@@ -1,1 +1,98 @@
-"""Module placeholder — implemented in milestone M2/M3."""
+"""Core data types for the vla-redteam engine.
+
+Observations and environment state flow through the pipeline as plain ``dict``
+objects (see the ABC signatures in :mod:`vla_redteam.policies.base`,
+:mod:`vla_redteam.suites.base`, and :mod:`vla_redteam.attacks.base`). The aliases
+below name those dicts; the pydantic models capture the *results* of a run, which
+are serialised to ``report.json``.
+
+Determinism contract: none of these models embed wall-clock time, absolute
+timestamps, or process-varying values. A :class:`RunReport` is a pure function of
+``(RunConfig, registered policy/suite/attacks)`` so that the same seed always
+produces a byte-identical report.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+import numpy as np
+import numpy.typing as npt
+from pydantic import BaseModel, Field
+
+# A policy observation (what a suite hands to a policy) and an environment state
+# snapshot (what ``SuiteAdapter.step`` returns as its info dict) are both plain
+# string-keyed dicts. They are kept as aliases — not models — so adapters around
+# real simulators (e.g. LIBERO) can pass their native dicts through untouched.
+type Observation = dict[str, Any]
+type State = dict[str, Any]
+
+# An action vector emitted by a policy / consumed by a suite.
+type Action = npt.NDArray[np.float32]
+
+
+class Decision(BaseModel):
+    """One policy decision at a single timestep within an episode."""
+
+    step: int = Field(..., description="1-based timestep index within the episode.")
+    instruction: str = Field(
+        ..., description="The (possibly adversarial) instruction given to the policy."
+    )
+    action: list[float] = Field(
+        ..., description="The action vector the policy emitted, as a list of floats."
+    )
+    unsafe: bool = Field(..., description="Whether the resulting environment state was unsafe.")
+
+
+class AttackResult(BaseModel):
+    """Outcome of a single episode: one ``(task, attack, seed)`` triple."""
+
+    task: str
+    attack: str
+    family: str
+    seed: int
+    success: bool = Field(..., description="True if the policy was driven into an unsafe state.")
+    steps: int = Field(..., description="Number of timesteps actually executed.")
+    steps_to_success: int | None = Field(
+        None, description="1-based step at which the unsafe state first occurred, or None."
+    )
+    danger: float = Field(..., description="Final value of the env's danger signal.")
+    threshold: float = Field(
+        ..., description="Per-seed unsafe threshold the danger signal was compared against."
+    )
+    original_instruction: str
+    adversarial_instruction: str
+
+
+class ASRStat(BaseModel):
+    """Attack-success-rate statistics for a slice of results."""
+
+    attempts: int = Field(..., description="Number of episodes in this slice.")
+    successes: int = Field(..., description="Number of episodes that reached an unsafe state.")
+    asr: float = Field(..., description="successes / attempts, or 0.0 when attempts == 0.")
+
+
+class RunReport(BaseModel):
+    """The full, deterministic result of a red-team run."""
+
+    tool_version: str = Field(..., description="vla_redteam.__version__ that produced this report.")
+    policy: str
+    suite: str
+    attacks: list[str] = Field(..., description="Resolved attack names that were run.")
+    tasks: list[str] = Field(..., description="Tasks that were run.")
+    episodes: int = Field(..., description="Episodes per (task, attack) pair.")
+    horizon: int = Field(..., description="Max timesteps per episode.")
+    seed: int = Field(..., description="Base seed; episode i used seed + i.")
+
+    attempts: int
+    successes: int
+    asr: float = Field(..., description="Overall Attack Success Rate — the headline stat.")
+
+    by_attack: dict[str, ASRStat] = Field(default_factory=dict)
+    by_task: dict[str, ASRStat] = Field(default_factory=dict)
+    results: list[AttackResult] = Field(default_factory=list)
+
+    def headline(self) -> str:
+        """Single-line human summary of the headline ASR."""
+        pct = 100.0 * self.asr
+        return f"Attack Success Rate (ASR): {pct:.1f}% ({self.successes}/{self.attempts})"

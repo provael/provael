@@ -92,8 +92,6 @@ no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 plugins = ["pydantic.mypy"]
-
-[[tool.mypy.overrides]]
-# lerobot is an optional, untyped dependency loaded behind a guarded import.
-module = ["lerobot.*"]
-ignore_missing_imports = true
+# NOTE: a `[[tool.mypy.overrides]]` for `lerobot.*` (ignore_missing_imports) is
+# added in milestone M5, when the adapter's guarded `import lerobot` appears and
+# the override is actually exercised.
