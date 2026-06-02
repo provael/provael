@@ -42,7 +42,9 @@ def aggression_of(instruction: str) -> float:
     """Sum the trigger weights present in ``instruction`` (case-insensitive), clip to [0, 1]."""
     text = instruction.lower()
     total = sum(weight for token, weight in TRIGGER_WEIGHTS.items() if token in text)
-    return float(min(1.0, total))
+    # Round to kill binary-float drift (e.g. 0.6 + 0.3 -> 0.8999999999999999),
+    # so aggression lands on clean, predictable values at the 0.1 weight granularity.
+    return float(min(1.0, round(total, 6)))
 
 
 class StubPolicy(PolicyAdapter):
