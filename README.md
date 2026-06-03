@@ -1,16 +1,26 @@
 # vla-redteam · `robopwn`
 
+[![CI](https://github.com/sattyamjjain/vla-redteam/actions/workflows/ci.yml/badge.svg)](https://github.com/sattyamjjain/vla-redteam/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/vla-redteam.svg)](https://pypi.org/project/vla-redteam/)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
+
 > Red-team open **Vision-Language-Action (VLA)** robot policies in simulation and
 > report an **Attack Success Rate (ASR)**.
 
-`vla-redteam` is a small, **model-agnostic** harness. It perturbs the instructions a
-VLA policy receives inside a simulator and measures how often those perturbations drive
-the policy into an *unsafe* state. The headline number is the ASR.
+`vla-redteam` is a small, **model-agnostic** harness. It perturbs the instructions and
+observations a VLA policy receives inside a simulator and measures how often those
+perturbations drive the policy into an *unsafe* state. The headline number is the ASR.
 
-The entire core — abstractions, attacks, scoring, runner, report, CLI — runs and is
-tested on a **plain CPU with no GPU and no model/dataset download**, using a
-deterministic `StubPolicy` + `StubSuite`. Real policies (e.g. SmolVLA via LeRobot) live
-behind an optional extra and a `ROBOPWN_INTEGRATION=1` gate.
+It ships **three attack families** — `instruction` (text reframings), `visual`
+(perception perturbations), and `injection` (indirect / embodied prompt injection) — an
+ASR **leaderboard**, and gated adapters for real **SmolVLA** policies and the **LIBERO**
+simulator.
+
+The entire core — abstractions, attacks, scoring, runner, report, CLI, leaderboard —
+runs and is tested on a **plain CPU with no GPU and no model/dataset download**, using a
+deterministic `StubPolicy` + `StubSuite`. Real policies (SmolVLA via LeRobot) and the
+LIBERO simulator live behind an optional extra and a `ROBOPWN_INTEGRATION=1` gate.
 
 > ⚠️ This is a **defensive, sim-only** tool for hardening policies via responsible
 > disclosure. It drives no physical robots and ships no real-world-harm payloads.
@@ -34,8 +44,8 @@ pip install -e .             # core only; lerobot is NOT pulled in
 ## Quickstart (runs in well under 5 s on a CPU)
 
 ```bash
-uv run robopwn attack --policy stub --suite stub --attacks instruction \
-    --episodes 10 --seed 0 --out runs/stub/
+uv run robopwn attack --policy stub --suite stub \
+    --attacks instruction,visual,injection --episodes 10 --seed 0 --out runs/stub/
 ```
 
 ```
@@ -43,22 +53,28 @@ uv run robopwn attack --policy stub --suite stub --attacks instruction \
 ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━┓
 ┃ attack            ┃   ASR ┃ successes ┃ attempts ┃
 ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━┩
+│ decoy_object      │ 60.0% │         6 │       10 │
 │ goal_substitution │ 60.0% │         6 │       10 │
+│ mcp_tool_desc     │ 70.0% │         7 │       10 │
 │ paraphrase        │ 70.0% │         7 │       10 │
+│ patch             │ 80.0% │         8 │       10 │
 │ roleplay          │ 80.0% │         8 │       10 │
+│ scene_text        │ 50.0% │         5 │       10 │
 └───────────────────┴───────┴───────────┴──────────┘
-Attack Success Rate (ASR): 70.0% (21/30)
+Attack Success Rate (ASR): 67.1% (47/70)
 ```
 
 This writes `runs/stub/report.json` (machine-readable, byte-deterministic) and
-`runs/stub/report.md`.
+`runs/stub/report.md`. Per family, seed-0 ASR is **instruction 21/30**, **visual
+14/20**, **injection 12/20** — exact, asserted numbers.
 
 Other commands:
 
 ```bash
-uv run robopwn list-policies     # stub (CPU) and smolvla (needs the [lerobot] extra)
-uv run robopwn list-attacks      # roleplay, goal_substitution, paraphrase (family: instruction)
+uv run robopwn list-policies            # stub (CPU); smolvla (needs the [lerobot] extra)
+uv run robopwn list-attacks             # 7 attacks across families instruction/visual/injection
 uv run robopwn report --in runs/stub/
+uv run robopwn leaderboard build --runs runs --out leaderboard/results   # ranked ASR table
 uv run robopwn version
 ```
 
@@ -67,13 +83,14 @@ uv run robopwn version
 | Capability | CPU (default) | Needs GPU + `[lerobot]` extra |
 | --- | :---: | :---: |
 | `stub` policy + `stub` suite | ✅ | |
-| `instruction` attacks, scoring, runner, report, CLI | ✅ | |
+| All 3 attack families (`instruction`/`visual`/`injection`) | ✅ | |
+| Scoring, runner, report, CLI, `leaderboard build` | ✅ | |
 | Full test suite (`pytest`), `ruff`, `mypy` | ✅ | |
 | `smolvla` policy (real SmolVLA via LeRobot) | | ✅ |
-| LIBERO simulator evaluation | | ✅ |
+| `libero` suite (real LIBERO simulator) | | ✅ |
 
-On CPU, `--policy smolvla` fails with a clear, actionable message (not a traceback)
-telling you exactly what to install.
+On CPU, `--policy smolvla` or `--suite libero` fails with a clear, actionable message
+(not a traceback) telling you exactly what to install.
 
 ## Verified environment
 
@@ -89,8 +106,8 @@ Resolved on the machine that built this release (2026-06-03):
 | **Optional `[lerobot]`** (resolved + introspected in an isolated venv) | lerobot 0.5.1 · torch 2.10.0 · transformers 5.3.0 |
 
 Verified results on this machine: `ruff check .` clean · `mypy src` clean ·
-`pytest` → **37 passed, 2 skipped** (the 2 skips are the GPU-gated LeRobot integration
-tests) · `robopwn attack` completes in well under a second.
+`pytest` → **66 passed, 3 skipped** (the 3 skips are the GPU-gated LeRobot/LIBERO
+integration tests) · `robopwn attack` completes in well under a second.
 
 > The LeRobot adapter was written **after introspecting the installed
 > `lerobot==0.5.1`** — every symbol and signature it calls was confirmed against the
@@ -107,17 +124,35 @@ pip install 'vla-redteam[lerobot]'
 # 2. For the LIBERO simulator, also install LeRobot's LIBERO extra
 pip install 'lerobot[libero]==0.5.1'
 
-# 3. Run the gated integration test (loads SmolVLA, checks the verified pipeline)
-ROBOPWN_INTEGRATION=1 pytest tests/test_lerobot_adapter.py -q
+# 3. Run the gated integration tests (load SmolVLA + build a real LIBERO env)
+ROBOPWN_INTEGRATION=1 pytest tests/test_lerobot_adapter.py tests/test_libero_adapter.py -q
+
+# 4. Red-team a real policy in the real simulator, then update the leaderboard
+ROBOPWN_INTEGRATION=1 robopwn attack --policy smolvla --suite libero \
+    --attacks instruction,visual,injection --episodes 10 --seed 0 --out runs/smolvla_libero
+robopwn leaderboard build --runs 'runs/*' --out leaderboard/results
 ```
 
-Today, end-to-end SmolVLA-on-LIBERO evaluation is done with LeRobot's own evaluator
-(the full LIBERO `SuiteAdapter` is Part 2):
+A reproducible helper script, [`scripts/run_real.sh`](scripts/run_real.sh), detects
+CUDA and runs the above (or prints the exact commands and exits cleanly if there is no
+GPU). LeRobot's own evaluator remains available too:
 
 ```bash
 lerobot-eval --policy.path=lerobot/smolvla_base \
     --env.type=libero --env.task=libero_object   # or libero_10 / libero_spatial / libero_goal
 ```
+
+## Leaderboard
+
+`robopwn leaderboard build` aggregates `report.json` files into a ranked, deterministic
+`(policy × suite × family) → ASR` table. The [`leaderboard/`](leaderboard/) folder is a
+ZeroGPU-compatible Gradio Space that renders the committed `results/*.json` with **no
+GPU**.
+
+> The committed `leaderboard/results/_demo.json` is **stub/demo data** — it shows the
+> harness works, but the numbers are not a real model's robustness. Add real SmolVLA /
+> OpenVLA results with the GPU command above; the "demo data" banner clears once a
+> non-stub run is present.
 
 ## How it works
 
@@ -141,12 +176,15 @@ lerobot-eval --policy.path=lerobot/smolvla_base \
 - **ASR** — `successes / attempts`, with `by_attack` and `by_task` breakdowns.
 
 **Why the stub ASR is a real number.** The `StubPolicy` is intentionally manipulable:
-it sums the weights of hard-coded "unsafe-intent" tokens in the instruction and emits a
-proportionally aggressive action. The `StubSuite` declares an episode unsafe when that
-action crosses a per-seed threshold derived from a stable SHA-256 hash. The benign base
-instruction has no triggers (so an unattacked run scores 0); each shipped attack injects
-triggers at a calibrated potency, so the resulting ASR is exact and reproducible. For
-`seed=0`, the ASR is **70.0% (21/30)** — and the test suite asserts that exact value.
+it sums the weights of hard-coded "unsafe-intent" tokens found in the instruction **and**
+in a fixed allow-list of observation channels (`scene_text`, `visual_tokens`,
+`tool_descriptions`, `patch`, `objects`), then emits a proportionally aggressive action.
+The `StubSuite` declares an episode unsafe when that action crosses a per-seed threshold
+derived from a stable SHA-256 hash. The benign base scene + instruction have no triggers
+(so an unattacked run scores 0); each shipped attack injects triggers at a calibrated
+potency, so every per-attack ASR is exact and reproducible. For `seed=0`: instruction
+**21/30**, visual **14/20**, injection **12/20** — and the test suite asserts each exact
+value.
 
 **Determinism.** A `RunReport` embeds no wall-clock time or process-varying values, so
 the same config + seed always produces a byte-identical `report.json`.
@@ -160,7 +198,29 @@ uv run pytest -q         # tests (CPU only; LeRobot tests skip unless gated)
 ```
 
 CI (GitHub Actions) runs exactly these three on Python 3.12 and **never installs
-lerobot**.
+lerobot**. The test suite (CPU; the 3 GPU-gated tests skip):
+
+```
+tests/
+  conftest.py                # stub policy / suite fixtures
+  test_attacks.py            # instruction family: perturb + frozen aggressions
+  test_visual_injection.py   # visual + injection families: perturb + frozen ASR
+  test_scoring.py            # ASR math, zero-division guard
+  test_runner_smoke.py       # exact seed-0 ASR (instruction canary 21/30)
+  test_determinism.py        # byte-identical report.json per seed
+  test_cli.py                # CLI commands + clean error paths
+  test_registries.py         # policy/suite factories + config validation
+  test_leaderboard.py        # leaderboard aggregation + determinism
+  test_lerobot_adapter.py    # SmolVLA adapter: missing-dep error + gated integration
+  test_libero_adapter.py     # LIBERO predicate (CPU) + gated integration
+```
+
+### Releasing
+
+Tag-triggered: `git tag v0.1.0 && git push origin v0.1.0` builds an sdist + wheel and
+publishes to PyPI via **OIDC trusted publishing** (no token in the repo), then cuts a
+GitHub Release from the CHANGELOG. See the one-time setup notes at the top of
+[`.github/workflows/release.yml`](.github/workflows/release.yml).
 
 ## Further reading
 

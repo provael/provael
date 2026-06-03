@@ -1,0 +1,94 @@
+name: Release
+
+# Tag-triggered release: build sdist + wheel, publish to PyPI via OIDC TRUSTED
+# PUBLISHING (no API token stored anywhere), then cut a GitHub Release from the
+# CHANGELOG.
+#
+# ────────────────────────────────────────────────────────────────────────────
+# ONE-TIME MAINTAINER SETUP (PyPI trusted publisher — no secrets in the repo):
+#   1. Create the project owner account on https://pypi.org.
+#   2. PyPI → your account → "Publishing" → "Add a new pending publisher":
+#        PyPI project name : vla-redteam
+#        Owner             : sattyamjjain
+#        Repository name   : vla-redteam
+#        Workflow name     : release.yml
+#        Environment name  : pypi
+#   3. In GitHub → repo Settings → Environments → create an environment named "pypi"
+#      (optionally add required reviewers / a tag protection rule).
+#   4. Publish by pushing a tag that matches the version, e.g.:
+#        git tag v0.1.0 && git push origin v0.1.0
+#   (For a first dry run, point step `publish` at TestPyPI by setting
+#    `repository-url: https://test.pypi.org/legacy/` and adding the matching pending
+#    publisher on test.pypi.org.)
+# ────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions: {}  # least privilege by default; jobs opt into exactly what they need
+
+jobs:
+  build:
+    name: Build sdist + wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv (Python 3.12)
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Build distributions
+        run: uv build
+      - name: Check metadata
+        run: uvx twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish-pypi:
+    name: Publish to PyPI (OIDC trusted publishing)
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write  # REQUIRED for OIDC trusted publishing — no token needed
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # No `password:` — trusted publishing uses the OIDC id-token above.
+
+  github-release:
+    name: Create GitHub Release
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # to create the release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Extract changelog notes for this tag
+        id: notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v ver="$version" '
+            $0 ~ "^## \\[" ver "\\]" {flag=1; next}
+            flag && /^## \[/ {exit}
+            flag {print}
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then echo "Release ${GITHUB_REF_NAME}" > release-notes.md; fi
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file release-notes.md

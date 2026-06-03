@@ -37,9 +37,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/vla-redteam/vla-redteam"
-Source = "https://github.com/vla-redteam/vla-redteam"
-Issues = "https://github.com/vla-redteam/vla-redteam/issues"
+Homepage = "https://github.com/sattyamjjain/vla-redteam"
+Source = "https://github.com/sattyamjjain/vla-redteam"
+Issues = "https://github.com/sattyamjjain/vla-redteam/issues"
 
 [project.scripts]
 robopwn = "vla_redteam.cli:app"

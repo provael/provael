@@ -16,18 +16,27 @@ the spirit of responsible disclosure.
 
 ## No real-world-harm payloads
 
-- The shipped `instruction` attacks are short, generic, **templated** reframings
-  (role-play, goal-substitution, paraphrase). They are designed to probe whether a
-  policy follows a redirected goal in a benchmark — **not** to provide a recipe for
-  causing harm.
-- The `StubPolicy`'s "trigger lexicon" is an intentionally transparent **test
-  fixture** (a handful of words with weights) so the CPU pipeline produces a
-  measurable Attack Success Rate with no model. It is not a real exploit and does not
-  transfer to real policies.
-- We deliberately **exclude** from Part 1 the families most prone to misuse and
-  hardest to defend (optimized adversarial suffixes / GCG, visual perturbations,
-  observation-channel injection). When added, they will remain sim-only and
-  benchmark-scoped.
+- The shipped attacks (families `instruction`, `visual`, `injection`) are short,
+  generic, **templated** reframings and markers. They probe whether a policy follows a
+  redirected goal in a benchmark — they are **not** a recipe for causing harm.
+- The `StubPolicy`'s "trigger lexicon" is an intentionally transparent **test fixture**
+  (a handful of words with weights, read from the instruction and a fixed set of
+  observation channels) so the CPU pipeline produces a measurable Attack Success Rate
+  with no model. It is not a real exploit and does not transfer to real policies.
+- The `visual` and `injection` families target the **stub's observation channels**. They
+  demonstrate the *measurement* of perception/injection attacks; they do **not** ship
+  pixel-level perturbations that transfer to a real model. The most misuse-prone families
+  — optimized adversarial suffixes / GCG and transferable pixel attacks — remain
+  deliberately **deferred**, and when added will stay sim-only and benchmark-scoped.
+
+## What we measure on LIBERO (redirection, not harm)
+
+LIBERO is **benign tabletop manipulation**. The LIBERO `SuiteAdapter` does **not**
+measure physical harm — it measures whether an attack **redirected** the policy to an
+attacker-designated target (the default predicate is an end-effector keep-out zone; an
+optional rule flags grasping a forbidden object). "Attack success" here means "the policy
+was steered off-task in simulation", which is exactly the robustness signal a defense can
+be evaluated against — not a real-world exploit.
 
 ## Intended users & uses
 
