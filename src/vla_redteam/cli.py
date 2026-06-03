@@ -31,6 +31,7 @@ from vla_redteam.attacks.registry import (
     make_attack,
 )
 from vla_redteam.config import RunConfig
+from vla_redteam.leaderboard import Leaderboard, build_leaderboard
 from vla_redteam.policies.lerobot_adapter import MissingLeRobotError
 from vla_redteam.policies.registry import (
     REQUIRES_LEROBOT,
@@ -46,6 +47,12 @@ app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,
 )
+
+leaderboard_app = typer.Typer(
+    help="Aggregate run reports into a ranked ASR leaderboard.",
+    no_args_is_help=True,
+)
+app.add_typer(leaderboard_app, name="leaderboard")
 
 _out = Console()
 _err = Console(stderr=True)
@@ -171,6 +178,53 @@ def report(
         _fail(f"{in_dir} does not contain a valid RoboPwn report.json")
         return
     render_summary(loaded, _out)
+
+
+def _render_leaderboard(leaderboard: Leaderboard) -> None:
+    if leaderboard.is_demo:
+        _out.print(
+            "[yellow]demo data[/yellow]: stub-policy results only — add real "
+            "SmolVLA/OpenVLA runs for live numbers (see leaderboard/README.md)."
+        )
+    table = Table(title="RoboPwn — ASR leaderboard (policy x suite x family)", title_style="bold")
+    table.add_column("rank", justify="right")
+    table.add_column("policy", style="cyan", no_wrap=True)
+    table.add_column("suite", style="magenta")
+    table.add_column("family")
+    table.add_column("ASR", justify="right", style="bold red")
+    table.add_column("successes", justify="right")
+    table.add_column("attempts", justify="right")
+    for rank, row in enumerate(leaderboard.rows, start=1):
+        table.add_row(
+            str(rank),
+            row.policy,
+            row.suite,
+            row.family,
+            f"{100.0 * row.asr:.1f}%",
+            str(row.successes),
+            str(row.attempts),
+        )
+    _out.print(table)
+
+
+@leaderboard_app.command("build")
+def leaderboard_build(
+    runs: Annotated[
+        list[str] | None,
+        typer.Option(help="Run dir(s), glob(s), or report.json path(s). Quote globs."),
+    ] = None,
+    out: Annotated[Path, typer.Option(help="Output directory for leaderboard.json.")] = Path(
+        "leaderboard/results"
+    ),
+) -> None:
+    """Aggregate report.json files into a ranked, deterministic leaderboard.json."""
+    try:
+        out_path, leaderboard = build_leaderboard(runs or ["runs"], out)
+    except FileNotFoundError as exc:
+        _fail(str(exc))
+        return
+    _render_leaderboard(leaderboard)
+    _out.print(f"\nWrote [cyan]{out_path}[/cyan]")
 
 
 if __name__ == "__main__":  # pragma: no cover

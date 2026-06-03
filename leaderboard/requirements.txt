@@ -1,0 +1,8 @@
+# Hugging Face Space (Gradio) dependencies for the RoboPwn ASR leaderboard (v0).
+# v0 renders committed results/*.json — no GPU, no model, no vla-redteam install needed.
+gradio>=5,<6
+
+# Optional: only present on Hugging Face ZeroGPU Spaces. The app guards the import,
+# so it is not required to run locally. Needed if you wire the @spaces.GPU live-run
+# button (see the commented stub in app.py).
+spaces
