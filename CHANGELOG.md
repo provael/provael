@@ -87,8 +87,11 @@ end-to-end (GPU-gated). Verified by **running** against the installed `lerobot==
 
 ### Verified by running (isolated lerobot venv, CPU)
 - `lerobot/smolvla_base` is **NOT** LIBERO-compatible (expects `camera1/2/3`; LIBERO
-  gives `image`/`image2` + 8-dim state) → a **LIBERO-fine-tuned** checkpoint is required;
-  the adapter surfaces a clean `IncompatiblePolicyError`.
+  gives `image`/`image2` + 8-dim state) → the adapter surfaces a clean
+  `IncompatiblePolicyError`.
+- The **ready** `HuggingFaceVLA/smolvla_libero` checkpoint **loads through the glue** with
+  no incompatibility (policy + pre/post + `LiberoProcessorStep` all build) — so no
+  fine-tuning is needed. It is the default in `scripts/run_real.sh` and the gated tests.
 
 ### Known limitations
 - Real-policy ASR is **seeded but model-stochastic** (mean ± std), not byte-deterministic

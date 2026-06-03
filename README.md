@@ -127,10 +127,13 @@ The in-process attack loop `robopwn attack --policy smolvla --suite libero` runs
 string and the camera image). Nothing here runs in CI or on the CPU core.
 
 > ⚠️ **`lerobot/smolvla_base` is NOT directly evaluable on LIBERO** (verified by running
-> it): it expects `camera1/2/3` but LIBERO provides `image`/`image2` + 8-dim state, and
-> it is untrained on LIBERO. Pass a **LIBERO-fine-tuned** SmolVLA checkpoint via
-> `--model`; the base model surfaces a clean `IncompatiblePolicyError`. Train one with
-> `lerobot-train … --dataset.repo_id=HuggingFaceVLA/libero` (see the LeRobot LIBERO docs).
+> it): it expects `camera1/2/3` but LIBERO provides `image`/`image2` + 8-dim state, so
+> `make_policy` rejects it and the adapter surfaces a clean `IncompatiblePolicyError`.
+> Use a **LIBERO-fine-tuned** checkpoint via `--model`. A ready one exists —
+> [`HuggingFaceVLA/smolvla_libero`](https://huggingface.co/HuggingFaceVLA/smolvla_libero)
+> — **verified to load through the glue** (no incompatibility), so no fine-tuning needed.
+> (Its benign task-success may run below the paper numbers; that's fine here — we measure
+> *redirection* ASR, not benchmark accuracy.)
 >
 > Real-policy ASR is **seeded but model-stochastic** — reported as mean ± per-seed std,
 > **not** byte-deterministic (only the stub is).
@@ -139,13 +142,12 @@ On a provisioned (GPU) machine:
 
 ```bash
 pip install 'vla-redteam[lerobot]' 'lerobot[libero]==0.5.1'
-export ROBOPWN_SMOLVLA_LIBERO_CKPT=<your-libero-finetuned-smolvla-repo_id>
 
 # Gated integration tests (real load + real env + one real step through the glue):
 ROBOPWN_INTEGRATION=1 pytest tests/test_lerobot_adapter.py tests/test_libero_adapter.py -q
 
 # Real seeded attack-ASR (mean ± std) in the LIBERO simulator, then update the leaderboard:
-robopwn attack --policy smolvla --suite libero --model "$ROBOPWN_SMOLVLA_LIBERO_CKPT" \
+robopwn attack --policy smolvla --suite libero --model HuggingFaceVLA/smolvla_libero \
     --attacks instruction,visual,injection --seeds 10 --seed 0 --out runs/smolvla_libero
 robopwn leaderboard build --runs 'runs/*' --out leaderboard/results
 ```

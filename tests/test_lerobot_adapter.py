@@ -30,8 +30,8 @@ from vla_redteam.types import SuiteFeatures
 
 _LEROBOT_AVAILABLE = importlib.util.find_spec("lerobot") is not None
 _INTEGRATION_ENABLED = os.environ.get("ROBOPWN_INTEGRATION") == "1"
-#: Optional LIBERO-fine-tuned SmolVLA checkpoint for the real load test.
-_LIBERO_CKPT = os.environ.get("ROBOPWN_SMOLVLA_LIBERO_CKPT")
+#: A READY LIBERO-fine-tuned SmolVLA checkpoint (verified to load through the glue).
+_LIBERO_CKPT = os.environ.get("ROBOPWN_SMOLVLA_LIBERO_CKPT", "HuggingFaceVLA/smolvla_libero")
 
 
 # --------------------------------------------------------------------------- #
@@ -122,21 +122,21 @@ def test_smolvla_base_is_incompatible_with_libero() -> None:
 
 
 @pytest.mark.skipif(
-    not (_INTEGRATION_ENABLED and _LEROBOT_AVAILABLE and _LIBERO_CKPT),
-    reason="set ROBOPWN_SMOLVLA_LIBERO_CKPT to a LIBERO-fine-tuned SmolVLA checkpoint",
+    not (_INTEGRATION_ENABLED and _LEROBOT_AVAILABLE),
+    reason="requires ROBOPWN_INTEGRATION=1 and an installed lerobot (downloads the checkpoint)",
 )
-def test_adapter_loads_libero_finetuned_checkpoint() -> None:
-    # The real load against a LIBERO-compatible checkpoint: verifies the full verified
-    # make_policy + processors + env-processors wiring.
+def test_libero_finetuned_checkpoint_loads_through_glue() -> None:
+    # The ready HuggingFaceVLA/smolvla_libero checkpoint resolves the feature mismatch that
+    # smolvla_base hit: make_policy + the policy and env (LiberoProcessorStep) processors
+    # all build. No MuJoCo needed (make_policy validates against the static env config).
     from lerobot.envs.factory import make_env_config
 
     env_cfg = make_env_config(
         "libero", task="libero_object", task_ids=[0], obs_type="pixels_agent_pos"
     )
-    assert _LIBERO_CKPT is not None
     adapter = LeRobotAdapter(model_id=_LIBERO_CKPT, device="cpu")
     adapter.set_features(SuiteFeatures(action_dim=7, env_config=env_cfg, image_key="image"))
-    adapter.load()
+    adapter.load()  # must NOT raise IncompatiblePolicyError
     assert adapter._loaded is True
     assert adapter._env_preprocess is not None  # LiberoProcessorStep wired
     assert hasattr(adapter._policy, "select_action")

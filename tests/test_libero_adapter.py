@@ -32,8 +32,8 @@ from vla_redteam.suites.libero import (
 
 _LEROBOT_AVAILABLE = importlib.util.find_spec("lerobot") is not None
 _INTEGRATION_ENABLED = os.environ.get("ROBOPWN_INTEGRATION") == "1"
-#: A LIBERO-fine-tuned SmolVLA checkpoint (the base model is NOT LIBERO-compatible).
-_LIBERO_CKPT = os.environ.get("ROBOPWN_SMOLVLA_LIBERO_CKPT")
+#: A READY LIBERO-fine-tuned SmolVLA checkpoint (the base model is NOT LIBERO-compatible).
+_LIBERO_CKPT = os.environ.get("ROBOPWN_SMOLVLA_LIBERO_CKPT", "HuggingFaceVLA/smolvla_libero")
 _DEVICE = os.environ.get("ROBOPWN_DEVICE", "cuda")
 
 # A keep-out zone and points clearly inside / outside it.
@@ -179,9 +179,9 @@ def test_libero_env_builds_resets_and_steps() -> None:
 
 
 @pytest.mark.skipif(
-    not (_INTEGRATION_ENABLED and _LEROBOT_AVAILABLE and _LIBERO_CKPT),
-    reason="requires ROBOPWN_INTEGRATION=1, lerobot+libero, and a LIBERO-finetuned "
-    "SmolVLA checkpoint in ROBOPWN_SMOLVLA_LIBERO_CKPT",
+    not (_INTEGRATION_ENABLED and _LEROBOT_AVAILABLE),
+    reason="requires ROBOPWN_INTEGRATION=1 and lerobot+libero (uses the ready "
+    "HuggingFaceVLA/smolvla_libero checkpoint; skips if the sim is unavailable)",
 )
 def test_one_real_smolvla_step_through_the_glue() -> None:
     # The whole point: a real SmolVLA acts on a real LIBERO observation via the verified

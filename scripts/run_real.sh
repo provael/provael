@@ -6,17 +6,19 @@
 # extras, runs the verified-real gated tests, runs the real attack, and refreshes the
 # leaderboard. With NO GPU it prints the exact commands and exits 0.
 #
-# IMPORTANT: lerobot/smolvla_base is NOT LIBERO-compatible (it expects camera1/2/3;
-# LIBERO provides image/image2 + 8-dim state). Set ROBOPWN_SMOLVLA_LIBERO_CKPT to a
-# LIBERO-FINE-TUNED SmolVLA checkpoint (train one with lerobot-train on
-# HuggingFaceVLA/libero). The base model will report a clean IncompatiblePolicyError.
+# NOTE: lerobot/smolvla_base is NOT LIBERO-compatible (it expects camera1/2/3; LIBERO
+# provides image/image2 + 8-dim state). The default below is a READY LIBERO-fine-tuned
+# checkpoint — HuggingFaceVLA/smolvla_libero — verified to load through the glue with no
+# IncompatiblePolicyError, so no fine-tuning is needed. Override with
+# ROBOPWN_SMOLVLA_LIBERO_CKPT. (Its benign task-success may run below the paper numbers —
+# see LeRobot issues #3264 / #2354 — which is fine here: we measure redirection ASR.)
 #
-# Usage:  ROBOPWN_SMOLVLA_LIBERO_CKPT=<repo_id> ./scripts/run_real.sh
+# Usage:  ./scripts/run_real.sh            (or ROBOPWN_SMOLVLA_LIBERO_CKPT=<repo_id> ...)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 VENV=".venv-real"
-CKPT="${ROBOPWN_SMOLVLA_LIBERO_CKPT:-lerobot/smolvla_base}"
+CKPT="${ROBOPWN_SMOLVLA_LIBERO_CKPT:-HuggingFaceVLA/smolvla_libero}"
 TASKS="${ROBOPWN_ATTACKS:-instruction,visual,injection}"
 SEEDS="${ROBOPWN_SEEDS:-10}"
 
@@ -27,21 +29,13 @@ On a CUDA GPU box, run the real in-process attack loop:
   uv venv ${VENV} --python 3.12
   uv pip install --python ${VENV}/bin/python -e '.[lerobot]' 'lerobot[libero]==0.5.1'
 
-  # A LIBERO-FINE-TUNED SmolVLA checkpoint is required (base model is incompatible):
-  export ROBOPWN_SMOLVLA_LIBERO_CKPT=<your-libero-finetuned-smolvla-repo_id>
-
-  # Real seeded attack-ASR (mean ± per-seed std), in the LIBERO simulator:
+  # Real seeded attack-ASR (mean ± per-seed std) with the ready LIBERO checkpoint:
   ${VENV}/bin/robopwn attack --policy smolvla --suite libero \\
-      --model "\$ROBOPWN_SMOLVLA_LIBERO_CKPT" \\
+      --model ${CKPT} \\
       --attacks ${TASKS} --seeds ${SEEDS} --seed 0 --out runs/smolvla_libero
 
   # Flip the leaderboard to real (non-demo) numbers:
   ${VENV}/bin/robopwn leaderboard build --runs 'runs/*' --out leaderboard/results
-
-To produce a checkpoint (per the official LeRobot LIBERO docs):
-  ${VENV}/bin/lerobot-train --policy.type=smolvla --policy.load_vlm_weights=true \\
-      --dataset.repo_id=HuggingFaceVLA/libero --env.type=libero --env.task=libero_10 \\
-      --output_dir=./outputs/ --steps=100000
 EOF
 }
 
