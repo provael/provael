@@ -57,6 +57,37 @@ def test_attack_runs_and_writes_report(tmp_path: Path) -> None:
     assert "ASR" in result.output  # headline printed
 
 
+def test_attack_runs_all_three_families(tmp_path: Path) -> None:
+    out = tmp_path / "run"
+    result = runner.invoke(
+        app,
+        [
+            "attack",
+            "--policy", "stub",
+            "--suite", "stub",
+            "--attacks", "instruction,visual,injection",
+            "--episodes", "5",
+            "--seed", "0",
+            "--out", str(out),
+        ],
+    )
+    assert result.exit_code == 0
+    report = load_report(out)
+    # 1 task x 7 attacks (3 instruction + 2 visual + 2 injection) x 5 episodes.
+    assert report.attempts == 35
+    assert set(report.attacks) == {
+        "roleplay", "goal_substitution", "paraphrase",
+        "patch", "decoy_object", "scene_text", "mcp_tool_desc",
+    }
+
+
+def test_list_attacks_shows_new_families() -> None:
+    result = runner.invoke(app, ["list-attacks"])
+    assert result.exit_code == 0
+    for token in ("patch", "scene_text", "visual", "injection"):
+        assert token in result.output
+
+
 def test_report_command_round_trips(tmp_path: Path) -> None:
     out = tmp_path / "run"
     assert runner.invoke(app, ["attack", "--episodes", "5", "--out", str(out)]).exit_code == 0

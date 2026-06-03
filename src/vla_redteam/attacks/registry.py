@@ -1,9 +1,10 @@
 """Attack registry: resolve names and family names to :class:`Attack` instances.
 
-Part 1 ships the ``instruction`` family only. The registry maps both individual
-attack names (``roleplay``, ``goal_substitution``, ``paraphrase``) and family names
-(``instruction``) to attacks, so ``--attacks instruction`` expands to the whole
-family while ``--attacks roleplay,paraphrase`` selects specific attacks.
+Three families ship today: ``instruction`` (text reframings), ``visual`` (perception
+perturbations), and ``injection`` (indirect / embodied prompt injection). The registry
+maps both individual attack names and family names to attacks, so
+``--attacks instruction`` expands a whole family while ``--attacks patch,scene_text``
+selects specific attacks across families.
 """
 
 from __future__ import annotations
@@ -11,6 +12,13 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from vla_redteam.attacks.base import Attack
+from vla_redteam.attacks.injection import (
+    FAMILY as INJECTION_FAMILY,
+)
+from vla_redteam.attacks.injection import (
+    MCPToolDescInjection,
+    SceneTextInjection,
+)
 from vla_redteam.attacks.instruction import (
     FAMILY as INSTRUCTION_FAMILY,
 )
@@ -19,17 +27,30 @@ from vla_redteam.attacks.instruction import (
     ParaphraseAttack,
     RolePlayAttack,
 )
+from vla_redteam.attacks.visual import (
+    FAMILY as VISUAL_FAMILY,
+)
+from vla_redteam.attacks.visual import (
+    DecoyObjectAttack,
+    PatchAttack,
+)
 
 #: Registry of attack factories keyed by attack name.
 ATTACKS: dict[str, Callable[[], Attack]] = {
     "roleplay": RolePlayAttack,
     "goal_substitution": GoalSubstitutionAttack,
     "paraphrase": ParaphraseAttack,
+    "patch": PatchAttack,
+    "decoy_object": DecoyObjectAttack,
+    "scene_text": SceneTextInjection,
+    "mcp_tool_desc": MCPToolDescInjection,
 }
 
 #: Family name -> ordered member attack names.
 FAMILIES: dict[str, list[str]] = {
     INSTRUCTION_FAMILY: ["roleplay", "goal_substitution", "paraphrase"],
+    VISUAL_FAMILY: ["patch", "decoy_object"],
+    INJECTION_FAMILY: ["scene_text", "mcp_tool_desc"],
 }
 
 

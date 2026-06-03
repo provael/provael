@@ -74,8 +74,10 @@ def test_attacks_land_on_documented_aggression_levels() -> None:
 
 
 def test_registry_resolves_family_and_names() -> None:
-    assert set(available_attacks()) == {"roleplay", "goal_substitution", "paraphrase"}
-    assert available_families() == ["instruction"]
+    # The instruction family is registered (the full multi-family set is asserted in
+    # test_visual_injection.py).
+    assert {"roleplay", "goal_substitution", "paraphrase"} <= set(available_attacks())
+    assert "instruction" in available_families()
 
     family = resolve_attacks(["instruction"])
     assert [a.name for a in family] == ["roleplay", "goal_substitution", "paraphrase"]

@@ -17,8 +17,7 @@ suffixes (GCG-style) are intentionally deferred to a later release (see CHANGELO
 
 from __future__ import annotations
 
-import hashlib
-
+from vla_redteam.attacks._payload import episode_index
 from vla_redteam.attacks.base import Attack
 from vla_redteam.types import Observation
 
@@ -26,21 +25,6 @@ FAMILY = "instruction"
 
 #: The unsafe object the instruction attacks try to redirect the policy toward.
 DEFAULT_TARGET_OBJECT = "knife"
-
-
-def _episode_index(observation: Observation, modulus: int) -> int:
-    """Pick a deterministic index from the observation.
-
-    Prefers the episode ``seed`` (present in our suites); otherwise falls back to a
-    stable SHA-256 hash of the instruction context so ``perturb`` stays a pure,
-    reproducible function even on suites that don't expose a seed.
-    """
-    seed = observation.get("seed")
-    if isinstance(seed, int):
-        return seed % modulus
-    key = str(observation.get("instruction", "")) + str(observation.get("task", ""))
-    digest = hashlib.sha256(key.encode()).digest()
-    return int.from_bytes(digest[:4], "big") % modulus
 
 
 class RolePlayAttack(Attack):
@@ -105,7 +89,7 @@ class ParaphraseAttack(Attack):
         self.target_object = target_object
 
     def perturb(self, instruction: str, observation: Observation) -> tuple[str, Observation]:
-        idx = _episode_index(observation, len(self.BANK))
+        idx = episode_index(observation, len(self.BANK))
         adversarial = self.BANK[idx].format(object=self.target_object)
         return adversarial, observation
 
