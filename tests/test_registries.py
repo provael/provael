@@ -11,14 +11,23 @@ from vla_redteam.policies.registry import (
     make_policy,
     policy_is_ready,
 )
-from vla_redteam.suites import available_suites, make_suite
+from vla_redteam.suites import available_suites, make_suite, suite_is_ready
 
 
 def test_suite_factory() -> None:
-    assert available_suites() == ["stub"]
+    assert available_suites() == ["libero", "stub"]
     suite = make_suite("stub")
     assert suite.name == "stub"
     assert suite.tasks() == ["reach"]
+
+
+def test_libero_suite_registered_but_gated() -> None:
+    # Constructing the libero suite is cheap and never imports lerobot; it is only
+    # "ready" when the extra is installed (absent on the CPU build).
+    assert "libero" in available_suites()
+    assert suite_is_ready("stub") is True
+    assert suite_is_ready("libero") is False
+    assert make_suite("libero").name == "libero"
 
 
 def test_suite_factory_rejects_unknown() -> None:
