@@ -97,6 +97,19 @@ def test_eval_hint_names_the_supported_path() -> None:
     assert "--env.type=libero" in LEROBOT_EVAL_LIBERO_HINT
 
 
+def test_incompatibility_hint_points_at_the_ready_checkpoint() -> None:
+    # The IncompatiblePolicyError message must name the fix, not make a forgetful user
+    # rediscover it.
+    from vla_redteam.policies.lerobot_adapter import LIBERO_FINETUNED_SMOLVLA, _CHECKPOINT_HINT
+
+    assert LIBERO_FINETUNED_SMOLVLA == "HuggingFaceVLA/smolvla_libero"
+    assert LIBERO_FINETUNED_SMOLVLA in _CHECKPOINT_HINT
+    assert "--model" in _CHECKPOINT_HINT
+    # The template still formats cleanly (only {model}/{error} are placeholders).
+    formatted = _CHECKPOINT_HINT.format(model="lerobot/smolvla_base", error="feature mismatch")
+    assert "lerobot/smolvla_base" in formatted and "smolvla_libero" in formatted
+
+
 # --------------------------------------------------------------------------- #
 # GATED: real load via the verified make_policy + processor path
 # --------------------------------------------------------------------------- #

@@ -61,20 +61,24 @@ LEROBOT_EVAL_LIBERO_HINT = (
     "--env.task=libero_object   # or libero_10 / libero_spatial / libero_goal"
 )
 
+#: A ready LIBERO-fine-tuned SmolVLA checkpoint, verified to load through the glue.
+LIBERO_FINETUNED_SMOLVLA = "HuggingFaceVLA/smolvla_libero"
+
 #: Surfaced when ``make_policy`` rejects the checkpoint for the env's features. VERIFIED
 #: by running it: ``lerobot/smolvla_base`` expects ``observation.images.camera1/2/3`` but
 #: LIBERO provides ``image``/``image2`` (+ 8-dim state) — the base model is NOT directly
-#: evaluable on LIBERO; it must be fine-tuned on LIBERO first (per the official docs).
+#: evaluable on LIBERO; it must be fine-tuned on LIBERO first (per the official docs). The
+#: message names the ready fix so a forgetful user doesn't have to rediscover it.
 _CHECKPOINT_HINT = (
     "The policy checkpoint '{model}' is not compatible with the LIBERO observation "
     "features.\nlerobot's make_policy reported:\n  {error}\n"
     "LIBERO provides 2 cameras (observation.images.image, image2) + 8-dim state; "
     "lerobot/smolvla_base expects camera1/2/3 and is untrained on LIBERO.\n"
-    "Use a LIBERO-FINE-TUNED SmolVLA checkpoint (pass --model <repo_id>), e.g. train one:\n"
-    "  lerobot-train --policy.type=smolvla --policy.load_vlm_weights=true \\\n"
-    "      --dataset.repo_id=HuggingFaceVLA/libero --env.type=libero --env.task=libero_10\n"
-    "If your checkpoint uses different obs keys, pass a rename_map (see the LeRobot "
-    "LIBERO docs)."
+    "Fix: pass a LIBERO-fine-tuned checkpoint, e.g.\n"
+    f"  --model {LIBERO_FINETUNED_SMOLVLA}   (a ready LIBERO-fine-tuned SmolVLA)\n"
+    "Or train your own: lerobot-train --policy.type=smolvla --policy.load_vlm_weights=true "
+    "--dataset.repo_id=HuggingFaceVLA/libero --env.type=libero --env.task=libero_10\n"
+    "If your checkpoint uses different obs keys, also pass --rename-map (LeRobot LIBERO docs)."
 )
 
 
@@ -251,5 +255,6 @@ __all__ = [
     "MissingLeRobotError",
     "IncompatiblePolicyError",
     "LEROBOT_EVAL_LIBERO_HINT",
+    "LIBERO_FINETUNED_SMOLVLA",
     "clamp_action",
 ]
