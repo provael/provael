@@ -113,12 +113,19 @@ class RunReport(BaseModel):
     attempts: int
     successes: int
     asr: float = Field(..., description="Overall Attack Success Rate — the headline stat.")
+    asr_std: float = Field(0.0, description="Std-dev of per-seed ASR (seed/model spread).")
+    stochastic: bool = Field(
+        False, description="True for real (model-stochastic) policies; the stub is deterministic."
+    )
 
     by_attack: dict[str, ASRStat] = Field(default_factory=dict)
     by_task: dict[str, ASRStat] = Field(default_factory=dict)
     results: list[AttackResult] = Field(default_factory=list)
 
     def headline(self) -> str:
-        """Single-line human summary of the headline ASR."""
+        """Single-line human summary of the headline ASR (± per-seed std for real policies)."""
         pct = 100.0 * self.asr
-        return f"Attack Success Rate (ASR): {pct:.1f}% ({self.successes}/{self.attempts})"
+        base = f"Attack Success Rate (ASR): {pct:.1f}% ({self.successes}/{self.attempts})"
+        if self.stochastic:
+            return f"{base} ± {100.0 * self.asr_std:.1f}% (seeded, model-stochastic)"
+        return base

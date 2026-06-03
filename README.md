@@ -112,7 +112,7 @@ Resolved on the machine that built this release (2026-06-03):
 | **Optional `[lerobot]`** (resolved + introspected in an isolated venv) | lerobot 0.5.1 · torch 2.10.0 · transformers 5.3.0 |
 
 Verified results on this machine: `ruff check .` clean · `mypy src` clean ·
-`pytest` → **66 passed, 3 skipped** (the 3 skips are the GPU-gated LeRobot/LIBERO
+`pytest` → **86 passed, 4 skipped** (the 4 skips are the GPU-gated LeRobot/LIBERO
 integration tests) · `robopwn attack` completes in well under a second.
 
 > The LeRobot adapter was written **after introspecting the installed
@@ -121,32 +121,39 @@ integration tests) · `robopwn attack` completes in well under a second.
 
 ## The real SmolVLA + LIBERO path (GPU box)
 
-Nothing here runs in CI or on the CPU core. On a provisioned (GPU) machine:
+The in-process attack loop `robopwn attack --policy smolvla --suite libero` runs the
+**real** rollout — replicating LeRobot's own evaluator (`preprocess_observation` →
+`select_action` → …), with attacks applied to what SmolVLA actually consumes (the task
+string and the camera image). Nothing here runs in CI or on the CPU core.
+
+> ⚠️ **`lerobot/smolvla_base` is NOT directly evaluable on LIBERO** (verified by running
+> it): it expects `camera1/2/3` but LIBERO provides `image`/`image2` + 8-dim state, and
+> it is untrained on LIBERO. Pass a **LIBERO-fine-tuned** SmolVLA checkpoint via
+> `--model`; the base model surfaces a clean `IncompatiblePolicyError`. Train one with
+> `lerobot-train … --dataset.repo_id=HuggingFaceVLA/libero` (see the LeRobot LIBERO docs).
+>
+> Real-policy ASR is **seeded but model-stochastic** — reported as mean ± per-seed std,
+> **not** byte-deterministic (only the stub is).
+
+On a provisioned (GPU) machine:
 
 ```bash
-# 1. Install the extra (pulls lerobot[smolvla]==0.5.1: transformers, torch, …)
-pip install 'vla-redteam[lerobot]'
+pip install 'vla-redteam[lerobot]' 'lerobot[libero]==0.5.1'
+export ROBOPWN_SMOLVLA_LIBERO_CKPT=<your-libero-finetuned-smolvla-repo_id>
 
-# 2. For the LIBERO simulator, also install LeRobot's LIBERO extra
-pip install 'lerobot[libero]==0.5.1'
-
-# 3. Run the gated integration tests (load SmolVLA + build a real LIBERO env)
+# Gated integration tests (real load + real env + one real step through the glue):
 ROBOPWN_INTEGRATION=1 pytest tests/test_lerobot_adapter.py tests/test_libero_adapter.py -q
 
-# 4. Red-team a real policy in the real simulator, then update the leaderboard
-ROBOPWN_INTEGRATION=1 robopwn attack --policy smolvla --suite libero \
-    --attacks instruction,visual,injection --episodes 10 --seed 0 --out runs/smolvla_libero
+# Real seeded attack-ASR (mean ± std) in the LIBERO simulator, then update the leaderboard:
+robopwn attack --policy smolvla --suite libero --model "$ROBOPWN_SMOLVLA_LIBERO_CKPT" \
+    --attacks instruction,visual,injection --seeds 10 --seed 0 --out runs/smolvla_libero
 robopwn leaderboard build --runs 'runs/*' --out leaderboard/results
 ```
 
-A reproducible helper script, [`scripts/run_real.sh`](scripts/run_real.sh), detects
-CUDA and runs the above (or prints the exact commands and exits cleanly if there is no
-GPU). LeRobot's own evaluator remains available too:
-
-```bash
-lerobot-eval --policy.path=lerobot/smolvla_base \
-    --env.type=libero --env.task=libero_object   # or libero_10 / libero_spatial / libero_goal
-```
+The helper [`scripts/run_real.sh`](scripts/run_real.sh) detects CUDA and runs the above
+(or prints the exact commands and exits cleanly if there is no GPU). LeRobot's own
+evaluator remains available for reference task-success numbers (`lerobot-eval
+--env.type=libero`).
 
 ## Leaderboard
 

@@ -1,10 +1,11 @@
 """Attack interface.
 
-An :class:`Attack` perturbs the instruction (and optionally the observation) that
-a policy receives, attempting to drive the policy into an unsafe state. Part 1 of
-vla-redteam ships only the ``instruction`` family (templated text attacks). Other
-families — optimised adversarial suffixes (GCG-style), visual perturbations, and
-prompt-injection via the observation — are deliberately out of scope for Part 1.
+An :class:`Attack` perturbs the instruction (and optionally the observation) that a
+policy receives, attempting to drive the policy into an unsafe state. Three families
+ship today: ``instruction`` (templated text reframings), ``visual`` (camera-image
+perturbations), and ``injection`` (indirect / embodied prompt injection). Optimised
+adversarial suffixes (GCG-style) and transferable pixel attacks remain deferred (see
+CHANGELOG ``[Unreleased]``).
 """
 
 from __future__ import annotations

@@ -9,6 +9,7 @@ attempts (returns ``0.0``) so an empty or filtered result set never raises.
 
 from __future__ import annotations
 
+import statistics
 from collections.abc import Callable
 
 from vla_redteam.types import ASRStat, AttackResult
@@ -59,10 +60,28 @@ def by_task(results: list[AttackResult]) -> dict[str, ASRStat]:
     return breakdown(results, lambda r: r.task)
 
 
+def by_seed(results: list[AttackResult]) -> dict[str, ASRStat]:
+    """ASR broken down by seed (one entry per distinct seed)."""
+    return breakdown(results, lambda r: str(r.seed))
+
+
+def asr_std(results: list[AttackResult]) -> float:
+    """Population std-dev of the per-seed ASRs (spread across seeds); 0.0 if <2 seeds.
+
+    The mean of the per-seed ASRs equals the overall ASR for balanced runs, so the
+    overall ASR ± this value summarises seed-to-seed (and, for real policies, model)
+    variation.
+    """
+    per_seed = [stat.asr for stat in by_seed(results).values() if stat.attempts > 0]
+    return statistics.pstdev(per_seed) if len(per_seed) > 1 else 0.0
+
+
 __all__ = [
     "attack_success_rate",
     "overall_stat",
     "breakdown",
     "by_attack",
     "by_task",
+    "by_seed",
+    "asr_std",
 ]

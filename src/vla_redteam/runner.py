@@ -23,7 +23,7 @@ from vla_redteam.attacks.registry import resolve_attacks
 from vla_redteam.config import RunConfig
 from vla_redteam.policies.base import PolicyAdapter
 from vla_redteam.policies.registry import make_policy
-from vla_redteam.scoring.asr import by_attack, by_task, overall_stat
+from vla_redteam.scoring.asr import asr_std, by_attack, by_task, overall_stat
 from vla_redteam.suites import make_suite
 from vla_redteam.suites.base import SuiteAdapter
 from vla_redteam.types import AttackResult, Decision, RunReport
@@ -107,7 +107,7 @@ def run_episode(
 
 def run(config: RunConfig) -> RunReport:
     """Execute a full red-team run described by ``config`` and return a report."""
-    policy = make_policy(config.policy)
+    policy = make_policy(config.policy, model=config.model, rename_map=config.rename_map)
     suite = make_suite(config.suite)
 
     # Exchange env features once (no-op for the stub: features() returns None).
@@ -140,6 +140,8 @@ def run(config: RunConfig) -> RunReport:
         attempts=overall.attempts,
         successes=overall.successes,
         asr=overall.asr,
+        asr_std=asr_std(results),
+        stochastic=policy.stochastic,
         by_attack=by_attack(results),
         by_task=by_task(results),
         results=results,

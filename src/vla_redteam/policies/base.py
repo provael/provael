@@ -18,6 +18,9 @@ class PolicyAdapter(ABC):
 
     #: Stable, human-readable identifier (also the registry key).
     name: str = "base"
+    #: True if inference is model-stochastic (reports are seeded but not byte-identical).
+    #: The deterministic stub is False; real VLA policies are True.
+    stochastic: bool = False
 
     def set_features(self, features: SuiteFeatures) -> None:  # noqa: B027
         """Receive the suite's observation/action features (called once before ``load``).

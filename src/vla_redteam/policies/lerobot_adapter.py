@@ -107,6 +107,9 @@ class LeRobotAdapter(PolicyAdapter):
     ``(action_dim,)`` numpy action.
     """
 
+    #: Real VLA inference is model-stochastic (reports are seeded but not byte-identical).
+    stochastic = True
+
     def __init__(
         self,
         model_id: str = "lerobot/smolvla_base",

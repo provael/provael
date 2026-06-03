@@ -106,3 +106,20 @@ def test_smolvla_without_extra_exits_cleanly() -> None:
 def test_unknown_attack_exits_cleanly() -> None:
     result = runner.invoke(app, ["attack", "--attacks", "bogus", "--episodes", "2"])
     assert result.exit_code == 2
+
+
+def test_libero_suite_without_extra_exits_cleanly() -> None:
+    # Symmetry with the smolvla test: --suite libero on a CPU box (no extra) is clean.
+    result = runner.invoke(app, ["attack", "--policy", "stub", "--suite", "libero", "--episodes", "2"])
+    assert result.exit_code == 2
+
+
+def test_seeds_alias_and_bad_rename_map(tmp_path: Path) -> None:
+    out = tmp_path / "run"
+    # --seeds is an alias for --episodes (1 task x 3 attacks x 2 seeds = 6 attempts).
+    ok = runner.invoke(app, ["attack", "--seeds", "2", "--out", str(out)])
+    assert ok.exit_code == 0
+    assert load_report(out).attempts == 6
+    # Invalid JSON rename-map -> clean error.
+    bad = runner.invoke(app, ["attack", "--rename-map", "not-json", "--episodes", "1"])
+    assert bad.exit_code == 2

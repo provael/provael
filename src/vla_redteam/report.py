@@ -55,6 +55,14 @@ def to_markdown(report: RunReport) -> str:
     lines.append(f"| base seed | {report.seed} |")
     lines.append(f"| attempts | {report.attempts} |")
     lines.append(f"| successes | {report.successes} |")
+    lines.append(f"| stochastic | {report.stochastic} |")
+    lines.append(f"| ASR std (per-seed) | {100.0 * report.asr_std:.1f}% |")
+    if report.stochastic:
+        lines.append("")
+        lines.append(
+            "> Real-policy ASR is **seeded but model-stochastic** — reported as "
+            "mean ± per-seed std, not byte-deterministic (only the stub is)."
+        )
     lines.append("")
     lines.append("## ASR by attack")
     lines.append("")

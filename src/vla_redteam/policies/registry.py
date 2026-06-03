@@ -17,18 +17,33 @@ from vla_redteam.policies.base import PolicyAdapter
 from vla_redteam.policies.stub import StubPolicy
 
 
-def _make_smolvla() -> PolicyAdapter:
+def _make_stub(**_kwargs: object) -> PolicyAdapter:
+    return StubPolicy()
+
+
+def _make_smolvla(
+    model: str | None = None,
+    rename_map: dict[str, str] | None = None,
+    device: str = "cuda",
+    **_kwargs: object,
+) -> PolicyAdapter:
     # Imported here (not at module top) so the core never hard-depends on the
     # adapter pulling optional symbols. The adapter module itself imports no
     # optional deps at module scope.
     from vla_redteam.policies.lerobot_adapter import LeRobotAdapter
 
-    return LeRobotAdapter(model_id="lerobot/smolvla_base", name="smolvla")
+    return LeRobotAdapter(
+        model_id=model or "lerobot/smolvla_base",
+        name="smolvla",
+        device=device,
+        rename_map=rename_map,
+    )
 
 
-#: Registry of policy factories keyed by name.
-POLICIES: dict[str, Callable[[], PolicyAdapter]] = {
-    "stub": StubPolicy,
+#: Registry of policy factories keyed by name. Factories accept (and ignore unknown)
+#: keyword overrides so the CLI can pass e.g. a fine-tuned checkpoint to `smolvla`.
+POLICIES: dict[str, Callable[..., PolicyAdapter]] = {
+    "stub": _make_stub,
     "smolvla": _make_smolvla,
 }
 
@@ -53,8 +68,11 @@ def policy_is_ready(name: str) -> bool:
     return name in POLICIES
 
 
-def make_policy(name: str) -> PolicyAdapter:
-    """Instantiate a policy by name (does not call ``load()``).
+def make_policy(name: str, **kwargs: object) -> PolicyAdapter:
+    """Instantiate a policy by name, forwarding optional overrides to the factory.
+
+    ``kwargs`` (e.g. ``model``, ``rename_map``, ``device``) are forwarded to the factory;
+    factories ignore overrides they don't use. Does not call ``load()``.
 
     Raises:
         KeyError: if ``name`` is not a registered policy.
@@ -63,7 +81,7 @@ def make_policy(name: str) -> PolicyAdapter:
         factory = POLICIES[name]
     except KeyError:
         raise KeyError(f"unknown policy {name!r}; available: {available_policies()}") from None
-    return factory()
+    return factory(**kwargs)
 
 
 __all__ = [

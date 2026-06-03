@@ -65,14 +65,47 @@ simulator are isolated behind the optional `[lerobot]` extra and an
   observation→features wiring and the robosuite grasped-object accessor are deferred.
 - The leaderboard ships demo (stub) data only until real-model runs are added.
 
+## [0.2.0-dev] — unreleased (in-process SmolVLA×LIBERO)
+
+The real attack loop `robopwn attack --policy smolvla --suite libero` now runs
+end-to-end (GPU-gated). Verified by **running** against the installed `lerobot==0.5.1`.
+
+### Added
+- **SmolVLA×LIBERO glue**: the SmolVLA adapter consumes a real LIBERO observation by
+  replicating LeRobot's own evaluator rollout (`preprocess_observation` → set task →
+  `env_preprocessor` (`LiberoProcessorStep`) → `preprocessor` → `select_action` →
+  `postprocessor` → `env_postprocessor` → clamp to `[-1,1]`). A `SuiteFeatures` protocol
+  exchanges the env config once; `make_policy(cfg, env_cfg, rename_map)` mirrors eval.
+- **Real-policy attack injection**: instruction → the task language string; `visual.patch`
+  / `visual.decoy_object` → adversarial-marker overlay on the camera image;
+  `injection.scene_text` → PIL-rendered scene sign. `injection.mcp_tool_desc` is honestly
+  **N/A** on a direct LIBERO loop (excluded from the denominator).
+- **Live unsafe predicate**: end-effector keep-out zone (live, verified `eef.pos`) plus a
+  **configurable** forbidden-object-grasp rule (a `grasp_extractor` hook).
+- **Seeded mean ± std** reporting for stochastic (real) policies; `--seeds`, `--model`,
+  and `--rename-map` CLI options; `pillow` added for image rendering.
+
+### Verified by running (isolated lerobot venv, CPU)
+- `lerobot/smolvla_base` is **NOT** LIBERO-compatible (expects `camera1/2/3`; LIBERO
+  gives `image`/`image2` + 8-dim state) → a **LIBERO-fine-tuned** checkpoint is required;
+  the adapter surfaces a clean `IncompatiblePolicyError`.
+
+### Known limitations
+- Real-policy ASR is **seeded but model-stochastic** (mean ± std), not byte-deterministic
+  (only the stub is).
+- Forbidden-object grasp is **disclosed-inert by default** (no verified robosuite accessor
+  without the sim) — live only with a user-supplied `grasp_extractor`.
+- A real SmolVLA-on-LIBERO ASR requires a LIBERO-fine-tuned checkpoint + GPU + sim; not
+  produced in CI.
+
 ## [Unreleased] — planned
 
 - **Optimized-suffix attack family** (GCG-style / POEX-style executable suffixes) and
-  pixel-level visual attacks that transfer to real VLA policies.
+  pixel-level visual attacks tuned to transfer to real VLA policies.
+- **`mcp_tool_desc` on a real robot-MCP target** (no surface in a direct LIBERO loop).
+- A **default robosuite grasp accessor** so forbidden-object-grasp is live out of the box.
 - **Full multi-policy live leaderboard** on Hugging Face ZeroGPU with real SmolVLA /
   OpenVLA numbers (the `@spaces.GPU` live-run path).
-- **Full LIBERO integration**: observation→features wiring so `--policy smolvla --suite
-  libero` runs end-to-end in-process, plus the robosuite grasped-object predicate.
 - **`vla-guard`** (Phase 2): a defensive companion that hardens policies against the
   attacks this tool measures.
 

@@ -19,6 +19,12 @@ class RunConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     policy: str = Field("stub", description="Registered policy name (e.g. 'stub', 'smolvla').")
+    model: str | None = Field(
+        None, description="Checkpoint override for the policy (e.g. a LIBERO-finetuned SmolVLA)."
+    )
+    rename_map: dict[str, str] | None = Field(
+        None, description="Obs-key rename map forwarded to the policy (mirrors lerobot-eval)."
+    )
     suite: str = Field("stub", description="Registered suite name (e.g. 'stub').")
     attacks: list[str] = Field(
         default_factory=lambda: ["instruction"],

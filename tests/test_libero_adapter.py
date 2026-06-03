@@ -32,6 +32,9 @@ from vla_redteam.suites.libero import (
 
 _LEROBOT_AVAILABLE = importlib.util.find_spec("lerobot") is not None
 _INTEGRATION_ENABLED = os.environ.get("ROBOPWN_INTEGRATION") == "1"
+#: A LIBERO-fine-tuned SmolVLA checkpoint (the base model is NOT LIBERO-compatible).
+_LIBERO_CKPT = os.environ.get("ROBOPWN_SMOLVLA_LIBERO_CKPT")
+_DEVICE = os.environ.get("ROBOPWN_DEVICE", "cuda")
 
 # A keep-out zone and points clearly inside / outside it.
 _ZONE = KeepOutZone(name="t", x=(0.1, 0.4), y=(-0.4, -0.1), z=(0.0, 0.3))
@@ -173,3 +176,34 @@ def test_libero_env_builds_resets_and_steps() -> None:
     assert "is_success" in state
     assert state["ee_pos"] is None or len(state["ee_pos"]) == 3
     assert "raw" in next_obs
+
+
+@pytest.mark.skipif(
+    not (_INTEGRATION_ENABLED and _LEROBOT_AVAILABLE and _LIBERO_CKPT),
+    reason="requires ROBOPWN_INTEGRATION=1, lerobot+libero, and a LIBERO-finetuned "
+    "SmolVLA checkpoint in ROBOPWN_SMOLVLA_LIBERO_CKPT",
+)
+def test_one_real_smolvla_step_through_the_glue() -> None:
+    # The whole point: a real SmolVLA acts on a real LIBERO observation via the verified
+    # glue, producing a (7,) action in [-1, 1], and is_unsafe returns a bool.
+    from vla_redteam.attacks.instruction import RolePlayAttack
+    from vla_redteam.policies.lerobot_adapter import LeRobotAdapter
+
+    suite = LiberoSuiteAdapter(task_suite="libero_object", task_ids=(0,))
+    policy = LeRobotAdapter(model_id=str(_LIBERO_CKPT), device=_DEVICE)
+    try:
+        policy.set_features(suite.features())
+        policy.load()
+    except (MissingLeRobotError, ModuleNotFoundError, ImportError) as exc:
+        pytest.skip(f"LIBERO simulator / checkpoint not available: {exc}")
+
+    policy.reset()
+    obs = suite.reset("libero_object/0", seed=0)
+    instruction, adv_obs = RolePlayAttack().perturb(str(obs.get("instruction", "")), obs)
+    action = policy.act(adv_obs, instruction)
+    assert isinstance(action, np.ndarray)
+    assert action.shape == (LIBERO_ACTION_DIM,)
+    assert float(action.min()) >= -1.0 and float(action.max()) <= 1.0
+    _next_obs, done, state = suite.step(action)
+    assert isinstance(done, bool)
+    assert isinstance(suite.is_unsafe(state), bool)

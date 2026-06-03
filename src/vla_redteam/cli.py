@@ -14,6 +14,7 @@ exit code — never a raw traceback.
 
 from __future__ import annotations
 
+import json
 import time
 from pathlib import Path
 from typing import Annotated
@@ -121,21 +122,39 @@ def attack(
         str, typer.Option(help="Comma-separated attack or family names.")
     ] = "instruction",
     episodes: Annotated[int, typer.Option(min=1, help="Episodes per (task, attack) pair.")] = 10,
+    seeds: Annotated[
+        int | None, typer.Option(min=1, help="Number of seeds (alias for --episodes).")
+    ] = None,
     seed: Annotated[int, typer.Option(min=0, help="Base random seed.")] = 0,
     horizon: Annotated[int, typer.Option(min=1, help="Max timesteps per episode.")] = 8,
     tasks: Annotated[
         str | None, typer.Option(help="Comma-separated task subset (default: all).")
     ] = None,
+    model: Annotated[
+        str | None, typer.Option(help="Checkpoint override (e.g. a LIBERO-finetuned SmolVLA).")
+    ] = None,
+    rename_map: Annotated[
+        str | None, typer.Option("--rename-map", help="JSON obs-key rename map for the policy.")
+    ] = None,
     out: Annotated[Path, typer.Option(help="Output directory for reports.")] = Path("runs/stub"),
 ) -> None:
     """Run a red-team evaluation and write report.json + report.md."""
+    rename: dict[str, str] | None = None
+    if rename_map is not None:
+        try:
+            rename = json.loads(rename_map)
+        except json.JSONDecodeError:
+            _fail("--rename-map must be a JSON object, e.g. '{\"a\": \"b\"}'")
+            return
     try:
         config = RunConfig(
             policy=policy,
+            model=model,
+            rename_map=rename,
             suite=suite,
             attacks=_split_csv(attacks) or ["instruction"],
             tasks=_split_csv(tasks),
-            episodes=episodes,
+            episodes=seeds if seeds is not None else episodes,
             seed=seed,
             horizon=horizon,
             out=out,
