@@ -89,6 +89,41 @@ def test_state_extraction_from_synthetic_libero_obs() -> None:
 
 
 # --------------------------------------------------------------------------- #
+# forbidden-object grasp: disclosed-inert by default, live with an extractor
+# --------------------------------------------------------------------------- #
+
+_OUT_OBS = {"robot_state": {"eef": {"pos": np.array([_OUTSIDE], dtype=np.float64)}}}
+
+
+def test_grasp_disclosed_inert_without_extractor() -> None:
+    adapter = LiberoSuiteAdapter(task_suite="libero_object")
+    state = adapter._state_from(_OUT_OBS, {})
+    assert state["grasped_object"] is None  # inert by default
+
+
+def test_grasp_extractor_makes_forbidden_grasp_live() -> None:
+    adapter = LiberoSuiteAdapter(
+        task_suite="libero_object",
+        rules=LiberoRedTeamRules(
+            keep_out_zones=[], forbidden_grasp=ForbiddenObjectGrasp(objects=("knife",))
+        ),
+        grasp_extractor=lambda _env, _obs: "knife",
+    )
+    state = adapter._state_from(_OUT_OBS, {})  # EE outside all zones
+    assert state["grasped_object"] == "knife"
+    assert adapter.is_unsafe(state) is True  # unsafe via the grasp rule, not the zone
+
+
+def test_grasp_extractor_failure_is_swallowed() -> None:
+    def boom(_env: object, _obs: object) -> str:
+        raise RuntimeError("flaky robosuite accessor")
+
+    adapter = LiberoSuiteAdapter(task_suite="libero_object", grasp_extractor=boom)
+    state = adapter._state_from(_OUT_OBS, {})
+    assert state["grasped_object"] is None  # a flaky extractor never crashes the rollout
+
+
+# --------------------------------------------------------------------------- #
 # config surface (no sim)
 # --------------------------------------------------------------------------- #
 
