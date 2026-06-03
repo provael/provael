@@ -45,10 +45,12 @@ Issues = "https://github.com/vla-redteam/vla-redteam/issues"
 robopwn = "vla_redteam.cli:app"
 
 # Optional extra. Kept OUT of the default install so the core stays CPU-only and
-# CI never pulls a GPU/ML stack. The pin below is the latest known-good release
-# as of 2026-06-02; record what actually resolves on your machine in the README.
+# CI never pulls a GPU/ML stack. SmolVLA needs lerobot's own [smolvla] extra
+# (transformers) — verified by introspection: base lerobot raises
+# "No module named 'transformers'" on importing SmolVLAPolicy. The LIBERO simulator
+# additionally needs lerobot[libero] (Part 2). Pin is the latest as of 2026-06-03.
 [project.optional-dependencies]
-lerobot = ["lerobot==0.5.1"]
+lerobot = ["lerobot[smolvla]==0.5.1"]
 
 [dependency-groups]
 dev = [
@@ -92,6 +94,9 @@ no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 plugins = ["pydantic.mypy"]
-# NOTE: a `[[tool.mypy.overrides]]` for `lerobot.*` (ignore_missing_imports) is
-# added in milestone M5, when the adapter's guarded `import lerobot` appears and
-# the override is actually exercised.
+
+[[tool.mypy.overrides]]
+# Optional, untyped deps loaded behind a guarded import in lerobot_adapter.py.
+# They are never installed in the CPU build / CI, so mypy must not fail on them.
+module = ["lerobot.*", "torch"]
+ignore_missing_imports = true
