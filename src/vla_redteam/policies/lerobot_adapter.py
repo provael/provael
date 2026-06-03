@@ -2,34 +2,36 @@
 
 DESIGN: this module imports **no** optional dependency at module scope, so the core
 package stays importable on a plain CPU with the ``[lerobot]`` extra absent. All
-contact with ``lerobot`` / ``torch`` happens inside :meth:`LeRobotAdapter.load`,
-which raises a clear, actionable error when the extra is missing.
+contact with ``lerobot`` / ``torch`` happens inside :meth:`LeRobotAdapter.load` /
+:meth:`~LeRobotAdapter.act`, which raise a clear, actionable error when the extra is
+missing.
 
-VERIFICATION (milestone M5): the calls below were written **after** introspecting
-the installed ``lerobot==0.5.1`` package — symbols and signatures were confirmed,
-not guessed. The verified facts:
+VERIFICATION (milestone M2): :meth:`act` replicates LeRobot's own evaluator rollout
+(``lerobot/scripts/lerobot_eval.py``) for ``lerobot==0.5.1`` — read, not guessed. The
+verified per-step path is::
 
-  * ``lerobot.policies.smolvla.modeling_smolvla.SmolVLAPolicy.from_pretrained(id)``
-    loads the policy. SmolVLA additionally needs the ``[smolvla]`` extra
-    (transformers) — base ``lerobot`` alone raises ``No module named 'transformers'``.
-  * ``lerobot.policies.factory.make_pre_post_processors(policy_cfg, pretrained_path=None,
-    **kwargs) -> (preprocess_pipeline, postprocess_pipeline)``.
-  * ``lerobot.policies.utils.build_inference_frame(observation, device, ds_features,
-    task=None, robot_type=None) -> dict`` builds a model-ready frame from a raw obs.
-  * ``PreTrainedPolicy.select_action(batch: dict[str, torch.Tensor]) -> torch.Tensor``.
+    obs = preprocess_observation(raw_obs)        # lerobot.envs.utils
+    obs["task"] = [instruction] * n_envs         # (we inject the *attacked* instruction
+                                                 #  here, replacing add_envs_task)
+    obs = env_preprocessor(obs)                  # LiberoProcessorStep (robot_state -> state)
+    obs = preprocessor(obs)                      # policy preprocessor (normalize + device)
+    action = policy.select_action(obs)           # one action; chunk queue is internal
+    action = postprocessor(action)               # unnormalize
+    action = env_postprocessor({ACTION: action})[ACTION]   # identity for LIBERO
+    action = action.cpu().numpy()                # (n_envs, action_dim) -> clamp to [-1, 1]
 
-This mirrors the official single-observation example shipped at
-``examples/tutorial/smolvla/using_smolvla_example.py`` (v0.5.1):
-``build_inference_frame -> preprocess -> select_action -> postprocess``.
+Setup mirrors eval: ``make_policy(cfg=policy_cfg, env_cfg=env_cfg)`` +
+``make_pre_post_processors(policy_cfg, pretrained_path, …)`` +
+``make_env_pre_post_processors(env_cfg, policy_cfg)``. The env config is supplied by the
+suite via :class:`~vla_redteam.types.SuiteFeatures` (``set_features``).
 
-The raw-observation -> ``ds_features`` wiring for a full simulator (LIBERO) belongs
-to the LIBERO ``SuiteAdapter`` (Part 2); ``lerobot-eval`` already does it end to end.
-See :data:`LEROBOT_EVAL_LIBERO_HINT`.
+NOTE: real-policy inference is **model-stochastic**; reports for it are seeded but NOT
+byte-deterministic (only the stub is). See SAFETY.md / README.
 
 Enable the real path on a GPU box::
 
-    pip install 'vla-redteam[lerobot]'         # pulls lerobot[smolvla]==0.5.1
-    ROBOPWN_INTEGRATION=1 pytest tests/test_lerobot_adapter.py -q
+    pip install 'vla-redteam[lerobot]' 'lerobot[libero]==0.5.1'
+    ROBOPWN_INTEGRATION=1 pytest tests/test_lerobot_adapter.py tests/test_libero_adapter.py -q
 """
 
 from __future__ import annotations
@@ -40,7 +42,7 @@ from typing import Any
 import numpy as np
 
 from vla_redteam.policies.base import PolicyAdapter
-from vla_redteam.types import Action, Observation
+from vla_redteam.types import Action, Observation, SuiteFeatures
 
 _INSTALL_HINT = (
     "The '{name}' policy requires the optional LeRobot dependency, which is not "
@@ -53,11 +55,26 @@ _INSTALL_HINT = (
     "Run on CPU with '--policy stub' to exercise the full pipeline with no model."
 )
 
-#: The verified, documented way to evaluate SmolVLA on LIBERO with LeRobot today.
-#: The full LIBERO SuiteAdapter is Part 2; until then this is the supported path.
+#: LeRobot's own evaluator — the documented reference for SmolVLA-on-LIBERO.
 LEROBOT_EVAL_LIBERO_HINT = (
-    "lerobot-eval --policy.path=lerobot/smolvla_base --env.type=libero "
+    "lerobot-eval --policy.path=<your-libero-finetuned-smolvla> --env.type=libero "
     "--env.task=libero_object   # or libero_10 / libero_spatial / libero_goal"
+)
+
+#: Surfaced when ``make_policy`` rejects the checkpoint for the env's features. VERIFIED
+#: by running it: ``lerobot/smolvla_base`` expects ``observation.images.camera1/2/3`` but
+#: LIBERO provides ``image``/``image2`` (+ 8-dim state) — the base model is NOT directly
+#: evaluable on LIBERO; it must be fine-tuned on LIBERO first (per the official docs).
+_CHECKPOINT_HINT = (
+    "The policy checkpoint '{model}' is not compatible with the LIBERO observation "
+    "features.\nlerobot's make_policy reported:\n  {error}\n"
+    "LIBERO provides 2 cameras (observation.images.image, image2) + 8-dim state; "
+    "lerobot/smolvla_base expects camera1/2/3 and is untrained on LIBERO.\n"
+    "Use a LIBERO-FINE-TUNED SmolVLA checkpoint (pass --model <repo_id>), e.g. train one:\n"
+    "  lerobot-train --policy.type=smolvla --policy.load_vlm_weights=true \\\n"
+    "      --dataset.repo_id=HuggingFaceVLA/libero --env.type=libero --env.task=libero_10\n"
+    "If your checkpoint uses different obs keys, pass a rename_map (see the LeRobot "
+    "LIBERO docs)."
 )
 
 
@@ -65,17 +82,29 @@ class MissingLeRobotError(RuntimeError):
     """Raised when a LeRobot-backed policy is used without the ``[lerobot]`` extra."""
 
 
+class IncompatiblePolicyError(RuntimeError):
+    """Raised when a checkpoint's features don't match the env (needs fine-tuning/rename)."""
+
+
+def clamp_action(action: object, action_dim: int, low: float = -1.0, high: float = 1.0) -> Action:
+    """Flatten a policy action to ``(action_dim,)`` float32 and clamp to ``[low, high]``.
+
+    Pure / CPU-testable. If more than ``action_dim`` values are present (e.g. an action
+    chunk leaked through), the first ``action_dim`` are taken (the first timestep).
+    """
+    flat = np.asarray(action, dtype=np.float32).reshape(-1)
+    trimmed = flat[:action_dim] if flat.size > action_dim else flat
+    result: Action = np.clip(trimmed, low, high).astype(np.float32)
+    return result
+
+
 class LeRobotAdapter(PolicyAdapter):
-    """Loads a LeRobot policy (default: ``lerobot/smolvla_base``) and runs it.
+    """Loads a LeRobot policy (default ``lerobot/smolvla_base``) and runs it on real obs.
 
-    Construction is cheap and imports nothing optional. :meth:`load` performs the
-    guarded import and builds the policy + pre/post processors. :meth:`act` runs the
-    verified single-observation inference pipeline and returns a 1-D ``numpy`` action.
-
-    ``dataset_features`` / ``robot_type`` describe the observation schema for
-    :func:`build_inference_frame`; they are supplied by the environment adapter
-    (e.g. a LIBERO ``SuiteAdapter`` in Part 2). Without them :meth:`act` raises a
-    clear error pointing at :data:`LEROBOT_EVAL_LIBERO_HINT`.
+    Construction imports nothing optional. The suite hands env metadata via
+    :meth:`set_features`; :meth:`load` builds the policy + the verified pre/post and
+    env pre/post processors; :meth:`act` runs one rollout step and returns a clamped
+    ``(action_dim,)`` numpy action.
     """
 
     def __init__(
@@ -83,96 +112,141 @@ class LeRobotAdapter(PolicyAdapter):
         model_id: str = "lerobot/smolvla_base",
         name: str = "smolvla",
         device: str = "cuda",
-        dataset_features: dict[str, dict[str, Any]] | None = None,
-        robot_type: str | None = None,
+        rename_map: dict[str, str] | None = None,
     ) -> None:
         self.model_id = model_id
         self.name = name
         self.device = device
-        self.dataset_features = dataset_features
-        self.robot_type = robot_type
+        self.rename_map = rename_map
+        self._features: SuiteFeatures | None = None
         self._policy: Any = None
         self._preprocess: Any = None
         self._postprocess: Any = None
+        self._env_preprocess: Any = None
+        self._env_postprocess: Any = None
         self._torch: Any = None
         self._device: Any = None
+        self._action_constant: str = "action"
         self._loaded = False
 
-    # -- availability -------------------------------------------------------
+    # -- availability / features -------------------------------------------
 
     @staticmethod
     def lerobot_available() -> bool:
         """True if ``lerobot`` is importable without importing it."""
         return importlib.util.find_spec("lerobot") is not None
 
+    def set_features(self, features: SuiteFeatures) -> None:
+        self._features = features
+
     # -- lifecycle ----------------------------------------------------------
 
     def load(self) -> None:
-        """Import lerobot (guarded) and build the policy + processors.
-
-        Raises:
-            MissingLeRobotError: if the ``[lerobot]`` extra is not installed.
-        """
+        """Import lerobot (guarded) and build the policy + processors (verified eval path)."""
         if not self.lerobot_available():
             raise MissingLeRobotError(_INSTALL_HINT.format(name=self.name))
 
-        # Imports are deferred to here (verified against lerobot==0.5.1).
         import torch
-        from lerobot.policies.factory import make_pre_post_processors
-        from lerobot.policies.smolvla.modeling_smolvla import SmolVLAPolicy
+        from lerobot.configs.policies import PreTrainedConfig
+        from lerobot.envs.factory import make_env_pre_post_processors
+        from lerobot.policies.factory import make_policy, make_pre_post_processors
+        from lerobot.utils.constants import ACTION
 
         self._torch = torch
-        self._device = torch.device(self.device)
+        self._action_constant = ACTION
+        device = torch.device(self.device)
+        self._device = device
 
-        policy = SmolVLAPolicy.from_pretrained(self.model_id)
-        policy.to(self._device)
+        env_cfg = self._features.env_config if self._features is not None else None
+
+        # Mirror lerobot_eval: build the policy config, then make_policy(cfg, env_cfg,
+        # rename_map). make_policy requires an env (or dataset) and validates that the
+        # checkpoint's visual/state features match the env's.
+        policy_cfg = PreTrainedConfig.from_pretrained(self.model_id)
+        policy_cfg.pretrained_path = self.model_id
+        policy_cfg.device = str(device)
+
+        try:
+            policy = make_policy(cfg=policy_cfg, env_cfg=env_cfg, rename_map=self.rename_map)
+        except ValueError as exc:
+            raise IncompatiblePolicyError(
+                _CHECKPOINT_HINT.format(model=self.model_id, error=exc)
+            ) from exc
         policy.eval()
-        policy.reset()  # clear the action queue between episodes
-
-        # make_pre_post_processors(policy_cfg, pretrained_path, **kwargs) -> (pre, post)
-        preprocess, postprocess = make_pre_post_processors(
-            policy.config,
-            self.model_id,
-            preprocessor_overrides={"device_processor": {"device": str(self._device)}},
-        )
-
         self._policy = policy
-        self._preprocess = preprocess
-        self._postprocess = postprocess
+
+        preprocessor_overrides: dict[str, Any] = {"device_processor": {"device": str(device)}}
+        if self.rename_map is not None:
+            preprocessor_overrides["rename_observations_processor"] = {
+                "rename_map": self.rename_map
+            }
+        self._preprocess, self._postprocess = make_pre_post_processors(
+            policy_cfg=policy_cfg,
+            pretrained_path=policy_cfg.pretrained_path,
+            preprocessor_overrides=preprocessor_overrides,
+        )
+        if env_cfg is not None:
+            self._env_preprocess, self._env_postprocess = make_env_pre_post_processors(
+                env_cfg=env_cfg, policy_cfg=policy_cfg
+            )
         self._loaded = True
 
-    def act(self, observation: Observation, instruction: str) -> Action:
-        """Run verified inference: build frame -> preprocess -> select_action -> postprocess.
+    def reset(self) -> None:
+        """Clear the policy's internal action queue between episodes (verified eval call)."""
+        if self._policy is not None:
+            self._policy.reset()
 
-        Returns a 1-D float32 ``numpy`` action vector.
+    def _apply_image_override(self, observation: Observation, raw: Any) -> Any:
+        """Fold ``observation[image_key]`` (an attack may have edited it) back into ``raw``.
+
+        Returns a shallow copy of ``raw`` with the primary camera image replaced (re-adding
+        the env's batch dim). No-op if no image / pixels key is present.
         """
+        image_key = self._features.image_key if self._features is not None else None
+        image = observation.get(image_key) if image_key else None
+        pixels_key = observation.get("pixels_key")
+        if image is None or pixels_key is None:
+            return raw
+        if not (isinstance(raw, dict) and isinstance(raw.get("pixels"), dict)):
+            return raw
+        batched = np.asarray(image)[None, ...]  # (H, W, 3) -> (1, H, W, 3)
+        return {**raw, "pixels": {**raw["pixels"], pixels_key: batched}}
+
+    def act(self, observation: Observation, instruction: str) -> Action:
+        """Run one verified rollout step on a real LIBERO observation; return a (7,) action."""
         if not self._loaded:
             raise RuntimeError("LeRobotAdapter.act called before load(); call load() first.")
-        if self.dataset_features is None:
+        if self._env_preprocess is None:
             raise RuntimeError(
-                "LeRobotAdapter.act needs `dataset_features` describing the observation "
-                "schema (built by the environment/suite adapter). The full LIBERO wiring "
-                "is Part 2; today use lerobot-eval directly:\n  " + LEROBOT_EVAL_LIBERO_HINT
+                "LeRobotAdapter needs a suite that provides env features (use "
+                "'--suite libero'). For reference numbers without the in-process loop:\n  "
+                + LEROBOT_EVAL_LIBERO_HINT
             )
 
-        from lerobot.policies.utils import build_inference_frame
+        from lerobot.envs.utils import preprocess_observation
 
-        frame = build_inference_frame(
-            observation=observation,
-            device=self._device,
-            ds_features=self.dataset_features,
-            task=instruction,
-            robot_type=self.robot_type,
-        )
-        batch = self._preprocess(frame)
+        raw = observation.get("raw", observation)
+        # Fold a (possibly attack-modified) image back into the raw obs the policy reads.
+        raw = self._apply_image_override(observation, raw)
+        obs_t = preprocess_observation(raw)
+        batch_size = next((v.shape[0] for v in obs_t.values() if hasattr(v, "shape")), 1)
+        # Inject OUR (possibly adversarial) instruction as the task (replaces add_envs_task).
+        obs_t["task"] = [instruction] * batch_size
+        obs_t = self._env_preprocess(obs_t)
+        obs_t = self._preprocess(obs_t)
         with self._torch.inference_mode():
-            action_tensor = self._policy.select_action(batch)
-        action_tensor = self._postprocess(action_tensor)
+            action = self._policy.select_action(obs_t)
+        action = self._postprocess(action)
+        action = self._env_postprocess({self._action_constant: action})[self._action_constant]
 
-        result: Action = np.asarray(
-            action_tensor.detach().to("cpu").numpy(), dtype=np.float32
-        ).reshape(-1)
-        return result
+        action_dim = self._features.action_dim if self._features is not None else action.shape[-1]
+        return clamp_action(action.detach().to("cpu").numpy(), action_dim)
 
 
-__all__ = ["LeRobotAdapter", "MissingLeRobotError", "LEROBOT_EVAL_LIBERO_HINT"]
+__all__ = [
+    "LeRobotAdapter",
+    "MissingLeRobotError",
+    "IncompatiblePolicyError",
+    "LEROBOT_EVAL_LIBERO_HINT",
+    "clamp_action",
+]

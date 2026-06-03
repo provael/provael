@@ -1,14 +1,12 @@
-"""LeRobot adapter tests.
+"""LeRobot SmolVLA adapter tests.
 
-Two halves:
+* CPU tests (no GPU/lerobot): the missing-dependency error, the eval hint, the pure
+  ``clamp_action`` mapping, and the features-protocol no-op for the stub.
+* GATED test (skipif not ROBOPWN_INTEGRATION==1 and lerobot importable): the adapter
+  loads SmolVLA via the verified ``make_policy`` + processor path with LIBERO features.
+  Enable on a provisioned box::
 
-* The **missing-dependency** test runs on a plain CPU box (where ``lerobot`` is not
-  installed) and asserts the adapter fails with a clear, actionable error.
-* The **integration** test is GATED: it is skipped unless BOTH
-  ``ROBOPWN_INTEGRATION=1`` is set AND ``lerobot`` is importable. Enable it on a
-  provisioned (GPU) machine with::
-
-      pip install 'vla-redteam[lerobot]'
+      pip install 'vla-redteam[lerobot]' 'lerobot[libero]==0.5.1'
       ROBOPWN_INTEGRATION=1 pytest tests/test_lerobot_adapter.py -q
 """
 
@@ -20,10 +18,67 @@ import os
 import numpy as np
 import pytest
 
-from vla_redteam.policies.lerobot_adapter import LeRobotAdapter, MissingLeRobotError
+from vla_redteam.policies.lerobot_adapter import (
+    LEROBOT_EVAL_LIBERO_HINT,
+    IncompatiblePolicyError,
+    LeRobotAdapter,
+    MissingLeRobotError,
+    clamp_action,
+)
+from vla_redteam.policies.stub import StubPolicy
+from vla_redteam.types import SuiteFeatures
 
 _LEROBOT_AVAILABLE = importlib.util.find_spec("lerobot") is not None
 _INTEGRATION_ENABLED = os.environ.get("ROBOPWN_INTEGRATION") == "1"
+#: Optional LIBERO-fine-tuned SmolVLA checkpoint for the real load test.
+_LIBERO_CKPT = os.environ.get("ROBOPWN_SMOLVLA_LIBERO_CKPT")
+
+
+# --------------------------------------------------------------------------- #
+# CPU: pure action mapping
+# --------------------------------------------------------------------------- #
+
+
+def test_clamp_action_shapes_and_clips() -> None:
+    action = clamp_action(np.array([[2.0, -3.0, 0.5, 0.0, 0.0, 0.0, 0.0]]), 7)
+    assert action.shape == (7,)
+    assert action.dtype == np.float32
+    assert action[0] == 1.0  # clipped high
+    assert action[1] == -1.0  # clipped low
+    assert action[2] == 0.5  # untouched in range
+
+
+def test_clamp_action_takes_first_timestep_of_a_chunk() -> None:
+    chunk = (np.arange(14, dtype=np.float32) / 100.0).reshape(2, 7)  # (2, 7) -> 14 values
+    action = clamp_action(chunk, 7)
+    assert action.shape == (7,)
+    assert action[0] == 0.0  # first timestep, first dim
+
+
+# --------------------------------------------------------------------------- #
+# CPU: features protocol
+# --------------------------------------------------------------------------- #
+
+
+def test_set_features_is_noop_for_stub() -> None:
+    policy = StubPolicy()
+    policy.set_features(SuiteFeatures(action_dim=7))  # ignored
+    policy.reset()  # no-op
+    policy.load()
+    action = policy.act({}, "fetch the knife now")
+    assert action.shape == (7,)
+
+
+def test_lerobot_adapter_stores_features() -> None:
+    adapter = LeRobotAdapter(device="cpu")
+    feats = SuiteFeatures(action_dim=7, task_suite="libero_object", image_key="image")
+    adapter.set_features(feats)
+    assert adapter._features is feats
+
+
+# --------------------------------------------------------------------------- #
+# CPU: missing-dependency + hint
+# --------------------------------------------------------------------------- #
 
 
 @pytest.mark.skipif(_LEROBOT_AVAILABLE, reason="this test asserts the lerobot-absent path")
@@ -33,69 +88,55 @@ def test_missing_lerobot_raises_actionable_error() -> None:
     with pytest.raises(MissingLeRobotError) as exc_info:
         adapter.load()
     message = str(exc_info.value)
-    assert "lerobot" in message.lower()
     assert "vla-redteam[lerobot]" in message
     assert "ROBOPWN_INTEGRATION" in message
 
 
-@pytest.mark.skipif(
-    not (_INTEGRATION_ENABLED and _LEROBOT_AVAILABLE),
-    reason="requires ROBOPWN_INTEGRATION=1 and an installed lerobot (see module docstring)",
-)
-def test_adapter_loads_against_real_api() -> None:
-    # Highest-value, drift-sensitive check: the adapter actually loads SmolVLA
-    # (SmolVLAPolicy.from_pretrained) and builds the verified pre/post processors
-    # (make_pre_post_processors). Runs on a provisioned box without the simulator.
-    adapter = LeRobotAdapter(model_id="lerobot/smolvla_base", device="cpu")
-    adapter.load()
-    assert adapter._loaded is True
-    assert adapter._policy is not None
-    assert adapter._preprocess is not None and adapter._postprocess is not None
-    assert hasattr(adapter._policy, "select_action")
-
-
-@pytest.mark.skipif(
-    not (_INTEGRATION_ENABLED and _LEROBOT_AVAILABLE),
-    reason="requires ROBOPWN_INTEGRATION=1 and an installed lerobot (see module docstring)",
-)
-def test_adapter_returns_action_for_dummy_libero_obs() -> None:
-    # Build ds_features and a dummy observation from lerobot's OWN LiberoEnv config
-    # (verified: action dim 7) — no fabricated schema. LiberoEnv is instantiable
-    # without launching MuJoCo.
-    from lerobot.datasets.feature_utils import combine_feature_dicts, hw_to_dataset_features
-    from lerobot.envs.configs import LiberoEnv
-    from lerobot.utils.constants import ACTION, OBS_STR
-
-    env_cfg = LiberoEnv(task="libero_object")
-    shapes = {key: feat.shape for key, feat in env_cfg.features.items()}
-    obs_shapes = {k: v for k, v in shapes.items() if k != ACTION}
-    ds_features = combine_feature_dicts(
-        hw_to_dataset_features(obs_shapes, OBS_STR),
-        hw_to_dataset_features({ACTION: shapes[ACTION]}, ACTION),
-    )
-    dummy_obs = {key: np.zeros(shape, dtype=np.float32) for key, shape in obs_shapes.items()}
-
-    adapter = LeRobotAdapter(
-        model_id="lerobot/smolvla_base",
-        device="cpu",
-        dataset_features=ds_features,
-        robot_type="libero",
-    )
-    adapter.load()
-    action = adapter.act(dummy_obs, "pick up the black bowl")
-
-    assert isinstance(action, np.ndarray)
-    assert action.ndim == 1
-    assert action.size == 7  # verified LIBERO action dimension
-
-
-@pytest.mark.skipif(
-    _LEROBOT_AVAILABLE,
-    reason="this test asserts act()'s clear error when dataset_features is absent",
-)
-def test_act_requires_dataset_features_message() -> None:
-    # Even without lerobot we can assert the guard message names the eval path.
-    from vla_redteam.policies.lerobot_adapter import LEROBOT_EVAL_LIBERO_HINT
-
+def test_eval_hint_names_the_supported_path() -> None:
     assert "lerobot-eval" in LEROBOT_EVAL_LIBERO_HINT
     assert "--env.type=libero" in LEROBOT_EVAL_LIBERO_HINT
+
+
+# --------------------------------------------------------------------------- #
+# GATED: real load via the verified make_policy + processor path
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.skipif(
+    not (_INTEGRATION_ENABLED and _LEROBOT_AVAILABLE),
+    reason="requires ROBOPWN_INTEGRATION=1 and an installed lerobot (see module docstring)",
+)
+def test_smolvla_base_is_incompatible_with_libero() -> None:
+    # VERIFIED: lerobot/smolvla_base expects camera1/2/3 but LIBERO provides image/image2,
+    # so make_policy rejects it. We surface a clean IncompatiblePolicyError (no traceback).
+    from lerobot.envs.factory import make_env_config
+
+    env_cfg = make_env_config(
+        "libero", task="libero_object", task_ids=[0], obs_type="pixels_agent_pos"
+    )
+    adapter = LeRobotAdapter(model_id="lerobot/smolvla_base", device="cpu")
+    adapter.set_features(SuiteFeatures(action_dim=7, env_config=env_cfg, image_key="image"))
+    with pytest.raises(IncompatiblePolicyError) as exc_info:
+        adapter.load()
+    assert "fine-tuned" in str(exc_info.value).lower()
+
+
+@pytest.mark.skipif(
+    not (_INTEGRATION_ENABLED and _LEROBOT_AVAILABLE and _LIBERO_CKPT),
+    reason="set ROBOPWN_SMOLVLA_LIBERO_CKPT to a LIBERO-fine-tuned SmolVLA checkpoint",
+)
+def test_adapter_loads_libero_finetuned_checkpoint() -> None:
+    # The real load against a LIBERO-compatible checkpoint: verifies the full verified
+    # make_policy + processors + env-processors wiring.
+    from lerobot.envs.factory import make_env_config
+
+    env_cfg = make_env_config(
+        "libero", task="libero_object", task_ids=[0], obs_type="pixels_agent_pos"
+    )
+    assert _LIBERO_CKPT is not None
+    adapter = LeRobotAdapter(model_id=_LIBERO_CKPT, device="cpu")
+    adapter.set_features(SuiteFeatures(action_dim=7, env_config=env_cfg, image_key="image"))
+    adapter.load()
+    assert adapter._loaded is True
+    assert adapter._env_preprocess is not None  # LiberoProcessorStep wired
+    assert hasattr(adapter._policy, "select_action")

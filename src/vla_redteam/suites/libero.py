@@ -43,11 +43,15 @@ from collections.abc import Sequence
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 from pydantic import BaseModel, Field
 
 from vla_redteam.policies.lerobot_adapter import MissingLeRobotError
 from vla_redteam.suites.base import SuiteAdapter
-from vla_redteam.types import Action, Observation, State
+from vla_redteam.types import Action, Observation, State, SuiteFeatures
+
+#: Top-level observation key carrying the primary camera image (the attack target).
+LIBERO_IMAGE_KEY = "image"
 
 #: The LIBERO task suites shipped by lerobot 0.5.1 (verified).
 LIBERO_TASK_SUITES: tuple[str, ...] = (
@@ -163,8 +167,10 @@ class LiberoSuiteAdapter(SuiteAdapter):
         self.task_ids = tuple(task_ids)
         self.rules = rules or LiberoRedTeamRules()
         self._instruction_override = instruction
+        self._env_cfg: Any = None
         self._envs: dict[str, Any] = {}
         self._active: Any = None
+        self._pixels_key: str | None = None
         self._instruction: str = instruction or f"{task_suite} task"
         self._task: str = f"{task_suite}/{self.task_ids[0]}"
         self._seed = 0
@@ -183,21 +189,51 @@ class LiberoSuiteAdapter(SuiteAdapter):
         """Configured ``"<suite>/<task_id>"`` identifiers (no simulator needed)."""
         return [f"{self.task_suite}/{tid}" for tid in self.task_ids]
 
-    def _build_env(self, suite: str, task_id: int) -> Any:
-        # Verified lerobot 0.5.1 factory path.
-        from lerobot.envs.factory import make_env, make_env_config
+    def _ensure_env_cfg(self) -> Any:
+        """Build (once) the verified LeRobot env config, with obs_type pinned."""
+        self._ensure_lerobot()
+        if self._env_cfg is None:
+            from lerobot.envs.factory import make_env_config
 
-        cfg = make_env_config("libero", task=suite, task_ids=[task_id])
+            # Pin obs_type so robot_state.eef.pos is always present (default is 'pixels').
+            self._env_cfg = make_env_config(
+                "libero",
+                task=self.task_suite,
+                task_ids=list(self.task_ids),
+                obs_type="pixels_agent_pos",
+            )
+        return self._env_cfg
+
+    def features(self) -> SuiteFeatures:
+        """Env metadata a real policy adapter needs (the verified LeRobot env config)."""
+        cfg = self._ensure_env_cfg()
+        camera_keys = tuple(
+            k for k in getattr(cfg, "features", {}) if str(k).startswith("pixels")
+        )
+        return SuiteFeatures(
+            action_dim=LIBERO_ACTION_DIM,
+            fps=int(getattr(cfg, "fps", 30)),
+            camera_keys=camera_keys,
+            image_key=LIBERO_IMAGE_KEY,
+            task_suite=self.task_suite,
+            env_config=cfg,
+        )
+
+    def _build_env(self, task_id: int) -> Any:
+        # Verified lerobot 0.5.1 factory path; reuse the cached, obs_type-pinned config.
+        from lerobot.envs.factory import make_env
+
+        cfg = self._ensure_env_cfg()
         envs = make_env(cfg, n_envs=1)  # -> {suite: {task_id: vec_env}}
-        suite_envs = envs[suite]
+        suite_envs = envs[self.task_suite]
         return suite_envs.get(task_id) or next(iter(suite_envs.values()))
 
     def reset(self, task: str, seed: int) -> Observation:
         self._ensure_lerobot()
-        suite, task_id = _parse_task(task, self.task_suite)
+        _suite, task_id = _parse_task(task, self.task_suite)
         env = self._envs.get(task)
         if env is None:
-            env = self._build_env(suite, task_id)
+            env = self._build_env(task_id)
             self._envs[task] = env
         self._active = env
         self._task = task
@@ -227,8 +263,21 @@ class LiberoSuiteAdapter(SuiteAdapter):
         except (KeyError, TypeError, IndexError):
             return None
 
+    def _primary_image(self, obs: Observation) -> npt.NDArray[Any] | None:
+        """Return the primary camera image (H, W, 3) uint8, or None if unavailable.
+
+        The pixels-dict key is cached so a (possibly attacked) image can be folded back
+        into the raw observation before the policy consumes it.
+        """
+        pixels = obs.get("pixels")
+        if not isinstance(pixels, dict) or not pixels:
+            return None
+        if self._pixels_key is None or self._pixels_key not in pixels:
+            self._pixels_key = next(iter(pixels))
+        return np.asarray(_first(pixels[self._pixels_key]))
+
     def _observation(self, obs: Observation) -> Observation:
-        return {
+        observation: Observation = {
             "task": self._task,
             "instruction": self._instruction,
             "seed": self._seed,
@@ -236,6 +285,11 @@ class LiberoSuiteAdapter(SuiteAdapter):
             "ee_pos": self._ee_pos(obs),
             "raw": obs,  # full lerobot obs for a real policy adapter to consume
         }
+        image = self._primary_image(obs)
+        if image is not None:
+            observation[LIBERO_IMAGE_KEY] = image
+            observation["pixels_key"] = self._pixels_key
+        return observation
 
     def _state_from(self, obs: Observation, info: dict[str, Any]) -> State:
         final = info.get("final_info")

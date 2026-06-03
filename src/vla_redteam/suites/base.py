@@ -13,7 +13,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any
 
-from vla_redteam.types import Action, Observation, State
+from vla_redteam.types import Action, Observation, State, SuiteFeatures
 
 
 class SuiteAdapter(ABC):
@@ -21,6 +21,15 @@ class SuiteAdapter(ABC):
 
     #: Stable, human-readable identifier (also the registry key).
     name: str = "base"
+
+    def features(self) -> SuiteFeatures | None:
+        """Env metadata for policies that need it; ``None`` when not applicable.
+
+        The stub returns ``None``; the LIBERO suite returns a populated
+        :class:`~vla_redteam.types.SuiteFeatures` so a real policy can wire itself to
+        the env. Exchanged once per run via :meth:`PolicyAdapter.set_features`.
+        """
+        return None
 
     @abstractmethod
     def tasks(self) -> list[str]:

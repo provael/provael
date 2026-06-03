@@ -32,7 +32,7 @@ from vla_redteam.attacks.registry import (
 )
 from vla_redteam.config import RunConfig
 from vla_redteam.leaderboard import Leaderboard, build_leaderboard
-from vla_redteam.policies.lerobot_adapter import MissingLeRobotError
+from vla_redteam.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
 from vla_redteam.policies.registry import (
     REQUIRES_LEROBOT,
     available_policies,
@@ -147,7 +147,7 @@ def attack(
     started = time.perf_counter()
     try:
         report = run(config)
-    except MissingLeRobotError as exc:
+    except (MissingLeRobotError, IncompatiblePolicyError) as exc:
         _fail(str(exc))
         return
     except KeyError as exc:

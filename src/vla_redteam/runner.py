@@ -38,6 +38,7 @@ def run_episode(
     horizon: int,
 ) -> AttackResult:
     """Play a single episode and return its :class:`AttackResult`."""
+    policy.reset()  # clear per-episode policy state (e.g. SmolVLA's action-chunk queue)
     obs = suite.reset(task, seed)
     base_instruction = str(obs.get("instruction", ""))
 
@@ -89,9 +90,15 @@ def run_episode(
 def run(config: RunConfig) -> RunReport:
     """Execute a full red-team run described by ``config`` and return a report."""
     policy = make_policy(config.policy)
+    suite = make_suite(config.suite)
+
+    # Exchange env features once (no-op for the stub: features() returns None).
+    features = suite.features()
+    if features is not None:
+        policy.set_features(features)
+
     policy.load()
 
-    suite = make_suite(config.suite)
     attacks = resolve_attacks(config.attacks)
     tasks = config.tasks if config.tasks is not None else suite.tasks()
 

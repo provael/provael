@@ -14,6 +14,7 @@ produces a byte-identical report.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -29,6 +30,24 @@ type State = dict[str, Any]
 
 # An action vector emitted by a policy / consumed by a suite.
 type Action = npt.NDArray[np.float32]
+
+
+@dataclass(frozen=True)
+class SuiteFeatures:
+    """Environment metadata a real policy adapter needs to consume a suite's obs.
+
+    Exchanged once per run via ``SuiteAdapter.features()`` -> ``PolicyAdapter.set_features``.
+    The ``stub`` suite returns ``None`` (no exchange); the ``libero`` suite returns this
+    with ``env_config`` set to the real (opaque) LeRobot env config so the SmolVLA adapter
+    can build the verified env pre/post processors.
+    """
+
+    action_dim: int
+    fps: int = 30
+    camera_keys: tuple[str, ...] = ()
+    image_key: str | None = None  # top-level obs key carrying the primary camera image
+    task_suite: str | None = None
+    env_config: Any = None  # opaque LeRobot env config (None outside the gated path)
 
 
 class Decision(BaseModel):

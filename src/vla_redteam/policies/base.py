@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from vla_redteam.types import Action, Observation
+from vla_redteam.types import Action, Observation, SuiteFeatures
 
 
 class PolicyAdapter(ABC):
@@ -18,6 +18,19 @@ class PolicyAdapter(ABC):
 
     #: Stable, human-readable identifier (also the registry key).
     name: str = "base"
+
+    def set_features(self, features: SuiteFeatures) -> None:  # noqa: B027
+        """Receive the suite's observation/action features (called once before ``load``).
+
+        Intentionally a non-abstract no-op default: policies that don't need env metadata
+        (e.g. the stub) ignore it. Real adapters (e.g. SmolVLA on LIBERO) override it.
+        """
+
+    def reset(self) -> None:  # noqa: B027
+        """Reset per-episode policy state (e.g. an action-chunk queue).
+
+        Intentionally a non-abstract no-op default; stateful policies override it.
+        """
 
     @abstractmethod
     def load(self) -> None:
