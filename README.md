@@ -8,6 +8,12 @@
 > Red-team open **Vision-Language-Action (VLA)** robot policies in simulation and
 > report an **Attack Success Rate (ASR)**.
 
+<p align="center">
+  <img src="docs/assets/demo.svg" alt="robopwn attack — ASR across instruction/visual/injection families" width="760">
+</p>
+
+<p align="center"><sub>Deterministic CPU stub run, seed 0 — regenerate with <code>./scripts/record_demo.sh</code>.</sub></p>
+
 `vla-redteam` is a small, **model-agnostic** harness. It perturbs the instructions and
 observations a VLA policy receives inside a simulator and measures how often those
 perturbations drive the policy into an *unsafe* state. The headline number is the ASR.
