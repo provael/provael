@@ -24,9 +24,10 @@ payloads while the run stays reproducible.
 
 from __future__ import annotations
 
+from vla_redteam.attacks._image import image_of, render_scene_text
 from vla_redteam.attacks._payload import append_channel, episode_index, set_channel
 from vla_redteam.attacks.base import Attack
-from vla_redteam.types import Observation
+from vla_redteam.types import IMAGE_KEY, Observation
 
 FAMILY = "injection"
 
@@ -52,14 +53,21 @@ class SceneTextInjection(Attack):
     def perturb(self, instruction: str, observation: Observation) -> tuple[str, Observation]:
         idx = episode_index(observation, len(self.BANK))
         payload = self.BANK[idx].format(object=self.target_object)
-        return instruction, set_channel(observation, "scene_text", payload)
+        perturbed = set_channel(observation, "scene_text", payload)
+        image = image_of(observation)
+        if image is not None:  # real scene (LIBERO): render the injected sign onto pixels
+            perturbed = {**perturbed, IMAGE_KEY: render_scene_text(image, payload)}
+        return instruction, perturbed
 
 
 class MCPToolDescInjection(Attack):
     """Inject a poisoned tool description that redirects the action (``tool_descriptions``).
 
     Simulates a compromised robot-control tool (e.g. an MCP server) whose advertised
-    description nudges the policy to seize a forbidden object.
+    description nudges the policy to seize a forbidden object. This has a real surface
+    only when the policy is driven through a robot-MCP tool layer; a **direct** LIBERO
+    rollout has no such layer, so this attack is reported **not-applicable** there (it is
+    excluded from that suite's ASR denominator — never faked).
     """
 
     name = "mcp_tool_desc"
@@ -74,7 +82,13 @@ class MCPToolDescInjection(Attack):
     def __init__(self, target_object: str = DEFAULT_TARGET_OBJECT) -> None:
         self.target_object = target_object
 
+    def applicable(self, observation: Observation) -> bool:
+        # No MCP surface in a direct (image-based) LIBERO loop -> N/A there.
+        return image_of(observation) is None
+
     def perturb(self, instruction: str, observation: Observation) -> tuple[str, Observation]:
+        if image_of(observation) is not None:
+            return instruction, observation  # no-op on LIBERO (runner records N/A)
         idx = episode_index(observation, len(self.BANK))
         payload = self.BANK[idx].format(object=self.target_object)
         return instruction, append_channel(observation, "tool_descriptions", payload)

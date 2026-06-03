@@ -22,6 +22,15 @@ class Attack(ABC):
     #: Attack family this attack belongs to (e.g. ``"instruction"``).
     family: str = "base"
 
+    def applicable(self, observation: Observation) -> bool:
+        """Whether this attack has a surface in the given suite's observation.
+
+        Default True. Returning False marks the attack **not-applicable** for that suite
+        (e.g. ``mcp_tool_desc`` has no MCP surface in a direct LIBERO loop); such episodes
+        are excluded from the ASR denominator rather than faked.
+        """
+        return True
+
     @abstractmethod
     def perturb(self, instruction: str, observation: Observation) -> tuple[str, Observation]:
         """Return an adversarial ``(instruction, observation)`` pair.

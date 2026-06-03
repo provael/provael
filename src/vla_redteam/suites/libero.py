@@ -48,10 +48,7 @@ from pydantic import BaseModel, Field
 
 from vla_redteam.policies.lerobot_adapter import MissingLeRobotError
 from vla_redteam.suites.base import SuiteAdapter
-from vla_redteam.types import Action, Observation, State, SuiteFeatures
-
-#: Top-level observation key carrying the primary camera image (the attack target).
-LIBERO_IMAGE_KEY = "image"
+from vla_redteam.types import IMAGE_KEY, Action, Observation, State, SuiteFeatures
 
 #: The LIBERO task suites shipped by lerobot 0.5.1 (verified).
 LIBERO_TASK_SUITES: tuple[str, ...] = (
@@ -214,7 +211,7 @@ class LiberoSuiteAdapter(SuiteAdapter):
             action_dim=LIBERO_ACTION_DIM,
             fps=int(getattr(cfg, "fps", 30)),
             camera_keys=camera_keys,
-            image_key=LIBERO_IMAGE_KEY,
+            image_key=IMAGE_KEY,
             task_suite=self.task_suite,
             env_config=cfg,
         )
@@ -287,7 +284,7 @@ class LiberoSuiteAdapter(SuiteAdapter):
         }
         image = self._primary_image(obs)
         if image is not None:
-            observation[LIBERO_IMAGE_KEY] = image
+            observation[IMAGE_KEY] = image
             observation["pixels_key"] = self._pixels_key
         return observation
 

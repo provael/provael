@@ -106,11 +106,13 @@ def aggregate(reports: list[RunReport]) -> Leaderboard:
     attack_names: set[str] = set()
     for report in reports:
         for result in report.results:
+            attack_names.add(result.attack)
+            if not result.applicable:  # excluded from the ASR denominator
+                continue
             key = (report.policy, report.suite, result.family)
             tally = buckets.setdefault(key, [0, 0])
             tally[0] += 1
             tally[1] += int(result.success)
-            attack_names.add(result.attack)
 
     rows = [
         LeaderboardRow(

@@ -31,6 +31,10 @@ type State = dict[str, Any]
 # An action vector emitted by a policy / consumed by a suite.
 type Action = npt.NDArray[np.float32]
 
+#: Canonical top-level observation key carrying the primary camera image (the target of
+#: image-space attacks). Suites that expose a real image populate this key.
+IMAGE_KEY = "image"
+
 
 @dataclass(frozen=True)
 class SuiteFeatures:
@@ -81,6 +85,9 @@ class AttackResult(BaseModel):
     )
     original_instruction: str
     adversarial_instruction: str
+    applicable: bool = Field(
+        True, description="False if the attack is N/A for this suite (excluded from ASR)."
+    )
 
 
 class ASRStat(BaseModel):

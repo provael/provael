@@ -2728,6 +2728,7 @@ name = "vla-redteam"
 source = { editable = "." }
 dependencies = [
     { name = "numpy" },
+    { name = "pillow" },
     { name = "pydantic" },
     { name = "pyyaml" },
     { name = "rich" },
@@ -2752,6 +2753,7 @@ dev = [
 requires-dist = [
     { name = "lerobot", extras = ["smolvla"], marker = "extra == 'lerobot'", specifier = "==0.5.1" },
     { name = "numpy" },
+    { name = "pillow", specifier = ">=10" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pyyaml" },
     { name = "rich" },

@@ -23,7 +23,8 @@ REPORT_MD = "report.md"
 
 
 def _stat_row(name: str, stat: ASRStat) -> tuple[str, str, str, str]:
-    return (name, f"{100.0 * stat.asr:.1f}%", str(stat.successes), str(stat.attempts))
+    asr = "N/A" if stat.attempts == 0 else f"{100.0 * stat.asr:.1f}%"
+    return (name, asr, str(stat.successes), str(stat.attempts))
 
 
 def to_json(report: RunReport) -> str:

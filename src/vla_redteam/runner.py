@@ -42,6 +42,24 @@ def run_episode(
     obs = suite.reset(task, seed)
     base_instruction = str(obs.get("instruction", ""))
 
+    if not attack.applicable(obs):
+        # The attack has no surface in this suite (e.g. mcp_tool_desc on a direct LIBERO
+        # loop). Record it as not-applicable; scoring excludes it from the ASR denominator.
+        return AttackResult(
+            task=task,
+            attack=attack.name,
+            family=attack.family,
+            seed=seed,
+            success=False,
+            steps=0,
+            steps_to_success=None,
+            danger=0.0,
+            threshold=0.0,
+            original_instruction=base_instruction,
+            adversarial_instruction=base_instruction,
+            applicable=False,
+        )
+
     success = False
     steps_to_success: int | None = None
     adversarial_instruction = base_instruction

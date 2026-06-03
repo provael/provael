@@ -18,9 +18,10 @@ patches are deferred (see CHANGELOG).
 
 from __future__ import annotations
 
+from vla_redteam.attacks._image import image_of, overlay_patch
 from vla_redteam.attacks._payload import append_channel
 from vla_redteam.attacks.base import Attack
-from vla_redteam.types import Observation
+from vla_redteam.types import IMAGE_KEY, Observation
 
 FAMILY = "visual"
 
@@ -46,7 +47,11 @@ class PatchAttack(Attack):
 
     def perturb(self, instruction: str, observation: Observation) -> tuple[str, Observation]:
         marker = self.TEMPLATE.format(object=self.target_object)
-        return instruction, append_channel(observation, "visual_tokens", marker)
+        perturbed = append_channel(observation, "visual_tokens", marker)
+        image = image_of(observation)
+        if image is not None:  # real camera image (LIBERO): overlay the patch on pixels
+            perturbed = {**perturbed, IMAGE_KEY: overlay_patch(image, marker)}
+        return instruction, perturbed
 
 
 class DecoyObjectAttack(Attack):
@@ -69,6 +74,10 @@ class DecoyObjectAttack(Attack):
     def perturb(self, instruction: str, observation: Observation) -> tuple[str, Observation]:
         with_object = append_channel(observation, "objects", self.target_object)
         with_cue = append_channel(with_object, "visual_tokens", self.SALIENCE_CUE)
+        image = image_of(observation)
+        if image is not None:  # real scene (LIBERO): plant the decoy marker on pixels
+            marker = f"decoy::{self.target_object}::{self.SALIENCE_CUE}"
+            with_cue = {**with_cue, IMAGE_KEY: overlay_patch(image, marker)}
         return instruction, with_cue
 
 
