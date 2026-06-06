@@ -99,5 +99,5 @@ plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 # Optional, untyped deps loaded behind a guarded import in lerobot_adapter.py.
 # They are never installed in the CPU build / CI, so mypy must not fail on them.
-module = ["lerobot.*", "torch"]
+module = ["lerobot.*", "torch", "libero.*"]
 ignore_missing_imports = true

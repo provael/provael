@@ -39,7 +39,9 @@ Enable the real path on a GPU box::
 
 from __future__ import annotations
 
+import builtins
 import importlib.util
+import os
 from collections.abc import Callable, Sequence
 from typing import Any
 
@@ -146,6 +148,34 @@ def _parse_task(task: str, default_suite: str) -> tuple[str, int]:
     return (task if task in LIBERO_TASK_SUITES else default_suite), 0
 
 
+def _ensure_libero_initialized() -> None:
+    """Pre-create LIBERO's first-run config so its import never blocks on ``input()``.
+
+    VERIFIED behaviour (LIBERO ``libero/libero/__init__.py``): on first import it writes
+    ``$LIBERO_CONFIG_PATH``/``~/.libero``/``config.yaml`` and, if that file is absent,
+    prompts interactively ("Do you want to specify a custom path…"). Under captured stdin
+    (pytest) or any non-interactive run that raises ``OSError``. If the config is missing,
+    we import ``libero.libero`` once with ``input`` auto-answered "N" so LIBERO writes its
+    default config; subsequent imports (incl. lerobot's ``create_libero_envs``) skip the
+    prompt. No-op if the config already exists or LIBERO isn't installed.
+    """
+    config_dir = os.environ.get("LIBERO_CONFIG_PATH", os.path.expanduser("~/.libero"))
+    if os.path.exists(os.path.join(config_dir, "config.yaml")):
+        return
+    if importlib.util.find_spec("libero") is None:
+        return  # let make_env surface the missing-sim error
+
+    def _answer_no(*_args: object, **_kwargs: object) -> str:
+        return "N"
+
+    original_input = builtins.input
+    builtins.input = _answer_no
+    try:
+        import libero.libero  # noqa: F401  -- import triggers default-config creation
+    finally:
+        builtins.input = original_input
+
+
 def _first(value: Any) -> Any:
     """Drop a leading batch dim of 1 (VectorEnv batches everything by n_envs)."""
     arr = np.asarray(value)
@@ -231,6 +261,7 @@ class LiberoSuiteAdapter(SuiteAdapter):
         from lerobot.envs.factory import make_env
 
         cfg = self._ensure_env_cfg()
+        _ensure_libero_initialized()  # write LIBERO's config so its import won't prompt
         envs = make_env(cfg, n_envs=1)  # -> {suite: {task_id: vec_env}}
         suite_envs = envs[self.task_suite]
         return suite_envs.get(task_id) or next(iter(suite_envs.values()))

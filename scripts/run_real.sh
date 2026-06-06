@@ -17,6 +17,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# Headless MuJoCo rendering for LIBERO on a cloud/HPC box (per the LeRobot LIBERO docs).
+export MUJOCO_GL="${MUJOCO_GL:-egl}"
+
 VENV=".venv-real"
 CKPT="${ROBOPWN_SMOLVLA_LIBERO_CKPT:-HuggingFaceVLA/smolvla_libero}"
 TASKS="${ROBOPWN_ATTACKS:-instruction,visual,injection}"
@@ -28,6 +31,7 @@ On a CUDA GPU box, run the real in-process attack loop:
 
   uv venv ${VENV} --python 3.12
   uv pip install --python ${VENV}/bin/python -e '.[lerobot]' 'lerobot[libero]==0.5.1'
+  export MUJOCO_GL=egl   # headless MuJoCo rendering
 
   # Real seeded attack-ASR (mean ± per-seed std) with the ready LIBERO checkpoint:
   ${VENV}/bin/robopwn attack --policy smolvla --suite libero \\
