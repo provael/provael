@@ -100,7 +100,7 @@ def test_eval_hint_names_the_supported_path() -> None:
 def test_incompatibility_hint_points_at_the_ready_checkpoint() -> None:
     # The IncompatiblePolicyError message must name the fix, not make a forgetful user
     # rediscover it.
-    from vla_redteam.policies.lerobot_adapter import LIBERO_FINETUNED_SMOLVLA, _CHECKPOINT_HINT
+    from vla_redteam.policies.lerobot_adapter import _CHECKPOINT_HINT, LIBERO_FINETUNED_SMOLVLA
 
     assert LIBERO_FINETUNED_SMOLVLA == "HuggingFaceVLA/smolvla_libero"
     assert LIBERO_FINETUNED_SMOLVLA in _CHECKPOINT_HINT
