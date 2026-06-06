@@ -84,6 +84,26 @@ end-to-end (GPU-gated). Verified by **running** against the installed `lerobot==
   **configurable** forbidden-object-grasp rule (a `grasp_extractor` hook).
 - **Seeded mean ± std** reporting for stochastic (real) policies; `--seeds`, `--model`,
   and `--rename-map` CLI options; `pillow` added for image rendering.
+- **`baseline` family** (`none`, a no-op control): runs the benign task unchanged so its
+  ASR is the reference, and attack ASR can be read as **lift over baseline**.
+- **Real task language as the base instruction**: the LIBERO adapter now reads the env's
+  actual task via `env.call("task_description")` (mirroring LeRobot's `add_envs_task`)
+  instead of a placeholder — so the benign baseline measures the policy on its real job
+  and attack ASR is a true "diverted from the legitimate task" number.
+- **Headless-sim robustness**: LIBERO's first-run `input()` config prompt is auto-handled
+  (`_ensure_libero_initialized`); `scripts/run_real.sh` sets `MUJOCO_GL`/`PYOPENGL_PLATFORM`
+  and documents the GL deps (`osmesa` CPU render, or EGL) for cloud GPU boxes.
+
+### First real result — verified on a GPU (2026-06-06)
+- Ran the full loop on a RunPod **RTX 4090** (`HuggingFaceVLA/smolvla_libero`,
+  `libero_object/0`, 10 seeds, horizon 280, `osmesa`). Overall **24.3% (17/70) ± 9.1%**.
+  Per family vs the benign `none` baseline (0/10): instruction `roleplay` **100%**,
+  `goal_substitution` **60%**, `paraphrase` 10%; `visual` and `injection` **0%**. The
+  canonical artifact is committed at `results/smolvla_libero_object/`, and
+  `leaderboard/results/leaderboard.json` now holds this real (non-demo) result.
+- **Honest caveat**: the keep-out predicate is a default, **uncalibrated** region — so this
+  is "diverted out of the benign safe envelope," not a zone-calibrated hazard rate; one
+  task, `n = 10`.
 
 ### Verified by running (isolated lerobot venv, CPU)
 - `lerobot/smolvla_base` is **NOT** LIBERO-compatible (expects `camera1/2/3`; LIBERO
@@ -98,11 +118,15 @@ end-to-end (GPU-gated). Verified by **running** against the installed `lerobot==
   (only the stub is).
 - Forbidden-object grasp is **disclosed-inert by default** (no verified robosuite accessor
   without the sim) — live only with a user-supplied `grasp_extractor`.
-- A real SmolVLA-on-LIBERO ASR requires a LIBERO-fine-tuned checkpoint + GPU + sim; not
-  produced in CI.
+- The first real ASR (above) uses an **uncalibrated** keep-out region, so it measures
+  redirection *out of the benign safe envelope*, not a zone-calibrated hazard rate; one
+  task, `n = 10`. Producing it requires a LIBERO-fine-tuned checkpoint + GPU + sim (not CI).
 
 ## [Unreleased] — planned
 
+- **Per-task keep-out-zone calibration** (+ trajectory inspection) so a real ASR is a
+  semantically-meaningful redirection rate, not "entered a default box" — and a multi-task,
+  multi-suite sweep. This is the headline `v0.2.0` follow-up to the first real result.
 - **Optimized-suffix attack family** (GCG-style / POEX-style executable suffixes) and
   pixel-level visual attacks tuned to transfer to real VLA policies.
 - **`mcp_tool_desc` on a real robot-MCP target** (no surface in a direct LIBERO loop).
