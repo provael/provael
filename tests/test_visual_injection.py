@@ -149,6 +149,7 @@ def test_all_families_combined_preserves_instruction() -> None:
 
 def test_registry_includes_new_families() -> None:
     assert set(available_attacks()) == {
+        "none",
         "roleplay",
         "goal_substitution",
         "paraphrase",
@@ -157,8 +158,24 @@ def test_registry_includes_new_families() -> None:
         "scene_text",
         "mcp_tool_desc",
     }
-    assert available_families() == ["injection", "instruction", "visual"]
+    assert available_families() == ["baseline", "injection", "instruction", "visual"]
+    assert [a.name for a in resolve_attacks(["baseline"])] == ["none"]
     assert [a.name for a in resolve_attacks(["visual"])] == ["patch", "decoy_object"]
     assert [a.name for a in resolve_attacks(["injection"])] == ["scene_text", "mcp_tool_desc"]
     # Cross-family selection by individual name.
     assert [a.name for a in resolve_attacks(["patch", "scene_text"])] == ["patch", "scene_text"]
+
+
+def test_baseline_noop_is_a_zero_aggression_control() -> None:
+    # The 'none' control must not perturb anything: instruction + observation pass through,
+    # so on the stub it injects zero aggression -> 0% baseline ASR (the reference for lift).
+    noop = resolve_attacks(["baseline"])[0]
+    base = _base_obs()
+    instruction, obs = noop.perturb(BASE_INSTRUCTION, base)
+    assert instruction == BASE_INSTRUCTION
+    assert obs is base  # identity: the control neither copies nor mutates the observation
+    assert combined_aggression(instruction, obs) == 0.0  # benign task -> no danger
+
+    report = run(RunConfig(policy="stub", suite="stub", attacks=["baseline"], episodes=20, seed=0))
+    assert report.attacks == ["none"]
+    assert report.by_attack["none"].successes == 0  # benign control never triggers unsafe

@@ -1,10 +1,10 @@
 """Attack registry: resolve names and family names to :class:`Attack` instances.
 
-Three families ship today: ``instruction`` (text reframings), ``visual`` (perception
-perturbations), and ``injection`` (indirect / embodied prompt injection). The registry
-maps both individual attack names and family names to attacks, so
-``--attacks instruction`` expands a whole family while ``--attacks patch,scene_text``
-selects specific attacks across families.
+Families: ``baseline`` (a no-op control for measuring lift), ``instruction`` (text
+reframings), ``visual`` (perception perturbations), and ``injection`` (indirect /
+embodied prompt injection). The registry maps both individual attack names and family
+names to attacks, so ``--attacks instruction`` expands a whole family while
+``--attacks none,patch,scene_text`` selects specific attacks across families.
 """
 
 from __future__ import annotations
@@ -12,6 +12,12 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from vla_redteam.attacks.base import Attack
+from vla_redteam.attacks.baseline import (
+    FAMILY as BASELINE_FAMILY,
+)
+from vla_redteam.attacks.baseline import (
+    NoOpAttack,
+)
 from vla_redteam.attacks.injection import (
     FAMILY as INJECTION_FAMILY,
 )
@@ -37,6 +43,7 @@ from vla_redteam.attacks.visual import (
 
 #: Registry of attack factories keyed by attack name.
 ATTACKS: dict[str, Callable[[], Attack]] = {
+    "none": NoOpAttack,
     "roleplay": RolePlayAttack,
     "goal_substitution": GoalSubstitutionAttack,
     "paraphrase": ParaphraseAttack,
@@ -48,6 +55,7 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
 
 #: Family name -> ordered member attack names.
 FAMILIES: dict[str, list[str]] = {
+    BASELINE_FAMILY: ["none"],
     INSTRUCTION_FAMILY: ["roleplay", "goal_substitution", "paraphrase"],
     VISUAL_FAMILY: ["patch", "decoy_object"],
     INJECTION_FAMILY: ["scene_text", "mcp_tool_desc"],

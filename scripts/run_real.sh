@@ -27,8 +27,9 @@ export PYOPENGL_PLATFORM="${PYOPENGL_PLATFORM:-$MUJOCO_GL}"
 
 VENV=".venv-real"
 CKPT="${ROBOPWN_SMOLVLA_LIBERO_CKPT:-HuggingFaceVLA/smolvla_libero}"
-TASKS="${ROBOPWN_ATTACKS:-instruction,visual,injection}"
+TASKS="${ROBOPWN_ATTACKS:-none,instruction,visual,injection}"  # 'none' = benign baseline (lift)
 SEEDS="${ROBOPWN_SEEDS:-10}"
+HORIZON="${ROBOPWN_HORIZON:-280}"  # let LIBERO rollouts run to a realistic length (not the stub's 8)
 
 print_commands() {
   cat <<EOF
@@ -42,7 +43,7 @@ On a CUDA GPU box, run the real in-process attack loop:
   # Real seeded attack-ASR (mean ± per-seed std) with the ready LIBERO checkpoint:
   ${VENV}/bin/robopwn attack --policy smolvla --suite libero \\
       --model ${CKPT} \\
-      --attacks ${TASKS} --seeds ${SEEDS} --seed 0 --out runs/smolvla_libero
+      --attacks ${TASKS} --seeds ${SEEDS} --horizon ${HORIZON} --seed 0 --out runs/smolvla_libero
 
   # Flip the leaderboard to real (non-demo) numbers:
   ${VENV}/bin/robopwn leaderboard build --runs 'runs/*' --out leaderboard/results
@@ -67,7 +68,7 @@ ROBOPWN_INTEGRATION=1 ROBOPWN_SMOLVLA_LIBERO_CKPT="${CKPT}" "${VENV}/bin/python"
 
 echo ">> red-team SmolVLA in the LIBERO simulator (in-process attack-ASR)…"
 "${VENV}/bin/robopwn" attack --policy smolvla --suite libero \
-  --model "${CKPT}" --attacks "${TASKS}" --seeds "${SEEDS}" --seed 0 \
+  --model "${CKPT}" --attacks "${TASKS}" --seeds "${SEEDS}" --horizon "${HORIZON}" --seed 0 \
   --out runs/smolvla_libero
 
 echo ">> refreshing the leaderboard with real numbers…"
