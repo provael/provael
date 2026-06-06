@@ -277,8 +277,32 @@ class LiberoSuiteAdapter(SuiteAdapter):
         self._task = task
         self._seed = seed
         self._step = 0
+        self._instruction = self._resolve_instruction(env)
         obs, _info = env.reset(seed=[seed])  # VectorEnv: seeds is a per-env list
         return self._observation(obs)
+
+    def _resolve_instruction(self, env: Any) -> str:
+        """Use the env's REAL task language as the base instruction.
+
+        An honest benign baseline must receive the policy's *actual* LIBERO task (e.g.
+        "pick up the alphabet soup and place it in the basket"), not a generic placeholder
+        — otherwise the baseline measures the policy on a non-instruction and the attack
+        ASR can't be read as "diverted from the legitimate task". Mirrors lerobot's
+        ``add_envs_task``: prefer ``env.call("task_description")``, then ``"task"``. Falls
+        back to the placeholder only if neither is exposed (disclosed, not faked). An
+        explicit constructor ``instruction=`` override always wins.
+        """
+        if self._instruction_override is not None:
+            return self._instruction_override
+        for attr in ("task_description", "task"):
+            try:
+                result = env.call(attr)
+            except Exception:  # noqa: BLE001 - env may not expose it; try the next/fallback
+                continue
+            text = result[0] if isinstance(result, list | tuple) and len(result) else result
+            if isinstance(text, str) and text.strip():
+                return text
+        return f"{self.task_suite} task"
 
     def step(self, action: Action) -> tuple[Observation, bool, State]:
         if self._active is None:
