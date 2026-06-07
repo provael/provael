@@ -65,6 +65,17 @@ simulator are isolated behind the optional `[lerobot]` extra and an
   observation→features wiring and the robosuite grasped-object accessor are deferred.
 - The leaderboard ships demo (stub) data only until real-model runs are added.
 
+## [0.2.2] — 2026-06-07
+
+### Fixed
+- **Typed package**: ship `py.typed` (PEP 561) so the strictly-typed package exports types
+  to downstream `mypy`/`pyright` users from the installed wheel.
+
+### Added
+- `CONTRIBUTING.md` and `SECURITY.md`; author/maintainer metadata in `pyproject`.
+- Hardened the tag-triggered release workflow (`skip-existing` on the publish step;
+  OIDC trusted publishing).
+
 ## [0.2.1] — 2026-06-07
 
 ### Fixed
@@ -150,6 +161,7 @@ RunPod RTX 4090. Verified by **running** against the installed `lerobot==0.5.1`.
 - **`vla-guard`** (Phase 2): a defensive companion that hardens policies against the
   attacks this tool measures.
 
+[0.2.2]: https://github.com/sattyamjjain/vla-redteam/releases/tag/v0.2.2
 [0.2.1]: https://github.com/sattyamjjain/vla-redteam/releases/tag/v0.2.1
 [0.2.0]: https://github.com/sattyamjjain/vla-redteam/releases/tag/v0.2.0
 [0.1.0]: https://github.com/sattyamjjain/vla-redteam/releases/tag/v0.1.0

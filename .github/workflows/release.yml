@@ -61,6 +61,8 @@ jobs:
           path: dist/
       - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true  # don't hard-fail if a re-run hits an already-uploaded version
         # No `password:` — trusted publishing uses the OIDC id-token above.
 
   github-release:
