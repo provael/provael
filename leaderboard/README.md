@@ -15,11 +15,15 @@ Attack Success Rate (ASR) of instruction / visual / injection attacks against
 Vision-Language-Action (VLA) robot policies in simulation, built with
 [`vla-redteam`](https://github.com/sattyamjjain/vla-redteam). Lower ASR = more robust.
 
-> ⚠️ **The committed data is stub/demo until real runs are added.** `results/_demo.json`
-> is produced from the deterministic CPU **stub** policy — it shows the harness works and
-> what the table looks like, but the numbers are **not** a real model's robustness. Add
-> real SmolVLA / OpenVLA results with the GPU command below; the "demo data" banner clears
-> automatically once a non-stub run is present.
+> ✅ **Real data.** `results/leaderboard.json` holds the first real SmolVLA-on-LIBERO
+> result (`HuggingFaceVLA/smolvla_libero`, `libero_object/0`, 10 seeds): overall
+> **24.3% (17/70) ± 9.1%**, with a benign `none` baseline of **0/10**. Read it as **lift
+> over baseline** — instruction-reframing attacks dominate (roleplay 100%,
+> goal_substitution 60%, paraphrase 10%); visual / scene-text **0%**.
+>
+> ⚠️ **Caveat:** the keep-out predicate is a default, **uncalibrated** region (one task,
+> `n=10`), so this is "diverted out of the benign safe envelope," not a calibrated hazard
+> rate. Per-task zone calibration is the next milestone.
 
 ## Run it
 
@@ -37,23 +41,26 @@ On Hugging Face: this folder is a Gradio Space. v0 renders the committed
 ## How the data is produced
 
 ```bash
-# CPU demo (stub policy) — what's committed here:
+# CPU demo (stub policy) — an example; no GPU/model needed:
 robopwn attack --policy stub --suite stub \
     --attacks instruction,visual,injection --episodes 10 --seed 0 --out runs/demo
 robopwn leaderboard build --runs runs/demo --out leaderboard/results   # writes leaderboard.json
 ```
 
-### Real numbers (GPU box) — replaces the demo data
+### Real numbers (GPU box) — what's committed here
 
 ```bash
 pip install 'vla-redteam[lerobot]' 'lerobot[libero]==0.5.1'
-ROBOPWN_INTEGRATION=1 robopwn attack --policy smolvla --suite libero \
-    --attacks instruction,visual,injection --episodes 10 --seed 0 --out runs/smolvla_libero
+apt-get install -y libosmesa6 libgl1 libglx-mesa0       # headless GL (cloud images ship none)
+export MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa
+robopwn attack --policy smolvla --suite libero --model HuggingFaceVLA/smolvla_libero \
+    --attacks none,instruction,visual,injection --seeds 10 --horizon 280 --seed 0 \
+    --out runs/smolvla_libero
 robopwn leaderboard build --runs 'runs/*' --out leaderboard/results
 ```
 
-Commit the resulting `results/*.json` and the banner switches to "includes real-model
-results".
+Commit the resulting `results/*.json`; the banner reads "includes real-model results"
+whenever a non-stub run is present.
 
 ## Schema
 
