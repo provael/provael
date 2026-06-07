@@ -9,7 +9,8 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
-authors = [{ name = "vla-redteam contributors" }]
+authors = [{ name = "Sattyam Jain" }]
+maintainers = [{ name = "Sattyam Jain" }]
 keywords = [
     "vla",
     "robotics",
