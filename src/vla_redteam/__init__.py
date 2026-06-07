@@ -10,4 +10,4 @@ StubSuite. Real VLA policies (e.g. SmolVLA via LeRobot) live behind the optional
 ``vla-redteam[lerobot]`` extra and are gated behind ``ROBOPWN_INTEGRATION=1``.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"

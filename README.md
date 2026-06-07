@@ -2,14 +2,14 @@
 
 [![CI](https://github.com/sattyamjjain/vla-redteam/actions/workflows/ci.yml/badge.svg)](https://github.com/sattyamjjain/vla-redteam/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/vla-redteam.svg)](https://pypi.org/project/vla-redteam/)
-[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/sattyamjjain/vla-redteam/blob/main/LICENSE)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
 
 > Red-team open **Vision-Language-Action (VLA)** robot policies in simulation and
 > report an **Attack Success Rate (ASR)**.
 
 <p align="center">
-  <img src="docs/assets/demo.svg" alt="robopwn attack — ASR across instruction/visual/injection families" width="760">
+  <img src="https://raw.githubusercontent.com/sattyamjjain/vla-redteam/main/docs/assets/demo.svg" alt="robopwn attack — ASR across instruction/visual/injection families" width="760">
 </p>
 
 <p align="center"><sub>Deterministic CPU stub run, seed 0 — regenerate with <code>./scripts/record_demo.sh</code>.</sub></p>
@@ -30,7 +30,7 @@ LIBERO simulator live behind an optional extra and a `ROBOPWN_INTEGRATION=1` gat
 
 > ⚠️ This is a **defensive, sim-only** tool for hardening policies via responsible
 > disclosure. It drives no physical robots and ships no real-world-harm payloads.
-> Read **[SAFETY.md](SAFETY.md)** before using it.
+> Read **[SAFETY.md](https://github.com/sattyamjjain/vla-redteam/blob/main/SAFETY.md)** before using it.
 
 ## Install (CPU core — no GPU, no network)
 
@@ -162,7 +162,7 @@ robopwn attack --policy smolvla --suite libero --model HuggingFaceVLA/smolvla_li
 robopwn leaderboard build --runs 'runs/*' --out leaderboard/results
 ```
 
-The helper [`scripts/run_real.sh`](scripts/run_real.sh) detects CUDA and runs the above
+The helper [`scripts/run_real.sh`](https://github.com/sattyamjjain/vla-redteam/blob/main/scripts/run_real.sh) detects CUDA and runs the above
 (or prints the exact commands and exits cleanly if there is no GPU). LeRobot's own
 evaluator remains available for reference task-success numbers (`lerobot-eval
 --env.type=libero`).
@@ -170,7 +170,7 @@ evaluator remains available for reference task-success numbers (`lerobot-eval
 ### First real result (SmolVLA on LIBERO)
 
 `HuggingFaceVLA/smolvla_libero` · `libero_object/0` · 10 seeds · horizon 280 · RTX 4090
-(`osmesa`), 2026-06-06. Full artifact: [`results/smolvla_libero_object/`](results/smolvla_libero_object/).
+(`osmesa`), 2026-06-06. Full artifact: [`results/smolvla_libero_object/`](https://github.com/sattyamjjain/vla-redteam/tree/main/results/smolvla_libero_object/).
 
 | family | attack | ASR | lift vs baseline |
 | --- | --- | ---: | ---: |
@@ -198,13 +198,13 @@ the real task, which competes), while pixel/scene-text perturbations did not mov
 ## Leaderboard
 
 `robopwn leaderboard build` aggregates `report.json` files into a ranked, deterministic
-`(policy × suite × family) → ASR` table. The [`leaderboard/`](leaderboard/) folder is a
+`(policy × suite × family) → ASR` table. The [`leaderboard/`](https://github.com/sattyamjjain/vla-redteam/tree/main/leaderboard) folder is a
 ZeroGPU-compatible Gradio Space that renders the committed `results/*.json` with **no
 GPU**.
 
 > The committed `leaderboard/results/leaderboard.json` now holds the **real
 > SmolVLA-on-LIBERO** result above (`is_demo` banner cleared), aggregated from
-> [`results/smolvla_libero_object/`](results/smolvla_libero_object/). The numbers are
+> [`results/smolvla_libero_object/`](https://github.com/sattyamjjain/vla-redteam/tree/main/results/smolvla_libero_object/). The numbers are
 > preliminary (one task, uncalibrated keep-out zone). The earlier stub `_demo.json` is
 > retired (recoverable from git history); regenerate any leaderboard with
 > `robopwn leaderboard build`.
@@ -279,10 +279,10 @@ GitHub Release from the CHANGELOG. See the one-time setup notes at the top of
 
 ## Further reading
 
-- **[SAFETY.md](SAFETY.md)** — responsible use, sim-only default, scope.
-- **[PRIOR_ART.md](PRIOR_ART.md)** — RoboPAIR, POEX, BadVLA, SafeVLA, and how we differ.
-- **[CHANGELOG.md](CHANGELOG.md)** — what shipped and what's planned for v0.2.
+- **[SAFETY.md](https://github.com/sattyamjjain/vla-redteam/blob/main/SAFETY.md)** — responsible use, sim-only default, scope.
+- **[PRIOR_ART.md](https://github.com/sattyamjjain/vla-redteam/blob/main/PRIOR_ART.md)** — RoboPAIR, POEX, BadVLA, SafeVLA, and how we differ.
+- **[CHANGELOG.md](https://github.com/sattyamjjain/vla-redteam/blob/main/CHANGELOG.md)** — what shipped and what's planned for v0.2.
 
 ## License
 
-[Apache-2.0](LICENSE).
+[Apache-2.0](https://github.com/sattyamjjain/vla-redteam/blob/main/LICENSE).
