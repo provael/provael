@@ -136,6 +136,42 @@ def aggregate(reports: list[RunReport]) -> Leaderboard:
     )
 
 
+def validate_report(report: RunReport) -> list[str]:
+    """Return a list of problems with a submitted run report (empty list == valid).
+
+    Used by ``scripts/validate_submission.py`` (and CI) to gate leaderboard submissions:
+    checks required fields, that the aggregate ASR/success counts are internally consistent
+    with the per-episode results, and that the not-applicable accounting matches.
+    """
+    errors: list[str] = []
+    if not report.policy:
+        errors.append("missing 'policy'")
+    if not report.suite:
+        errors.append("missing 'suite'")
+    if not report.results:
+        errors.append("'results' is empty — nothing to score")
+        return errors  # nothing else is meaningful without results
+    if not 0.0 <= report.asr <= 1.0:
+        errors.append(f"asr {report.asr} is outside [0, 1]")
+    if not 0 <= report.successes <= report.attempts:
+        errors.append(f"successes {report.successes} not in [0, attempts={report.attempts}]")
+    applicable = sum(1 for r in report.results if r.applicable)
+    if report.attempts != applicable:
+        errors.append(f"attempts ({report.attempts}) != applicable results ({applicable})")
+    applicable_successes = sum(1 for r in report.results if r.applicable and r.success)
+    if report.successes != applicable_successes:
+        errors.append(
+            f"successes ({report.successes}) != applicable successes in results "
+            f"({applicable_successes})"
+        )
+    for i, r in enumerate(report.results):
+        if not r.attack:
+            errors.append(f"results[{i}] missing 'attack'")
+        if not r.family:
+            errors.append(f"results[{i}] missing 'family'")
+    return errors
+
+
 def to_json(leaderboard: Leaderboard) -> str:
     """Serialise a leaderboard to a stable, indented JSON string (sorted keys)."""
     data = json.loads(leaderboard.model_dump_json())
@@ -175,4 +211,5 @@ __all__ = [
     "to_json",
     "load_leaderboard",
     "build_leaderboard",
+    "validate_report",
 ]

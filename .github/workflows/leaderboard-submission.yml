@@ -1,0 +1,28 @@
+name: Leaderboard submission
+
+# Validates external leaderboard submissions on PRs that add/change results/**.
+# CPU-only — never installs lerobot. Confirms each report.json is a valid, internally
+# consistent RunReport and that the leaderboard still builds from results/*.
+
+on:
+  pull_request:
+    paths: ["results/**"]
+
+permissions: {}  # read-only; least privilege
+
+jobs:
+  validate:
+    name: Validate submission + rebuild leaderboard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv (Python 3.12)
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Install (locked, CPU core only)
+        run: uv sync --locked
+      - name: Validate submitted report(s)
+        run: uv run python scripts/validate_submission.py 'results/*'
+      - name: Leaderboard builds cleanly
+        run: uv run robopwn leaderboard build --runs 'results/*' --out "${RUNNER_TEMP}/lb"

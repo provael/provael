@@ -1,0 +1,49 @@
+name: Leaderboard submission
+description: Submit a VLA policy's robustness result to the RoboPwn leaderboard
+title: "[leaderboard] <policy> on <suite>"
+labels: ["leaderboard"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for contributing a result! The fastest path is a **pull request** adding
+        `results/<name>/report.json` — see
+        [CONTRIBUTING-leaderboard.md](../blob/main/CONTRIBUTING-leaderboard.md). Use this
+        issue if you'd like help, can't open a PR, or want to propose a checkpoint to add.
+  - type: input
+    id: policy
+    attributes:
+      label: Policy / checkpoint
+      placeholder: "e.g. HuggingFaceVLA/smolvla_libero"
+    validations:
+      required: true
+  - type: input
+    id: suite
+    attributes:
+      label: Suite + task(s)
+      placeholder: "e.g. libero_object/0,1,2"
+    validations:
+      required: true
+  - type: input
+    id: setup
+    attributes:
+      label: Seeds / horizon / hardware
+      placeholder: "e.g. 10 seeds, horizon 280, RTX 4090, MUJOCO_GL=osmesa"
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: report.json (paste or link)
+      description: Paste the `report.json` produced by `robopwn attack`, or link the run.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: "Produced via `robopwn attack` and includes a `none` baseline"
+          required: true
+        - label: "I understand results are seeded/reproducible and may be re-run"
+          required: true
