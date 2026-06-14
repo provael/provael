@@ -3,7 +3,7 @@
 v0 is a STATIC-DATA viewer: it renders the committed ``results/*.json`` files
 (produced by ``robopwn leaderboard build``) as a ranked table plus example attacked
 payloads. No GPU is used. When every aggregated run used the ``stub`` policy, a clear
-"demo data" banner is shown — the numbers are illustrative until real SmolVLA / OpenVLA
+"demo data" banner is shown — the numbers are illustrative until real-model (e.g. SmolVLA)
 runs are added.
 
 ZeroGPU: a future "run a live attack" button would call a function decorated with
@@ -71,7 +71,7 @@ def _example_table(examples: list[dict]) -> list[list[str]]:
 
 _DEMO_BANNER = (
     "> ⚠️ **Demo data.** These results come from the deterministic CPU **stub** policy, "
-    "not a real model. They are illustrative until real SmolVLA / OpenVLA runs are added. "
+    "not a real model. They are illustrative until real-model (e.g. SmolVLA) runs are added. "
     "Reproduce/extend with the GPU command in the README."
 )
 _REAL_BANNER = "> ✅ Includes real-model results."

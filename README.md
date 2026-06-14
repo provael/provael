@@ -18,10 +18,12 @@
 observations a VLA policy receives inside a simulator and measures how often those
 perturbations drive the policy into an *unsafe* state. The headline number is the ASR.
 
-It ships **three attack families** — `instruction` (text reframings), `visual`
-(perception perturbations), and `injection` (indirect / embodied prompt injection) — an
-ASR **leaderboard**, and gated adapters for real **SmolVLA** policies and the **LIBERO**
-simulator.
+It ships **three families of templated, auditable attacks** — `instruction` (text
+reframings), `visual` (observation-space markers), and `injection` (indirect / embodied
+prompt injection) — plus a `none` baseline, an ASR **leaderboard**, and a gated adapter for
+real **SmolVLA** policies on the **LIBERO** simulator. These are heuristic perturbations,
+**not** gradient/optimization-based adversarial attacks — see
+[Scope and honest limitations](#scope-and-honest-limitations).
 
 The entire core — abstractions, attacks, scoring, runner, report, CLI, leaderboard —
 runs and is tested on a **plain CPU with no GPU and no model/dataset download**, using a
@@ -31,6 +33,31 @@ LIBERO simulator live behind an optional extra and a `ROBOPWN_INTEGRATION=1` gat
 > ⚠️ This is a **defensive, sim-only** tool for hardening policies via responsible
 > disclosure. It drives no physical robots and ships no real-world-harm payloads.
 > Read **[SAFETY.md](https://github.com/sattyamjjain/vla-redteam/blob/main/SAFETY.md)** before using it.
+
+## Scope and honest limitations
+
+This is an **early, research-grade** harness, built to be reproducible and honest rather than
+to oversell. Before you trust a number, know:
+
+- **Templated attacks, not optimized ones.** The attacks are auditable string/observation
+  templates (instruction reframings, image markers, scene text), **not** gradient- or
+  search-based adversarial methods (GCG/PGD-style). They probe *behavioral* susceptibility,
+  not worst-case robustness. Optimized VLA attacks are an open roadmap item (cf. prior art
+  **BadVLA**, **AttackVLA**).
+- **Only the instruction family transfers (so far).** On real SmolVLA × LIBERO, instruction
+  reframings redirected the policy (roleplay 100%, goal-substitution 60%); the **visual and
+  injection families produced 0% measurable lift** on the real model. Treat those two as
+  stub-validated scaffolding pending stronger perturbations.
+- **One policy, one suite shipped.** The architecture is model-agnostic by design (an adapter
+  interface), but only the **SmolVLA / LeRobot** policy and the **LIBERO** suite are
+  implemented today — generality is intended, not yet demonstrated against a second backend.
+- **One task, uncalibrated predicate.** The headline result is `libero_object/0` with a
+  default, **uncalibrated** keep-out zone, so ASR means "diverted out of the benign
+  envelope," not a calibrated hazard rate. Multi-task + per-task zone calibration is next.
+
+Honesty and reproducibility are the point — see
+[PRIOR_ART.md](https://github.com/sattyamjjain/vla-redteam/blob/main/PRIOR_ART.md) for how
+this sits next to the academic state of the art.
 
 ## Install (CPU core — no GPU, no network)
 

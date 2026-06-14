@@ -202,8 +202,8 @@ def report(
 def _render_leaderboard(leaderboard: Leaderboard) -> None:
     if leaderboard.is_demo:
         _out.print(
-            "[yellow]demo data[/yellow]: stub-policy results only — add real "
-            "SmolVLA/OpenVLA runs for live numbers (see leaderboard/README.md)."
+            "[yellow]demo data[/yellow]: stub-policy results only — add real-model "
+            "(e.g. SmolVLA) runs for live numbers (see leaderboard/README.md)."
         )
     table = Table(title="RoboPwn — ASR leaderboard (policy x suite x family)", title_style="bold")
     table.add_column("rank", justify="right")
