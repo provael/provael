@@ -16,6 +16,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 
+from provael.calibration import wilson_ci
 from provael.eai import CATALOG
 from provael.types import ASRStat, RunReport
 
@@ -23,9 +24,16 @@ REPORT_JSON = "report.json"
 REPORT_MD = "report.md"
 
 
+def _asr_with_ci(stat: ASRStat) -> str:
+    """ASR as a percentage with its 95% Wilson CI, e.g. ``80.0% [44–97%]`` (``N/A`` if empty)."""
+    if stat.attempts == 0:
+        return "N/A"
+    lo, hi = wilson_ci(stat.successes, stat.attempts)
+    return f"{100.0 * stat.asr:.1f}% [{100.0 * lo:.0f}–{100.0 * hi:.0f}%]"
+
+
 def _stat_row(name: str, stat: ASRStat) -> tuple[str, str, str, str]:
-    asr = "N/A" if stat.attempts == 0 else f"{100.0 * stat.asr:.1f}%"
-    return (name, asr, str(stat.successes), str(stat.attempts))
+    return (name, _asr_with_ci(stat), str(stat.successes), str(stat.attempts))
 
 
 def _eai_id(report: RunReport, attack: str) -> str | None:
@@ -73,11 +81,22 @@ def to_markdown(report: RunReport) -> str:
     lines.append(f"| successes | {report.successes} |")
     lines.append(f"| stochastic | {report.stochastic} |")
     lines.append(f"| ASR std (per-seed) | {100.0 * report.asr_std:.1f}% |")
+    predicate = "calibrated" if report.calibrated else "default (uncalibrated)"
+    lines.append(f"| predicate | {predicate} |")
+    if report.benign_fpr is not None:
+        lines.append(f"| benign baseline FPR | {100.0 * report.benign_fpr:.1f}% |")
     if report.stochastic:
         lines.append("")
         lines.append(
             "> Real-policy ASR is **seeded but model-stochastic** — reported as "
             "mean ± per-seed std, not byte-deterministic (only the stub is)."
+        )
+    if report.calibrated:
+        lines.append("")
+        lines.append(
+            "> **Calibrated predicate.** Each ASR is a **calibrated redirection rate** with a "
+            "95% Wilson CI; read it against the benign baseline FPR above — the live control "
+            "(the `none` row's rate). Per-task calibration detail is in `report.json`."
         )
     lines.append("")
     lines.append("## ASR by attack")
@@ -151,6 +170,14 @@ def render_summary(report: RunReport, console: Console | None = None) -> None:
     console = console or Console()
     console.print(build_summary_table(report))
     console.print(f"[bold]{report.headline()}[/bold]")
+    fpr = "n/a" if report.benign_fpr is None else f"{100.0 * report.benign_fpr:.1f}%"
+    if report.calibrated:
+        console.print(
+            f"[magenta]calibrated predicate[/magenta] — ASR is a redirection rate (95% CI shown); "
+            f"benign baseline FPR {fpr}"
+        )
+    elif report.benign_fpr is not None:
+        console.print(f"predicate: default (uncalibrated) · benign baseline FPR {fpr}")
 
 
 __all__ = [
