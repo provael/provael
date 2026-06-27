@@ -32,6 +32,7 @@ from provael.attacks.registry import (
     available_families,
     make_attack,
 )
+from provael.calibration import calibrate_suite, load_calibrations, save_calibration
 from provael.config import RunConfig
 from provael.leaderboard import Leaderboard, build_leaderboard
 from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
@@ -157,6 +158,10 @@ def attack(
         Path | None,
         typer.Option("--sarif-out", help="Write a SARIF 2.1.0 file to this path (implies SARIF)."),
     ] = None,
+    calib: Annotated[
+        Path | None,
+        typer.Option("--calib", help="Dir of calibration artifacts (from `provael calibrate`)."),
+    ] = None,
 ) -> None:
     """Run a red-team evaluation and write report.json + report.md."""
     rename: dict[str, str] | None = None
@@ -183,9 +188,18 @@ def attack(
         _fail(f"invalid configuration: {exc.errors()[0]['msg']}")
         return
 
+    calibrations = None
+    if calib is not None:
+        calibrations = load_calibrations(calib, config.policy, config.suite)
+        if not calibrations:
+            _err.print(
+                f"[yellow]note:[/yellow] no calibration artifacts for "
+                f"{config.policy}/{config.suite} in {calib}; using the default predicate."
+            )
+
     started = time.perf_counter()
     try:
-        report = run(config)
+        report = run(config, calibrations)
     except (MissingLeRobotError, IncompatiblePolicyError) as exc:
         _fail(str(exc))
         return
@@ -236,6 +250,74 @@ def report(
             print(to_sarif_json(loaded))  # machine-readable SARIF to stdout
         return
     render_summary(loaded, _out)
+
+
+@app.command()
+def calibrate(
+    policy: Annotated[str, typer.Option(help="Registered policy name.")] = "stub",
+    suite: Annotated[str, typer.Option(help="Registered suite name.")] = "stub",
+    tasks: Annotated[
+        str | None, typer.Option(help="Comma-separated task subset (default: all).")
+    ] = None,
+    seeds: Annotated[
+        int, typer.Option(min=2, help="Number of benign rollouts (split into fit/holdout).")
+    ] = 20,
+    seed: Annotated[int, typer.Option(min=0, help="Base seed; rollout i uses seed + i.")] = 0,
+    horizon: Annotated[int, typer.Option(min=1, help="Max timesteps per benign rollout.")] = 8,
+    target_fpr: Annotated[
+        float,
+        typer.Option("--target-fpr", min=0.0, max=1.0, help="Max benign FPR on the holdout split."),
+    ] = 0.05,
+    model: Annotated[
+        str | None, typer.Option(help="Checkpoint override (real policies).")
+    ] = None,
+    out: Annotated[
+        Path, typer.Option(help="Output directory for calibration artifacts.")
+    ] = Path("calib"),
+) -> None:
+    """Calibrate the per-task unsafe predicate from benign rollouts (writes calib artifacts)."""
+    seed_list = list(range(seed, seed + seeds))
+    try:
+        calibrations = calibrate_suite(
+            policy, suite, _split_csv(tasks), seed_list,
+            target_fpr=target_fpr, horizon=horizon, tool_version=__version__, model=model,
+        )
+    except (MissingLeRobotError, IncompatiblePolicyError) as exc:
+        _fail(str(exc))
+        return
+    except KeyError as exc:
+        _fail(str(exc).strip('"'))
+        return
+    except (NotImplementedError, ValueError) as exc:
+        _fail(str(exc))
+        return
+
+    table = Table(title="Provael — calibration", title_style="bold")
+    table.add_column("task", style="cyan", no_wrap=True)
+    table.add_column("predicate", style="magenta")
+    table.add_column("n benign", justify="right")
+    table.add_column("target FPR", justify="right")
+    table.add_column("benign FPR", justify="right", style="bold")
+    table.add_column("boundary")
+    written: list[Path] = []
+    for task, cal in calibrations.items():
+        boundary = (
+            f"danger > {cal.threshold:.3f}"
+            if cal.kind == "scalar"
+            else f"{len(cal.keep_out_zones)} keep-out zone(s)"
+        )
+        table.add_row(
+            task, cal.kind, str(cal.n_benign),
+            f"{100.0 * cal.target_fpr:.1f}%", f"{100.0 * cal.benign_fpr:.1f}%", boundary,
+        )
+        written.append(save_calibration(cal, out))
+    _out.print(table)
+    for path in written:
+        _out.print(f"Wrote [cyan]{path}[/cyan]")
+    _out.print(
+        f"\nApply it: [bold]provael attack --policy {policy} --suite {suite} "
+        f"--calib {out}[/bold]"
+    )
 
 
 def _render_leaderboard(leaderboard: Leaderboard) -> None:
