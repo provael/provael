@@ -20,13 +20,14 @@ from __future__ import annotations
 from provael import __version__
 from provael.attacks.base import Attack
 from provael.attacks.registry import resolve_attacks
+from provael.calibration import Calibration
 from provael.config import RunConfig
 from provael.policies.base import PolicyAdapter
 from provael.policies.registry import make_policy
 from provael.scoring.asr import asr_std, by_attack, by_task, overall_stat
 from provael.suites import make_suite
 from provael.suites.base import SuiteAdapter
-from provael.types import AttackResult, Decision, EaiTag, RunReport
+from provael.types import AttackResult, CalibrationMeta, Decision, EaiTag, RunReport
 
 
 def run_episode(
@@ -105,10 +106,17 @@ def run_episode(
     )
 
 
-def run(config: RunConfig) -> RunReport:
-    """Execute a full red-team run described by ``config`` and return a report."""
+def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -> RunReport:
+    """Execute a full red-team run described by ``config`` and return a report.
+
+    If ``calibrations`` (task -> :class:`~provael.calibration.Calibration`) is given, the
+    suite uses the calibrated predicate for those tasks; otherwise the default predicate is
+    used, so existing runs are unchanged.
+    """
     policy = make_policy(config.policy, model=config.model, rename_map=config.rename_map)
     suite = make_suite(config.suite)
+    if calibrations:
+        suite.set_calibration(calibrations)
 
     # Exchange env features once (no-op for the stub: features() returns None).
     features = suite.features()
@@ -128,6 +136,24 @@ def run(config: RunConfig) -> RunReport:
                 results.append(run_episode(policy, suite, attack, task, seed, config.horizon))
 
     overall = overall_stat(results)
+    attack_breakdown = by_attack(results)
+
+    calibration_meta: dict[str, CalibrationMeta] = {}
+    if calibrations:
+        for task in tasks:
+            cal = calibrations.get(task)
+            if cal is not None:
+                calibration_meta[task] = CalibrationMeta(
+                    predicate="calibrated",
+                    kind=cal.kind,
+                    target_fpr=cal.target_fpr,
+                    holdout_fpr=cal.benign_fpr,
+                    n_benign=cal.n_benign,
+                )
+    # The benign baseline's rate under the predicate actually used IS the live benign FPR.
+    baseline = attack_breakdown.get("none")
+    benign_fpr = baseline.asr if baseline is not None else None
+
     return RunReport(
         tool_version=__version__,
         policy=config.policy,
@@ -142,7 +168,10 @@ def run(config: RunConfig) -> RunReport:
         asr=overall.asr,
         asr_std=asr_std(results),
         stochastic=policy.stochastic,
-        by_attack=by_attack(results),
+        calibrated=bool(calibration_meta),
+        benign_fpr=benign_fpr,
+        calibration=calibration_meta,
+        by_attack=attack_breakdown,
         by_task=by_task(results),
         eai={
             a.name: EaiTag(id=a.eai_id, name=a.eai_name)

@@ -105,6 +105,18 @@ class EaiTag(BaseModel):
     name: str = Field(..., description="Human-readable risk name.")
 
 
+class CalibrationMeta(BaseModel):
+    """Which unsafe predicate a task used, and the benign FPR the calibration achieved."""
+
+    predicate: str = Field(..., description="'calibrated' or 'default'.")
+    kind: str | None = Field(None, description="'scalar' or 'spatial' for a calibrated predicate.")
+    target_fpr: float | None = Field(None, description="The benign-FPR target the fit aimed for.")
+    holdout_fpr: float | None = Field(
+        None, description="Benign FPR achieved on the calibration holdout split."
+    )
+    n_benign: int | None = Field(None, description="Benign rollouts used to calibrate.")
+
+
 class RunReport(BaseModel):
     """The full, deterministic result of a red-team run."""
 
@@ -123,6 +135,18 @@ class RunReport(BaseModel):
     asr_std: float = Field(0.0, description="Std-dev of per-seed ASR (seed/model spread).")
     stochastic: bool = Field(
         False, description="True for real (model-stochastic) policies; the stub is deterministic."
+    )
+
+    calibrated: bool = Field(
+        False, description="True if a calibrated predicate was used for at least one task."
+    )
+    benign_fpr: float | None = Field(
+        None,
+        description="Benign-baseline redirection rate in THIS run (the 'none' attack's rate "
+        "under the predicate used) — the live control for the ASR. None if no baseline ran.",
+    )
+    calibration: dict[str, CalibrationMeta] = Field(
+        default_factory=dict, description="Per-task calibration metadata (calibrated tasks only)."
     )
 
     by_attack: dict[str, ASRStat] = Field(default_factory=dict)
