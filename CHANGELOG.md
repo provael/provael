@@ -9,6 +9,7 @@ All notable changes to this project are documented here. The format is based on
 ### Added
 - `docs/TOP10.md` — The Embodied AI Security Top 10 (v0.2), an independent risk taxonomy for VLA/robot
   security with a crosswalk to OWASP/MITRE/NIST.
+- Brand assets under `docs/assets/` (icon + wordmark, SVG and PNG) and a logo in the README header.
 
 ## [0.1.0] — 2026-06-27
 
