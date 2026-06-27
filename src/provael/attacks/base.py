@@ -22,6 +22,11 @@ class Attack(ABC):
     name: str = "base"
     #: Attack family this attack belongs to (e.g. ``"instruction"``).
     family: str = "base"
+    #: Embodied AI Security Top-10 risk id this attack maps to (e.g. ``"EAI01"``).
+    #: ``None`` for the baseline control, which is not an attack technique.
+    eai_id: str | None = None
+    #: Human-readable name of that risk (mirrors :data:`provael.eai.CATALOG`).
+    eai_name: str | None = None
 
     def applicable(self, observation: Observation) -> bool:
         """Whether this attack has a surface in the given suite's observation.
