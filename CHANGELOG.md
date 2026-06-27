@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `docs/TOP10.md` — The Embodied AI Security Top 10 (v0.2), an independent risk taxonomy for VLA/robot
+  security with a crosswalk to OWASP/MITRE/NIST.
+
 ## [0.1.0] — 2026-06-27
 
 Initial **Provael** release. Provael is the open-source red-team & assurance layer for
