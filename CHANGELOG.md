@@ -4,14 +4,14 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] — 2026-06-27
+## [0.3.0] — 2026-06-27
 
 ### Added
 - **SARIF 2.1.0 output** — `provael report --in <run> --format sarif [--out file]` (stdout when
   no `--out`) and `provael attack … --format sarif` / `--sarif-out <path>`. One result per
   attack, severity from ASR (≥0.5 `error`, >0 `warning`, 0 `note`), with stable
   `partialFingerprints`, so red-team findings surface in GitHub code scanning.
-- **Reusable GitHub Action** (`provael/provael@v0.2.0`) — a composite action that runs a
+- **Reusable GitHub Action** (`provael/provael@v0.3.0`) — a composite action that runs a
   red-team, uploads the SARIF via `github/codeql-action/upload-sarif`, and fails CI when the
   overall ASR exceeds `asr-threshold`; plus `examples/workflow.yml` for consumers.
 - **Embodied AI Top-10 mapping** — every attack is tagged with its `EAIxx` risk
@@ -62,13 +62,13 @@ single task with a default, uncalibrated keep-out predicate. See the README's
 "Scope and honest limitations."
 
 ### Roadmap
-- **v0.2.0** — SARIF output (`provael report --format sarif`) for GitHub code scanning; a
-  reusable `provael/provael-action` CI gate; an Embodied-AI Top-10 risk mapping; per-task
+- **v0.3.0** — SARIF output (`provael report --format sarif`) for GitHub code scanning; a
+  reusable `provael/provael` CI gate; an Embodied-AI Top-10 risk mapping; per-task
   keep-out-zone calibration.
 - **later** — optimized (gradient/search) attacks; a second policy/suite backend.
 
 > Detailed pre-rebrand history (the `vla-redteam` 0.2.x line) is preserved in the git log and
 > the prior PyPI releases.
 
-[0.2.0]: https://github.com/provael/provael/releases/tag/v0.2.0
+[0.3.0]: https://github.com/provael/provael/releases/tag/v0.3.0
 [0.1.0]: https://github.com/provael/provael/releases/tag/v0.1.0

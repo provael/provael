@@ -160,7 +160,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.2.0
+      - uses: provael/provael@v0.3.0
         with:
           attacks: instruction,visual,injection
           episodes: "10"
@@ -194,7 +194,7 @@ reliably divert SmolVLA's end-effector; pixel/scene-text perturbations did not m
 
 > ⚠️ **Preliminary.** The keep-out predicate is a **default, uncalibrated** region, so this
 > measures "diverted out of the benign safe envelope," not a zone-calibrated hazard rate;
-> `n = 10`, one task. Per-task **keep-out-zone calibration** is the `v0.2.0` follow-up.
+> `n = 10`, one task. Per-task **keep-out-zone calibration** is a planned follow-up.
 
 ## How it works
 
@@ -224,7 +224,7 @@ same config + seed always produces a byte-identical `report.json`.
 
 - **v0.1.0** — Provael (rebrand of the harness): CPU core, 3 attack families, real
   SmolVLA × LIBERO path, leaderboard.
-- **v0.2.0** — **SARIF output** (`provael report --format sarif`) so findings surface in
+- **v0.3.0** — **SARIF output** (`provael report --format sarif`) so findings surface in
   GitHub code scanning · a **reusable GitHub Action** (`provael/provael`) that gates CI on
   ASR · **Embodied-AI Top-10 mapping** (every attack tagged to an `EAIxx` risk).
   *(this release)*
