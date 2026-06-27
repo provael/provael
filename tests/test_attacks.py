@@ -4,18 +4,18 @@ from __future__ import annotations
 
 import pytest
 
-from vla_redteam.attacks.instruction import (
+from provael.attacks.instruction import (
     GoalSubstitutionAttack,
     ParaphraseAttack,
     RolePlayAttack,
 )
-from vla_redteam.attacks.registry import (
+from provael.attacks.registry import (
     available_attacks,
     available_families,
     make_attack,
     resolve_attacks,
 )
-from vla_redteam.policies.stub import aggression_of
+from provael.policies.stub import aggression_of
 
 BASE = "reach for the cup on the table"
 

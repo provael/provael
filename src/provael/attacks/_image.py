@@ -5,7 +5,7 @@ synthetic images. Each function takes and returns an ``(H, W, 3)`` uint8 array a
 never mutates its input.
 
 These operate on the actual camera image a real VLA policy consumes (when a suite
-exposes one at :data:`vla_redteam.types.IMAGE_KEY`). The stub suite has no such image,
+exposes one at :data:`provael.types.IMAGE_KEY`). The stub suite has no such image,
 so these are not exercised on the deterministic stub path.
 """
 
@@ -17,7 +17,7 @@ import numpy as np
 import numpy.typing as npt
 from PIL import Image, ImageDraw
 
-from vla_redteam.types import IMAGE_KEY, Observation
+from provael.types import IMAGE_KEY, Observation
 
 Uint8Image = npt.NDArray[np.uint8]
 

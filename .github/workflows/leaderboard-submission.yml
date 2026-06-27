@@ -25,4 +25,4 @@ jobs:
       - name: Validate submitted report(s)
         run: uv run python scripts/validate_submission.py 'results/*'
       - name: Leaderboard builds cleanly
-        run: uv run robopwn leaderboard build --runs 'results/*' --out "${RUNNER_TEMP}/lb"
+        run: uv run provael leaderboard build --runs 'results/*' --out "${RUNNER_TEMP}/lb"

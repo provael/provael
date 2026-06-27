@@ -18,11 +18,11 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from vla_redteam.attacks.registry import make_attack
-from vla_redteam.policies.stub import ATTACKABLE_OBS_FIELDS
-from vla_redteam.report import REPORT_JSON, load_report
-from vla_redteam.suites.stub import BASE_INSTRUCTION, StubSuite
-from vla_redteam.types import RunReport
+from provael.attacks.registry import make_attack
+from provael.policies.stub import ATTACKABLE_OBS_FIELDS
+from provael.report import REPORT_JSON, load_report
+from provael.suites.stub import BASE_INSTRUCTION, StubSuite
+from provael.types import RunReport
 
 LEADERBOARD_JSON = "leaderboard.json"
 

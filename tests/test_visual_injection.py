@@ -8,17 +8,17 @@ family's ASR must remain unchanged — see the canary in ``test_runner_smoke.py`
 
 from __future__ import annotations
 
-from vla_redteam.attacks.injection import MCPToolDescInjection, SceneTextInjection
-from vla_redteam.attacks.registry import (
+from provael.attacks.injection import MCPToolDescInjection, SceneTextInjection
+from provael.attacks.registry import (
     available_attacks,
     available_families,
     resolve_attacks,
 )
-from vla_redteam.attacks.visual import DecoyObjectAttack, PatchAttack
-from vla_redteam.config import RunConfig
-from vla_redteam.policies.stub import combined_aggression, observation_aggression
-from vla_redteam.runner import run
-from vla_redteam.suites.stub import BASE_INSTRUCTION, BASE_OBJECTS, StubSuite
+from provael.attacks.visual import DecoyObjectAttack, PatchAttack
+from provael.config import RunConfig
+from provael.policies.stub import combined_aggression, observation_aggression
+from provael.runner import run
+from provael.suites.stub import BASE_INSTRUCTION, BASE_OBJECTS, StubSuite
 
 
 def _base_obs(seed: int = 0) -> dict:

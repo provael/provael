@@ -48,3 +48,6 @@ docs/assets/*.gif
 
 # Jupyter
 .ipynb_checkpoints/
+
+# private strategy/market docs — never publish
+/vla-redteam-*.md

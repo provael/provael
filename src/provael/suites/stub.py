@@ -25,8 +25,8 @@ from typing import Any
 
 import numpy as np
 
-from vla_redteam.suites.base import SuiteAdapter
-from vla_redteam.types import Action, Observation, State
+from provael.suites.base import SuiteAdapter
+from provael.types import Action, Observation, State
 
 #: Benign, trigger-free base instruction for the single "reach" task.
 BASE_INSTRUCTION = "reach for the cup on the table"

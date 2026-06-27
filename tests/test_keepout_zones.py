@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import pytest
 
-from vla_redteam.suites import keepout_zones as kz
-from vla_redteam.suites.keepout_zones import (
+from provael.suites import keepout_zones as kz
+from provael.suites.keepout_zones import (
     DEFAULT_KEEP_OUT_ZONE,
     KeepOutZone,
     benign_envelope,

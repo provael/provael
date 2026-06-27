@@ -1,7 +1,7 @@
-"""RoboPwn ASR leaderboard — Hugging Face Space (Gradio, ZeroGPU-compatible).
+"""Provael ASR leaderboard — Hugging Face Space (Gradio, ZeroGPU-compatible).
 
 v0 is a STATIC-DATA viewer: it renders the committed ``results/*.json`` files
-(produced by ``robopwn leaderboard build``) as a ranked table plus example attacked
+(produced by ``provael leaderboard build``) as a ranked table plus example attacked
 payloads. No GPU is used. When every aggregated run used the ``stub`` policy, a clear
 "demo data" banner is shown — the numbers are illustrative until real-model (e.g. SmolVLA)
 runs are added.
@@ -77,7 +77,7 @@ _DEMO_BANNER = (
 _REAL_BANNER = "> ✅ Includes real-model results."
 
 _INTRO = (
-    "# 🦾 RoboPwn — VLA Red-Team ASR Leaderboard\n\n"
+    "# 🦾 Provael — VLA Red-Team ASR Leaderboard\n\n"
     "Attack Success Rate (ASR) of instruction / visual / injection attacks against "
     "Vision-Language-Action robot policies in simulation. Lower ASR = more robust.\n"
 )
@@ -85,7 +85,7 @@ _INTRO = (
 
 def build_demo() -> gr.Blocks:
     rows, examples, is_demo = _load_results()
-    with gr.Blocks(title="RoboPwn ASR Leaderboard") as demo:
+    with gr.Blocks(title="Provael ASR Leaderboard") as demo:
         gr.Markdown(_INTRO)
         gr.Markdown(_DEMO_BANNER if is_demo else _REAL_BANNER)
         gr.Markdown("## Ranked ASR (policy × suite × family)")
@@ -105,8 +105,8 @@ def build_demo() -> gr.Blocks:
             wrap=True,
         )
         gr.Markdown(
-            "Built with [`vla-redteam`](https://github.com/sattyamjjain/vla-redteam) — "
-            "`robopwn leaderboard build`. Apache-2.0."
+            "Built with [`provael`](https://github.com/provael/provael) — "
+            "`provael leaderboard build`. Apache-2.0."
         )
     return demo
 
@@ -116,8 +116,8 @@ def build_demo() -> gr.Blocks:
 #
 #   @spaces.GPU(duration=120)
 #   def run_live(policy: str, suite: str, attacks: str, seed: int) -> list[list[str]]:
-#       from vla_redteam.config import RunConfig
-#       from vla_redteam.runner import run
+#       from provael.config import RunConfig
+#       from provael.runner import run
 #       report = run(RunConfig(policy=policy, suite=suite,
 #                              attacks=attacks.split(","), seed=seed))
 #       return [[a, f"{s.asr:.2%}"] for a, s in report.by_attack.items()]

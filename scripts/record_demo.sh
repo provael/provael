@@ -15,7 +15,7 @@ SVG="docs/assets/demo.svg"
 mkdir -p docs/assets
 
 echo ">> running the demo attack (stub, all 3 families, seed 0)…"
-uv run robopwn attack --policy stub --suite stub \
+uv run provael attack --policy stub --suite stub \
   --attacks instruction,visual,injection --episodes 10 --seed 0 --out "$OUT_DIR" >/dev/null
 
 echo ">> rendering $SVG (Rich, deterministic)…"
@@ -25,7 +25,7 @@ from pathlib import Path
 
 from rich.console import Console
 
-from vla_redteam.report import build_summary_table, load_report
+from provael.report import build_summary_table, load_report
 
 out_dir, svg_path = sys.argv[1], sys.argv[2]
 report = load_report(Path(out_dir))
@@ -36,8 +36,8 @@ console.print(f"[bold]{report.headline()}[/bold]")
 # Fixed unique_id -> stable, reproducible SVG (no random element ids).
 console.save_svg(
     svg_path,
-    title="robopwn attack --attacks instruction,visual,injection",
-    unique_id="robopwn-demo",
+    title="provael attack --attacks instruction,visual,injection",
+    unique_id="provael-demo",
 )
 print(f"wrote {svg_path}")
 PY
@@ -45,9 +45,9 @@ PY
 if command -v asciinema >/dev/null 2>&1 && command -v agg >/dev/null 2>&1; then
   echo ">> asciinema + agg found — also recording docs/assets/demo.gif…"
   asciinema rec --overwrite -c \
-    "uv run robopwn attack --policy stub --suite stub --attacks instruction,visual,injection --episodes 10 --seed 0 --out $OUT_DIR" \
-    /tmp/robopwn-demo.cast
-  agg /tmp/robopwn-demo.cast docs/assets/demo.gif
+    "uv run provael attack --policy stub --suite stub --attacks instruction,visual,injection --episodes 10 --seed 0 --out $OUT_DIR" \
+    /tmp/provael-demo.cast
+  agg /tmp/provael-demo.cast docs/assets/demo.gif
   echo ">> wrote docs/assets/demo.gif"
 fi
 

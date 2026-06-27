@@ -23,15 +23,15 @@ verified per-step path is::
 Setup mirrors eval: ``make_policy(cfg=policy_cfg, env_cfg=env_cfg)`` +
 ``make_pre_post_processors(policy_cfg, pretrained_path, …)`` +
 ``make_env_pre_post_processors(env_cfg, policy_cfg)``. The env config is supplied by the
-suite via :class:`~vla_redteam.types.SuiteFeatures` (``set_features``).
+suite via :class:`~provael.types.SuiteFeatures` (``set_features``).
 
 NOTE: real-policy inference is **model-stochastic**; reports for it are seeded but NOT
 byte-deterministic (only the stub is). See SAFETY.md / README.
 
 Enable the real path on a GPU box::
 
-    pip install 'vla-redteam[lerobot]' 'lerobot[libero]==0.5.1'
-    ROBOPWN_INTEGRATION=1 pytest tests/test_lerobot_adapter.py tests/test_libero_adapter.py -q
+    pip install 'provael[lerobot]' 'lerobot[libero]==0.5.1'
+    PROVAEL_INTEGRATION=1 pytest tests/test_lerobot_adapter.py tests/test_libero_adapter.py -q
 """
 
 from __future__ import annotations
@@ -41,17 +41,17 @@ from typing import Any
 
 import numpy as np
 
-from vla_redteam.policies.base import PolicyAdapter
-from vla_redteam.types import Action, Observation, SuiteFeatures
+from provael.policies.base import PolicyAdapter
+from provael.types import Action, Observation, SuiteFeatures
 
 _INSTALL_HINT = (
     "The '{name}' policy requires the optional LeRobot dependency, which is not "
     "installed.\n"
-    "  1. Install the extra:  pip install 'vla-redteam[lerobot]'\n"
+    "  1. Install the extra:  pip install 'provael[lerobot]'\n"
     "     (pulls lerobot[smolvla]==0.5.1; needs Python >=3.12 and a GPU machine.)\n"
     "  2. For the LIBERO simulator, also install LeRobot's LIBERO extra:\n"
     "       pip install 'lerobot[libero]==0.5.1'\n"
-    "  3. Enable the gated integration path:  ROBOPWN_INTEGRATION=1\n"
+    "  3. Enable the gated integration path:  PROVAEL_INTEGRATION=1\n"
     "Run on CPU with '--policy stub' to exercise the full pipeline with no model."
 )
 

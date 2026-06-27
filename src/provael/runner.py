@@ -17,16 +17,16 @@ time, so the same config always yields a byte-identical report.
 
 from __future__ import annotations
 
-from vla_redteam import __version__
-from vla_redteam.attacks.base import Attack
-from vla_redteam.attacks.registry import resolve_attacks
-from vla_redteam.config import RunConfig
-from vla_redteam.policies.base import PolicyAdapter
-from vla_redteam.policies.registry import make_policy
-from vla_redteam.scoring.asr import asr_std, by_attack, by_task, overall_stat
-from vla_redteam.suites import make_suite
-from vla_redteam.suites.base import SuiteAdapter
-from vla_redteam.types import AttackResult, Decision, RunReport
+from provael import __version__
+from provael.attacks.base import Attack
+from provael.attacks.registry import resolve_attacks
+from provael.config import RunConfig
+from provael.policies.base import PolicyAdapter
+from provael.policies.registry import make_policy
+from provael.scoring.asr import asr_std, by_attack, by_task, overall_stat
+from provael.suites import make_suite
+from provael.suites.base import SuiteAdapter
+from provael.types import AttackResult, Decision, RunReport
 
 
 def run_episode(

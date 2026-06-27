@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from vla_redteam.config import RunConfig
-from vla_redteam.leaderboard import validate_report
-from vla_redteam.runner import run
+from provael.config import RunConfig
+from provael.leaderboard import validate_report
+from provael.runner import run
 
 
 def _valid_report():

@@ -12,7 +12,7 @@ from __future__ import annotations
 import statistics
 from collections.abc import Callable
 
-from vla_redteam.types import ASRStat, AttackResult
+from provael.types import ASRStat, AttackResult
 
 
 def _applicable(results: list[AttackResult]) -> list[AttackResult]:

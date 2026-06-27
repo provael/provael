@@ -1,5 +1,5 @@
-# Hugging Face Space (Gradio) dependencies for the RoboPwn ASR leaderboard (v0).
-# v0 renders committed results/*.json — no GPU, no model, no vla-redteam install needed.
+# Hugging Face Space (Gradio) dependencies for the Provael ASR leaderboard (v0).
+# v0 renders committed results/*.json — no GPU, no model, no provael install needed.
 # gradio is also provided by the Space SDK (sdk_version in README.md); the floor here keeps
 # a local `python app.py` aligned. Verified: app.py builds on gradio 6.16.0.
 gradio>=5

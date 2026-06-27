@@ -4,7 +4,7 @@
 committed for auditability. Rebuild the leaderboard from it with:
 
 ```bash
-robopwn leaderboard build --runs results/smolvla_libero_object --out leaderboard/results
+provael leaderboard build --runs results/smolvla_libero_object --out leaderboard/results
 ```
 
 | field | value |

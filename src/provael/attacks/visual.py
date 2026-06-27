@@ -18,10 +18,10 @@ patches are deferred (see CHANGELOG).
 
 from __future__ import annotations
 
-from vla_redteam.attacks._image import image_of, overlay_patch
-from vla_redteam.attacks._payload import append_channel
-from vla_redteam.attacks.base import Attack
-from vla_redteam.types import IMAGE_KEY, Observation
+from provael.attacks._image import image_of, overlay_patch
+from provael.attacks._payload import append_channel
+from provael.attacks.base import Attack
+from provael.types import IMAGE_KEY, Observation
 
 FAMILY = "visual"
 

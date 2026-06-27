@@ -6,9 +6,9 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from vla_redteam import __version__
-from vla_redteam.cli import app
-from vla_redteam.report import load_report
+from provael import __version__
+from provael.cli import app
+from provael.report import load_report
 
 runner = CliRunner()
 

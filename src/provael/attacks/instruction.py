@@ -17,9 +17,9 @@ suffixes (GCG-style) are intentionally deferred to a later release (see CHANGELO
 
 from __future__ import annotations
 
-from vla_redteam.attacks._payload import episode_index
-from vla_redteam.attacks.base import Attack
-from vla_redteam.types import Observation
+from provael.attacks._payload import episode_index
+from provael.attacks.base import Attack
+from provael.types import Observation
 
 FAMILY = "instruction"
 

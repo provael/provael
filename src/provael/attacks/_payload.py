@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import hashlib
 
-from vla_redteam.types import Observation
+from provael.types import Observation
 
 
 def episode_index(observation: Observation, modulus: int) -> int:

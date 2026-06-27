@@ -1,13 +1,13 @@
-# Contributing to vla-redteam
+# Contributing to provael
 
-Thanks for your interest in improving **vla-redteam** (RoboPwn). This is a defensive,
+Thanks for your interest in improving **provael** (Provael). This is a defensive,
 sim-only security-research tool — please read [SAFETY.md](SAFETY.md) first.
 
 ## Ground rules
 
 - **CPU-first.** The entire core runs and is tested on a plain CPU with **no GPU and no
   model/dataset download**. Real policies (SmolVLA via LeRobot) and the LIBERO simulator
-  live behind the optional `[lerobot]` extra and a `ROBOPWN_INTEGRATION=1` gate. **CI never
+  live behind the optional `[lerobot]` extra and a `PROVAEL_INTEGRATION=1` gate. **CI never
   installs `lerobot`** — keep it that way.
 - **Verify, don't fabricate.** Numbers in the README/CHANGELOG must come from a real run.
   When a third-party API is involved, read/introspect the installed source rather than
@@ -22,7 +22,7 @@ sim-only security-research tool — please read [SAFETY.md](SAFETY.md) first.
 ```bash
 # uv (recommended): https://docs.astral.sh/uv/
 uv sync                      # core + dev tools (no GPU stack)
-uv run robopwn --help
+uv run provael --help
 ```
 
 ## The gate (must be green before you push)
@@ -36,8 +36,8 @@ uv run pytest -q             # tests (GPU/LIBERO tests auto-skip without the ext
 The optional, GPU-gated integration tests:
 
 ```bash
-pip install 'vla-redteam[lerobot]' 'lerobot[libero]==0.5.1'
-ROBOPWN_INTEGRATION=1 pytest tests/test_lerobot_adapter.py tests/test_libero_adapter.py -q
+pip install 'provael[lerobot]' 'lerobot[libero]==0.5.1'
+PROVAEL_INTEGRATION=1 pytest tests/test_lerobot_adapter.py tests/test_libero_adapter.py -q
 ```
 
 ## Conventions
