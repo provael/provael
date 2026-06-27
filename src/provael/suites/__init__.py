@@ -10,14 +10,14 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from vla_redteam.suites.base import SuiteAdapter
-from vla_redteam.suites.stub import StubSuite
+from provael.suites.base import SuiteAdapter
+from provael.suites.stub import StubSuite
 
 
 def _make_libero() -> SuiteAdapter:
     # Imported here (not at module top) only for symmetry; the adapter module itself
     # imports no optional deps at module scope, so this stays CPU-safe either way.
-    from vla_redteam.suites.libero import LiberoSuiteAdapter
+    from provael.suites.libero import LiberoSuiteAdapter
 
     return LiberoSuiteAdapter()
 

@@ -11,32 +11,32 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from vla_redteam.attacks.base import Attack
-from vla_redteam.attacks.baseline import (
+from provael.attacks.base import Attack
+from provael.attacks.baseline import (
     FAMILY as BASELINE_FAMILY,
 )
-from vla_redteam.attacks.baseline import (
+from provael.attacks.baseline import (
     NoOpAttack,
 )
-from vla_redteam.attacks.injection import (
+from provael.attacks.injection import (
     FAMILY as INJECTION_FAMILY,
 )
-from vla_redteam.attacks.injection import (
+from provael.attacks.injection import (
     MCPToolDescInjection,
     SceneTextInjection,
 )
-from vla_redteam.attacks.instruction import (
+from provael.attacks.instruction import (
     FAMILY as INSTRUCTION_FAMILY,
 )
-from vla_redteam.attacks.instruction import (
+from provael.attacks.instruction import (
     GoalSubstitutionAttack,
     ParaphraseAttack,
     RolePlayAttack,
 )
-from vla_redteam.attacks.visual import (
+from provael.attacks.visual import (
     FAMILY as VISUAL_FAMILY,
 )
-from vla_redteam.attacks.visual import (
+from provael.attacks.visual import (
     DecoyObjectAttack,
     PatchAttack,
 )

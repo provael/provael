@@ -8,9 +8,9 @@ name: Release
 # ONE-TIME MAINTAINER SETUP (PyPI trusted publisher — no secrets in the repo):
 #   1. Create the project owner account on https://pypi.org.
 #   2. PyPI → your account → "Publishing" → "Add a new pending publisher":
-#        PyPI project name : vla-redteam
-#        Owner             : sattyamjjain
-#        Repository name   : vla-redteam
+#        PyPI project name : provael
+#        Owner             : provael
+#        Repository name   : provael
 #        Workflow name     : release.yml
 #        Environment name  : pypi
 #   3. In GitHub → repo Settings → Environments → create an environment named "pypi"

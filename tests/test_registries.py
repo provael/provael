@@ -5,13 +5,13 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from vla_redteam.config import RunConfig
-from vla_redteam.policies.registry import (
+from provael.config import RunConfig
+from provael.policies.registry import (
     available_policies,
     make_policy,
     policy_is_ready,
 )
-from vla_redteam.suites import available_suites, make_suite, suite_is_ready
+from provael.suites import available_suites, make_suite, suite_is_ready
 
 
 def test_suite_factory() -> None:

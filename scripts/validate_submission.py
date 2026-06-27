@@ -4,7 +4,7 @@
 Run by CI on PRs that touch `results/**`, and locally before you submit. Checks every
 `report.json` under the given globs (default `results/*`): that it parses as a RunReport and
 that its aggregate ASR / success counts are internally consistent (see
-`vla_redteam.leaderboard.validate_report`). Exits non-zero if any report is missing/invalid.
+`provael.leaderboard.validate_report`). Exits non-zero if any report is missing/invalid.
 
 Usage:
     python scripts/validate_submission.py            # checks results/*
@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import sys
 
-from vla_redteam.leaderboard import find_reports, validate_report
-from vla_redteam.report import load_report
+from provael.leaderboard import find_reports, validate_report
+from provael.report import load_report
 
 
 def main(argv: list[str]) -> int:

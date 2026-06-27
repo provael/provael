@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from vla_redteam.scoring.asr import (
+from provael.scoring.asr import (
     attack_success_rate,
     breakdown,
     by_attack,
     by_task,
     overall_stat,
 )
-from vla_redteam.types import AttackResult
+from provael.types import AttackResult
 
 
 def _result(success: bool, attack: str = "roleplay", task: str = "reach", seed: int = 0) -> AttackResult:

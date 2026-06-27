@@ -1,4 +1,4 @@
-"""``robopwn`` command-line interface.
+"""``provael`` command-line interface.
 
 Commands:
   * ``attack``         — run a red-team evaluation and write a report.
@@ -25,26 +25,26 @@ from rich.console import Console
 from rich.markup import escape
 from rich.table import Table
 
-from vla_redteam import __version__
-from vla_redteam.attacks.registry import (
+from provael import __version__
+from provael.attacks.registry import (
     available_attacks,
     available_families,
     make_attack,
 )
-from vla_redteam.config import RunConfig
-from vla_redteam.leaderboard import Leaderboard, build_leaderboard
-from vla_redteam.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
-from vla_redteam.policies.registry import (
+from provael.config import RunConfig
+from provael.leaderboard import Leaderboard, build_leaderboard
+from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
+from provael.policies.registry import (
     REQUIRES_LEROBOT,
     available_policies,
     policy_is_ready,
 )
-from vla_redteam.report import load_report, render_summary, write_report
-from vla_redteam.runner import run
+from provael.report import load_report, render_summary, write_report
+from provael.runner import run
 
 app = typer.Typer(
-    name="robopwn",
-    help="RoboPwn — red-team open Vision-Language-Action (VLA) robot policies in simulation.",
+    name="provael",
+    help="Provael — red-team open Vision-Language-Action (VLA) robot policies in simulation.",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -79,8 +79,8 @@ def _split_csv(value: str | None) -> list[str] | None:
 
 @app.command()
 def version() -> None:
-    """Print the RoboPwn / vla-redteam version."""
-    _out.print(f"robopwn (vla-redteam) {__version__}")
+    """Print the Provael / provael version."""
+    _out.print(f"provael (provael) {__version__}")
 
 
 @app.command("list-policies")
@@ -94,7 +94,7 @@ def list_policies() -> None:
         ready = policy_is_ready(name)
         mark = "[green]yes[/green]" if ready else "[yellow]no[/yellow]"
         note = (
-            escape("requires `vla-redteam[lerobot]` (GPU)")
+            escape("requires `provael[lerobot]` (GPU)")
             if name in REQUIRES_LEROBOT
             else "CPU, no deps"
         )
@@ -194,7 +194,7 @@ def report(
         _fail(str(exc))
         return
     except ValidationError:
-        _fail(f"{in_dir} does not contain a valid RoboPwn report.json")
+        _fail(f"{in_dir} does not contain a valid Provael report.json")
         return
     render_summary(loaded, _out)
 
@@ -205,7 +205,7 @@ def _render_leaderboard(leaderboard: Leaderboard) -> None:
             "[yellow]demo data[/yellow]: stub-policy results only — add real-model "
             "(e.g. SmolVLA) runs for live numbers (see leaderboard/README.md)."
         )
-    table = Table(title="RoboPwn — ASR leaderboard (policy x suite x family)", title_style="bold")
+    table = Table(title="Provael — ASR leaderboard (policy x suite x family)", title_style="bold")
     table.add_column("rank", justify="right")
     table.add_column("policy", style="cyan", no_wrap=True)
     table.add_column("suite", style="magenta")

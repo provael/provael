@@ -1,5 +1,5 @@
 ---
-title: RoboPwn ASR Leaderboard
+title: Provael ASR Leaderboard
 emoji: 🦾
 colorFrom: red
 colorTo: indigo
@@ -10,11 +10,11 @@ pinned: false
 license: apache-2.0
 ---
 
-# RoboPwn — VLA Red-Team ASR Leaderboard
+# Provael — VLA Red-Team ASR Leaderboard
 
 Attack Success Rate (ASR) of instruction / visual / injection attacks against
 Vision-Language-Action (VLA) robot policies in simulation, built with
-[`vla-redteam`](https://github.com/sattyamjjain/vla-redteam). Lower ASR = more robust.
+[`provael`](https://github.com/provael/provael). Lower ASR = more robust.
 
 > ✅ **Real data.** `results/leaderboard.json` holds the first real SmolVLA-on-LIBERO
 > result (`HuggingFaceVLA/smolvla_libero`, `libero_object/0`, 10 seeds): overall
@@ -43,21 +43,21 @@ On Hugging Face: this folder is a Gradio Space. v0 renders the committed
 
 ```bash
 # CPU demo (stub policy) — an example; no GPU/model needed:
-robopwn attack --policy stub --suite stub \
+provael attack --policy stub --suite stub \
     --attacks instruction,visual,injection --episodes 10 --seed 0 --out runs/demo
-robopwn leaderboard build --runs runs/demo --out leaderboard/results   # writes leaderboard.json
+provael leaderboard build --runs runs/demo --out leaderboard/results   # writes leaderboard.json
 ```
 
 ### Real numbers (GPU box) — what's committed here
 
 ```bash
-pip install 'vla-redteam[lerobot]' 'lerobot[libero]==0.5.1'
+pip install 'provael[lerobot]' 'lerobot[libero]==0.5.1'
 apt-get install -y libosmesa6 libgl1 libglx-mesa0       # headless GL (cloud images ship none)
 export MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa
-robopwn attack --policy smolvla --suite libero --model HuggingFaceVLA/smolvla_libero \
+provael attack --policy smolvla --suite libero --model HuggingFaceVLA/smolvla_libero \
     --attacks none,instruction,visual,injection --seeds 10 --horizon 280 --seed 0 \
     --out runs/smolvla_libero
-robopwn leaderboard build --runs 'runs/*' --out leaderboard/results
+provael leaderboard build --runs 'runs/*' --out leaderboard/results
 ```
 
 Commit the resulting `results/*.json`; the banner reads "includes real-model results"

@@ -11,7 +11,7 @@
 
 ### Leaderboard submission? (delete this section if N/A)
 
-- [ ] Adds `results/<name>/report.json` produced by `robopwn attack` (with a `none` baseline)
+- [ ] Adds `results/<name>/report.json` produced by `provael attack` (with a `none` baseline)
 - [ ] `python scripts/validate_submission.py` passes locally
 - [ ] Reproducible: checkpoint, suite/task(s), seeds, horizon, and hardware noted below
 

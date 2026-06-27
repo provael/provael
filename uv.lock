@@ -1803,6 +1803,53 @@ wheels = [
 ]
 
 [[package]]
+name = "provael"
+source = { editable = "." }
+dependencies = [
+    { name = "numpy" },
+    { name = "pillow" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "rich" },
+    { name = "typer" },
+]
+
+[package.optional-dependencies]
+lerobot = [
+    { name = "lerobot", extra = ["smolvla"] },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "types-pyyaml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "lerobot", extras = ["smolvla"], marker = "extra == 'lerobot'", specifier = "==0.5.1" },
+    { name = "numpy" },
+    { name = "pillow", specifier = ">=10" },
+    { name = "pydantic", specifier = ">=2.7" },
+    { name = "pyyaml" },
+    { name = "rich" },
+    { name = "typer", specifier = ">=0.12" },
+]
+provides-extras = ["lerobot"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "types-pyyaml" },
+]
+
+[[package]]
 name = "psutil"
 version = "7.2.2"
 source = { registry = "https://pypi.org/simple" }
@@ -2721,53 +2768,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/53/0c/06f8b233b8fd13b9e5ee11424ef85419ba0d8ba0b3138bf360be2ff56953/urllib3-2.7.0.tar.gz", hash = "sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c", size = 433602, upload-time = "2026-05-07T16:13:18.596Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7f/3e/5db95bcf282c52709639744ca2a8b149baccf648e39c8cc87553df9eae0c/urllib3-2.7.0-py3-none-any.whl", hash = "sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897", size = 131087, upload-time = "2026-05-07T16:13:17.151Z" },
-]
-
-[[package]]
-name = "vla-redteam"
-source = { editable = "." }
-dependencies = [
-    { name = "numpy" },
-    { name = "pillow" },
-    { name = "pydantic" },
-    { name = "pyyaml" },
-    { name = "rich" },
-    { name = "typer" },
-]
-
-[package.optional-dependencies]
-lerobot = [
-    { name = "lerobot", extra = ["smolvla"] },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-    { name = "types-pyyaml" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "lerobot", extras = ["smolvla"], marker = "extra == 'lerobot'", specifier = "==0.5.1" },
-    { name = "numpy" },
-    { name = "pillow", specifier = ">=10" },
-    { name = "pydantic", specifier = ">=2.7" },
-    { name = "pyyaml" },
-    { name = "rich" },
-    { name = "typer", specifier = ">=0.12" },
-]
-provides-extras = ["lerobot"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-    { name = "types-pyyaml" },
 ]
 
 [[package]]

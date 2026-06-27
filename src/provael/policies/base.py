@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from vla_redteam.types import Action, Observation, SuiteFeatures
+from provael.types import Action, Observation, SuiteFeatures
 
 
 class PolicyAdapter(ABC):

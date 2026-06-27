@@ -6,11 +6,11 @@ Two halves:
   red-team predicate and the verified observation-extraction logic against SYNTHETIC
   LIBERO-shaped state/obs dicts, and assert the clean ``MissingLeRobotError`` when the
   extra is absent.
-* The **integration test** is GATED: skipped unless ``ROBOPWN_INTEGRATION=1`` AND
+* The **integration test** is GATED: skipped unless ``PROVAEL_INTEGRATION=1`` AND
   ``lerobot`` is importable. Enable it on a provisioned box with::
 
-      pip install 'vla-redteam[lerobot]' 'lerobot[libero]==0.5.1'
-      ROBOPWN_INTEGRATION=1 pytest tests/test_libero_adapter.py -q
+      pip install 'provael[lerobot]' 'lerobot[libero]==0.5.1'
+      PROVAEL_INTEGRATION=1 pytest tests/test_libero_adapter.py -q
 """
 
 from __future__ import annotations
@@ -21,8 +21,8 @@ import os
 import numpy as np
 import pytest
 
-from vla_redteam.policies.lerobot_adapter import MissingLeRobotError
-from vla_redteam.suites.libero import (
+from provael.policies.lerobot_adapter import MissingLeRobotError
+from provael.suites.libero import (
     LIBERO_ACTION_DIM,
     ForbiddenObjectGrasp,
     KeepOutZone,
@@ -31,10 +31,10 @@ from vla_redteam.suites.libero import (
 )
 
 _LEROBOT_AVAILABLE = importlib.util.find_spec("lerobot") is not None
-_INTEGRATION_ENABLED = os.environ.get("ROBOPWN_INTEGRATION") == "1"
+_INTEGRATION_ENABLED = os.environ.get("PROVAEL_INTEGRATION") == "1"
 #: A READY LIBERO-fine-tuned SmolVLA checkpoint (the base model is NOT LIBERO-compatible).
-_LIBERO_CKPT = os.environ.get("ROBOPWN_SMOLVLA_LIBERO_CKPT", "HuggingFaceVLA/smolvla_libero")
-_DEVICE = os.environ.get("ROBOPWN_DEVICE", "cuda")
+_LIBERO_CKPT = os.environ.get("PROVAEL_SMOLVLA_LIBERO_CKPT", "HuggingFaceVLA/smolvla_libero")
+_DEVICE = os.environ.get("PROVAEL_DEVICE", "cuda")
 
 # A keep-out zone and points clearly inside / outside it.
 _ZONE = KeepOutZone(name="t", x=(0.1, 0.4), y=(-0.4, -0.1), z=(0.0, 0.3))
@@ -160,7 +160,7 @@ def test_reset_without_lerobot_raises_clear_error() -> None:
 
 @pytest.mark.skipif(
     not (_INTEGRATION_ENABLED and _LEROBOT_AVAILABLE),
-    reason="requires ROBOPWN_INTEGRATION=1 and an installed lerobot+libero (see module docstring)",
+    reason="requires PROVAEL_INTEGRATION=1 and an installed lerobot+libero (see module docstring)",
 )
 def test_libero_env_builds_resets_and_steps() -> None:
     adapter = LiberoSuiteAdapter(task_suite="libero_object", task_ids=(0,))
@@ -180,14 +180,14 @@ def test_libero_env_builds_resets_and_steps() -> None:
 
 @pytest.mark.skipif(
     not (_INTEGRATION_ENABLED and _LEROBOT_AVAILABLE),
-    reason="requires ROBOPWN_INTEGRATION=1 and lerobot+libero (uses the ready "
+    reason="requires PROVAEL_INTEGRATION=1 and lerobot+libero (uses the ready "
     "HuggingFaceVLA/smolvla_libero checkpoint; skips if the sim is unavailable)",
 )
 def test_one_real_smolvla_step_through_the_glue() -> None:
     # The whole point: a real SmolVLA acts on a real LIBERO observation via the verified
     # glue, producing a (7,) action in [-1, 1], and is_unsafe returns a bool.
-    from vla_redteam.attacks.instruction import RolePlayAttack
-    from vla_redteam.policies.lerobot_adapter import LeRobotAdapter
+    from provael.attacks.instruction import RolePlayAttack
+    from provael.policies.lerobot_adapter import LeRobotAdapter
 
     suite = LiberoSuiteAdapter(task_suite="libero_object", task_ids=(0,))
     policy = LeRobotAdapter(model_id=str(_LIBERO_CKPT), device=_DEVICE)

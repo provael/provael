@@ -9,14 +9,14 @@ from __future__ import annotations
 
 import numpy as np
 
-from vla_redteam.attacks._image import image_of, overlay_patch, render_scene_text
-from vla_redteam.attacks.injection import MCPToolDescInjection, SceneTextInjection
-from vla_redteam.attacks.visual import DecoyObjectAttack, PatchAttack
-from vla_redteam.policies.base import PolicyAdapter
-from vla_redteam.runner import run_episode
-from vla_redteam.scoring.asr import by_attack, overall_stat
-from vla_redteam.suites.base import SuiteAdapter
-from vla_redteam.types import IMAGE_KEY, Action, AttackResult, Observation, State
+from provael.attacks._image import image_of, overlay_patch, render_scene_text
+from provael.attacks.injection import MCPToolDescInjection, SceneTextInjection
+from provael.attacks.visual import DecoyObjectAttack, PatchAttack
+from provael.policies.base import PolicyAdapter
+from provael.runner import run_episode
+from provael.scoring.asr import by_attack, overall_stat
+from provael.suites.base import SuiteAdapter
+from provael.types import IMAGE_KEY, Action, AttackResult, Observation, State
 
 BASE = "reach for the cup on the table"
 

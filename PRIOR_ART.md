@@ -1,6 +1,6 @@
 # Prior art & honest credit
 
-`vla-redteam` stands on a growing body of academic work on the safety of
+`provael` stands on a growing body of academic work on the safety of
 LLM-/VLA-controlled robots. This file credits the work we build on and states
 plainly **how we differ** — what is novel here (a small, reproducible, model-agnostic
 ASR harness) and what is not (the attack ideas themselves, which come from the papers
@@ -43,7 +43,7 @@ training-/fine-tuning-time trigger that causes conditional control deviations wi
 near-100% attack success and little clean-task degradation.
 
 **How we differ:** BadVLA is a **training-time** threat (it modifies the model);
-`vla-redteam` is strictly **inference-time, black-box** red-teaming of an *unmodified*
+`provael` is strictly **inference-time, black-box** red-teaming of an *unmodified*
 policy. We never train, fine-tune, or poison weights. (Our `StubPolicy`'s trigger
 lexicon is a *test fixture* that imitates a vulnerability so the CPU pipeline yields a
 measurable ASR — it is not a model and not a backdoor.)
@@ -55,7 +55,7 @@ A **defense**: aligns VLA policies with safe reinforcement learning (a constrain
 MDP / min-max formulation), reporting large safety improvements with maintained task
 performance and sim-to-real transfer.
 
-**How we differ (complementary):** SafeVLA hardens policies; `vla-redteam` measures how
+**How we differ (complementary):** SafeVLA hardens policies; `provael` measures how
 often a policy can still be driven unsafe. The two are two sides of the same coin — a
 defense like SafeVLA is exactly the kind of policy whose residual ASR our harness is
 meant to quantify.

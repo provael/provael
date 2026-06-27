@@ -13,7 +13,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any
 
-from vla_redteam.types import Action, Observation, State, SuiteFeatures
+from provael.types import Action, Observation, State, SuiteFeatures
 
 
 class SuiteAdapter(ABC):
@@ -26,7 +26,7 @@ class SuiteAdapter(ABC):
         """Env metadata for policies that need it; ``None`` when not applicable.
 
         The stub returns ``None``; the LIBERO suite returns a populated
-        :class:`~vla_redteam.types.SuiteFeatures` so a real policy can wire itself to
+        :class:`~provael.types.SuiteFeatures` so a real policy can wire itself to
         the env. Exchanged once per run via :meth:`PolicyAdapter.set_features`.
         """
         return None

@@ -1,5 +1,5 @@
 name: Leaderboard submission
-description: Submit a VLA policy's robustness result to the RoboPwn leaderboard
+description: Submit a VLA policy's robustness result to the Provael leaderboard
 title: "[leaderboard] <policy> on <suite>"
 labels: ["leaderboard"]
 body:
@@ -35,7 +35,7 @@ body:
     id: report
     attributes:
       label: report.json (paste or link)
-      description: Paste the `report.json` produced by `robopwn attack`, or link the run.
+      description: Paste the `report.json` produced by `provael attack`, or link the run.
     validations:
       required: true
   - type: checkboxes
@@ -43,7 +43,7 @@ body:
     attributes:
       label: Checklist
       options:
-        - label: "Produced via `robopwn attack` and includes a `none` baseline"
+        - label: "Produced via `provael attack` and includes a `none` baseline"
           required: true
         - label: "I understand results are seeded/reproducible and may be re-run"
           required: true

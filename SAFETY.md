@@ -1,6 +1,6 @@
 # Safety & responsible use
 
-`vla-redteam` (RoboPwn) exists to **harden** open Vision-Language-Action robot
+`provael` (Provael) exists to **harden** open Vision-Language-Action robot
 policies, by measuring how often instruction-level manipulation can drive a policy
 into an unsafe state in **simulation**. It is a defensive / evaluation tool, built in
 the spirit of responsible disclosure.
@@ -11,7 +11,7 @@ the spirit of responsible disclosure.
   fully-supported path is the CPU `stub` policy + `stub` suite, which involve **no
   model, no robot, and no network**.
 - Running against a real VLA policy (e.g. SmolVLA via LeRobot) still happens **inside
-  a simulator** (e.g. LIBERO). `vla-redteam` does **not** drive physical robots and
+  a simulator** (e.g. LIBERO). `provael` does **not** drive physical robots and
   ships no robot-control or actuator code.
 
 ## No real-world-harm payloads
@@ -63,5 +63,5 @@ released** policy:
 - Detection-evasion tooling, or anything whose primary purpose is to make a real-world
   attack harder to catch.
 
-By using `vla-redteam` you agree to use it only on systems you are authorized to test,
+By using `provael` you agree to use it only on systems you are authorized to test,
 and only for defensive, research, or educational purposes.

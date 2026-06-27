@@ -2,12 +2,12 @@
 
 * CPU tests (no GPU/lerobot): the missing-dependency error, the eval hint, the pure
   ``clamp_action`` mapping, and the features-protocol no-op for the stub.
-* GATED test (skipif not ROBOPWN_INTEGRATION==1 and lerobot importable): the adapter
+* GATED test (skipif not PROVAEL_INTEGRATION==1 and lerobot importable): the adapter
   loads SmolVLA via the verified ``make_policy`` + processor path with LIBERO features.
   Enable on a provisioned box::
 
-      pip install 'vla-redteam[lerobot]' 'lerobot[libero]==0.5.1'
-      ROBOPWN_INTEGRATION=1 pytest tests/test_lerobot_adapter.py -q
+      pip install 'provael[lerobot]' 'lerobot[libero]==0.5.1'
+      PROVAEL_INTEGRATION=1 pytest tests/test_lerobot_adapter.py -q
 """
 
 from __future__ import annotations
@@ -18,20 +18,20 @@ import os
 import numpy as np
 import pytest
 
-from vla_redteam.policies.lerobot_adapter import (
+from provael.policies.lerobot_adapter import (
     LEROBOT_EVAL_LIBERO_HINT,
     IncompatiblePolicyError,
     LeRobotAdapter,
     MissingLeRobotError,
     clamp_action,
 )
-from vla_redteam.policies.stub import StubPolicy
-from vla_redteam.types import SuiteFeatures
+from provael.policies.stub import StubPolicy
+from provael.types import SuiteFeatures
 
 _LEROBOT_AVAILABLE = importlib.util.find_spec("lerobot") is not None
-_INTEGRATION_ENABLED = os.environ.get("ROBOPWN_INTEGRATION") == "1"
+_INTEGRATION_ENABLED = os.environ.get("PROVAEL_INTEGRATION") == "1"
 #: A READY LIBERO-fine-tuned SmolVLA checkpoint (verified to load through the glue).
-_LIBERO_CKPT = os.environ.get("ROBOPWN_SMOLVLA_LIBERO_CKPT", "HuggingFaceVLA/smolvla_libero")
+_LIBERO_CKPT = os.environ.get("PROVAEL_SMOLVLA_LIBERO_CKPT", "HuggingFaceVLA/smolvla_libero")
 
 
 # --------------------------------------------------------------------------- #
@@ -88,8 +88,8 @@ def test_missing_lerobot_raises_actionable_error() -> None:
     with pytest.raises(MissingLeRobotError) as exc_info:
         adapter.load()
     message = str(exc_info.value)
-    assert "vla-redteam[lerobot]" in message
-    assert "ROBOPWN_INTEGRATION" in message
+    assert "provael[lerobot]" in message
+    assert "PROVAEL_INTEGRATION" in message
 
 
 def test_eval_hint_names_the_supported_path() -> None:
@@ -100,7 +100,7 @@ def test_eval_hint_names_the_supported_path() -> None:
 def test_incompatibility_hint_points_at_the_ready_checkpoint() -> None:
     # The IncompatiblePolicyError message must name the fix, not make a forgetful user
     # rediscover it.
-    from vla_redteam.policies.lerobot_adapter import _CHECKPOINT_HINT, LIBERO_FINETUNED_SMOLVLA
+    from provael.policies.lerobot_adapter import _CHECKPOINT_HINT, LIBERO_FINETUNED_SMOLVLA
 
     assert LIBERO_FINETUNED_SMOLVLA == "HuggingFaceVLA/smolvla_libero"
     assert LIBERO_FINETUNED_SMOLVLA in _CHECKPOINT_HINT
@@ -117,7 +117,7 @@ def test_incompatibility_hint_points_at_the_ready_checkpoint() -> None:
 
 @pytest.mark.skipif(
     not (_INTEGRATION_ENABLED and _LEROBOT_AVAILABLE),
-    reason="requires ROBOPWN_INTEGRATION=1 and an installed lerobot (see module docstring)",
+    reason="requires PROVAEL_INTEGRATION=1 and an installed lerobot (see module docstring)",
 )
 def test_smolvla_base_is_incompatible_with_libero() -> None:
     # VERIFIED: lerobot/smolvla_base expects camera1/2/3 but LIBERO provides image/image2,
@@ -136,7 +136,7 @@ def test_smolvla_base_is_incompatible_with_libero() -> None:
 
 @pytest.mark.skipif(
     not (_INTEGRATION_ENABLED and _LEROBOT_AVAILABLE),
-    reason="requires ROBOPWN_INTEGRATION=1 and an installed lerobot (downloads the checkpoint)",
+    reason="requires PROVAEL_INTEGRATION=1 and an installed lerobot (downloads the checkpoint)",
 )
 def test_libero_finetuned_checkpoint_loads_through_glue() -> None:
     # The ready HuggingFaceVLA/smolvla_libero checkpoint resolves the feature mismatch that

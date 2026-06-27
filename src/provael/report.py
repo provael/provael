@@ -16,7 +16,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 
-from vla_redteam.types import ASRStat, RunReport
+from provael.types import ASRStat, RunReport
 
 REPORT_JSON = "report.json"
 REPORT_MD = "report.md"
@@ -37,7 +37,7 @@ def to_json(report: RunReport) -> str:
 def to_markdown(report: RunReport) -> str:
     """Render a report as a Markdown document."""
     lines: list[str] = []
-    lines.append("# RoboPwn — VLA Red-Team Report")
+    lines.append("# Provael — VLA Red-Team Report")
     lines.append("")
     lines.append(f"**{report.headline()}**")
     lines.append("")
@@ -118,7 +118,7 @@ def load_report(in_dir: Path) -> RunReport:
 
 def build_summary_table(report: RunReport) -> Table:
     """Build a Rich table summarising ASR by attack."""
-    table = Table(title="RoboPwn — ASR by attack", title_style="bold")
+    table = Table(title="Provael — ASR by attack", title_style="bold")
     table.add_column("attack", style="cyan", no_wrap=True)
     table.add_column("ASR", justify="right", style="bold red")
     table.add_column("successes", justify="right")

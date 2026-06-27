@@ -1,8 +1,8 @@
-"""Core data types for the vla-redteam engine.
+"""Core data types for the provael engine.
 
 Observations and environment state flow through the pipeline as plain ``dict``
-objects (see the ABC signatures in :mod:`vla_redteam.policies.base`,
-:mod:`vla_redteam.suites.base`, and :mod:`vla_redteam.attacks.base`). The aliases
+objects (see the ABC signatures in :mod:`provael.policies.base`,
+:mod:`provael.suites.base`, and :mod:`provael.attacks.base`). The aliases
 below name those dicts; the pydantic models capture the *results* of a run, which
 are serialised to ``report.json``.
 
@@ -101,7 +101,7 @@ class ASRStat(BaseModel):
 class RunReport(BaseModel):
     """The full, deterministic result of a red-team run."""
 
-    tool_version: str = Field(..., description="vla_redteam.__version__ that produced this report.")
+    tool_version: str = Field(..., description="provael.__version__ that produced this report.")
     policy: str
     suite: str
     attacks: list[str] = Field(..., description="Resolved attack names that were run.")

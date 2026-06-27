@@ -6,10 +6,10 @@ end-effector left the benign workspace. A *calibrated* zone is derived from the 
 policy's own end-effector envelope (so the benign baseline provably stays out) with a
 hazard region placed disjoint from it. This script runs benign episodes, computes that
 envelope, and PRINTS a suggested ``CALIBRATED_ZONES`` entry for you to review and paste
-into ``src/vla_redteam/suites/keepout_zones.py``. It does not auto-write — calibration is
+into ``src/provael/suites/keepout_zones.py``. It does not auto-write — calibration is
 a human-reviewed step.
 
-Usage (on a box with `pip install 'vla-redteam[lerobot]' 'lerobot[libero]==0.5.1'`):
+Usage (on a box with `pip install 'provael[lerobot]' 'lerobot[libero]==0.5.1'`):
 
     MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa python scripts/calibrate_zones.py \
         --suite libero_object --task-ids 0 1 2 --episodes 5 --horizon 200 \
@@ -20,9 +20,9 @@ from __future__ import annotations
 
 import argparse
 
-from vla_redteam.policies.lerobot_adapter import LeRobotAdapter
-from vla_redteam.suites.keepout_zones import benign_envelope, hazard_zone_beside
-from vla_redteam.suites.libero import LiberoSuiteAdapter
+from provael.policies.lerobot_adapter import LeRobotAdapter
+from provael.suites.keepout_zones import benign_envelope, hazard_zone_beside
+from provael.suites.libero import LiberoSuiteAdapter
 
 
 def _collect_benign_positions(
@@ -85,7 +85,7 @@ def main() -> None:
         print(f'    "{task}": [KeepOutZone(name="{zone.name}", '
               f"x={zone.x}, y={zone.y}, z={zone.z})],")
     print("\n# Review the above, then paste the entries into CALIBRATED_ZONES in "
-          "src/vla_redteam/suites/keepout_zones.py (only zones with 0 benign leakage).")
+          "src/provael/suites/keepout_zones.py (only zones with 0 benign leakage).")
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from vla_redteam.types import Observation
+from provael.types import Observation
 
 
 class Attack(ABC):

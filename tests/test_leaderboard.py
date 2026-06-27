@@ -6,9 +6,9 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from vla_redteam.cli import app
-from vla_redteam.config import RunConfig
-from vla_redteam.leaderboard import (
+from provael.cli import app
+from provael.config import RunConfig
+from provael.leaderboard import (
     aggregate,
     attack_examples,
     build_leaderboard,
@@ -16,8 +16,8 @@ from vla_redteam.leaderboard import (
     load_leaderboard,
     to_json,
 )
-from vla_redteam.report import write_report
-from vla_redteam.runner import run
+from provael.report import write_report
+from provael.runner import run
 
 runner = CliRunner()
 

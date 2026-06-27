@@ -13,8 +13,8 @@ from __future__ import annotations
 import importlib.util
 from collections.abc import Callable
 
-from vla_redteam.policies.base import PolicyAdapter
-from vla_redteam.policies.stub import StubPolicy
+from provael.policies.base import PolicyAdapter
+from provael.policies.stub import StubPolicy
 
 
 def _make_stub(**_kwargs: object) -> PolicyAdapter:
@@ -30,7 +30,7 @@ def _make_smolvla(
     # Imported here (not at module top) so the core never hard-depends on the
     # adapter pulling optional symbols. The adapter module itself imports no
     # optional deps at module scope.
-    from vla_redteam.policies.lerobot_adapter import LeRobotAdapter
+    from provael.policies.lerobot_adapter import LeRobotAdapter
 
     return LeRobotAdapter(
         model_id=model or "lerobot/smolvla_base",

@@ -9,7 +9,7 @@ found in the instruction and emits a proportionally aggressive action.
 This backdoor is a *test fixture*, not a model of real VLA behaviour. Real VLAs
 have no such lookup table; the point is only that templated instruction attacks
 (which inject those tokens) produce a measurable, deterministic Attack Success Rate
-against the paired :class:`~vla_redteam.suites.stub.StubSuite`. See PRIOR_ART.md for
+against the paired :class:`~provael.suites.stub.StubSuite`. See PRIOR_ART.md for
 why instruction reframing is a real attack surface on actual policies.
 """
 
@@ -19,8 +19,8 @@ from collections.abc import Iterable
 
 import numpy as np
 
-from vla_redteam.policies.base import PolicyAdapter
-from vla_redteam.types import Action, Observation
+from provael.policies.base import PolicyAdapter
+from provael.types import Action, Observation
 
 #: Substrings that, if present in an attackable channel, raise the stub's "aggression".
 #: Weights are summed (then clipped to 1.0). Chosen so the shipped attacks land on

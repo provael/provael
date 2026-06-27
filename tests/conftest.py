@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from vla_redteam.policies.stub import StubPolicy
-from vla_redteam.suites.stub import StubSuite
+from provael.policies.stub import StubPolicy
+from provael.suites.stub import StubSuite
 
 
 @pytest.fixture

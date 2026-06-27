@@ -4,7 +4,7 @@ GATING: this module imports **no** optional dependency at module scope, so it st
 importable on a plain CPU. All contact with ``lerobot`` (and, transitively, the LIBERO
 simulator / MuJoCo) happens inside :meth:`LiberoSuiteAdapter.reset` /
 :meth:`~LiberoSuiteAdapter.step`, which raise the shared
-:class:`~vla_redteam.policies.lerobot_adapter.MissingLeRobotError` when the extra is
+:class:`~provael.policies.lerobot_adapter.MissingLeRobotError` when the extra is
 absent. CI / the CPU build never import the sim.
 
 VERIFICATION (milestone M3): every lerobot call below was written **after**
@@ -33,8 +33,8 @@ callable to make it live (see :data:`GraspExtractor`). This is stated in SAFETY.
 
 Enable the real path on a GPU box::
 
-    pip install 'vla-redteam[lerobot]' 'lerobot[libero]==0.5.1'
-    ROBOPWN_INTEGRATION=1 pytest tests/test_libero_adapter.py -q
+    pip install 'provael[lerobot]' 'lerobot[libero]==0.5.1'
+    PROVAEL_INTEGRATION=1 pytest tests/test_libero_adapter.py -q
 """
 
 from __future__ import annotations
@@ -49,10 +49,10 @@ import numpy as np
 import numpy.typing as npt
 from pydantic import BaseModel, Field
 
-from vla_redteam.policies.lerobot_adapter import MissingLeRobotError
-from vla_redteam.suites.base import SuiteAdapter
-from vla_redteam.suites.keepout_zones import DEFAULT_KEEP_OUT_ZONE, KeepOutZone, zones_for
-from vla_redteam.types import IMAGE_KEY, Action, Observation, State, SuiteFeatures
+from provael.policies.lerobot_adapter import MissingLeRobotError
+from provael.suites.base import SuiteAdapter
+from provael.suites.keepout_zones import DEFAULT_KEEP_OUT_ZONE, KeepOutZone, zones_for
+from provael.types import IMAGE_KEY, Action, Observation, State, SuiteFeatures
 
 #: The LIBERO task suites shipped by lerobot 0.5.1 (verified).
 LIBERO_TASK_SUITES: tuple[str, ...] = (
@@ -75,8 +75,8 @@ GraspExtractor = Callable[[Any, Observation], "str | None"]
 _LIBERO_HINT = (
     "The 'libero' suite requires the optional LeRobot + LIBERO simulator, which is "
     "not installed.\n"
-    "  pip install 'vla-redteam[lerobot]' 'lerobot[libero]==0.5.1'\n"
-    "  ROBOPWN_INTEGRATION=1 robopwn attack --policy smolvla --suite libero ...\n"
+    "  pip install 'provael[lerobot]' 'lerobot[libero]==0.5.1'\n"
+    "  PROVAEL_INTEGRATION=1 provael attack --policy smolvla --suite libero ...\n"
     "Run on CPU with '--suite stub' to exercise the full pipeline with no simulator."
 )
 

@@ -7,7 +7,7 @@ on:
 
 # CPU-only by design: this workflow NEVER installs the optional `[lerobot]` extra,
 # so it pulls no torch / transformers / GPU stack. The LeRobot integration tests are
-# gated (ROBOPWN_INTEGRATION) and skip here automatically.
+# gated (PROVAEL_INTEGRATION) and skip here automatically.
 jobs:
   check:
     name: ruff + mypy + pytest (CPU, no lerobot)

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from vla_redteam.config import RunConfig
-from vla_redteam.report import to_json, write_report
-from vla_redteam.runner import run
+from provael.config import RunConfig
+from provael.report import to_json, write_report
+from provael.runner import run
 
 
 def test_same_seed_identical_report() -> None:

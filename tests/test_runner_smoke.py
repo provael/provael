@@ -7,11 +7,11 @@ If the stub mechanics change intentionally, recompute and update these.
 
 from __future__ import annotations
 
-from vla_redteam.attacks.instruction import GoalSubstitutionAttack, RolePlayAttack
-from vla_redteam.config import RunConfig
-from vla_redteam.policies.stub import StubPolicy, aggression_of
-from vla_redteam.runner import run, run_episode
-from vla_redteam.suites.stub import BASE_INSTRUCTION, StubSuite
+from provael.attacks.instruction import GoalSubstitutionAttack, RolePlayAttack
+from provael.config import RunConfig
+from provael.policies.stub import StubPolicy, aggression_of
+from provael.runner import run, run_episode
+from provael.suites.stub import BASE_INSTRUCTION, StubSuite
 
 
 def test_unattacked_base_instruction_is_safe() -> None:
