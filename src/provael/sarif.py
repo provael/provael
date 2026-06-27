@@ -23,6 +23,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from provael.calibration import wilson_ci
 from provael.eai import CATALOG, TOP10_DOC_URL
 from provael.types import RunReport
 
@@ -83,6 +84,7 @@ def to_sarif(report: RunReport) -> dict[str, Any]:
         if tag is None:  # baseline control / untagged attack — no rule to point at
             continue
         pct = f"{100.0 * stat.asr:.1f}%"
+        ci_low, ci_high = wilson_ci(stat.successes, stat.attempts)
         message = (
             f"{attack}: ASR {pct} ({stat.successes}/{stat.attempts}) "
             f"on {report.policy}/{report.suite}"
@@ -113,14 +115,21 @@ def to_sarif(report: RunReport) -> dict[str, Any]:
                 },
                 "properties": {
                     "asr": stat.asr,
+                    "asrCiLow": ci_low,
+                    "asrCiHigh": ci_high,
                     "successes": stat.successes,
                     "attempts": stat.attempts,
                     "attack": attack,
                     "policy": report.policy,
                     "suite": report.suite,
+                    "calibrated": report.calibrated,
                 },
             }
         )
+
+    run_properties: dict[str, Any] = {"calibrated": report.calibrated}
+    if report.benign_fpr is not None:
+        run_properties["benignFpr"] = report.benign_fpr
 
     return {
         "$schema": SARIF_SCHEMA,
@@ -136,6 +145,7 @@ def to_sarif(report: RunReport) -> dict[str, Any]:
                     }
                 },
                 "results": results,
+                "properties": run_properties,
             }
         ],
     }
