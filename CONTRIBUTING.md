@@ -57,6 +57,31 @@ PROVAEL_INTEGRATION=1 pytest tests/test_lerobot_adapter.py tests/test_libero_ada
 3. Update `CHANGELOG.md` (`[Unreleased]`) and any affected docs.
 4. Open the PR with a **Summary** and a **Test Plan**.
 
+## Sign your commits (DCO)
+
+Provael uses the **[Developer Certificate of Origin](https://developercertificate.org/)**
+(DCO v1.1) instead of a CLA — it's lighter and you keep your copyright. Signing off certifies
+that you wrote the patch, or otherwise have the right to submit it under the project's license.
+
+Add a `Signed-off-by` trailer to **every** commit by committing with `-s`:
+
+```bash
+git commit -s -m "fix: handle empty attack list"
+```
+
+That appends a line using the real name and email from your git config:
+
+```text
+Signed-off-by: Your Name <you@example.com>
+```
+
+- Forgot the last commit? `git commit --amend -s --no-edit`.
+- A whole branch? `git rebase --signoff main`.
+
+The full certificate text is short — read it at <https://developercertificate.org/>. (If the
+DCO check app is enabled on the repo, PRs with unsigned commits will fail until every commit is
+signed off.)
+
 ## Reporting bugs / requesting features
 
 Open a GitHub issue (templates provided). For security vulnerabilities, see
