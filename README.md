@@ -35,6 +35,11 @@ simulator live behind an optional extra and a `PROVAEL_INTEGRATION=1` gate.
 > disclosure. It drives no physical robots and ships no real-world-harm payloads.
 > Read **[SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md)** before using it.
 
+## The Embodied AI Security Top 10
+
+An independent, community risk list for the security of VLA models and the robots they drive — the
+framework Provael's attacks map to. Read it: [docs/TOP10.md](docs/TOP10.md). Draft v0.2, PRs welcome.
+
 ## Scope and honest limitations
 
 This is an **early, research-grade** harness, built to be reproducible and honest rather than
