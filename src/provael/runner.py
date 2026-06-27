@@ -26,7 +26,7 @@ from provael.policies.registry import make_policy
 from provael.scoring.asr import asr_std, by_attack, by_task, overall_stat
 from provael.suites import make_suite
 from provael.suites.base import SuiteAdapter
-from provael.types import AttackResult, Decision, RunReport
+from provael.types import AttackResult, Decision, EaiTag, RunReport
 
 
 def run_episode(
@@ -144,6 +144,11 @@ def run(config: RunConfig) -> RunReport:
         stochastic=policy.stochastic,
         by_attack=by_attack(results),
         by_task=by_task(results),
+        eai={
+            a.name: EaiTag(id=a.eai_id, name=a.eai_name)
+            for a in attacks
+            if a.eai_id is not None and a.eai_name is not None
+        },
         results=results,
     )
 

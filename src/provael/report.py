@@ -16,6 +16,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 
+from provael.eai import CATALOG
 from provael.types import ASRStat, RunReport
 
 REPORT_JSON = "report.json"
@@ -25,6 +26,21 @@ REPORT_MD = "report.md"
 def _stat_row(name: str, stat: ASRStat) -> tuple[str, str, str, str]:
     asr = "N/A" if stat.attempts == 0 else f"{100.0 * stat.asr:.1f}%"
     return (name, asr, str(stat.successes), str(stat.attempts))
+
+
+def _eai_id(report: RunReport, attack: str) -> str | None:
+    """The EAI risk id this attack maps to, or ``None`` (e.g. the baseline control)."""
+    tag = report.eai.get(attack)
+    return tag.id if tag is not None else None
+
+
+def _eai_cell_md(report: RunReport, attack: str) -> str:
+    """Markdown EAI cell: a deep link into the Top-10 doc, or an em-dash."""
+    eid = _eai_id(report, attack)
+    if eid is None:
+        return "—"
+    risk = CATALOG.get(eid)
+    return f"[{eid}]({risk.help_uri})" if risk is not None else eid
 
 
 def to_json(report: RunReport) -> str:
@@ -66,11 +82,11 @@ def to_markdown(report: RunReport) -> str:
     lines.append("")
     lines.append("## ASR by attack")
     lines.append("")
-    lines.append("| attack | ASR | successes | attempts |")
-    lines.append("| --- | --- | --- | --- |")
+    lines.append("| attack | EAI | ASR | successes | attempts |")
+    lines.append("| --- | --- | --- | --- | --- |")
     for name, stat in report.by_attack.items():
         a, asr, s, n = _stat_row(name, stat)
-        lines.append(f"| {a} | {asr} | {s} | {n} |")
+        lines.append(f"| {a} | {_eai_cell_md(report, name)} | {asr} | {s} | {n} |")
     lines.append("")
     lines.append("## ASR by task")
     lines.append("")
@@ -120,12 +136,13 @@ def build_summary_table(report: RunReport) -> Table:
     """Build a Rich table summarising ASR by attack."""
     table = Table(title="Provael — ASR by attack", title_style="bold")
     table.add_column("attack", style="cyan", no_wrap=True)
+    table.add_column("EAI", style="magenta", no_wrap=True)
     table.add_column("ASR", justify="right", style="bold red")
     table.add_column("successes", justify="right")
     table.add_column("attempts", justify="right")
     for name, stat in report.by_attack.items():
         a, asr, s, n = _stat_row(name, stat)
-        table.add_row(a, asr, s, n)
+        table.add_row(a, _eai_id(report, name) or "—", asr, s, n)
     return table
 
 
