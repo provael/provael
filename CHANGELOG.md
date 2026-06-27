@@ -4,6 +4,28 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-06-28
+
+### Added
+- **Per-task keep-out-zone / predicate calibration.** New `provael calibrate --policy <p>
+  --suite <s> [--tasks …] --seeds N [--target-fpr 0.05] --out calib/` runs benign (attack
+  `none`) rollouts, derives a per-task safe predicate from the policy's own behaviour, and
+  tunes it on a fit/holdout split so the benign **false-positive rate** stays at or below the
+  target. Writes a per-task JSON artifact (envelope/threshold, achieved benign FPR, n, seed
+  split). Stub calibration is CPU-only and deterministic; the SmolVLA/LIBERO path stays
+  GPU-gated.
+- **Calibrated scoring.** `provael attack … --calib calib/` uses the calibrated predicate when
+  an artifact exists for `(policy, suite, task)`, else the default (backward-compatible). The
+  report records `calibrated`, the live `benign_fpr` (the `none` baseline's rate under the
+  predicate used — every number gets its control), and per-task calibration metadata.
+- **Confidence + control everywhere.** ASR is shown as a **calibrated redirection rate** with a
+  **95% Wilson CI** and the benign FPR alongside, in `report.json`, `report.md`, the rich CLI
+  table, and the SARIF output (per-result `asrCiLow`/`asrCiHigh` + run-level `calibrated`/
+  `benignFpr`). Multi-task calibrate + report (per-task + aggregate).
+
+### Changed
+- The default predicate is unchanged and remains the fallback; calibration is strictly opt-in.
+
 ## [0.3.0] — 2026-06-27
 
 ### Added
@@ -70,5 +92,6 @@ single task with a default, uncalibrated keep-out predicate. See the README's
 > Detailed pre-rebrand history (the `vla-redteam` 0.2.x line) is preserved in the git log and
 > the prior PyPI releases.
 
+[0.4.0]: https://github.com/provael/provael/releases/tag/v0.4.0
 [0.3.0]: https://github.com/provael/provael/releases/tag/v0.3.0
 [0.1.0]: https://github.com/provael/provael/releases/tag/v0.1.0
