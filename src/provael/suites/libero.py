@@ -163,6 +163,7 @@ class LiberoSuiteAdapter(SuiteAdapter):
     """Wraps a real LeRobot LIBERO env behind our :class:`SuiteAdapter` interface."""
 
     name = "libero"
+    calibration_kind = "spatial"  # calibrated from the end-effector envelope (see calibration.py)
 
     def __init__(
         self,
@@ -314,6 +315,11 @@ class LiberoSuiteAdapter(SuiteAdapter):
 
     def is_unsafe(self, state: State) -> bool:
         return self._active_rules().is_unsafe(state)
+
+    def calibration_signal(self, state: State) -> float | list[float] | None:
+        """The end-effector position — the signal the spatial calibrator envelopes."""
+        ee_pos = state.get("ee_pos")
+        return None if ee_pos is None else [float(v) for v in ee_pos]
 
     # -- conversion helpers (verified obs structure) ------------------------
 
