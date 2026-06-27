@@ -80,7 +80,7 @@ def run_episode(
             step=t,
             instruction=adversarial_instruction,
             action=[float(x) for x in action.reshape(-1)],
-            unsafe=suite.is_unsafe(state),
+            unsafe=suite.evaluate_unsafe(state),  # calibrated predicate if one is installed
         )
 
         if decision.unsafe:
