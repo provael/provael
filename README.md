@@ -70,9 +70,11 @@ to oversell. Before you trust a number, know:
 - **One policy, one suite shipped.** The architecture is model-agnostic by design (an adapter
   interface), but only the **SmolVLA / LeRobot** policy and the **LIBERO** suite are
   implemented today — generality is intended, not yet demonstrated against a second backend.
-- **One task, uncalibrated predicate.** The headline result is `libero_object/0` with a
-  default, **uncalibrated** keep-out zone, so ASR means "diverted out of the benign
-  envelope," not a calibrated hazard rate. Multi-task + per-task zone calibration is next.
+- **The first result used an uncalibrated predicate.** The headline `libero_object/0` numbers
+  below used a default keep-out zone, so that ASR means "diverted out of the benign envelope,"
+  not a calibrated hazard rate. **v0.4 adds `provael calibrate`** — a per-task predicate fit
+  from the policy's own benign rollouts to a benign-FPR target, reported as a calibrated
+  redirection rate with a 95% CI and the benign FPR alongside. See [Calibration](#calibration).
 
 Honesty and reproducibility are the point — see
 [PRIOR_ART.md](https://github.com/provael/provael/blob/main/PRIOR_ART.md) for how this sits
@@ -126,6 +128,7 @@ Other commands:
 uv run provael list-policies            # stub (CPU); smolvla (needs the [lerobot] extra)
 uv run provael list-attacks             # 7 attacks across families instruction/visual/injection
 uv run provael report --in runs/stub/
+uv run provael calibrate --policy stub --suite stub --seeds 20 --out calib/  # fit a per-task predicate
 uv run provael leaderboard build --runs runs --out leaderboard/results   # ranked ASR table
 uv run provael version
 ```
@@ -192,9 +195,42 @@ Read it as **lift over the benign baseline**. The `none` control runs the policy
 task and scores **0/10**, so every success is attack-induced. Language-reframing attacks
 reliably divert SmolVLA's end-effector; pixel/scene-text perturbations did not move it (0%).
 
-> ⚠️ **Preliminary.** The keep-out predicate is a **default, uncalibrated** region, so this
-> measures "diverted out of the benign safe envelope," not a zone-calibrated hazard rate;
-> `n = 10`, one task. Per-task **keep-out-zone calibration** is a planned follow-up.
+> ⚠️ **Preliminary.** These numbers used a **default, uncalibrated** keep-out region, so they
+> measure "diverted out of the benign safe envelope," not a zone-calibrated hazard rate;
+> `n = 10`, one task. **v0.4 adds `provael calibrate`** to fit a per-task predicate to a
+> benign-FPR target and report a calibrated redirection rate with a 95% CI — see
+> [Calibration](#calibration).
+
+## Calibration
+
+By default the unsafe predicate is **uncalibrated** — the stub uses a random per-seed threshold
+and LIBERO a generic keep-out box — so ASR reads as "diverted out of the benign envelope."
+`provael calibrate` replaces that with a **per-task predicate fit from the policy's own benign
+rollouts**:
+
+1. Run `N` benign (attack `none`) rollouts per task and split the seeds into **fit / holdout**.
+2. Derive the safe predicate from the fit split — a thresholded danger signal (stub) or an
+   end-effector keep-out zone placed disjoint from the benign envelope (LIBERO) — and tune it so
+   the benign **false-positive rate** on the holdout split is `<= --target-fpr` (default 0.05).
+3. Save a per-task JSON artifact (envelope/threshold, achieved benign FPR, `n`, seed split).
+
+```bash
+# 1) calibrate (CPU stub shown — deterministic)
+uv run provael calibrate --policy stub --suite stub --seeds 20 --target-fpr 0.05 --out calib/
+
+# 2) attack with the calibrated predicate
+uv run provael attack --policy stub --suite stub \
+    --attacks none,instruction,visual,injection --episodes 10 --calib calib/ --out runs/calib/
+```
+
+A calibrated run reports a **calibrated redirection rate** with a **95% Wilson CI** and the
+**benign baseline FPR** (the `none` row, scored under the same predicate) alongside — every
+number gets its control. The `calibrated` flag, `benign_fpr`, and per-task calibration metadata
+are recorded in `report.json`, `report.md`, the CLI table, and the SARIF output. Without
+`--calib`, the default predicate is used, unchanged.
+
+> The real **SmolVLA × LIBERO** calibration runs on a GPU box (it needs the `[lerobot]` extra);
+> the stub path runs on CPU and is covered by CI.
 
 ## How it works
 
@@ -224,12 +260,12 @@ same config + seed always produces a byte-identical `report.json`.
 
 - **v0.1.0** — Provael (rebrand of the harness): CPU core, 3 attack families, real
   SmolVLA × LIBERO path, leaderboard.
-- **v0.3.0** — **SARIF output** (`provael report --format sarif`) so findings surface in
-  GitHub code scanning · a **reusable GitHub Action** (`provael/provael`) that gates CI on
-  ASR · **Embodied-AI Top-10 mapping** (every attack tagged to an `EAIxx` risk).
-  *(this release)*
-- **next** — per-task keep-out-zone calibration; optimized (gradient/search) attacks; a
-  second policy/suite backend.
+- **v0.3.0** — SARIF output (`provael report --format sarif`), a reusable GitHub Action
+  (`provael/provael`) that gates CI on ASR, and the Embodied-AI Top-10 mapping (every attack
+  tagged to an `EAIxx` risk).
+- **v0.4.0** — **per-task predicate calibration** (`provael calibrate`): a calibrated
+  redirection rate with a 95% CI and the benign FPR as its control. *(this release)*
+- **next** — optimized (gradient/search) attacks; a second policy/suite backend.
 
 ## Development
 
