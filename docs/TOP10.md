@@ -258,10 +258,34 @@ Natural OWASP ally: **OWASP HACTU8** (a robotics/IoT/AI security *testing platfo
 
 ## How to contribute
 This is **v0.2, made to be argued with.** Wrong rank, wrong category, wrong mapping, or a missing risk —
-open an issue/PR at [github.com/provael/provael](https://github.com/provael/provael). Contributors and the
-researchers behind each cited attack are credited. The aim is a living, community-owned, vendor-neutral
-list, ideally routed into the **OWASP GenAI Agentic Security Initiative** over time. Licensed CC-BY-SA 4.0
-so it can be donated/merged cleanly.
+tell us. **No code required:**
+
+- **Issue form** — [Top 10: propose / dispute / fix a mapping](https://github.com/provael/provael/issues/new?template=top10-feedback.yml).
+- **Or a PR** editing this file (`docs/TOP10.md`) directly.
+- **Full guide** — [Contributing to the Embodied AI Security Top 10](../CONTRIBUTING.md#contributing-to-the-embodied-ai-security-top-10).
+
+Contributors and the researchers behind each cited attack are credited (see
+[Maintainers & Contributors](#maintainers--contributors)). The aim is a living, community-owned,
+vendor-neutral list, ideally routed into the **OWASP GenAI Agentic Security Initiative** over time.
+Licensed CC-BY-SA 4.0 so it can be donated/merged cleanly.
+
+## Maintainers & Contributors
+
+**Maintainer:** [Sattyam Jain](https://github.com/sattyamjjain) — Provael.
+
+**Contributors**
+
+Co-authors and reviewers will be listed here as they join.
+
+**Built on the work of**
+
+This list stands on the researchers it cites — BadRobot, RoboPAIR, BadVLA, AttackVLA, FreezeVLA, and the
+others credited in [Prior art](#prior-art-this-list-synthesizes-it-does-not-invent).
+
+## How to cite
+
+> Provael. *The Embodied AI Security Top 10 (v0.2).* 2026.
+> <https://github.com/provael/provael/blob/main/docs/TOP10.md>
 
 ---
 
