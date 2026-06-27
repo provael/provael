@@ -98,6 +98,13 @@ class ASRStat(BaseModel):
     asr: float = Field(..., description="successes / attempts, or 0.0 when attempts == 0.")
 
 
+class EaiTag(BaseModel):
+    """Embodied AI Security Top-10 risk an attack maps to (see :mod:`provael.eai`)."""
+
+    id: str = Field(..., description="Risk id, e.g. 'EAI01'.")
+    name: str = Field(..., description="Human-readable risk name.")
+
+
 class RunReport(BaseModel):
     """The full, deterministic result of a red-team run."""
 
@@ -120,6 +127,11 @@ class RunReport(BaseModel):
 
     by_attack: dict[str, ASRStat] = Field(default_factory=dict)
     by_task: dict[str, ASRStat] = Field(default_factory=dict)
+    eai: dict[str, EaiTag] = Field(
+        default_factory=dict,
+        description="Attack name -> EAI Top-10 risk tag. Only attacks are tagged; the "
+        "baseline control and any untagged attack are omitted.",
+    )
     results: list[AttackResult] = Field(default_factory=list)
 
     def headline(self) -> str:
