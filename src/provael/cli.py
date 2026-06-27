@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import time
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
@@ -41,6 +42,15 @@ from provael.policies.registry import (
 )
 from provael.report import load_report, render_summary, write_report
 from provael.runner import run
+from provael.sarif import to_sarif_json, write_sarif
+
+
+class OutputFormat(StrEnum):
+    """Console / artifact output format for ``attack`` and ``report``."""
+
+    table = "table"
+    sarif = "sarif"
+
 
 app = typer.Typer(
     name="provael",
@@ -137,6 +147,16 @@ def attack(
         str | None, typer.Option("--rename-map", help="JSON obs-key rename map for the policy.")
     ] = None,
     out: Annotated[Path, typer.Option(help="Output directory for reports.")] = Path("runs/stub"),
+    fmt: Annotated[
+        OutputFormat,
+        typer.Option(
+            "--format", help="Console format. 'sarif' also writes report.sarif into --out."
+        ),
+    ] = OutputFormat.table,
+    sarif_out: Annotated[
+        Path | None,
+        typer.Option("--sarif-out", help="Write a SARIF 2.1.0 file to this path (implies SARIF)."),
+    ] = None,
 ) -> None:
     """Run a red-team evaluation and write report.json + report.md."""
     rename: dict[str, str] | None = None
@@ -182,12 +202,24 @@ def attack(
     render_summary(report, _out)
     _out.print(f"\nWrote [cyan]{json_path}[/cyan] and [cyan]{md_path}[/cyan]  ({elapsed:.2f}s)")
 
+    sarif_target = sarif_out or (config.out / "report.sarif" if fmt is OutputFormat.sarif else None)
+    if sarif_target is not None:
+        write_sarif(report, sarif_target)
+        _out.print(f"Wrote [cyan]{sarif_target}[/cyan]  (SARIF 2.1.0)")
+
 
 @app.command()
 def report(
     in_dir: Annotated[Path, typer.Option("--in", help="Directory containing report.json.")],
+    fmt: Annotated[
+        OutputFormat, typer.Option("--format", help="Output format: 'table' or 'sarif'.")
+    ] = OutputFormat.table,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="With --format sarif, write here instead of stdout."),
+    ] = None,
 ) -> None:
-    """Print a summary of a previously written report."""
+    """Print a summary of a previously written report, or emit it as SARIF."""
     try:
         loaded = load_report(in_dir)
     except FileNotFoundError as exc:
@@ -195,6 +227,13 @@ def report(
         return
     except ValidationError:
         _fail(f"{in_dir} does not contain a valid Provael report.json")
+        return
+    if fmt is OutputFormat.sarif:
+        if out is not None:
+            write_sarif(loaded, out)
+            _out.print(f"Wrote [cyan]{out}[/cyan]  (SARIF 2.1.0)")
+        else:
+            print(to_sarif_json(loaded))  # machine-readable SARIF to stdout
         return
     render_summary(loaded, _out)
 
