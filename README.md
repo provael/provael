@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/provael/provael/main/docs/assets/provael_icon_512.png" alt="Provael logo" width="110" height="110">
+</p>
+
 # Provael
 
 [![CI](https://github.com/provael/provael/actions/workflows/ci.yml/badge.svg)](https://github.com/provael/provael/actions/workflows/ci.yml)
