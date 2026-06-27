@@ -1,0 +1,53 @@
+name: "Top 10: propose / dispute / fix a mapping"
+description: Propose a new risk, dispute a ranking, or fix a framework mapping in the Embodied AI Security Top 10
+title: "[top10] <short summary>"
+labels: ["top10"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping sharpen [The Embodied AI Security Top 10](../blob/main/docs/TOP10.md)
+        — a **v0.2 community draft, made to be argued with.** No code required. For a small,
+        concrete fix, a pull request editing `docs/TOP10.md` is even faster; see the
+        [contributing guide](../blob/main/CONTRIBUTING.md#contributing-to-the-embodied-ai-security-top-10).
+  - type: dropdown
+    id: type
+    attributes:
+      label: What are you proposing?
+      options:
+        - Propose a new risk
+        - Dispute a ranking
+        - Fix a framework mapping
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: eai_id
+    attributes:
+      label: Which risk? (optional)
+      description: The affected EAI risk id, if your point is about a specific one.
+      placeholder: "e.g. EAI04"
+    validations:
+      required: false
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: The proposal or the argument — what should change, and why.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Links that back it up — arXiv, CVE, advisory, repo.
+      placeholder: "https://arxiv.org/abs/…, CVE-…, https://github.com/…"
+    validations:
+      required: false
+  - type: checkboxes
+    id: coauthor
+    attributes:
+      label: Co-authoring
+      options:
+        - label: "I'd be open to co-authoring / endorsing the Embodied AI Security Top 10"
+          required: false

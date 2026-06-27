@@ -61,3 +61,20 @@ PROVAEL_INTEGRATION=1 pytest tests/test_lerobot_adapter.py tests/test_libero_ada
 
 Open a GitHub issue (templates provided). For security vulnerabilities, see
 [SECURITY.md](SECURITY.md) — please do **not** open a public issue for those.
+
+## Contributing to the Embodied AI Security Top 10
+
+[docs/TOP10.md](docs/TOP10.md) — *The Embodied AI Security Top 10* — is a community draft we
+actively want challenged. **You don't need to touch any code to contribute.**
+
+- **Propose / dispute / fix a mapping** via the issue form:
+  [Top 10: propose / dispute / fix a mapping](https://github.com/provael/provael/issues/new?template=top10-feedback.yml)
+  — argue a rank, a category, a framework cross-map, or a missing risk.
+- **Or open a PR** editing `docs/TOP10.md` directly (small fixes, fresh evidence, clearer wording).
+- **Licensing.** The Top 10 is **CC-BY-SA 4.0** (the code is Apache-2.0). By contributing you agree
+  your contribution is licensed CC-BY-SA 4.0, so the list stays freely shareable and donatable.
+- **Versioning.** It's at **v0.x** — deliberately a draft, made to be argued with; material changes
+  bump the minor draft version.
+- **Where it's headed.** The goal is a living, vendor-neutral list, ideally routed into the **OWASP
+  GenAI / Agentic Security Initiative** over time. Contributors and the researchers behind each cited
+  attack are credited in the doc.
