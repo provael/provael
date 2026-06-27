@@ -44,6 +44,15 @@ simulator live behind an optional extra and a `PROVAEL_INTEGRATION=1` gate.
 An independent, community risk list for the security of VLA models and the robots they drive — the
 framework Provael's attacks map to. Read it: [docs/TOP10.md](docs/TOP10.md). Draft v0.2, PRs welcome.
 
+Every attack is tagged with the risk it exercises; the SARIF output (`--format sarif`) carries
+that tag as each finding's `EAIxx` ruleId:
+
+| family | attacks | maps to |
+| --- | --- | --- |
+| `instruction` | `roleplay`, `goal_substitution`, `paraphrase` | [EAI01 — Policy & instruction jailbreak](docs/TOP10.md#eai01--policy--instruction-jailbreak-direct-command-channel) |
+| `visual` | `patch`, `decoy_object` | [EAI02 — Adversarial perception](docs/TOP10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) |
+| `injection` | `scene_text`, `mcp_tool_desc` | [EAI05 — Indirect / embodied prompt injection](docs/TOP10.md#eai05--indirect--embodied-prompt-injection) |
+
 ## Scope and honest limitations
 
 This is an **early, research-grade** harness, built to be reproducible and honest rather than
@@ -135,6 +144,34 @@ uv run provael version
 On CPU, `--policy smolvla` or `--suite libero` fails with a clear, actionable message (not a
 traceback) telling you exactly what to install.
 
+## Use in CI (GitHub Action)
+
+Gate any robot/VLA repo on red-team results with the reusable Action. It runs a red-team,
+uploads findings to **GitHub code scanning** as SARIF (each tagged with its `EAIxx` rule), and
+fails the job when the overall ASR exceeds a threshold:
+
+```yaml
+# .github/workflows/provael.yml
+permissions:
+  contents: read
+  security-events: write   # required to upload SARIF
+jobs:
+  redteam:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: provael/provael@v0.2.0
+        with:
+          attacks: instruction,visual,injection
+          episodes: "10"
+          asr-threshold: "0.5"   # fail the job if overall ASR > 50%
+```
+
+The default `stub` policy + suite run on a **CPU** runner — no GPU, no model download — a fast
+smoke test of the gate wiring. Red-teaming a **real** policy (`policy: smolvla`,
+`suite: libero`) needs a **GPU runner** plus the `[lerobot]` extra; see the commented job in
+[examples/workflow.yml](examples/workflow.yml).
+
 ## First real result (SmolVLA on LIBERO)
 
 `HuggingFaceVLA/smolvla_libero` · `libero_object/0` · 10 seeds · horizon 280 · RTX 4090
@@ -186,12 +223,13 @@ same config + seed always produces a byte-identical `report.json`.
 ## Roadmap
 
 - **v0.1.0** — Provael (rebrand of the harness): CPU core, 3 attack families, real
-  SmolVLA × LIBERO path, leaderboard. *(this release)*
+  SmolVLA × LIBERO path, leaderboard.
 - **v0.2.0** — **SARIF output** (`provael report --format sarif`) so findings surface in
-  GitHub code scanning · a **reusable GitHub Action** (`provael/provael-action`) to run a
-  red-team gate in any robot/VLA repo's CI · **Embodied-AI Top-10 mapping** (each attack
-  tagged to a risk ID) · per-task keep-out-zone calibration.
-- **later** — optimized (gradient/search) attacks; a second policy/suite backend.
+  GitHub code scanning · a **reusable GitHub Action** (`provael/provael`) that gates CI on
+  ASR · **Embodied-AI Top-10 mapping** (every attack tagged to an `EAIxx` risk).
+  *(this release)*
+- **next** — per-task keep-out-zone calibration; optimized (gradient/search) attacks; a
+  second policy/suite backend.
 
 ## Development
 

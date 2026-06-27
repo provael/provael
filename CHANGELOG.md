@@ -4,12 +4,27 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] — 2026-06-27
 
 ### Added
-- `docs/TOP10.md` — The Embodied AI Security Top 10 (v0.2), an independent risk taxonomy for VLA/robot
-  security with a crosswalk to OWASP/MITRE/NIST.
+- **SARIF 2.1.0 output** — `provael report --in <run> --format sarif [--out file]` (stdout when
+  no `--out`) and `provael attack … --format sarif` / `--sarif-out <path>`. One result per
+  attack, severity from ASR (≥0.5 `error`, >0 `warning`, 0 `note`), with stable
+  `partialFingerprints`, so red-team findings surface in GitHub code scanning.
+- **Reusable GitHub Action** (`provael/provael@v0.2.0`) — a composite action that runs a
+  red-team, uploads the SARIF via `github/codeql-action/upload-sarif`, and fails CI when the
+  overall ASR exceeds `asr-threshold`; plus `examples/workflow.yml` for consumers.
+- **Embodied AI Top-10 mapping** — every attack is tagged with its `EAIxx` risk
+  (`instruction` → EAI01, `visual` → EAI02, `injection` → EAI05; the baseline control stays
+  untagged). Surfaced as `RunReport.eai` in report.json, an EAI column in report.md and the
+  CLI table, and as SARIF `ruleId`s deep-linked to `docs/TOP10.md`.
+- `docs/TOP10.md` — The Embodied AI Security Top 10 (v0.2), an independent risk taxonomy for
+  VLA/robot security with a crosswalk to OWASP/MITRE/NIST.
 - Brand assets under `docs/assets/` (icon + wordmark, SVG and PNG) and a logo in the README header.
+
+### Unchanged
+- The deterministic stub run still reports ASR 67.1% (47/70), byte-identical; the CPU core
+  pulls no GPU/ML stack and CI never installs lerobot.
 
 ## [0.1.0] — 2026-06-27
 
@@ -55,4 +70,5 @@ single task with a default, uncalibrated keep-out predicate. See the README's
 > Detailed pre-rebrand history (the `vla-redteam` 0.2.x line) is preserved in the git log and
 > the prior PyPI releases.
 
+[0.2.0]: https://github.com/provael/provael/releases/tag/v0.2.0
 [0.1.0]: https://github.com/provael/provael/releases/tag/v0.1.0
