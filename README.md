@@ -245,6 +245,24 @@ uv run pytest -q         # tests (CPU only; LeRobot tests skip unless gated)
 - **[PRIOR_ART.md](https://github.com/provael/provael/blob/main/PRIOR_ART.md)** — RoboPAIR, POEX, BadVLA, SafeVLA, and how we differ.
 - **[CHANGELOG.md](https://github.com/provael/provael/blob/main/CHANGELOG.md)** — what shipped and what's planned.
 
+## Security & contributing
+
+- **Security** — report vulnerabilities in Provael privately via
+  **[SECURITY.md](https://github.com/provael/provael/blob/main/SECURITY.md)** (90-day
+  coordinated disclosure). For responsible *use* of the tool, see
+  **[SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md)**.
+- **Contributing** —
+  **[CONTRIBUTING.md](https://github.com/provael/provael/blob/main/CONTRIBUTING.md)**: dev
+  setup, the green gate, and **DCO sign-off** (`git commit -s`).
+- **Code of conduct** —
+  **[CODE_OF_CONDUCT.md](https://github.com/provael/provael/blob/main/CODE_OF_CONDUCT.md)**
+  (Contributor Covenant 2.1).
+- **Shape the risk list** — the
+  **[Embodied AI Security Top 10](https://github.com/provael/provael/blob/main/docs/TOP10.md)**
+  is a community draft; propose, dispute, or co-author it.
+- **Cite** — see
+  **[CITATION.cff](https://github.com/provael/provael/blob/main/CITATION.cff)**.
+
 ## License
 
 [Apache-2.0](https://github.com/provael/provael/blob/main/LICENSE). Provael — *prove it, prevail.*

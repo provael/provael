@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use Provael or its Embodied AI Security Top 10, please cite them as below."
+title: Provael
+abstract: >-
+  Provael is an open-source, model-agnostic tool to red-team open Vision-Language-Action (VLA)
+  robot policies in simulation and report an Attack Success Rate (ASR).
+type: software
+authors:
+  - family-names: Jain
+    given-names: Sattyam
+    website: "https://github.com/sattyamjjain"
+version: "0.3.0"
+date-released: "2026-06-27"
+license: Apache-2.0
+repository-code: "https://github.com/provael/provael"
+url: "https://github.com/provael/provael"
+keywords:
+  - vla
+  - robotics
+  - red-team
+  - security
+  - adversarial
+  - ai-safety
+references:
+  - type: generic
+    title: "The Embodied AI Security Top 10"
+    version: "0.2"
+    year: 2026
+    authors:
+      - family-names: Jain
+        given-names: Sattyam
+    url: "https://github.com/provael/provael/blob/main/docs/TOP10.md"
+    license: CC-BY-SA-4.0
