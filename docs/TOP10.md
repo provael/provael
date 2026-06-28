@@ -77,7 +77,7 @@ failures · rogue/self-evolving agents · long-lived memory poisoning.
 **What.** Natural-language commands (direct, or via an LLM planner) that drive the policy to act against
 its safety constraints — the embodied analog of an LLM jailbreak, output as a physical action plan.
 **Evidence.** *[research]* **RoboPAIR** (arXiv 2410.13691, ~100% ASR incl. a deployed Unitree Go2);
-**BadRobot** (arXiv 2407.20242). Provael's own runs: instruction reframings divert a real SmolVLA policy.
+**BadRobot** (arXiv 2407.20242). Provael's own runs: `roleplay` diverts a real SmolVLA×LIBERO policy **100% (10/10), 95% CI [72–100%]** against a **0% benign baseline** (sim-only, one task, n=10; reproduce with `provael calibrate` + `attack --calib`).
 **Why it matters.** Cheapest, most transferable attack — rides the normal command channel to a moving robot.
 **Mitigations.** Instruction provenance/auth; runtime plan-validation guardrail (temporal-logic /
 executability, cf. RoboGuard); embodied-harm refusal training; red-team each release and gate on ASR.
@@ -87,8 +87,9 @@ executability, cf. RoboGuard); embodied-harm refusal training; red-team each rel
 **What.** Crafted perturbations in what the policy *sees/senses* — adversarial patches, stickers, 3D
 textures, or sensor spoofing — that flip behavior while looking benign to humans.
 **Evidence.** *[research]* "Adversarial vulnerabilities of VLA models" (arXiv 2411.13587); action-aware
-patch attacks. *(Honest note: in Provael's early SmolVLA×LIBERO run these did NOT transfer — real-world
-robustness of perception attacks is unsettled, which is exactly why you test rather than assume.)*
+patch attacks. *(Honest note: in Provael's SmolVLA×LIBERO run these did NOT transfer — 0% (0/10), 95% CI
+[0–28%], against the same 0% benign baseline; real-world robustness of perception attacks is unsettled,
+which is exactly why you test rather than assume.)*
 **Why it matters.** Lives in the physical environment, not the network — needs no system access, survives air-gaps.
 **Mitigations.** Input smoothing/randomization; multi-view & multi-sensor agreement; adversarial training;
 perception-embedding anomaly detection; physical red-team with printed artifacts.

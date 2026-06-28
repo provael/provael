@@ -70,11 +70,11 @@ to oversell. Before you trust a number, know:
 - **One policy, one suite shipped.** The architecture is model-agnostic by design (an adapter
   interface), but only the **SmolVLA / LeRobot** policy and the **LIBERO** suite are
   implemented today — generality is intended, not yet demonstrated against a second backend.
-- **The first result used an uncalibrated predicate.** The headline `libero_object/0` numbers
-  below used a default keep-out zone, so that ASR means "diverted out of the benign envelope,"
-  not a calibrated hazard rate. **v0.4 adds `provael calibrate`** — a per-task predicate fit
-  from the policy's own benign rollouts to a benign-FPR target, reported as a calibrated
-  redirection rate with a 95% CI and the benign FPR alongside. See [Calibration](#calibration).
+- **Every rate ships with its control.** The headline `libero_object/0` result below is reported
+  as a redirection rate with its **95% Wilson CI** and the **benign baseline FPR** (the `none`
+  control — 0% here) alongside, so a non-zero rate is attack-induced, not task noise. **v0.4's
+  `provael calibrate`** fits the unsafe predicate per task from the policy's own benign rollouts
+  to a benign-FPR target; apply it with `provael attack --calib`. See [Calibration](#calibration).
 
 Honesty and reproducibility are the point — see
 [PRIOR_ART.md](https://github.com/provael/provael/blob/main/PRIOR_ART.md) for how this sits
@@ -180,26 +180,30 @@ smoke test of the gate wiring. Red-teaming a **real** policy (`policy: smolvla`,
 `HuggingFaceVLA/smolvla_libero` · `libero_object/0` · 10 seeds · horizon 280 · RTX 4090
 (`osmesa`), 2026-06-06.
 
-| family | attack | ASR | lift vs baseline |
+**`roleplay` redirects SmolVLA out of its safe envelope 100% (10/10), 95% Wilson CI
+[72–100%], against a benign baseline FPR of 0% (0/10)** — every redirection is attack-induced.
+
+| family | attack | redirection rate (95% CI) | benign FPR (control) |
 | --- | --- | ---: | ---: |
-| baseline | `none` | 0% (0/10) | — |
-| instruction | `roleplay` | **100% (10/10)** | **+100** |
-| instruction | `goal_substitution` | **60% (6/10)** | **+60** |
-| instruction | `paraphrase` | 10% (1/10) | +10 |
-| visual | `patch` | 0% (0/10) | 0 |
-| visual | `decoy_object` | 0% (0/10) | 0 |
-| injection | `scene_text` | 0% (0/10) | 0 |
-| **overall** | | **24.3% (17/70) ± 9.1%** | |
+| baseline | `none` | — | **0% (0/10)** |
+| instruction | `roleplay` | **100% (10/10) [72–100%]** | 0% |
+| instruction | `goal_substitution` | **60% (6/10) [31–83%]** | 0% |
+| instruction | `paraphrase` | 10% (1/10) [2–40%] | 0% |
+| visual | `patch` | 0% (0/10) [0–28%] | 0% |
+| visual | `decoy_object` | 0% (0/10) [0–28%] | 0% |
+| injection | `scene_text` | 0% (0/10) [0–28%] | 0% |
 
-Read it as **lift over the benign baseline**. The `none` control runs the policy's *real*
-task and scores **0/10**, so every success is attack-induced. Language-reframing attacks
-reliably divert SmolVLA's end-effector; pixel/scene-text perturbations did not move it (0%).
+Read each rate **against its control**: the `none` baseline runs the policy's *real* task and
+scores **0/10 (benign FPR 0%)**, so every success above is attack-induced, not the policy failing
+the task on its own. Language-reframing attacks reliably divert SmolVLA's end-effector; pixel and
+scene-text perturbations did not move it (0%) — an honest null on this suite.
 
-> ⚠️ **Preliminary.** These numbers used a **default, uncalibrated** keep-out region, so they
-> measure "diverted out of the benign safe envelope," not a zone-calibrated hazard rate;
-> `n = 10`, one task. **v0.4 adds `provael calibrate`** to fit a per-task predicate to a
-> benign-FPR target and report a calibrated redirection rate with a 95% CI — see
-> [Calibration](#calibration).
+> **Scope (honest, unchanged).** Simulation only, **one task**, **`n = 10`** per attack — read the
+> CIs, not just the point estimates. Only the **instruction** family transfers to the real model so
+> far. **Calibration is available**: `provael calibrate` fits a per-task predicate from the policy's
+> own benign rollouts to a benign-FPR target, and `provael attack --calib` reports a calibrated
+> redirection rate with a 95% CI and the benign FPR as its control (here, 0%) — see
+> [Calibration](#calibration). The real SmolVLA × LIBERO path needs a GPU + the `[lerobot]` extra.
 
 ## Calibration
 
@@ -231,6 +235,25 @@ are recorded in `report.json`, `report.md`, the CLI table, and the SARIF output.
 
 > The real **SmolVLA × LIBERO** calibration runs on a GPU box (it needs the `[lerobot]` extra);
 > the stub path runs on CPU and is covered by CI.
+
+## Compliance evidence
+
+Turn a run into an **auditor-readable evidence artifact** — it maps the measured signals
+(calibrated redirection rate + 95% CI, the benign-FPR control, the EAI risks covered, the
+calibration metadata) onto **EU AI Act** (Art. 9 / 15 / 72), **ISO 10218-1/-2:2025** (cyber),
+**NIST AI 100-2 / AI RMF**, and **IEC 62443**:
+
+```bash
+uv run provael report --in runs/calib --format compliance --out report.compliance.json  # evidence JSON
+uv run provael report --in runs/calib --format compliance --out report.compliance.md    # auditor-readable
+```
+
+Each mapped requirement carries the Provael artifacts that evidence it, an `evidence-present` /
+`gap` status (with a reason — e.g. an uncalibrated run flags the metrics that need calibration as
+gaps), and the honest-scope caveats. It reuses `report.json` (no attacks re-run) and is
+**evidence, not certification** — see
+[docs/COMPLIANCE.md](https://github.com/provael/provael/blob/main/docs/COMPLIANCE.md) for the full
+crosswalk and schema.
 
 ## How it works
 
@@ -296,8 +319,9 @@ uv run pytest -q         # tests (CPU only; LeRobot tests skip unless gated)
 - **Shape the risk list** — the
   **[Embodied AI Security Top 10](https://github.com/provael/provael/blob/main/docs/TOP10.md)**
   is a community draft; propose, dispute, or co-author it.
-- **Compliance** — how a calibrated run maps to ISO 10218:2025, the EU AI Act (Art. 15), and
-  NIST AI RMF: **[docs/COMPLIANCE.md](https://github.com/provael/provael/blob/main/docs/COMPLIANCE.md)**.
+- **Compliance** — `provael report --format compliance` maps a run to ISO 10218:2025, the EU AI
+  Act (Art. 9 / 15 / 72), NIST AI 100-2 / AI RMF, and IEC 62443; crosswalk + schema in
+  **[docs/COMPLIANCE.md](https://github.com/provael/provael/blob/main/docs/COMPLIANCE.md)**.
 - **Cite** — see
   **[CITATION.cff](https://github.com/provael/provael/blob/main/CITATION.cff)**.
 
