@@ -296,6 +296,8 @@ uv run pytest -q         # tests (CPU only; LeRobot tests skip unless gated)
 - **Shape the risk list** — the
   **[Embodied AI Security Top 10](https://github.com/provael/provael/blob/main/docs/TOP10.md)**
   is a community draft; propose, dispute, or co-author it.
+- **Compliance** — how a calibrated run maps to ISO 10218:2025, the EU AI Act (Art. 15), and
+  NIST AI RMF: **[docs/COMPLIANCE.md](https://github.com/provael/provael/blob/main/docs/COMPLIANCE.md)**.
 - **Cite** — see
   **[CITATION.cff](https://github.com/provael/provael/blob/main/CITATION.cff)**.
 

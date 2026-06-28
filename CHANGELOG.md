@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `docs/COMPLIANCE.md` — a crosswalk + evidence map from Provael's calibrated output (redirection
+  rate, benign FPR, CI, EAI tags, SARIF) to **EU AI Act Art. 15**, **ISO 10218:2025**, **NIST AI
+  100-2 / AI RMF**, and **IEC 62443**, plus a pre-spec (evidence schema) for a future
+  `provael report --format compliance` generator. Linked from the README.
+
 ## [0.4.0] — 2026-06-28
 
 ### Added
