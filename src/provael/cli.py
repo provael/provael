@@ -33,6 +33,12 @@ from provael.attacks.registry import (
     make_attack,
 )
 from provael.calibration import calibrate_suite, load_calibrations, save_calibration
+from provael.compliance import (
+    COMPLIANCE_JSON,
+    to_compliance_json,
+    write_compliance_json,
+    write_compliance_markdown,
+)
 from provael.config import RunConfig
 from provael.leaderboard import Leaderboard, build_leaderboard
 from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
@@ -51,6 +57,7 @@ class OutputFormat(StrEnum):
 
     table = "table"
     sarif = "sarif"
+    compliance = "compliance"
 
 
 app = typer.Typer(
@@ -151,7 +158,9 @@ def attack(
     fmt: Annotated[
         OutputFormat,
         typer.Option(
-            "--format", help="Console format. 'sarif' also writes report.sarif into --out."
+            "--format",
+            help="Output format. 'sarif' also writes report.sarif, 'compliance' also writes "
+            "report.compliance.json, into --out.",
         ),
     ] = OutputFormat.table,
     sarif_out: Annotated[
@@ -221,19 +230,29 @@ def attack(
         write_sarif(report, sarif_target)
         _out.print(f"Wrote [cyan]{sarif_target}[/cyan]  (SARIF 2.1.0)")
 
+    if fmt is OutputFormat.compliance:
+        compliance_target = config.out / COMPLIANCE_JSON
+        write_compliance_json(report, compliance_target)
+        _out.print(f"Wrote [cyan]{compliance_target}[/cyan]  (compliance evidence, JSON)")
+
 
 @app.command()
 def report(
     in_dir: Annotated[Path, typer.Option("--in", help="Directory containing report.json.")],
     fmt: Annotated[
-        OutputFormat, typer.Option("--format", help="Output format: 'table' or 'sarif'.")
+        OutputFormat,
+        typer.Option("--format", help="Output format: 'table', 'sarif', or 'compliance'."),
     ] = OutputFormat.table,
     out: Annotated[
         Path | None,
-        typer.Option("--out", help="With --format sarif, write here instead of stdout."),
+        typer.Option(
+            "--out",
+            help="With --format sarif/compliance, write here instead of stdout. For "
+            "compliance, a '.md' suffix writes the human-readable report, else JSON.",
+        ),
     ] = None,
 ) -> None:
-    """Print a summary of a previously written report, or emit it as SARIF."""
+    """Print a summary of a previously written report, or emit it as SARIF / compliance evidence."""
     try:
         loaded = load_report(in_dir)
     except FileNotFoundError as exc:
@@ -248,6 +267,16 @@ def report(
             _out.print(f"Wrote [cyan]{out}[/cyan]  (SARIF 2.1.0)")
         else:
             print(to_sarif_json(loaded))  # machine-readable SARIF to stdout
+        return
+    if fmt is OutputFormat.compliance:
+        if out is None:
+            print(to_compliance_json(loaded))  # machine-readable evidence JSON to stdout
+        elif out.suffix.lower() == ".md":
+            write_compliance_markdown(loaded, out)
+            _out.print(f"Wrote [cyan]{out}[/cyan]  (compliance evidence, Markdown)")
+        else:
+            write_compliance_json(loaded, out)
+            _out.print(f"Wrote [cyan]{out}[/cyan]  (compliance evidence, JSON)")
         return
     render_summary(loaded, _out)
 
