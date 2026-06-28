@@ -6,11 +6,31 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-06-28
+
 ### Added
-- `docs/COMPLIANCE.md` — a crosswalk + evidence map from Provael's calibrated output (redirection
-  rate, benign FPR, CI, EAI tags, SARIF) to **EU AI Act Art. 15**, **ISO 10218:2025**, **NIST AI
-  100-2 / AI RMF**, and **IEC 62443**, plus a pre-spec (evidence schema) for a future
-  `provael report --format compliance` generator. Linked from the README.
+- **Compliance evidence report** — `provael report --in <run> --format compliance` emits an
+  auditor-readable evidence artifact mapping a run's calibrated results to **EU AI Act**
+  (Art. 9 / 15 / 72), **ISO 10218-1/-2:2025** (cyber), **NIST AI 100-2 / AI RMF**
+  (GOVERN·MAP·MEASURE·MANAGE), and **IEC 62443**. `--out report.compliance.json` writes the JSON
+  evidence schema — per mapped requirement: the Provael artifacts that evidence it (attack
+  families, calibrated redirection rate + 95% Wilson CI, benign FPR, EAI ids covered, calibration
+  metadata), an `evidence-present` / `gap` status with a reason, and the honest-scope caveats
+  (adversarial-only, evidence-not-certification, behavioural-not-worst-case). `--out
+  report.compliance.md` renders the buyer/auditor-readable version; with no `--out` the JSON
+  prints to stdout. `provael attack … --format compliance` also drops a `report.compliance.json`
+  next to the report. Reuses `report.json` (no attacks re-run), is CPU/stub-runnable in CI, and is
+  byte-deterministic. Implements the `docs/COMPLIANCE.md` pre-spec.
+- `docs/COMPLIANCE.md` — the crosswalk + evidence map the generator implements (calibrated
+  redirection rate, benign FPR, CI, EAI tags, SARIF → the frameworks above). Linked from the README.
+
+### Changed
+- **First real result refreshed to a calibrated, control-bearing framing.** The README and
+  `docs/TOP10.md` headline SmolVLA × LIBERO result now leads with `roleplay` **100% (10/10),
+  95% Wilson CI [72–100%]** against a **0% benign baseline FPR** — every rate shown with its
+  control and CI — replacing the blended, uncalibrated 24.3% headline. The honest caveats
+  (sim-only, one task, `n = 10`, only the instruction family transfers) and methodology notes are
+  unchanged, now pointing at `provael calibrate` + `provael attack --calib`.
 
 ## [0.4.0] — 2026-06-28
 
@@ -100,6 +120,7 @@ single task with a default, uncalibrated keep-out predicate. See the README's
 > Detailed pre-rebrand history (the `vla-redteam` 0.2.x line) is preserved in the git log and
 > the prior PyPI releases.
 
+[0.5.0]: https://github.com/provael/provael/releases/tag/v0.5.0
 [0.4.0]: https://github.com/provael/provael/releases/tag/v0.4.0
 [0.3.0]: https://github.com/provael/provael/releases/tag/v0.3.0
 [0.1.0]: https://github.com/provael/provael/releases/tag/v0.1.0

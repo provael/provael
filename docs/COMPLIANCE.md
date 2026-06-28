@@ -84,40 +84,48 @@ same mapping live in [TOP10.md → Cross-framework crosswalk](TOP10.md#cross-fra
 
 ---
 
-## Planned: `provael report --format compliance` (v2.x — gated on demand)
+## Shipped: `provael report --format compliance` (v0.5.0)
 
-The crosswalk above is the spec for a generator that turns a calibrated run into an
-auditor-ready evidence report. **Not built yet** — it's pre-specced here so the data model is
-right before there's a paying reason to build the hosted version.
+The crosswalk above is the spec for the generator that turns a run into an auditor-ready evidence
+report. **Shipped in v0.5.0.**
 
-- **Input:** a calibrated run's `report.json` (+ its calibration artifacts) and a target
-  framework profile (`eu-ai-act` | `iso-10218` | `nist-ai-rmf`).
-- **Output:** a per-control evidence document (Markdown/JSON, later PDF): each mapped control →
-  the Provael signal, the measured result (redirection rate + CI + benign FPR), a pass/fail vs a
-  configurable threshold, and a reference to the underlying artifact (SARIF / `report.json`).
+```bash
+provael report --in runs/calib --format compliance --out report.compliance.json  # evidence JSON
+provael report --in runs/calib --format compliance --out report.compliance.md    # auditor-readable
+provael report --in runs/calib --format compliance                               # JSON to stdout
+```
 
-Proposed **evidence schema** (one entry per mapped control):
+- **Input:** an existing run's `report.json`. Calibrated runs carry the redirection rate + 95% CI
+  + benign FPR + per-task calibration metadata; uncalibrated runs are accepted and surface the
+  requirements that need a calibrated/controlled metric as **gaps**. No attacks are re-run, so the
+  path is CPU/stub-runnable in CI and byte-deterministic.
+- **Output:** a per-requirement evidence document (JSON + Markdown): each mapped control → the
+  Provael signal, the run's measured result (redirection rate + 95% CI + benign FPR + per-EAI
+  breakdown + calibration target), an `evidence-present` / `gap` status with a reason, the
+  honest-scope caveats, and references to the underlying artifacts (`report.json` / `report.sarif`).
+
+**Evidence schema** — the measured `result` is carried once at the top; `entries[]` is one object
+per mapped control:
 
 ```json
 {
-  "framework": "eu-ai-act",
+  "key": "eu-ai-act:art15",
+  "framework": "EU AI Act (Regulation (EU) 2024/1689)",
+  "framework_id": "eu-ai-act",
   "control_id": "Article 15",
   "control_title": "Accuracy, robustness and cybersecurity",
-  "provael_signal": "EAI01 instruction jailbreak (calibrated)",
-  "result": {
-    "redirection_rate": 0.60,
-    "ci95": [0.31, 0.83],
-    "benign_fpr": 0.0,
-    "n": 10,
-    "calibrated": true,
-    "target_fpr": 0.05
-  },
-  "status": "review",
-  "evidence_refs": ["report.json#/by_attack/goal_substitution", "report.sarif"]
+  "provael_signal": "Calibrated redirection rate + 95% CI per EAI risk, with the benign-FPR control; SARIF for the security review",
+  "status": "evidence-present",
+  "gap_reason": null,
+  "indicative": false,
+  "evidence_refs": ["report.json", "report.json#/by_attack", "report.sarif"],
+  "caveats": ["adversarial-only", "evidence-not-certification", "behavioural-not-worst-case"]
 }
 ```
 
-`status` is advisory (`pass` / `review` / `fail` against a user-set threshold), never an
+`status` is advisory — `evidence-present` means this run produced the artifact a reviewer would
+attach; `gap` means it did not (an uncalibrated run, a missing benign control, or a longitudinal /
+observability requirement a single run can't satisfy, each with a `gap_reason`) — never an
 assertion of legal compliance.
 
 ---
