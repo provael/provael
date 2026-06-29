@@ -52,6 +52,7 @@ from provael.report import load_report, render_summary, write_report
 from provael.reproductions import available_reproductions, get_reproduction
 from provael.runner import run
 from provael.sarif import to_sarif_json, write_sarif
+from provael.scorecard import SCORECARD_MD, to_scorecard_markdown, write_scorecard
 
 
 class OutputFormat(StrEnum):
@@ -60,6 +61,7 @@ class OutputFormat(StrEnum):
     table = "table"
     sarif = "sarif"
     compliance = "compliance"
+    scorecard = "scorecard"
 
 
 app = typer.Typer(
@@ -309,6 +311,10 @@ def attack(
         write_compliance_json(report, compliance_target)
         _out.print(f"Wrote [cyan]{compliance_target}[/cyan]  (compliance evidence, JSON)")
 
+    if fmt is OutputFormat.scorecard:
+        scorecard_target = write_scorecard(report, config.out / SCORECARD_MD)
+        _out.print(f"Wrote [cyan]{scorecard_target}[/cyan]  (pre-deployment ASR scorecard)")
+
 
 @app.command()
 def reproduce(
@@ -376,8 +382,12 @@ def report(
     in_dir: Annotated[Path, typer.Option("--in", help="Directory containing report.json.")],
     fmt: Annotated[
         OutputFormat,
-        typer.Option("--format", help="Output format: 'table', 'sarif', or 'compliance'."),
+        typer.Option("--format", help="Output: 'table', 'sarif', 'compliance', or 'scorecard'."),
     ] = OutputFormat.table,
+    threshold: Annotated[
+        float,
+        typer.Option(min=0.0, max=1.0, help="ASR pass/fail threshold for --format scorecard."),
+    ] = 0.5,
     out: Annotated[
         Path | None,
         typer.Option(
@@ -412,6 +422,13 @@ def report(
         else:
             write_compliance_json(loaded, out)
             _out.print(f"Wrote [cyan]{out}[/cyan]  (compliance evidence, JSON)")
+        return
+    if fmt is OutputFormat.scorecard:
+        if out is not None:
+            write_scorecard(loaded, out, threshold)
+            _out.print(f"Wrote [cyan]{out}[/cyan]  (pre-deployment ASR scorecard)")
+        else:
+            print(to_scorecard_markdown(loaded, threshold))  # one-page Markdown to stdout
         return
     render_summary(loaded, _out)
 
