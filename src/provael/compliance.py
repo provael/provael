@@ -153,8 +153,8 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         control_id="NIST AI 100-2e2025",
         control_title="Adversarial ML taxonomy",
         provael_signal=(
-            "EAI01/02/05 mapped to the adversarial-ML taxonomy (evasion / abuse / indirect "
-            "injection)"
+            "EAI01/02/04/05 mapped to the adversarial-ML taxonomy (evasion / abuse / indirect "
+            "injection / action-integrity violation)"
         ),
         evidence_refs=(
             "report.json#/eai",

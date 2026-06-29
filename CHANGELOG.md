@@ -6,9 +6,22 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-## [0.5.0] — 2026-06-28
+## [0.5.0] — 2026-06-29
 
 ### Added
+- **EAI04 action-space-integrity attack family (`action`).** Two new attacks alongside the
+  existing instruction/visual/injection families: **`freeze`** — a FreezeVLA-style
+  action-freeze (arXiv:2509.19870) that drives the policy's motor command to a no-op — and
+  **`trajectory_hijack`** — a targeted redirect that biases the action toward an attacker
+  waypoint. Both route through the standard `Attack` interface and are scored as a rate with
+  a **95% Wilson CI against a benign-FPR control** (the `none` baseline under the same
+  predicate). On the deterministic CPU stub both land at **100% [72–100%] vs a 0% benign
+  baseline**; the EAI04 predicate (freeze / redirect) is OR-ed into the suite's unsafe check,
+  is independent of danger calibration, and is a no-op on suites that surface no action
+  signal (so the attacks report **not-applicable** there — e.g. the GPU-gated LIBERO path).
+  **Stub-validated scaffolding:** a real-model action-freeze needs an adversarial-image search
+  (FreezeVLA / AttackVLA), which is GPU-gated and **not yet run** — no cross-model transfer is
+  claimed. `docs/TOP10.md` EAI04 moves from taxonomy-only to *attack shipped*.
 - **Compliance evidence report** — `provael report --in <run> --format compliance` emits an
   auditor-readable evidence artifact mapping a run's calibrated results to **EU AI Act**
   (Art. 9 / 15 / 72), **ISO 10218-1/-2:2025** (cyber), **NIST AI 100-2 / AI RMF**

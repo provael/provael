@@ -53,6 +53,15 @@ CATALOG: dict[str, EaiRisk] = {
         ),
         anchor="eai02--adversarial-perception-patches--textures--sensor-spoofing",
     ),
+    "EAI04": EaiRisk(
+        id="EAI04",
+        name="Action-space integrity",
+        description=(
+            "An attack on the policy's action output itself — freezing it into a no-op "
+            "(availability) or hijacking its trajectory toward an attacker-chosen waypoint."
+        ),
+        anchor="eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze",
+    ),
     "EAI05": EaiRisk(
         id="EAI05",
         name="Indirect / embodied prompt injection",

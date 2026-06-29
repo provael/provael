@@ -42,6 +42,7 @@ certified bounds. See [Honest scope](#honest-scope--what-this-does-not-cover).
 |---|---|---|---|---|
 | **EAI01** instruction jailbreak | Art. 15 — cybersecurity: resilience to attempts to alter use/outputs/performance | Cybersecurity / unauthorized-manipulation requirements *(indicative)* | Abuse / evasion (integrity) | Access control; use-control *(indicative)* |
 | **EAI02** adversarial perception | Art. 15 — resilience to *adversarial examples* (inputs designed to cause mistakes) | Cybersecurity req. *(indicative)* | Evasion (integrity) | — |
+| **EAI04** action-space integrity (freeze / trajectory hijack) | Art. 9 — risk management *(indicative)* + Art. 15 — resilience to manipulation of *outputs / performance* | ISO 10218-2:2025 — cyber: monitored-stop / motion-limit & integrity requirements *(indicative)* | Integrity violation (action-space integrity) | Control-system integrity / safety response *(indicative)* |
 | **EAI05** indirect / embodied injection | Art. 15 — manipulation via crafted inputs | Cybersecurity req. *(indicative)* | Indirect prompt injection | Data integrity *(indicative)* |
 | **Calibrated redirection rate + 95% CI** | Art. 15 — *accuracy metrics declared* + robustness measurement; benchmarking methodology | Evidence for the cyber-risk assessment *(indicative)* | **AI RMF MEASURE** (measure risks) | Security level verification *(indicative)* |
 | **Benign baseline FPR (control)** | Art. 15 — consistent performance; false-positive characterisation | — | AI RMF MEASURE (validity, reliability) | — |

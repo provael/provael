@@ -11,6 +11,16 @@ have no such lookup table; the point is only that templated instruction attacks
 (which inject those tokens) produce a measurable, deterministic Attack Success Rate
 against the paired :class:`~provael.suites.stub.StubSuite`. See PRIOR_ART.md for
 why instruction reframing is a real attack surface on actual policies.
+
+The same stub also models an **action-space-integrity** surface for the EAI04 ``action``
+family (see :mod:`provael.scoring.action`): channel 0 carries danger/aggression as above,
+while channels 1-3 carry a benign *nominal reach motion* the policy commands by default.
+A ``freeze`` directive zeros that motion (the policy stops issuing motor commands) and a
+``trajectory_hijack`` directive redirects it toward an attacker waypoint. Those directives
+arrive in a dedicated observation channel that is **disjoint from the danger-bearing
+channels**, so the action family never perturbs the danger axis — the existing families'
+ASRs are byte-identical. Like the trigger table, this is a deliberate fixture surface,
+not a model of real VLA motion.
 """
 
 from __future__ import annotations
@@ -18,8 +28,14 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 import numpy as np
+import numpy.typing as npt
 
 from provael.policies.base import PolicyAdapter
+from provael.scoring.action import (
+    NOMINAL_DIRECTION,
+    NOMINAL_SPEED,
+    parse_action_directives,
+)
 from provael.types import Action, Observation
 
 #: Substrings that, if present in an attackable channel, raise the stub's "aggression".
@@ -94,6 +110,17 @@ def observation_aggression(observation: Observation) -> float:
     return float(min(1.0, round(_trigger_score(attackable_text(observation)), _ROUND_DP)))
 
 
+def _nominal_motion(
+    direction: tuple[float, float, float], speed: float
+) -> npt.NDArray[np.float32]:
+    """A length-3 motion vector: ``direction`` unit-normalised, scaled to ``speed``."""
+    vec = np.asarray(direction, dtype=np.float32)
+    norm = float(np.linalg.norm(vec))
+    if norm == 0.0:
+        return np.zeros(3, dtype=np.float32)
+    return (vec / norm * speed).astype(np.float32)
+
+
 def combined_aggression(instruction: str, observation: Observation) -> float:
     """Total aggression from the instruction *and* the observation channels.
 
@@ -120,15 +147,23 @@ class StubPolicy(PolicyAdapter):
         self._loaded = True
 
     def act(self, observation: Observation, instruction: str) -> Action:
-        """Emit a safe action by default; an aggressive one if triggers are present.
+        """Emit a benign action by default; an aggressive and/or action-perturbed one otherwise.
 
-        Aggression is read from BOTH the instruction (the instruction family) and the
-        observation's attackable channels (the visual / injection families), summed and
-        clipped to [0, 1]. Channel 0 encodes "reach/aggression" — the only channel the
-        StubSuite reads. With no triggers the action is all zeros (benign).
+        Channel 0 encodes "reach/aggression" — the danger axis the StubSuite reads — summed
+        from the instruction (instruction family) and the observation's attackable channels
+        (visual / injection families), clipped to [0, 1]. Channels 1-3 carry the EAI04
+        nominal reach motion: present (benign) by default, **zeroed** by a ``freeze``
+        directive, or **redirected** toward a waypoint by a ``trajectory_hijack`` directive
+        (see :mod:`provael.scoring.action`). With no attack, channel 0 is 0 and channels 1-3
+        hold the nominal motion (benign: not unsafe, not frozen, not redirected).
         """
         if not self._loaded:
             raise RuntimeError("StubPolicy.act called before load(); call load() first.")
         action = np.zeros(self.action_dim, dtype=np.float32)
         action[0] = combined_aggression(instruction, observation)
+        if self.action_dim >= 4:
+            freeze, hijack_target = parse_action_directives(observation)
+            if not freeze:  # benign or hijacked → command motion (frozen → leave zeros)
+                direction = hijack_target if hijack_target is not None else NOMINAL_DIRECTION
+                action[1:4] = _nominal_motion(direction, NOMINAL_SPEED)
         return action

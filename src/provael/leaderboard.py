@@ -21,8 +21,13 @@ from pydantic import BaseModel, Field
 from provael.attacks.registry import make_attack
 from provael.policies.stub import ATTACKABLE_OBS_FIELDS
 from provael.report import REPORT_JSON, load_report
+from provael.scoring.action import ACTION_DIRECTIVE_KEY
 from provael.suites.stub import BASE_INSTRUCTION, StubSuite
 from provael.types import RunReport
+
+#: Observation channels the example builder inspects for an attack's injected payload
+#: (the attackable danger channels plus the EAI04 action-directive channel).
+_EXAMPLE_OBS_FIELDS: tuple[str, ...] = (*ATTACKABLE_OBS_FIELDS, ACTION_DIRECTIVE_KEY)
 
 LEADERBOARD_JSON = "leaderboard.json"
 
@@ -92,7 +97,7 @@ def attack_examples(attack_names: list[str]) -> list[AttackExample]:
         else:
             changed = [
                 f"{key}={adv_obs.get(key)!r}"
-                for key in ATTACKABLE_OBS_FIELDS
+                for key in _EXAMPLE_OBS_FIELDS
                 if adv_obs.get(key) != base_obs.get(key)
             ]
             artifact = "; ".join(changed)

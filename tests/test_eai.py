@@ -6,6 +6,7 @@ import io
 
 from rich.console import Console
 
+from provael.attacks.action import FreezeAttack, TrajectoryHijackAttack
 from provael.attacks.baseline import NoOpAttack
 from provael.attacks.injection import MCPToolDescInjection, SceneTextInjection
 from provael.attacks.instruction import (
@@ -29,6 +30,8 @@ EXPECTED: dict[str, str] = {
     "decoy_object": "EAI02",
     "scene_text": "EAI05",
     "mcp_tool_desc": "EAI05",
+    "freeze": "EAI04",
+    "trajectory_hijack": "EAI04",
 }
 
 
@@ -41,6 +44,9 @@ def test_attack_classes_carry_eai_metadata() -> None:
     assert DecoyObjectAttack().eai_id == "EAI02"
     assert SceneTextInjection().eai_id == "EAI05"
     assert MCPToolDescInjection().eai_id == "EAI05"
+    assert FreezeAttack().eai_id == "EAI04"
+    assert FreezeAttack().eai_name == "Action-space integrity"
+    assert TrajectoryHijackAttack().eai_id == "EAI04"
 
 
 def test_baseline_is_untagged() -> None:
@@ -61,7 +67,7 @@ def test_runreport_eai_map_excludes_baseline() -> None:
         RunConfig(
             policy="stub",
             suite="stub",
-            attacks=["none", "instruction", "visual", "injection"],
+            attacks=["none", "instruction", "visual", "injection", "action"],
             episodes=2,
             seed=0,
         )
