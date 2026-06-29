@@ -8,6 +8,10 @@ and `PROVAEL_INTEGRATION=1`.
 | --- | --- | --- | --- | :---: |
 | 01 | [first-scan-cpu](01-first-scan-cpu/) | Your first scan — all four attack families on the stub | < 1 s | CPU |
 | 02 | [redteam-smolvla-libero](02-redteam-smolvla-libero/) | Red-team a real SmolVLA policy in LIBERO | minutes | GPU |
+| — | [cross_suite_validation/](cross_suite_validation/) | Same attacks, two suites — generality shown with data | < 1 s | CPU |
+| — | [adapters/](adapters/) | Red-team any VLA — π0, GR00T, OpenVLA, bring-your-own | varies | varies |
+| — | [suites/](suites/) | The shipped suites + how to add a simulator | — | — |
+| — | [python-api/](python-api/) | Runnable BYO policy & BYO suite in ~30–40 lines | < 1 s | CPU |
 | — | [recipes/](recipes/) | Named run presets (`provael list-recipes` / `--recipe`) | < 1 s | CPU |
 | — | [ci/](ci/) | CI gate integrations (GitHub Actions today) | — | — |
 

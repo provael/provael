@@ -16,19 +16,23 @@ from provael.suites import available_suites, make_suite, suite_is_ready
 
 
 def test_suite_factory() -> None:
-    assert available_suites() == ["libero", "stub"]
+    assert available_suites() == ["libero", "metaworld", "reach", "stub"]
     suite = make_suite("stub")
     assert suite.name == "stub"
     assert suite.tasks() == ["reach"]
 
 
-def test_libero_suite_registered_but_gated() -> None:
-    # Constructing the libero suite is cheap and never imports lerobot; it is only
-    # "ready" when the extra is installed (absent on the CPU build).
-    assert "libero" in available_suites()
+def test_cpu_suites_ready_real_suites_gated() -> None:
+    # stub (scalar) and reach (spatial) are pure CPU; libero + metaworld wrap real sims and are
+    # only "ready" when the [lerobot] extra is installed (absent on the CPU build).
     assert suite_is_ready("stub") is True
+    assert suite_is_ready("reach") is True
     assert suite_is_ready("libero") is False
+    assert suite_is_ready("metaworld") is False
+    # Constructing the gated suites is cheap and never imports the simulator.
     assert make_suite("libero").name == "libero"
+    assert make_suite("metaworld").name == "metaworld"
+    assert make_suite("reach").calibration_kind == "spatial"
 
 
 def test_suite_factory_rejects_unknown() -> None:
