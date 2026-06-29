@@ -7,11 +7,25 @@
 > assurance file. Clause/article references are anchored where verifiable and marked
 > *indicative* where the precise sub-clause depends on the full standard text.
 
-Robots running **Vision-Language-Action (VLA)** policies sit under *two* regimes at once:
-robot-safety standards (**ISO 10218:2025**) and AI regulation (**EU AI Act**). Both now expect
-evidence that the AI layer is **robust against adversarial manipulation** — exactly the thing a
-chatbot-era security review skips and exactly what Provael measures. This document maps Provael's
-outputs to what each framework asks for, and specs the report Provael will generate from them.
+Robots running **Vision-Language-Action (VLA)** policies sit under *three* regimes at once:
+robot-safety standards (**ISO 10218:2025**), product law (the **EU Machinery Regulation
+(EU) 2023/1230**), and AI regulation (the **EU AI Act**). All three now expect evidence that the
+AI layer is **robust against adversarial manipulation** — exactly the thing a chatbot-era security
+review skips and exactly what Provael measures. This document maps Provael's outputs to what each
+framework asks for, and specs the report Provael generates from them.
+
+> **Regulatory routing (2026 Digital Omnibus update).** Under the Digital Omnibus (political
+> agreement May 2026; effective on publication in the Official Journal), AI-enabled
+> **machinery/robots** are routed out of EU AI Act **Chapter III** directly: the AI-specific
+> health-and-safety expectations — including **robustness against manipulation** — reach robots
+> through **delegated acts to the Machinery Regulation** (the Machinery Regulation applies from
+> **2027-01-20**; AI-specific delegated acts expected by **2028-08-02**), alongside the new
+> **cybersecurity risk assessment** in **ISO 10218:2025**. High-risk AI Act deadlines also shifted
+> — stand-alone Annex III to **2027-12-02**, embedded Annex I to **2028-08-02**. The EU AI Act
+> **Article 15** robustness/cybersecurity language remains the substantive *measurement* anchor
+> (and still applies directly to non-machinery high-risk AI systems); for a robot, treat the
+> Machinery Regulation + ISO 10218:2025 cyber-risk assessment as the *operative route* and Art. 15
+> as the methodology it pulls in. Dates/routing are *indicative* — confirm against the final OJ text.
 
 ---
 
@@ -63,6 +77,7 @@ same mapping live in [TOP10.md → Cross-framework crosswalk](TOP10.md#cross-fra
 | EU AI Act Art. 15 — declare accuracy/robustness metrics & methodology | `report.json` + this run's config (deterministic); the calibrated redirection rate + CI per EAI risk |
 | EU AI Act Art. 15 — resilience to manipulation/adversarial inputs | Per-attack results across EAI01/02/05 with the benign-FPR control; SARIF for the security review |
 | EU AI Act Art. 9 / ISO 10218 cyber-risk assessment | The EAI risk list as the threat catalogue + measured rates per risk |
+| EU Machinery Regulation 2023/1230 — "protection against corruption" + safety-function AI (conformity input) | Measured redirection rate per EAI risk as input to the mandatory cyber-risk assessment; SARIF for the security file *(indicative)* |
 | EU AI Act Art. 72 — post-market monitoring | Re-run on each model/checkpoint update; track redirection rate over time (leaderboard) |
 | NIST AI RMF MEASURE | Calibrated rate + CI + benign FPR (a measured, controlled metric, not a vibe) |
 | Auditor wants reproducibility | Seed, config, and per-task calibration artifact (target vs achieved FPR, fit/holdout split) |
@@ -137,6 +152,11 @@ Verified anchors (read the full text for clause-level audit use):
 
 - EU AI Act (Regulation (EU) 2024/1689) — **Article 15, Accuracy, robustness and cybersecurity**:
   <https://artificialintelligenceact.eu/article/15/>
+- **EU Machinery Regulation (Regulation (EU) 2023/1230)** — applies 2027-01-20; new
+  "protection against corruption" cybersecurity requirement; AI safety-functions → high-risk →
+  third-party conformity assessment. The 2026 **Digital Omnibus** routes AI-specific robustness
+  for machinery here via delegated acts (indicative; confirm against the final OJ text):
+  <https://eur-lex.europa.eu/eli/reg/2023/1230/oj>
 - **ISO 10218-1:2025** Robotics — Safety requirements — Part 1 (incl. cybersecurity /
   unauthorized-access requirements): <https://www.iso.org/standard/73933.html>
 - **ISO 10218-2:2025** — Part 2 (robot applications & cells): <https://www.iso.org/standard/73934.html>
