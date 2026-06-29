@@ -43,8 +43,8 @@ from provael.config import RunConfig
 from provael.leaderboard import Leaderboard, build_leaderboard
 from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
 from provael.policies.registry import (
-    REQUIRES_LEROBOT,
     available_policies,
+    policy_extra,
     policy_is_ready,
 )
 from provael.recipes import RECIPES, available_recipes, load_recipe
@@ -112,11 +112,8 @@ def list_policies() -> None:
     for name in available_policies():
         ready = policy_is_ready(name)
         mark = "[green]yes[/green]" if ready else "[yellow]no[/yellow]"
-        note = (
-            escape("requires `provael[lerobot]` (GPU)")
-            if name in REQUIRES_LEROBOT
-            else "CPU, no deps"
-        )
+        extra = policy_extra(name)
+        note = escape(f"requires `provael[{extra}]` (GPU)") if extra else "CPU, no deps"
         table.add_row(name, mark, note)
     _out.print(table)
 
@@ -172,6 +169,10 @@ def attack(
     ] = None,
     rename_map: Annotated[
         str | None, typer.Option("--rename-map", help="JSON obs-key rename map for the policy.")
+    ] = None,
+    unnorm_key: Annotated[
+        str | None,
+        typer.Option("--unnorm-key", help="Action-unnormalization stats id (e.g. OpenVLA)."),
     ] = None,
     out: Annotated[Path, typer.Option(help="Output directory for reports.")] = Path("runs/stub"),
     fmt: Annotated[
@@ -242,6 +243,8 @@ def attack(
         overrides["model"] = model
     if _explicit("rename_map"):
         overrides["rename_map"] = rename
+    if _explicit("unnorm_key"):
+        overrides["unnorm_key"] = unnorm_key
     if _explicit("out"):
         overrides["out"] = out
 

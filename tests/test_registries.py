@@ -9,6 +9,7 @@ from provael.config import RunConfig
 from provael.policies.registry import (
     available_policies,
     make_policy,
+    policy_extra,
     policy_is_ready,
 )
 from provael.suites import available_suites, make_suite, suite_is_ready
@@ -36,11 +37,26 @@ def test_suite_factory_rejects_unknown() -> None:
 
 
 def test_policy_factory_and_readiness() -> None:
-    assert set(available_policies()) == {"stub", "smolvla"}
+    assert set(available_policies()) == {
+        "stub", "smolvla", "pi0", "pi05", "pi0fast", "groot", "openvla"
+    }
     assert policy_is_ready("stub") is True
-    # smolvla needs the optional extra, absent on the CPU build.
-    assert policy_is_ready("smolvla") is False
+    # The LeRobot-native policies need the [lerobot] extra, absent on the CPU build.
+    for name in ("smolvla", "pi0", "pi05", "pi0fast", "groot"):
+        assert policy_is_ready(name) is False
+        assert policy_extra(name) == "lerobot"
+    # OpenVLA needs the [openvla] extra (transformers), also absent on the CPU build.
+    assert policy_is_ready("openvla") is False
+    assert policy_extra("openvla") == "openvla"
+    assert policy_extra("stub") is None
     assert make_policy("stub").name == "stub"
+
+
+def test_real_policy_construction_is_cheap_and_imports_nothing() -> None:
+    # Constructing any real policy must not import its heavy extra (only load() does).
+    assert make_policy("pi0", model="lerobot/pi0_libero_finetuned").name == "pi0"
+    assert make_policy("groot").name == "groot"
+    assert make_policy("openvla", unnorm_key="libero_object").name == "openvla"
 
 
 def test_policy_factory_rejects_unknown() -> None:

@@ -113,7 +113,12 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
     suite uses the calibrated predicate for those tasks; otherwise the default predicate is
     used, so existing runs are unchanged.
     """
-    policy = make_policy(config.policy, model=config.model, rename_map=config.rename_map)
+    policy = make_policy(
+        config.policy,
+        model=config.model,
+        rename_map=config.rename_map,
+        unnorm_key=config.unnorm_key,
+    )
     suite = make_suite(config.suite)
     if calibrations:
         suite.set_calibration(calibrations)

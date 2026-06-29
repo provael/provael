@@ -25,6 +25,10 @@ class RunConfig(BaseModel):
     rename_map: dict[str, str] | None = Field(
         None, description="Obs-key rename map forwarded to the policy (mirrors lerobot-eval)."
     )
+    unnorm_key: str | None = Field(
+        None,
+        description="Action-unnormalization stats id for policies that need one (e.g. OpenVLA).",
+    )
     suite: str = Field("stub", description="Registered suite name (e.g. 'stub').")
     attacks: list[str] = Field(
         default_factory=lambda: ["instruction"],
