@@ -1,0 +1,34 @@
+# Provael examples gallery
+
+Copy-paste runnable examples, simplest first. Everything in the **CPU** column needs only
+`pip install provael` — no GPU, no model download. The **GPU** rows need the `[lerobot]` extra
+and `PROVAEL_INTEGRATION=1`.
+
+| # | Example | What it shows | Runtime | Needs |
+| --- | --- | --- | --- | :---: |
+| 01 | [first-scan-cpu](01-first-scan-cpu/) | Your first scan — all four attack families on the stub | < 1 s | CPU |
+| 02 | [redteam-smolvla-libero](02-redteam-smolvla-libero/) | Red-team a real SmolVLA policy in LIBERO | minutes | GPU |
+| — | [recipes/](recipes/) | Named run presets (`provael list-recipes` / `--recipe`) | < 1 s | CPU |
+| — | [ci/](ci/) | CI gate integrations (GitHub Actions today) | — | — |
+
+## Fastest possible start
+
+```bash
+pip install provael
+provael attack --recipe quick          # instruction family, 5 episodes, on the CPU stub
+provael list-recipes                   # see every built-in preset
+```
+
+Prefer not to install anything? **[Open the 5-minute Colab notebook →](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb)**
+
+## How the pieces fit
+
+- **Policy × Suite × Attacks → ASR.** A *policy* acts in a *suite* (simulator); *attacks* perturb
+  what it sees/reads; the *Attack Success Rate* is how often that drives it unsafe. Swap any axis.
+- **CPU-first.** The `stub` policy + `stub` suite are deterministic fixtures so the whole engine is
+  testable with no GPU. Real models (`smolvla`) and sims (`libero`) are opt-in extras.
+- **Honest numbers.** Stub ASRs are a property of the fixture, not of any real VLA. Real-model
+  results (example 02) are produced by *your* run and come with 95% CIs and a benign-FPR control.
+
+More to come: model adapters (π0, OpenVLA), a second simulator suite, attack reproductions,
+buyer-facing scorecards, and compliance evidence packs.

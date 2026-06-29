@@ -1,0 +1,4 @@
+# Recipe: instruction-only — instruction-jailbreak family (EAI01) only, 10 episodes.
+#   provael attack --recipe instruction-only
+attacks: [instruction]
+episodes: 10

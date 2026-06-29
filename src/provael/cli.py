@@ -47,6 +47,7 @@ from provael.policies.registry import (
     available_policies,
     policy_is_ready,
 )
+from provael.recipes import RECIPES, available_recipes, load_recipe
 from provael.report import load_report, render_summary, write_report
 from provael.runner import run
 from provael.sarif import to_sarif_json, write_sarif
@@ -132,8 +133,26 @@ def list_attacks() -> None:
     _out.print(f"families: {', '.join(available_families())}")
 
 
+@app.command("list-recipes")
+def list_recipes() -> None:
+    """List built-in run recipes (named RunConfig presets for `attack --recipe`)."""
+    table = Table(title="Recipes")
+    table.add_column("recipe", style="cyan", no_wrap=True)
+    table.add_column("attacks", style="magenta")
+    table.add_column("episodes", justify="right")
+    table.add_column("description")
+    for name in available_recipes():
+        cfg = RECIPES[name].config
+        attacks = ", ".join(cfg.get("attacks", ["instruction"]))
+        episodes = str(cfg.get("episodes", 10))
+        table.add_row(name, attacks, episodes, RECIPES[name].description)
+    _out.print(table)
+    _out.print("Use: [cyan]provael attack --recipe <name>[/cyan]  (explicit flags override it)")
+
+
 @app.command()
 def attack(
+    ctx: typer.Context,
     policy: Annotated[str, typer.Option(help="Registered policy name.")] = "stub",
     suite: Annotated[str, typer.Option(help="Registered suite name.")] = "stub",
     attacks: Annotated[
@@ -171,6 +190,14 @@ def attack(
         Path | None,
         typer.Option("--calib", help="Dir of calibration artifacts (from `provael calibrate`)."),
     ] = None,
+    recipe: Annotated[
+        str | None,
+        typer.Option(
+            "--recipe",
+            help="Built-in recipe name (see `list-recipes`) or path to a recipe .yml. "
+            "Explicitly-passed flags override the recipe.",
+        ),
+    ] = None,
 ) -> None:
     """Run a red-team evaluation and write report.json + report.md."""
     rename: dict[str, str] | None = None
@@ -180,19 +207,46 @@ def attack(
         except json.JSONDecodeError:
             _fail("--rename-map must be a JSON object, e.g. '{\"a\": \"b\"}'")
             return
+
+    # A recipe provides the base config; explicitly-passed CLI flags override it. We use the
+    # parameter source to tell an explicit flag from a default, so `--recipe quick --seed 3`
+    # keeps the recipe's attacks/episodes but uses seed 3.
     try:
-        config = RunConfig(
-            policy=policy,
-            model=model,
-            rename_map=rename,
-            suite=suite,
-            attacks=_split_csv(attacks) or ["instruction"],
-            tasks=_split_csv(tasks),
-            episodes=seeds if seeds is not None else episodes,
-            seed=seed,
-            horizon=horizon,
-            out=out,
-        )
+        base: dict[str, object] = load_recipe(recipe) if recipe is not None else {}
+    except (KeyError, ValueError) as exc:
+        _fail(str(exc).strip('"'))
+        return
+
+    def _explicit(name: str) -> bool:
+        source = ctx.get_parameter_source(name)
+        return source is not None and source.name == "COMMANDLINE"
+
+    overrides: dict[str, object] = {}
+    if _explicit("policy"):
+        overrides["policy"] = policy
+    if _explicit("suite"):
+        overrides["suite"] = suite
+    if _explicit("attacks"):
+        overrides["attacks"] = _split_csv(attacks) or ["instruction"]
+    if _explicit("tasks"):
+        overrides["tasks"] = _split_csv(tasks)
+    if _explicit("episodes"):
+        overrides["episodes"] = episodes
+    if _explicit("seeds") and seeds is not None:
+        overrides["episodes"] = seeds
+    if _explicit("seed"):
+        overrides["seed"] = seed
+    if _explicit("horizon"):
+        overrides["horizon"] = horizon
+    if _explicit("model"):
+        overrides["model"] = model
+    if _explicit("rename_map"):
+        overrides["rename_map"] = rename
+    if _explicit("out"):
+        overrides["out"] = out
+
+    try:
+        config = RunConfig.model_validate({**base, **overrides})
     except ValidationError as exc:
         _fail(f"invalid configuration: {exc.errors()[0]['msg']}")
         return
