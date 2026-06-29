@@ -49,6 +49,7 @@ from provael.policies.registry import (
 )
 from provael.recipes import RECIPES, available_recipes, load_recipe
 from provael.report import load_report, render_summary, write_report
+from provael.reproductions import available_reproductions, get_reproduction
 from provael.runner import run
 from provael.sarif import to_sarif_json, write_sarif
 
@@ -145,6 +146,22 @@ def list_recipes() -> None:
         table.add_row(name, attacks, episodes, RECIPES[name].description)
     _out.print(table)
     _out.print("Use: [cyan]provael attack --recipe <name>[/cyan]  (explicit flags override it)")
+
+
+@app.command("list-reproductions")
+def list_reproductions() -> None:
+    """List published-attack reproductions (`reproduce <name>`)."""
+    table = Table(title="Reproductions")
+    table.add_column("name", style="cyan", no_wrap=True)
+    table.add_column("EAI", style="magenta")
+    table.add_column("paper")
+    table.add_column("Provael family")
+    for name in available_reproductions():
+        repro = get_reproduction(name)
+        table.add_row(name, repro.eai, f"{repro.title.split(':')[0]} ({repro.arxiv})",
+                      ", ".join(repro.attacks))
+    _out.print(table)
+    _out.print("Use: [cyan]provael reproduce <name>[/cyan]  (defaults to the CPU stub)")
 
 
 @app.command()
@@ -291,6 +308,67 @@ def attack(
         compliance_target = config.out / COMPLIANCE_JSON
         write_compliance_json(report, compliance_target)
         _out.print(f"Wrote [cyan]{compliance_target}[/cyan]  (compliance evidence, JSON)")
+
+
+@app.command()
+def reproduce(
+    name: Annotated[str, typer.Argument(help="Reproduction name (see `list-reproductions`).")],
+    policy: Annotated[str, typer.Option(help="Policy to run it against.")] = "stub",
+    suite: Annotated[str, typer.Option(help="Suite to run it in.")] = "stub",
+    model: Annotated[
+        str | None, typer.Option(help="Checkpoint override for a real policy.")
+    ] = None,
+    unnorm_key: Annotated[
+        str | None, typer.Option("--unnorm-key", help="Action-unnormalization id (e.g. OpenVLA).")
+    ] = None,
+    episodes: Annotated[int, typer.Option(min=1, help="Episodes per (task, attack) pair.")] = 10,
+    seed: Annotated[int, typer.Option(min=0, help="Base random seed.")] = 0,
+    out: Annotated[Path, typer.Option(help="Output directory.")] = Path("runs/repro"),
+) -> None:
+    """Reproduce a published VLA attack by name, mapped onto Provael's attack families.
+
+    Prints the paper's *cited* result separately from Provael's *measured* result. On the CPU
+    stub the measured numbers are properties of the deterministic fixture, not a real VLA.
+    """
+    try:
+        repro = get_reproduction(name)
+    except KeyError as exc:
+        _fail(str(exc).strip('"'))
+        return
+
+    _out.print(
+        f"\n[bold]Reproduction:[/bold] {escape(repro.title)}  [magenta]{repro.eai}[/magenta]"
+    )
+    _out.print(f"  paper: {escape(repro.arxiv)}")
+    _out.print(f"  {escape(repro.summary)}")
+    _out.print(f"  [dim]mapping:[/dim] {escape(repro.mapping_note)}")
+    _out.print(f"  [dim]paper reported (cited, NOT Provael's):[/dim] {escape(repro.paper_asr)}\n")
+
+    try:
+        config = RunConfig(
+            policy=policy, suite=suite, model=model, unnorm_key=unnorm_key,
+            attacks=repro.attacks, episodes=episodes, seed=seed, out=out,
+        )
+        report = run(config)
+    except (MissingLeRobotError, IncompatiblePolicyError, NotImplementedError) as exc:
+        _fail(str(exc))
+        return
+    except KeyError as exc:
+        _fail(str(exc).strip('"'))
+        return
+
+    write_report(report, config.out)
+    render_summary(report, _out)
+    _out.print(
+        f"\n[bold]Provael measured[/bold] (policy={policy}, suite={suite}): {report.headline()}"
+    )
+    if policy == "stub" or suite == "stub":
+        _err.print(
+            "[yellow]note:[/yellow] stub numbers are properties of the deterministic test "
+            "fixture, not a real VLA. Run against a real model for real numbers, e.g.\n"
+            "  PROVAEL_INTEGRATION=1 provael reproduce "
+            f"{repro.name} --policy smolvla --suite libero --model HuggingFaceVLA/smolvla_libero"
+        )
 
 
 @app.command()
