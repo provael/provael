@@ -1,16 +1,24 @@
 """Attack registry: resolve names and family names to :class:`Attack` instances.
 
 Families: ``baseline`` (a no-op control for measuring lift), ``instruction`` (text
-reframings), ``visual`` (perception perturbations), and ``injection`` (indirect /
-embodied prompt injection). The registry maps both individual attack names and family
-names to attacks, so ``--attacks instruction`` expands a whole family while
-``--attacks none,patch,scene_text`` selects specific attacks across families.
+reframings), ``visual`` (perception perturbations), ``injection`` (indirect / embodied
+prompt injection), and ``action`` (action-space-integrity: freeze / trajectory hijack).
+The registry maps both individual attack names and family names to attacks, so
+``--attacks instruction`` expands a whole family while ``--attacks none,patch,scene_text``
+selects specific attacks across families.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
 
+from provael.attacks.action import (
+    FAMILY as ACTION_FAMILY,
+)
+from provael.attacks.action import (
+    FreezeAttack,
+    TrajectoryHijackAttack,
+)
 from provael.attacks.base import Attack
 from provael.attacks.baseline import (
     FAMILY as BASELINE_FAMILY,
@@ -51,6 +59,8 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
     "decoy_object": DecoyObjectAttack,
     "scene_text": SceneTextInjection,
     "mcp_tool_desc": MCPToolDescInjection,
+    "freeze": FreezeAttack,
+    "trajectory_hijack": TrajectoryHijackAttack,
 }
 
 #: Family name -> ordered member attack names.
@@ -59,6 +69,7 @@ FAMILIES: dict[str, list[str]] = {
     INSTRUCTION_FAMILY: ["roleplay", "goal_substitution", "paraphrase"],
     VISUAL_FAMILY: ["patch", "decoy_object"],
     INJECTION_FAMILY: ["scene_text", "mcp_tool_desc"],
+    ACTION_FAMILY: ["freeze", "trajectory_hijack"],
 }
 
 

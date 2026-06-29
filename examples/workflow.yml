@@ -23,11 +23,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Provael red-team gate
-        uses: provael/provael@v0.3.0
+        uses: provael/provael@v0.5.0
         with:
           policy: stub
           suite: stub
-          attacks: instruction,visual,injection
+          attacks: instruction,visual,injection,action
           episodes: "10"
           seed: "0"
           asr-threshold: "0.5"   # fail the job if overall ASR > 50%

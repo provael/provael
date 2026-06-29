@@ -23,11 +23,12 @@ core: a small, **model-agnostic** harness that perturbs the instructions and obs
 VLA policy receives inside a simulator and measures how often those perturbations drive the
 policy into an *unsafe* state. The headline number is the ASR.
 
-It ships **three families of templated, auditable attacks** — `instruction` (text
-reframings), `visual` (observation-space markers), and `injection` (indirect / embodied
-prompt injection) — plus a `none` baseline, an ASR **leaderboard**, and a gated adapter for
-real **SmolVLA** policies on the **LIBERO** simulator. These are heuristic perturbations,
-**not** gradient/optimization-based adversarial attacks — see
+It ships **four families of templated, auditable attacks** — `instruction` (text
+reframings), `visual` (observation-space markers), `injection` (indirect / embodied
+prompt injection), and `action` (action-space integrity: freeze / trajectory hijack) —
+plus a `none` baseline, an ASR **leaderboard**, and a gated adapter for real **SmolVLA**
+policies on the **LIBERO** simulator. These are heuristic perturbations, **not**
+gradient/optimization-based adversarial attacks — see
 [Scope and honest limitations](#scope-and-honest-limitations).
 
 The entire core — abstractions, attacks, scoring, runner, report, CLI, leaderboard — runs
@@ -52,6 +53,7 @@ that tag as each finding's `EAIxx` ruleId:
 | `instruction` | `roleplay`, `goal_substitution`, `paraphrase` | [EAI01 — Policy & instruction jailbreak](docs/TOP10.md#eai01--policy--instruction-jailbreak-direct-command-channel) |
 | `visual` | `patch`, `decoy_object` | [EAI02 — Adversarial perception](docs/TOP10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) |
 | `injection` | `scene_text`, `mcp_tool_desc` | [EAI05 — Indirect / embodied prompt injection](docs/TOP10.md#eai05--indirect--embodied-prompt-injection) |
+| `action` | `freeze`, `trajectory_hijack` | [EAI04 — Action-space integrity](docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
 
 ## Scope and honest limitations
 
@@ -67,6 +69,11 @@ to oversell. Before you trust a number, know:
   reframings redirected the policy (roleplay 100%, goal-substitution 60%); the **visual and
   injection families produced 0% measurable lift** on the real model. Treat those two as
   stub-validated scaffolding pending stronger perturbations.
+- **The `action` family (EAI04) is stub-validated only.** `freeze` and `trajectory_hijack`
+  exercise the action-space-integrity surface on the deterministic stub (freeze/redirection
+  100% [72–100%] vs a 0% benign-FPR control). A real-model action-freeze / trajectory-hijack
+  needs an adversarial-image search (FreezeVLA, AttackVLA), which is GPU-gated and **not yet
+  run** — so no SmolVLA × LIBERO transfer is claimed for it.
 - **One policy, one suite shipped.** The architecture is model-agnostic by design (an adapter
   interface), but only the **SmolVLA / LeRobot** policy and the **LIBERO** suite are
   implemented today — generality is intended, not yet demonstrated against a second backend.
@@ -126,7 +133,7 @@ Other commands:
 
 ```bash
 uv run provael list-policies            # stub (CPU); smolvla (needs the [lerobot] extra)
-uv run provael list-attacks             # 7 attacks across families instruction/visual/injection
+uv run provael list-attacks             # 9 attacks across instruction/visual/injection/action
 uv run provael report --in runs/stub/
 uv run provael calibrate --policy stub --suite stub --seeds 20 --out calib/  # fit a per-task predicate
 uv run provael leaderboard build --runs runs --out leaderboard/results   # ranked ASR table
@@ -138,7 +145,7 @@ uv run provael version
 | Capability | CPU (default) | Needs GPU + `[lerobot]` extra |
 | --- | :---: | :---: |
 | `stub` policy + `stub` suite | ✅ | |
-| All 3 attack families (`instruction`/`visual`/`injection`) | ✅ | |
+| All 4 attack families (`instruction`/`visual`/`injection`/`action`) | ✅ | |
 | Scoring, runner, report, CLI, `leaderboard build` | ✅ | |
 | Full test suite (`pytest`), `ruff`, `mypy` | ✅ | |
 | `smolvla` policy (real SmolVLA via LeRobot) | | ✅ |
@@ -163,9 +170,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.3.0
+      - uses: provael/provael@v0.5.0
         with:
-          attacks: instruction,visual,injection
+          attacks: instruction,visual,injection,action
           episodes: "10"
           asr-threshold: "0.5"   # fail the job if overall ASR > 50%
 ```
@@ -287,8 +294,12 @@ same config + seed always produces a byte-identical `report.json`.
   (`provael/provael`) that gates CI on ASR, and the Embodied-AI Top-10 mapping (every attack
   tagged to an `EAIxx` risk).
 - **v0.4.0** — **per-task predicate calibration** (`provael calibrate`): a calibrated
-  redirection rate with a 95% CI and the benign FPR as its control. *(this release)*
-- **next** — optimized (gradient/search) attacks; a second policy/suite backend.
+  redirection rate with a 95% CI and the benign FPR as its control.
+- **v0.5.0** — a **compliance evidence report** (`provael report --format compliance`) and the
+  **`action` family (EAI04)** — action-space-integrity attacks (`freeze` + `trajectory_hijack`),
+  stub-validated, each a rate with a 95% CI against a benign-FPR control. *(this release)*
+- **next** — optimized (gradient/search) attacks incl. real-model action-freeze (FreezeVLA);
+  a second policy/suite backend.
 
 ## Development
 

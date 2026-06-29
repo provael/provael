@@ -112,7 +112,12 @@ Supply Chain** · NIST AI 100-2 **Poisoning / Supply-Chain**.
 trajectory, degrading task success, or freezing it (paralysis).
 **Evidence.** *[research]* **AttackVLA/BackdoorVLA** (arXiv 2511.12149, targeted action sequence,
 real-robot validated); **FreezeVLA** (arXiv 2509.19870, ~76% paralysis ASR). *(Freeze is also an
-availability/DoS failure — see cross-cutting.)*
+availability/DoS failure — see cross-cutting.)* **Attack shipped (Provael):** the `action` family
+(`freeze` + `trajectory_hijack`) — *method:* a freeze directive drives the policy's motor command to a
+no-op (FreezeVLA-style action-freeze) while a hijack directive redirects the trajectory toward an
+attacker waypoint; each scored as a rate with a 95% Wilson CI against a benign-FPR control. **Stub-validated
+only** (deterministic CPU core, freeze/redirection 100% [72–100%] vs a 0% benign baseline); real-model
+SmolVLA × LIBERO transfer is GPU-gated and **not yet run** — no cross-model claim.
 **Why it matters.** A hijacked-trajectory robot and a frozen robot are different severe failures — and a
 single "task success" metric hides both.
 **Mitigations.** Report ASR as a matrix (untargeted / freeze / targeted) with a clean baseline; action

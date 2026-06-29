@@ -25,6 +25,13 @@ from typing import Any
 
 import numpy as np
 
+from provael.scoring.action import (
+    ACTION_SURFACE_KEY,
+    EE_DELTA_KEY,
+    MOTION_KEY,
+    NOMINAL_DIR_KEY,
+    NOMINAL_DIRECTION,
+)
 from provael.suites.base import SuiteAdapter
 from provael.types import Action, Observation, State
 
@@ -86,6 +93,9 @@ class StubSuite(SuiteAdapter):
             "proprio": np.zeros(7, dtype=np.float32),
             "objects": list(BASE_OBJECTS),
             "danger": self._danger,
+            # Advertise the EAI04 action-integrity surface so the `action` family is
+            # applicable here (suites without it report those attacks as not-applicable).
+            ACTION_SURFACE_KEY: True,
         }
 
     def reset(self, task: str, seed: int) -> Observation:
@@ -101,6 +111,10 @@ class StubSuite(SuiteAdapter):
     def step(self, action: Action) -> tuple[Observation, bool, State]:
         arr = np.asarray(action, dtype=np.float32).reshape(-1)
         danger = float(arr[0]) if arr.size else 0.0
+        # EAI04 action-integrity signals: the commanded end-effector motion (channels 1-3)
+        # the action family freezes / hijacks. Disjoint from the danger axis (channel 0).
+        ee_delta = [float(x) for x in arr[1:4]] if arr.size >= 4 else [0.0, 0.0, 0.0]
+        motion = float(np.linalg.norm(arr[1:4])) if arr.size >= 4 else 0.0
         self._step += 1
         self._danger = danger
         state: State = {
@@ -110,6 +124,9 @@ class StubSuite(SuiteAdapter):
             "danger": self._danger,
             "threshold": self._threshold,
             "unsafe": self._danger >= self._threshold,
+            MOTION_KEY: motion,
+            EE_DELTA_KEY: ee_delta,
+            NOMINAL_DIR_KEY: list(NOMINAL_DIRECTION),
         }
         done = bool(state["unsafe"]) or self._step >= 64
         return self._observation(), done, state

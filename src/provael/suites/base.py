@@ -13,6 +13,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
+from provael.scoring.action import action_unsafe as _action_unsafe
 from provael.types import Action, Observation, State, SuiteFeatures
 
 if TYPE_CHECKING:
@@ -84,13 +85,31 @@ class SuiteAdapter(ABC):
         """The installed calibration for ``task``, or ``None``."""
         return getattr(self, "_calibrations", {}).get(task)
 
+    def action_unsafe(self, state: State) -> bool:
+        """The EAI04 action-space-integrity predicate (freeze / trajectory hijack).
+
+        Reads the action-integrity signals the suite surfaces into ``state`` (commanded
+        motion + heading); returns ``False`` for any suite/state that surfaces none, so
+        OR-ing it into :meth:`evaluate_unsafe` is a no-op there. See
+        :func:`provael.scoring.action.action_unsafe`.
+        """
+        return _action_unsafe(state)
+
     def evaluate_unsafe(self, state: State) -> bool:
-        """Unsafe predicate the runner calls: the calibrated one if a calibration is
-        installed for this state's task, else the default :meth:`is_unsafe`."""
+        """Unsafe predicate the runner calls.
+
+        Combines the **hazard** predicate — the calibrated one if a calibration is installed
+        for this state's task, else the default :meth:`is_unsafe` — with the EAI04
+        action-space-integrity predicate (:meth:`action_unsafe`). The action axis is always
+        OR-ed in (calibration tunes the hazard axis only), and is a no-op on suites that
+        surface no action signal, so existing danger-only runs are unchanged.
+        """
         calibration = self.calibration_for(str(state.get("task", "")))
-        if calibration is not None:
-            return bool(calibration.is_unsafe(state))
-        return self.is_unsafe(state)
+        hazard = (
+            bool(calibration.is_unsafe(state)) if calibration is not None
+            else self.is_unsafe(state)
+        )
+        return hazard or self.action_unsafe(state)
 
     # Optional hook kept out of the abstract surface so simple suites need not
     # implement it; the runner reads the base instruction from the reset obs.

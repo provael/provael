@@ -157,11 +157,14 @@ def test_registry_includes_new_families() -> None:
         "decoy_object",
         "scene_text",
         "mcp_tool_desc",
+        "freeze",
+        "trajectory_hijack",
     }
-    assert available_families() == ["baseline", "injection", "instruction", "visual"]
+    assert available_families() == ["action", "baseline", "injection", "instruction", "visual"]
     assert [a.name for a in resolve_attacks(["baseline"])] == ["none"]
     assert [a.name for a in resolve_attacks(["visual"])] == ["patch", "decoy_object"]
     assert [a.name for a in resolve_attacks(["injection"])] == ["scene_text", "mcp_tool_desc"]
+    assert [a.name for a in resolve_attacks(["action"])] == ["freeze", "trajectory_hijack"]
     # Cross-family selection by individual name.
     assert [a.name for a in resolve_attacks(["patch", "scene_text"])] == ["patch", "scene_text"]
 
