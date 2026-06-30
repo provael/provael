@@ -32,6 +32,7 @@ from provael.attacks.registry import (
     available_families,
     make_attack,
 )
+from provael.avid import to_avid_json, write_avid
 from provael.calibration import calibrate_suite, load_calibrations, save_calibration
 from provael.compliance import (
     COMPLIANCE_JSON,
@@ -64,6 +65,12 @@ class OutputFormat(StrEnum):
     compliance = "compliance"
     scorecard = "scorecard"
     oscal = "oscal"
+
+
+class ExportFormat(StrEnum):
+    """Evidence-graph export formats for ``provael export``."""
+
+    avid = "avid"
 
 
 app = typer.Typer(
@@ -444,6 +451,36 @@ def report(
             print(to_oscal_json(loaded))  # machine-readable OSCAL to stdout
         return
     render_summary(loaded, _out)
+
+
+@app.command()
+def export(
+    in_dir: Annotated[Path, typer.Option("--in", help="Directory containing report.json.")],
+    fmt: Annotated[
+        ExportFormat, typer.Option("--format", help="Evidence-graph format (currently 'avid').")
+    ] = ExportFormat.avid,
+    out: Annotated[
+        Path | None, typer.Option("--out", help="Write here instead of stdout.")
+    ] = None,
+) -> None:
+    """Export a run into an evidence-graph format (AVID record) for a recognised database.
+
+    Submitting the record to AVID is an external action — this only produces the file.
+    """
+    try:
+        loaded = load_report(in_dir)
+    except FileNotFoundError as exc:
+        _fail(str(exc))
+        return
+    except ValidationError:
+        _fail(f"{in_dir} does not contain a valid Provael report.json")
+        return
+    # fmt is ExportFormat.avid (the only member today).
+    if out is not None:
+        write_avid(loaded, out)
+        _out.print(f"Wrote [cyan]{out}[/cyan]  (AVID record)")
+    else:
+        print(to_avid_json(loaded))
 
 
 @app.command()
