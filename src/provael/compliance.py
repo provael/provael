@@ -3,8 +3,9 @@
 Turns a calibrated red-team run into an **auditor-readable evidence artifact** that maps the
 run's measured signals (calibrated redirection rate + 95% Wilson CI, the benign-FPR control, the
 EAI risks exercised, the per-task calibration metadata) onto the framework requirements in
-``docs/COMPLIANCE.md`` — **EU AI Act** (Reg. (EU) 2024/1689), **ISO 10218-1/-2:2025** (cyber),
-**NIST AI 100-2 / AI RMF**, and **IEC 62443**.
+``docs/COMPLIANCE.md`` — **EU AI Act** (Reg. (EU) 2024/1689), the **EU Machinery Regulation**
+(Reg. (EU) 2023/1230 — the operative route for AI-enabled robots after the 2026 Digital Omnibus),
+**ISO 10218-1/-2:2025** (cyber), **NIST AI 100-2 / AI RMF**, and **IEC 62443**.
 
 This is the generator the ``docs/COMPLIANCE.md`` pre-spec described. It is **evidence, not
 certification**: each requirement entry carries a ``status`` of ``evidence-present`` or ``gap``
@@ -94,6 +95,7 @@ class Requirement:
 
 
 _EU = "EU AI Act (Regulation (EU) 2024/1689)"
+_MACHINERY = "EU Machinery Regulation (Regulation (EU) 2023/1230)"
 _ISO = "ISO 10218:2025"
 _NIST = "NIST AI 100-2 / AI RMF"
 _IEC = "IEC 62443"
@@ -127,6 +129,18 @@ REQUIREMENTS: tuple[Requirement, ...] = (
             "Re-run per model/checkpoint update; redirection rate tracked over time (leaderboard)"
         ),
         evidence_refs=("leaderboard/results/leaderboard.json", "report.json#/tool_version"),
+        indicative=True,
+    ),
+    Requirement(
+        key="eu-machinery:cyber",
+        framework=_MACHINERY, framework_id="eu-machinery",
+        control_id="Reg. (EU) 2023/1230",
+        control_title="Machinery — protection against corruption / safety-function AI",
+        provael_signal=(
+            "Measured redirection rate per EAI risk as input to the mandatory cyber-risk "
+            "assessment for AI-enabled machinery; SARIF for the security file"
+        ),
+        evidence_refs=("report.json#/by_attack", "report.sarif", "docs/COMPLIANCE.md"),
         indicative=True,
     ),
     Requirement(

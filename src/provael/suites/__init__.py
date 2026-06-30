@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from provael.suites.base import SuiteAdapter
+from provael.suites.reach import ReachSuite
 from provael.suites.stub import StubSuite
 
 
@@ -22,14 +23,23 @@ def _make_libero() -> SuiteAdapter:
     return LiberoSuiteAdapter()
 
 
-#: Registry of suite factories keyed by name.
+def _make_metaworld() -> SuiteAdapter:
+    from provael.suites.metaworld import MetaworldSuiteAdapter
+
+    return MetaworldSuiteAdapter()
+
+
+#: Registry of suite factories keyed by name. ``stub`` (scalar) and ``reach`` (spatial) are
+#: pure-CPU; ``libero`` and ``metaworld`` wrap real simulators behind the ``[lerobot]`` extra.
 SUITES: dict[str, Callable[[], SuiteAdapter]] = {
     "stub": StubSuite,
+    "reach": ReachSuite,
     "libero": _make_libero,
+    "metaworld": _make_metaworld,
 }
 
-#: Suites that require the optional ``[lerobot]`` extra (and the LIBERO simulator).
-REQUIRES_LEROBOT: frozenset[str] = frozenset({"libero"})
+#: Suites that require the optional ``[lerobot]`` extra (and a real simulator).
+REQUIRES_LEROBOT: frozenset[str] = frozenset({"libero", "metaworld"})
 
 
 def available_suites() -> list[str]:

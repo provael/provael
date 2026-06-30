@@ -102,8 +102,10 @@ def test_requirement_mapping_is_complete_and_ordered() -> None:
     cr = to_compliance(_calibrated_report())
     # Every requirement in the catalog appears, in catalog order.
     assert [e.key for e in cr.entries] == [r.key for r in REQUIREMENTS]
-    # All four frameworks are represented.
-    assert {e.framework_id for e in cr.entries} == {"eu-ai-act", "iso-10218", "nist", "iec-62443"}
+    # All frameworks are represented.
+    assert {e.framework_id for e in cr.entries} == {
+        "eu-ai-act", "eu-machinery", "iso-10218", "nist", "iec-62443"
+    }
     for entry in cr.entries:
         assert entry.provael_signal
         assert entry.evidence_refs
@@ -121,7 +123,7 @@ def test_gap_detection_uncalibrated() -> None:
         "nist-ai-rmf:measure",
         "nist-ai-rmf:manage",
     }
-    assert cr.summary == {"evidence-present": 6, "gap": 4}
+    assert cr.summary == {"evidence-present": 7, "gap": 4}
     # Every gap explains itself; every present entry has no gap reason.
     for entry in cr.entries:
         if entry.status == "gap":
@@ -138,7 +140,7 @@ def test_gap_detection_calibrated() -> None:
     by = _by_key(cr)
     assert by["eu-ai-act:art15"].status == "evidence-present"
     assert by["nist-ai-rmf:measure"].status == "evidence-present"
-    assert cr.summary == {"evidence-present": 8, "gap": 2}
+    assert cr.summary == {"evidence-present": 9, "gap": 2}
     # The measured evidence carries the calibrated control.
     assert cr.result.calibrated is True
     assert cr.result.benign_fpr == 0.0

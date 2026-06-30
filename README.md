@@ -6,8 +6,10 @@
 
 [![CI](https://github.com/provael/provael/actions/workflows/ci.yml/badge.svg)](https://github.com/provael/provael/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/provael.svg)](https://pypi.org/project/provael/)
+[![Downloads](https://img.shields.io/pypi/dm/provael.svg)](https://pypi.org/project/provael/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/provael/provael/blob/main/LICENSE)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb)
 
 > **Prove it. Prevail.** — red-team open **Vision-Language-Action (VLA)** robot policies in
 > simulation and report an **Attack Success Rate (ASR)**.
@@ -16,7 +18,9 @@
   <img src="https://raw.githubusercontent.com/provael/provael/main/docs/assets/demo.svg" alt="Provael attack — ASR across instruction/visual/injection families" width="760">
 </p>
 
-<p align="center"><sub>Deterministic CPU run, seed 0 — regenerate with <code>./scripts/record_demo.sh</code>.</sub></p>
+<p align="center"><sub>Deterministic CPU run, seed 0 — regenerate with <code>vhs scripts/demo.tape</code> (or <code>./scripts/record_demo.sh</code>).</sub></p>
+
+> **New here?** Run it in your browser in 5 minutes — [open the Colab notebook](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb) — or browse the [examples gallery](examples/) and the built-in `provael list-recipes`.
 
 **Provael** is the open-source red-team & assurance layer for physical AI. This repo is its
 core: a small, **model-agnostic** harness that perturbs the instructions and observations a
@@ -26,10 +30,13 @@ policy into an *unsafe* state. The headline number is the ASR.
 It ships **four families of templated, auditable attacks** — `instruction` (text
 reframings), `visual` (observation-space markers), `injection` (indirect / embodied
 prompt injection), and `action` (action-space integrity: freeze / trajectory hijack) —
-plus a `none` baseline, an ASR **leaderboard**, and a gated adapter for real **SmolVLA**
-policies on the **LIBERO** simulator. These are heuristic perturbations, **not**
-gradient/optimization-based adversarial attacks — see
-[Scope and honest limitations](#scope-and-honest-limitations).
+plus a `none` baseline and an ASR **leaderboard**. It red-teams **7 policies** — the CPU `stub`
+plus real **SmolVLA / π0 / π0.5 / π0-FAST / GR00T** (via the `[lerobot]` extra) and **OpenVLA**
+(via `[openvla]`) — across **4 suites** (`stub` + `reach` on CPU; **LIBERO** + **Meta-World**
+gated), or any policy/suite you wrap with the tiny adapter ABCs. These are heuristic
+perturbations, **not** gradient/optimization-based adversarial attacks — see
+[Scope and honest limitations](#scope-and-honest-limitations) and the
+[examples gallery](examples/).
 
 The entire core — abstractions, attacks, scoring, runner, report, CLI, leaderboard — runs
 and is tested on a **plain CPU with no GPU and no model/dataset download**, using a
@@ -134,6 +141,8 @@ Other commands:
 ```bash
 uv run provael list-policies            # stub (CPU); smolvla (needs the [lerobot] extra)
 uv run provael list-attacks             # 9 attacks across instruction/visual/injection/action
+uv run provael list-recipes             # named presets: quick / instruction-only / full-sweep / ci-gate
+uv run provael attack --recipe quick    # a recipe is the base config; explicit flags override it
 uv run provael report --in runs/stub/
 uv run provael calibrate --policy stub --suite stub --seeds 20 --out calib/  # fit a per-task predicate
 uv run provael leaderboard build --runs runs --out leaderboard/results   # ranked ASR table
@@ -144,15 +153,16 @@ uv run provael version
 
 | Capability | CPU (default) | Needs GPU + `[lerobot]` extra |
 | --- | :---: | :---: |
-| `stub` policy + `stub` suite | ✅ | |
+| `stub` (scalar) + `reach` (spatial) suites | ✅ | |
 | All 4 attack families (`instruction`/`visual`/`injection`/`action`) | ✅ | |
-| Scoring, runner, report, CLI, `leaderboard build` | ✅ | |
+| Scoring, runner, report, CLI, recipes, `reproduce`, scorecard/SARIF/OSCAL/AVID | ✅ | |
 | Full test suite (`pytest`), `ruff`, `mypy` | ✅ | |
-| `smolvla` policy (real SmolVLA via LeRobot) | | ✅ |
-| `libero` suite (real LIBERO simulator) | | ✅ |
+| `smolvla` / `pi0` / `pi05` / `pi0fast` / `groot` policies (real, via LeRobot) | | ✅ |
+| `openvla` policy (OpenVLA via `transformers`; needs the `[openvla]` extra) | | ✅ |
+| `libero` + `metaworld` suites (real simulators) | | ✅ |
 
-On CPU, `--policy smolvla` or `--suite libero` fails with a clear, actionable message (not a
-traceback) telling you exactly what to install.
+On CPU, a real policy/suite fails with a clear, actionable message (not a traceback) telling you
+exactly which extra to install. Run `provael list-policies` to see what's runnable here.
 
 ## Use in CI (GitHub Action)
 
@@ -180,7 +190,7 @@ jobs:
 The default `stub` policy + suite run on a **CPU** runner — no GPU, no model download — a fast
 smoke test of the gate wiring. Red-teaming a **real** policy (`policy: smolvla`,
 `suite: libero`) needs a **GPU runner** plus the `[lerobot]` extra; see the commented job in
-[examples/workflow.yml](examples/workflow.yml).
+[examples/ci/github-actions.yml](examples/ci/github-actions.yml).
 
 ## First real result (SmolVLA on LIBERO)
 
@@ -297,9 +307,16 @@ same config + seed always produces a byte-identical `report.json`.
   redirection rate with a 95% CI and the benign FPR as its control.
 - **v0.5.0** — a **compliance evidence report** (`provael report --format compliance`) and the
   **`action` family (EAI04)** — action-space-integrity attacks (`freeze` + `trajectory_hijack`),
-  stub-validated, each a rate with a 95% CI against a benign-FPR control. *(this release)*
-- **next** — optimized (gradient/search) attacks incl. real-model action-freeze (FreezeVLA);
-  a second policy/suite backend.
+  stub-validated, each a rate with a 95% CI against a benign-FPR control.
+- **unreleased** — **model breadth** (π0/π0.5/π0-FAST/GR00T/OpenVLA + bring-your-own), a second CPU
+  **spatial suite** (`reach`) + gated Meta-World, **`reproduce`** for published attacks, a
+  **pre-deployment scorecard** + **OSCAL**/**AVID** exports, named **recipes**, an **examples
+  gallery** + **docs site**, **integrations** (promptfoo/garak/PyRIT, multi-CI SARIF, MLOps,
+  supply-chain), a **runtime firewall** defense demo, and a public-submission leaderboard. *(this
+  branch)*
+- **next** — optimized (gradient/search) attacks incl. real-model action-freeze (FreezeVLA); more
+  suites (RoboCasa / CALVIN / SimplerEnv / the AI2 harness bridge). See the full
+  [roadmap](docs/roadmap.md).
 
 ## Development
 

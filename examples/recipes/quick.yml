@@ -1,0 +1,7 @@
+# Recipe: quick — fast CPU smoke (instruction family, 5 episodes).
+# Mirror of the built-in `quick` recipe. Run either of:
+#   provael attack --recipe quick
+#   provael attack --recipe ./examples/recipes/quick.yml
+# Any explicit flag (e.g. --episodes 20) overrides the values below.
+attacks: [instruction]
+episodes: 5

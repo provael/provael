@@ -6,6 +6,40 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- **Model breadth (7 policies).** LeRobot-native `pi0` / `pi05` / `pi0fast` / `groot` (config-level
+  reuse of the generic LeRobot adapter) and `openvla` (OpenVLA / OpenVLA-OFT via Hugging Face
+  `transformers`, a new `[openvla]` extra — the non-LeRobot, model-agnostic path). A
+  bring-your-own-VLA cookbook + a runnable `PolicyAdapter` example.
+- **Second & spatial CPU suite (`reach`).** A deterministic, pure-CPU suite with a *spatial*
+  keep-out predicate (the first non-GPU exercise of that path), plus a gated **Meta-World** adapter
+  and a live **cross-suite validation** example.
+- **`reproduce`** — run published attacks (FreezeVLA / OpenVLA-patch / BadVLA / RoboPAIR) mapped
+  onto the existing families; the paper's number is cited separately from Provael's measured run.
+- **Named recipes** (`list-recipes`, `attack --recipe NAME|./file.yml`).
+- **New report/export surfaces:** `--format scorecard` (one-page pre-deployment ASR scorecard),
+  `--format oscal` (NIST OSCAL assessment-results), and `provael export --format avid` (AVID record).
+- **Explorer onboarding:** an examples gallery, a 5-minute Colab notebook (+ notebooks 02–05), and a
+  Material-for-MkDocs docs site (build-only; deploy gated).
+- **Integrations:** a runnable promptfoo provider, garak/PyRIT reference plugins, multi-CI SARIF
+  (GitHub/GitLab/Azure + DefectDojo/SonarQube), a pre-commit hook, MLflow/W&B ASR logging, an HF
+  eval-results emitter, a fork-safe Modal GPU-CI job, a Dockerfile + devcontainer, and supply-chain
+  examples (model-signing + CycloneDX ML-BOM).
+- **Compliance:** a worked EU AI Act Art. 15 evidence pack, per-persona crosswalk cards, a NIST AI
+  RMF MEASURE 2.7 walkthrough, and standards drafts (MITRE ATLAS case study, OWASP Agentic embodied
+  annex, OECD.AI / awesome-list listings) — all drafted, not submitted.
+- **Defense demo:** a model-agnostic action-stream firewall (ASR with vs. without) + a ROS 2 guard
+  node (sim/reference).
+- **Leaderboard** upgraded to a RoboArena-style all-vs-open-source split with open submission; an
+  interactive HF-Space demo; an OpenSSF Scorecard workflow + SLSA provenance example.
+
+### Changed
+- **Compliance crosswalk corrected for the 2026 Digital Omnibus:** AI-enabled robots route through
+  the **Machinery Regulation (EU) 2023/1230** (applies 2027-01-20) + ISO 10218:2025 cyber-risk
+  assessment, not AI Act Chapter III directly; high-risk deadlines shifted (2027-12-02 / 2028-08-02).
+  Added a `eu-machinery:cyber` requirement to `report --format compliance`.
+- Relocated the consumer GitHub Actions example to `examples/ci/github-actions.yml`.
+
 ## [0.5.0] — 2026-06-29
 
 ### Added

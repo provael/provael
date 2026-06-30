@@ -53,6 +53,9 @@ provael = "provael.cli:app"
 # additionally needs lerobot[libero] (Part 2). Pin is the latest as of 2026-06-03.
 [project.optional-dependencies]
 lerobot = ["lerobot[smolvla]==0.5.1"]
+# OpenVLA / OpenVLA-OFT via Hugging Face transformers (the non-LeRobot, model-agnostic path).
+# GPU-only; pulled in explicitly by the user, never by the default install or CPU CI.
+openvla = ["transformers>=4.40", "torch", "timm", "accelerate", "pillow>=10"]
 
 [dependency-groups]
 dev = [
@@ -61,6 +64,13 @@ dev = [
     "ruff",
     "mypy",
     "types-PyYAML",
+]
+# Docs site tooling — NOT installed by the default `uv sync` / CPU CI. Build with
+# `uv run --group docs mkdocs build --strict`.
+docs = [
+    "mkdocs-material",
+    "mkdocs-jupyter",
+    "mike",
 ]
 
 [tool.hatch.version]
@@ -100,5 +110,5 @@ plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 # Optional, untyped deps loaded behind a guarded import in lerobot_adapter.py.
 # They are never installed in the CPU build / CI, so mypy must not fail on them.
-module = ["lerobot.*", "torch", "libero.*"]
+module = ["lerobot.*", "torch", "libero.*", "transformers.*"]
 ignore_missing_imports = true

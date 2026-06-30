@@ -268,7 +268,7 @@ tell us. **No code required:**
 
 - **Issue form** — [Top 10: propose / dispute / fix a mapping](https://github.com/provael/provael/issues/new?template=top10-feedback.yml).
 - **Or a PR** editing this file (`docs/TOP10.md`) directly.
-- **Full guide** — [Contributing to the Embodied AI Security Top 10](../CONTRIBUTING.md#contributing-to-the-embodied-ai-security-top-10).
+- **Full guide** — [Contributing to the Embodied AI Security Top 10](https://github.com/provael/provael/blob/main/CONTRIBUTING.md#contributing-to-the-embodied-ai-security-top-10).
 
 Contributors and the researchers behind each cited attack are credited (see
 [Maintainers & Contributors](#maintainers--contributors)). The aim is a living, community-owned,

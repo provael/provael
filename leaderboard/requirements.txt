@@ -1,5 +1,6 @@
-# Hugging Face Space (Gradio) dependencies for the Provael ASR leaderboard (v0).
-# v0 renders committed results/*.json — no GPU, no model, no provael install needed.
-# gradio is also provided by the Space SDK (sdk_version in README.md); the floor here keeps
-# a local `python app.py` aligned. Verified: app.py builds on gradio 6.16.0.
+# Hugging Face Space (Gradio) dependencies for the Provael ASR leaderboard.
+# Viewing renders committed results/*.json — no GPU, no model, no provael install needed.
+# Submission opens a PR to the requests dataset via huggingface_hub (needs HF_TOKEN on the Space).
+# gradio is also provided by the Space SDK (sdk_version in README.md).
 gradio>=5
+huggingface_hub>=0.24

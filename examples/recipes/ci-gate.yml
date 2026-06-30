@@ -1,0 +1,6 @@
+# Recipe: ci-gate — the preset a CI gate runs: all families, 10 episodes, seed 0.
+# Matches the defaults of the GitHub Action (examples/ci/github-actions.yml).
+#   provael attack --recipe ci-gate --format sarif --sarif-out provael.sarif
+attacks: [instruction, visual, injection, action]
+episodes: 10
+seed: 0

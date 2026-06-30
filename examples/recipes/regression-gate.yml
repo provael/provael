@@ -1,0 +1,7 @@
+# Recipe: regression-gate — the run a checkpoint-regression CI gate executes.
+# Same coverage as ci-gate; paired with examples/ci/regression-gate.md, which compares this
+# run's ASR against the last known-good checkpoint and fails the PR on a regression.
+#   provael attack --recipe regression-gate --format scorecard --out runs/gate
+attacks: [instruction, visual, injection, action]
+episodes: 10
+seed: 0

@@ -1,0 +1,28 @@
+# SLSA build provenance for the Provael wheel/sdist (GitHub Artifact Attestations, SLSA L3).
+# Copy into .github/workflows/. Attests what built the artifact, signed via Sigstore + in-toto.
+name: Build provenance
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write       # required for keyless signing
+  attestations: write   # required to record the attestation
+
+jobs:
+  build-and-attest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Build sdist + wheel
+        run: uv build
+      - name: Attest build provenance (SLSA L3)
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: "dist/*"
+      # Verify later with:  gh attestation verify dist/<wheel> --repo provael/provael

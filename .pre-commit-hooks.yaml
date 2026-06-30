@@ -1,0 +1,20 @@
+# Provael as a pre-commit hook. Consumers add this to their .pre-commit-config.yaml:
+#
+#   repos:
+#     - repo: https://github.com/provael/provael
+#       rev: v0.5.0
+#       hooks:
+#         - id: provael
+#           # optional: override the default fast CPU smoke run
+#           # args: ["attack", "--recipe", "quick"]
+#
+# The default runs a fast CPU stub smoke (instruction family, 5 episodes) — shift-left wiring
+# check. Point args at a real policy/suite (with the [lerobot] extra) for a real gate.
+- id: provael
+  name: provael red-team (CPU smoke)
+  description: Run a Provael VLA red-team scan
+  entry: provael
+  args: ["attack", "--recipe", "quick"]
+  language: python
+  pass_filenames: false
+  always_run: true

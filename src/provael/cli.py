@@ -32,6 +32,7 @@ from provael.attacks.registry import (
     available_families,
     make_attack,
 )
+from provael.avid import to_avid_json, write_avid
 from provael.calibration import calibrate_suite, load_calibrations, save_calibration
 from provael.compliance import (
     COMPLIANCE_JSON,
@@ -41,15 +42,19 @@ from provael.compliance import (
 )
 from provael.config import RunConfig
 from provael.leaderboard import Leaderboard, build_leaderboard
+from provael.oscal import OSCAL_JSON, to_oscal_json, write_oscal
 from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
 from provael.policies.registry import (
-    REQUIRES_LEROBOT,
     available_policies,
+    policy_extra,
     policy_is_ready,
 )
+from provael.recipes import RECIPES, available_recipes, load_recipe
 from provael.report import load_report, render_summary, write_report
+from provael.reproductions import available_reproductions, get_reproduction
 from provael.runner import run
 from provael.sarif import to_sarif_json, write_sarif
+from provael.scorecard import SCORECARD_MD, to_scorecard_markdown, write_scorecard
 
 
 class OutputFormat(StrEnum):
@@ -58,6 +63,14 @@ class OutputFormat(StrEnum):
     table = "table"
     sarif = "sarif"
     compliance = "compliance"
+    scorecard = "scorecard"
+    oscal = "oscal"
+
+
+class ExportFormat(StrEnum):
+    """Evidence-graph export formats for ``provael export``."""
+
+    avid = "avid"
 
 
 app = typer.Typer(
@@ -111,11 +124,8 @@ def list_policies() -> None:
     for name in available_policies():
         ready = policy_is_ready(name)
         mark = "[green]yes[/green]" if ready else "[yellow]no[/yellow]"
-        note = (
-            escape("requires `provael[lerobot]` (GPU)")
-            if name in REQUIRES_LEROBOT
-            else "CPU, no deps"
-        )
+        extra = policy_extra(name)
+        note = escape(f"requires `provael[{extra}]` (GPU)") if extra else "CPU, no deps"
         table.add_row(name, mark, note)
     _out.print(table)
 
@@ -132,8 +142,42 @@ def list_attacks() -> None:
     _out.print(f"families: {', '.join(available_families())}")
 
 
+@app.command("list-recipes")
+def list_recipes() -> None:
+    """List built-in run recipes (named RunConfig presets for `attack --recipe`)."""
+    table = Table(title="Recipes")
+    table.add_column("recipe", style="cyan", no_wrap=True)
+    table.add_column("attacks", style="magenta")
+    table.add_column("episodes", justify="right")
+    table.add_column("description")
+    for name in available_recipes():
+        cfg = RECIPES[name].config
+        attacks = ", ".join(cfg.get("attacks", ["instruction"]))
+        episodes = str(cfg.get("episodes", 10))
+        table.add_row(name, attacks, episodes, RECIPES[name].description)
+    _out.print(table)
+    _out.print("Use: [cyan]provael attack --recipe <name>[/cyan]  (explicit flags override it)")
+
+
+@app.command("list-reproductions")
+def list_reproductions() -> None:
+    """List published-attack reproductions (`reproduce <name>`)."""
+    table = Table(title="Reproductions")
+    table.add_column("name", style="cyan", no_wrap=True)
+    table.add_column("EAI", style="magenta")
+    table.add_column("paper")
+    table.add_column("Provael family")
+    for name in available_reproductions():
+        repro = get_reproduction(name)
+        table.add_row(name, repro.eai, f"{repro.title.split(':')[0]} ({repro.arxiv})",
+                      ", ".join(repro.attacks))
+    _out.print(table)
+    _out.print("Use: [cyan]provael reproduce <name>[/cyan]  (defaults to the CPU stub)")
+
+
 @app.command()
 def attack(
+    ctx: typer.Context,
     policy: Annotated[str, typer.Option(help="Registered policy name.")] = "stub",
     suite: Annotated[str, typer.Option(help="Registered suite name.")] = "stub",
     attacks: Annotated[
@@ -154,6 +198,10 @@ def attack(
     rename_map: Annotated[
         str | None, typer.Option("--rename-map", help="JSON obs-key rename map for the policy.")
     ] = None,
+    unnorm_key: Annotated[
+        str | None,
+        typer.Option("--unnorm-key", help="Action-unnormalization stats id (e.g. OpenVLA)."),
+    ] = None,
     out: Annotated[Path, typer.Option(help="Output directory for reports.")] = Path("runs/stub"),
     fmt: Annotated[
         OutputFormat,
@@ -171,6 +219,14 @@ def attack(
         Path | None,
         typer.Option("--calib", help="Dir of calibration artifacts (from `provael calibrate`)."),
     ] = None,
+    recipe: Annotated[
+        str | None,
+        typer.Option(
+            "--recipe",
+            help="Built-in recipe name (see `list-recipes`) or path to a recipe .yml. "
+            "Explicitly-passed flags override the recipe.",
+        ),
+    ] = None,
 ) -> None:
     """Run a red-team evaluation and write report.json + report.md."""
     rename: dict[str, str] | None = None
@@ -180,19 +236,48 @@ def attack(
         except json.JSONDecodeError:
             _fail("--rename-map must be a JSON object, e.g. '{\"a\": \"b\"}'")
             return
+
+    # A recipe provides the base config; explicitly-passed CLI flags override it. We use the
+    # parameter source to tell an explicit flag from a default, so `--recipe quick --seed 3`
+    # keeps the recipe's attacks/episodes but uses seed 3.
     try:
-        config = RunConfig(
-            policy=policy,
-            model=model,
-            rename_map=rename,
-            suite=suite,
-            attacks=_split_csv(attacks) or ["instruction"],
-            tasks=_split_csv(tasks),
-            episodes=seeds if seeds is not None else episodes,
-            seed=seed,
-            horizon=horizon,
-            out=out,
-        )
+        base: dict[str, object] = load_recipe(recipe) if recipe is not None else {}
+    except (KeyError, ValueError) as exc:
+        _fail(str(exc).strip('"'))
+        return
+
+    def _explicit(name: str) -> bool:
+        source = ctx.get_parameter_source(name)
+        return source is not None and source.name == "COMMANDLINE"
+
+    overrides: dict[str, object] = {}
+    if _explicit("policy"):
+        overrides["policy"] = policy
+    if _explicit("suite"):
+        overrides["suite"] = suite
+    if _explicit("attacks"):
+        overrides["attacks"] = _split_csv(attacks) or ["instruction"]
+    if _explicit("tasks"):
+        overrides["tasks"] = _split_csv(tasks)
+    if _explicit("episodes"):
+        overrides["episodes"] = episodes
+    if _explicit("seeds") and seeds is not None:
+        overrides["episodes"] = seeds
+    if _explicit("seed"):
+        overrides["seed"] = seed
+    if _explicit("horizon"):
+        overrides["horizon"] = horizon
+    if _explicit("model"):
+        overrides["model"] = model
+    if _explicit("rename_map"):
+        overrides["rename_map"] = rename
+    if _explicit("unnorm_key"):
+        overrides["unnorm_key"] = unnorm_key
+    if _explicit("out"):
+        overrides["out"] = out
+
+    try:
+        config = RunConfig.model_validate({**base, **overrides})
     except ValidationError as exc:
         _fail(f"invalid configuration: {exc.errors()[0]['msg']}")
         return
@@ -235,14 +320,87 @@ def attack(
         write_compliance_json(report, compliance_target)
         _out.print(f"Wrote [cyan]{compliance_target}[/cyan]  (compliance evidence, JSON)")
 
+    if fmt is OutputFormat.scorecard:
+        scorecard_target = write_scorecard(report, config.out / SCORECARD_MD)
+        _out.print(f"Wrote [cyan]{scorecard_target}[/cyan]  (pre-deployment ASR scorecard)")
+
+    if fmt is OutputFormat.oscal:
+        oscal_target = write_oscal(report, config.out / OSCAL_JSON)
+        _out.print(f"Wrote [cyan]{oscal_target}[/cyan]  (OSCAL assessment-results)")
+
+
+@app.command()
+def reproduce(
+    name: Annotated[str, typer.Argument(help="Reproduction name (see `list-reproductions`).")],
+    policy: Annotated[str, typer.Option(help="Policy to run it against.")] = "stub",
+    suite: Annotated[str, typer.Option(help="Suite to run it in.")] = "stub",
+    model: Annotated[
+        str | None, typer.Option(help="Checkpoint override for a real policy.")
+    ] = None,
+    unnorm_key: Annotated[
+        str | None, typer.Option("--unnorm-key", help="Action-unnormalization id (e.g. OpenVLA).")
+    ] = None,
+    episodes: Annotated[int, typer.Option(min=1, help="Episodes per (task, attack) pair.")] = 10,
+    seed: Annotated[int, typer.Option(min=0, help="Base random seed.")] = 0,
+    out: Annotated[Path, typer.Option(help="Output directory.")] = Path("runs/repro"),
+) -> None:
+    """Reproduce a published VLA attack by name, mapped onto Provael's attack families.
+
+    Prints the paper's *cited* result separately from Provael's *measured* result. On the CPU
+    stub the measured numbers are properties of the deterministic fixture, not a real VLA.
+    """
+    try:
+        repro = get_reproduction(name)
+    except KeyError as exc:
+        _fail(str(exc).strip('"'))
+        return
+
+    _out.print(
+        f"\n[bold]Reproduction:[/bold] {escape(repro.title)}  [magenta]{repro.eai}[/magenta]"
+    )
+    _out.print(f"  paper: {escape(repro.arxiv)}")
+    _out.print(f"  {escape(repro.summary)}")
+    _out.print(f"  [dim]mapping:[/dim] {escape(repro.mapping_note)}")
+    _out.print(f"  [dim]paper reported (cited, NOT Provael's):[/dim] {escape(repro.paper_asr)}\n")
+
+    try:
+        config = RunConfig(
+            policy=policy, suite=suite, model=model, unnorm_key=unnorm_key,
+            attacks=repro.attacks, episodes=episodes, seed=seed, out=out,
+        )
+        report = run(config)
+    except (MissingLeRobotError, IncompatiblePolicyError, NotImplementedError) as exc:
+        _fail(str(exc))
+        return
+    except KeyError as exc:
+        _fail(str(exc).strip('"'))
+        return
+
+    write_report(report, config.out)
+    render_summary(report, _out)
+    _out.print(
+        f"\n[bold]Provael measured[/bold] (policy={policy}, suite={suite}): {report.headline()}"
+    )
+    if policy == "stub" or suite == "stub":
+        _err.print(
+            "[yellow]note:[/yellow] stub numbers are properties of the deterministic test "
+            "fixture, not a real VLA. Run against a real model for real numbers, e.g.\n"
+            "  PROVAEL_INTEGRATION=1 provael reproduce "
+            f"{repro.name} --policy smolvla --suite libero --model HuggingFaceVLA/smolvla_libero"
+        )
+
 
 @app.command()
 def report(
     in_dir: Annotated[Path, typer.Option("--in", help="Directory containing report.json.")],
     fmt: Annotated[
         OutputFormat,
-        typer.Option("--format", help="Output format: 'table', 'sarif', or 'compliance'."),
+        typer.Option("--format", help="Output: 'table', 'sarif', 'compliance', or 'scorecard'."),
     ] = OutputFormat.table,
+    threshold: Annotated[
+        float,
+        typer.Option(min=0.0, max=1.0, help="ASR pass/fail threshold for --format scorecard."),
+    ] = 0.5,
     out: Annotated[
         Path | None,
         typer.Option(
@@ -278,7 +436,51 @@ def report(
             write_compliance_json(loaded, out)
             _out.print(f"Wrote [cyan]{out}[/cyan]  (compliance evidence, JSON)")
         return
+    if fmt is OutputFormat.scorecard:
+        if out is not None:
+            write_scorecard(loaded, out, threshold)
+            _out.print(f"Wrote [cyan]{out}[/cyan]  (pre-deployment ASR scorecard)")
+        else:
+            print(to_scorecard_markdown(loaded, threshold))  # one-page Markdown to stdout
+        return
+    if fmt is OutputFormat.oscal:
+        if out is not None:
+            write_oscal(loaded, out)
+            _out.print(f"Wrote [cyan]{out}[/cyan]  (OSCAL assessment-results)")
+        else:
+            print(to_oscal_json(loaded))  # machine-readable OSCAL to stdout
+        return
     render_summary(loaded, _out)
+
+
+@app.command()
+def export(
+    in_dir: Annotated[Path, typer.Option("--in", help="Directory containing report.json.")],
+    fmt: Annotated[
+        ExportFormat, typer.Option("--format", help="Evidence-graph format (currently 'avid').")
+    ] = ExportFormat.avid,
+    out: Annotated[
+        Path | None, typer.Option("--out", help="Write here instead of stdout.")
+    ] = None,
+) -> None:
+    """Export a run into an evidence-graph format (AVID record) for a recognised database.
+
+    Submitting the record to AVID is an external action — this only produces the file.
+    """
+    try:
+        loaded = load_report(in_dir)
+    except FileNotFoundError as exc:
+        _fail(str(exc))
+        return
+    except ValidationError:
+        _fail(f"{in_dir} does not contain a valid Provael report.json")
+        return
+    # fmt is ExportFormat.avid (the only member today).
+    if out is not None:
+        write_avid(loaded, out)
+        _out.print(f"Wrote [cyan]{out}[/cyan]  (AVID record)")
+    else:
+        print(to_avid_json(loaded))
 
 
 @app.command()
