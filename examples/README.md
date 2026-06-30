@@ -15,7 +15,12 @@ and `PROVAEL_INTEGRATION=1`.
 | — | [python-api/](python-api/) | Runnable BYO policy & BYO suite in ~30–40 lines | < 1 s | CPU |
 | — | [scorecard/](scorecard/) | One-page pre-deployment ASR scorecard (verdict + heatmap) | < 1 s | CPU |
 | — | [recipes/](recipes/) | Named run presets (`provael list-recipes` / `--recipe`) | < 1 s | CPU |
-| — | [ci/](ci/) | CI gate + regression-gate integrations | — | — |
+| — | [integrations/](integrations/) | promptfoo / garak / PyRIT + SARIF aggregators | varies | — |
+| — | [ci/](ci/) | CI gates: GitHub / GitLab / Azure + regression-gate | — | — |
+| — | [mlops/](mlops/) | Log ASR to MLflow / W&B (track + gate promotion) | < 1 s | CPU |
+| — | [hf/](hf/) | Push ASR onto a HF model card (eval-results) | < 1 s | CPU |
+| — | [gpu-ci/](gpu-ci/) | Fork-safe real-model GPU CI via Modal (~$0.02/run) | minutes | GPU |
+| — | [supply-chain/](supply-chain/) | Verify the model (safetensors/Sigstore) + emit an ML-BOM | < 1 s | CPU |
 
 ## Fastest possible start
 

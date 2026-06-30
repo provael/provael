@@ -4,11 +4,12 @@ Drop-in continuous-integration examples that run a Provael red-team gate and pub
 
 | File | Platform | What it does |
 | --- | --- | --- |
-| [`github-actions.yml`](github-actions.yml) | GitHub Actions | Runs the gate on push/PR, uploads SARIF to GitHub code scanning, fails the job past an ASR threshold. Uses the reusable `provael/provael` Action. |
+| [`github-actions.yml`](github-actions.yml) | GitHub Actions | Gate on push/PR, upload SARIF to code scanning, fail past an ASR threshold (reusable `provael/provael` Action). |
+| [`gitlab-provael.yml`](gitlab-provael.yml) | GitLab CI | Native `artifacts:reports:sarif` → GitLab Vulnerability Management + scorecard artifact. |
+| [`azure-pipelines-provael.yml`](azure-pipelines-provael.yml) | Azure Pipelines | Publishes SARIF to the `CodeAnalysisLogs` artifact for the SARIF Scans Tab. |
+| [`regression-gate.md`](regression-gate.md) | any | Block a PR when a retrain raises ASR vs the baseline checkpoint. |
 
-Copy `github-actions.yml` into a robot/VLA repo at `.github/workflows/provael.yml`. The default
-`stub` policy + suite run on a **CPU** runner (a fast smoke test of the gate wiring); the
-commented `redteam-real` job shows the GPU + `[lerobot]` path for a real policy.
-
-> More CI platforms (GitLab CI, Azure Pipelines) and SARIF aggregators (DefectDojo, SonarQube)
-> land in a later pass.
+Copy the file for your platform into the consumer repo. The default `stub` policy + suite run on a
+**CPU** runner (a fast smoke test of the gate wiring); a real policy needs a GPU + the `[lerobot]`
+extra (see the `redteam-real` job in `github-actions.yml`). SARIF also lands in DefectDojo /
+SonarQube — see [../integrations/sarif-aggregators.md](../integrations/sarif-aggregators.md).

@@ -1,0 +1,32 @@
+# Azure Pipelines: run a Provael red-team and render findings in the Scans tab.
+# Install the free "SARIF SAST Scans Tab" extension to view *.sarif from the CodeAnalysisLogs
+# artifact: https://marketplace.visualstudio.com/items?itemName=sariftools.scans
+#
+# CPU stub by default. For a real policy use a GPU agent + the [lerobot] extra.
+trigger:
+  - main
+pr:
+  - '*'
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.12'
+
+  - script: pip install provael
+    displayName: Install Provael
+
+  - script: |
+      provael attack --recipe ci-gate --format sarif --sarif-out "$(Build.ArtifactStagingDirectory)/provael.sarif" --out runs/ci
+      provael report --in runs/ci --format scorecard --threshold 0.5
+    displayName: Provael red-team gate
+
+  # Publish to the folder the SARIF Scans Tab reads.
+  - task: PublishBuildArtifacts@1
+    condition: always()
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: CodeAnalysisLogs

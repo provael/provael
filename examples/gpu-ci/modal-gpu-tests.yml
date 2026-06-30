@@ -1,0 +1,24 @@
+# GitHub Actions: label-gated real-model GPU red-team via Modal (~$0.02/run, fork-safe).
+# Copy to .github/workflows/. Triggers ONLY when a maintainer adds the `gpu-tests` label to a PR,
+# so untrusted fork PRs can never spend your Modal credits.
+name: Provael GPU red-team (Modal)
+
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  gpu-redteam:
+    if: github.event.label.name == 'gpu-tests'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install modal
+      - name: Run real SmolVLA x LIBERO on a Modal GPU
+        run: modal run examples/gpu-ci/modal_provael_gpu.py
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
