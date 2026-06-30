@@ -23,6 +23,7 @@ and `PROVAEL_INTEGRATION=1`.
 | — | [supply-chain/](supply-chain/) | Verify the model (safetensors/Sigstore) + emit an ML-BOM | < 1 s | CPU |
 | — | [evidence/eu-ai-act-art15/](evidence/eu-ai-act-art15/) | Worked EU AI Act Art. 15 robustness evidence pack | < 1 s | CPU |
 | — | [runtime/](runtime/) | Action-stream firewall (defense) — ASR with vs. without | < 1 s | CPU |
+| — | [hf-space/](hf-space/) | Zero-install Gradio demo — run a scan in the browser | < 1 s | CPU |
 
 ## Fastest possible start
 

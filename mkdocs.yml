@@ -42,6 +42,8 @@ nav:
       - OWASP Agentic embodied annex: standards/owasp-asi-embodied.md
       - Listings & PRs: standards/listings.md
   - Python API: python-api.md
+  - vs. LLM red-team tools: comparison.md
+  - Handbook (outline): handbook.md
   - FAQ: faq.md
   - Roadmap: roadmap.md
 

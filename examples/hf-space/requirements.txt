@@ -1,0 +1,3 @@
+# Hugging Face Space deps for the Provael interactive demo. CPU only.
+gradio>=5
+provael
