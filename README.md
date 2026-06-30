@@ -30,10 +30,13 @@ policy into an *unsafe* state. The headline number is the ASR.
 It ships **four families of templated, auditable attacks** — `instruction` (text
 reframings), `visual` (observation-space markers), `injection` (indirect / embodied
 prompt injection), and `action` (action-space integrity: freeze / trajectory hijack) —
-plus a `none` baseline, an ASR **leaderboard**, and a gated adapter for real **SmolVLA**
-policies on the **LIBERO** simulator. These are heuristic perturbations, **not**
-gradient/optimization-based adversarial attacks — see
-[Scope and honest limitations](#scope-and-honest-limitations).
+plus a `none` baseline and an ASR **leaderboard**. It red-teams **7 policies** — the CPU `stub`
+plus real **SmolVLA / π0 / π0.5 / π0-FAST / GR00T** (via the `[lerobot]` extra) and **OpenVLA**
+(via `[openvla]`) — across **4 suites** (`stub` + `reach` on CPU; **LIBERO** + **Meta-World**
+gated), or any policy/suite you wrap with the tiny adapter ABCs. These are heuristic
+perturbations, **not** gradient/optimization-based adversarial attacks — see
+[Scope and honest limitations](#scope-and-honest-limitations) and the
+[examples gallery](examples/).
 
 The entire core — abstractions, attacks, scoring, runner, report, CLI, leaderboard — runs
 and is tested on a **plain CPU with no GPU and no model/dataset download**, using a
@@ -150,15 +153,16 @@ uv run provael version
 
 | Capability | CPU (default) | Needs GPU + `[lerobot]` extra |
 | --- | :---: | :---: |
-| `stub` policy + `stub` suite | ✅ | |
+| `stub` (scalar) + `reach` (spatial) suites | ✅ | |
 | All 4 attack families (`instruction`/`visual`/`injection`/`action`) | ✅ | |
-| Scoring, runner, report, CLI, `leaderboard build` | ✅ | |
+| Scoring, runner, report, CLI, recipes, `reproduce`, scorecard/SARIF/OSCAL/AVID | ✅ | |
 | Full test suite (`pytest`), `ruff`, `mypy` | ✅ | |
-| `smolvla` policy (real SmolVLA via LeRobot) | | ✅ |
-| `libero` suite (real LIBERO simulator) | | ✅ |
+| `smolvla` / `pi0` / `pi05` / `pi0fast` / `groot` policies (real, via LeRobot) | | ✅ |
+| `openvla` policy (OpenVLA via `transformers`; needs the `[openvla]` extra) | | ✅ |
+| `libero` + `metaworld` suites (real simulators) | | ✅ |
 
-On CPU, `--policy smolvla` or `--suite libero` fails with a clear, actionable message (not a
-traceback) telling you exactly what to install.
+On CPU, a real policy/suite fails with a clear, actionable message (not a traceback) telling you
+exactly which extra to install. Run `provael list-policies` to see what's runnable here.
 
 ## Use in CI (GitHub Action)
 
@@ -303,9 +307,16 @@ same config + seed always produces a byte-identical `report.json`.
   redirection rate with a 95% CI and the benign FPR as its control.
 - **v0.5.0** — a **compliance evidence report** (`provael report --format compliance`) and the
   **`action` family (EAI04)** — action-space-integrity attacks (`freeze` + `trajectory_hijack`),
-  stub-validated, each a rate with a 95% CI against a benign-FPR control. *(this release)*
-- **next** — optimized (gradient/search) attacks incl. real-model action-freeze (FreezeVLA);
-  a second policy/suite backend.
+  stub-validated, each a rate with a 95% CI against a benign-FPR control.
+- **unreleased** — **model breadth** (π0/π0.5/π0-FAST/GR00T/OpenVLA + bring-your-own), a second CPU
+  **spatial suite** (`reach`) + gated Meta-World, **`reproduce`** for published attacks, a
+  **pre-deployment scorecard** + **OSCAL**/**AVID** exports, named **recipes**, an **examples
+  gallery** + **docs site**, **integrations** (promptfoo/garak/PyRIT, multi-CI SARIF, MLOps,
+  supply-chain), a **runtime firewall** defense demo, and a public-submission leaderboard. *(this
+  branch)*
+- **next** — optimized (gradient/search) attacks incl. real-model action-freeze (FreezeVLA); more
+  suites (RoboCasa / CALVIN / SimplerEnv / the AI2 harness bridge). See the full
+  [roadmap](docs/roadmap.md).
 
 ## Development
 
