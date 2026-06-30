@@ -26,18 +26,26 @@ Vision-Language-Action (VLA) robot policies in simulation, built with
 > `n=10`), so this is "diverted out of the benign safe envelope," not a calibrated hazard
 > rate. Per-task zone calibration is the next milestone.
 
+## Tabs
+
+- **All policies** and **Open-source policies** — a RoboArena-style split (open-weights models vs.
+  everything) so robustness is compared like-for-like.
+- **Example payloads** — the attacked inputs behind the numbers.
+- **Submit a result** — open-submission: upload a `provael leaderboard build` results JSON; it opens
+  a PR to the `provael-submissions/requests` dataset (Open-LLM-Leaderboard pattern) for a maintainer
+  to validate and promote. Needs `HF_TOKEN` set on the Space.
+
 ## Run it
 
 Locally:
 
 ```bash
-pip install gradio
+pip install gradio huggingface_hub
 python app.py
 ```
 
-On Hugging Face: this folder is a Gradio Space. v0 renders the committed
-`results/*.json` with **no GPU** (ZeroGPU optional — see the `@spaces.GPU` stub in
-`app.py` for the future live-run button).
+On Hugging Face: this folder is a Gradio Space rendering the committed `results/*.json` with **no
+GPU**. Submission is enabled when `HF_TOKEN` is set as a Space secret.
 
 ## How the data is produced
 
