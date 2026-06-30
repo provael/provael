@@ -1,0 +1,61 @@
+site_name: Provael
+site_description: >-
+  Red-team open Vision-Language-Action (VLA) robot policies in simulation and report an
+  Attack Success Rate (ASR).
+site_url: https://provael.github.io/provael/
+repo_url: https://github.com/provael/provael
+repo_name: provael/provael
+docs_dir: docs
+copyright: Apache-2.0 · Independent project · evidence, not certification
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.instant
+    - content.code.copy
+    - search.suggest
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle: { icon: material/weather-night, name: Dark mode }
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle: { icon: material/weather-sunny, name: Light mode }
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Examples gallery: examples.md
+  - Attack catalog: attacks.md
+  - Embodied AI Top 10: TOP10.md
+  - Compliance:
+      - Crosswalk: COMPLIANCE.md
+      - Per-persona cards: crosswalk/README.md
+      - NIST MEASURE 2.7: MEASURE-2-7.md
+      - Sim predicts real: SIM_PREDICTS_REAL.md
+  - Standards (drafts):
+      - MITRE ATLAS case study: standards/atlas-case-study.md
+      - OWASP Agentic embodied annex: standards/owasp-asi-embodied.md
+      - Listings & PRs: standards/listings.md
+  - Python API: python-api.md
+  - vs. LLM red-team tools: comparison.md
+  - Handbook (outline): handbook.md
+  - FAQ: faq.md
+  - Roadmap: roadmap.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - pymdownx.superfences
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search

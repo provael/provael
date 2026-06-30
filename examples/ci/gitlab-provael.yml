@@ -1,0 +1,21 @@
+# GitLab CI: run a Provael red-team and publish findings to GitLab Vulnerability Management.
+# Copy into .gitlab-ci.yml (or `include:` it). GitLab natively ingests SARIF 2.1.0 via
+# artifacts:reports:sarif, so Provael findings become first-class vulnerabilities.
+#   https://docs.gitlab.com/user/application_security/detect/sarif/
+#
+# CPU stub by default (no GPU, no model). For a real policy, run on a GPU runner with the
+# [lerobot] extra + PROVAEL_INTEGRATION=1 (see github-actions.yml for the job shape).
+provael-redteam:
+  image: python:3.12-slim
+  stage: test
+  script:
+    - pip install provael
+    - provael attack --recipe ci-gate --format sarif --sarif-out provael.sarif --out runs/ci
+    # Fail the job if overall ASR exceeds the threshold (verdict in the scorecard):
+    - provael report --in runs/ci --format scorecard --threshold 0.5 | tee scorecard.md
+  artifacts:
+    when: always
+    paths:
+      - scorecard.md
+    reports:
+      sarif: provael.sarif

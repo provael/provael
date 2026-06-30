@@ -1,0 +1,4 @@
+# Recipe: full-sweep — all four attack families (EAI01/02/04/05), 10 episodes.
+#   provael attack --recipe full-sweep
+attacks: [instruction, visual, injection, action]
+episodes: 10
