@@ -65,6 +65,13 @@ dev = [
     "mypy",
     "types-PyYAML",
 ]
+# Docs site tooling — NOT installed by the default `uv sync` / CPU CI. Build with
+# `uv run --group docs mkdocs build --strict`.
+docs = [
+    "mkdocs-material",
+    "mkdocs-jupyter",
+    "mike",
+]
 
 [tool.hatch.version]
 path = "src/provael/__init__.py"

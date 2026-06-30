@@ -165,7 +165,7 @@ Verified anchors (read the full text for clause-level audit use):
 - **IEC 62443** — industrial automation & control systems security.
 
 See also [TOP10.md](TOP10.md) (the risk taxonomy + OWASP/MITRE crosswalk) and
-[SAFETY.md](../SAFETY.md) (responsible-use scope).
+[SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md) (responsible-use scope).
 
 ---
 

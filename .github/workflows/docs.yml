@@ -1,0 +1,32 @@
+# Build the MkDocs site; deploy to GitHub Pages only on a manual dispatch (deploy is gated).
+name: Docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Deploy to gh-pages"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Build (strict)
+        run: uv run --group docs mkdocs build --strict
+      - name: Deploy to gh-pages (manual only)
+        if: github.event_name == 'workflow_dispatch' && inputs.deploy
+        run: uv run --group docs mkdocs gh-deploy --force
