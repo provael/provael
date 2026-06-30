@@ -180,7 +180,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.5.0
+      - uses: provael/provael@v0.6.0
         with:
           attacks: instruction,visual,injection,action
           episodes: "10"

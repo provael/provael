@@ -2,7 +2,7 @@
 #
 #   repos:
 #     - repo: https://github.com/provael/provael
-#       rev: v0.5.0
+#       rev: v0.6.0
 #       hooks:
 #         - id: provael
 #           # optional: override the default fast CPU smoke run

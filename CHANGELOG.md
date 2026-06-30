@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-06-30
+
 ### Added
 - **Model breadth (7 policies).** LeRobot-native `pi0` / `pi05` / `pi0fast` / `groot` (config-level
   reuse of the generic LeRobot adapter) and `openvla` (OpenVLA / OpenVLA-OFT via Hugging Face
@@ -167,6 +169,7 @@ single task with a default, uncalibrated keep-out predicate. See the README's
 > Detailed pre-rebrand history (the `vla-redteam` 0.2.x line) is preserved in the git log and
 > the prior PyPI releases.
 
+[0.6.0]: https://github.com/provael/provael/releases/tag/v0.6.0
 [0.5.0]: https://github.com/provael/provael/releases/tag/v0.5.0
 [0.4.0]: https://github.com/provael/provael/releases/tag/v0.4.0
 [0.3.0]: https://github.com/provael/provael/releases/tag/v0.3.0
