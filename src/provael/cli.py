@@ -41,6 +41,7 @@ from provael.compliance import (
 )
 from provael.config import RunConfig
 from provael.leaderboard import Leaderboard, build_leaderboard
+from provael.oscal import OSCAL_JSON, to_oscal_json, write_oscal
 from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
 from provael.policies.registry import (
     available_policies,
@@ -62,6 +63,7 @@ class OutputFormat(StrEnum):
     sarif = "sarif"
     compliance = "compliance"
     scorecard = "scorecard"
+    oscal = "oscal"
 
 
 app = typer.Typer(
@@ -315,6 +317,10 @@ def attack(
         scorecard_target = write_scorecard(report, config.out / SCORECARD_MD)
         _out.print(f"Wrote [cyan]{scorecard_target}[/cyan]  (pre-deployment ASR scorecard)")
 
+    if fmt is OutputFormat.oscal:
+        oscal_target = write_oscal(report, config.out / OSCAL_JSON)
+        _out.print(f"Wrote [cyan]{oscal_target}[/cyan]  (OSCAL assessment-results)")
+
 
 @app.command()
 def reproduce(
@@ -429,6 +435,13 @@ def report(
             _out.print(f"Wrote [cyan]{out}[/cyan]  (pre-deployment ASR scorecard)")
         else:
             print(to_scorecard_markdown(loaded, threshold))  # one-page Markdown to stdout
+        return
+    if fmt is OutputFormat.oscal:
+        if out is not None:
+            write_oscal(loaded, out)
+            _out.print(f"Wrote [cyan]{out}[/cyan]  (OSCAL assessment-results)")
+        else:
+            print(to_oscal_json(loaded))  # machine-readable OSCAL to stdout
         return
     render_summary(loaded, _out)
 

@@ -21,6 +21,7 @@ and `PROVAEL_INTEGRATION=1`.
 | — | [hf/](hf/) | Push ASR onto a HF model card (eval-results) | < 1 s | CPU |
 | — | [gpu-ci/](gpu-ci/) | Fork-safe real-model GPU CI via Modal (~$0.02/run) | minutes | GPU |
 | — | [supply-chain/](supply-chain/) | Verify the model (safetensors/Sigstore) + emit an ML-BOM | < 1 s | CPU |
+| — | [evidence/eu-ai-act-art15/](evidence/eu-ai-act-art15/) | Worked EU AI Act Art. 15 robustness evidence pack | < 1 s | CPU |
 
 ## Fastest possible start
 
