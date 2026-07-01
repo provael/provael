@@ -30,11 +30,13 @@ policy into an *unsafe* state. The headline number is the ASR.
 It ships **four families of templated, auditable attacks** — `instruction` (text
 reframings), `visual` (observation-space markers), `injection` (indirect / embodied
 prompt injection), and `action` (action-space integrity: freeze / trajectory hijack) —
-plus a `none` baseline and an ASR **leaderboard**. It red-teams **7 policies** — the CPU `stub`
+plus an **`optimized`** family (`targeted_hijack`: a black-box, query-budgeted *search*), a
+`none` baseline, and an ASR **leaderboard**. It red-teams **7 policies** — the CPU `stub`
 plus real **SmolVLA / π0 / π0.5 / π0-FAST / GR00T** (via the `[lerobot]` extra) and **OpenVLA**
 (via `[openvla]`) — across **4 suites** (`stub` + `reach` on CPU; **LIBERO** + **Meta-World**
-gated), or any policy/suite you wrap with the tiny adapter ABCs. These are heuristic
-perturbations, **not** gradient/optimization-based adversarial attacks — see
+gated), or any policy/suite you wrap with the tiny adapter ABCs. The templated families are
+heuristic perturbations (not gradient-based); the `optimized` family is a model-agnostic search
+that only *queries* the policy — see
 [Scope and honest limitations](#scope-and-honest-limitations) and the
 [examples gallery](examples/).
 
@@ -61,6 +63,7 @@ that tag as each finding's `EAIxx` ruleId:
 | `visual` | `patch`, `decoy_object` | [EAI02 — Adversarial perception](docs/TOP10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) |
 | `injection` | `scene_text`, `mcp_tool_desc` | [EAI05 — Indirect / embodied prompt injection](docs/TOP10.md#eai05--indirect--embodied-prompt-injection) |
 | `action` | `freeze`, `trajectory_hijack` | [EAI04 — Action-space integrity](docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
+| `optimized` | `targeted_hijack` (black-box search) | [EAI04 — Action-space integrity](docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
 
 ## Scope and honest limitations
 
@@ -140,7 +143,7 @@ Other commands:
 
 ```bash
 uv run provael list-policies            # stub (CPU); smolvla (needs the [lerobot] extra)
-uv run provael list-attacks             # 9 attacks across instruction/visual/injection/action
+uv run provael list-attacks             # 10 attacks across instruction/visual/injection/action/optimized
 uv run provael list-recipes             # named presets: quick / instruction-only / full-sweep / ci-gate
 uv run provael attack --recipe quick    # a recipe is the base config; explicit flags override it
 uv run provael report --in runs/stub/
@@ -154,7 +157,7 @@ uv run provael version
 | Capability | CPU (default) | Needs GPU + `[lerobot]` extra |
 | --- | :---: | :---: |
 | `stub` (scalar) + `reach` (spatial) suites | ✅ | |
-| All 4 attack families (`instruction`/`visual`/`injection`/`action`) | ✅ | |
+| All 5 attack families (`instruction`/`visual`/`injection`/`action`/`optimized`) | ✅ | |
 | Scoring, runner, report, CLI, recipes, `reproduce`, scorecard/SARIF/OSCAL/AVID | ✅ | |
 | Full test suite (`pytest`), `ruff`, `mypy` | ✅ | |
 | `smolvla` / `pi0` / `pi05` / `pi0fast` / `groot` policies (real, via LeRobot) | | ✅ |

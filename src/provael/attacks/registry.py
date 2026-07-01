@@ -41,6 +41,12 @@ from provael.attacks.instruction import (
     ParaphraseAttack,
     RolePlayAttack,
 )
+from provael.attacks.optimized import (
+    FAMILY as OPTIMIZED_FAMILY,
+)
+from provael.attacks.optimized import (
+    TargetedTrajectoryHijack,
+)
 from provael.attacks.visual import (
     FAMILY as VISUAL_FAMILY,
 )
@@ -61,6 +67,7 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
     "mcp_tool_desc": MCPToolDescInjection,
     "freeze": FreezeAttack,
     "trajectory_hijack": TrajectoryHijackAttack,
+    "targeted_hijack": TargetedTrajectoryHijack,
 }
 
 #: Family name -> ordered member attack names.
@@ -70,6 +77,7 @@ FAMILIES: dict[str, list[str]] = {
     VISUAL_FAMILY: ["patch", "decoy_object"],
     INJECTION_FAMILY: ["scene_text", "mcp_tool_desc"],
     ACTION_FAMILY: ["freeze", "trajectory_hijack"],
+    OPTIMIZED_FAMILY: ["targeted_hijack"],
 }
 
 
