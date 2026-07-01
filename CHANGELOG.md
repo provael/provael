@@ -6,6 +6,21 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- **Optimized attack family (`optimized`) — the first non-templated attack.** `targeted_hijack`
+  is a **black-box, query-budgeted search** (EAI04): it searches candidate `goto::` action
+  directives (within a magnitude cap, bounded by `--query-budget`, default 200) for the one whose
+  *emitted* motion best aligns with an attacker-chosen — but harmless, sim-only — goal, then
+  commits it for the episode. It only *queries* the policy (no gradients/internals, model-agnostic;
+  the runner wires a policy oracle and resets around each query so the search never pollutes the
+  live rollout), and is deterministic given the episode seed. New `--query-budget` CLI flag +
+  `RunConfig.query_budget`. **Stub-validated scaffolding:** on the deterministic CPU stub the
+  targeted-redirection rate is **100% (20/20) [84–100%]** vs a **0% benign-FPR control** (see
+  `results/optimized_targeted_hijack_stub/`); the real SmolVLA×LIBERO transfer is GPU-gated and
+  **not run in CI** (a gated integration test measures it), so no cross-model transfer is claimed.
+  Prior art cited (AttackVLA/BackdoorVLA arXiv:2511.12149, FreezeVLA arXiv:2509.19870); no "first"
+  claim.
+
 ## [0.6.0] — 2026-06-30
 
 ### Added

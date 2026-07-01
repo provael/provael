@@ -15,6 +15,8 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
   Azure) SARIF; pre-commit; MLflow/W&B logging; HF eval-results; Modal GPU-CI; Docker/devcontainer;
   supply-chain (model-signing + ML-BOM).
 - **Defense demo:** action-stream firewall + ROS 2 guard node (sim/reference).
+- **Optimized attacks (in progress):** the `optimized` family — `targeted_hijack`, a black-box,
+  query-budgeted search — is the first non-templated attack (stub-validated; real transfer gated).
 
 ## Planned (contributions welcome)
 
@@ -23,7 +25,8 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
 - **Public leaderboard** with open submission; **docs site** versioning.
 - **Standards:** MITRE ATLAS case study, OWASP Agentic embodied annex, OECD.AI listing (drafts in
   [docs/standards](https://github.com/provael/provael/tree/main/docs/standards)).
-- **Stronger attacks:** gradient/search-optimised variants beyond the templated screen.
+- **Stronger attacks:** white-box gradient variants (GCG-style suffixes, transferable pixel/patch
+  search) and a real-model transfer of the `optimized` family beyond the stub.
 
 !!! note
     "Planned" means not yet shipped — we don't ship fabricated capability. Each lands behind tests

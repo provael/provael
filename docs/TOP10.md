@@ -117,7 +117,10 @@ availability/DoS failure — see cross-cutting.)* **Attack shipped (Provael):** 
 no-op (FreezeVLA-style action-freeze) while a hijack directive redirects the trajectory toward an
 attacker waypoint; each scored as a rate with a 95% Wilson CI against a benign-FPR control. **Stub-validated
 only** (deterministic CPU core, freeze/redirection 100% [72–100%] vs a 0% benign baseline); real-model
-SmolVLA × LIBERO transfer is GPU-gated and **not yet run** — no cross-model claim.
+SmolVLA × LIBERO transfer is GPU-gated and **not yet run** — no cross-model claim. **Also shipped:** the
+`optimized` family (`targeted_hijack`) — a black-box, query-budgeted *search* that adapts a `goto::`
+directive to steer the policy's emitted motion toward an attacker goal (the first non-templated attack);
+stub-validated (100% [84–100%] vs a 0% benign baseline at query-budget 200), real transfer GPU-gated.
 **Why it matters.** A hijacked-trajectory robot and a frozen robot are different severe failures — and a
 single "task success" metric hides both.
 **Mitigations.** Report ASR as a matrix (untargeted / freeze / targeted) with a clean baseline; action

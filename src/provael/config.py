@@ -42,6 +42,11 @@ class RunConfig(BaseModel):
     )
     seed: int = Field(0, ge=0, description="Base random seed for reproducibility.")
     horizon: int = Field(8, ge=1, description="Maximum timesteps per episode.")
+    query_budget: int | None = Field(
+        None,
+        ge=1,
+        description="Per-episode policy-query budget for the optimized (search) attack family.",
+    )
     out: Path = Field(
         default_factory=lambda: Path("runs/stub"), description="Output directory for reports."
     )

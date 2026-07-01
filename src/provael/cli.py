@@ -219,6 +219,14 @@ def attack(
         Path | None,
         typer.Option("--calib", help="Dir of calibration artifacts (from `provael calibrate`)."),
     ] = None,
+    query_budget: Annotated[
+        int | None,
+        typer.Option(
+            "--query-budget",
+            min=1,
+            help="Per-episode policy-query budget for the optimized (search) attack family.",
+        ),
+    ] = None,
     recipe: Annotated[
         str | None,
         typer.Option(
@@ -273,6 +281,8 @@ def attack(
         overrides["rename_map"] = rename
     if _explicit("unnorm_key"):
         overrides["unnorm_key"] = unnorm_key
+    if _explicit("query_budget"):
+        overrides["query_budget"] = query_budget
     if _explicit("out"):
         overrides["out"] = out
 
