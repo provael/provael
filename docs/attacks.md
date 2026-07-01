@@ -48,6 +48,26 @@ Manipulating the actuation itself. Reproduces the FreezeVLA threat class.
 | `freeze` | zero the commanded motion (the robot stops, ignores the task) |
 | `trajectory_hijack` | redirect motion toward an attacker waypoint |
 
+## `optimized` — search-based targeted hijack (EAI04)
+
+The first **non-templated** family: a black-box, query-budgeted *search* that adapts to the
+policy's responses instead of emitting a fixed cue.
+
+| Attack | Idea |
+| --- | --- |
+| `targeted_hijack` | search (within a magnitude cap, under `--query-budget`) for the action directive that best steers the policy's *own emitted motion* toward an attacker-chosen goal, over the horizon |
+
+It only *queries* the policy (no gradients / internals), so it is model-agnostic; each query is
+made independent by resetting the policy around it, and the search is deterministic given the
+episode seed. On the CPU stub it converges in closed form.
+
+!!! warning "Stub-validated scaffolding"
+    On a real VLA a targeted action hijack needs an adversarial-image / action-token search over
+    the model's inputs (AttackVLA, arXiv:2511.12149). That path is GPU-gated and **not run in CI**,
+    so no cross-model transfer is claimed. The stub numbers are fixture properties; run
+    `tests/test_optimized.py::test_targeted_hijack_transfer_smolvla_libero` under
+    `PROVAEL_INTEGRATION=1` to measure a real rate. No "first" claim is made.
+
 ## Baseline
 
 `none` is the benign control — it never perturbs anything, so its ASR is the false-positive floor

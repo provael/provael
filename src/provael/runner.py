@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from provael import __version__
 from provael.attacks.base import Attack
+from provael.attacks.optimized import TargetedTrajectoryHijack
 from provael.attacks.registry import resolve_attacks
 from provael.calibration import Calibration
 from provael.config import RunConfig
@@ -27,7 +28,36 @@ from provael.policies.registry import make_policy
 from provael.scoring.asr import asr_std, by_attack, by_task, overall_stat
 from provael.suites import make_suite
 from provael.suites.base import SuiteAdapter
-from provael.types import AttackResult, CalibrationMeta, Decision, EaiTag, RunReport
+from provael.types import (
+    Action,
+    AttackResult,
+    CalibrationMeta,
+    Decision,
+    EaiTag,
+    Observation,
+    RunReport,
+)
+
+
+def _configure_optimized(
+    attacks: list[Attack], policy: PolicyAdapter, query_budget: int | None
+) -> None:
+    """Wire a policy-query oracle (and optional budget override) into optimized attacks.
+
+    Only the optimized family exposes ``attach_oracle``; the base ``Attack`` contract is
+    untouched. Each search query resets the policy first, so it is an *independent* black-box
+    query that never pollutes the live rollout's per-episode state (e.g. an action-chunk queue).
+    """
+
+    def _query(instruction: str, observation: Observation) -> Action:
+        policy.reset()
+        return policy.act(observation, instruction)
+
+    for attack in attacks:
+        if isinstance(attack, TargetedTrajectoryHijack):
+            if query_budget is not None:
+                attack.query_budget = query_budget
+            attack.attach_oracle(_query, policy.reset)
 
 
 def run_episode(
@@ -131,6 +161,7 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
     policy.load()
 
     attacks = resolve_attacks(config.attacks)
+    _configure_optimized(attacks, policy, config.query_budget)
     tasks = config.tasks if config.tasks is not None else suite.tasks()
 
     results: list[AttackResult] = []
