@@ -60,7 +60,7 @@ real corpus matures. Disagree with the rank? That's the point — open a PR.
 | **EAI03** | Model & pipeline poisoning, backdoors & supply chain | Model / supply chain | *[research]* BadVLA, TrojanRobot |
 | **EAI04** | Action-space integrity attacks (hijack / targeted / freeze) | Action | *[research]* AttackVLA, FreezeVLA |
 | **EAI05** | Indirect / embodied prompt injection | Perception / tools | *[research]* CrossInject |
-| **EAI06** | Unsafe action execution & guardrail bypass (embodiment gap) | Model / safety | *[research]* BadRobot (safety misalignment) |
+| **EAI06** | Cross-domain safety misalignment (the embodiment gap) | Model / safety | *[research]* BadRobot (ICLR 2025) |
 | **EAI07** | CPS, firmware, comms & teleoperation compromise | Hardware / network | *[incident]* UniPwn (CVE-2025-60250/-60251), Go1 backdoor (CVE-2025-2894) |
 | **EAI08** | Identity, access & excessive autonomy | Identity / authz | *[incident]* unauth ROS/DDS; *[framework]* OWASP ASI03 |
 | **EAI09** | Model & data confidentiality — theft, extraction, inversion & surveillance | Confidentiality / privacy | *[incident]* Unitree G1 telemetry; *[research]* model extraction |
@@ -77,7 +77,7 @@ failures · rogue/self-evolving agents · long-lived memory poisoning.
 **What.** Natural-language commands (direct, or via an LLM planner) that drive the policy to act against
 its safety constraints — the embodied analog of an LLM jailbreak, output as a physical action plan.
 **Evidence.** *[research]* **RoboPAIR** (arXiv 2410.13691, ~100% ASR incl. a deployed Unitree Go2);
-**BadRobot** (arXiv 2407.20242). Provael's own runs: `roleplay` diverts a real SmolVLA×LIBERO policy **100% (10/10), 95% CI [72–100%]** against a **0% benign baseline** (sim-only, one task, n=10; reproduce with `provael calibrate` + `attack --calib`).
+**BadRobot** (ICLR 2025, arXiv 2407.20242). Provael's own runs: `roleplay` diverts a real SmolVLA×LIBERO policy **100% (10/10), 95% CI [72–100%]** against a **0% benign baseline** (sim-only, one task, n=10; reproduce with `provael calibrate` + `attack --calib`).
 **Why it matters.** Cheapest, most transferable attack — rides the normal command channel to a moving robot.
 **Mitigations.** Instruction provenance/auth; runtime plan-validation guardrail (temporal-logic /
 executability, cf. RoboGuard); embodied-harm refusal training; red-team each release and gate on ASR.
@@ -139,16 +139,24 @@ hard control-vs-content channel separation; tool allow-lists; sanitize RAG corpo
 **Maps to.** OWASP **LLM01 Prompt Injection (indirect)** · OWASP **ASI06 Memory & Context Poisoning** ·
 NIST AI 100-2 **Indirect Prompt Injection**.
 
-## EAI06 — Unsafe action execution & guardrail bypass (the embodiment gap)
-**What.** The policy *says* the right thing but *does* the wrong thing — "safety misalignment" where a
-verbal refusal doesn't propagate to the emitted action, or a guardrail validates language but not the
-physical plan.
-**Evidence.** *[research]* **BadRobot** names this as a core embodied failure surface (cross-domain safety
-misalignment): the model refuses in text yet still outputs the harmful executable policy.
-**Why it matters.** Teams that bolt an LLM-style refusal filter onto a robot get false confidence — the
-dangerous action still runs.
-**Mitigations.** Validate the *action plan*, not just language; ground safety rules to physical context;
-executability + harm gating at the planner→actuator boundary; an independent safety monitor.
+## EAI06 — Cross-domain safety misalignment (the embodiment gap)
+**What.** A mismatch across the three layers a VLA policy spans — **language-level safety**,
+**world-model reasoning**, and the **executable physical action** — so that safety at one layer does not
+carry to the next. Three failure sub-modes (BadRobot, ICLR 2025):
+- **Action-language safety misalignment** — the model refuses (or reasons safely) in *text* yet still
+  emits the harmful *action* plan; a guardrail that validates language but not the physical plan misses it.
+- **World-knowledge flaws** — a *benign-looking* instruction yields an unsafe action because the agent's
+  physical-world understanding is incomplete or wrong (e.g. it does not know an object is hazardous, fragile,
+  or a person). Nothing looks unsafe at the language layer; the harm is in the world model.
+- **Instruction jailbreak → action** — the [EAI01](#eai01--policy--instruction-jailbreak-direct-command-channel)
+  channel, viewed as the language→action leg of the same misalignment.
+**Evidence.** *[research]* **BadRobot** (ICLR 2025) names cross-domain safety misalignment — including the
+world-knowledge failure mode — as a core embodied surface: safe language, unsafe action.
+**Why it matters.** Teams that bolt an LLM-style refusal filter onto a robot get false confidence — a
+benign-looking, "safely-reasoned" instruction can still drive a dangerous action.
+**Mitigations.** Validate the *action plan* and its *physical-world consequences*, not just language; ground
+safety rules to world state (object/person/hazard awareness); executability + harm gating at the
+planner→actuator boundary; an independent safety monitor.
 **Maps to.** OWASP **LLM06 / ASI03 (excessive agency / guardrail bypass)** · ISO 10218:2025 / ISO 13482 (functional safety interface).
 
 ## EAI07 — CPS, firmware, comms & teleoperation compromise
@@ -259,7 +267,7 @@ Foundational surveys: **VLA Safety survey** (arXiv 2604.23775); **Towards Robust
 (ACM CSUR 10.1145/3806048 / arXiv 2502.13175); **Trust in LLM-controlled Robotics** (arXiv 2601.02377);
 **SoK: Humanoid Ecosystem Cybersecurity** (arXiv 2508.17481); **SoK: Security & Privacy of
 Foundation-Model-Powered Robots** (arXiv 2606.16788); **Safety in Embodied AI** (arXiv 2605.02900).
-Attacks/benchmarks: RoboPAIR, BadRobot, BadVLA, TrojanRobot, AttackVLA, FreezeVLA, CrossInject (IDs in
+Attacks/benchmarks: RoboPAIR, BadRobot (ICLR 2025), BadVLA, TrojanRobot, AttackVLA, FreezeVLA, CrossInject (IDs in
 each item). Red-teaming: **RedVLA** (arXiv 2604.22591). Scoring/DB: **Alias Robotics RVD** (arXiv
 1912.11299) + **RVSS**. Frameworks we cross-map to: **OWASP Agentic Top 10 (2026)**, **OWASP LLM Top 10
 (2025)**, **MITRE ATLAS** (v5.x, 16 tactics), **NIST AI 100-2e2025**, **ISO 10218:2025 / IEC 62443**.
@@ -284,7 +292,9 @@ Licensed CC-BY-SA 4.0 so it can be donated/merged cleanly.
 
 **Contributors**
 
-Co-authors and reviewers will be listed here as they join.
+- **Hangtao Zhang** — University of Pennsylvania ([Google Scholar](https://scholar.google.com/citations?user=H6wMyNEAAAAJ)). Co-author; shaped EAI01 and the EAI06 cross-domain-safety-misalignment framing (incl. the world-knowledge failure mode) from the BadRobot (ICLR 2025) work.
+
+Further co-authors and reviewers will be listed here as they join.
 
 **Built on the work of**
 
