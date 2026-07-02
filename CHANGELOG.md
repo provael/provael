@@ -6,7 +6,21 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-07-03
+
 ### Added
+- **Signed attestation (`provael attest`).** Wraps the *same* compliance evidence as
+  `report --format compliance` (ASR + 95% Wilson CI + benign-FPR control + per-EAI breakdown + the
+  EU/ISO/NIST/IEC crosswalk) into a **tamper-evident, dated, offline-verifiable** bundle: a SHA-256
+  digest binds the run, a UTC issuance date + crosswalk ruleset + source commit are stamped, a
+  per-attack transfer-test status is recorded (real-transfer vs stub scaffolding), and it is wrapped
+  in a **DSSE-style envelope**. The digest layer is standard-library and always on (`--no-sign`);
+  **Ed25519** signing/verification rides the optional `provael[attest]` extra (`cryptography`) and
+  verifies offline (`provael attest --verify … --pubkey …`). It re-runs nothing (reuses
+  `report.json`) and carries a regulatory clock (EU Machinery Reg 2023/1230 applies 2027-01-20; AI
+  Act Annex-I machinery statutory 2027-08-02 with a proposed-not-adopted 2028 move). **Evidence, not
+  certification.** New `docs/ATTESTATION.md`. The free core stays 6 deps; the hosted, key-backed
+  attestation with a real-VLA (GPU) transfer run is the open-core paid surface.
 - **Optimized attack family (`optimized`) — the first non-templated attack.** `targeted_hijack`
   is a **black-box, query-budgeted search** (EAI04): it searches candidate `goto::` action
   directives (within a magnitude cap, bounded by `--query-budget`, default 200) for the one whose

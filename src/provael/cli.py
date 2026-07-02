@@ -15,7 +15,9 @@ exit code — never a raw traceback.
 from __future__ import annotations
 
 import json
+import subprocess
 import time
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
@@ -32,8 +34,22 @@ from provael.attacks.registry import (
     available_families,
     make_attack,
 )
+from provael.attest import (
+    ATTESTATION_JSON,
+    ATTESTATION_PUB,
+    MissingAttestExtraError,
+    load_bundle,
+    to_bundle,
+    verify_bundle,
+    write_bundle,
+)
 from provael.avid import to_avid_json, write_avid
-from provael.calibration import calibrate_suite, load_calibrations, save_calibration
+from provael.calibration import (
+    calibrate_suite,
+    load_calibrations,
+    save_calibration,
+    wilson_ci,
+)
 from provael.compliance import (
     COMPLIANCE_JSON,
     to_compliance_json,
@@ -106,6 +122,19 @@ def _split_csv(value: str | None) -> list[str] | None:
         return None
     items = [tok.strip() for tok in value.split(",") if tok.strip()]
     return items or None
+
+
+def _git_commit() -> str | None:
+    """Best-effort short commit SHA of the working tree, or None outside a git checkout."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, timeout=5, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    sha = result.stdout.strip()
+    return sha if result.returncode == 0 and sha else None
 
 
 @app.command()
@@ -491,6 +520,146 @@ def export(
         _out.print(f"Wrote [cyan]{out}[/cyan]  (AVID record)")
     else:
         print(to_avid_json(loaded))
+
+
+@app.command()
+def attest(
+    in_dir: Annotated[
+        Path | None,
+        typer.Option("--in", help="Directory with a prior report.json to attest. Omit to run one."),
+    ] = None,
+    policy: Annotated[str, typer.Option(help="Policy to run (when --in is omitted).")] = "stub",
+    suite: Annotated[str, typer.Option(help="Suite to run (when --in is omitted).")] = "stub",
+    attacks: Annotated[
+        str, typer.Option(help="Attacks to run when --in is omitted. Keep 'none' for the control.")
+    ] = "none,instruction",
+    episodes: Annotated[int, typer.Option(min=1, help="Episodes per (task, attack) pair.")] = 10,
+    seed: Annotated[int, typer.Option(min=0, help="Base random seed.")] = 0,
+    calib: Annotated[
+        Path | None, typer.Option("--calib", help="Calibration dir (from `provael calibrate`).")
+    ] = None,
+    key: Annotated[
+        Path | None,
+        typer.Option("--key", help="Ed25519 private-key PEM to sign with. Omit for ephemeral."),
+    ] = None,
+    no_sign: Annotated[
+        bool, typer.Option("--no-sign", help="Emit a digest-only bundle (no signature, no extra).")
+    ] = False,
+    verify: Annotated[
+        Path | None,
+        typer.Option("--verify", help="Verify an existing attestation.json instead of issuing."),
+    ] = None,
+    pubkey: Annotated[
+        Path | None, typer.Option("--pubkey", help="Public-key PEM to verify a signed bundle with.")
+    ] = None,
+    commit: Annotated[
+        str | None, typer.Option("--commit", help="Override the source commit stamp.")
+    ] = None,
+    out: Annotated[
+        Path, typer.Option(help="Output directory for the bundle.")
+    ] = Path("runs/attest"),
+) -> None:
+    """Issue (or verify) a signed, dated, standards-crosswalked ASR evidence bundle.
+
+    `attest` wraps the SAME compliance evidence as `report --format compliance` — the ASR with its
+    95% Wilson CI, the benign-FPR control, the per-EAI breakdown, and the EU/ISO/NIST/IEC crosswalk
+    — then binds it with a SHA-256 digest, stamps a UTC date + ruleset + commit, and signs a
+    DSSE-style envelope (Ed25519). It is evidence, not certification.
+    """
+    # -- verification mode -------------------------------------------------------------------
+    if verify is not None:
+        try:
+            bundle = load_bundle(verify)
+        except (FileNotFoundError, ValidationError):
+            _fail(f"{verify} is not a readable attestation bundle")
+            return
+        pub_bytes = pubkey.read_bytes() if pubkey is not None else None
+        try:
+            result = verify_bundle(bundle, public_key_pem_bytes=pub_bytes)
+        except MissingAttestExtraError as exc:
+            _fail(str(exc))
+            return
+        for reason in result.reasons:
+            _out.print(f"  - {reason}")
+        if result.ok:
+            _out.print("[green]attestation OK[/green]")
+        else:
+            _fail("attestation verification FAILED", code=1)
+        return
+
+    # -- issuance mode -----------------------------------------------------------------------
+    if in_dir is not None:
+        try:
+            report = load_report(in_dir)
+        except FileNotFoundError as exc:
+            _fail(str(exc))
+            return
+        except ValidationError:
+            _fail(f"{in_dir} does not contain a valid Provael report.json")
+            return
+    else:
+        calibrations = load_calibrations(calib, policy, suite) if calib is not None else None
+        try:
+            config = RunConfig(
+                policy=policy, suite=suite, attacks=_split_csv(attacks) or ["none", "instruction"],
+                episodes=episodes, seed=seed, out=out,
+            )
+            report = run(config, calibrations)
+        except (MissingLeRobotError, IncompatiblePolicyError, NotImplementedError) as exc:
+            _fail(str(exc))
+            return
+        except KeyError as exc:
+            _fail(str(exc).strip('"'))
+            return
+        write_report(report, out)
+
+    issued_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    stamp = commit or _git_commit() or f"v{__version__}"
+    private_key_pem = key.read_bytes() if key is not None else None
+
+    try:
+        bundle, pub_pem = to_bundle(
+            report, issued_at=issued_at, commit=stamp,
+            private_key_pem=private_key_pem, sign=not no_sign,
+        )
+    except MissingAttestExtraError as exc:
+        _fail(str(exc))
+        return
+
+    bundle_path = write_bundle(bundle, out / ATTESTATION_JSON)
+    # The human-readable evidence travels with the bundle.
+    write_compliance_markdown(report, out / "report.compliance.md")
+    pub_path: Path | None = None
+    if pub_pem is not None and key is None:
+        # Ephemeral key: publish the public half so the bundle stays offline-verifiable.
+        pub_path = out / ATTESTATION_PUB
+        pub_path.write_bytes(pub_pem)
+
+    render_summary(report, _out)
+    lo, hi = wilson_ci(report.successes, report.attempts) if report.attempts else (0.0, 0.0)
+    fpr = "n/a" if report.benign_fpr is None else f"{100.0 * report.benign_fpr:.1f}%"
+    _out.print("\n[bold]Attestation[/bold]")
+    _out.print(f"  subject   : {report.policy} x {report.suite}")
+    _out.print(f"  evidence  : ASR {100.0 * report.asr:.1f}% "
+               f"[{100.0 * lo:.0f}-{100.0 * hi:.0f}%], benign FPR {fpr}")
+    _out.print(f"  issued_at : {issued_at}   commit: {stamp}")
+    if bundle.signed:
+        _out.print(f"  signature : ed25519  keyid {bundle.signatures[0].keyid}")
+    else:
+        _out.print("  signature : [yellow]digest-only (unsigned)[/yellow]")
+    _out.print("  clock     : EU Machinery Reg 2023/1230 applies 2027-01-20")
+    _out.print(f"\nWrote [cyan]{bundle_path}[/cyan]"
+               + (f" and [cyan]{pub_path}[/cyan]" if pub_path is not None else ""))
+    if bundle.signed and key is None:
+        _err.print("[yellow]note:[/yellow] signed with an ephemeral key (integrity, not identity). "
+                   "Pass --key <ed25519.pem> to sign with your organisation key.")
+    if report.policy == "stub" or report.suite == "stub":
+        _err.print("[yellow]note:[/yellow] stub numbers are properties of the deterministic "
+                   "fixture, not a real VLA. Attest a real run for a transfer measurement.")
+    verify_hint = f"provael attest --verify {bundle_path}"
+    if pub_path is not None:
+        verify_hint += f" --pubkey {pub_path}"
+    _out.print(f"Verify offline: [bold]{verify_hint}[/bold]")
 
 
 @app.command()

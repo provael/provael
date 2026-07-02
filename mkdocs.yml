@@ -34,6 +34,7 @@ nav:
   - Embodied AI Top 10: TOP10.md
   - Compliance:
       - Crosswalk: COMPLIANCE.md
+      - Signed attestation: ATTESTATION.md
       - Per-persona cards: crosswalk/README.md
       - NIST MEASURE 2.7: MEASURE-2-7.md
       - Sim predicts real: SIM_PREDICTS_REAL.md

@@ -56,6 +56,10 @@ lerobot = ["lerobot[smolvla]==0.5.1"]
 # OpenVLA / OpenVLA-OFT via Hugging Face transformers (the non-LeRobot, model-agnostic path).
 # GPU-only; pulled in explicitly by the user, never by the default install or CPU CI.
 openvla = ["transformers>=4.40", "torch", "timm", "accelerate", "pillow>=10"]
+# Cryptographic signing/verification for `provael attest`. Kept OUT of the default install so the
+# free core stays 6 light deps; `attest` prints a clear install hint when it is missing. The dev
+# group also pulls it so CI exercises the real Ed25519 sign/verify path (pure CPU, deterministic).
+attest = ["cryptography>=42"]
 
 [dependency-groups]
 dev = [
@@ -64,6 +68,9 @@ dev = [
     "ruff",
     "mypy",
     "types-PyYAML",
+    # Pulled into dev/CI so the real Ed25519 sign/verify path in `provael attest` is exercised
+    # (CPU, deterministic). End users get it via the `attest` optional extra, not the base install.
+    "cryptography>=42",
 ]
 # Docs site tooling — NOT installed by the default `uv sync` / CPU CI. Build with
 # `uv run --group docs mkdocs build --strict`.
@@ -110,5 +117,6 @@ plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 # Optional, untyped deps loaded behind a guarded import in lerobot_adapter.py.
 # They are never installed in the CPU build / CI, so mypy must not fail on them.
-module = ["lerobot.*", "torch", "libero.*", "transformers.*"]
+# cryptography is guarded (lazy) in attest.py and only present via the dev group / attest extra.
+module = ["lerobot.*", "torch", "libero.*", "transformers.*", "cryptography.*"]
 ignore_missing_imports = true

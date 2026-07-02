@@ -148,6 +148,7 @@ uv run provael list-recipes             # named presets: quick / instruction-onl
 uv run provael attack --recipe quick    # a recipe is the base config; explicit flags override it
 uv run provael report --in runs/stub/
 uv run provael calibrate --policy stub --suite stub --seeds 20 --out calib/  # fit a per-task predicate
+uv run provael attest --policy stub --suite stub --out runs/attest   # signed, dated evidence bundle
 uv run provael leaderboard build --runs runs --out leaderboard/results   # ranked ASR table
 uv run provael version
 ```
@@ -159,6 +160,7 @@ uv run provael version
 | `stub` (scalar) + `reach` (spatial) suites | ✅ | |
 | All 5 attack families (`instruction`/`visual`/`injection`/`action`/`optimized`) | ✅ | |
 | Scoring, runner, report, CLI, recipes, `reproduce`, scorecard/SARIF/OSCAL/AVID | ✅ | |
+| `attest` — signed, dated evidence bundle (digest-only core; Ed25519 via `[attest]` extra) | ✅ | |
 | Full test suite (`pytest`), `ruff`, `mypy` | ✅ | |
 | `smolvla` / `pi0` / `pi05` / `pi0fast` / `groot` policies (real, via LeRobot) | | ✅ |
 | `openvla` policy (OpenVLA via `transformers`; needs the `[openvla]` extra) | | ✅ |
@@ -274,6 +276,29 @@ gaps), and the honest-scope caveats. It reuses `report.json` (no attacks re-run)
 **evidence, not certification** — see
 [docs/COMPLIANCE.md](https://github.com/provael/provael/blob/main/docs/COMPLIANCE.md) for the full
 crosswalk and schema.
+
+### Signed attestation (`provael attest`)
+
+`attest` wraps that **same** compliance evidence into a **tamper-evident, dated, offline-verifiable
+bundle** — the artifact an auditor or insurer keeps on file. It binds the run with a SHA-256 digest,
+stamps a UTC date + the crosswalk ruleset + the source commit, records a per-attack transfer-test
+status, and wraps it in a DSSE-style envelope:
+
+```bash
+uv run provael attest --policy stub --suite stub --out runs/attest   # issue a bundle + public key
+uv run provael attest --verify runs/attest/attestation.json \
+  --pubkey runs/attest/attestation.pub                               # verify offline, no network
+```
+
+The digest layer is standard-library and always on. Cryptographic **Ed25519 signing** rides the
+optional `provael[attest]` extra (`--no-sign` gives a digest-only bundle without it). It re-runs
+nothing and is **evidence, not certification** — see
+[docs/ATTESTATION.md](https://github.com/provael/provael/blob/main/docs/ATTESTATION.md).
+
+> **Open-core.** The CLI, attacks, calibrated ASR, SARIF, the GitHub Action and local `attest` are
+> free and Apache-2.0. The *hosted, authoritative* attestation — signed with Provael's key and
+> backed by a real-VLA (GPU) transfer run — is the paid surface. The open tool never gates the
+> local stub path.
 
 ## How it works
 
