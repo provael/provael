@@ -99,7 +99,8 @@ about. Dates only — no claim of conformity:
 - **The `optimized` family is stub-validated scaffolding.** The black-box search is exercised on the
   stub; its real SmolVLA × LIBERO transfer is **GPU-gated and not yet measured**, so the bundle
   flags it `stub-validated-scaffolding` and no cross-model transfer is claimed.
-- The out-of-scope list in [SAFETY.md](../SAFETY.md) applies unchanged. Provael tests the AI
+- The out-of-scope list in [SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md)
+  applies unchanged. Provael tests the AI
   decision layer; it does not test firmware, radios, or mechanical safety.
 
 ## Open-core
