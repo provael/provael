@@ -66,11 +66,21 @@ from provael.policies.registry import (
     policy_is_ready,
 )
 from provael.recipes import RECIPES, available_recipes, load_recipe
+from provael.regression import (
+    DEFAULT_TOLERANCE,
+    RegressionDiff,
+    SliceDelta,
+    diff_reports,
+    write_diff_json,
+    write_diff_markdown,
+    write_regression_sarif,
+)
 from provael.report import load_report, render_summary, write_report
 from provael.reproductions import available_reproductions, get_reproduction
 from provael.runner import run
 from provael.sarif import to_sarif_json, write_sarif
 from provael.scorecard import SCORECARD_MD, to_scorecard_markdown, write_scorecard
+from provael.types import RunReport
 
 
 class OutputFormat(StrEnum):
@@ -429,6 +439,65 @@ def reproduce(
         )
 
 
+def _diff_row(s: SliceDelta) -> tuple[str, str, str, str, str]:
+    def rate(asr: float | None, ci: tuple[float, float] | None) -> str:
+        if asr is None or ci is None:
+            return "n/a"
+        return f"{100.0 * asr:.1f}% [{100.0 * ci[0]:.0f}-{100.0 * ci[1]:.0f}%]"
+    delta = "n/a" if s.delta is None else f"{s.delta:+.1%}"
+    flag = "[bold red]REGRESSED[/bold red]" if s.regressed else "[green]ok[/green]"
+    return (s.label, rate(s.baseline_asr, s.baseline_ci),
+            rate(s.candidate_asr, s.candidate_ci), delta, flag)
+
+
+def _report_baseline(
+    candidate_report: RunReport, baseline: Path, tolerance: float,
+    out: Path | None, sarif_out: Path | None,
+) -> None:
+    """Run the per-checkpoint regression diff and exit non-zero if the candidate regressed."""
+    try:
+        baseline_report = load_report(baseline)
+    except FileNotFoundError as exc:
+        _fail(str(exc))
+        return
+    except ValidationError:
+        _fail(f"{baseline} is not a valid Provael report.json")
+        return
+
+    diff: RegressionDiff = diff_reports(candidate_report, baseline_report, tolerance)
+
+    table = Table(
+        title=f"Provael — baseline-regression diff (tolerance {tolerance:.0%})", title_style="bold"
+    )
+    table.add_column("slice", style="cyan", no_wrap=True)
+    table.add_column("baseline ASR", justify="right")
+    table.add_column("candidate ASR", justify="right")
+    table.add_column("delta", justify="right")
+    table.add_column("status", justify="center")
+    table.add_row(*_diff_row(diff.overall))
+    for s in diff.by_eai:
+        table.add_row(*_diff_row(s))
+    _out.print(table)
+
+    if out is not None:
+        if out.suffix.lower() == ".md":
+            write_diff_markdown(diff, out)
+        else:
+            write_diff_json(diff, out)
+        _out.print(f"Wrote [cyan]{out}[/cyan]  (regression diff)")
+    if sarif_out is not None:
+        write_regression_sarif(diff, candidate_report, sarif_out)
+        _out.print(f"Wrote [cyan]{sarif_out}[/cyan]  (regression SARIF)")
+
+    if diff.regressed:
+        _fail(
+            f"regression: {diff.overall.reason}. Regressed slices: "
+            f"{', '.join(diff.regressed_keys)}.",
+            code=1,
+        )
+    _out.print("[green]no regression[/green] past the tolerance with disjoint 95% CIs.")
+
+
 @app.command()
 def report(
     in_dir: Annotated[Path, typer.Option("--in", help="Directory containing report.json.")],
@@ -445,8 +514,28 @@ def report(
         typer.Option(
             "--out",
             help="With --format sarif/compliance, write here instead of stdout. For "
-            "compliance, a '.md' suffix writes the human-readable report, else JSON.",
+            "compliance, a '.md' suffix writes the human-readable report, else JSON. With "
+            "--baseline, writes the diff (a '.md' suffix writes Markdown, else JSON).",
         ),
+    ] = None,
+    baseline: Annotated[
+        Path | None,
+        typer.Option(
+            "--baseline",
+            help="A known-good report.json to diff against (per-checkpoint regression gate). "
+            "Exits non-zero if the candidate regressed.",
+        ),
+    ] = None,
+    regression_tolerance: Annotated[
+        float,
+        typer.Option(
+            "--regression-tolerance", min=0.0, max=1.0,
+            help="ASR rise allowed before a regression can trip (with --baseline).",
+        ),
+    ] = DEFAULT_TOLERANCE,
+    sarif_out: Annotated[
+        Path | None,
+        typer.Option("--sarif-out", help="With --baseline, write a regression SARIF here."),
     ] = None,
 ) -> None:
     """Print a summary of a previously written report, or emit it as SARIF / compliance evidence."""
@@ -457,6 +546,9 @@ def report(
         return
     except ValidationError:
         _fail(f"{in_dir} does not contain a valid Provael report.json")
+        return
+    if baseline is not None:
+        _report_baseline(loaded, baseline, regression_tolerance, out, sarif_out)
         return
     if fmt is OutputFormat.sarif:
         if out is not None:

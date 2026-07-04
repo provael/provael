@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Provael red-team gate
-        uses: provael/provael@v0.6.0
+        uses: provael/provael@v0.8.0
         with:
           policy: stub
           suite: stub

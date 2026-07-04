@@ -1,0 +1,44 @@
+# Example consumer workflow: a per-checkpoint baseline-regression gate.
+# Drop this into a robot/VLA repo at .github/workflows/provael-regression.yml.
+#
+# It runs a Provael red-team on every PR and fails when the candidate is MORE attackable than the
+# last known-good baseline. "More attackable" means the overall ASR rose past the tolerance AND the
+# two 95% Wilson CIs are disjoint, so small-n noise cannot fail a build on its own.
+#
+# The baseline is a committed report.json (see "how to store & roll the baseline" in
+# regression-gate.md). The default stub policy/suite runs on CPU as a smoke test of the wiring;
+# point it at a real policy on a GPU runner for real-model numbers.
+name: Provael regression gate
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write   # upload the attack + regression SARIF to code scanning
+
+jobs:
+  regression-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4   # the baseline lives in-repo at .provael/baseline.report.json
+
+      - name: Provael baseline-regression gate
+        uses: provael/provael@v0.8.0
+        with:
+          policy: stub
+          suite: stub
+          attacks: instruction,visual,injection,action
+          episodes: "10"
+          seed: "0"
+          asr-threshold: "0.9"                              # absolute ceiling (still enforced)
+          baseline: .provael/baseline.report.json           # the last known-good report.json
+          regression-tolerance: "0.05"                      # allow 5 points of noise
+          fail-on-regression: "true"
+          sarif-output: provael.sarif
+
+# Roll the baseline (after a reviewed, intended ASR change) by replacing the committed file:
+#   provael attack --policy stub --suite stub \
+#     --attacks instruction,visual,injection,action --episodes 10 --seed 0 --out runs/new
+#   cp runs/new/report.json .provael/baseline.report.json
+#   git add .provael/baseline.report.json && git commit -m "chore: roll Provael baseline"
