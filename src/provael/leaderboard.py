@@ -19,6 +19,8 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from provael.attacks.registry import make_attack
+from provael.attest import canonical_json, sha256_hex, sign_bytes, verify_bytes
+from provael.calibration import wilson_ci
 from provael.policies.stub import ATTACKABLE_OBS_FIELDS
 from provael.report import REPORT_JSON, load_report
 from provael.scoring.action import ACTION_DIRECTIVE_KEY
@@ -31,9 +33,25 @@ _EXAMPLE_OBS_FIELDS: tuple[str, ...] = (*ATTACKABLE_OBS_FIELDS, ACTION_DIRECTIVE
 
 LEADERBOARD_JSON = "leaderboard.json"
 
+#: DSSE payload type for a signed leaderboard.
+LEADERBOARD_PAYLOAD_TYPE = "application/vnd.provael.leaderboard+json"
+
+#: Row transfer-status labels (a row is a real transfer only on a real policy AND a real suite).
+REAL_TRANSFER = "real-transfer"
+STUB_SCAFFOLDING = "stub-scaffolding"
+
+
+def transfer_status(policy: str, suite: str) -> str:
+    """Honest label for a row: real-model transfer vs deterministic-stub scaffolding.
+
+    A number only *transfers* when a real policy runs in a real simulator; a real policy on the
+    stub suite (or the stub policy anywhere) is scaffolding, not a transfer measurement.
+    """
+    return REAL_TRANSFER if policy != "stub" and suite != "stub" else STUB_SCAFFOLDING
+
 
 class LeaderboardRow(BaseModel):
-    """One ranked row: ASR for a ``(policy, suite, family)`` slice."""
+    """One ranked row: ASR for a ``(policy, suite, family)`` slice, with its honesty context."""
 
     policy: str
     suite: str
@@ -41,6 +59,13 @@ class LeaderboardRow(BaseModel):
     attempts: int
     successes: int
     asr: float
+    ci95: tuple[float, float] | None = Field(None, description="95% Wilson CI on this row's ASR.")
+    benign_fpr: float | None = Field(
+        None, description="The benign control: the baseline ('none') ASR for this policy x suite."
+    )
+    transfer_status: str = Field(
+        STUB_SCAFFOLDING, description="'real-transfer' or 'stub-scaffolding' (see transfer_status)."
+    )
 
 
 class AttackExample(BaseModel):
@@ -51,13 +76,34 @@ class AttackExample(BaseModel):
     example: str
 
 
-class Leaderboard(BaseModel):
-    """A ranked, deterministic ASR leaderboard built from run reports."""
+class LeaderboardSignature(BaseModel):
+    """Ed25519 signature over the board's canonical bytes (signature field excluded)."""
 
-    schema_version: int = 1
+    keyid: str
+    alg: str = "ed25519"
+    sig: str
+
+
+class Leaderboard(BaseModel):
+    """A ranked, deterministic ASR leaderboard built from run reports.
+
+    The rows/examples/``inputs_digest`` are a pure function of the input reports (byte-stable). The
+    provenance envelope (``generated_at``, ``commit``, ``signature``) is stamped only on the signed
+    real-run build path, so a plain ``build_leaderboard`` stays deterministic.
+    """
+
+    schema_version: int = 2
     is_demo: bool = Field(..., description="True when every aggregated run used the stub policy.")
     rows: list[LeaderboardRow] = Field(default_factory=list)
     examples: list[AttackExample] = Field(default_factory=list)
+    inputs_digest: str | None = Field(
+        None, description="SHA-256 of the canonical aggregated input reports (deterministic)."
+    )
+    generated_at: str | None = Field(None, description="UTC ISO-8601 build time (…Z), if stamped.")
+    commit: str | None = Field(
+        None, description="Source commit the board was built from, if stamped."
+    )
+    signature: LeaderboardSignature | None = None
 
 
 def find_reports(paths: list[str]) -> list[Path]:
@@ -105,8 +151,18 @@ def attack_examples(attack_names: list[str]) -> list[AttackExample]:
     return sorted(examples, key=lambda e: (e.family, e.attack))
 
 
+def _inputs_digest(reports: list[RunReport]) -> str:
+    """SHA-256 over the canonical, order-independent set of input reports (deterministic).
+
+    Reuses the digest approach from :mod:`provael.attest` so the board and an attestation speak the
+    same integrity language.
+    """
+    canon = sorted(canonical_json(json.loads(r.model_dump_json())) for r in reports)
+    return sha256_hex(b"\n".join(canon))
+
+
 def aggregate(reports: list[RunReport]) -> Leaderboard:
-    """Aggregate run reports into a ranked :class:`Leaderboard`."""
+    """Aggregate run reports into a ranked :class:`Leaderboard` (pure, deterministic)."""
     buckets: dict[tuple[str, str, str], list[int]] = {}
     attack_names: set[str] = set()
     for report in reports:
@@ -119,6 +175,12 @@ def aggregate(reports: list[RunReport]) -> Leaderboard:
             tally[0] += 1
             tally[1] += int(result.success)
 
+    # The benign control per (policy, suite): the baseline ('none') family's rate.
+    baseline_fpr: dict[tuple[str, str], float] = {}
+    for (policy, suite, family), (attempts, successes) in buckets.items():
+        if family == "baseline" and attempts:
+            baseline_fpr[(policy, suite)] = successes / attempts
+
     rows = [
         LeaderboardRow(
             policy=policy,
@@ -127,6 +189,9 @@ def aggregate(reports: list[RunReport]) -> Leaderboard:
             attempts=attempts,
             successes=successes,
             asr=(successes / attempts if attempts else 0.0),
+            ci95=wilson_ci(successes, attempts) if attempts else None,
+            benign_fpr=baseline_fpr.get((policy, suite)),
+            transfer_status=transfer_status(policy, suite),
         )
         for (policy, suite, family), (attempts, successes) in buckets.items()
     ]
@@ -138,6 +203,7 @@ def aggregate(reports: list[RunReport]) -> Leaderboard:
         is_demo=is_demo,
         rows=rows,
         examples=attack_examples(sorted(attack_names)),
+        inputs_digest=_inputs_digest(reports) if reports else None,
     )
 
 
@@ -188,33 +254,90 @@ def load_leaderboard(path: Path) -> Leaderboard:
     return Leaderboard.model_validate_json(path.read_text(encoding="utf-8"))
 
 
-def build_leaderboard(run_paths: list[str], out_dir: Path) -> tuple[Path, Leaderboard]:
+def _signing_payload(board: Leaderboard) -> bytes:
+    """Canonical bytes signed/verified: the whole board minus the ``signature`` field."""
+    data = json.loads(board.model_dump_json())
+    data.pop("signature", None)
+    return canonical_json(data)
+
+
+def stamp_provenance(board: Leaderboard, *, generated_at: str, commit: str) -> Leaderboard:
+    """Return a copy stamped with a UTC build time and source commit (injected by the caller)."""
+    return board.model_copy(update={"generated_at": generated_at, "commit": commit})
+
+
+def sign_leaderboard(board: Leaderboard, private_key_pem: bytes) -> Leaderboard:
+    """Return a copy signed with Ed25519 (needs the ``attest`` extra). Sign after stamping."""
+    keyid, sig = sign_bytes(private_key_pem, LEADERBOARD_PAYLOAD_TYPE, _signing_payload(board))
+    return board.model_copy(update={"signature": LeaderboardSignature(keyid=keyid, sig=sig)})
+
+
+def verify_leaderboard(board: Leaderboard, public_key_pem_bytes: bytes) -> bool:
+    """Verify a signed board offline. False when unsigned or the signature does not check out."""
+    if board.signature is None:
+        return False
+    return verify_bytes(
+        public_key_pem_bytes, LEADERBOARD_PAYLOAD_TYPE, _signing_payload(board), board.signature.sig
+    )
+
+
+def build_leaderboard(
+    run_paths: list[str],
+    out_dir: Path,
+    *,
+    generated_at: str | None = None,
+    commit: str | None = None,
+    sign_key: bytes | None = None,
+    require_real: bool = False,
+) -> tuple[Path, Leaderboard]:
     """Find reports under ``run_paths``, aggregate, and write ``<out_dir>/leaderboard.json``.
+
+    With no keyword args the board is the deterministic (demo-or-real) aggregation. Pass
+    ``generated_at`` + ``commit`` to stamp provenance and ``sign_key`` to Ed25519-sign it;
+    ``require_real=True`` rejects a stub-only input (for the public real board).
 
     Raises:
         FileNotFoundError: if no ``report.json`` files are found.
+        ValueError: if ``require_real`` and every input run used the stub policy.
     """
     report_paths = find_reports(run_paths)
     if not report_paths:
         raise FileNotFoundError(f"no {REPORT_JSON} files found under: {', '.join(run_paths)}")
     reports = [load_report(p) for p in report_paths]
-    leaderboard = aggregate(reports)
+    board = aggregate(reports)
+    if require_real and board.is_demo:
+        raise ValueError(
+            "no real (non-stub) runs found — the public board needs a real-model run; "
+            "use the plain build for the stub demo"
+        )
+    if generated_at is not None and commit is not None:
+        board = stamp_provenance(board, generated_at=generated_at, commit=commit)
+    if sign_key is not None:
+        board = sign_leaderboard(board, sign_key)
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / LEADERBOARD_JSON
-    out_path.write_text(to_json(leaderboard), encoding="utf-8")
-    return out_path, leaderboard
+    out_path.write_text(to_json(board), encoding="utf-8")
+    return out_path, board
 
 
 __all__ = [
     "LEADERBOARD_JSON",
+    "LEADERBOARD_PAYLOAD_TYPE",
+    "REAL_TRANSFER",
+    "STUB_SCAFFOLDING",
+    "transfer_status",
     "LeaderboardRow",
     "AttackExample",
+    "LeaderboardSignature",
     "Leaderboard",
     "find_reports",
     "attack_examples",
     "aggregate",
     "to_json",
     "load_leaderboard",
+    "stamp_provenance",
+    "sign_leaderboard",
+    "verify_leaderboard",
     "build_leaderboard",
     "validate_report",
 ]

@@ -26,9 +26,38 @@ CI validates it automatically.
    workflow validates the report and confirms the leaderboard still builds. In the PR
    description, note the checkpoint, suite/task(s), seeds, horizon, and hardware.
 
-4. On merge, a maintainer rebuilds the published board
-   (`provael leaderboard build --runs 'results/*' --out leaderboard/results`) and the Space
-   updates. (`is_demo` clears automatically once any non-stub result is present.)
+4. On merge, a maintainer rebuilds the published **real** board and the Space updates:
+
+   ```bash
+   # Stamps a UTC build date, the source commit, and a SHA-256 digest of the aggregated inputs.
+   provael leaderboard build --real results/<your-name> --out leaderboard/results
+   # The authoritative hosted board is additionally Ed25519-signed with the project key:
+   provael leaderboard build --real results/<your-name> --sign --key provael-ed25519.pem \
+       --out leaderboard/results
+   ```
+
+   `is_demo` clears automatically once any non-stub result is present, and each row is labelled
+   `real-transfer` vs `stub-scaffolding` so a stub run is never silently mixed with a real one.
+   Every row carries its 95% Wilson CI and the benign (`none`) control.
+
+## Reproduce and verify a board
+
+The board is reproducible from its inputs. Rebuild it and confirm the `inputs_digest` matches:
+
+```bash
+provael leaderboard build --real results/<name> --out /tmp/rebuild
+python -c "import json; a=json.load(open('leaderboard/results/leaderboard.json'))['inputs_digest']; \
+b=json.load(open('/tmp/rebuild/leaderboard.json'))['inputs_digest']; print('match:', a==b)"
+```
+
+If the board is signed, verify the signature offline (no network) against the published public key:
+
+```bash
+provael leaderboard verify --in leaderboard/results/leaderboard.json --pubkey leaderboard.pub
+```
+
+The date and commit are provenance metadata (a snapshot stamp); the `inputs_digest` and the row
+numbers are what reproduce. This is **evidence, not certification**.
 
 ## What the validator checks
 

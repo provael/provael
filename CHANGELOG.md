@@ -6,6 +6,23 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-07-04
+
+### Added
+- **Real, signed, reproducible public ASR leaderboard.** `provael leaderboard build --real
+  <results-dir>` builds the public board from real-model runs (seeded from the committed
+  `results/smolvla_libero_object/`), and every row now carries its **95% Wilson CI**, the **benign
+  (`none`) control**, and a **transfer-status** label (`real-transfer` vs `stub-scaffolding`). When
+  any real run is present, `is_demo` is False and stub and real rows are never silently mixed (each
+  is labelled). The board is stamped with a **UTC build date, the source commit, and a SHA-256
+  digest of the aggregated inputs** (reusing the digest path from `attest.py`), so it is
+  reproducible: rebuild and check the `inputs_digest` matches. Optional **Ed25519 signing**
+  (`--sign`, via the `provael[attest]` extra) with offline verification (`provael leaderboard
+  verify --in … --pubkey …`). The hosted Gradio Space renders the real SmolVLA × LIBERO numbers
+  (instruction family transfers; **visual/injection are 0%** on the real model) with the provenance
+  footer. The free core builds and verifies boards; the hosted, project-key-signed board is the
+  open-core paid surface. **Evidence, not certification.**
+
 ## [0.8.0] — 2026-07-04
 
 ### Added
