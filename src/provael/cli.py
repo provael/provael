@@ -38,7 +38,9 @@ from provael.attest import (
     ATTESTATION_JSON,
     ATTESTATION_PUB,
     MissingAttestExtraError,
+    generate_private_key_pem,
     load_bundle,
+    public_key_pem,
     to_bundle,
     verify_bundle,
     write_bundle,
@@ -57,7 +59,13 @@ from provael.compliance import (
     write_compliance_markdown,
 )
 from provael.config import RunConfig
-from provael.leaderboard import Leaderboard, build_leaderboard
+from provael.leaderboard import (
+    LEADERBOARD_JSON,
+    Leaderboard,
+    build_leaderboard,
+    load_leaderboard,
+    verify_leaderboard,
+)
 from provael.oscal import OSCAL_JSON, to_oscal_json, write_oscal
 from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
 from provael.policies.registry import (
@@ -833,18 +841,20 @@ def _render_leaderboard(leaderboard: Leaderboard) -> None:
     table.add_column("policy", style="cyan", no_wrap=True)
     table.add_column("suite", style="magenta")
     table.add_column("family")
-    table.add_column("ASR", justify="right", style="bold red")
-    table.add_column("successes", justify="right")
-    table.add_column("attempts", justify="right")
+    table.add_column("ASR (95% CI)", justify="right", style="bold red")
+    table.add_column("n", justify="right")
+    table.add_column("transfer")
     for rank, row in enumerate(leaderboard.rows, start=1):
+        ci = "" if row.ci95 is None else f" [{100.0 * row.ci95[0]:.0f}-{100.0 * row.ci95[1]:.0f}%]"
+        transfer = "[green]real[/green]" if row.transfer_status == "real-transfer" else "stub"
         table.add_row(
             str(rank),
             row.policy,
             row.suite,
             row.family,
-            f"{100.0 * row.asr:.1f}%",
-            str(row.successes),
-            str(row.attempts),
+            f"{100.0 * row.asr:.1f}%{ci}",
+            f"{row.successes}/{row.attempts}",
+            transfer,
         )
     _out.print(table)
 
@@ -855,18 +865,92 @@ def leaderboard_build(
         list[str] | None,
         typer.Option(help="Run dir(s), glob(s), or report.json path(s). Quote globs."),
     ] = None,
+    real: Annotated[
+        Path | None,
+        typer.Option(
+            "--real",
+            help="Build the public real board from this results dir (requires a non-stub run; "
+            "stamps a UTC date, source commit, and an inputs digest).",
+        ),
+    ] = None,
+    sign: Annotated[
+        bool, typer.Option("--sign", help="Ed25519-sign the board (needs the `attest` extra).")
+    ] = False,
+    key: Annotated[
+        Path | None,
+        typer.Option("--key", help="Ed25519 private-key PEM to sign with. Omit for ephemeral."),
+    ] = None,
     out: Annotated[Path, typer.Option(help="Output directory for leaderboard.json.")] = Path(
         "leaderboard/results"
     ),
 ) -> None:
-    """Aggregate report.json files into a ranked, deterministic leaderboard.json."""
+    """Aggregate report.json files into a ranked leaderboard.json (deterministic; real + signed)."""
+    source = [str(real)] if real is not None else (runs or ["runs"])
+    generated_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ") if real is not None else None
+    commit = (_git_commit() or f"v{__version__}") if real is not None else None
+
+    sign_key: bytes | None = None
+    ephemeral = False
+    if sign:
+        try:
+            sign_key = key.read_bytes() if key is not None else generate_private_key_pem()
+        except MissingAttestExtraError as exc:
+            _fail(str(exc))
+            return
+        ephemeral = key is None
+
     try:
-        out_path, leaderboard = build_leaderboard(runs or ["runs"], out)
+        out_path, leaderboard = build_leaderboard(
+            source, out, generated_at=generated_at, commit=commit,
+            sign_key=sign_key, require_real=real is not None,
+        )
     except FileNotFoundError as exc:
         _fail(str(exc))
         return
+    except ValueError as exc:  # require_real on a stub-only input
+        _fail(str(exc))
+        return
+
+    pub_path: Path | None = None
+    if sign and ephemeral and sign_key is not None:
+        pub_path = out / (LEADERBOARD_JSON.replace(".json", ".pub"))
+        pub_path.write_bytes(public_key_pem(sign_key))
+
     _render_leaderboard(leaderboard)
-    _out.print(f"\nWrote [cyan]{out_path}[/cyan]")
+    if leaderboard.inputs_digest is not None:
+        _out.print(f"inputs digest: [dim]{leaderboard.inputs_digest[:16]}…[/dim]")
+    if leaderboard.signature is not None:
+        _out.print(f"signature: ed25519  keyid {leaderboard.signature.keyid}")
+    _out.print(f"\nWrote [cyan]{out_path}[/cyan]"
+               + (f" and [cyan]{pub_path}[/cyan]" if pub_path is not None else ""))
+    if sign and ephemeral:
+        _err.print("[yellow]note:[/yellow] signed with an ephemeral key (integrity, not identity). "
+                   "Pass --key to sign with your organisation key.")
+
+
+@leaderboard_app.command("verify")
+def leaderboard_verify(
+    board: Annotated[Path, typer.Option("--in", help="Path to a leaderboard.json to verify.")],
+    pubkey: Annotated[Path, typer.Option("--pubkey", help="Ed25519 public-key PEM.")],
+) -> None:
+    """Verify a signed leaderboard offline against a public key."""
+    try:
+        loaded = load_leaderboard(board)
+    except (FileNotFoundError, ValidationError):
+        _fail(f"{board} is not a readable leaderboard.json")
+        return
+    if loaded.signature is None:
+        _fail("leaderboard is unsigned — nothing to verify", code=1)
+        return
+    try:
+        ok = verify_leaderboard(loaded, pubkey.read_bytes())
+    except MissingAttestExtraError as exc:
+        _fail(str(exc))
+        return
+    if ok:
+        _out.print(f"[green]leaderboard OK[/green]  keyid {loaded.signature.keyid}")
+    else:
+        _fail("leaderboard signature INVALID", code=1)
 
 
 if __name__ == "__main__":  # pragma: no cover
