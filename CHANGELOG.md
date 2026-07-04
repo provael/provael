@@ -6,6 +6,27 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-07-04
+
+### Added
+- **Per-checkpoint baseline-regression gate (`report --baseline` + the Action).** A new
+  `provael report --baseline <known-good report.json> --regression-tolerance <float>` diffs a
+  candidate run against a baseline and reports overall, per-EAI-risk, and per-attack ASR deltas.
+  A slice **regresses** only when the candidate ASR beats the baseline by more than the tolerance
+  **and** the two 95% Wilson CIs are disjoint in the worse direction, so small-`n` noise cannot
+  fail a build (it reuses the CIs already computed, inventing no new statistic). It prints a diff
+  table, writes a machine-readable `regression.json` and a **regression SARIF** (a regressed EAI
+  family becomes an error-level code-scanning finding, not just pass/fail), and **exits non-zero**
+  on a regression. Deterministic and dependency-free (stays within the ~6-dep core).
+- **Reusable GitHub Action regression gate.** New inputs `baseline`, `regression-tolerance`
+  (default `0.05`), and `fail-on-regression` (default `true`); new outputs `regressed` and
+  `asr-delta`. The job now fails if **either** the absolute `asr-threshold` is exceeded **or** a
+  regression is detected, surfaces the per-family diff in the job summary, and uploads the
+  regression SARIF under a distinct `provael-regression` category. A runnable consumer workflow is
+  in `examples/ci/regression-gate.yml`; `examples/ci/regression-gate.md` documents storing and
+  rolling the baseline. Per-checkpoint regression is **evidence** (e.g. for EU Machinery Regulation
+  2023/1230 Annex III §1.1.9 safe-behaviour-across-updates), not certification.
+
 ## [0.7.0] — 2026-07-03
 
 ### Added
