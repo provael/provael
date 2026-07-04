@@ -149,9 +149,28 @@ uv run provael attack --recipe quick    # a recipe is the base config; explicit 
 uv run provael report --in runs/stub/
 uv run provael calibrate --policy stub --suite stub --seeds 20 --out calib/  # fit a per-task predicate
 uv run provael attest --policy stub --suite stub --out runs/attest   # signed, dated evidence bundle
-uv run provael leaderboard build --runs runs --out leaderboard/results   # ranked ASR table
+uv run provael leaderboard build --runs runs --out leaderboard/results   # ranked ASR table (demo)
+uv run provael leaderboard build --real results/smolvla_libero_object --sign   # real signed board
 uv run provael version
 ```
+
+### Public ASR board (real, signed, reproducible)
+
+`provael leaderboard build --real <results-dir>` builds the public board from real-model runs. Every
+row carries its **95% Wilson CI**, the benign (`none`) control, and a **transfer-status** label
+(`real-transfer` vs `stub-scaffolding`), so a stub run is never silently mixed with a real one. The
+board is stamped with a UTC date, the source commit, and a **SHA-256 digest of the aggregated
+inputs** — rebuild it and check the digest matches to reproduce. Add `--sign` (needs the
+`provael[attest]` extra) to Ed25519-sign it, and verify offline:
+
+```bash
+uv run provael leaderboard verify --in leaderboard/results/leaderboard.json --pubkey leaderboard.pub
+```
+
+On the real **SmolVLA × LIBERO** policy only the **instruction** family transfers today
+(roleplay 100%, goal_substitution 60%); **visual and injection are 0%**. The free core builds and
+verifies boards; the hosted, project-key-signed board is the open-core paid surface. See
+[docs/leaderboard.md](docs/leaderboard.md). **Evidence, not certification.**
 
 ## What runs on CPU vs. what needs a GPU
 

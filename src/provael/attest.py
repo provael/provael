@@ -273,6 +273,35 @@ def _keyid(public_key_pem_bytes: bytes) -> str:
 
 
 # --------------------------------------------------------------------------------------------
+# Shared digest + sign/verify helpers (reused by provael.leaderboard — one crypto path, not two).
+# --------------------------------------------------------------------------------------------
+
+def canonical_json(obj: Any) -> bytes:
+    """Canonical JSON bytes (keys sorted, no incidental whitespace). Stable across runs."""
+    return _canonical(obj)
+
+
+def sha256_hex(data: bytes) -> str:
+    """Hex SHA-256 of ``data``."""
+    return _sha256_hex(data)
+
+
+def sign_bytes(private_key_pem: bytes, payload_type: str, payload: bytes) -> tuple[str, str]:
+    """Ed25519-sign ``payload`` over the DSSE PAE. Returns ``(keyid, base64 signature)``."""
+    pub = public_key_pem(private_key_pem)
+    signature = _sign(private_key_pem, _pae(payload_type, payload))
+    return _keyid(pub), base64.b64encode(signature).decode("ascii")
+
+
+def verify_bytes(
+    public_key_pem_bytes: bytes, payload_type: str, payload: bytes, signature_b64: str
+) -> bool:
+    """Verify an Ed25519 signature produced by :func:`sign_bytes` (offline)."""
+    signature = base64.b64decode(signature_b64)
+    return _verify(public_key_pem_bytes, signature, _pae(payload_type, payload))
+
+
+# --------------------------------------------------------------------------------------------
 # Builders.
 # --------------------------------------------------------------------------------------------
 
@@ -467,4 +496,8 @@ __all__ = [
     "load_bundle",
     "generate_private_key_pem",
     "public_key_pem",
+    "canonical_json",
+    "sha256_hex",
+    "sign_bytes",
+    "verify_bytes",
 ]
