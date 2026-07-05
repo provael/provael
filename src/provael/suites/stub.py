@@ -32,6 +32,11 @@ from provael.scoring.action import (
     NOMINAL_DIR_KEY,
     NOMINAL_DIRECTION,
 )
+from provael.scoring.backdoor import (
+    ACTIVATION_CHANNEL,
+    BACKDOOR_ACTIVATION_KEY,
+    BACKDOOR_SURFACE_KEY,
+)
 from provael.suites.base import SuiteAdapter
 from provael.types import Action, Observation, State
 
@@ -96,6 +101,9 @@ class StubSuite(SuiteAdapter):
             # Advertise the EAI04 action-integrity surface so the `action` family is
             # applicable here (suites without it report those attacks as not-applicable).
             ACTION_SURFACE_KEY: True,
+            # Advertise the EAI03 backdoor-screen surface so the `backdoor` family is applicable
+            # here (suites without it report those attacks as not-applicable).
+            BACKDOOR_SURFACE_KEY: True,
         }
 
     def reset(self, task: str, seed: int) -> Observation:
@@ -115,6 +123,10 @@ class StubSuite(SuiteAdapter):
         # the action family freezes / hijacks. Disjoint from the danger axis (channel 0).
         ee_delta = [float(x) for x in arr[1:4]] if arr.size >= 4 else [0.0, 0.0, 0.0]
         motion = float(np.linalg.norm(arr[1:4])) if arr.size >= 4 else 0.0
+        # EAI03 backdoor-activation signal: the fixture policy's hidden-objective flag (channel 4),
+        # disjoint from the danger axis (channel 0) and the motion channels (1-3). 0 for every
+        # non-backdoor attack, so existing runs are byte-identical.
+        activation = float(arr[ACTIVATION_CHANNEL]) if arr.size > ACTIVATION_CHANNEL else 0.0
         self._step += 1
         self._danger = danger
         state: State = {
@@ -127,6 +139,7 @@ class StubSuite(SuiteAdapter):
             MOTION_KEY: motion,
             EE_DELTA_KEY: ee_delta,
             NOMINAL_DIR_KEY: list(NOMINAL_DIRECTION),
+            BACKDOOR_ACTIVATION_KEY: activation,
         }
         done = bool(state["unsafe"]) or self._step >= 64
         return self._observation(), done, state

@@ -5,6 +5,7 @@ Commands:
   * ``list-policies``  — show registered policies and whether they're runnable here.
   * ``list-attacks``   — show registered attacks and families.
   * ``report``         — print a previously written report.
+  * ``transfer-test``  — per-family rate + 95% Wilson CI + benign control + transfer-status.
   * ``version``        — print the tool version.
 
 Errors that a user can act on (missing ``[lerobot]`` extra, unknown policy / suite /
@@ -29,6 +30,7 @@ from rich.markup import escape
 from rich.table import Table
 
 from provael import __version__
+from provael.attacks.baseline import FAMILY as BASELINE_FAMILY
 from provael.attacks.registry import (
     available_attacks,
     available_families,
@@ -50,6 +52,7 @@ from provael.calibration import (
     calibrate_suite,
     load_calibrations,
     save_calibration,
+    transfer_test,
     wilson_ci,
 )
 from provael.compliance import (
@@ -88,7 +91,8 @@ from provael.reproductions import available_reproductions, get_reproduction
 from provael.runner import run
 from provael.sarif import to_sarif_json, write_sarif
 from provael.scorecard import SCORECARD_MD, to_scorecard_markdown, write_scorecard
-from provael.types import RunReport
+from provael.scoring.asr import by_family
+from provael.types import RunReport, TransferTest
 
 
 class OutputFormat(StrEnum):
@@ -592,6 +596,75 @@ def report(
     render_summary(loaded, _out)
 
 
+def _family_transfer_tests(report: RunReport) -> list[TransferTest]:
+    """One transfer-test per attack family (baseline excluded — it IS the benign control)."""
+    fam_stats = by_family(report.results)
+    baseline = fam_stats.get(BASELINE_FAMILY)
+    return [
+        transfer_test(
+            stat, benign=baseline, policy=report.policy, suite=report.suite, family=family
+        )
+        for family, stat in fam_stats.items()
+        if family != BASELINE_FAMILY
+    ]
+
+
+@app.command("transfer-test")
+def transfer_test_cmd(
+    in_dir: Annotated[Path, typer.Option("--in", help="Directory containing report.json.")],
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write a byte-stable transfer-test JSON here, not a table."),
+    ] = None,
+) -> None:
+    """Print each family's transfer-test: rate + 95% Wilson CI + benign control + transfer-status.
+
+    Every family carries its honest ``transfer-status``: ``real-transfer`` for a real policy x
+    suite, ``stub-scaffolding`` on the deterministic CPU stub (reported as-is, no cross-model
+    claim).
+    """
+    try:
+        loaded = load_report(in_dir)
+    except FileNotFoundError as exc:
+        _fail(str(exc))
+        return
+    except ValidationError:
+        _fail(f"{in_dir} does not contain a valid Provael report.json")
+        return
+
+    tests = _family_transfer_tests(loaded)
+    if out is not None:
+        payload = {
+            "policy": loaded.policy,
+            "suite": loaded.suite,
+            "tool_version": loaded.tool_version,
+            "transfer_tests": [json.loads(t.model_dump_json()) for t in tests],
+        }
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        _out.print(f"Wrote [cyan]{out}[/cyan]  (transfer-test evidence, JSON)")
+        return
+
+    table = Table(title=f"Transfer-test  ({loaded.policy} x {loaded.suite})")
+    table.add_column("family", style="cyan", no_wrap=True)
+    table.add_column("rate (95% CI)", justify="right")
+    table.add_column("benign FPR", justify="right")
+    table.add_column("n", justify="right")
+    table.add_column("transfer-status", style="magenta")
+    for t in tests:
+        ci = "" if t.ci95 is None else f" [{100.0 * t.ci95[0]:.0f}-{100.0 * t.ci95[1]:.0f}%]"
+        benign = "n/a" if t.benign_fpr is None else f"{100.0 * t.benign_fpr:.1f}%"
+        table.add_row(
+            t.family, f"{100.0 * t.rate:.1f}%{ci}", benign, str(t.n), t.transfer_status
+        )
+    _out.print(table)
+    if loaded.policy == "stub" or loaded.suite == "stub":
+        _err.print(
+            "[yellow]note:[/yellow] stub-scaffolding — rates are properties of the deterministic "
+            "fixture, not a real VLA. The real SmolVLA x LIBERO transfer is GPU-gated."
+        )
+
+
 @app.command()
 def export(
     in_dir: Annotated[Path, typer.Option("--in", help="Directory containing report.json.")],
@@ -620,6 +693,35 @@ def export(
         _out.print(f"Wrote [cyan]{out}[/cyan]  (AVID record)")
     else:
         print(to_avid_json(loaded))
+
+
+@app.command()
+def serve(
+    host: Annotated[str, typer.Option(help="Bind host.")] = "127.0.0.1",
+    port: Annotated[int, typer.Option(min=1, max=65535, help="Bind port.")] = 8000,
+) -> None:
+    """Run the reference hosted attestation server (needs the `[hosted]` extra).
+
+    Open-core: the server is Apache-2.0 and self-hostable (it returns self-signed attestations). The
+    operated, project-key-signed instance plus the insurer / Notified-Body report are the paid tier;
+    the free CLI, attacks, ASR, SARIF, the Action and local `attest` are never gated.
+    """
+    try:
+        import uvicorn
+
+        from provael.hosted.server import MissingHostedExtraError, create_app
+    except ImportError:
+        _fail("The hosted server needs the `hosted` extra: pip install 'provael[hosted]'.")
+        return
+    try:
+        application = create_app()
+    except MissingHostedExtraError as exc:
+        _fail(str(exc))
+        return
+    _out.print(
+        f"Provael hosted (reference) on [cyan]http://{host}:{port}[/cyan]  —  Ctrl-C to stop"
+    )
+    uvicorn.run(application, host=host, port=port)
 
 
 @app.command()
