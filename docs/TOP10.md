@@ -102,6 +102,15 @@ dataset, teleop data, or RAG corpus — normal behavior until the trigger fires 
 2411.11683, physical-world backdoor via a malicious VLM, validated on a UR3e arm). The open VLA hub
 ecosystem (OpenVLA/π0/GR00T) is a direct supply-chain surface.
 **Why it matters.** Near-invisible in normal eval, persistent, triggerable on demand — poison once, ship everywhere.
+**Attack shipped (Provael):** the `backdoor` family (`object_trigger` + `phrase_trigger`) — *method:* a
+**pre-deployment backdoor screen**. It injects a battery of harmless, sim-only candidate triggers (a
+visual/object trigger and an objective-decoupled trigger phrase) while leaving the visible task benign, and
+measures whether the policy activates a hidden objective — each scored as an activation rate with a 95%
+Wilson CI against a benign-FPR control (the `none` baseline). Provael **does not train or implant a real
+backdoor**; it screens a checkpoint for one. **Stub-validated only** (the deterministic CPU core is planted
+with a known trigger, so the screen fires 100% [84–100%] vs a 0% benign baseline); a clean, un-backdoored
+public checkpoint carries no such implant, so the same screen reads ~0% — an honest null. Real-model
+SmolVLA × LIBERO transfer is GPU-gated and **not yet run** — no cross-model claim.
 **Mitigations.** Checkpoint provenance + hashes; prefer signed/attested weights; scan fine-tunes; backdoor/
 trigger probes pre-deploy; treat third-party data + RAG as untrusted.
 **Maps to.** OWASP **LLM03 Supply Chain** + **LLM04 Data & Model Poisoning** · OWASP **ASI04 Agentic

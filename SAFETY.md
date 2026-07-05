@@ -28,6 +28,11 @@ the spirit of responsible disclosure.
   pixel-level perturbations that transfer to a real model. The most misuse-prone families
   — optimized adversarial suffixes / GCG and transferable pixel attacks — remain
   deliberately **deferred**, and when added will stay sim-only and benchmark-scoped.
+- The `backdoor` family (EAI03) is a **pre-deployment trigger *screen***, not an implant. It injects
+  harmless, sim-only candidate triggers and measures whether a policy activates a hidden objective on
+  a **known-planted stub fixture**. Provael **does not train, fine-tune, or implant a real backdoor**,
+  and ships **no real-world payload**; on a clean checkpoint the screen reads ~0%. Real-model transfer
+  is GPU-gated and not run in the CPU core, so no cross-model claim is made.
 
 ## What we measure on LIBERO (redirection, not harm)
 

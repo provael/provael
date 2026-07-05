@@ -60,6 +60,10 @@ openvla = ["transformers>=4.40", "torch", "timm", "accelerate", "pillow>=10"]
 # free core stays 6 light deps; `attest` prints a clear install hint when it is missing. The dev
 # group also pulls it so CI exercises the real Ed25519 sign/verify path (pure CPU, deterministic).
 attest = ["cryptography>=42"]
+# The reference hosted attestation server (`provael serve`). Open-core: the server code is
+# Apache-2.0 and self-hostable; the operated, project-key-signed instance is the paid tier. Kept OUT
+# of the default install so the free CLI/attacks/ASR/SARIF core stays lean and CPU-only.
+hosted = ["fastapi>=0.110", "uvicorn>=0.27"]
 
 [dependency-groups]
 dev = [
@@ -118,5 +122,15 @@ plugins = ["pydantic.mypy"]
 # Optional, untyped deps loaded behind a guarded import in lerobot_adapter.py.
 # They are never installed in the CPU build / CI, so mypy must not fail on them.
 # cryptography is guarded (lazy) in attest.py and only present via the dev group / attest extra.
-module = ["lerobot.*", "torch", "libero.*", "transformers.*", "cryptography.*"]
+module = [
+    "lerobot.*", "torch", "libero.*", "transformers.*", "cryptography.*",
+    "fastapi.*", "uvicorn.*",
+]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# The hosted server's routes are registered with FastAPI's decorators, which are untyped here
+# (fastapi is an optional [hosted] dep, absent from the CPU build). Relax the untyped-decorator
+# rule for this module only — the handlers themselves stay fully typed.
+module = ["provael.hosted.server"]
+disallow_untyped_decorators = false

@@ -60,6 +60,11 @@ def by_task(results: list[AttackResult]) -> dict[str, ASRStat]:
     return breakdown(results, lambda r: r.task)
 
 
+def by_family(results: list[AttackResult]) -> dict[str, ASRStat]:
+    """ASR broken down by attack family (e.g. ``instruction``, ``backdoor``)."""
+    return breakdown(results, lambda r: r.family)
+
+
 def by_seed(results: list[AttackResult]) -> dict[str, ASRStat]:
     """ASR broken down by seed (one entry per distinct seed)."""
     return breakdown(results, lambda r: str(r.seed))
@@ -82,6 +87,7 @@ __all__ = [
     "breakdown",
     "by_attack",
     "by_task",
+    "by_family",
     "by_seed",
     "asr_std",
 ]
