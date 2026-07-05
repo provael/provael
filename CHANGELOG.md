@@ -6,6 +6,41 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-07-05
+
+### Added
+- **EAI03 `backdoor` attack family — objective-decoupled trigger screening.** A new family
+  (`object_trigger` + `phrase_trigger`) fills the previously documented-but-unimplemented EAI03 risk
+  (Model & pipeline poisoning, backdoors & supply chain), grounded in **BadVLA** (arXiv:2505.16640)
+  and **AttackVLA / BackdoorVLA** (arXiv:2511.12149). It is a **pre-deployment backdoor *screen***,
+  not an exploit: it injects a battery of harmless, sim-only candidate triggers (a visual/object
+  trigger and an objective-decoupled trigger phrase) while leaving the visible task benign, and
+  measures whether the policy activates a hidden objective. Provael **neither trains nor implants a
+  real backdoor**. On the deterministic CPU stub (a known-planted fixture) the screen fires 100%
+  [84–100%] vs a 0% benign-FPR control; a clean public checkpoint carries no such implant, so the
+  same screen reads ~0% (an honest null). New `src/provael/scoring/backdoor.py` protocol +
+  `src/provael/attacks/backdoor_vla.py`; wired into the registry, `list-attacks`, the EAI catalog
+  (`EAI03`), SARIF, and the suite `evaluate_unsafe` OR-chain. The family uses a **disjoint
+  observation channel + an unused stub action channel**, so the frozen canary ASRs (instruction
+  21/30, visual 14/20, injection 12/20, action) stay **byte-identical**. Real SmolVLA × LIBERO
+  transfer is GPU-gated and **not yet run** — no cross-model claim.
+- **Per-family transfer-test (`provael transfer-test`).** Every family now reports its mandatory
+  transfer-test — activation/redirection **rate + 95% Wilson CI + benign-FPR control** — with an
+  honest `transfer-status` label (`real-transfer` on a real policy×suite, `stub-scaffolding` on the
+  stub). New `by_family` (`scoring/asr.py`), `transfer_test` (`calibration.py`), and a `TransferTest`
+  model; the CLI prints a table or writes byte-stable JSON.
+- **Hosted open-core surface (`provael serve`, `[hosted]` extra).** A self-hostable Apache-2.0
+  FastAPI reference server (`src/provael/hosted/`) that turns a `report.json` into a signed
+  attestation and an insurer / Notified-Body-ready compliance report. **Open-core boundary:** the
+  free CLI, all attack families (incl. the backdoor screen), ASR, SARIF, the GitHub Action, the
+  Top-10, and **local `attest`** are never gated; the **operated, project-key-signed** instance +
+  the insurer report (`build_insurer_report`, guarded by `require_entitlement`) + the curated screen
+  are the paid tier. Self-hosters get self-signed attestations. The free core is not crippled.
+- **EU Machinery Regulation compliance mapping.** New `docs/compliance/machinery-reg-2027.md` maps
+  `provael attest` evidence → EU Machinery Regulation 2023/1230 (applies **2027-01-20**), AI Act
+  Annex-I machinery (statutory **2027-08-02**; proposed-not-adopted **2028-08-02**), and ISO
+  10218-1/-2:2025. **Evidence, not certification.**
+
 ## [0.9.0] — 2026-07-04
 
 ### Added

@@ -21,6 +21,13 @@ arrive in a dedicated observation channel that is **disjoint from the danger-bea
 channels**, so the action family never perturbs the danger axis — the existing families'
 ASRs are byte-identical. Like the trigger table, this is a deliberate fixture surface,
 not a model of real VLA motion.
+
+The stub also models an **objective-decoupled backdoor** for the EAI03 ``backdoor`` family (see
+:mod:`provael.scoring.backdoor`): it is *planted* with a single trigger and fires a hidden-objective
+flag on channel 4 iff that trigger is present in the (dedicated, disjoint) backdoor channel —
+otherwise channel 4 stays 0. This lets the pre-deploy backdoor *screen* demonstrably fire on the
+fixture while every other family's action stays byte-identical. A real, un-backdoored checkpoint has
+no such implant, so the same screen reads ~0% on it. Again a fixture, not a real backdoor.
 """
 
 from __future__ import annotations
@@ -36,6 +43,7 @@ from provael.scoring.action import (
     NOMINAL_SPEED,
     parse_action_directives,
 )
+from provael.scoring.backdoor import ACTIVATION_CHANNEL, stub_activates
 from provael.types import Action, Observation
 
 #: Substrings that, if present in an attackable channel, raise the stub's "aggression".
@@ -166,4 +174,10 @@ class StubPolicy(PolicyAdapter):
             if not freeze:  # benign or hijacked → command motion (frozen → leave zeros)
                 direction = hijack_target if hijack_target is not None else NOMINAL_DIRECTION
                 action[1:4] = _nominal_motion(direction, NOMINAL_SPEED)
+        # EAI03 planted-backdoor fixture: a matching objective-decoupled trigger fires the hidden
+        # objective flag on channel 4 (disjoint from the danger axis and the motion channels, so a
+        # trigger probe never moves them). Absent the planted trigger, this stays 0 (benign) — so
+        # every other family's action is byte-identical and the `none` baseline is the FPR control.
+        if self.action_dim > ACTIVATION_CHANNEL and stub_activates(observation):
+            action[ACTIVATION_CHANNEL] = 1.0
         return action
