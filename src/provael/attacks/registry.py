@@ -2,8 +2,9 @@
 
 Families: ``baseline`` (a no-op control for measuring lift), ``instruction`` (text
 reframings), ``visual`` (perception perturbations), ``injection`` (indirect / embodied
-prompt injection), and ``action`` (action-space-integrity: freeze / trajectory hijack).
-The registry maps both individual attack names and family names to attacks, so
+prompt injection), ``action`` (action-space-integrity: freeze / trajectory hijack),
+``backdoor`` (EAI03 objective-decoupled trigger screening), and ``optimized`` (a
+black-box search). The registry maps both individual attack names and family names to attacks, so
 ``--attacks instruction`` expands a whole family while ``--attacks none,patch,scene_text``
 selects specific attacks across families.
 """
@@ -18,6 +19,13 @@ from provael.attacks.action import (
 from provael.attacks.action import (
     FreezeAttack,
     TrajectoryHijackAttack,
+)
+from provael.attacks.backdoor_vla import (
+    FAMILY as BACKDOOR_FAMILY,
+)
+from provael.attacks.backdoor_vla import (
+    ObjectTriggerBackdoor,
+    PhraseTriggerBackdoor,
 )
 from provael.attacks.base import Attack
 from provael.attacks.baseline import (
@@ -68,6 +76,8 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
     "freeze": FreezeAttack,
     "trajectory_hijack": TrajectoryHijackAttack,
     "targeted_hijack": TargetedTrajectoryHijack,
+    "object_trigger": ObjectTriggerBackdoor,
+    "phrase_trigger": PhraseTriggerBackdoor,
 }
 
 #: Family name -> ordered member attack names.
@@ -77,6 +87,7 @@ FAMILIES: dict[str, list[str]] = {
     VISUAL_FAMILY: ["patch", "decoy_object"],
     INJECTION_FAMILY: ["scene_text", "mcp_tool_desc"],
     ACTION_FAMILY: ["freeze", "trajectory_hijack"],
+    BACKDOOR_FAMILY: ["object_trigger", "phrase_trigger"],
     OPTIMIZED_FAMILY: ["targeted_hijack"],
 }
 

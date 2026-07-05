@@ -53,6 +53,16 @@ CATALOG: dict[str, EaiRisk] = {
         ),
         anchor="eai02--adversarial-perception-patches--textures--sensor-spoofing",
     ),
+    "EAI03": EaiRisk(
+        id="EAI03",
+        name="Model & pipeline poisoning, backdoors & supply chain",
+        description=(
+            "A hidden, objective-decoupled trigger (a benign-looking object or phrase) "
+            "planted at train/fine-tune time or via a poisoned open-weights checkpoint: "
+            "normal behaviour until the trigger fires an attacker-chosen action."
+        ),
+        anchor="eai03--model--pipeline-poisoning-backdoors--supply-chain",
+    ),
     "EAI04": EaiRisk(
         id="EAI04",
         name="Action-space integrity",

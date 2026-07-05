@@ -105,6 +105,35 @@ class EaiTag(BaseModel):
     name: str = Field(..., description="Human-readable risk name.")
 
 
+#: Honest transfer-status labels every family's transfer-test carries.
+REAL_TRANSFER = "real-transfer"
+STUB_SCAFFOLDING = "stub-scaffolding"
+
+
+class TransferTest(BaseModel):
+    """A family's mandatory transfer-test: its rate with a 95% Wilson CI and the benign control.
+
+    Every attack family ships one of these so a rate is never read without its uncertainty and its
+    benign (``none``) false-positive control. ``transfer_status`` labels it honestly: a real
+    policy×suite is a ``real-transfer`` measurement; anything on the deterministic stub is
+    ``stub-scaffolding`` (report as-is, never over-sold, never a "first" claim).
+    """
+
+    family: str = Field(..., description="Attack family, e.g. 'backdoor'.")
+    rate: float = Field(..., description="successes / attempts over applicable episodes.")
+    ci95: tuple[float, float] | None = Field(
+        None, description="95% Wilson score interval for the rate (None if no applicable episodes)."
+    )
+    benign_fpr: float | None = Field(
+        None, description="Benign-baseline rate (the 'none' control), or None if no baseline ran."
+    )
+    n: int = Field(..., description="Applicable episodes the rate is computed over.")
+    transfer_status: str = Field(
+        ..., description="'real-transfer' (real policy×suite) or 'stub-scaffolding'."
+    )
+    note: str = Field("", description="Honest-scope note for this transfer-test.")
+
+
 class CalibrationMeta(BaseModel):
     """Which unsafe predicate a task used, and the benign FPR the calibration achieved."""
 
