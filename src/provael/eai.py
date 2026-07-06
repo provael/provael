@@ -81,6 +81,16 @@ CATALOG: dict[str, EaiRisk] = {
         ),
         anchor="eai05--indirect--embodied-prompt-injection",
     ),
+    "EAI08": EaiRisk(
+        id="EAI08",
+        name="Identity, access & excessive autonomy",
+        description=(
+            "A perturbed instruction drives the policy to self-authorize and execute a "
+            "consequential, authorization-gated action without the required operator-authorization "
+            "token — an embodied instance of excessive agency (OWASP ASI03)."
+        ),
+        anchor="eai08--identity-access--excessive-autonomy",
+    ),
 }
 
 
