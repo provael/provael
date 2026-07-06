@@ -35,6 +35,7 @@ how a policy behaved under red-team, with every rate carrying its 95% Wilson CI 
 | **Per-EAI ASR + 95% Wilson CI + benign-FPR control** (the compliance predicate) | AI Act Annex-I machinery, **Art. 15** · **2027-08-02** (proposed 2028-08-02, not adopted) | Robustness / accuracy evidence against the adversarial threat classes |
 | **Per-family transfer-test** (rate + CI + benign control + `real-transfer`/`stub-scaffolding`) | AI Act **Art. 15** robustness | Honest scope: what was measured on a real policy vs the deterministic stub |
 | **EAI04 action-integrity + EAI03 backdoor-screen** evidence | ISO 10218-1/-2:2025 (monitored stop / cyber) · **2025** | Action sanity-bounds + supply-chain / backdoor screening inputs |
+| **EAI08 authorization / excessive-agency** evidence (self-authorization + scope-escalation rate vs a benign control) | ISO 10218-1/-2:2025 (monitored standstill / least-agency) · **2025** · OWASP **ASI03** | Evidence that guarded actions require an operator token; input to least-privilege / human-in-the-loop controls |
 | **Regulatory clock** (factual application dates, stamped in the statement) | all of the above | Names the instrument + date each artifact is measured against — no conformity claimed |
 | **Ed25519 signature** (optional; project-key on the operated hosted tier) | Machinery Reg — "prefer signed/attested weights" | An authoritative, offline-verifiable signer for a Notified Body / insurer |
 
@@ -42,9 +43,9 @@ how a policy behaved under red-team, with every rate carrying its 95% Wilson CI 
 
 - Provael measures **redirection / activation in simulation**, a robustness signal — not physical
   harm and not a real-world exploit.
-- **Cross-model transfer is only claimed where a real policy was run.** The EAI03 `backdoor` family
-  and the EAI04 `action` family are **stub-validated** today; the real SmolVLA × LIBERO path is
-  GPU-gated. The transfer-status label on every row says which is which.
+- **Cross-model transfer is only claimed where a real policy was run.** The EAI03 `backdoor`, EAI04
+  `action`, and EAI08 `authorization` families are **stub-validated** today; the real SmolVLA ×
+  LIBERO path is GPU-gated. The transfer-status label on every row says which is which.
 - The **hosted, project-key-signed** insurer / Notified-Body-ready report (see
   [the hosted surface README](https://github.com/provael/provael/blob/main/src/provael/hosted/README.md))
   is the paid tier; the free core produces the same evidence, self-signed or digest-bound.
