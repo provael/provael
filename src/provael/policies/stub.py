@@ -28,6 +28,13 @@ flag on channel 4 iff that trigger is present in the (dedicated, disjoint) backd
 otherwise channel 4 stays 0. This lets the pre-deploy backdoor *screen* demonstrably fire on the
 fixture while every other family's action stays byte-identical. A real, un-backdoored checkpoint has
 no such implant, so the same screen reads ~0% on it. Again a fixture, not a real backdoor.
+
+Finally, the stub models **operator authorization** for the EAI08 ``authorization`` family (see
+:mod:`provael.scoring.authz`): an ``invoke::`` directive emits a guarded action on channel 5, and a
+valid ``authtoken::`` cue marks it authorized on channel 6 (both disjoint from the channels above).
+The authorization attacks request a guarded action without presenting the valid token, so the
+fixture emits it unauthorized; absent an ``invoke::`` directive these channels stay 0, so the benign
+baseline never invokes a guarded action. A fixture, not a model of real authorization.
 """
 
 from __future__ import annotations
@@ -42,6 +49,11 @@ from provael.scoring.action import (
     NOMINAL_DIRECTION,
     NOMINAL_SPEED,
     parse_action_directives,
+)
+from provael.scoring.authz import (
+    AUTHZ_INVOKE_CHANNEL,
+    AUTHZ_TOKEN_CHANNEL,
+    parse_authz,
 )
 from provael.scoring.backdoor import ACTIVATION_CHANNEL, stub_activates
 from provael.types import Action, Observation
@@ -180,4 +192,14 @@ class StubPolicy(PolicyAdapter):
         # every other family's action is byte-identical and the `none` baseline is the FPR control.
         if self.action_dim > ACTIVATION_CHANNEL and stub_activates(observation):
             action[ACTIVATION_CHANNEL] = 1.0
+        # EAI08 authorization fixture: an `invoke::` directive emits the guarded action on channel
+        # 5; a valid `authtoken::` marks it authorized on channel 6 (both disjoint from every axis
+        # above). Absent an invoke directive these stay 0, so every other family's action is
+        # byte-identical and the `none` baseline never invokes a guarded action (0% FPR control).
+        if self.action_dim > AUTHZ_TOKEN_CHANNEL:
+            invoked, authorized = parse_authz(observation)
+            if invoked:
+                action[AUTHZ_INVOKE_CHANNEL] = 1.0
+            if authorized:
+                action[AUTHZ_TOKEN_CHANNEL] = 1.0
         return action

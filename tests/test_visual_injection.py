@@ -162,15 +162,21 @@ def test_registry_includes_new_families() -> None:
         "targeted_hijack",
         "object_trigger",
         "phrase_trigger",
+        "self_authorize_bypass",
+        "scope_escalation",
     }
     assert available_families() == [
-        "action", "backdoor", "baseline", "injection", "instruction", "optimized", "visual"
+        "action", "authorization", "backdoor", "baseline",
+        "injection", "instruction", "optimized", "visual",
     ]
     assert [a.name for a in resolve_attacks(["baseline"])] == ["none"]
     assert [a.name for a in resolve_attacks(["visual"])] == ["patch", "decoy_object"]
     assert [a.name for a in resolve_attacks(["injection"])] == ["scene_text", "mcp_tool_desc"]
     assert [a.name for a in resolve_attacks(["action"])] == ["freeze", "trajectory_hijack"]
     assert [a.name for a in resolve_attacks(["backdoor"])] == ["object_trigger", "phrase_trigger"]
+    assert [a.name for a in resolve_attacks(["authorization"])] == [
+        "self_authorize_bypass", "scope_escalation"
+    ]
     assert [a.name for a in resolve_attacks(["optimized"])] == ["targeted_hijack"]
     # Cross-family selection by individual name.
     assert [a.name for a in resolve_attacks(["patch", "scene_text"])] == ["patch", "scene_text"]

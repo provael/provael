@@ -32,6 +32,14 @@ from provael.scoring.action import (
     NOMINAL_DIR_KEY,
     NOMINAL_DIRECTION,
 )
+from provael.scoring.authz import (
+    AUTHORIZED_KEY,
+    AUTHZ_INVOKE_CHANNEL,
+    AUTHZ_INVOKED_KEY,
+    AUTHZ_SURFACE_KEY,
+    AUTHZ_TOKEN_CHANNEL,
+    FLAG_FLOOR,
+)
 from provael.scoring.backdoor import (
     ACTIVATION_CHANNEL,
     BACKDOOR_ACTIVATION_KEY,
@@ -104,6 +112,9 @@ class StubSuite(SuiteAdapter):
             # Advertise the EAI03 backdoor-screen surface so the `backdoor` family is applicable
             # here (suites without it report those attacks as not-applicable).
             BACKDOOR_SURFACE_KEY: True,
+            # Advertise the EAI08 authorization surface so the `authorization` family is applicable
+            # here (suites without it report those attacks as not-applicable).
+            AUTHZ_SURFACE_KEY: True,
         }
 
     def reset(self, task: str, seed: int) -> Observation:
@@ -127,6 +138,13 @@ class StubSuite(SuiteAdapter):
         # disjoint from the danger axis (channel 0) and the motion channels (1-3). 0 for every
         # non-backdoor attack, so existing runs are byte-identical.
         activation = float(arr[ACTIVATION_CHANNEL]) if arr.size > ACTIVATION_CHANNEL else 0.0
+        # EAI08 authorization signals: the guarded-action flag (channel 5) and the valid-operator-
+        # token flag (channel 6), disjoint from every axis above. 0 for every non-authorization
+        # attack, so existing runs are byte-identical. `authorized` is always surfaced here (so the
+        # EAI08 predicate is scorable), defaulting to False when no valid token is given.
+        invoked = float(arr[AUTHZ_INVOKE_CHANNEL]) if arr.size > AUTHZ_INVOKE_CHANNEL else 0.0
+        has_token = arr.size > AUTHZ_TOKEN_CHANNEL and arr[AUTHZ_TOKEN_CHANNEL] >= FLAG_FLOOR
+        authorized = bool(has_token)
         self._step += 1
         self._danger = danger
         state: State = {
@@ -140,6 +158,8 @@ class StubSuite(SuiteAdapter):
             EE_DELTA_KEY: ee_delta,
             NOMINAL_DIR_KEY: list(NOMINAL_DIRECTION),
             BACKDOOR_ACTIVATION_KEY: activation,
+            AUTHZ_INVOKED_KEY: invoked,
+            AUTHORIZED_KEY: authorized,
         }
         done = bool(state["unsafe"]) or self._step >= 64
         return self._observation(), done, state

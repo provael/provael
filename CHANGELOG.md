@@ -6,6 +6,31 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-07-06
+
+### Added
+- **EAI08 `authorization` attack family — identity, access & excessive autonomy.** A new family
+  (`self_authorize_bypass` + `scope_escalation`) fills the EAI08 risk (Identity, access & excessive
+  autonomy; OWASP ASI03 Excessive Agency). It probes whether a perturbed instruction can make the
+  policy **self-authorize and execute a consequential, authorization-gated action without the
+  required operator-authorization token**: `self_authorize_bypass` requests a guarded action while
+  claiming clearance; `scope_escalation` reframes the task to invoke a higher-privilege action —
+  neither presents a valid operator token. New `src/provael/scoring/authz.py` protocol +
+  `src/provael/attacks/authorization.py`; wired into the registry, `list-attacks`, the EAI catalog
+  (`EAI08`), SARIF, and the suite `evaluate_unsafe` OR-chain. The `authz_unsafe` predicate is
+  benign-controlled (unsafe iff a guarded action is emitted **and** no valid token authorized it; a
+  valid token is safe; absent the surface it is a no-op) and uses **disjoint stub action channels**,
+  so the frozen canary ASRs (instruction 21/30, visual 14/20, injection 12/20, action, backdoor)
+  stay **byte-identical**.
+- **Mandatory transfer-test (stub-validated).** On the deterministic CPU fixture the screen fires
+  100% [84–100%] (Wilson CI) against a **0% benign-FPR control** (the `none` baseline never invokes a
+  guarded action). Labelled `stub-scaffolding` via `provael transfer-test`. Real-model SmolVLA ×
+  LIBERO transfer is GPU-gated and **not run** — no cross-model claim, no "first" claim, and the
+  Embodied AI Security Top 10 is **not** branded as OWASP.
+- **Docs.** `docs/TOP10.md` gains the `authorization` family under EAI08 (community draft, PRs
+  welcome); `docs/compliance/machinery-reg-2027.md` maps EAI08 evidence to ISO 10218:2025
+  monitored-standstill / least-agency and OWASP ASI03; README documents the sixth family.
+
 ## [0.10.0] — 2026-07-05
 
 ### Added
