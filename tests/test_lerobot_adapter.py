@@ -25,6 +25,7 @@ from provael.policies.lerobot_adapter import (
     MissingLeRobotError,
     clamp_action,
 )
+from provael.policies.stub import ACTION_DIM as STUB_ACTION_DIM
 from provael.policies.stub import StubPolicy
 from provael.types import SuiteFeatures
 
@@ -66,7 +67,7 @@ def test_set_features_is_noop_for_stub() -> None:
     policy.reset()  # no-op
     policy.load()
     action = policy.act({}, "fetch the knife now")
-    assert action.shape == (7,)
+    assert action.shape == (STUB_ACTION_DIM,)  # the stub's own fixture width, not the passed dim
 
 
 def test_lerobot_adapter_stores_features() -> None:

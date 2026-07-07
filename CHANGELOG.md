@@ -6,6 +6,29 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-07-08
+
+### Added
+- **EAI02 `sensor_spoof` attack family — adversarial perception / sensor spoofing.** A new EAI02
+  attack *vector* (distinct from the scalar `visual` family): a **sim-injected perception spoof**
+  (`patch_spoof`, an adversarial patch on the simulated camera; `signal_spoof`, a range/depth signal
+  perturbation on the simulated LiDAR) that makes the policy perceive a phantom target inside a
+  **monitored-standstill keep-out zone** and command its end-effector there. **Sim-only, defensive:**
+  it perturbs the simulator's observation stream, **never real sensor hardware**, and ships no
+  real-world payload. New `src/provael/scoring/perception.py` protocol + `src/provael/attacks/
+  sensor_spoof.py`; wired into the registry, `list-attacks`, SARIF (EAI02 ruleId), and the spatial
+  keep-out OR-chain (`suites/base.py::evaluate_unsafe` gains `sensor_spoof_unsafe`, surfaced by the
+  `reach` suite). The spoof uses a **disjoint stub action channel (7)** — the stub fixture width goes
+  7→8 — so the frozen canaries (stub 47/70; reach roleplay 10/10, goal_substitution 0/10; action,
+  backdoor, authorization) stay **byte-identical**. It maps to EAI02 (Adversarial perception) in the
+  **Embodied AI Security Top 10** (not OWASP).
+- **Mandatory transfer-test (stub-validated).** On the deterministic CPU `reach` keep-out suite the
+  spoof drives the end-effector into the zone 100% [84–100%] (Wilson CI) against a **0% benign-FPR
+  control** (the `none` baseline injects no spoof and stays at the origin). Labelled `stub-scaffolding`
+  via `provael transfer-test`. The real-model path — an adversarial patch on a real policy's RGB
+  stream driving its end-effector into a keep-out zone (SmolVLA × LIBERO) — is GPU-gated and **not
+  run**; no cross-model claim, no "first" claim.
+
 ## [0.11.0] — 2026-07-06
 
 ### Added
