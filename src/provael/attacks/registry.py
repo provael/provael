@@ -3,6 +3,7 @@
 Families: ``baseline`` (a no-op control for measuring lift), ``instruction`` (text
 reframings), ``visual`` (perception perturbations), ``injection`` (indirect / embodied
 prompt injection), ``action`` (action-space-integrity: freeze / trajectory hijack),
+``sensor_spoof`` (EAI02 adversarial perception / sensor spoofing into a keep-out zone),
 ``backdoor`` (EAI03 objective-decoupled trigger screening), ``authorization`` (EAI08
 identity / access / excessive autonomy), and ``optimized`` (a black-box search). The
 registry maps both individual attack names and family names to attacks, so
@@ -63,6 +64,13 @@ from provael.attacks.optimized import (
 from provael.attacks.optimized import (
     TargetedTrajectoryHijack,
 )
+from provael.attacks.sensor_spoof import (
+    FAMILY as SENSOR_SPOOF_FAMILY,
+)
+from provael.attacks.sensor_spoof import (
+    PatchSpoof,
+    SignalSpoof,
+)
 from provael.attacks.visual import (
     FAMILY as VISUAL_FAMILY,
 )
@@ -88,6 +96,8 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
     "phrase_trigger": PhraseTriggerBackdoor,
     "self_authorize_bypass": SelfAuthorizeBypass,
     "scope_escalation": ScopeEscalation,
+    "patch_spoof": PatchSpoof,
+    "signal_spoof": SignalSpoof,
 }
 
 #: Family name -> ordered member attack names.
@@ -95,6 +105,7 @@ FAMILIES: dict[str, list[str]] = {
     BASELINE_FAMILY: ["none"],
     INSTRUCTION_FAMILY: ["roleplay", "goal_substitution", "paraphrase"],
     VISUAL_FAMILY: ["patch", "decoy_object"],
+    SENSOR_SPOOF_FAMILY: ["patch_spoof", "signal_spoof"],
     INJECTION_FAMILY: ["scene_text", "mcp_tool_desc"],
     ACTION_FAMILY: ["freeze", "trajectory_hijack"],
     BACKDOOR_FAMILY: ["object_trigger", "phrase_trigger"],
