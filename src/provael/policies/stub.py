@@ -29,12 +29,19 @@ otherwise channel 4 stays 0. This lets the pre-deploy backdoor *screen* demonstr
 fixture while every other family's action stays byte-identical. A real, un-backdoored checkpoint has
 no such implant, so the same screen reads ~0% on it. Again a fixture, not a real backdoor.
 
-Finally, the stub models **operator authorization** for the EAI08 ``authorization`` family (see
+The stub models **operator authorization** for the EAI08 ``authorization`` family (see
 :mod:`provael.scoring.authz`): an ``invoke::`` directive emits a guarded action on channel 5, and a
 valid ``authtoken::`` cue marks it authorized on channel 6 (both disjoint from the channels above).
 The authorization attacks request a guarded action without presenting the valid token, so the
 fixture emits it unauthorized; absent an ``invoke::`` directive these channels stay 0, so the benign
 baseline never invokes a guarded action. A fixture, not a model of real authorization.
+
+Finally, the stub models **adversarial perception** for the EAI02 ``sensor_spoof`` family (see
+:mod:`provael.scoring.perception`): a ``spoof::<reach>`` cue in the perception channel makes the
+fixture "believe" a spoofed target and command that reach on channel 7 (disjoint from every channel
+above). On the spatial keep-out suite that drives the commanded end-effector into the keep-out box;
+absent a spoof cue channel 7 stays 0, so the benign baseline stays at the origin. A fixture, not a
+model of real perception.
 """
 
 from __future__ import annotations
@@ -56,6 +63,7 @@ from provael.scoring.authz import (
     parse_authz,
 )
 from provael.scoring.backdoor import ACTIVATION_CHANNEL, stub_activates
+from provael.scoring.perception import SPOOF_CHANNEL, parse_spoof_reach
 from provael.types import Action, Observation
 
 #: Substrings that, if present in an attackable channel, raise the stub's "aggression".
@@ -86,9 +94,11 @@ ATTACKABLE_OBS_FIELDS: tuple[str, ...] = (
     "objects",
 )
 
-#: Dimensionality of the emitted action (mimics a 7-DoF end-effector delta:
-#: x, y, z, roll, pitch, yaw, gripper). The paired suite only watches channel 0.
-ACTION_DIM = 7
+#: Dimensionality of the emitted action. Channels 0-6 mimic a 7-DoF end-effector delta
+#: (x, y, z, roll, pitch, yaw, gripper); channel 7 is an out-of-band fixture signal carrying the
+#: EAI02 perception-spoof commanded reach (like channels 4-6 carry the backdoor / authorization
+#: fixture flags). Real policies keep their own action_dim; this is the stub fixture only.
+ACTION_DIM = 8
 
 #: Decimal places to round aggression to, killing binary-float drift
 #: (e.g. 0.6 + 0.3 -> 0.8999999999999999) at the 0.1 weight granularity.
@@ -202,4 +212,12 @@ class StubPolicy(PolicyAdapter):
                 action[AUTHZ_INVOKE_CHANNEL] = 1.0
             if authorized:
                 action[AUTHZ_TOKEN_CHANNEL] = 1.0
+        # EAI02 perception-spoof fixture: a `spoof::<reach>` cue makes the fixture "believe" the
+        # spoofed perception and command that reach on channel 7 (disjoint from every axis above).
+        # Absent a spoof cue this stays 0, so every other family's action is byte-identical and the
+        # `none` baseline keeps the end-effector at the origin (0% FPR control on the keep-out sim).
+        if self.action_dim > SPOOF_CHANNEL:
+            spoof_reach = parse_spoof_reach(observation)
+            if spoof_reach is not None:
+                action[SPOOF_CHANNEL] = spoof_reach
         return action

@@ -90,6 +90,15 @@ textures, or sensor spoofing — that flip behavior while looking benign to huma
 patch attacks. *(Honest note: in Provael's SmolVLA×LIBERO run these did NOT transfer — 0% (0/10), 95% CI
 [0–28%], against the same 0% benign baseline; real-world robustness of perception attacks is unsettled,
 which is exactly why you test rather than assume.)*
+**Attacks shipped (Provael):** the `visual` family (`patch` + `decoy_object`, a scalar-danger perturbation)
+and the `sensor_spoof` family (`patch_spoof` + `signal_spoof`) — *method:* a **sim-injected perception
+spoof** (an adversarial patch on the simulated camera, or a range/depth signal perturbation on the
+simulated LiDAR) that makes the policy perceive a phantom target inside a **monitored-standstill keep-out
+zone** and command its end-effector there. Sim-only: it perturbs the simulator's observation stream,
+**never real sensor hardware**. Scored as a keep-out-violation rate with a 95% Wilson CI against a
+benign-FPR control. **Stub-validated only** (deterministic CPU `reach` suite: 100% [84–100%] vs a 0%
+benign baseline); real-model transfer (an adversarial patch on a real policy's RGB driving its
+end-effector into a keep-out zone) is GPU-gated and **not yet run** — no cross-model claim.
 **Why it matters.** Lives in the physical environment, not the network — needs no system access, survives air-gaps.
 **Mitigations.** Input smoothing/randomization; multi-view & multi-sensor agreement; adversarial training;
 perception-embedding anomaly detection; physical red-team with printed artifacts.

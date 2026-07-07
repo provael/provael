@@ -33,6 +33,11 @@ the spirit of responsible disclosure.
   a **known-planted stub fixture**. Provael **does not train, fine-tune, or implant a real backdoor**,
   and ships **no real-world payload**; on a clean checkpoint the screen reads ~0%. Real-model transfer
   is GPU-gated and not run in the CPU core, so no cross-model claim is made.
+- The `sensor_spoof` family (EAI02) perturbs the **simulator's observation tensor** (a sim camera
+  patch / sim LiDAR signal perturbation), **never real sensor hardware**, to measure whether spoofed
+  perception drives the policy's *commanded* end-effector into a keep-out zone **in simulation**. It
+  ships no real-sensor code and no real-world payload; the real-model (adversarial-patch) transfer is
+  GPU-gated and not run in the CPU core.
 
 ## What we measure on LIBERO (redirection, not harm)
 
