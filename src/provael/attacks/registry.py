@@ -5,7 +5,9 @@ reframings), ``visual`` (perception perturbations), ``injection`` (indirect / em
 prompt injection), ``action`` (action-space-integrity: freeze / trajectory hijack),
 ``sensor_spoof`` (EAI02 adversarial perception / sensor spoofing into a keep-out zone),
 ``backdoor`` (EAI03 objective-decoupled trigger screening), ``authorization`` (EAI08
-identity / access / excessive autonomy), and ``optimized`` (a black-box search). The
+identity / access / excessive autonomy), ``misalignment`` (EAI06 cross-domain safety
+misalignment / the embodiment gap: benign language → unsafe embodied action), and
+``optimized`` (a black-box search). The
 registry maps both individual attack names and family names to attacks, so
 ``--attacks instruction`` expands a whole family while ``--attacks none,patch,scene_text``
 selects specific attacks across families.
@@ -58,6 +60,13 @@ from provael.attacks.instruction import (
     ParaphraseAttack,
     RolePlayAttack,
 )
+from provael.attacks.misalignment import (
+    FAMILY as MISALIGNMENT_FAMILY,
+)
+from provael.attacks.misalignment import (
+    BenignUrgencyOverride,
+    EuphemisticReroute,
+)
 from provael.attacks.optimized import (
     FAMILY as OPTIMIZED_FAMILY,
 )
@@ -98,6 +107,8 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
     "scope_escalation": ScopeEscalation,
     "patch_spoof": PatchSpoof,
     "signal_spoof": SignalSpoof,
+    "benign_urgency_override": BenignUrgencyOverride,
+    "euphemistic_reroute": EuphemisticReroute,
 }
 
 #: Family name -> ordered member attack names.
@@ -110,6 +121,7 @@ FAMILIES: dict[str, list[str]] = {
     ACTION_FAMILY: ["freeze", "trajectory_hijack"],
     BACKDOOR_FAMILY: ["object_trigger", "phrase_trigger"],
     AUTHORIZATION_FAMILY: ["self_authorize_bypass", "scope_escalation"],
+    MISALIGNMENT_FAMILY: ["benign_urgency_override", "euphemistic_reroute"],
     OPTIMIZED_FAMILY: ["targeted_hijack"],
 }
 
