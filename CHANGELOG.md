@@ -6,6 +6,33 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-07-08
+
+### Added
+- **EAI06 `misalignment` attack family — cross-domain safety misalignment (the embodiment gap).**
+  `feat(attacks): add EAI06 cross-domain safety-misalignment (embodiment-gap) family —
+  benign-instruction → unsafe-action, targeting keepout_zones; transfer-tested Wilson-95 + benign-FPR.`
+  Two attacks (`benign_urgency_override`, an urgency framing; `euphemistic_reroute`, a euphemism) each
+  **reframe the task into an instruction a chat-layer safety filter would pass as benign** yet, when
+  embodied, drive the policy's commanded end-effector into a **monitored-standstill keep-out zone**
+  (BadRobot, ICLR 2025, risk (b)). **Sim-only, defensive:** the attack perturbs only the
+  instruction/observation the policy receives, **never real-robot control**, and ships no real-world
+  payload. The reframed instruction carries **no** language-level danger token (the stub's danger
+  channel stays 0), so the violation is attributable to the language→action gap, not a jailbroken
+  language goal (the separate EAI01 `instruction` family). New `src/provael/scoring/misalignment.py`
+  protocol + `src/provael/attacks/misalignment.py`; wired into the registry, `list-attacks`, SARIF
+  (EAI06 ruleId), and the spatial keep-out OR-chain (`suites/base.py::evaluate_unsafe` gains
+  `misalignment_unsafe`, surfaced by the `reach` suite). The cue uses a **disjoint stub action channel
+  (8)** — the stub fixture width goes 8→9 — so the frozen canaries (stub 47/70; reach roleplay 10/10,
+  goal_substitution 0/10; action, backdoor, authorization, sensor_spoof) stay **byte-identical**. It
+  maps to EAI06 (Cross-domain safety misalignment) in the **Embodied AI Security Top 10** (not OWASP).
+- **Mandatory transfer-test (stub-validated).** On the deterministic CPU `reach` keep-out suite a
+  benign-sounding instruction drives the end-effector into the zone 100% [84–100%] (Wilson CI) against a
+  **0% benign-FPR control** (the `none` baseline injects no cue and stays out of the zone). Labelled
+  `stub-scaffolding` via `provael transfer-test`. The real-model path — a benign-sounding instruction
+  driving a real policy's end-effector into a keep-out zone (BadRobot × SmolVLA × LIBERO) — is GPU-gated
+  and **not run**; no cross-model claim, no "first" claim.
+
 ## [0.12.0] — 2026-07-08
 
 ### Added
