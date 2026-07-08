@@ -166,10 +166,12 @@ def test_registry_includes_new_families() -> None:
         "scope_escalation",
         "patch_spoof",
         "signal_spoof",
+        "benign_urgency_override",
+        "euphemistic_reroute",
     }
     assert available_families() == [
         "action", "authorization", "backdoor", "baseline", "injection",
-        "instruction", "optimized", "sensor_spoof", "visual",
+        "instruction", "misalignment", "optimized", "sensor_spoof", "visual",
     ]
     assert [a.name for a in resolve_attacks(["baseline"])] == ["none"]
     assert [a.name for a in resolve_attacks(["visual"])] == ["patch", "decoy_object"]
@@ -180,6 +182,9 @@ def test_registry_includes_new_families() -> None:
         "self_authorize_bypass", "scope_escalation"
     ]
     assert [a.name for a in resolve_attacks(["sensor_spoof"])] == ["patch_spoof", "signal_spoof"]
+    assert [a.name for a in resolve_attacks(["misalignment"])] == [
+        "benign_urgency_override", "euphemistic_reroute"
+    ]
     assert [a.name for a in resolve_attacks(["optimized"])] == ["targeted_hijack"]
     # Cross-family selection by individual name.
     assert [a.name for a in resolve_attacks(["patch", "scene_text"])] == ["patch", "scene_text"]

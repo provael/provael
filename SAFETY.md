@@ -38,6 +38,12 @@ the spirit of responsible disclosure.
   perception drives the policy's *commanded* end-effector into a keep-out zone **in simulation**. It
   ships no real-sensor code and no real-world payload; the real-model (adversarial-patch) transfer is
   GPU-gated and not run in the CPU core.
+- The `misalignment` family (EAI06) perturbs only the **instruction/observation the policy receives**,
+  **never real-robot control**, to measure the **embodiment gap**: an instruction a chat-layer safety
+  filter would pass as benign ("tidy up quickly") still drives the policy's *commanded* end-effector
+  into a keep-out zone **in simulation**. The reframed instructions are benign-sounding and carry no
+  real-world payload; it does not defeat, disable, or evade any safety filter — it demonstrates that a
+  language-only filter is insufficient. Real-model transfer is GPU-gated and not run in the CPU core.
 
 ## What we measure on LIBERO (redirection, not harm)
 

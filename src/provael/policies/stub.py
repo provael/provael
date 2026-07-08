@@ -36,12 +36,19 @@ The authorization attacks request a guarded action without presenting the valid 
 fixture emits it unauthorized; absent an ``invoke::`` directive these channels stay 0, so the benign
 baseline never invokes a guarded action. A fixture, not a model of real authorization.
 
-Finally, the stub models **adversarial perception** for the EAI02 ``sensor_spoof`` family (see
+The stub models **adversarial perception** for the EAI02 ``sensor_spoof`` family (see
 :mod:`provael.scoring.perception`): a ``spoof::<reach>`` cue in the perception channel makes the
 fixture "believe" a spoofed target and command that reach on channel 7 (disjoint from every channel
 above). On the spatial keep-out suite that drives the commanded end-effector into the keep-out box;
 absent a spoof cue channel 7 stays 0, so the benign baseline stays at the origin. A fixture, not a
 model of real perception.
+
+Finally, the stub models the **embodiment gap** for the EAI06 ``misalignment`` family (see
+:mod:`provael.scoring.misalignment`): an ``embodied::<reach>`` cue makes the fixture command the
+reach a benign-sounding instruction embodies on channel 8 (disjoint from every channel above). On
+the spatial keep-out suite that drives the commanded end-effector into the keep-out box under a
+language-benign instruction; absent the cue channel 8 stays 0, so the benign baseline stays at the
+origin. A fixture, not a model of real embodiment.
 """
 
 from __future__ import annotations
@@ -63,6 +70,7 @@ from provael.scoring.authz import (
     parse_authz,
 )
 from provael.scoring.backdoor import ACTIVATION_CHANNEL, stub_activates
+from provael.scoring.misalignment import MISALIGN_CHANNEL, parse_embodied_reach
 from provael.scoring.perception import SPOOF_CHANNEL, parse_spoof_reach
 from provael.types import Action, Observation
 
@@ -95,10 +103,10 @@ ATTACKABLE_OBS_FIELDS: tuple[str, ...] = (
 )
 
 #: Dimensionality of the emitted action. Channels 0-6 mimic a 7-DoF end-effector delta
-#: (x, y, z, roll, pitch, yaw, gripper); channel 7 is an out-of-band fixture signal carrying the
-#: EAI02 perception-spoof commanded reach (like channels 4-6 carry the backdoor / authorization
-#: fixture flags). Real policies keep their own action_dim; this is the stub fixture only.
-ACTION_DIM = 8
+#: (x, y, z, roll, pitch, yaw, gripper); channels 7-8 are out-of-band fixture signals carrying the
+#: EAI02 perception-spoof and EAI06 embodiment-gap commanded reaches (like channels 4-6 carry the
+#: backdoor / authorization fixture flags). Real policies keep their own action_dim; stub only.
+ACTION_DIM = 9
 
 #: Decimal places to round aggression to, killing binary-float drift
 #: (e.g. 0.6 + 0.3 -> 0.8999999999999999) at the 0.1 weight granularity.
@@ -220,4 +228,12 @@ class StubPolicy(PolicyAdapter):
             spoof_reach = parse_spoof_reach(observation)
             if spoof_reach is not None:
                 action[SPOOF_CHANNEL] = spoof_reach
+        # EAI06 embodiment-gap fixture: an `embodied::<reach>` cue makes the fixture command the
+        # reach a benign-sounding instruction embodies on channel 8 (disjoint from all axes above).
+        # Absent the cue this stays 0, so every other family's action is byte-identical and the
+        # `none` baseline keeps the end-effector at the origin (0% FPR control on the keep-out sim).
+        if self.action_dim > MISALIGN_CHANNEL:
+            embodied_reach = parse_embodied_reach(observation)
+            if embodied_reach is not None:
+                action[MISALIGN_CHANNEL] = embodied_reach
         return action

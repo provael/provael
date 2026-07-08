@@ -81,6 +81,16 @@ CATALOG: dict[str, EaiRisk] = {
         ),
         anchor="eai05--indirect--embodied-prompt-injection",
     ),
+    "EAI06": EaiRisk(
+        id="EAI06",
+        name="Cross-domain safety misalignment (the embodiment gap)",
+        description=(
+            "A benign-sounding instruction a language-layer safety filter passes still drives an "
+            "unsafe embodied action (motion into a keep-out zone / contact with a flagged object): "
+            "the embodiment gap between safe language and unsafe physical action."
+        ),
+        anchor="eai06--cross-domain-safety-misalignment-the-embodiment-gap",
+    ),
     "EAI08": EaiRisk(
         id="EAI08",
         name="Identity, access & excessive autonomy",
