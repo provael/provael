@@ -44,6 +44,13 @@ the spirit of responsible disclosure.
   into a keep-out zone **in simulation**. The reframed instructions are benign-sounding and carry no
   real-world payload; it does not defeat, disable, or evade any safety filter — it demonstrates that a
   language-only filter is insufficient. Real-model transfer is GPU-gated and not run in the CPU core.
+- The `action_space` family (EAI04, 2nd vector) perturbs only the **observation the policy receives**,
+  **never real-robot control**, to measure **commanded-end-state integrity** on a disjoint sim channel:
+  `keepout_hijack` drives the policy's *commanded* end-effector into a keep-out zone, and
+  `critical_freeze` paralyses it at a safety-critical step — both scored **in simulation** on the
+  fixture's commanded action. The visible instruction stays benign and it ships no real-world payload;
+  it is not detection-evasion. Real-model transfer (AttackVLA / FreezeVLA) is GPU-gated and not run in
+  the CPU core, so no cross-model claim is made.
 
 ## What we measure on LIBERO (redirection, not harm)
 

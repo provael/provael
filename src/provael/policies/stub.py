@@ -64,6 +64,11 @@ from provael.scoring.action import (
     NOMINAL_SPEED,
     parse_action_directives,
 )
+from provael.scoring.action_space import (
+    FREEZE_SENTINEL,
+    HIJACK_CHANNEL,
+    parse_action_space,
+)
 from provael.scoring.authz import (
     AUTHZ_INVOKE_CHANNEL,
     AUTHZ_TOKEN_CHANNEL,
@@ -103,10 +108,12 @@ ATTACKABLE_OBS_FIELDS: tuple[str, ...] = (
 )
 
 #: Dimensionality of the emitted action. Channels 0-6 mimic a 7-DoF end-effector delta
-#: (x, y, z, roll, pitch, yaw, gripper); channels 7-8 are out-of-band fixture signals carrying the
-#: EAI02 perception-spoof and EAI06 embodiment-gap commanded reaches (like channels 4-6 carry the
-#: backdoor / authorization fixture flags). Real policies keep their own action_dim; stub only.
-ACTION_DIM = 9
+#: (x, y, z, roll, pitch, yaw, gripper); channels 7-9 are out-of-band fixture signals carrying the
+#: EAI02 perception-spoof reach, the EAI06 embodiment-gap reach, and the EAI04 2nd-vector
+#: action-space commanded end-state (positive = keep-out hijack cell, negative = critical-step
+#: freeze) (like channels 4-6 carry the backdoor / authorization fixture flags). Real policies keep
+#: their own action_dim; stub only.
+ACTION_DIM = 10
 
 #: Decimal places to round aggression to, killing binary-float drift
 #: (e.g. 0.6 + 0.3 -> 0.8999999999999999) at the 0.1 weight granularity.
@@ -236,4 +243,16 @@ class StubPolicy(PolicyAdapter):
             embodied_reach = parse_embodied_reach(observation)
             if embodied_reach is not None:
                 action[MISALIGN_CHANNEL] = embodied_reach
+        # EAI04 action-space-integrity fixture (2nd vector): an `ashijack::<cell>` cue drives the
+        # commanded end-effector to a keep-out cell (positive channel 9), and an `asfreeze::<step>`
+        # cue paralyses the policy at a safety-critical step (a negative FREEZE_SENTINEL) — both on
+        # channel 9 (disjoint from all axes above). Absent either cue this stays 0, so every other
+        # family's action is byte-identical and the `none` baseline stays at the origin, un-frozen
+        # (0% FPR control on the keep-out sim).
+        if self.action_dim > HIJACK_CHANNEL:
+            hijack_cell, frozen = parse_action_space(observation)
+            if frozen:
+                action[HIJACK_CHANNEL] = FREEZE_SENTINEL
+            elif hijack_cell is not None:
+                action[HIJACK_CHANNEL] = hijack_cell
         return action

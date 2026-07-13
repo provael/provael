@@ -134,11 +134,13 @@ REQUIREMENTS: tuple[Requirement, ...] = (
     Requirement(
         key="eu-machinery:cyber",
         framework=_MACHINERY, framework_id="eu-machinery",
-        control_id="Reg. (EU) 2023/1230",
+        control_id="Reg. (EU) 2023/1230 (applies 2027-01-20)",
         control_title="Machinery — protection against corruption / safety-function AI",
         provael_signal=(
             "Measured redirection rate per EAI risk as input to the mandatory cyber-risk "
-            "assessment for AI-enabled machinery; SARIF for the security file"
+            "assessment for AI-enabled machinery, with action-space integrity (EAI04: keep-out "
+            "hijack / critical-step freeze of the commanded motion) as the on-point evidence for "
+            "the corruption-of-safety-function essential requirement; SARIF for the security file"
         ),
         evidence_refs=("report.json#/by_attack", "report.sarif", "docs/COMPLIANCE.md"),
         indicative=True,
@@ -148,7 +150,11 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         framework=_ISO, framework_id="iso-10218",
         control_id="ISO 10218-1:2025",
         control_title="Robots & robotic devices — Safety — Part 1 (cybersecurity requirements)",
-        provael_signal="Measured redirection rate per EAI risk as cyber-risk-assessment input",
+        provael_signal=(
+            "Measured redirection rate per EAI risk as cyber-risk-assessment input, with "
+            "action-space integrity (EAI04: keepout_hijack / critical_freeze) as the on-point "
+            "evidence for the monitored-stop / space-limiting safety functions"
+        ),
         evidence_refs=("report.json#/by_attack", "docs/COMPLIANCE.md"),
         indicative=True,
     ),

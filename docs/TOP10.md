@@ -139,6 +139,18 @@ SmolVLA × LIBERO transfer is GPU-gated and **not yet run** — no cross-model c
 `optimized` family (`targeted_hijack`) — a black-box, query-budgeted *search* that adapts a `goto::`
 directive to steer the policy's emitted motion toward an attacker goal (the first non-templated attack);
 stub-validated (100% [84–100%] vs a 0% benign baseline at query-budget 200), real transfer GPU-gated.
+**Also shipped (2nd vector):** the `action_space` family (`keepout_hijack` + `critical_freeze`) —
+*method:* it attacks the **commanded end-state** on a disjoint out-of-band channel (not the motion
+channels the `action` family uses): `keepout_hijack` drives the policy's *commanded end-effector*
+into a **monitored-standstill keep-out zone** (an AttackVLA-style targeted end-state hijack), while
+`critical_freeze` **paralyses the policy at a safety-critical step** (a targeted, availability-style
+FreezeVLA variant). The visible instruction stays **benign** (no language danger token — the danger
+channel stays 0), so the violation is attributable to action-space integrity, not a jailbroken
+language goal. Each is scored as a rate with a 95% Wilson CI against a benign-FPR control (the `none`
+baseline injects no cue and stays at the origin, un-frozen → 0%). **Stub-validated only** (the
+deterministic CPU `reach` keep-out suite: 100% [84–100%] vs a 0% benign baseline); real-model
+transfer (AttackVLA / FreezeVLA × SmolVLA × LIBERO) is GPU-gated and **not run** — no cross-model
+claim.
 **Why it matters.** A hijacked-trajectory robot and a frozen robot are different severe failures — and a
 single "task success" metric hides both.
 **Mitigations.** Report ASR as a matrix (untargeted / freeze / targeted) with a clean baseline; action
