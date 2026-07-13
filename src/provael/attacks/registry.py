@@ -3,7 +3,9 @@
 Families: ``baseline`` (a no-op control for measuring lift), ``instruction`` (text
 reframings), ``visual`` (perception perturbations), ``injection`` (indirect / embodied
 prompt injection), ``action`` (action-space-integrity: freeze / trajectory hijack),
-``sensor_spoof`` (EAI02 adversarial perception / sensor spoofing into a keep-out zone),
+``action_space`` (EAI04 2nd vector: keep-out hijack of the commanded end-effector /
+critical-step freeze), ``sensor_spoof`` (EAI02 adversarial perception / sensor spoofing
+into a keep-out zone),
 ``backdoor`` (EAI03 objective-decoupled trigger screening), ``authorization`` (EAI08
 identity / access / excessive autonomy), ``misalignment`` (EAI06 cross-domain safety
 misalignment / the embodiment gap: benign language → unsafe embodied action), and
@@ -23,6 +25,13 @@ from provael.attacks.action import (
 from provael.attacks.action import (
     FreezeAttack,
     TrajectoryHijackAttack,
+)
+from provael.attacks.action_space import (
+    FAMILY as ACTION_SPACE_FAMILY,
+)
+from provael.attacks.action_space import (
+    CriticalFreeze,
+    KeepoutHijack,
 )
 from provael.attacks.authorization import (
     FAMILY as AUTHORIZATION_FAMILY,
@@ -100,6 +109,8 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
     "mcp_tool_desc": MCPToolDescInjection,
     "freeze": FreezeAttack,
     "trajectory_hijack": TrajectoryHijackAttack,
+    "keepout_hijack": KeepoutHijack,
+    "critical_freeze": CriticalFreeze,
     "targeted_hijack": TargetedTrajectoryHijack,
     "object_trigger": ObjectTriggerBackdoor,
     "phrase_trigger": PhraseTriggerBackdoor,
@@ -119,6 +130,7 @@ FAMILIES: dict[str, list[str]] = {
     SENSOR_SPOOF_FAMILY: ["patch_spoof", "signal_spoof"],
     INJECTION_FAMILY: ["scene_text", "mcp_tool_desc"],
     ACTION_FAMILY: ["freeze", "trajectory_hijack"],
+    ACTION_SPACE_FAMILY: ["keepout_hijack", "critical_freeze"],
     BACKDOOR_FAMILY: ["object_trigger", "phrase_trigger"],
     AUTHORIZATION_FAMILY: ["self_authorize_bypass", "scope_escalation"],
     MISALIGNMENT_FAMILY: ["benign_urgency_override", "euphemistic_reroute"],

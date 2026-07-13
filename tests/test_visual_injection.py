@@ -159,6 +159,8 @@ def test_registry_includes_new_families() -> None:
         "mcp_tool_desc",
         "freeze",
         "trajectory_hijack",
+        "keepout_hijack",
+        "critical_freeze",
         "targeted_hijack",
         "object_trigger",
         "phrase_trigger",
@@ -170,13 +172,14 @@ def test_registry_includes_new_families() -> None:
         "euphemistic_reroute",
     }
     assert available_families() == [
-        "action", "authorization", "backdoor", "baseline", "injection",
+        "action", "action_space", "authorization", "backdoor", "baseline", "injection",
         "instruction", "misalignment", "optimized", "sensor_spoof", "visual",
     ]
     assert [a.name for a in resolve_attacks(["baseline"])] == ["none"]
     assert [a.name for a in resolve_attacks(["visual"])] == ["patch", "decoy_object"]
     assert [a.name for a in resolve_attacks(["injection"])] == ["scene_text", "mcp_tool_desc"]
     assert [a.name for a in resolve_attacks(["action"])] == ["freeze", "trajectory_hijack"]
+    assert [a.name for a in resolve_attacks(["action_space"])] == ["keepout_hijack", "critical_freeze"]
     assert [a.name for a in resolve_attacks(["backdoor"])] == ["object_trigger", "phrase_trigger"]
     assert [a.name for a in resolve_attacks(["authorization"])] == [
         "self_authorize_bypass", "scope_escalation"

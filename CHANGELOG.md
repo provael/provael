@@ -6,6 +6,38 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.14.0] — 2026-07-13
+
+### Added
+- **EAI04 `action_space` attack family — action-space integrity, 2nd vector.**
+  `feat(attacks): add EAI04 action-space-integrity 2nd vector (action_space) —
+  keep-out hijack of the commanded end-effector + critical-step freeze; transfer-tested
+  Wilson-95 + benign-FPR.` A **second, disjoint EAI04 vector** alongside the founding `action`
+  family (mirroring how `sensor_spoof` is a 2nd EAI02 vector beside `visual`): instead of the motion
+  channels (1-3), it attacks the **commanded end-state** on its own out-of-band channel. Two attacks
+  (`keepout_hijack`, an AttackVLA-style targeted hijack that drives the *commanded* end-effector into
+  a **monitored-standstill keep-out zone**; `critical_freeze`, a targeted FreezeVLA-style paralysis
+  at a **safety-critical step**). **Sim-only, defensive:** the attack perturbs only the observation
+  the policy receives, **never real-robot control**, and ships no real-world payload. The visible
+  instruction stays **benign** (the stub's danger channel stays 0), so the violation is attributable
+  to action-space integrity, not a jailbroken language goal (the separate EAI01 `instruction`
+  family) nor the motion-channel freeze of the founding `action` family. New
+  `src/provael/scoring/action_space.py` protocol + `src/provael/attacks/action_space.py`; wired into
+  the registry, `list-attacks`, SARIF (EAI04 ruleId, derived from the tag), and the spatial keep-out
+  OR-chain (`suites/base.py::evaluate_unsafe` gains `action_space_unsafe`, surfaced by the `reach`
+  suite). The cue uses a **disjoint stub action channel (9)** — the stub fixture width goes 9→10 — so
+  the frozen canaries (stub 47/70; reach roleplay 10/10, goal_substitution 0/10; the founding
+  `freeze` / `trajectory_hijack`, and backdoor / authorization / sensor_spoof / misalignment) stay
+  **byte-identical**. It maps to EAI04 (Action-space integrity) in the **Embodied AI Security Top 10**
+  (not OWASP), and to the EU Machinery Regulation (EU) 2023/1230 corruption-of-safety-function
+  essential requirement (applies **2027-01-20**) + ISO 10218-1:2025 monitored-stop / space-limiting
+  functions in the compliance crosswalk.
+- **Mandatory transfer-test (stub-validated).** On the deterministic CPU `reach` keep-out suite the
+  commanded end-effector is hijacked into the zone / the policy is frozen 100% [84–100%] (Wilson CI)
+  against a **0% benign-FPR control** (the `none` baseline injects no cue and stays at the origin,
+  un-frozen). Labelled `stub-scaffolding` via `provael transfer-test`. The real-model path (AttackVLA
+  / FreezeVLA × SmolVLA × LIBERO) is GPU-gated and **not run**; no cross-model claim, no "first" claim.
+
 ## [0.13.0] — 2026-07-08
 
 ### Added
