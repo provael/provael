@@ -19,6 +19,7 @@ from provael.hosted import (
     has_entitlement,
     require_entitlement,
 )
+from provael.hosted.machinery import build_machinery_annex_pack, to_machinery_annex_pack_json
 from provael.hosted.report import CONFORMITY_MAPPING, DISCLAIMERS, build_insurer_report
 from provael.runner import run
 
@@ -73,6 +74,36 @@ def test_insurer_report_is_deterministic_given_fixed_metadata() -> None:
     a = build_insurer_report(report, issued_at="2026-07-05T00:00:00Z", commit="abc")
     b = build_insurer_report(report, issued_at="2026-07-05T00:00:00Z", commit="abc")
     assert a == b
+
+
+def test_insurer_report_carries_p04_honesty_signals() -> None:
+    # D4: the exec summary now reads the headline against both intervals + the transfer tier, so an
+    # insurer can't take a stub number as real.
+    es = build_insurer_report(_report(), issued_at="2026-07-05T00:00:00Z", commit="x")[
+        "executive_summary"
+    ]
+    assert es["transfer_status"] == "stub-validated-scaffolding"
+    assert es["anytime_ci"] is not None and es["wilson_ci95"] is not None
+    assert es["matched_benign_fpr"] == 0.0
+    assert es["seeds"] == 5 and es["preliminary"] is False  # 5 seeds -> banked
+
+
+# --------------------------------------------------------------------------------------------
+# the EU Machinery Annex III evidence-pack (D3) — a pure function, gated at the server layer
+# --------------------------------------------------------------------------------------------
+
+def test_machinery_annex_pack_maps_the_cyber_ehsrs_and_is_honest() -> None:
+    pack = build_machinery_annex_pack(_report(), issued_at="2026-07-05T00:00:00Z", commit="x")
+    assert pack["format"] == "provael-machinery-annex-iii-pack/v1"
+    assert pack["applies_from"] == "2027-01-20"
+    ehsrs = {row["ehsr_id"]: row for row in pack["annex_iii_evidence"]}
+    assert set(ehsrs) == {"Annex III, 1.1.9", "Annex III, 1.2.1"}  # the two cyber EHSRs
+    assert all(row["transfer_status"] == "stub-validated-scaffolding" for row in ehsrs.values())
+    assert "attestation_statement" in pack and pack["disclaimers"] == list(DISCLAIMERS)
+    # Deterministic given fixed issuance metadata.
+    assert to_machinery_annex_pack_json(
+        _report(), issued_at="2026-07-05T00:00:00Z", commit="x"
+    ) == to_machinery_annex_pack_json(_report(), issued_at="2026-07-05T00:00:00Z", commit="x")
 
 
 # --------------------------------------------------------------------------------------------

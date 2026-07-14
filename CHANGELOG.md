@@ -61,6 +61,18 @@ All notable changes to this project are documented here. The format is based on
   seed)` `TrialRecord`s with `pending_trials` resume — a preempted GPU run resumes instead of
   re-measuring, which is what makes the ≥5-seed budget affordable on cheap spot instances.
   Crash-safe (a mid-write line is skipped, not fatal) and deterministic.
+- **E4 — CycloneDX ML-BOM export.** New `provael.mlbom` promotes the supply-chain example to a
+  first-class deterministic exporter (`provael attack/report --format mlbom`): a CycloneDX 1.6
+  ML-BOM carrying the ASR + Wilson CI + benign-FPR + transfer-status as model-card metrics, mapped
+  to EU AI Act Art. 11 / Annex IV. Ingests into OWASP Dependency-Track.
+- **D3 — EU Machinery Annex III evidence-pack (paid).** New `provael.hosted.machinery.
+  build_machinery_annex_pack` maps the run's evidence onto the two cybersecurity-relevant Annex III
+  EHSRs of Reg. (EU) 2023/1230 — **1.1.9 protection against corruption** and **1.2.1 safety &
+  reliability of control systems** — wrapping the signed attestation, carrying the run-level transfer
+  tier, ahead of 2027-01-20. Pure function; gated at the server layer (Q4 paid enterprise add-on).
+- **D4 — insurer report honesty signals.** `build_insurer_report`'s executive summary now threads
+  the P0.4/D1 signals (Wilson + anytime CI, matched-benign FPR, run-level `transfer_status`, seed
+  count + `preliminary`) so an insurer cannot read a stub number as a real-transfer measurement.
 
 ### Notes
 - CPU core stays deterministic and lean (INV-9): the new fields default to `None`/empty, so every
