@@ -69,6 +69,7 @@ from provael.leaderboard import (
     load_leaderboard,
     verify_leaderboard,
 )
+from provael.mlbom import ML_BOM_JSON, to_ml_bom_json, write_ml_bom
 from provael.oscal import OSCAL_JSON, to_oscal_json, write_oscal
 from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
 from provael.policies.registry import (
@@ -103,6 +104,7 @@ class OutputFormat(StrEnum):
     compliance = "compliance"
     scorecard = "scorecard"
     oscal = "oscal"
+    mlbom = "mlbom"
 
 
 class ExportFormat(StrEnum):
@@ -409,6 +411,10 @@ def attack(
         oscal_target = write_oscal(report, config.out / OSCAL_JSON)
         _out.print(f"Wrote [cyan]{oscal_target}[/cyan]  (OSCAL assessment-results)")
 
+    if fmt is OutputFormat.mlbom:
+        mlbom_target = write_ml_bom(report, config.out / ML_BOM_JSON)
+        _out.print(f"Wrote [cyan]{mlbom_target}[/cyan]  (CycloneDX ML-BOM)")
+
 
 @app.command()
 def reproduce(
@@ -612,6 +618,13 @@ def report(
             _out.print(f"Wrote [cyan]{out}[/cyan]  (OSCAL assessment-results)")
         else:
             print(to_oscal_json(loaded))  # machine-readable OSCAL to stdout
+        return
+    if fmt is OutputFormat.mlbom:
+        if out is not None:
+            write_ml_bom(loaded, out)
+            _out.print(f"Wrote [cyan]{out}[/cyan]  (CycloneDX ML-BOM)")
+        else:
+            print(to_ml_bom_json(loaded))  # machine-readable ML-BOM to stdout
         return
     render_summary(loaded, _out)
 

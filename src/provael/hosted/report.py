@@ -21,7 +21,7 @@ from typing import Any
 
 from provael.attest import build_statement
 from provael.compliance import to_compliance_dict
-from provael.types import RunReport
+from provael.types import MEASURED_REAL_TRANSFER, STUB_VALIDATED_SCAFFOLDING, RunReport
 
 #: The conformity mapping: each row lines a Provael artifact up against the instrument + date it
 #: informs. Dates mirror :data:`provael.attest.REGULATORY_CLOCK` (factual application dates).
@@ -80,6 +80,11 @@ def build_insurer_report(
     """
     statement = build_statement(report, issued_at=issued_at, commit=commit)
     stmt_dict: dict[str, Any] = json.loads(statement.model_dump_json())
+    transfer_status = (
+        MEASURED_REAL_TRANSFER
+        if report.policy != "stub" and report.suite != "stub"
+        else STUB_VALIDATED_SCAFFOLDING
+    )
     return {
         "format": "provael-insurer-report/v1",
         "tool_version": report.tool_version,
@@ -89,7 +94,15 @@ def build_insurer_report(
             "policy": report.policy,
             "suite": report.suite,
             "headline_asr": report.asr,
+            # P0.4 honesty: read the headline against BOTH intervals + the matched-benign control,
+            # and the run-level transfer tier — so an insurer never reads a stub number as real.
+            "wilson_ci95": list(report.ci95) if report.ci95 is not None else None,
+            "anytime_ci": list(report.anytime_ci) if report.anytime_ci is not None else None,
             "benign_fpr": report.benign_fpr,
+            "matched_benign_fpr": report.matched_benign_fpr,
+            "transfer_status": transfer_status,
+            "seeds": report.seeds,
+            "preliminary": report.preliminary,
             "attacks": report.attacks,
             "calibrated": report.calibrated,
         },
