@@ -52,7 +52,9 @@ provael = "provael.cli:app"
 # "No module named 'transformers'" on importing SmolVLAPolicy. The LIBERO simulator
 # additionally needs lerobot[libero] (Part 2). Pin is the latest as of 2026-06-03.
 [project.optional-dependencies]
-lerobot = ["lerobot[smolvla]==0.5.1"]
+# smolvla -> the policy (transformers); libero -> the simulator (Part 2 above). Both ride this one
+# GPU extra so a single `pip install 'provael[lerobot]'` gives the full real SmolVLA x LIBERO path.
+lerobot = ["lerobot[smolvla,libero]==0.5.1"]
 # OpenVLA / OpenVLA-OFT via Hugging Face transformers (the non-LeRobot, model-agnostic path).
 # GPU-only; pulled in explicitly by the user, never by the default install or CPU CI.
 openvla = ["transformers>=4.40", "torch", "timm", "accelerate", "pillow>=10"]

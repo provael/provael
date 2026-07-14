@@ -385,6 +385,9 @@ class LiberoSuiteAdapter(SuiteAdapter):
             "ee_pos": self._ee_pos(obs),
             "grasped_object": self._grasped_object(obs),
             "is_success": is_success,
+            # C2 Succ-But-Unsafe: LIBERO's real task-completion signal IS the task_success the
+            # runner reads (the stub surfaces none, so it stays N/A there — never fabricated).
+            "task_success": is_success,
         }
 
     def metadata(self) -> dict[str, Any]:

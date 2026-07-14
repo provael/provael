@@ -10,7 +10,9 @@ into a keep-out zone),
 identity / access / excessive autonomy), ``confidentiality`` (EAI09 model & data
 confidentiality: a memorized-canary leak screen — membership inference / extraction),
 ``misalignment`` (EAI06 cross-domain safety misalignment / the embodiment gap: benign
-language → unsafe embodied action), and ``optimized`` (a black-box search). The
+language → unsafe embodied action), ``optimized`` (a black-box action-directive search), and
+``optimized_patch`` (EAI02 the image-channel analogue: a query-budgeted adversarial-patch search,
+GPU-gated / inert on the image-less stub). The
 registry maps both individual attack names and family names to attacks, so
 ``--attacks instruction`` expands a whole family while ``--attacks none,patch,scene_text``
 selects specific attacks across families.
@@ -90,6 +92,12 @@ from provael.attacks.optimized import (
 from provael.attacks.optimized import (
     TargetedTrajectoryHijack,
 )
+from provael.attacks.optimized_patch import (
+    FAMILY as OPTIMIZED_PATCH_FAMILY,
+)
+from provael.attacks.optimized_patch import (
+    OptimizedPatchHijack,
+)
 from provael.attacks.sensor_spoof import (
     FAMILY as SENSOR_SPOOF_FAMILY,
 )
@@ -120,6 +128,7 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
     "keepout_hijack": KeepoutHijack,
     "critical_freeze": CriticalFreeze,
     "targeted_hijack": TargetedTrajectoryHijack,
+    "patch_hijack": OptimizedPatchHijack,
     "object_trigger": ObjectTriggerBackdoor,
     "phrase_trigger": PhraseTriggerBackdoor,
     "self_authorize_bypass": SelfAuthorizeBypass,
@@ -146,6 +155,7 @@ FAMILIES: dict[str, list[str]] = {
     CONFIDENTIALITY_FAMILY: ["membership_inference", "model_extraction"],
     MISALIGNMENT_FAMILY: ["benign_urgency_override", "euphemistic_reroute"],
     OPTIMIZED_FAMILY: ["targeted_hijack"],
+    OPTIMIZED_PATCH_FAMILY: ["patch_hijack"],
 }
 
 

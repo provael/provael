@@ -38,6 +38,7 @@ from __future__ import annotations
 import math
 import random
 from collections.abc import Callable, Sequence
+from typing import Protocol, runtime_checkable
 
 from provael.attacks._payload import append_channel
 from provael.attacks.base import Attack
@@ -66,6 +67,23 @@ MOTION_SLICE: tuple[int, int] = (1, 4)
 
 #: An oracle: given ``(instruction, observation)`` return the policy's action. Wired by the runner.
 Oracle = Callable[[str, Observation], Action]
+
+
+@runtime_checkable
+class OracleAttack(Protocol):
+    """Structural type for attacks the runner wires a policy-query oracle into.
+
+    Any attack exposing ``query_budget`` + :meth:`attach_oracle` (this family's
+    :class:`TargetedTrajectoryHijack` and the image-channel
+    :class:`~provael.attacks.optimized_patch.OptimizedPatchHijack`) is covered by the runner's
+    ``_configure_optimized`` step without that step needing to import every concrete class.
+    """
+
+    query_budget: int
+
+    def attach_oracle(
+        self, query: Oracle, reset: Callable[[], None] | None = None
+    ) -> None: ...
 
 
 def _clip_magnitude(vec: Sequence[float], cap: float) -> tuple[float, float, float]:
@@ -196,5 +214,6 @@ __all__ = [
     "DEFAULT_MAX_MAGNITUDE",
     "MOTION_SLICE",
     "Oracle",
+    "OracleAttack",
     "TargetedTrajectoryHijack",
 ]
