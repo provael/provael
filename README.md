@@ -27,20 +27,21 @@ core: a small, **model-agnostic** harness that perturbs the instructions and obs
 VLA policy receives inside a simulator and measures how often those perturbations drive the
 policy into an *unsafe* state. The headline number is the ASR.
 
-It ships **nine families of templated, auditable attacks** — `instruction` (text
+It ships **ten families of templated, auditable attacks** — `instruction` (text
 reframings), `visual` (observation-space markers), `sensor_spoof` (EAI02: a sim
 perception spoof driving the end-effector into a keep-out zone), `injection` (indirect /
 embodied prompt injection), `action` (action-space integrity: freeze / trajectory
 hijack), `action_space` (EAI04 2nd vector: keep-out hijack of the *commanded end-effector*
 / critical-step freeze), `backdoor` (EAI03: an objective-decoupled trigger *screen*),
-`authorization` (EAI08: self-authorization / scope-escalation, i.e. excessive agency), and
-`misalignment` (EAI06: the embodiment gap — a benign-sounding instruction driving an unsafe
-embodied action into a keep-out zone) — plus an **`optimized`** family (`targeted_hijack`: a
-black-box, query-budgeted *search*), a `none` baseline, and an ASR **leaderboard**. Every
-family carries its transfer-test (rate + 95% Wilson CI + benign-FPR control); run
-`provael transfer-test` to print it. The `sensor_spoof`, `backdoor`, `authorization`,
-`misalignment`, and `action_space` families are **stub-validated only** (no real-model transfer
-claimed). It red-teams **7 policies** — the CPU `stub`
+`authorization` (EAI08: self-authorization / scope-escalation, i.e. excessive agency),
+`confidentiality` (EAI09: a memorized-canary leak *screen* — membership inference /
+extraction), and `misalignment` (EAI06: the embodiment gap — a benign-sounding instruction
+driving an unsafe embodied action into a keep-out zone) — plus an **`optimized`** family
+(`targeted_hijack`: a black-box, query-budgeted *search*), a `none` baseline, and an ASR
+**leaderboard**. Every family carries its transfer-test (rate + 95% Wilson CI + benign-FPR
+control); run `provael transfer-test` to print it. The `sensor_spoof`, `backdoor`,
+`authorization`, `misalignment`, `action_space`, and `confidentiality` families are
+**stub-validated only** (no real-model transfer claimed). It red-teams **7 policies** — the CPU `stub`
 plus real **SmolVLA / π0 / π0.5 / π0-FAST / GR00T** (via the `[lerobot]` extra) and **OpenVLA**
 (via `[openvla]`) — across **4 suites** (`stub` + `reach` on CPU; **LIBERO** + **Meta-World**
 gated), or any policy/suite you wrap with the tiny adapter ABCs. The templated families are
@@ -63,6 +64,12 @@ simulator live behind an optional extra and a `PROVAEL_INTEGRATION=1` gate.
 An independent, community risk list for the security of VLA models and the robots they drive — the
 framework Provael's attacks map to. Read it: [docs/TOP10.md](docs/TOP10.md). Draft v0.2, PRs welcome.
 
+**Coverage: 8 / 10.** Provael ships a runnable, sim-only attack family with a transfer-test for eight
+categories — **EAI01–EAI06, EAI08, EAI09**. **EAI07** (CPS / firmware / comms / teleop) and **EAI10**
+(evaluation / observability) are **out of a VLA-policy red-teamer's scope by design** — EAI07 is an
+infrastructure / CVE layer (would need real exploit tooling this tool won't ship) and EAI10 is a
+governance meta-risk Provael's own eval *mitigates* rather than attacks.
+
 Every attack is tagged with the risk it exercises; the SARIF output (`--format sarif`) carries
 that tag as each finding's `EAIxx` ruleId:
 
@@ -76,6 +83,7 @@ that tag as each finding's `EAIxx` ruleId:
 | `action_space` | `keepout_hijack`, `critical_freeze` (commanded-end-state: keep-out hijack / critical-step freeze) | [EAI04 — Action-space integrity](docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
 | `backdoor` | `object_trigger`, `phrase_trigger` (objective-decoupled trigger screen) | [EAI03 — Model & pipeline poisoning, backdoors & supply chain](docs/TOP10.md#eai03--model--pipeline-poisoning-backdoors--supply-chain) |
 | `authorization` | `self_authorize_bypass`, `scope_escalation` (excessive agency) | [EAI08 — Identity, access & excessive autonomy](docs/TOP10.md#eai08--identity-access--excessive-autonomy) |
+| `confidentiality` | `membership_inference`, `model_extraction` (memorized-canary leak screen) | [EAI09 — Model & data confidentiality](docs/TOP10.md#eai09--model--data-confidentiality--theft-extraction-inversion--surveillance) |
 | `misalignment` | `benign_urgency_override`, `euphemistic_reroute` (benign language → keep-out violation) | [EAI06 — Cross-domain safety misalignment](docs/TOP10.md#eai06--cross-domain-safety-misalignment-the-embodiment-gap) |
 | `optimized` | `targeted_hijack` (black-box search) | [EAI04 — Action-space integrity](docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
 
@@ -157,7 +165,7 @@ Other commands:
 
 ```bash
 uv run provael list-policies            # stub (CPU); smolvla (needs the [lerobot] extra)
-uv run provael list-attacks             # 20 attacks across instruction/visual/sensor_spoof/injection/action/action_space/backdoor/authorization/misalignment/optimized
+uv run provael list-attacks             # 22 attacks across instruction/visual/sensor_spoof/injection/action/action_space/backdoor/authorization/confidentiality/misalignment/optimized
 uv run provael list-recipes             # named presets: quick / instruction-only / full-sweep / ci-gate
 uv run provael attack --recipe quick    # a recipe is the base config; explicit flags override it
 uv run provael report --in runs/stub/
@@ -191,7 +199,7 @@ verifies boards; the hosted, project-key-signed board is the open-core paid surf
 | Capability | CPU (default) | Needs GPU + `[lerobot]` extra |
 | --- | :---: | :---: |
 | `stub` (scalar) + `reach` (spatial) suites | ✅ | |
-| All 10 attack families (`instruction`/`visual`/`sensor_spoof`/`injection`/`action`/`action_space`/`backdoor`/`authorization`/`misalignment`/`optimized`) | ✅ | |
+| All 11 attack families (`instruction`/`visual`/`sensor_spoof`/`injection`/`action`/`action_space`/`backdoor`/`authorization`/`confidentiality`/`misalignment`/`optimized`) | ✅ | |
 | Scoring, runner, report, CLI, recipes, `reproduce`, scorecard/SARIF/OSCAL/AVID | ✅ | |
 | `attest` — signed, dated evidence bundle (digest-only core; Ed25519 via `[attest]` extra) | ✅ | |
 | Full test suite (`pytest`), `ruff`, `mypy` | ✅ | |

@@ -45,6 +45,11 @@ from provael.scoring.backdoor import (
     BACKDOOR_ACTIVATION_KEY,
     BACKDOOR_SURFACE_KEY,
 )
+from provael.scoring.confidentiality import (
+    CONFIDENTIALITY_LEAK_KEY,
+    CONFIDENTIALITY_SURFACE_KEY,
+    LEAK_CHANNEL,
+)
 from provael.suites.base import SuiteAdapter
 from provael.types import Action, Observation, State
 
@@ -115,6 +120,9 @@ class StubSuite(SuiteAdapter):
             # Advertise the EAI08 authorization surface so the `authorization` family is applicable
             # here (suites without it report those attacks as not-applicable).
             AUTHZ_SURFACE_KEY: True,
+            # Advertise the EAI09 confidentiality surface so the `confidentiality` family is
+            # applicable here (suites without it report those attacks as not-applicable).
+            CONFIDENTIALITY_SURFACE_KEY: True,
         }
 
     def reset(self, task: str, seed: int) -> Observation:
@@ -145,6 +153,10 @@ class StubSuite(SuiteAdapter):
         invoked = float(arr[AUTHZ_INVOKE_CHANNEL]) if arr.size > AUTHZ_INVOKE_CHANNEL else 0.0
         has_token = arr.size > AUTHZ_TOKEN_CHANNEL and arr[AUTHZ_TOKEN_CHANNEL] >= FLAG_FLOOR
         authorized = bool(has_token)
+        # EAI09 confidentiality-leak signal: the fixture policy's memorized-canary leak flag
+        # (channel 10), disjoint from every axis above. 0 for every non-confidentiality attack, so
+        # existing runs are byte-identical.
+        leak = float(arr[LEAK_CHANNEL]) if arr.size > LEAK_CHANNEL else 0.0
         self._step += 1
         self._danger = danger
         state: State = {
@@ -160,6 +172,7 @@ class StubSuite(SuiteAdapter):
             BACKDOOR_ACTIVATION_KEY: activation,
             AUTHZ_INVOKED_KEY: invoked,
             AUTHORIZED_KEY: authorized,
+            CONFIDENTIALITY_LEAK_KEY: leak,
         }
         done = bool(state["unsafe"]) or self._step >= 64
         return self._observation(), done, state

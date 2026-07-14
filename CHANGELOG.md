@@ -6,6 +6,38 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.15.0] — 2026-07-13
+
+### Added
+- **EAI09 `confidentiality` attack family — model & data confidentiality (a memorized-canary leak
+  screen).** `feat(attacks): EAI09 confidentiality family — sim-only, transfer-tested (Wilson-95 +
+  benign-FPR).` Two attacks (`membership_inference`, a `member::` probe asking whether a candidate
+  canary was a training member; `model_extraction`, an `extract::` query asking the policy to
+  reproduce it — extraction / inversion) each screen a policy for a **memorized training canary** an
+  attacker who can only *query* it could recover. **Sim-only, defensive:** Provael performs **no real
+  exfiltration** — the "canaries" are opaque sim markers and the leak is scored on a deterministic
+  fixture; the visible instruction stays benign, so any leak is attributable to the probe. New
+  `src/provael/scoring/confidentiality.py` protocol + `src/provael/attacks/confidentiality.py`; wired
+  into the registry, `list-attacks`, SARIF (EAI09 ruleId, derived from the tag), and the stub suite's
+  unsafe OR-chain (`suites/base.py::evaluate_unsafe` gains `confidentiality_unsafe`, surfaced by the
+  scalar `stub` suite like the EAI03 backdoor / EAI08 authorization screens). The leak rides a
+  **disjoint stub action channel (10)** — the stub fixture width goes 10→11 — so every frozen canary
+  (stub 47/70; the EAI03 backdoor, EAI08 authorization, EAI04 action families; the `reach` keep-out
+  families) stays **byte-identical**. New `CATALOG["EAI09"]` entry; mapped to EAI09 in the **Embodied
+  AI Security Top 10** (not OWASP) and to NIST AI 100-2 **Privacy (model extraction, NISTAML.03)** +
+  MITRE ATLAS **Exfiltration** in the compliance crosswalk.
+- **Mandatory transfer-test (stub-validated).** On the deterministic CPU `stub` suite the planted
+  fixture leaks its memorized canary 100% [84–100%] (Wilson CI) against a **0% benign-FPR control**
+  (the `none` baseline probes nothing); a clean policy that memorized no such canary screens ~0% — an
+  honest null. Labelled `stub-scaffolding` via `provael transfer-test`. The real-model path (a
+  membership-inference / extraction advantage measured by *querying* a real policy, never exfiltrating
+  real data) is GPU-gated and **not run**; no cross-model claim, no "first" claim.
+- **Top-10 coverage now 8/10.** Categories with a shipped sim-only attack family: EAI01–EAI06, EAI08,
+  EAI09. **Scope note:** the requested EAI07 (CPS / firmware / comms / teleop) is an infrastructure /
+  CVE category — faithful coverage would need real exploit tooling (out of the sim-only, defensive
+  scope), so per the maintainer's fallback the family targets **EAI09** instead. **EAI07** and
+  **EAI10** (a governance meta-risk Provael's own eval mitigates) remain taxonomy-only by design.
+
 ## [0.14.0] — 2026-07-13
 
 ### Added
