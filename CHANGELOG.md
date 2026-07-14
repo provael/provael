@@ -73,12 +73,36 @@ All notable changes to this project are documented here. The format is based on
 - **D4 — insurer report honesty signals.** `build_insurer_report`'s executive summary now threads
   the P0.4/D1 signals (Wilson + anytime CI, matched-benign FPR, run-level `transfer_status`, seed
   count + `preliminary`) so an insurer cannot read a stub number as a real-transfer measurement.
+- **P0.3b — `optimized_patch` family (`patch_hijack`), the GPU-ready optimised adversarial-patch
+  attack.** A new attack that searches over adversarial **image patches** on the real camera channel
+  (`IMAGE_KEY` → the adapter's `_apply_image_override`) — the perception-space analogue of
+  `targeted_hijack`, scoring each candidate by the policy's *emitted motion* via the runner's oracle
+  (broadened from a concrete-class check to the structural `OracleAttack` protocol). It maps to
+  **EAI02**, records `attacker_access="black-box-query"` + `action_head_class="flow"` (honest: a query
+  search, not the white-box-gradient FreezeVLA it credits), lives in its **own family** so every
+  existing family expansion stays byte-identical, and is **applicable-gated on a real image** — so it
+  is inert on the image-less stub and the 47/70 canary is untouched. Reimplemented from scratch
+  (INV-8; FreezeVLA is MIT but no code is ported). The gradient/search only runs on GPU; no transfer
+  is claimed until the gated path runs.
+- **P0.1 `scripts/clean_baseline.py` + P0.2 `tests/test_libero_realpath.py` — the GPU-ready
+  denominator and predicate proof.** `clean_baseline.py` runs the benign `none` control through the
+  real SmolVLA×LIBERO path and emits a machine-readable **pass/fail false-positive gate** at the Q2
+  tolerance (X = 5 pp), recording GPU-hours for the ROADMAP §5 budget. `test_libero_realpath.py`
+  proves the shipped `evaluate_unsafe` predicate has teeth: a CPU test (no sim) flags an in-zone
+  end-effector and clears an out-of-zone one, plus gated integration tests that assert a real benign
+  rollout never trips and a real in-zone end-effector is flagged. Both are gated/skip cleanly on CPU.
+- **`[lerobot]` extra now pulls the LIBERO simulator** (`lerobot[smolvla,libero]==0.5.1`) and the
+  LIBERO suite surfaces its real task-completion as `task_success`, so the C2 Succ-But-Unsafe metric
+  is live on the real path (still honestly N/A on the stub). A **budget-capped nightly GPU workflow**
+  (`.github/workflows/gpu-nightly.yml`, OFF unless `vars.ENABLE_GPU_NIGHTLY == 'true'`) runs the real
+  path via Modal without ever touching the CPU `ci.yml`.
 
 ### Notes
-- CPU core stays deterministic and lean (INV-9): the new fields default to `None`/empty, so every
-  frozen canary (stub 47/70; the EAI03/EAI04/EAI08/EAI09 screens; the `reach` keep-out families)
-  stays **byte-identical**. No GPU, model, or network is touched. No paper ASR is a Provael number
-  (INV-2); nothing is labelled "first" (INV-5).
+- CPU core stays deterministic and lean (INV-9): the new fields default to `None`/empty and the new
+  `patch_hijack` is inert off the real image path, so every frozen canary (stub 47/70; the
+  EAI03/EAI04/EAI08/EAI09 screens; the `reach` keep-out families) stays **byte-identical**. The GPU
+  path rides the `[lerobot]` extra and stays behind `PROVAEL_INTEGRATION=1`; CPU CI touches no GPU,
+  model, or network. No paper ASR is a Provael number (INV-2); nothing is labelled "first" (INV-5).
 
 ## [0.15.0] — 2026-07-13
 

@@ -48,6 +48,22 @@ policy. We never train, fine-tune, or poison weights. (Our `StubPolicy`'s trigge
 lexicon is a *test fixture* that imitates a vulnerability so the CPU pipeline yields a
 measurable ASR — it is not a model and not a backdoor.)
 
+### FreezeVLA — *Action-Freezing Attacks against Vision-Language-Action Models*
+Wong, et al. (2025). arXiv:[2509.19870](https://arxiv.org/abs/2509.19870) · [code](https://github.com/xinwong/FreezeVLA) (MIT)
+
+An **optimised, white-box** visual attack: a min-max bi-level optimisation crafts an adversarial
+image that makes the VLA *freeze* (emit null/stalled actions), an availability failure, at a reported
+~76% average success rate.
+
+**How we differ:** our `optimized_patch` family (`patch_hijack`) is the **inference-time, black-box
+query** analogue — it searches over patch placements on the real camera frame, scoring each by the
+policy's *emitted motion* via an oracle, and records `attacker_access="black-box-query"` (never
+claiming the white-box-gradient access it does not use). We **reimplement the idea, porting no code**;
+FreezeVLA's MIT license would permit a port with attribution, but a from-scratch predicate keeps the
+core dependency-free. A true white-box-gradient variant and an availability/freeze success predicate
+are noted as GPU/P1 follow-ups (see ROADMAP P0.3b). Like our other families, the transfer number is
+GPU-gated and unclaimed until the `PROVAEL_INTEGRATION=1` path is run.
+
 ### SafeVLA — *Towards Safety Alignment of Vision-Language-Action Models via Constrained Learning*
 (2025). arXiv:[2503.03480](https://arxiv.org/abs/2503.03480) · [safevla.github.io](https://safevla.github.io/)
 

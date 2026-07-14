@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from provael import __version__
 from provael.attacks.base import Attack
-from provael.attacks.optimized import TargetedTrajectoryHijack
+from provael.attacks.optimized import OracleAttack
 from provael.attacks.registry import resolve_attacks
 from provael.calibration import Calibration, anytime_ci, wilson_ci
 from provael.config import RunConfig
@@ -61,7 +61,9 @@ def _configure_optimized(
         return policy.act(observation, instruction)
 
     for attack in attacks:
-        if isinstance(attack, TargetedTrajectoryHijack):
+        # Any oracle-driven attack (the action-directive `targeted_hijack` and the image-channel
+        # `patch_hijack`) is covered structurally via the OracleAttack protocol.
+        if isinstance(attack, OracleAttack):
             if query_budget is not None:
                 attack.query_budget = query_budget
             attack.attach_oracle(_query, policy.reset)

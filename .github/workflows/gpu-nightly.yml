@@ -1,0 +1,60 @@
+# Nightly real-model GPU red-team (SmolVLA x LIBERO) via Modal — budget-capped, OFF by default.
+#
+# This runs the GATED integration path on a real GPU on a schedule, so the repo's honest transfer
+# numbers stay fresh without a maintainer running anything by hand. It is deliberately isolated from
+# ci.yml: the CPU core CI never installs the [lerobot] extra, never touches a GPU, and stays free and
+# green regardless of this file.
+#
+# COST SAFETY (handoff to enable):
+#   * Disabled unless the repo variable `ENABLE_GPU_NIGHTLY` is set to "true" (Settings -> Variables).
+#     Until then every run no-ops in seconds, so a fork or an unconfigured repo can never spend.
+#   * The GPU work runs inside Modal (examples/gpu-ci/modal_provael_gpu.py), which caps each run at
+#     one L4 for <=1h (~$0.02/run) and shuts the container down — the budget cap lives with the job.
+#   * Requires the MODAL_TOKEN_ID / MODAL_TOKEN_SECRET secrets; without them the job cannot bill.
+name: GPU red-team (nightly, Modal)
+
+on:
+  schedule:
+    - cron: "17 4 * * *"  # 04:17 UTC daily (off-peak, off the :00 fleet spike)
+  workflow_dispatch: {}     # allow a manual, maintainer-triggered run
+
+# One nightly at a time; a new run supersedes an in-flight one so overlaps can't double-spend.
+concurrency:
+  group: gpu-nightly
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gpu-redteam:
+    # Opt-in only: no variable set -> no run -> no spend.
+    if: ${{ vars.ENABLE_GPU_NIGHTLY == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the Modal client
+        run: pip install "modal>=0.64"
+
+      - name: Run the real SmolVLA x LIBERO red-team on a Modal GPU
+        run: modal run examples/gpu-ci/modal_provael_gpu.py | tee gpu-nightly-report.txt
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+
+      - name: Upload the run artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpu-nightly-report
+          path: gpu-nightly-report.txt
+          retention-days: 30
+      # HANDOFF: to emit a *signed* attestation artifact, have the Modal entrypoint run
+      # `provael attest` on the produced report and return its JSON, then persist it here. The
+      # signing key belongs in Modal secrets (never in this repo). See ROADMAP §5 / P0.5b.
