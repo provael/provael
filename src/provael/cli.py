@@ -253,6 +253,18 @@ def attack(
         str | None,
         typer.Option("--unnorm-key", help="Action-unnormalization stats id (e.g. OpenVLA)."),
     ] = None,
+    accelerator: Annotated[
+        str | None,
+        typer.Option(
+            "--accelerator",
+            help="Execution device: 'cpu' | 'cuda' | 'mps'. Recorded into the report (D6). "
+            "'tpu' is an explicit NotImplementedError slot (see ROADMAP §8).",
+        ),
+    ] = None,
+    precision: Annotated[
+        str | None,
+        typer.Option("--precision", help="Compute-precision hint (e.g. 'fp32', 'bf16'), recorded."),
+    ] = None,
     out: Annotated[Path, typer.Option(help="Output directory for reports.")] = Path("runs/stub"),
     fmt: Annotated[
         OutputFormat,
@@ -332,6 +344,10 @@ def attack(
         overrides["rename_map"] = rename
     if _explicit("unnorm_key"):
         overrides["unnorm_key"] = unnorm_key
+    if _explicit("accelerator"):
+        overrides["accelerator"] = accelerator
+    if _explicit("precision"):
+        overrides["precision"] = precision
     if _explicit("query_budget"):
         overrides["query_budget"] = query_budget
     if _explicit("out"):
@@ -341,6 +357,10 @@ def attack(
         config = RunConfig.model_validate({**base, **overrides})
     except ValidationError as exc:
         _fail(f"invalid configuration: {exc.errors()[0]['msg']}")
+        return
+    except NotImplementedError as exc:
+        # e.g. --accelerator tpu — the D5/§8 reserved slot surfaces its decision text cleanly.
+        _fail(str(exc))
         return
 
     calibrations = None

@@ -50,10 +50,45 @@ class RunConfig(BaseModel):
     out: Path = Field(
         default_factory=lambda: Path("runs/stub"), description="Output directory for reports."
     )
+    accelerator: str | None = Field(
+        None,
+        description="D6: explicit execution device — 'cpu' | 'cuda' | 'mps'. None lets the policy "
+        "choose. 'tpu' is a reserved-but-unimplemented slot (ROADMAP §8 / D5).",
+    )
+    precision: str | None = Field(
+        None,
+        description="D6: compute-precision hint (e.g. 'fp32', 'bf16', 'fp16'); None lets the "
+        "policy choose. Recorded into the report so a result says at what precision it ran.",
+    )
 
     @field_validator("attacks")
     @classmethod
     def _attacks_non_empty(cls, v: list[str]) -> list[str]:
         if not v:
             raise ValueError("at least one attack (or attack family) must be specified")
+        return v
+
+    @field_validator("accelerator")
+    @classmethod
+    def _accelerator_supported(cls, v: str | None) -> str | None:
+        """Gate the device slot: known devices pass, 'tpu' raises NotImplementedError (D5/§8).
+
+        Raising NotImplementedError (not ValueError) is deliberate — pydantic lets it propagate
+        unchanged, so ``accelerator='tpu'`` surfaces the roadmap decision verbatim rather than a
+        generic validation error. See ROADMAP §8 for the (both-required) revisit trigger.
+        """
+        if v is None:
+            return v
+        if v == "tpu":
+            raise NotImplementedError(
+                "accelerator='tpu' is a reserved-but-unimplemented slot (ROADMAP §8 / D5). "
+                "Revisit trigger: TorchTPU GA AND third-party PyTorch VLA-class inference parity. "
+                "Every current target ships a PyTorch cpu/cuda/mps path — use one."
+            )
+        allowed = {"cpu", "cuda", "mps"}
+        if v not in allowed:
+            raise ValueError(
+                f"unsupported accelerator {v!r}; expected one of {sorted(allowed)} "
+                "(or 'tpu', which is an explicit NotImplementedError slot)"
+            )
         return v

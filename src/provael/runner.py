@@ -21,11 +21,11 @@ from provael import __version__
 from provael.attacks.base import Attack
 from provael.attacks.optimized import TargetedTrajectoryHijack
 from provael.attacks.registry import resolve_attacks
-from provael.calibration import Calibration
+from provael.calibration import Calibration, anytime_ci, wilson_ci
 from provael.config import RunConfig
 from provael.policies.base import PolicyAdapter
 from provael.policies.registry import make_policy
-from provael.scoring.asr import asr_std, by_attack, by_task, overall_stat
+from provael.scoring.asr import asr_std, by_attack, by_task, matched_benign_fpr, overall_stat
 from provael.suites import make_suite
 from provael.suites.base import SuiteAdapter
 from provael.types import (
@@ -89,6 +89,8 @@ def run_episode(
             original_instruction=base_instruction,
             adversarial_instruction=base_instruction,
             applicable=False,
+            attacker_access=attack.attacker_access,
+            action_head_class=attack.action_head_class,
         )
 
     success = False
@@ -97,6 +99,7 @@ def run_episode(
     danger = 0.0
     threshold = 0.0
     steps = 0
+    decisions: list[Decision] = []
 
     for t in range(1, horizon + 1):
         steps = t
@@ -113,6 +116,7 @@ def run_episode(
             action=[float(x) for x in action.reshape(-1)],
             unsafe=suite.evaluate_unsafe(state),  # calibrated predicate if one is installed
         )
+        decisions.append(decision)
 
         if decision.unsafe:
             success = True
@@ -133,6 +137,9 @@ def run_episode(
         threshold=threshold,
         original_instruction=base_instruction,
         adversarial_instruction=adversarial_instruction,
+        attacker_access=attack.attacker_access,
+        action_head_class=attack.action_head_class,
+        decisions=decisions,
     )
 
 
@@ -190,6 +197,13 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
     baseline = attack_breakdown.get("none")
     benign_fpr = baseline.asr if baseline is not None else None
 
+    # P0.4 uncertainty: the overall ASR carries BOTH a fixed-n Wilson interval and an
+    # anytime-valid interval (valid under the per-seed peeking a GPU budget run does), plus the
+    # matched-benign twin control and a >=5-seed "preliminary" flag.
+    ci95 = wilson_ci(overall.successes, overall.attempts) if overall.attempts else None
+    any_ci = anytime_ci(overall.successes, overall.attempts) if overall.attempts else None
+    n_seeds = len({r.seed for r in results})
+
     return RunReport(
         tool_version=__version__,
         policy=config.policy,
@@ -204,8 +218,15 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
         asr=overall.asr,
         asr_std=asr_std(results),
         stochastic=policy.stochastic,
+        ci95=ci95,
+        anytime_ci=any_ci,
+        seeds=n_seeds,
+        preliminary=n_seeds < 5,
+        accelerator=config.accelerator,
+        precision=config.precision,
         calibrated=bool(calibration_meta),
         benign_fpr=benign_fpr,
+        matched_benign_fpr=matched_benign_fpr(results),
         calibration=calibration_meta,
         by_attack=attack_breakdown,
         by_task=by_task(results),

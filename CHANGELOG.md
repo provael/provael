@@ -6,6 +6,37 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.16.0] — 2026-07-15
+
+### Added
+- **P0.4 — honest reporting for a real-transfer number.** Every run now carries, on the overall ASR,
+  **both** a fixed-n 95% Wilson CI (`RunReport.ci95`) **and** an **anytime-valid CI**
+  (`RunReport.anytime_ci`) — a Robbins-style **Beta-mixture confidence sequence** (`calibration.
+  anytime_ci`, stdlib `math.lgamma`, no SciPy) that stays valid under the seed-by-seed peeking a
+  budget-capped GPU job does, where a single-n Wilson interval would not. Plus a **matched-benign
+  FPR** (`scoring.asr.matched_benign_fpr`): the benign `none` twin flag-rate over exactly the
+  `(task, seed)` cells an attack touched, removing the composition confounds the marginal
+  `benign_fpr` can hide. Runs record their distinct **seed count** and a **`preliminary`** flag
+  (`<5` seeds → indicative, not banked; LIBERO shows a ~13.7 pp cross-seed spread). A **per-episode
+  log** (`AttackResult.decisions`, one `Decision` per executed step) now ships in `report.json`; it
+  is bound by the same SHA-256 the attestation subject already records (no new hash). `report.md`
+  surfaces all of the above.
+- **INV-4 — threat-model metadata on every attack.** `Attack` (and each `AttackResult`) gains
+  `attacker_access` (`white-box-gradient` | `black-box-query` | `in-scene-physical`) and
+  `action_head_class` (`token` | `flow`), defaulting to `None` where a stub family makes no real
+  claim — so no freeze/token attack is silently assumed to transfer to a flow-matching head (D3).
+- **D6 — explicit `accelerator` / `precision`.** `RunConfig` gains both fields (`cpu` | `cuda` |
+  `mps`; **`tpu` → `NotImplementedError`** pointing at ROADMAP §8/D5, the reserved-but-unimplemented
+  slot). Threaded into `RunReport`, the `Calibration` provenance, and the attestation statement so a
+  result records **where** and **at what precision** it ran. New `--accelerator` / `--precision` CLI
+  flags on `provael attack`.
+
+### Notes
+- CPU core stays deterministic and lean (INV-9): the new fields default to `None`/empty, so every
+  frozen canary (stub 47/70; the EAI03/EAI04/EAI08/EAI09 screens; the `reach` keep-out families)
+  stays **byte-identical**. No GPU, model, or network is touched. No paper ASR is a Provael number
+  (INV-2); nothing is labelled "first" (INV-5).
+
 ## [0.15.0] — 2026-07-13
 
 ### Added
