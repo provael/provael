@@ -98,3 +98,13 @@ def test_eai_help_uris_point_at_top10_anchors() -> None:
     for eai_id, risk in CATALOG.items():
         assert risk.help_uri.endswith(f"docs/TOP10.md#{risk.anchor}")
         assert risk.anchor.startswith(eai_id.lower())
+
+
+def test_every_catalog_entry_carries_a_structured_atlas_mapping() -> None:
+    # D5: the ATLAS mapping is structured data on every risk (promoted from the prose table),
+    # phrased as a tactic -> technique and never as an invented AML.TXXXX id.
+    for risk in CATALOG.values():
+        assert risk.atlas_techniques  # non-empty tuple
+        for technique in risk.atlas_techniques:
+            assert isinstance(technique, str) and "→" in technique
+            assert "AML.T" not in technique  # descriptive phrasing only, no fabricated ids

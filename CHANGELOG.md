@@ -30,6 +30,23 @@ All notable changes to this project are documented here. The format is based on
   slot). Threaded into `RunReport`, the `Calibration` provenance, and the attestation statement so a
   result records **where** and **at what precision** it ran. New `--accelerator` / `--precision` CLI
   flags on `provael attack`.
+- **D1 — transfer-aware compliance tier.** The signed attestation's honesty label
+  (`measured-real-transfer` / `stub-validated-scaffolding`) is now threaded as a **run-level
+  `transfer_status`** field on the compliance `EvidenceResult` and as an OSCAL `transfer-status`
+  prop on the overall finding, so an auditor cannot misread stub scaffolding as conformity-relevant.
+  Both vocabularies are promoted to shared constants in `types.py` (INV-3: one source, extended not
+  bypassed); `attest.py` now references them. The per-family nuance (e.g. the optimized family) stays
+  in the attestation's per-attack `transfer` list — the run-level summary does not override it.
+- **D2 — standards rows.** Compliance crosswalk gains **EU CRA** (Reg. (EU) 2024/2847), **ISO/IEC
+  TR 5469:2024** (AI functional safety), **ISO/IEC 42001:2023** (AI management system), and **ISO/IEC
+  23894:2023** (AI risk management) requirement rows, each scope-flagged *indicative*. A **CRA
+  regulatory-clock** entry is added to the attestation (main obligations 2027-12-11; reporting
+  2026-09-11 — dates verified against OJ 2024/2847). Ruleset bumped to `provael-attest-ruleset/2`.
+- **D5 — ATLAS mapping promoted to structured data (INV-6).** Each `provael.eai.CATALOG` entry
+  gains an `atlas_techniques` tuple (descriptive tactic→technique phrasing, no fabricated
+  `AML.TXXXX` ids, `(proposed)` where ATLAS's embodied coverage is thin), surfaced into SARIF rule
+  `properties.atlasTechniques`. `docs/standards/atlas-case-study.md` extended to all eight covered
+  categories as the human-readable mirror. Routes external validation through MITRE ATLAS.
 
 ### Notes
 - CPU core stays deterministic and lean (INV-9): the new fields default to `None`/empty, so every

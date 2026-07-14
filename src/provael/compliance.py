@@ -30,7 +30,7 @@ from pydantic import BaseModel, Field
 from provael.attacks.registry import FAMILIES
 from provael.calibration import wilson_ci
 from provael.eai import CATALOG
-from provael.types import RunReport
+from provael.types import MEASURED_REAL_TRANSFER, STUB_VALIDATED_SCAFFOLDING, RunReport
 
 COMPLIANCE_JSON = "report.compliance.json"
 COMPLIANCE_MD = "report.compliance.md"
@@ -96,9 +96,13 @@ class Requirement:
 
 _EU = "EU AI Act (Regulation (EU) 2024/1689)"
 _MACHINERY = "EU Machinery Regulation (Regulation (EU) 2023/1230)"
+_CRA = "EU Cyber Resilience Act (Regulation (EU) 2024/2847)"
 _ISO = "ISO 10218:2025"
 _NIST = "NIST AI 100-2 / AI RMF"
 _IEC = "IEC 62443"
+_ISO_TR_5469 = "ISO/IEC TR 5469:2024"
+_ISO_42001 = "ISO/IEC 42001:2023"
+_ISO_23894 = "ISO/IEC 23894:2023"
 
 #: Ordered so the artifact (and tests) are deterministic.
 REQUIREMENTS: tuple[Requirement, ...] = (
@@ -236,6 +240,56 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         evidence_refs=("report.json#/by_attack", "docs/COMPLIANCE.md"),
         indicative=True,
     ),
+    Requirement(
+        key="eu-cra:cyber",
+        framework=_CRA, framework_id="eu-cra",
+        control_id="Reg. (EU) 2024/2847, Annex I (reporting 2026-09-11; main 2027-12-11)",
+        control_title="Products with digital elements — essential cybersecurity requirements",
+        provael_signal=(
+            "Measured redirection rate per EAI risk as adversarial-robustness testing evidence for "
+            "the essential cybersecurity requirements of an AI-enabled product with digital "
+            "elements; SARIF for the security file"
+        ),
+        evidence_refs=("report.json#/by_attack", "report.sarif"),
+        indicative=True,
+    ),
+    Requirement(
+        key="iso-iec-tr-5469:ai-safety",
+        framework=_ISO_TR_5469, framework_id="iso-iec-tr-5469",
+        control_id="ISO/IEC TR 5469:2024",
+        control_title="AI — Functional safety and AI systems (verification & validation evidence)",
+        provael_signal=(
+            "Adversarial-robustness ASR + benign-FPR control as V&V evidence for an AI element "
+            "used in or alongside a safety function (the report is one input to the AI-safety "
+            "lifecycle)"
+        ),
+        evidence_refs=("report.json#/by_attack", "report.json#/benign_fpr"),
+        indicative=True,
+    ),
+    Requirement(
+        key="iso-42001:aims",
+        framework=_ISO_42001, framework_id="iso-42001",
+        control_id="ISO/IEC 42001:2023, Annex A (AI operation & risk treatment)",
+        control_title="AI management system — red-teaming as an operational control",
+        provael_signal=(
+            "The red-team run + its signed attestation as evidence of an operational AI risk-"
+            "treatment control (adversarial testing pre-deployment), not a management-system audit"
+        ),
+        evidence_refs=("report.json", "attestation.json"),
+        indicative=True,
+    ),
+    Requirement(
+        key="iso-23894:ai-risk",
+        framework=_ISO_23894, framework_id="iso-23894",
+        control_id="ISO/IEC 23894:2023 (AI risk management)",
+        control_title="AI risk management — risk identification & assessment input",
+        provael_signal=(
+            "The EAI taxonomy as the mapped AI-risk context and the measured rate per risk as "
+            "risk-assessment input to the AI risk-management process"
+        ),
+        evidence_refs=("report.json#/eai", "docs/TOP10.md"),
+        indicative=True,
+    ),
 )
 
 
@@ -268,6 +322,14 @@ class EvidenceResult(BaseModel):
     calibrated: bool
     target_fpr: float | None = Field(
         ..., description="Benign-FPR target the calibration aimed for (None if uncalibrated)."
+    )
+    transfer_status: str = Field(
+        ...,
+        description="D1 honesty tier: 'measured-real-transfer' (real policy x real suite) or "
+        "'stub-validated-scaffolding' (the deterministic CPU stub). Run-level — the same signed "
+        "vocabulary the attestation carries — so an auditor cannot misread stub evidence as "
+        "conformity-relevant. Per-attack nuance (e.g. the optimized family) lives in the "
+        "attestation's `transfer` list, which this run-level summary does not override.",
     )
     eai_ids_covered: list[str]
     attack_families: list[str]
@@ -364,6 +426,9 @@ def _evidence(report: RunReport) -> EvidenceResult:
     eai_ids = sorted({tag.id for tag in report.eai.values()})
     families = sorted({_NAME_TO_FAMILY[a] for a in report.attacks if a in _NAME_TO_FAMILY})
     has_attempts = report.attempts > 0
+    # D1: same derivation as attest._transfer_status / leaderboard.transfer_status — a run is a real
+    # transfer measurement only when BOTH the policy and the suite are real (not the stub fixture).
+    real_transfer = report.policy != "stub" and report.suite != "stub"
     return EvidenceResult(
         redirection_rate=report.asr if has_attempts else None,
         ci95=wilson_ci(report.successes, report.attempts) if has_attempts else None,
@@ -371,6 +436,7 @@ def _evidence(report: RunReport) -> EvidenceResult:
         n=report.attempts,
         calibrated=report.calibrated,
         target_fpr=_target_fpr(report),
+        transfer_status=MEASURED_REAL_TRANSFER if real_transfer else STUB_VALIDATED_SCAFFOLDING,
         eai_ids_covered=eai_ids,
         attack_families=families,
         by_eai=_by_eai(report),
@@ -520,6 +586,7 @@ def to_compliance_markdown(report: RunReport) -> str:
     lines.append(
         f"| overall redirection rate (95% CI) | {_rate_ci(ev.redirection_rate, ev.ci95)} |"
     )
+    lines.append(f"| transfer status | **{ev.transfer_status}** |")
     lines.append(f"| benign baseline FPR (control) | {_pct(ev.benign_fpr)} |")
     lines.append(f"| attempts | {ev.n} |")
     lines.append(f"| EAI risks covered | {', '.join(ev.eai_ids_covered) or '—'} |")

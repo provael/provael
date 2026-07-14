@@ -69,14 +69,16 @@ def to_sarif(report: RunReport) -> dict[str, Any]:
         name = risk.name if risk is not None else id_to_name.get(rid, rid)
         description = risk.description if risk is not None else name
         help_uri = risk.help_uri if risk is not None else TOP10_DOC_URL
-        rules.append(
-            {
-                "id": rid,
-                "name": name,
-                "shortDescription": {"text": description},
-                "helpUri": help_uri,
-            }
-        )
+        rule: dict[str, Any] = {
+            "id": rid,
+            "name": name,
+            "shortDescription": {"text": description},
+            "helpUri": help_uri,
+        }
+        # D5: route external validation through MITRE ATLAS (no Top-10 branding conflict, INV-6).
+        if risk is not None and risk.atlas_techniques:
+            rule["properties"] = {"atlasTechniques": list(risk.atlas_techniques)}
+        rules.append(rule)
 
     results: list[dict[str, Any]] = []
     for attack, stat in report.by_attack.items():

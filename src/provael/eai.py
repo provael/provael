@@ -26,6 +26,12 @@ class EaiRisk:
     name: str
     description: str
     anchor: str  # GitHub heading slug within docs/TOP10.md
+    #: D5: proposed MITRE ATLAS (https://atlas.mitre.org) tactic → technique mapping(s) for this
+    #: risk, promoted from the prose table in ``docs/standards/atlas-case-study.md`` to structured
+    #: data. Descriptive tactic→technique phrasing (not invented ``AML.TXXXX`` ids), flagged
+    #: ``(proposed)`` where ATLAS's thin embodied coverage has no on-point technique. Routing
+    #: external validation through ATLAS avoids any Top-10 branding conflict (INV-6).
+    atlas_techniques: tuple[str, ...] = ()
 
     @property
     def help_uri(self) -> str:
@@ -43,6 +49,8 @@ CATALOG: dict[str, EaiRisk] = {
             "and drives it into an unsafe action."
         ),
         anchor="eai01--policy--instruction-jailbreak-direct-command-channel",
+        atlas_techniques=("ML Attack Staging → prompt-injection / jailbreak of an "
+                          "ML-driven agent",),
     ),
     "EAI02": EaiRisk(
         id="EAI02",
@@ -52,6 +60,8 @@ CATALOG: dict[str, EaiRisk] = {
             "redirects its behaviour while the text goal stays benign."
         ),
         anchor="eai02--adversarial-perception-patches--textures--sensor-spoofing",
+        atlas_techniques=("Evasion → adversarial example in the perception channel (craft "
+                          "adversarial data)",),
     ),
     "EAI03": EaiRisk(
         id="EAI03",
@@ -62,6 +72,8 @@ CATALOG: dict[str, EaiRisk] = {
             "normal behaviour until the trigger fires an attacker-chosen action."
         ),
         anchor="eai03--model--pipeline-poisoning-backdoors--supply-chain",
+        atlas_techniques=("Persistence → backdoor the ML model; ML Supply Chain Compromise → "
+                          "poison an open-weights checkpoint",),
     ),
     "EAI04": EaiRisk(
         id="EAI04",
@@ -71,6 +83,8 @@ CATALOG: dict[str, EaiRisk] = {
             "(availability) or hijacking its trajectory toward an attacker-chosen waypoint."
         ),
         anchor="eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze",
+        atlas_techniques=("Impact → manipulate / deny the agent's actuation (proposed — ATLAS "
+                          "embodied coverage is thin)",),
     ),
     "EAI05": EaiRisk(
         id="EAI05",
@@ -80,6 +94,7 @@ CATALOG: dict[str, EaiRisk] = {
             "tool description) carries an imperative the policy then executes."
         ),
         anchor="eai05--indirect--embodied-prompt-injection",
+        atlas_techniques=("Execution → indirect prompt injection via the environment",),
     ),
     "EAI06": EaiRisk(
         id="EAI06",
@@ -90,6 +105,8 @@ CATALOG: dict[str, EaiRisk] = {
             "the embodiment gap between safe language and unsafe physical action."
         ),
         anchor="eai06--cross-domain-safety-misalignment-the-embodiment-gap",
+        atlas_techniques=("Impact → unsafe embodied action under a language-benign instruction "
+                          "(proposed — the embodiment gap has no on-point ATLAS technique)",),
     ),
     "EAI08": EaiRisk(
         id="EAI08",
@@ -100,6 +117,8 @@ CATALOG: dict[str, EaiRisk] = {
             "token — an embodied instance of excessive agency (OWASP ASI03)."
         ),
         anchor="eai08--identity-access--excessive-autonomy",
+        atlas_techniques=("Privilege Escalation → excessive agency / self-authorized guarded "
+                          "action (proposed)",),
     ),
     "EAI09": EaiRisk(
         id="EAI09",
@@ -110,6 +129,8 @@ CATALOG: dict[str, EaiRisk] = {
             "sim-only against a planted fixture, never a real exfiltration."
         ),
         anchor="eai09--model--data-confidentiality--theft-extraction-inversion--surveillance",
+        atlas_techniques=("Exfiltration → model extraction / membership inference via the "
+                          "inference interface",),
     ),
 }
 

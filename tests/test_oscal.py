@@ -34,6 +34,15 @@ def test_oscal_structure() -> None:
     assert ar["metadata"]["oscal-version"] == "1.1.2"  # type: ignore[index]
 
 
+def test_oscal_finding_carries_transfer_status_prop() -> None:
+    # D1: the run-level honesty tier surfaces as an OSCAL prop so a GRC consumer can't misread
+    # stub scaffolding as a real-transfer measurement.
+    doc = to_oscal(_report())
+    finding = doc["assessment-results"]["results"][0]["findings"][0]  # type: ignore[index]
+    props = {p["name"]: p["value"] for p in finding["props"]}
+    assert props["transfer-status"] == "stub-validated-scaffolding"
+
+
 def test_oscal_is_deterministic() -> None:
     # Stable uuid5 ids + no clock => byte-identical for a deterministic run.
     assert to_oscal_json(_report()) == to_oscal_json(_report())
