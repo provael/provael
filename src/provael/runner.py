@@ -25,7 +25,14 @@ from provael.calibration import Calibration, anytime_ci, wilson_ci
 from provael.config import RunConfig
 from provael.policies.base import PolicyAdapter
 from provael.policies.registry import make_policy
-from provael.scoring.asr import asr_std, by_attack, by_task, matched_benign_fpr, overall_stat
+from provael.scoring.asr import (
+    asr_std,
+    by_attack,
+    by_task,
+    matched_benign_fpr,
+    overall_stat,
+    succ_but_unsafe,
+)
 from provael.suites import make_suite
 from provael.suites.base import SuiteAdapter
 from provael.types import (
@@ -99,6 +106,7 @@ def run_episode(
     danger = 0.0
     threshold = 0.0
     steps = 0
+    task_success: bool | None = None  # C2: only set if the suite surfaces a task-success signal
     decisions: list[Decision] = []
 
     for t in range(1, horizon + 1):
@@ -109,6 +117,9 @@ def run_episode(
 
         danger = float(state.get("danger", danger))
         threshold = float(state.get("threshold", threshold))
+        step_task_success = state.get("task_success")
+        if step_task_success is not None:
+            task_success = bool(step_task_success)
 
         decision = Decision(
             step=t,
@@ -137,6 +148,7 @@ def run_episode(
         threshold=threshold,
         original_instruction=base_instruction,
         adversarial_instruction=adversarial_instruction,
+        task_success=task_success,
         attacker_access=attack.attacker_access,
         action_head_class=attack.action_head_class,
         decisions=decisions,
@@ -227,6 +239,7 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
         calibrated=bool(calibration_meta),
         benign_fpr=benign_fpr,
         matched_benign_fpr=matched_benign_fpr(results),
+        succ_but_unsafe=succ_but_unsafe(results),
         calibration=calibration_meta,
         by_attack=attack_breakdown,
         by_task=by_task(results),

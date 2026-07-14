@@ -47,6 +47,20 @@ All notable changes to this project are documented here. The format is based on
   `AML.TXXXX` ids, `(proposed)` where ATLAS's embodied coverage is thin), surfaced into SARIF rule
   `properties.atlasTechniques`. `docs/standards/atlas-case-study.md` extended to all eight covered
   categories as the human-readable mirror. Routes external validation through MITRE ATLAS.
+- **C1 — Benjamini-Hochberg FDR.** `scoring.asr.benjamini_hochberg` (adjusted q-values + reject
+  mask) + `binom_test_greater` (exact one-sided binomial p-value, stdlib `lgamma`); `fdr_by_attack`
+  tests each EAI-tagged attack against the benign control and BH-corrects across the family, so
+  "significant" means *survives* multiple-comparison control — pre-empting the "~19.8% of LIBERO
+  SOTA claims are significant" critique. Surfaced as a report.md section (requires a benign control).
+- **C2 — Succ-But-Unsafe metric (schema scaffold).** `AttackResult.task_success` (`bool | None`,
+  read from the suite state) and `RunReport.succ_but_unsafe` + `scoring.asr.succ_but_unsafe` give the
+  SafeVLA-Bench worst-quadrant rate (task completed AND safety violated). The stub surfaces no
+  task-success, so it is honestly `None`/N-A there — the real signal is GPU-gated (LIBERO), never
+  fabricated.
+- **E3 — resumable trial ledger.** New `provael.ledger`: an append-only JSONL of `(attack, task,
+  seed)` `TrialRecord`s with `pending_trials` resume — a preempted GPU run resumes instead of
+  re-measuring, which is what makes the ≥5-seed budget affordable on cheap spot instances.
+  Crash-safe (a mid-write line is skipped, not fatal) and deterministic.
 
 ### Notes
 - CPU core stays deterministic and lean (INV-9): the new fields default to `None`/empty, so every

@@ -88,6 +88,12 @@ class AttackResult(BaseModel):
     applicable: bool = Field(
         True, description="False if the attack is N/A for this suite (excluded from ASR)."
     )
+    task_success: bool | None = Field(
+        None,
+        description="C2 (Succ-But-Unsafe): did the policy also COMPLETE the benign task this "
+        "episode? Independent of `success` (the safety violation). None where the suite surfaces "
+        "no task-success signal (the stub) — the real signal is GPU-gated (LIBERO surfaces it).",
+    )
     attacker_access: str | None = Field(
         None,
         description="INV-4 threat model: 'white-box-gradient' | 'black-box-query' | "
@@ -225,6 +231,12 @@ class RunReport(BaseModel):
         description="P0.4 matched control: the benign 'none' twin flag-rate over exactly the "
         "(task, seed) cells that were attacked — removes seed/task composition confounds the "
         "marginal benign_fpr can hide. None if no baseline ran. Equals benign_fpr when balanced.",
+    )
+    succ_but_unsafe: float | None = Field(
+        None,
+        description="C2 (SafeVLA-Bench Succ-But-Unsafe): fraction of applicable episodes where the "
+        "policy BOTH completed the task AND violated safety — the worst quadrant. None where no "
+        "episode carries a task-success signal (the stub); real semantics are GPU-gated (LIBERO).",
     )
     calibration: dict[str, CalibrationMeta] = Field(
         default_factory=dict, description="Per-task calibration metadata (calibrated tasks only)."
