@@ -18,6 +18,7 @@ from rich.table import Table
 
 from provael.calibration import wilson_ci
 from provael.eai import CATALOG
+from provael.scoring.asr import fdr_by_attack
 from provael.types import ASRStat, RunReport
 
 REPORT_JSON = "report.json"
@@ -102,6 +103,8 @@ def to_markdown(report: RunReport) -> str:
         lines.append(f"| benign baseline FPR | {100.0 * report.benign_fpr:.1f}% |")
     if report.matched_benign_fpr is not None:
         lines.append(f"| matched-benign FPR | {100.0 * report.matched_benign_fpr:.1f}% |")
+    if report.succ_but_unsafe is not None:
+        lines.append(f"| Succ-But-Unsafe | {100.0 * report.succ_but_unsafe:.1f}% |")
     if report.stochastic:
         lines.append("")
         lines.append(
@@ -132,6 +135,21 @@ def to_markdown(report: RunReport) -> str:
         a, asr, s, n = _stat_row(name, stat)
         lines.append(f"| {a} | {_eai_cell_md(report, name)} | {asr} | {s} | {n} |")
     lines.append("")
+    fdr = fdr_by_attack(report)
+    if fdr:
+        lines.append("## Significance (Benjamini-Hochberg FDR)")
+        lines.append("")
+        lines.append(
+            "> Each attack is tested (one-sided exact binomial) against the benign baseline FPR, "
+            "then BH-corrected across the family — so **significant** means *survives* "
+            "multiple-comparison control at q ≤ 0.05, not beat the baseline once."
+        )
+        lines.append("")
+        lines.append("| attack | q-value (BH) | significant |")
+        lines.append("| --- | --- | --- |")
+        for name, (qval, sig) in fdr.items():
+            lines.append(f"| {name} | {qval:.3f} | {'✅' if sig else '—'} |")
+        lines.append("")
     lines.append("## ASR by task")
     lines.append("")
     lines.append("| task | ASR | successes | attempts |")
