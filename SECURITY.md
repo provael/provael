@@ -10,8 +10,8 @@ sim-only by default, no physical robots, no real-world-harm payloads — see
 
 | Version | Supported |
 | --- | --- |
-| latest `0.3.x` on [PyPI](https://pypi.org/project/provael/) | ✅ |
-| `< 0.3.0` | ❌ |
+| latest `0.16.x` on [PyPI](https://pypi.org/project/provael/) | ✅ |
+| `< 0.16.0` | ❌ |
 
 Fixes land in the latest release — please reproduce on the current version before reporting.
 
@@ -40,3 +40,21 @@ welcome and credited unless you'd prefer to stay anonymous.
 - The tool ships **no real-world-harm payloads** and drives **no physical robots**. Misuse
   against systems you do not own or have permission to test is out of scope and not condoned —
   see [SAFETY.md](SAFETY.md).
+
+## Dependency advisories (supply-chain hygiene, not Provael findings)
+
+These are advisories in **optional dependencies**, tracked here for transparency. They are **not
+vulnerabilities in Provael**, and the core install (6 deps, no GPU/ML stack) is unaffected.
+
+- **[CVE-2026-25874](https://nvd.nist.gov/vuln/detail/CVE-2026-25874) — LeRobot unauthenticated
+  pickle-deserialization RCE (CVSS 9.8), affecting `lerobot` through `0.5.1`.** The flaw is in
+  LeRobot's **async-inference `PolicyServer`**, which `pickle.loads` untrusted payloads over an
+  unauthenticated gRPC endpoint (TCP/50051). Provael's optional `[lerobot]` extra pins
+  `lerobot==0.5.1` (an affected version), **but Provael never starts that PolicyServer or any gRPC
+  endpoint** — it uses LeRobot only for **in-process** policy loading and the LIBERO simulator,
+  behind the `[lerobot]` extra and the `PROVAEL_INTEGRATION=1` gate. So the vulnerable code path is
+  not reachable through Provael, on CPU or GPU. If you **separately** run LeRobot's async inference,
+  follow the upstream advisory (fixed in LeRobot PR #3048, which replaces pickle with
+  safetensors + JSON) — require auth/mTLS on the PolicyServer and upgrade once a fixed release is
+  verified against the `smolvla_libero` path. Pinning Provael's extra to that fixed release is a
+  tracked follow-up (the `smolvla_libero` glue is verified only against `0.5.1` today).

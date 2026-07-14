@@ -60,9 +60,11 @@ jobs:
           name: dist
           path: dist/
       - name: Publish
-        uses: pypa/gh-action-pypi-publish@release/v1
+        # Pinned to a fixed version (was the moving `@release/v1`); >=1.11.0 for PEP 740.
+        uses: pypa/gh-action-pypi-publish@v1.14.0
         with:
           skip-existing: true  # don't hard-fail if a re-run hits an already-uploaded version
+          attestations: true   # PEP 740: emit signed provenance attestations alongside the upload
         # No `password:` — trusted publishing uses the OIDC id-token above.
 
   github-release:

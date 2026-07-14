@@ -96,6 +96,21 @@ All notable changes to this project are documented here. The format is based on
   is live on the real path (still honestly N/A on the stub). A **budget-capped nightly GPU workflow**
   (`.github/workflows/gpu-nightly.yml`, OFF unless `vars.ENABLE_GPU_NIGHTLY == 'true'`) runs the real
   path via Modal without ever touching the CPU `ci.yml`.
+- **§8 — accelerator rationale doc.** New `docs/accelerators.md` documents the D6 device slot and
+  **why `accelerator='tpu'` raises** (no maintained VLA-class PyTorch TPU inference path yet) with
+  the both-required revisit trigger (TorchTPU GA **and** third-party PyTorch VLA inference parity).
+  Linked from the `NotImplementedError` message and added to the docs nav.
+
+### Security
+- **P0.5b — PEP 740 publish attestations.** `release.yml` pins the PyPI publish step from the moving
+  `pypa/gh-action-pypi-publish@release/v1` to `@v1.14.0` and sets `attestations: true`, so releases
+  emit signed provenance attestations alongside the OIDC trusted-publishing upload.
+- **P0.5a — dependency advisory (hygiene, not a Provael finding).** `SECURITY.md` records
+  **CVE-2026-25874** (LeRobot unauthenticated pickle-deserialization RCE, CVSS 9.8, affecting
+  `lerobot` ≤ 0.5.1) — verified against the upstream advisory. Provael's optional `[lerobot]` extra
+  pins an affected version but **never starts the vulnerable async-inference gRPC PolicyServer**, so
+  the path is unreachable through Provael; the note frames it as supply-chain hygiene and points at
+  the upstream fix. Also fixes the stale `SECURITY.md` "supported versions" line (`0.3.x` → `0.16.x`).
 
 ### Notes
 - CPU core stays deterministic and lean (INV-9): the new fields default to `None`/empty and the new

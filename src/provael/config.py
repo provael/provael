@@ -83,7 +83,8 @@ class RunConfig(BaseModel):
             raise NotImplementedError(
                 "accelerator='tpu' is a reserved-but-unimplemented slot (ROADMAP §8 / D5). "
                 "Revisit trigger: TorchTPU GA AND third-party PyTorch VLA-class inference parity. "
-                "Every current target ships a PyTorch cpu/cuda/mps path — use one."
+                "Every current target ships a PyTorch cpu/cuda/mps path — use one. "
+                "Rationale: https://provael.github.io/provael/accelerators/"
             )
         allowed = {"cpu", "cuda", "mps"}
         if v not in allowed:

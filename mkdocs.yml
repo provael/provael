@@ -47,6 +47,7 @@ nav:
   - Python API: python-api.md
   - vs. LLM red-team tools: comparison.md
   - Handbook (outline): handbook.md
+  - Accelerators & TPU: accelerators.md
   - FAQ: faq.md
   - Roadmap: roadmap.md
 
