@@ -123,7 +123,7 @@ def test_gap_detection_uncalibrated() -> None:
         "nist-ai-rmf:measure",
         "nist-ai-rmf:manage",
     }
-    assert cr.summary == {"evidence-present": 7, "gap": 4}
+    assert cr.summary == {"evidence-present": 8, "gap": 4}
     # Every gap explains itself; every present entry has no gap reason.
     for entry in cr.entries:
         if entry.status == "gap":
@@ -140,7 +140,7 @@ def test_gap_detection_calibrated() -> None:
     by = _by_key(cr)
     assert by["eu-ai-act:art15"].status == "evidence-present"
     assert by["nist-ai-rmf:measure"].status == "evidence-present"
-    assert cr.summary == {"evidence-present": 9, "gap": 2}
+    assert cr.summary == {"evidence-present": 10, "gap": 2}
     # The measured evidence carries the calibrated control.
     assert cr.result.calibrated is True
     assert cr.result.benign_fpr == 0.0

@@ -51,6 +51,13 @@ the spirit of responsible disclosure.
   fixture's commanded action. The visible instruction stays benign and it ships no real-world payload;
   it is not detection-evasion. Real-model transfer (AttackVLA / FreezeVLA) is GPU-gated and not run in
   the CPU core, so no cross-model claim is made.
+- The `confidentiality` family (EAI09) is a **pre-deployment leak *screen***, not an exfiltration. It
+  injects harmless, sim-only candidate **canary** probes (`member::` / `extract::`) and measures
+  whether a **known-planted stub fixture** leaks the memorized canary — modelling membership inference
+  / model extraction. Provael **exfiltrates no real data and steals no real model**; the canaries are
+  opaque markers and the leak is scored on a deterministic fixture, so a clean checkpoint screens ~0%.
+  The real-model transfer (a membership-inference / extraction advantage measured by *querying* a real
+  policy, never exfiltrating real data) is GPU-gated and not run in the CPU core — no cross-model claim.
 
 ## What we measure on LIBERO (redirection, not harm)
 

@@ -75,6 +75,7 @@ from provael.scoring.authz import (
     parse_authz,
 )
 from provael.scoring.backdoor import ACTIVATION_CHANNEL, stub_activates
+from provael.scoring.confidentiality import LEAK_CHANNEL, stub_leaks
 from provael.scoring.misalignment import MISALIGN_CHANNEL, parse_embodied_reach
 from provael.scoring.perception import SPOOF_CHANNEL, parse_spoof_reach
 from provael.types import Action, Observation
@@ -108,12 +109,12 @@ ATTACKABLE_OBS_FIELDS: tuple[str, ...] = (
 )
 
 #: Dimensionality of the emitted action. Channels 0-6 mimic a 7-DoF end-effector delta
-#: (x, y, z, roll, pitch, yaw, gripper); channels 7-9 are out-of-band fixture signals carrying the
-#: EAI02 perception-spoof reach, the EAI06 embodiment-gap reach, and the EAI04 2nd-vector
-#: action-space commanded end-state (positive = keep-out hijack cell, negative = critical-step
-#: freeze) (like channels 4-6 carry the backdoor / authorization fixture flags). Real policies keep
-#: their own action_dim; stub only.
-ACTION_DIM = 10
+#: (x, y, z, roll, pitch, yaw, gripper); channels 7-10 are out-of-band fixture signals carrying the
+#: EAI02 perception-spoof reach, the EAI06 embodiment-gap reach, the EAI04 2nd-vector action-space
+#: commanded end-state (positive = keep-out hijack cell, negative = critical-step freeze), and the
+#: EAI09 confidentiality leak flag (like channels 4-6 carry the backdoor / authorization fixture
+#: flags). Real policies keep their own action_dim; stub only.
+ACTION_DIM = 11
 
 #: Decimal places to round aggression to, killing binary-float drift
 #: (e.g. 0.6 + 0.3 -> 0.8999999999999999) at the 0.1 weight granularity.
@@ -255,4 +256,11 @@ class StubPolicy(PolicyAdapter):
                 action[HIJACK_CHANNEL] = FREEZE_SENTINEL
             elif hijack_cell is not None:
                 action[HIJACK_CHANNEL] = hijack_cell
+        # EAI09 confidentiality fixture: a `member::`/`extract::` probe for the planted canary makes
+        # the fixture leak a flag on channel 10 (disjoint from axes above), modelling a memorized
+        # training secret recovered by membership inference / extraction. Absent a probe this
+        # stays 0, so every other family's action is byte-identical and the `none` baseline leaks
+        # nothing (0% FPR control); a clean policy with no such canary screens ~0% too.
+        if self.action_dim > LEAK_CHANNEL and stub_leaks(observation):
+            action[LEAK_CHANNEL] = 1.0
         return action

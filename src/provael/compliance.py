@@ -183,6 +183,19 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         indicative=False,
     ),
     Requirement(
+        key="nist-ai-100-2:privacy",
+        framework=_NIST, framework_id="nist",
+        control_id="NIST AI 100-2e2025 (Privacy)",
+        control_title="Privacy attacks — model extraction / membership inference (NISTAML.03)",
+        provael_signal=(
+            "Measured confidentiality-leak rate + 95% CI for the EAI09 family "
+            "(membership inference / extraction) as evidence for the privacy-attack pillar; "
+            "also MITRE ATLAS Exfiltration"
+        ),
+        evidence_refs=("report.json#/by_attack", "report.json#/eai"),
+        indicative=False,
+    ),
+    Requirement(
         key="nist-ai-rmf:measure",
         framework=_NIST, framework_id="nist",
         control_id="AI RMF — MEASURE",

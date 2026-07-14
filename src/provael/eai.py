@@ -101,6 +101,16 @@ CATALOG: dict[str, EaiRisk] = {
         ),
         anchor="eai08--identity-access--excessive-autonomy",
     ),
+    "EAI09": EaiRisk(
+        id="EAI09",
+        name="Model & data confidentiality",
+        description=(
+            "A query-based confidentiality attack — model extraction, membership inference, or "
+            "inversion — that recovers a memorized training canary from the policy; screened "
+            "sim-only against a planted fixture, never a real exfiltration."
+        ),
+        anchor="eai09--model--data-confidentiality--theft-extraction-inversion--surveillance",
+    ),
 }
 
 

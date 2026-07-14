@@ -166,14 +166,16 @@ def test_registry_includes_new_families() -> None:
         "phrase_trigger",
         "self_authorize_bypass",
         "scope_escalation",
+        "membership_inference",
+        "model_extraction",
         "patch_spoof",
         "signal_spoof",
         "benign_urgency_override",
         "euphemistic_reroute",
     }
     assert available_families() == [
-        "action", "action_space", "authorization", "backdoor", "baseline", "injection",
-        "instruction", "misalignment", "optimized", "sensor_spoof", "visual",
+        "action", "action_space", "authorization", "backdoor", "baseline", "confidentiality",
+        "injection", "instruction", "misalignment", "optimized", "sensor_spoof", "visual",
     ]
     assert [a.name for a in resolve_attacks(["baseline"])] == ["none"]
     assert [a.name for a in resolve_attacks(["visual"])] == ["patch", "decoy_object"]
@@ -183,6 +185,9 @@ def test_registry_includes_new_families() -> None:
     assert [a.name for a in resolve_attacks(["backdoor"])] == ["object_trigger", "phrase_trigger"]
     assert [a.name for a in resolve_attacks(["authorization"])] == [
         "self_authorize_bypass", "scope_escalation"
+    ]
+    assert [a.name for a in resolve_attacks(["confidentiality"])] == [
+        "membership_inference", "model_extraction"
     ]
     assert [a.name for a in resolve_attacks(["sensor_spoof"])] == ["patch_spoof", "signal_spoof"]
     assert [a.name for a in resolve_attacks(["misalignment"])] == [
