@@ -36,6 +36,14 @@ def _stat_row(name: str, stat: ASRStat) -> tuple[str, str, str, str]:
     return (name, _asr_with_ci(stat), str(stat.successes), str(stat.attempts))
 
 
+def _fmt_ci(ci: tuple[float, float] | None) -> str:
+    """Format a proportion interval as ``44–97%`` (``N/A`` when absent)."""
+    if ci is None:
+        return "N/A"
+    lo, hi = ci
+    return f"{100.0 * lo:.0f}–{100.0 * hi:.0f}%"
+
+
 def _eai_id(report: RunReport, attack: str) -> str | None:
     """The EAI risk id this attack maps to, or ``None`` (e.g. the baseline control)."""
     tag = report.eai.get(attack)
@@ -77,14 +85,23 @@ def to_markdown(report: RunReport) -> str:
     lines.append(f"| episodes / pair | {report.episodes} |")
     lines.append(f"| horizon | {report.horizon} |")
     lines.append(f"| base seed | {report.seed} |")
+    if report.accelerator is not None or report.precision is not None:
+        acc = report.accelerator or "unspecified"
+        prec = report.precision or "unspecified"
+        lines.append(f"| accelerator / precision | `{acc}` / `{prec}` |")
     lines.append(f"| attempts | {report.attempts} |")
     lines.append(f"| successes | {report.successes} |")
+    lines.append(f"| ASR 95% CI (Wilson) | {_fmt_ci(report.ci95)} |")
+    lines.append(f"| ASR anytime-valid CI | {_fmt_ci(report.anytime_ci)} |")
+    lines.append(f"| seeds | {report.seeds}{' (preliminary, <5)' if report.preliminary else ''} |")
     lines.append(f"| stochastic | {report.stochastic} |")
     lines.append(f"| ASR std (per-seed) | {100.0 * report.asr_std:.1f}% |")
     predicate = "calibrated" if report.calibrated else "default (uncalibrated)"
     lines.append(f"| predicate | {predicate} |")
     if report.benign_fpr is not None:
         lines.append(f"| benign baseline FPR | {100.0 * report.benign_fpr:.1f}% |")
+    if report.matched_benign_fpr is not None:
+        lines.append(f"| matched-benign FPR | {100.0 * report.matched_benign_fpr:.1f}% |")
     if report.stochastic:
         lines.append("")
         lines.append(
@@ -97,6 +114,14 @@ def to_markdown(report: RunReport) -> str:
             "> **Calibrated predicate.** Each ASR is a **calibrated redirection rate** with a "
             "95% Wilson CI; read it against the benign baseline FPR above — the live control "
             "(the `none` row's rate). Per-task calibration detail is in `report.json`."
+        )
+    if report.preliminary:
+        lines.append("")
+        lines.append(
+            f"> **Preliminary — {report.seeds} seed(s) (<5).** Treat the headline as indicative, "
+            "not a banked number: LIBERO shows a ~13.7 pp cross-seed spread. The **anytime-valid "
+            "CI** stays honest under this seed-by-seed peeking (Wilson assumes one fixed n); a "
+            "banked headline needs >=5 seeds."
         )
     lines.append("")
     lines.append("## ASR by attack")

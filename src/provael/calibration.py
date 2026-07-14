@@ -71,6 +71,77 @@ def wilson_ci(successes: int, attempts: int, z: float = Z95) -> tuple[float, flo
     return (max(0.0, center - half), min(1.0, center + half))
 
 
+def _betaln(a: float, b: float) -> float:
+    """log of the Beta function B(a, b) = Γ(a)Γ(b)/Γ(a+b) (stdlib ``lgamma``; no SciPy)."""
+    return math.lgamma(a) + math.lgamma(b) - math.lgamma(a + b)
+
+
+def anytime_ci(
+    successes: int,
+    attempts: int,
+    *,
+    alpha: float = 0.05,
+    prior: tuple[float, float] = (1.0, 1.0),
+) -> tuple[float, float]:
+    """Anytime-valid (time-uniform) confidence interval for a Bernoulli rate.
+
+    A Robbins-style **Beta-mixture confidence sequence**. Mixing the alternative rate over a
+    ``Beta(prior)`` prior, the wealth process
+
+        ``M_n(p) = [B(a+S, b+n-S) / B(a, b)] / (p**S * (1-p)**(n-S))``   (S successes in n trials)
+
+    is a nonnegative test martingale under the null "true rate == p" with ``M_0 = 1``. By Ville's
+    inequality ``P(exists n: M_n(p0) >= 1/alpha) <= alpha``, so the set ``{p : M_n(p) < 1/alpha}``
+    covers the true rate ``p0`` **simultaneously for all n** with probability >= 1 - ``alpha``.
+
+    Unlike :func:`wilson_ci` (valid only at a single, pre-fixed n) this stays valid under optional
+    stopping and continuous monitoring — the regime P0.4 runs in, where a budget-capped GPU job is
+    watched seed-by-seed and stopped when the interval is tight enough. It is wider than the Wilson
+    interval at a fixed n; that width is the honest price of anytime validity.
+
+    Returns ``(lo, hi)`` clamped to ``[0, 1]``; ``(0.0, 1.0)`` when ``attempts == 0`` (no data). The
+    interval always contains the MLE ``S/n`` (the mixture LR at the MLE is <= 1 < 1/alpha).
+    """
+    if attempts <= 0:
+        return (0.0, 1.0)
+    a, b = prior
+    n = attempts
+    s = successes
+    threshold = -math.log(alpha)  # reject p when log M_n(p) >= threshold
+    const = _betaln(a + s, b + n - s) - _betaln(a, b)
+
+    def excess(p: float) -> float:
+        # log M_n(p) - threshold. log M_n(p) = const - [S log p + (n-S) log(1-p)].
+        log_lik = 0.0
+        if s > 0:
+            log_lik += s * math.log(p)
+        if n - s > 0:
+            log_lik += (n - s) * math.log1p(-p)
+        return (const - log_lik) - threshold
+
+    # log M_n is convex in p, minimal at the MLE (where excess < 0), and -> +inf at any boundary
+    # the data pins (p->0 when S>0, p->1 when S<n). So the accept region {excess < 0} is a single
+    # central interval; find its two ends by bisection on each monotone side of the MLE.
+    eps = 1e-12
+    mle = min(1.0 - eps, max(eps, s / n))
+
+    def _root(lo: float, hi: float) -> float:
+        # Solve excess(p) = 0 on a monotone bracket with a sign change; orientation-agnostic
+        # (excess decreases on the left of the MLE, increases on the right). 60 iters -> ~1e-18.
+        lo_pos = excess(lo) > 0.0
+        for _ in range(60):
+            mid = 0.5 * (lo + hi)
+            if (excess(mid) > 0.0) == lo_pos:
+                lo = mid
+            else:
+                hi = mid
+        return 0.5 * (lo + hi)
+
+    low = 0.0 if excess(eps) <= 0.0 else _root(eps, mle)
+    high = 1.0 if excess(1.0 - eps) <= 0.0 else _root(mle, 1.0 - eps)
+    return (max(0.0, low), min(1.0, high))
+
+
 def transfer_test(
     stat: ASRStat,
     *,
@@ -146,6 +217,12 @@ class Calibration(BaseModel):
     fit_seeds: list[int] = Field(default_factory=list)
     holdout_seeds: list[int] = Field(default_factory=list)
     tool_version: str = ""
+    accelerator: str | None = Field(
+        None, description="D6: device this predicate was fit on ('cpu' | 'cuda' | 'mps'), or None."
+    )
+    precision: str | None = Field(
+        None, description="D6: compute precision this predicate was fit at, or None."
+    )
 
     def is_unsafe(self, state: State) -> bool:
         """Apply the calibrated predicate to a step state."""

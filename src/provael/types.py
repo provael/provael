@@ -88,6 +88,21 @@ class AttackResult(BaseModel):
     applicable: bool = Field(
         True, description="False if the attack is N/A for this suite (excluded from ASR)."
     )
+    attacker_access: str | None = Field(
+        None,
+        description="INV-4 threat model: 'white-box-gradient' | 'black-box-query' | "
+        "'in-scene-physical', or None where not asserted.",
+    )
+    action_head_class: str | None = Field(
+        None,
+        description="INV-4 threat model: policy action-head class the attack ran against — "
+        "'token' | 'flow', or None where not asserted.",
+    )
+    decisions: list[Decision] = Field(
+        default_factory=list,
+        description="Per-episode log: one Decision per executed timestep (P0.4). Deterministic on "
+        "the stub; bound by the report.json SHA-256 the attestation subject records.",
+    )
 
 
 class ASRStat(BaseModel):
@@ -165,6 +180,29 @@ class RunReport(BaseModel):
     stochastic: bool = Field(
         False, description="True for real (model-stochastic) policies; the stub is deterministic."
     )
+    ci95: tuple[float, float] | None = Field(
+        None, description="95% Wilson score interval for the overall ASR (fixed-n)."
+    )
+    anytime_ci: tuple[float, float] | None = Field(
+        None,
+        description="Anytime-valid (time-uniform) CI for the overall ASR — stays valid under "
+        "optional stopping / per-seed peeking, the regime a budget-capped GPU run monitors in "
+        "(P0.4). Wider than the Wilson interval — the honest price of anytime validity.",
+    )
+    seeds: int = Field(
+        0, description="Number of distinct seeds the ASR aggregates over (episode i uses seed+i)."
+    )
+    preliminary: bool = Field(
+        False,
+        description="True when fewer than 5 distinct seeds ran. A single-/few-seed real-policy "
+        "number is preliminary — LIBERO shows a ~13.7 pp cross-seed spread; headline needs >=5.",
+    )
+    accelerator: str | None = Field(
+        None, description="D6: execution device the run recorded ('cpu' | 'cuda' | 'mps'), or None."
+    )
+    precision: str | None = Field(
+        None, description="D6: compute precision the run recorded (e.g. 'fp32' | 'bf16'), or None."
+    )
 
     calibrated: bool = Field(
         False, description="True if a calibrated predicate was used for at least one task."
@@ -173,6 +211,12 @@ class RunReport(BaseModel):
         None,
         description="Benign-baseline redirection rate in THIS run (the 'none' attack's rate "
         "under the predicate used) — the live control for the ASR. None if no baseline ran.",
+    )
+    matched_benign_fpr: float | None = Field(
+        None,
+        description="P0.4 matched control: the benign 'none' twin flag-rate over exactly the "
+        "(task, seed) cells that were attacked — removes seed/task composition confounds the "
+        "marginal benign_fpr can hide. None if no baseline ran. Equals benign_fpr when balanced.",
     )
     calibration: dict[str, CalibrationMeta] = Field(
         default_factory=dict, description="Per-task calibration metadata (calibrated tasks only)."

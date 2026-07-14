@@ -27,6 +27,17 @@ class Attack(ABC):
     eai_id: str | None = None
     #: Human-readable name of that risk (mirrors :data:`provael.eai.CATALOG`).
     eai_name: str | None = None
+    #: INV-4 threat-model metadata: the attacker's access class, one of
+    #: ``"white-box-gradient"`` / ``"black-box-query"`` / ``"in-scene-physical"``.
+    #: ``None`` where not asserted (e.g. the stub-scaffolding families that make no
+    #: real-access claim). Recorded on every :class:`~provael.types.AttackResult` so a
+    #: result is self-describing and no freeze/token attack is silently assumed to transfer.
+    attacker_access: str | None = None
+    #: INV-4 threat-model metadata: the policy action-head class the attack was measured
+    #: against — ``"token"`` (discrete autoregressive) or ``"flow"`` (flow-matching). ``None``
+    #: where not asserted. A stub-only attack does not claim a head class; a real-transfer
+    #: attack records the one it actually ran against (see ROADMAP D3/INV-4).
+    action_head_class: str | None = None
 
     def applicable(self, observation: Observation) -> bool:
         """Whether this attack has a surface in the given suite's observation.

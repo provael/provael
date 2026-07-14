@@ -142,6 +142,12 @@ class AttestationStatement(BaseModel):
     issued_at: str = Field(..., description="UTC ISO-8601 issuance timestamp (…Z).")
     commit: str = Field(..., description="Source commit (or tool version) the ruleset came from.")
     subject: AttestationSubject
+    accelerator: str | None = Field(
+        None, description="D6: execution device the attested run recorded, or None."
+    )
+    precision: str | None = Field(
+        None, description="D6: compute precision the attested run recorded, or None."
+    )
     regulatory_clock: list[RegulatoryClock]
     transfer: list[TransferStatus]
     predicate_type: str = PREDICATE_TYPE
@@ -351,6 +357,8 @@ def build_statement(
             name=f"{report.policy} x {report.suite}",
             digest={"sha256": report_digest},
         ),
+        accelerator=report.accelerator,
+        precision=report.precision,
         regulatory_clock=list(REGULATORY_CLOCK),
         transfer=_transfer_status(report),
         predicate=to_compliance_dict(report),
