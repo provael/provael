@@ -7,9 +7,10 @@ prompt injection), ``action`` (action-space-integrity: freeze / trajectory hijac
 critical-step freeze), ``sensor_spoof`` (EAI02 adversarial perception / sensor spoofing
 into a keep-out zone),
 ``backdoor`` (EAI03 objective-decoupled trigger screening), ``authorization`` (EAI08
-identity / access / excessive autonomy), ``misalignment`` (EAI06 cross-domain safety
-misalignment / the embodiment gap: benign language → unsafe embodied action), and
-``optimized`` (a black-box search). The
+identity / access / excessive autonomy), ``confidentiality`` (EAI09 model & data
+confidentiality: a memorized-canary leak screen — membership inference / extraction),
+``misalignment`` (EAI06 cross-domain safety misalignment / the embodiment gap: benign
+language → unsafe embodied action), and ``optimized`` (a black-box search). The
 registry maps both individual attack names and family names to attacks, so
 ``--attacks instruction`` expands a whole family while ``--attacks none,patch,scene_text``
 selects specific attacks across families.
@@ -53,6 +54,13 @@ from provael.attacks.baseline import (
 )
 from provael.attacks.baseline import (
     NoOpAttack,
+)
+from provael.attacks.confidentiality import (
+    FAMILY as CONFIDENTIALITY_FAMILY,
+)
+from provael.attacks.confidentiality import (
+    MembershipInference,
+    ModelExtraction,
 )
 from provael.attacks.injection import (
     FAMILY as INJECTION_FAMILY,
@@ -116,6 +124,8 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
     "phrase_trigger": PhraseTriggerBackdoor,
     "self_authorize_bypass": SelfAuthorizeBypass,
     "scope_escalation": ScopeEscalation,
+    "membership_inference": MembershipInference,
+    "model_extraction": ModelExtraction,
     "patch_spoof": PatchSpoof,
     "signal_spoof": SignalSpoof,
     "benign_urgency_override": BenignUrgencyOverride,
@@ -133,6 +143,7 @@ FAMILIES: dict[str, list[str]] = {
     ACTION_SPACE_FAMILY: ["keepout_hijack", "critical_freeze"],
     BACKDOOR_FAMILY: ["object_trigger", "phrase_trigger"],
     AUTHORIZATION_FAMILY: ["self_authorize_bypass", "scope_escalation"],
+    CONFIDENTIALITY_FAMILY: ["membership_inference", "model_extraction"],
     MISALIGNMENT_FAMILY: ["benign_urgency_override", "euphemistic_reroute"],
     OPTIMIZED_FAMILY: ["targeted_hijack"],
 }

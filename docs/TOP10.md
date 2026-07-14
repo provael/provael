@@ -71,6 +71,14 @@ real corpus matures. Disagree with the rank? That's the point — open a PR.
 latency, freeze). **Watchlist (emerging):** multi-robot / wormable propagation · cascading multi-agent
 failures · rogue/self-evolving agents · long-lived memory poisoning.
 
+**Provael attack coverage: 8 / 10.** Eight categories ship a runnable, sim-only Provael attack family
+with a transfer-test — **EAI01–EAI06, EAI08, EAI09**. **EAI07** (CPS / firmware / comms / teleop) and
+**EAI10** (evaluation / observability) are **out of scope for a VLA-policy red-teamer by design**:
+EAI07 is an infrastructure / CVE layer (IEC 62443 · ATT&CK-ICS — faithful coverage would need real
+exploit tooling, which this tool will not ship), and EAI10 is a governance meta-risk that Provael's
+own eval *mitigates* rather than attacks. "Shipped" means a sim-only screen with a benign-FPR control;
+real-model transfer varies by family and is called out honestly in each entry.
+
 ---
 
 ## EAI01 — Policy & instruction jailbreak (direct command channel)
@@ -250,6 +258,18 @@ of learned policies (DRL policy stealing; SoK on foundation-model-powered robots
 makes confidentiality/privacy one of its three core attack goals.
 **Why it matters.** A stolen policy is permanent leverage; a robot's data stream is among the most
 sensitive that exists (inside homes, factories, secure sites) — and bystanders never consented.
+**Attack shipped (Provael):** the `confidentiality` family (`membership_inference` + `model_extraction`)
+— *method:* a **pre-deployment confidentiality screen** for a **memorized training canary**.
+`membership_inference` probes whether a candidate canary was a training member; `model_extraction`
+queries the policy to reproduce it (extraction / inversion) — each injected as a sim-only probe while
+the visible instruction stays benign, so any leak is attributable to the probe, not the task. Each is
+scored as a leak rate with a 95% Wilson CI against a benign-FPR control (the `none` baseline probes
+nothing → 0%). Provael **performs no real exfiltration** — the "canaries" are opaque sim markers and
+the leak is scored on a deterministic fixture. **Stub-validated only** (the CPU fixture memorized a
+planted canary → the screen fires 100% [84–100%] vs a 0% benign baseline); a clean policy that
+memorized no such canary screens ~0% — an honest null. Real-model SmolVLA × LIBERO transfer — an
+actual membership-inference / extraction advantage measured by *querying* a real policy (never
+exfiltrating real data) — is GPU-gated and **not yet run**, so no cross-model claim.
 **Mitigations.** Egress monitoring + allow-lists; rate-limit/obfuscate query APIs; watermark/fingerprint
 weights; minimize + disclose telemetry; on-device processing; data-residency controls; bystander-privacy review.
 **Maps to.** OWASP **LLM02 Sensitive Information Disclosure** · NIST AI 100-2 **Privacy (model extraction, NISTAML.03)** · MITRE ATLAS **Exfiltration**.
