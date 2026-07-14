@@ -85,6 +85,10 @@ def test_regulatory_clock_states_machinery_2027_and_both_ai_act_dates() -> None:
     ai_act = by_id["eu-ai-act"]
     assert ai_act.applies_from == "2027-08-02"
     assert "2028" in ai_act.note and "not yet adopted" in ai_act.note.lower()
+    # CRA (Reg. (EU) 2024/2847): main obligations 2027-12-11; the note states the 2026 reporting date.
+    cra = by_id["eu-cra"]
+    assert cra.applies_from == "2027-12-11"
+    assert "2026-09-11" in cra.note
 
 
 def test_transfer_status_flags_stub_and_optimized() -> None:

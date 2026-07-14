@@ -102,9 +102,10 @@ def test_requirement_mapping_is_complete_and_ordered() -> None:
     cr = to_compliance(_calibrated_report())
     # Every requirement in the catalog appears, in catalog order.
     assert [e.key for e in cr.entries] == [r.key for r in REQUIREMENTS]
-    # All frameworks are represented.
+    # All frameworks are represented (incl. the D2 additions: CRA + the ISO/IEC AI standards).
     assert {e.framework_id for e in cr.entries} == {
-        "eu-ai-act", "eu-machinery", "iso-10218", "nist", "iec-62443"
+        "eu-ai-act", "eu-machinery", "eu-cra", "iso-10218", "nist", "iec-62443",
+        "iso-iec-tr-5469", "iso-42001", "iso-23894",
     }
     for entry in cr.entries:
         assert entry.provael_signal
@@ -123,7 +124,7 @@ def test_gap_detection_uncalibrated() -> None:
         "nist-ai-rmf:measure",
         "nist-ai-rmf:manage",
     }
-    assert cr.summary == {"evidence-present": 8, "gap": 4}
+    assert cr.summary == {"evidence-present": 12, "gap": 4}
     # Every gap explains itself; every present entry has no gap reason.
     for entry in cr.entries:
         if entry.status == "gap":
@@ -140,11 +141,28 @@ def test_gap_detection_calibrated() -> None:
     by = _by_key(cr)
     assert by["eu-ai-act:art15"].status == "evidence-present"
     assert by["nist-ai-rmf:measure"].status == "evidence-present"
-    assert cr.summary == {"evidence-present": 10, "gap": 2}
+    assert cr.summary == {"evidence-present": 14, "gap": 2}
     # The measured evidence carries the calibrated control.
     assert cr.result.calibrated is True
     assert cr.result.benign_fpr == 0.0
     assert cr.result.target_fpr == 0.05
+
+
+def test_transfer_status_tier_is_run_level_and_uses_the_attestation_vocabulary() -> None:
+    # D1: the stub run is honestly scaffolding; the markdown surfaces it so an auditor can't misread.
+    cr = to_compliance(_calibrated_report())
+    assert cr.result.transfer_status == "stub-validated-scaffolding"
+    assert "transfer status" in to_compliance_markdown(_calibrated_report())
+    # A real policy x real suite flips it to the measured-transfer label (same run-level derivation).
+    real = to_compliance(_base(policy="smolvla", suite="libero"))
+    assert real.result.transfer_status == "measured-real-transfer"
+
+
+def test_cra_and_iso_ai_rows_are_present_and_indicative() -> None:
+    by = _by_key(to_compliance(_calibrated_report()))
+    for key in ("eu-cra:cyber", "iso-iec-tr-5469:ai-safety", "iso-42001:aims", "iso-23894:ai-risk"):
+        assert by[key].indicative is True  # D2 rows are scope-flagged indicative
+        assert by[key].status == "evidence-present"  # an EAI-tagged attack ran
 
 
 def test_indicative_flags_match_catalog() -> None:

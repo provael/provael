@@ -16,12 +16,22 @@ agent/embodied techniques — its embodied coverage is thin, which is the openin
 
 ## ATLAS technique mapping (proposed)
 
-| Provael attack family | EAI | ATLAS tactic / technique (proposed) |
+**Now structured (D5).** This mapping is promoted from prose to the `atlas_techniques` field on each
+`provael.eai.CATALOG` entry and surfaced into SARIF rule `properties.atlasTechniques`, so external
+validation routes through MITRE ATLAS with zero Top-10 branding conflict (INV-6). The table below is
+the human-readable mirror; phrasings are descriptive tactic→technique (not invented `AML.TXXXX` ids)
+and flagged *(proposed)* where ATLAS's thin embodied coverage has no on-point technique.
+
+| Provael attack family | EAI | ATLAS tactic → technique (proposed) |
 | --- | --- | --- |
-| instruction (jailbreak) | EAI01 | *ML Attack Staging* → prompt-injection / jailbreak of an ML-driven agent |
-| visual (patch/decoy) | EAI02 | *Initial Access / Evasion* → adversarial example in the perception channel |
-| injection (scene-text / tool-desc) | EAI05 | *Execution* → indirect prompt injection via the environment |
-| action (freeze / hijack) | EAI04 | *Impact* → manipulate the agent's actuation / denial of robot action |
+| instruction (jailbreak) | EAI01 | ML Attack Staging → prompt-injection / jailbreak of an ML-driven agent |
+| visual (patch / decoy / sensor-spoof) | EAI02 | Evasion → adversarial example in the perception channel (craft adversarial data) |
+| backdoor (object / phrase trigger) | EAI03 | Persistence → backdoor the ML model; ML Supply Chain Compromise → poison an open-weights checkpoint |
+| action / action_space (freeze / hijack) | EAI04 | Impact → manipulate / deny the agent's actuation *(proposed — ATLAS embodied coverage is thin)* |
+| injection (scene-text / tool-desc) | EAI05 | Execution → indirect prompt injection via the environment |
+| misalignment (embodiment gap) | EAI06 | Impact → unsafe embodied action under a language-benign instruction *(proposed — no on-point ATLAS technique)* |
+| authorization (excessive autonomy) | EAI08 | Privilege Escalation → excessive agency / self-authorized guarded action *(proposed)* |
+| confidentiality (extraction / membership) | EAI09 | Exfiltration → model extraction / membership inference via the inference interface |
 
 ## Evidence
 

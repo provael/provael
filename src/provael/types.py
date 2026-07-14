@@ -120,9 +120,17 @@ class EaiTag(BaseModel):
     name: str = Field(..., description="Human-readable risk name.")
 
 
-#: Honest transfer-status labels every family's transfer-test carries.
+#: Honest transfer-status labels every family's transfer-test carries (the leaderboard / report
+#: wording). Read alongside the attestation pair below — they are deliberately distinct strings.
 REAL_TRANSFER = "real-transfer"
 STUB_SCAFFOLDING = "stub-scaffolding"
+
+#: Attestation / compliance transfer-status vocabulary — the signed, auditor-facing pair. The
+#: attestation statement (:mod:`provael.attest`) and the transfer-aware compliance tier
+#: (:mod:`provael.compliance`) share THESE constants so an auditor reads one consistent label and
+#: cannot misread stub scaffolding as conformity-relevant evidence (INV-3: extend, never bypass).
+MEASURED_REAL_TRANSFER = "measured-real-transfer"
+STUB_VALIDATED_SCAFFOLDING = "stub-validated-scaffolding"
 
 
 class TransferTest(BaseModel):

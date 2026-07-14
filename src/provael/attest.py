@@ -43,7 +43,7 @@ from pydantic import BaseModel, Field
 from provael.attacks.optimized import FAMILY as OPTIMIZED_FAMILY
 from provael.attacks.registry import FAMILIES
 from provael.compliance import to_compliance_dict
-from provael.types import RunReport
+from provael.types import MEASURED_REAL_TRANSFER, STUB_VALIDATED_SCAFFOLDING, RunReport
 
 #: The attestation statement format id (our own DSSE-style envelope, not in-toto conformance).
 STATEMENT_FORMAT = "provael-attestation/v1"
@@ -52,7 +52,8 @@ PREDICATE_TYPE = "provael-compliance-evidence/v1"
 #: DSSE payload type for the envelope.
 PAYLOAD_TYPE = "application/vnd.provael.attestation+json"
 #: Ruleset version for the framework crosswalk. Bump when compliance.REQUIREMENTS changes.
-RULESET_VERSION = "provael-attest-ruleset/1"
+#: /2: added the CRA + ISO/IEC TR 5469 + ISO 42001/23894 rows and the D1 run-level transfer tier.
+RULESET_VERSION = "provael-attest-ruleset/2"
 
 ATTESTATION_JSON = "attestation.json"
 ATTESTATION_PUB = "attestation.pub"
@@ -94,6 +95,15 @@ REGULATORY_CLOCK: tuple[RegulatoryClock, ...] = (
         applies_from="2027-08-02",
         note="High-risk obligations statutory from 2 Aug 2027. A move to 2 Aug 2028 is proposed "
         "in the Digital Omnibus but NOT yet adopted; treat 2027 as binding until it is.",
+    ),
+    RegulatoryClock(
+        framework_id="eu-cra",
+        instrument="Regulation (EU) 2024/2847 (Cyber Resilience Act)",
+        applies_from="2027-12-11",
+        note="Main obligations apply from 2027-12-11; the earlier vulnerability/incident "
+        "reporting duties apply from 2026-09-11. Products with digital elements (an AI-enabled "
+        "robot qualifies) need essential cybersecurity requirements + conformity assessment. "
+        "Dates factual (OJ 2024/2847); no conformity claim.",
     ),
     RegulatoryClock(
         framework_id="iso-10218",
@@ -321,18 +331,18 @@ def _transfer_status(report: RunReport) -> list[TransferStatus]:
         family = _NAME_TO_FAMILY.get(attack, "unknown")
         if family == OPTIMIZED_FAMILY:
             rows.append(TransferStatus(
-                attack=attack, family=family, status="stub-validated-scaffolding",
+                attack=attack, family=family, status=STUB_VALIDATED_SCAFFOLDING,
                 note="Search-based scaffolding validated on the deterministic stub; real-VLA "
                 "transfer is GPU-gated and not yet measured.",
             ))
         elif real:
             rows.append(TransferStatus(
-                attack=attack, family=family, status="measured-real-transfer",
+                attack=attack, family=family, status=MEASURED_REAL_TRANSFER,
                 note=f"Measured against a real policy ({report.policy} x {report.suite}).",
             ))
         else:
             rows.append(TransferStatus(
-                attack=attack, family=family, status="stub-validated-scaffolding",
+                attack=attack, family=family, status=STUB_VALIDATED_SCAFFOLDING,
                 note="Numbers are properties of the deterministic CPU stub, not a real VLA. "
                 "Re-run against a real model for a transfer measurement.",
             ))
