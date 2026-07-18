@@ -48,6 +48,8 @@ nav:
   - vs. LLM red-team tools: comparison.md
   - Handbook (outline): handbook.md
   - Accelerators & TPU: accelerators.md
+  - Findings:
+      - Cross-architecture transfer (2026): findings/2026-cross-arch-transfer.md
   - FAQ: faq.md
   - Roadmap: roadmap.md
 
