@@ -86,6 +86,7 @@ real-model transfer varies by family and is called out honestly in each entry.
 its safety constraints — the embodied analog of an LLM jailbreak, output as a physical action plan.
 **Evidence.** *[research]* **RoboPAIR** (arXiv 2410.13691, ~100% ASR incl. a deployed Unitree Go2);
 **BadRobot** (ICLR 2025, arXiv 2407.20242). Provael's own runs: `roleplay` diverts a real SmolVLA×LIBERO policy **100% (10/10), 95% CI [72–100%]** against a **0% benign baseline** (sim-only, one task, n=10; reproduce with `provael calibrate` + `attack --calib`).
+**Cross-architecture transfer (goal, run pending).** The *same* instruction family can now be aimed at **π0 served by openpi** (Physical Intelligence's own stack — a different framework from LeRobot, same flow-matching action head) via the `[openpi]` client → a GPU policy server. A redirection that reproduces across both backends is evidence the attack is about policy behaviour, not one codebase's glue. That run is **GPU-gated and not yet run** — no cross-architecture number is claimed here, and this adds **no** new Top-10 category coverage (still **8/10**).
 **Why it matters.** Cheapest, most transferable attack — rides the normal command channel to a moving robot.
 **Mitigations.** Instruction provenance/auth; runtime plan-validation guardrail (temporal-logic /
 executability, cf. RoboGuard); embodied-harm refusal training; red-team each release and gate on ASR.

@@ -14,6 +14,10 @@ Two adapter backends are reused across many models:
 * **Hugging Face ``transformers``** (``openvla``) — loads OpenVLA / OpenVLA-OFT directly via
   ``AutoModelForVision2Seq``. Needs ``provael[openvla]``. This is the model-agnostic path that
   does not go through LeRobot.
+* **openpi websocket client** (``openpi``) — connects to a Physical-Intelligence/openpi π0 policy
+  *server* (the model runs there, on a GPU). Needs the CPU-only ``provael[openpi]`` client. This is
+  the cross-architecture-transfer backend: the same attacks that move SmolVLA, aimed at π0 as served
+  by openpi's own stack (a different framework, same flow-matching action head).
 
 Each real policy accepts a ``model`` override so a fine-tuned (e.g. LIBERO) checkpoint can be
 passed from the CLI.
@@ -22,6 +26,7 @@ passed from the CLI.
 from __future__ import annotations
 
 import importlib.util
+import os
 from collections.abc import Callable
 
 from provael.policies.base import PolicyAdapter
@@ -71,6 +76,24 @@ def _make_openvla(
     )
 
 
+def _make_openpi(
+    host: str | None = None,
+    port: int | None = None,
+    **_kwargs: object,
+) -> PolicyAdapter:
+    """Build the openpi websocket-client adapter, defaulting the server address from the env.
+
+    openpi runs the model in a separate GPU server; this client connects to it. The address comes
+    from ``host``/``port`` kwargs, else ``OPENPI_HOST``/``OPENPI_PORT``, else ``localhost:8000``.
+    """
+    from provael.policies.openpi_adapter import OpenPiAdapter
+
+    return OpenPiAdapter(
+        host=host or os.environ.get("OPENPI_HOST") or "localhost",
+        port=int(port or os.environ.get("OPENPI_PORT") or 8000),
+    )
+
+
 #: Registry of policy factories keyed by name. Factories accept (and ignore unknown) keyword
 #: overrides so the CLI can pass e.g. a fine-tuned checkpoint via ``--model``.
 POLICIES: dict[str, Callable[..., PolicyAdapter]] = {
@@ -81,6 +104,7 @@ POLICIES: dict[str, Callable[..., PolicyAdapter]] = {
     "pi0fast": _lerobot_native("lerobot/pi0fast_base", "pi0fast"),
     "groot": _lerobot_native("nvidia/GR00T-N1.5-3B", "groot"),
     "openvla": _make_openvla,
+    "openpi": _make_openpi,
 }
 
 #: policy name -> (extra name, importable module that makes it runnable here).
@@ -91,6 +115,7 @@ _REQUIRES_EXTRA: dict[str, tuple[str, str]] = {
     "pi0fast": ("lerobot", "lerobot"),
     "groot": ("lerobot", "lerobot"),
     "openvla": ("openvla", "transformers"),
+    "openpi": ("openpi", "openpi_client"),
 }
 
 #: Policies that require the optional ``[lerobot]`` extra (kept for back-compat).
