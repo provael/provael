@@ -41,10 +41,11 @@ driving an unsafe embodied action into a keep-out zone) — plus an **`optimized
 **leaderboard**. Every family carries its transfer-test (rate + 95% Wilson CI + benign-FPR
 control); run `provael transfer-test` to print it. The `sensor_spoof`, `backdoor`,
 `authorization`, `misalignment`, `action_space`, and `confidentiality` families are
-**stub-validated only** (no real-model transfer claimed). It red-teams **7 policies** — the CPU `stub`
-plus real **SmolVLA / π0 / π0.5 / π0-FAST / GR00T** (via the `[lerobot]` extra) and **OpenVLA**
-(via `[openvla]`) — across **4 suites** (`stub` + `reach` on CPU; **LIBERO** + **Meta-World**
-gated), or any policy/suite you wrap with the tiny adapter ABCs. The templated families are
+**stub-validated only** (no real-model transfer claimed). It red-teams **8 policies** — the CPU `stub`
+plus real **SmolVLA / π0 / π0.5 / π0-FAST / GR00T** (via the `[lerobot]` extra), **OpenVLA**
+(via `[openvla]`), and **π0 served by openpi** — Physical Intelligence's own stack, via the CPU-only
+`[openpi]` websocket client to a GPU policy server — across **4 suites** (`stub` + `reach` on CPU;
+**LIBERO** + **Meta-World** gated), or any policy/suite you wrap with the tiny adapter ABCs. The templated families are
 heuristic perturbations (not gradient-based); the `optimized` family is a model-agnostic search
 that only *queries* the policy — see
 [Scope and honest limitations](#scope-and-honest-limitations) and the
@@ -106,9 +107,14 @@ to oversell. Before you trust a number, know:
   100% [72–100%] vs a 0% benign-FPR control). A real-model action-freeze / trajectory-hijack
   needs an adversarial-image search (FreezeVLA, AttackVLA), which is GPU-gated and **not yet
   run** — so no SmolVLA × LIBERO transfer is claimed for it.
-- **One policy, one suite shipped.** The architecture is model-agnostic by design (an adapter
-  interface), but only the **SmolVLA / LeRobot** policy and the **LIBERO** suite are
-  implemented today — generality is intended, not yet demonstrated against a second backend.
+- **Demonstrated transfer is still one policy, one suite.** The architecture is model-agnostic
+  (an adapter interface), and an adapter now ships for a *cross-architecture* backend — **π0 served
+  by openpi** (Physical Intelligence's own stack, a different framework from LeRobot, same
+  flow-matching action head) — so the *same* instruction attacks that move SmolVLA can be aimed at
+  it. But that **cross-architecture transfer run is GPU-gated and not yet run** (and `[openpi]` /
+  `[lerobot]` can't share one env — conflicting numpy pins — so it runs in a separate env, compared
+  offline). Demonstrated real-model transfer remains **SmolVLA / LeRobot × LIBERO** only — generality
+  is scaffolded, not yet shown across backends.
 - **Every rate ships with its control.** The headline `libero_object/0` result below is reported
   as a redirection rate with its **95% Wilson CI** and the **benign baseline FPR** (the `none`
   control — 0% here) alongside, so a non-zero rate is attack-induced, not task noise. **v0.4's

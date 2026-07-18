@@ -100,6 +100,18 @@ All notable changes to this project are documented here. The format is based on
   **why `accelerator='tpu'` raises** (no maintained VLA-class PyTorch TPU inference path yet) with
   the both-required revisit trigger (TorchTPU GA **and** third-party PyTorch VLA inference parity).
   Linked from the `NotImplementedError` message and added to the docs nav.
+- **`openpi` / π0 flow-matching adapter — the cross-architecture transfer backend.** New
+  `provael.policies.openpi_adapter.OpenPiAdapter`: a second non-LeRobot backend that connects to a
+  Physical-Intelligence/openpi π0 policy **server** via the CPU-only `openpi-client` (`[openpi]`
+  extra), injecting the (adversarial) instruction as openpi's `prompt`. Registered so
+  `list-policies` shows `openpi` (8 policies now). The point is **cross-architecture transfer**: the
+  same instruction-family attacks that move SmolVLA (LeRobot) can be aimed at π0 served by openpi's
+  own stack — a different framework, same flow-matching action head. Ships the harness + a gated
+  integration test; the real forward pass needs the extra, `PROVAEL_INTEGRATION=1`, and a running
+  GPU server, so **no cross-model number is claimed** ("run pending on GPU"). `[openpi]` and
+  `[lerobot]` are declared **mutually exclusive** (`[tool.uv] conflicts`) — conflicting numpy pins —
+  so the cross-architecture comparison runs in a separate env, compared offline. Adds **no** new
+  Top-10 coverage (still 8/10); "Embodied AI Security Top 10" naming preserved.
 
 ### Security
 - **P0.5b — PEP 740 publish attestations.** `release.yml` pins the PyPI publish step from the moving

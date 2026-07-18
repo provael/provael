@@ -42,7 +42,7 @@ def test_suite_factory_rejects_unknown() -> None:
 
 def test_policy_factory_and_readiness() -> None:
     assert set(available_policies()) == {
-        "stub", "smolvla", "pi0", "pi05", "pi0fast", "groot", "openvla"
+        "stub", "smolvla", "pi0", "pi05", "pi0fast", "groot", "openvla", "openpi"
     }
     assert policy_is_ready("stub") is True
     # The LeRobot-native policies need the [lerobot] extra, absent on the CPU build.
@@ -52,6 +52,9 @@ def test_policy_factory_and_readiness() -> None:
     # OpenVLA needs the [openvla] extra (transformers), also absent on the CPU build.
     assert policy_is_ready("openvla") is False
     assert policy_extra("openvla") == "openvla"
+    # openpi needs the [openpi] extra (openpi-client), also absent on the CPU build.
+    assert policy_is_ready("openpi") is False
+    assert policy_extra("openpi") == "openpi"
     assert policy_extra("stub") is None
     assert make_policy("stub").name == "stub"
 

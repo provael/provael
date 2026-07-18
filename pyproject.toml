@@ -58,6 +58,10 @@ lerobot = ["lerobot[smolvla,libero]==0.5.1"]
 # OpenVLA / OpenVLA-OFT via Hugging Face transformers (the non-LeRobot, model-agnostic path).
 # GPU-only; pulled in explicitly by the user, never by the default install or CPU CI.
 openvla = ["transformers>=4.40", "torch", "timm", "accelerate", "pillow>=10"]
+# openpi / pi0 (Physical-Intelligence/openpi) via its CPU-only websocket client — the model runs in
+# a separate GPU policy server, so this extra pulls no torch/JAX. The cross-architecture-transfer
+# backend. Never pulled by the default install or CPU CI.
+openpi = ["openpi-client>=0.1.2"]
 # Cryptographic signing/verification for `provael attest`. Kept OUT of the default install so the
 # free core stays 6 light deps; `attest` prints a clear install hint when it is missing. The dev
 # group also pulls it so CI exercises the real Ed25519 sign/verify path (pure CPU, deterministic).
@@ -84,6 +88,16 @@ docs = [
     "mkdocs-material",
     "mkdocs-jupyter",
     "mike",
+]
+
+# The `lerobot` and `openpi` extras are mutually exclusive: lerobot pins numpy>=2.0 while
+# openpi-client pins numpy<2.0, so they cannot share one environment (an upstream reality, not a
+# provael choice). Declaring the conflict lets uv resolve/lock them in separate forks instead of
+# failing the universal lock; each still installs fine on its own. They target different backends
+# and are run in separate invocations anyway (lerobot in-process vs openpi client->server).
+[tool.uv]
+conflicts = [
+    [{ extra = "lerobot" }, { extra = "openpi" }],
 ]
 
 [tool.hatch.version]
@@ -126,7 +140,7 @@ plugins = ["pydantic.mypy"]
 # cryptography is guarded (lazy) in attest.py and only present via the dev group / attest extra.
 module = [
     "lerobot.*", "torch", "libero.*", "transformers.*", "cryptography.*",
-    "fastapi.*", "uvicorn.*",
+    "fastapi.*", "uvicorn.*", "openpi_client.*",
 ]
 ignore_missing_imports = true
 
