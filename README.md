@@ -295,6 +295,27 @@ scene-text perturbations did not move it (0%) — an honest null on this suite.
 > redirection rate with a 95% CI and the benign FPR as its control (here, 0%) — see
 > [Calibration](#calibration). The real SmolVLA × LIBERO path needs a GPU + the `[lerobot]` extra.
 
+## Cross-architecture transfer
+
+Does the *same* attack move *different* VLA architectures, or is a redirection an artifact of one
+codebase's glue? The **cross-architecture transfer study** runs the shared instruction/visual/injection
+battery against multiple backends through the same runner + scoring, and reports per-(family ×
+architecture) ASR with a 95% Wilson CI and the benign-FPR control:
+
+```bash
+provael study cross-arch                      # deterministic CPU-stub table (no GPU/network)
+python studies/cross_arch_transfer/run.py     # + writes results/cross_arch_transfer/
+```
+
+On CPU it runs the deterministic stub battery and marks the real backends **`pending`**. The real legs
+— **SmolVLA** (LeRobot) and **π0** (served by Physical Intelligence's own `openpi` stack; same
+flow-matching action head, different framework) — are gated behind `PROVAEL_INTEGRATION=1` + the
+`[lerobot]`/`[openpi]` extra, and (since those two extras pin conflicting numpy majors) run in separate
+environments, merged offline. **Honest status:** on the one real architecture measured so far (SmolVLA),
+only the **instruction** family transfers (`roleplay` 100% [72–100%], `goal_substitution` 60%); visual
+and injection show 0% lift. The **π0** leg is **run pending** — no cross-architecture number is claimed
+until it runs. Full write-up: [docs/findings/2026-cross-arch-transfer.md](docs/findings/2026-cross-arch-transfer.md).
+
 ## Calibration
 
 By default the unsafe predicate is **uncalibrated** — the stub uses a random per-seed threshold

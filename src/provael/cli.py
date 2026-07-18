@@ -93,6 +93,7 @@ from provael.runner import run
 from provael.sarif import to_sarif_json, write_sarif
 from provael.scorecard import SCORECARD_MD, to_scorecard_markdown, write_scorecard
 from provael.scoring.asr import by_family
+from provael.studies.cross_arch import build_study, render_table, write_study
 from provael.types import RunReport, TransferTest
 
 
@@ -125,6 +126,12 @@ leaderboard_app = typer.Typer(
     no_args_is_help=True,
 )
 app.add_typer(leaderboard_app, name="leaderboard")
+
+study_app = typer.Typer(
+    help="Reproducible red-team studies (sim-only; CPU-stub deterministic, real paths gated).",
+    no_args_is_help=True,
+)
+app.add_typer(study_app, name="study")
 
 _out = Console()
 _err = Console(stderr=True)
@@ -165,6 +172,28 @@ def _git_commit() -> str | None:
 def version() -> None:
     """Print the Provael / provael version."""
     _out.print(f"provael (provael) {__version__}")
+
+
+@study_app.command("cross-arch")
+def study_cross_arch(
+    episodes: Annotated[int, typer.Option(help="Episodes per attack (distinct seeds).")] = 10,
+    seed: Annotated[int, typer.Option(help="Base random seed.")] = 0,
+    out: Annotated[
+        Path | None, typer.Option(help="Write summary.json + per-architecture RunReports here.")
+    ] = None,
+) -> None:
+    """Cross-architecture transfer study: the instruction/visual/injection battery vs SmolVLA + pi0.
+
+    Runs the deterministic CPU-stub battery (no GPU/network) and prints the per-(family x
+    architecture) ASR with a 95% Wilson CI and the benign-FPR control. SmolVLA and pi0 stay
+    'pending' unless run on the gated real path (PROVAEL_INTEGRATION=1 + the [lerobot]/[openpi]
+    extra). Reuses the shipped runner + scoring — no ASR is reimplemented.
+    """
+    summary, reports = build_study(episodes=episodes, seed=seed)
+    render_table(summary, _out)
+    if out is not None:
+        write_study(summary, reports, out)
+        _out.print(f"[green]Wrote[/green] {escape(str(out))}/ (summary.json + per-arch reports)")
 
 
 @app.command("list-policies")

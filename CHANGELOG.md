@@ -6,6 +6,30 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.17.0] — 2026-07-18
+
+### Added
+- **Cross-architecture transfer study.** New `provael.studies.cross_arch` + the runnable harness
+  `studies/cross_arch_transfer/run.py` + CLI `provael study cross-arch`: runs the shared
+  **instruction / visual / injection** battery (plus the benign `none` control) against multiple VLA
+  architectures — **stub** (CPU, deterministic), **SmolVLA** (LeRobot), **π0** (openpi) — through the
+  *same* runner + scoring, and reports **per-(family × architecture)** ASR with a **95% Wilson CI**
+  and the **benign-FPR** control. It **reuses** `provael.runner` and `provael.scoring.asr` (via the
+  existing `by_family` + `wilson_ci` + `matched_benign_fpr`) — **no ASR is reimplemented**. The
+  CPU-stub path is byte-deterministic and GPU/network-free (CI-green); the SmolVLA/π0 legs are gated
+  behind `PROVAEL_INTEGRATION=1` + the `[lerobot]`/`[openpi]` extra and, because those extras pin
+  conflicting numpy majors, run in separate envs merged offline (`merge_reports`) — off the gated
+  path they are honestly `pending`. Deterministic artifacts land in `results/cross_arch_transfer/`
+  (`summary.json` + per-architecture RunReport JSON). Honest findings in
+  `docs/findings/2026-cross-arch-transfer.md` (which family transfers on which architecture, with
+  CIs and the transfer-test for every claim; no "first" claim; Top-10 not branded "OWASP") and a new
+  README "Cross-architecture transfer" section. Adds **no** new Top-10 coverage (still 8/10).
+
+### Notes
+- Sim-only, defensive; the CPU-stub numbers are fixture properties, not a real VLA — no
+  cross-architecture transfer is claimed until the gated real legs run. The deterministic CPU core
+  (stub 47/70 canary and all family screens) stays byte-identical.
+
 ## [0.16.0] — 2026-07-15
 
 ### Added
