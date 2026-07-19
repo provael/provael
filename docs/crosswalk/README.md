@@ -12,7 +12,7 @@ the 2026 Digital-Omnibus routing.
 | Obligation | Instrument · date | Provael artifact |
 | --- | --- | --- |
 | Cybersecurity risk assessment (mandatory) | **ISO 10218-1/-2:2025** (cyber clauses) | Measured ASR per EAI as a risk-assessment input (`report.compliance`) |
-| Protection against corruption; AI safety-functions → 3rd-party conformity | **EU Machinery Regulation 2023/1230** · applies **2027-01-20** | SARIF + scorecard for the security file |
+| Protection against corruption; AI safety-functions → 3rd-party conformity | **EU Machinery Regulation 2023/1230** · applies **2027-01-20** | `provael certify` Annex I Part A / Annex III dossier (OSCAL + HTML); SARIF + scorecard for the security file |
 | Industrial control-system security levels | **IEC 62443** | Per-EAI ASR as control-system security evidence |
 
 ## Humanoid maker (the white-space)

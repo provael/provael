@@ -6,6 +6,35 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.18.0] — 2026-07-19
+
+### Added
+- **`provael certify` — Machinery Regulation conformity-assessment evidence dossier.** A new command
+  produces the evidence pack a notified body reviews for an ML-based safety component under
+  Regulation (EU) 2023/1230 (**applies 20 January 2027**; CELEX 32023R1230, Article 54). One shared
+  code path (`provael.certify`) serves two profiles: `--profile annex-i-part-a` (default — the
+  Annex I Part A third-party conformity route for ML self-evolving-behaviour safety components, via
+  Article 6(1) → Article 25(2)) and `--profile annex-iii`; the existing hosted **Annex III** pack
+  (`provael.hosted.machinery`) is now a thin caller of this core, not a parallel implementation. The
+  dossier's separately-addressable artifacts: component identification + intended use + operating
+  envelope (run-derived, plus an operator `--component-metadata` overlay); the per-family adversarial
+  evidence — ASR with its **n**, the fixed-n **Wilson 95%** interval *and* the anytime-valid
+  **Robbins Beta-mixture** confidence sequence, the matched benign FPR, Succ-But-Unsafe, and
+  **BH-FDR** across families, with the `preliminary` flag under 5 seeds; an honest **transfer
+  statement** where a family with no real-policy transfer is labelled *"not demonstrated on a real
+  policy"* in the same sentence as its ASR; a plain **residual-risk** statement (classes deferred per
+  SAFETY.md, families/suites not run, embodiments not covered); a **standards crosswalk** (Machinery
+  Annex I Part A / Annex III, ISO 10218-1/-2:2025 → IEC 62443, NIST AI 100-2e2025) with unverifiable
+  clause numbers marked `[clause reference pending verification]` rather than guessed; and references
+  (not copies) to the CycloneDX **ML-BOM** and the PEP 740 **attestation**. It **reuses** every
+  statistic from `provael.scoring.asr` and `provael.calibration` — **no scoring is reimplemented**
+  (guarded by a test). Emits two formats: the machine-readable **OSCAL** assessment-results (extended
+  with `import-ap` + `reviewed-controls` clause bindings — not a new schema) and a single
+  self-contained **print-to-PDF HTML** an assessor can read without ever having used Provael.
+  Deterministic (`sort_keys`-stable, no wall-clock). **Evidence input to a conformity assessment — it
+  is not a conformity assessment, and Provael is not a notified body.** New
+  `docs/compliance/machinery-annex-i-part-a.md`.
+
 ## [0.17.0] — 2026-07-18
 
 ### Added
