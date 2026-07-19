@@ -150,6 +150,27 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         indicative=True,
     ),
     Requirement(
+        key="eu-machinery:annex-i-part-a",
+        framework=_MACHINERY, framework_id="eu-machinery",
+        control_id="Article 25(2) via Article 6(1); Annex I Part A "
+        "[point reference pending verification]",
+        control_title="Annex I Part A — third-party conformity assessment of ML self-evolving-"
+        "behaviour safety components",
+        provael_signal=(
+            "Per-family adversarial evidence (ASR + 95% Wilson CI + anytime-valid CI + benign-FPR "
+            "control + Succ-But-Unsafe + BH-FDR across families) with the honest per-family "
+            "real-policy transfer statement — the adversarial-robustness input a notified body "
+            "reviews for an ML safety component routed to a third-party conformity assessment "
+            "under Article 25(2). Article/annex numbers verified against CELEX 32023R1230; the "
+            "granular Annex I Part A point number is marked pending until confirmed against the "
+            "primary annex text"
+        ),
+        evidence_refs=(
+            "dossier.json", "dossier.oscal.json", "report.json#/by_attack", "attestation.json",
+        ),
+        indicative=True,
+    ),
+    Requirement(
         key="iso-10218-1:cyber",
         framework=_ISO, framework_id="iso-10218",
         control_id="ISO 10218-1:2025",

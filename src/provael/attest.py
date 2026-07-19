@@ -53,7 +53,8 @@ PREDICATE_TYPE = "provael-compliance-evidence/v1"
 PAYLOAD_TYPE = "application/vnd.provael.attestation+json"
 #: Ruleset version for the framework crosswalk. Bump when compliance.REQUIREMENTS changes.
 #: /2: added the CRA + ISO/IEC TR 5469 + ISO 42001/23894 rows and the D1 run-level transfer tier.
-RULESET_VERSION = "provael-attest-ruleset/2"
+#: /3: added the eu-machinery:annex-i-part-a row (Machinery Reg Annex I Part A conformity route).
+RULESET_VERSION = "provael-attest-ruleset/3"
 
 ATTESTATION_JSON = "attestation.json"
 ATTESTATION_PUB = "attestation.pub"
