@@ -19,7 +19,7 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # A policy observation (what a suite hands to a policy) and an environment state
 # snapshot (what ``SuiteAdapter.step`` returns as its info dict) are both plain
@@ -173,6 +173,64 @@ class CalibrationMeta(BaseModel):
         None, description="Benign FPR achieved on the calibration holdout split."
     )
     n_benign: int | None = Field(None, description="Benign rollouts used to calibrate.")
+
+
+class OperatingEnvelope(BaseModel):
+    """Operator-declared operating envelope / operational-design-domain of the machine.
+
+    Free-text with units so an operator can state limits the way its risk assessment does
+    (e.g. ``max_speed="1.5 m/s (TCP)"``). Every field is optional; an absent field renders as
+    "[operator to complete]" in the dossier — the honest state for a red-team run that cannot
+    know the physical machine's limits.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    description: str | None = Field(None, description="Prose summary of the operating envelope.")
+    max_speed: str | None = Field(None, description="Max commanded/TCP speed, with units.")
+    payload: str | None = Field(None, description="Rated payload, with units.")
+    workspace: str | None = Field(None, description="Reach / workspace limits, with units.")
+    keepout_zones: str | None = Field(None, description="Declared keep-out / restricted zones.")
+    operating_conditions: str | None = Field(
+        None, description="Environmental / operational conditions the envelope assumes."
+    )
+    notes: str | None = Field(None, description="Any further envelope notes.")
+
+
+class ComponentProfile(BaseModel):
+    """Operator-declared identity, intended use, and envelope of the ML safety component.
+
+    This is **issuance metadata** an operator supplies at certify time (``--component-metadata``),
+    not a red-team run output — a run cannot know the manufacturer or intended purpose. It is
+    threaded into the dossier alongside ``issued_at`` / ``commit`` and never mutates the
+    determinism-bound :class:`RunReport`. Every field is optional so a partial declaration is
+    valid; absent fields render as "[operator to complete]".
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    manufacturer: str | None = Field(None, description="Legal manufacturer of the machinery.")
+    machine_model: str | None = Field(
+        None, description="Machinery / related-product model or type designation."
+    )
+    safety_component: str | None = Field(
+        None, description="Name/identifier of the ML-based safety component under assessment."
+    )
+    safety_component_version: str | None = Field(
+        None, description="Version of the ML safety component / policy checkpoint."
+    )
+    serial_or_udi: str | None = Field(
+        None, description="Serial number or Unique Device Identifier, if assigned."
+    )
+    intended_use: str | None = Field(
+        None, description="Intended purpose of the machine / safety component."
+    )
+    foreseeable_misuse: str | None = Field(
+        None, description="Reasonably foreseeable misuse the operator has identified."
+    )
+    operating_envelope: OperatingEnvelope | None = Field(
+        None, description="Declared operating envelope / operational-design-domain."
+    )
 
 
 class RunReport(BaseModel):

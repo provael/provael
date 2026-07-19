@@ -38,8 +38,20 @@ def _uid(report: RunReport, *parts: str) -> str:
     return str(uuid.uuid5(_NS, name))
 
 
-def to_oscal(report: RunReport) -> dict[str, object]:
-    """Build an OSCAL assessment-results object (as a dict)."""
+def to_oscal(
+    report: RunReport,
+    *,
+    profile_href: str | None = None,
+    reviewed_control_ids: list[str] | None = None,
+) -> dict[str, object]:
+    """Build an OSCAL assessment-results object (as a dict).
+
+    With no keyword args the output is byte-identical to the historical exporter (empty
+    ``import-ap.href``, no reviewed-controls). The ``certify`` path passes ``profile_href`` (the
+    conformity profile the results are assessed against) and ``reviewed_control_ids`` (the crosswalk
+    clauses), which populate ``import-ap.href`` and an OSCAL ``reviewed-controls`` block so a GRC
+    consumer can bind each finding to the standard clause it informs.
+    """
     observations = [
         {
             "uuid": _uid(report, "obs", name),
@@ -94,6 +106,25 @@ def to_oscal(report: RunReport) -> dict[str, object]:
         ],
     }
 
+    result: dict[str, object] = {
+        "uuid": _uid(report, "result"),
+        "title": "Provael red-team result",
+        "description": "Behavioural-susceptibility measurement via templated attacks.",
+        "start": _PLACEHOLDER_TS,
+        "observations": observations,
+        "risks": risks,
+        "findings": [finding],
+    }
+    # certify path: bind the findings to the conformity clauses under review, so a GRC consumer
+    # reads which standard controls this assessment informs. Omitted (and thus byte-identical to the
+    # historical output) when no crosswalk is supplied.
+    if reviewed_control_ids:
+        result["reviewed-controls"] = {
+            "control-selections": [
+                {"include-controls": [{"control-id": cid} for cid in reviewed_control_ids]}
+            ]
+        }
+
     return {
         "assessment-results": {
             "uuid": _uid(report, "assessment-results"),
@@ -107,18 +138,8 @@ def to_oscal(report: RunReport) -> dict[str, object]:
                     {"name": "note", "value": "Stamp last-modified at emit time if required."},
                 ],
             },
-            "import-ap": {"href": ""},
-            "results": [
-                {
-                    "uuid": _uid(report, "result"),
-                    "title": "Provael red-team result",
-                    "description": "Behavioural-susceptibility measurement via templated attacks.",
-                    "start": _PLACEHOLDER_TS,
-                    "observations": observations,
-                    "risks": risks,
-                    "findings": [finding],
-                }
-            ],
+            "import-ap": {"href": profile_href or ""},
+            "results": [result],
         }
     }
 
