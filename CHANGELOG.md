@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.19.0] — 2026-07-20
+
 ### Added
 - **EAI ↔ RoboJailBench taxonomy crosswalk.** New `provael.crosswalk` + `provael crosswalk --target
   robojailbench` map the Embodied AI Security Top 10 against **RoboJailBench**'s 18-category
