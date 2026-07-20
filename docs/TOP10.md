@@ -304,6 +304,10 @@ with rollback; a written disclosure + incident plan.
 - **Multi-robot / swarm / wormable propagation** — Morris-II self-replicating GenAI worm (arXiv 2403.02817); the wormable UniPwn Unitree botnet. Maps to OWASP **ASI08 Cascading Failures** + **ASI07 Insecure Inter-Agent Comms**.
 - **Cascading multi-agent failures** (ASI08) · **Rogue / self-evolving agents** (ASI10) · **Long-lived memory & context poisoning** for persistent embodied agents (ASI06).
 
+*These system-level risks are **not** covered by [RoboJailBench](crosswalk/robojailbench.md) either —
+its 18 categories are single-robot harm outcomes, so multi-robot / wormable propagation and cascading
+multi-agent failures fall outside both taxonomies. They remain a shared open gap.*
+
 ## Adjacent safety failures (out of scope — cross-referenced, not enumerated)
 Hallucination-driven unsafe actions, sim-to-real gap, miscalibration, distribution shift, and random
 hardware faults are **functional-safety / reliability** issues governed by **ISO 10218:2025 / ISO 13482 /
@@ -334,6 +338,20 @@ Exploitation · ASI10 Rogue Agents. (CPS/firmware has no clean ASI peer — it's
 ATT&CK-ICS + ISO 10218/IEC 62443.)*
 
 ---
+
+## Relationship to other taxonomies
+
+**RoboJailBench** (Yeke, Zhou, Lin, Cai, Bianchi & Celik, Purdue University;
+arXiv:[2605.19328](https://arxiv.org/abs/2605.19328), 2026) proposes an 18-category **harm-outcome**
+security taxonomy for embodied agents, derived from ISO/TS 15066:2016 + ISO 10218-1/-2 and documented
+incident reports. It is **complementary** to this list, not a competitor: RoboJailBench enumerates
+*what harm results* (collision, force violation, unauthorized capture, …), while the Embodied AI
+Security Top 10 enumerates *how the system is attacked*. A single EAI mechanism produces many
+RoboJailBench harms, and several EAI ids (EAI03 poisoning, EAI05 injection, EAI07 CPS, EAI10
+evaluation) are delivery mechanisms or meta-risks with **no single harm counterpart**. The full,
+machine-readable mapping in both directions — with provael's honest, benign-FPR-controlled coverage
+and transfer status per category — is in the
+[EAI ↔ RoboJailBench crosswalk](crosswalk/robojailbench.md).
 
 ## Prior art (this list synthesizes, it does not invent)
 

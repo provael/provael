@@ -65,6 +65,10 @@ simulator live behind an optional extra and a `PROVAEL_INTEGRATION=1` gate.
 An independent, community risk list for the security of VLA models and the robots they drive — the
 framework Provael's attacks map to. Read it: [docs/TOP10.md](docs/TOP10.md). Draft v0.2, PRs welcome.
 
+Comparing frameworks? See the [EAI ↔ RoboJailBench crosswalk](docs/crosswalk/robojailbench.md) — a
+machine-readable mapping between the Top 10 and RoboJailBench's 18 harm categories, with provael's
+honest measured coverage (and transfer status) per category.
+
 **Coverage: 8 / 10.** Provael ships a runnable, sim-only attack family with a transfer-test for eight
 categories — **EAI01–EAI06, EAI08, EAI09**. **EAI07** (CPS / firmware / comms / teleop) and **EAI10**
 (evaluation / observability) are **out of a VLA-policy red-teamer's scope by design** — EAI07 is an

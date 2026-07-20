@@ -39,6 +39,7 @@ from provael.attacks.registry import FAMILIES
 from provael.attest import ATTESTATION_JSON, build_statement
 from provael.calibration import anytime_ci, wilson_ci
 from provael.compliance import CAVEATS, REQUIREMENTS
+from provael.crosswalk import build_appendix as _crosswalk_appendix
 from provael.hosted.report import DISCLAIMERS
 from provael.mlbom import ML_BOM_JSON
 from provael.oscal import to_oscal
@@ -381,7 +382,8 @@ def _annex_iii_pack(report: RunReport, *, issued_at: str, commit: str) -> dict[s
 
 
 def _annex_i_dossier(
-    report: RunReport, *, issued_at: str, commit: str, component: ComponentProfile | None
+    report: RunReport, *, issued_at: str, commit: str, component: ComponentProfile | None,
+    include_crosswalk: bool = False,
 ) -> dict[str, Any]:
     """The Annex I Part A conformity-assessment evidence dossier (the rich shape)."""
     stmt_dict: dict[str, Any] = json.loads(
@@ -389,7 +391,7 @@ def _annex_i_dossier(
     )
     tier = _run_transfer_tier(report)
     family_rows = _family_evidence_rows(report)
-    return {
+    dossier: dict[str, Any] = {
         "format": DOSSIER_FORMAT,
         "profile": CertifyProfile.annex_i_part_a.value,
         "tool_version": report.tool_version,
@@ -423,6 +425,11 @@ def _annex_i_dossier(
         "scope_caveats": [{"id": cid, "text": CAVEATS[cid]} for cid in _SCOPE_CAVEAT_IDS],
         "disclaimers": list(DISCLAIMERS),
     }
+    if include_crosswalk:
+        # Optional appendix: the EAI ↔ RoboJailBench taxonomy crosswalk + provael's measured
+        # head-to-head (reuses provael.scoring.asr — see provael.crosswalk; not reimplemented here).
+        dossier["appendix_taxonomy_crosswalk"] = _crosswalk_appendix(report)
+    return dossier
 
 
 def build_dossier(
@@ -432,6 +439,7 @@ def build_dossier(
     issued_at: str,
     commit: str,
     component: ComponentProfile | None = None,
+    include_crosswalk: bool = False,
 ) -> dict[str, Any]:
     """Build the conformity-evidence dossier for ``profile`` (pure — no clock, no random).
 
@@ -441,10 +449,14 @@ def build_dossier(
         issued_at: UTC ISO-8601 issuance timestamp (passed in, never read from a clock here).
         commit: the source commit the ruleset came from.
         component: operator-declared identity/intended-use/envelope overlay (Annex I only).
+        include_crosswalk: append the EAI ↔ RoboJailBench crosswalk appendix (Annex I only).
     """
     if profile is CertifyProfile.annex_iii:
         return _annex_iii_pack(report, issued_at=issued_at, commit=commit)
-    return _annex_i_dossier(report, issued_at=issued_at, commit=commit, component=component)
+    return _annex_i_dossier(
+        report, issued_at=issued_at, commit=commit, component=component,
+        include_crosswalk=include_crosswalk,
+    )
 
 
 def to_dossier_json(dossier: dict[str, Any]) -> str:
@@ -673,11 +685,13 @@ def write_dossier(
     issued_at: str,
     commit: str,
     component: ComponentProfile | None = None,
+    include_crosswalk: bool = False,
 ) -> dict[str, Path]:
     """Write the dossier bundle (JSON + OSCAL + HTML) into ``out_dir``; return the paths."""
     out_dir.mkdir(parents=True, exist_ok=True)
     dossier = build_dossier(
-        report, profile=profile, issued_at=issued_at, commit=commit, component=component
+        report, profile=profile, issued_at=issued_at, commit=commit, component=component,
+        include_crosswalk=include_crosswalk,
     )
     json_path = out_dir / CERTIFY_JSON
     json_path.write_text(to_dossier_json(dossier) + "\n", encoding="utf-8")
