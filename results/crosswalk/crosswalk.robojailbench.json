@@ -1,0 +1,356 @@
+{
+  "coverage_counts": {
+    "covered": 2,
+    "not covered": 9,
+    "out of scope by design": 2,
+    "partial": 5
+  },
+  "eai_to_robojailbench": [
+    {
+      "id": "EAI01",
+      "name": "Policy & instruction jailbreak",
+      "note": "a jailbreak can drive many harms; it maps to the harmful-action outcomes provael's instruction family can reach (weaponization, theft), and can also induce the content harms rjb11/rjb12 that provael does not measure.",
+      "robojailbench": [
+        "rjb16",
+        "rjb17"
+      ]
+    },
+    {
+      "id": "EAI02",
+      "name": "Adversarial perception",
+      "note": "a sensor-spoof driving the effector into a keep-out zone \u2192 the collision / unsafe-motion / trespassing harms.",
+      "robojailbench": [
+        "rjb01",
+        "rjb02",
+        "rjb03",
+        "rjb05",
+        "rjb18"
+      ]
+    },
+    {
+      "id": "EAI03",
+      "name": "Model & pipeline poisoning, backdoors & supply chain",
+      "note": "no counterpart: a backdoor is a delivery mechanism, not a harm class \u2014 once triggered it can produce any of RoboJailBench's 18 harms.",
+      "robojailbench": []
+    },
+    {
+      "id": "EAI04",
+      "name": "Action-space integrity",
+      "note": "action-space attacks produce the physical-safety harm outcomes (collision, force, unsafe motion, entrapment, disruption, trespassing).",
+      "robojailbench": [
+        "rjb01",
+        "rjb02",
+        "rjb03",
+        "rjb04",
+        "rjb05",
+        "rjb06",
+        "rjb13",
+        "rjb18"
+      ]
+    },
+    {
+      "id": "EAI05",
+      "name": "Indirect / embodied prompt injection",
+      "note": "no counterpart: an injection channel is a delivery mechanism, not a harm class.",
+      "robojailbench": []
+    },
+    {
+      "id": "EAI06",
+      "name": "Cross-domain safety misalignment",
+      "note": "a benign-sounding instruction driving an unsafe action \u2192 the collision / unsafe-motion harms.",
+      "robojailbench": [
+        "rjb01",
+        "rjb02",
+        "rjb03",
+        "rjb05"
+      ]
+    },
+    {
+      "id": "EAI07",
+      "name": "CPS, firmware, comms & teleoperation compromise",
+      "note": "no counterpart: RoboJailBench's taxonomy is harm-outcome and has no CPS / firmware / comms class; also out of provael's scope by design.",
+      "robojailbench": []
+    },
+    {
+      "id": "EAI08",
+      "name": "Identity, access & excessive autonomy",
+      "note": "unauthorized or over-broad action \u2192 theft and trespassing.",
+      "robojailbench": [
+        "rjb17",
+        "rjb18"
+      ]
+    },
+    {
+      "id": "EAI09",
+      "name": "Model & data confidentiality",
+      "note": "the data / privacy harms \u2014 though provael's confidentiality family screens a memorization leak, not these capture / sharing / retention behaviours (see the coverage column).",
+      "robojailbench": [
+        "rjb07",
+        "rjb08",
+        "rjb09",
+        "rjb10"
+      ]
+    },
+    {
+      "id": "EAI10",
+      "name": "Insufficient evaluation, observability & incident response",
+      "note": "no counterpart: a governance / operations meta-risk, not a harm class.",
+      "robojailbench": []
+    }
+  ],
+  "format": "provael-crosswalk/v1",
+  "robojailbench_to_eai": [
+    {
+      "category": "Collision with people",
+      "coverage": "partial",
+      "eai": [
+        "EAI04",
+        "EAI06",
+        "EAI02"
+      ],
+      "families": [
+        "action_space",
+        "misalignment",
+        "sensor_spoof"
+      ],
+      "group": "physical safety",
+      "id": "rjb01",
+      "note": "provael measures a generic keep-out-zone violation \u2014 a sim proxy that does not distinguish a person from any keep-out target; stub-validated."
+    },
+    {
+      "category": "Collision with robots",
+      "coverage": "partial",
+      "eai": [
+        "EAI04",
+        "EAI06",
+        "EAI02"
+      ],
+      "families": [
+        "action_space",
+        "misalignment",
+        "sensor_spoof"
+      ],
+      "group": "physical safety",
+      "id": "rjb02",
+      "note": "same generic keep-out-zone proxy; the target's identity (a robot) is not modelled."
+    },
+    {
+      "category": "Collision with objects",
+      "coverage": "partial",
+      "eai": [
+        "EAI04",
+        "EAI06",
+        "EAI02"
+      ],
+      "families": [
+        "action_space",
+        "misalignment",
+        "sensor_spoof"
+      ],
+      "group": "physical safety",
+      "id": "rjb03",
+      "note": "same generic keep-out-zone proxy; the target's identity (an object) is not modelled."
+    },
+    {
+      "category": "Force/pressure violation",
+      "coverage": "not covered",
+      "eai": [
+        "EAI04"
+      ],
+      "families": [],
+      "group": "physical safety",
+      "id": "rjb04",
+      "note": "provael perturbs motion / commanded-end-state channels, not force or pressure; no force is modelled in the suites."
+    },
+    {
+      "category": "Unsafe motion",
+      "coverage": "covered",
+      "eai": [
+        "EAI04"
+      ],
+      "families": [
+        "action",
+        "action_space"
+      ],
+      "group": "physical safety",
+      "id": "rjb05",
+      "note": "the action family (freeze / trajectory_hijack) and the keep-out hijack directly exercise unsafe / hijacked motion in simulation; stub-validated (see head-to-head)."
+    },
+    {
+      "category": "Entrapment/crushing",
+      "coverage": "not covered",
+      "eai": [
+        "EAI04"
+      ],
+      "families": [],
+      "group": "physical safety",
+      "id": "rjb06",
+      "note": "no gripper-closing / clamping dynamic exists in provael's suites."
+    },
+    {
+      "category": "Unauthorized capture",
+      "coverage": "not covered",
+      "eai": [
+        "EAI09"
+      ],
+      "families": [],
+      "group": "data & privacy",
+      "id": "rjb07",
+      "note": "EAI09 names the surveillance facet, but the confidentiality family screens a memorized training-canary leak (membership-inference / extraction), not data capture; no attack drives the robot to record."
+    },
+    {
+      "category": "Data misuse",
+      "coverage": "not covered",
+      "eai": [
+        "EAI09"
+      ],
+      "families": [],
+      "group": "data & privacy",
+      "id": "rjb08",
+      "note": "as rjb07: provael screens memorization-leak, not use of collected data."
+    },
+    {
+      "category": "Unauthorized sharing",
+      "coverage": "not covered",
+      "eai": [
+        "EAI09"
+      ],
+      "families": [],
+      "group": "data & privacy",
+      "id": "rjb09",
+      "note": "as rjb07: no attack exercises exfiltration / telemetry sharing."
+    },
+    {
+      "category": "Unauthorized retention",
+      "coverage": "not covered",
+      "eai": [
+        "EAI09"
+      ],
+      "families": [],
+      "group": "data & privacy",
+      "id": "rjb10",
+      "note": "as rjb07: no attack exercises unlawful retention of collected data."
+    },
+    {
+      "category": "Discrimination",
+      "coverage": "not covered",
+      "eai": [
+        "EAI01",
+        "EAI06"
+      ],
+      "families": [],
+      "group": "behavioral & ethical",
+      "id": "rjb11",
+      "note": "a content / ethics harm; provael measures embodied keep-out and screen mechanisms, not content policy. Inducible via an EAI01 jailbreak but not measured here."
+    },
+    {
+      "category": "Deception/manipulation",
+      "coverage": "not covered",
+      "eai": [
+        "EAI01",
+        "EAI06"
+      ],
+      "families": [],
+      "group": "behavioral & ethical",
+      "id": "rjb12",
+      "note": "a content / ethics harm; not measured by provael (see rjb11)."
+    },
+    {
+      "category": "Public disruption",
+      "coverage": "not covered",
+      "eai": [
+        "EAI04"
+      ],
+      "families": [],
+      "group": "behavioral & ethical",
+      "id": "rjb13",
+      "note": "no route-blocking / public-disruption scenario exists in provael's suites; EAI04 is the nearest mechanism."
+    },
+    {
+      "category": "Pornography",
+      "coverage": "out of scope by design",
+      "eai": [],
+      "families": [],
+      "group": "behavioral & ethical",
+      "id": "rjb14",
+      "note": "a content-moderation harm outside provael's adversarial-embodied-security charter; belongs to LLM content-safety, not VLA-policy red-teaming."
+    },
+    {
+      "category": "Hateful conduct",
+      "coverage": "out of scope by design",
+      "eai": [],
+      "families": [],
+      "group": "behavioral & ethical",
+      "id": "rjb15",
+      "note": "a content-moderation harm outside provael's charter (see rjb14)."
+    },
+    {
+      "category": "Terrorism/weaponization",
+      "coverage": "partial",
+      "eai": [
+        "EAI01"
+      ],
+      "families": [
+        "instruction"
+      ],
+      "group": "behavioral & ethical",
+      "id": "rjb16",
+      "note": "the instruction family exercises the jailbreak-to-harmful-action mechanism (and is the one family that transfers on a real policy), measured as end-effector diversion \u2014 not the weaponization outcome itself."
+    },
+    {
+      "category": "Theft",
+      "coverage": "partial",
+      "eai": [
+        "EAI08",
+        "EAI01"
+      ],
+      "families": [
+        "authorization",
+        "instruction"
+      ],
+      "group": "behavioral & ethical",
+      "id": "rjb17",
+      "note": "the authorization family (self-authorize a guarded action) and the instruction jailbreak exercise the unauthorized-action mechanism; measured as a screen / diversion proxy, not the theft outcome."
+    },
+    {
+      "category": "Trespassing",
+      "coverage": "covered",
+      "eai": [
+        "EAI04",
+        "EAI02",
+        "EAI08",
+        "EAI06"
+      ],
+      "families": [
+        "action_space",
+        "sensor_spoof",
+        "misalignment"
+      ],
+      "group": "physical safety",
+      "id": "rjb18",
+      "note": "'enter a restricted area' maps directly to provael's keep-out-zone violation \u2014 the most literal sim match; stub-validated (see head-to-head)."
+    }
+  ],
+  "source": {
+    "affiliation": "Purdue University",
+    "arxiv": "2605.19328",
+    "arxiv_date": "2026-05-19",
+    "arxiv_version": "v1",
+    "authors": [
+      "Doguhuan Yeke",
+      "Yanming Zhou",
+      "Leo Y. Lin",
+      "Hongyu Cai",
+      "Antonio Bianchi",
+      "Z. Berkay Celik"
+    ],
+    "derivation": "ISO/TS 15066:2016; ISO 10218-1/-2; Asimov's Laws of Robotics; real-world incident reports (news + FDA); prior robotics-safety research",
+    "leaderboard_date": "2026-05-07",
+    "leaderboard_url": "https://purseclab.github.io/benchmark-for-robotics-security/",
+    "leaderboard_version": "1.0.0",
+    "name": "RoboJailBench",
+    "taxonomy_location": "Table 2 (18 categories)",
+    "title": "RoboJailBench: Benchmarking Adversarial Attacks and Defenses in Embodied Robotic Agents"
+  },
+  "target": "robojailbench"
+}

@@ -63,6 +63,11 @@ from provael.compliance import (
     write_compliance_markdown,
 )
 from provael.config import RunConfig
+from provael.crosswalk import (
+    CROSSWALK_TARGET,
+    to_crosswalk_json,
+    to_crosswalk_markdown,
+)
 from provael.leaderboard import (
     LEADERBOARD_JSON,
     Leaderboard,
@@ -113,6 +118,19 @@ class ExportFormat(StrEnum):
     """Evidence-graph export formats for ``provael export``."""
 
     avid = "avid"
+
+
+class CrosswalkTarget(StrEnum):
+    """Taxonomy a ``provael crosswalk`` maps the Embodied AI Security Top 10 against."""
+
+    robojailbench = CROSSWALK_TARGET
+
+
+class CrosswalkFormat(StrEnum):
+    """Output format for ``provael crosswalk``."""
+
+    json = "json"
+    md = "md"
 
 
 app = typer.Typer(
@@ -195,6 +213,35 @@ def study_cross_arch(
     if out is not None:
         write_study(summary, reports, out)
         _out.print(f"[green]Wrote[/green] {escape(str(out))}/ (summary.json + per-arch reports)")
+
+
+@app.command("crosswalk")
+def crosswalk_cmd(
+    target: Annotated[
+        CrosswalkTarget, typer.Option(help="Taxonomy to map the Top 10 against.")
+    ] = CrosswalkTarget.robojailbench,
+    fmt: Annotated[
+        CrosswalkFormat, typer.Option("--format", help="Output format.")
+    ] = CrosswalkFormat.json,
+    out: Annotated[
+        Path | None, typer.Option(help="Write the crosswalk JSON here instead of stdout.")
+    ] = None,
+) -> None:
+    """Emit the Embodied AI Security Top 10 ↔ RoboJailBench taxonomy crosswalk (deterministic).
+
+    A machine-readable mapping of RoboJailBench's 18 harm categories to the EAI id(s) and provael
+    attack family/families that cover them, with an honest coverage state per category. Sim-only;
+    no RoboJailBench benchmark is run and no comparative scores are produced.
+    """
+    if target is not CrosswalkTarget.robojailbench:  # pragma: no cover - single target today
+        _fail(f"unknown crosswalk target {target.value!r}; available: {CROSSWALK_TARGET}")
+    payload = to_crosswalk_markdown() if fmt is CrosswalkFormat.md else to_crosswalk_json()
+    if out is not None:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(payload + "\n", encoding="utf-8")
+        _out.print(f"[green]Wrote[/green] {escape(str(out))}")
+    else:
+        print(payload)
 
 
 @app.command("list-policies")
@@ -791,6 +838,13 @@ def certify(
     out: Annotated[
         Path, typer.Option(help="Output directory for the dossier bundle.")
     ] = Path("runs/certify"),
+    include_crosswalk: Annotated[
+        bool,
+        typer.Option(
+            "--include-crosswalk",
+            help="Append the EAI ↔ RoboJailBench taxonomy-crosswalk appendix (Annex I Part A).",
+        ),
+    ] = False,
 ) -> None:
     """Emit a Machinery Regulation conformity-assessment evidence dossier (JSON + OSCAL + HTML).
 
@@ -840,7 +894,8 @@ def certify(
     issued_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     stamp = commit or _git_commit() or f"v{__version__}"
     paths = write_dossier(
-        report, out, profile=profile, issued_at=issued_at, commit=stamp, component=component
+        report, out, profile=profile, issued_at=issued_at, commit=stamp, component=component,
+        include_crosswalk=include_crosswalk,
     )
 
     render_summary(report, _out)
