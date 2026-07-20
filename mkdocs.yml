@@ -44,6 +44,7 @@ nav:
   - Standards (drafts):
       - MITRE ATLAS case study: standards/atlas-case-study.md
       - OWASP Agentic embodied annex: standards/owasp-asi-embodied.md
+      - RoboJailBench crosswalk: crosswalk/robojailbench.md
       - Listings & PRs: standards/listings.md
   - Python API: python-api.md
   - vs. LLM red-team tools: comparison.md

@@ -6,6 +6,23 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- **EAI ↔ RoboJailBench taxonomy crosswalk.** New `provael.crosswalk` + `provael crosswalk --target
+  robojailbench` map the Embodied AI Security Top 10 against **RoboJailBench**'s 18-category
+  harm-outcome taxonomy (Yeke, Zhou, Lin, Cai, Bianchi & Celik, Purdue; arXiv 2605.19328v1, 2026;
+  leaderboard v1.0.0) — category names quoted verbatim from Table 2. A declarative, machine-readable
+  mapping in both directions with an honest per-category coverage state (**2 covered · 5 partial · 9
+  not covered · 2 out of scope by design**, of 18 — the two taxonomies are orthogonal axes, harm vs
+  mechanism, so a clean 1:1 does not exist). Deterministic JSON + Markdown (`sort_keys`, no
+  wall-clock). A **head-to-head** reports provael's measured ASR per mapped family (95% Wilson CI +
+  benign-FPR, **reusing `provael.scoring.asr` — no ASR reimplemented**) with the mandatory transfer
+  statement next to every number: only the `instruction` family is demonstrated on a real policy;
+  every other family is labelled *not demonstrated on a real policy*. Wired into `provael certify
+  --include-crosswalk` as an optional Annex I appendix (composed, not re-rendered). Full write-up:
+  `docs/crosswalk/robojailbench.md`; committed JSON at `results/crosswalk/`. Adds **no** new Top-10
+  coverage (still 8/10); TOP10.md gains a "Relationship to other taxonomies" section. Sim-only: no
+  RoboJailBench benchmark is run and no comparative scores against their numbers are produced.
+
 ## [0.18.0] — 2026-07-19
 
 ### Added
