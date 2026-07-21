@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.20.0] — 2026-07-21
+
 ### Added
 - **EAI04 action-space transfer study — a clearly-published negative result.** New
   `provael study eai04` + `provael.studies.cross_arch.build_eai04_study` extend the v0.17.0

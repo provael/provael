@@ -241,7 +241,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.8.0
+      - uses: provael/provael@v0.20.0
         with:
           attacks: instruction,visual,injection,action
           episodes: "10"
