@@ -160,6 +160,13 @@ baseline injects no cue and stays at the origin, un-frozen → 0%). **Stub-valid
 deterministic CPU `reach` keep-out suite: 100% [84–100%] vs a 0% benign baseline); real-model
 transfer (AttackVLA / FreezeVLA × SmolVLA × LIBERO) is GPU-gated and **not run** — no cross-model
 claim.
+**Transfer study (measured).** The [EAI04 transfer study](studies/eai04-action-space-transfer.md)
+extends the cross-architecture harness to all four EAI04 vectors: on the deterministic `reach` fixture
+they fire 100% [72–100%] (BH-FDR significant vs a 0% benign control), but on the real SmolVLA/π0 ×
+LIBERO path they are **not-applicable** — these out-of-band-directive attacks never reach a real VLA,
+and no real suite surfaces the action-integrity signal (verified). So `action`/`action_space` stay
+**stub-validated**; a real EAI04 number needs the adversarial-image path (`optimized_patch`), still
+GPU-gated. Coverage is unchanged (still 8/10).
 **Why it matters.** A hijacked-trajectory robot and a frozen robot are different severe failures — and a
 single "task success" metric hides both.
 **Mitigations.** Report ASR as a matrix (untargeted / freeze / targeted) with a clean baseline; action

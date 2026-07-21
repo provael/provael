@@ -39,8 +39,8 @@ extraction), and `misalignment` (EAI06: the embodiment gap — a benign-sounding
 driving an unsafe embodied action into a keep-out zone) — plus an **`optimized`** family
 (`targeted_hijack`: a black-box, query-budgeted *search*), a `none` baseline, and an ASR
 **leaderboard**. Every family carries its transfer-test (rate + 95% Wilson CI + benign-FPR
-control); run `provael transfer-test` to print it. The `sensor_spoof`, `backdoor`,
-`authorization`, `misalignment`, `action_space`, and `confidentiality` families are
+control); run `provael transfer-test` to print it. The `action`, `action_space`, `sensor_spoof`,
+`backdoor`, `authorization`, `misalignment`, and `confidentiality` families are
 **stub-validated only** (no real-model transfer claimed). It red-teams **8 policies** — the CPU `stub`
 plus real **SmolVLA / π0 / π0.5 / π0-FAST / GR00T** (via the `[lerobot]` extra), **OpenVLA**
 (via `[openvla]`), and **π0 served by openpi** — Physical Intelligence's own stack, via the CPU-only
@@ -106,11 +106,16 @@ to oversell. Before you trust a number, know:
   reframings redirected the policy (roleplay 100%, goal-substitution 60%); the **visual and
   injection families produced 0% measurable lift** on the real model. Treat those two as
   stub-validated scaffolding pending stronger perturbations.
-- **The `action` family (EAI04) is stub-validated only.** `freeze` and `trajectory_hijack`
-  exercise the action-space-integrity surface on the deterministic stub (freeze/redirection
-  100% [72–100%] vs a 0% benign-FPR control). A real-model action-freeze / trajectory-hijack
-  needs an adversarial-image search (FreezeVLA, AttackVLA), which is GPU-gated and **not yet
-  run** — so no SmolVLA × LIBERO transfer is claimed for it.
+- **EAI04 (`action` + `action_space`) is stub-validated — and its transfer study confirms it does
+  not reach a real policy through this mechanism.** On the deterministic `reach` keep-out fixture all
+  four vectors (`freeze`, `trajectory_hijack`, `keepout_hijack`, `critical_freeze`) fire 100%
+  [72–100%] vs a 0% benign-FPR control (BH-FDR significant). But they inject an *out-of-band directive
+  channel a real VLA ignores*, and LIBERO surfaces no action-integrity signal — so on the real
+  SmolVLA/π0 path they are **not-applicable** (verified), not merely pending. A real
+  action-freeze/hijack needs the GPU-gated adversarial-image search (FreezeVLA / AttackVLA; see the
+  `optimized_patch` family). Full write-up:
+  [docs/studies/eai04-action-space-transfer.md](docs/studies/eai04-action-space-transfer.md)
+  (`provael study eai04`).
 - **Demonstrated transfer is still one policy, one suite.** The architecture is model-agnostic
   (an adapter interface), and an adapter now ships for a *cross-architecture* backend — **π0 served
   by openpi** (Physical Intelligence's own stack, a different framework from LeRobot, same
