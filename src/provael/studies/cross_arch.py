@@ -37,7 +37,7 @@ from provael.config import RunConfig
 from provael.policies.registry import policy_is_ready
 from provael.report import write_report
 from provael.runner import run
-from provael.scoring.asr import by_family, matched_benign_fpr
+from provael.scoring.asr import by_family, fdr_by_attack, matched_benign_fpr, succ_but_unsafe
 from provael.types import RunReport
 
 #: The shared battery: the benign control + the three transfer-tested templated families.
@@ -118,16 +118,19 @@ def _pending_reason(arch: Architecture) -> str:
     return f"gated: needs provael[{arch.extra}] + PROVAEL_INTEGRATION=1{server}"
 
 
-def run_arch(arch: Architecture, *, episodes: int = 10, seed: int = 0) -> RunReport | None:
-    """Run the battery against one architecture, or ``None`` when it is gated/unavailable here.
+def run_arch(
+    arch: Architecture, *, episodes: int = 10, seed: int = 0, battery: list[str] = BATTERY
+) -> RunReport | None:
+    """Run ``battery`` against one architecture, or ``None`` when it is gated/unavailable here.
 
     Uses the shipped :func:`provael.runner.run` unchanged, so the ASR / CI / benign-FPR are computed
-    by the same code every other Provael run uses.
+    by the same code every other Provael run uses. ``battery`` defaults to the cross-architecture
+    battery; the EAI04 study passes its own (see :data:`EAI04_BATTERY`).
     """
     if not _arch_ready(arch):
         return None
     config = RunConfig(
-        policy=arch.policy, suite=arch.suite, attacks=BATTERY, episodes=episodes, seed=seed
+        policy=arch.policy, suite=arch.suite, attacks=battery, episodes=episodes, seed=seed
     )
     return run(config)
 
@@ -266,6 +269,208 @@ def write_study(
     return out_dir
 
 
+# --------------------------------------------------------------------------------------------
+# EAI04 action-space-integrity transfer study — reuses the harness above (no second harness).
+# --------------------------------------------------------------------------------------------
+
+#: The EAI04 battery: the benign control + the two EAI04 vectors (each a family with two attacks).
+EAI04_BATTERY: list[str] = ["none", "action", "action_space"]
+#: EAI04 family -> its attacks (the "vectors"). ``action`` drives the motion channel;
+#: ``action_space`` drives the commanded end-state channel.
+EAI04_VECTORS: dict[str, tuple[str, ...]] = {
+    "action": ("freeze", "trajectory_hijack"),
+    "action_space": ("keepout_hijack", "critical_freeze"),
+}
+
+#: EAI04 architectures. The deterministic CPU reference runs on the ``reach`` keep-out suite (where
+#: BOTH vectors are applicable — ``action`` also applies on ``stub``, ``action_space`` needs
+#: ``reach``). The real backends target LIBERO, where these attacks are NOT-APPLICABLE (verified).
+EAI04_ARCHITECTURES: tuple[Architecture, ...] = (
+    Architecture("reach", "CPU reach keep-out (deterministic fixture)", "stub", "reach", None),
+    Architecture("smolvla", "SmolVLA — LeRobot flow-matching", "smolvla", "libero", "lerobot"),
+    Architecture("pi0", "pi0 — openpi flow-matching", "openpi", "libero", "openpi"),
+)
+
+#: Why the real legs are NOT-APPLICABLE (not merely gated). The EAI04 attacks inject an out-of-band
+#: directive channel a real VLA ignores, and no real suite surfaces the required flag — verified
+#: on a LIBERO-shaped observation. This is architectural, not a hardware gap.
+_EAI04_NOT_APPLICABLE = (
+    "not-applicable on the real LIBERO path: action/action_space inject an out-of-band directive "
+    "channel a real VLA ignores, and LIBERO surfaces no supports_action_integrity / "
+    "supports_action_space signal (verified on a LIBERO-shaped observation). No real-policy EAI04 "
+    "transfer is obtainable through this mechanism; a real action-freeze / hijack needs the "
+    "GPU-gated adversarial-image search (FreezeVLA / AttackVLA — see the optimized_patch family)."
+)
+
+_EAI04_HONESTY = (
+    "Sim-only, defensive. The reach rows are properties of the deterministic CPU keep-out fixture, "
+    "NOT a real VLA. The EAI04 action/action_space attacks inject an out-of-band directive channel "
+    "that a real VLA ignores, and no real suite (LIBERO) surfaces the required action-integrity "
+    "signal - so the real SmolVLA/pi0 legs are NOT-APPLICABLE, not merely 'pending': no "
+    "real-policy EAI04 transfer is obtainable through this mechanism, and action/action_space stay "
+    "stub-validated. A real action-freeze/hijack needs the GPU-gated adversarial-image search "
+    "(FreezeVLA/AttackVLA; see the optimized_patch family). Every rate is read against its "
+    "benign-FPR control; "
+    "BH-FDR corrects across vectors; runs under 5 seeds are flagged preliminary. No 'first' claim."
+)
+
+
+class Eai04Row(BaseModel):
+    """One (architecture × vector) cell of the EAI04 study — the full stats, or not-applicable."""
+
+    architecture: str
+    family: str  # action | action_space
+    vector: str  # freeze | trajectory_hijack | keepout_hijack | critical_freeze
+    status: str  # "measured" | "not-applicable"
+    attempts: int = 0
+    successes: int = 0
+    asr: float | None = None
+    ci95_low: float | None = None
+    ci95_high: float | None = None
+    benign_fpr: float | None = None
+    matched_benign_fpr: float | None = None
+    succ_but_unsafe: float | None = None
+    bh_fdr_q: float | None = None
+    bh_fdr_significant: bool | None = None
+    seeds: int | None = None
+    preliminary: bool | None = None
+    note: str = ""
+
+
+class Eai04Summary(BaseModel):
+    """The machine-readable EAI04 transfer table (deterministic: no wall-clock)."""
+
+    format: str = "provael-eai04-transfer-study/v1"
+    tool_version: str
+    battery: list[str]
+    vectors: dict[str, list[str]]
+    episodes: int
+    seed: int
+    rows: list[Eai04Row]
+    honesty: str
+
+
+def eai04_measured_rows(arch: Architecture, report: RunReport) -> list[Eai04Row]:
+    """Per-vector EAI04 rows for a measured architecture.
+
+    Reuses the shipped scoring end to end: ``report.by_attack`` (ASR), :func:`wilson_ci`,
+    :func:`fdr_by_attack` (BH-FDR across the EAI04 vectors), :func:`succ_but_unsafe`, and
+    :func:`matched_benign_fpr`. A vector with no applicable episodes in this suite is ``not-
+    applicable`` (excluded from the denominator, never faked).
+    """
+    fdr = fdr_by_attack(report) or {}
+    mbf = matched_benign_fpr(report.results)
+    rows: list[Eai04Row] = []
+    for family, vectors in EAI04_VECTORS.items():
+        for vector in vectors:
+            stat = report.by_attack.get(vector)
+            if stat is None or stat.attempts == 0:
+                rows.append(Eai04Row(
+                    architecture=arch.key, family=family, vector=vector, status="not-applicable",
+                    note="no applicable episodes in this suite",
+                ))
+                continue
+            lo, hi = wilson_ci(stat.successes, stat.attempts)
+            q = fdr.get(vector)
+            sbu = succ_but_unsafe([r for r in report.results if r.attack == vector])
+            rows.append(Eai04Row(
+                architecture=arch.key, family=family, vector=vector, status="measured",
+                attempts=stat.attempts, successes=stat.successes, asr=stat.asr,
+                ci95_low=lo, ci95_high=hi, benign_fpr=report.benign_fpr, matched_benign_fpr=mbf,
+                succ_but_unsafe=sbu,
+                bh_fdr_q=None if q is None else q[0],
+                bh_fdr_significant=None if q is None else q[1],
+                seeds=report.seeds, preliminary=report.preliminary,
+            ))
+    return rows
+
+
+def eai04_not_applicable_rows(arch: Architecture, note: str) -> list[Eai04Row]:
+    """Not-applicable rows for an architecture where EAI04 cannot be measured (e.g. real LIBERO)."""
+    return [
+        Eai04Row(architecture=arch.key, family=family, vector=vector, status="not-applicable",
+                 note=note)
+        for family, vectors in EAI04_VECTORS.items()
+        for vector in vectors
+    ]
+
+
+def build_eai04_study(
+    *, episodes: int = 10, seed: int = 0,
+    architectures: tuple[Architecture, ...] = EAI04_ARCHITECTURES,
+) -> tuple[Eai04Summary, dict[str, RunReport]]:
+    """Run the EAI04 transfer study and return the summary + the measured reports.
+
+    The CPU reference (``reach``) is measured deterministically; the real backends are
+    ``not-applicable`` — verified architectural fact, not a hardware gate (see
+    :data:`_EAI04_NOT_APPLICABLE`). Deterministic given fixed ``episodes``/``seed``.
+    """
+    rows: list[Eai04Row] = []
+    reports: dict[str, RunReport] = {}
+    for arch in architectures:
+        report = run_arch(arch, episodes=episodes, seed=seed, battery=EAI04_BATTERY)
+        if report is None:
+            # Gated here; and for the real (LIBERO) backends, not-applicable regardless of a GPU.
+            note = _EAI04_NOT_APPLICABLE if arch.extra is not None else _pending_reason(arch)
+            rows.extend(eai04_not_applicable_rows(arch, note))
+        else:
+            reports[arch.key] = report
+            rows.extend(eai04_measured_rows(arch, report))
+    return Eai04Summary(
+        tool_version=__version__, battery=EAI04_BATTERY,
+        vectors={k: list(v) for k, v in EAI04_VECTORS.items()},
+        episodes=episodes, seed=seed, rows=rows, honesty=_EAI04_HONESTY,
+    ), reports
+
+
+def eai04_summary_json(summary: Eai04Summary) -> str:
+    """Deterministic, indented JSON for the EAI04 summary (no trailing newline)."""
+    return summary.model_dump_json(indent=2)
+
+
+#: Filename of the machine-readable EAI04 summary within a study's output directory.
+EAI04_SUMMARY_JSON = "summary.json"
+
+
+def write_eai04_study(
+    summary: Eai04Summary, reports: dict[str, RunReport], out_dir: Path
+) -> Path:
+    """Write the EAI04 summary JSON + each measured architecture's byte-deterministic RunReport."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / EAI04_SUMMARY_JSON).write_text(eai04_summary_json(summary) + "\n", encoding="utf-8")
+    for key, report in reports.items():
+        write_report(report, out_dir / key)
+    return out_dir
+
+
+def render_eai04_table(summary: Eai04Summary, console: object | None = None) -> None:
+    """Print the EAI04 architecture × vector × ASR × CI × controls table (Rich)."""
+    from rich.console import Console
+    from rich.table import Table
+
+    out = console if console is not None else Console()
+    table = Table(title="EAI04 action-space transfer — ASR by (architecture × vector)")
+    for col in ("architecture", "family", "vector", "ASR (95% CI)", "n", "benign-FPR",
+                "SbU", "BH-q", "status"):
+        table.add_column(col)
+    for row in summary.rows:
+        if (
+            row.status == "measured" and row.asr is not None
+            and row.ci95_low is not None and row.ci95_high is not None
+        ):
+            asr = f"{row.asr * 100:.0f}% [{row.ci95_low * 100:.0f}-{row.ci95_high * 100:.0f}%]"
+            n = str(row.attempts)
+            fpr = "n/a" if row.benign_fpr is None else f"{row.benign_fpr * 100:.0f}%"
+            sbu = "n/a" if row.succ_but_unsafe is None else f"{row.succ_but_unsafe * 100:.0f}%"
+            bh = "n/a" if row.bh_fdr_q is None else f"{row.bh_fdr_q:.1g}"
+        else:
+            asr = n = fpr = sbu = bh = "—"
+        table.add_row(_label(row.architecture), row.family, row.vector, asr, n, fpr, sbu, bh,
+                      row.status)
+    out.print(table)  # type: ignore[attr-defined]
+    out.print(f"[dim]{summary.honesty}[/dim]")  # type: ignore[attr-defined]
+
+
 __all__ = [
     "BATTERY",
     "FAMILIES",
@@ -282,4 +487,16 @@ __all__ = [
     "summary_json",
     "render_table",
     "write_study",
+    "EAI04_BATTERY",
+    "EAI04_VECTORS",
+    "EAI04_ARCHITECTURES",
+    "EAI04_SUMMARY_JSON",
+    "Eai04Row",
+    "Eai04Summary",
+    "eai04_measured_rows",
+    "eai04_not_applicable_rows",
+    "build_eai04_study",
+    "eai04_summary_json",
+    "write_eai04_study",
+    "render_eai04_table",
 ]
