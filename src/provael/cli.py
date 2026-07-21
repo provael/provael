@@ -99,7 +99,14 @@ from provael.runner import run
 from provael.sarif import to_sarif_json, write_sarif
 from provael.scorecard import SCORECARD_MD, to_scorecard_markdown, write_scorecard
 from provael.scoring.asr import by_family
-from provael.studies.cross_arch import build_study, render_table, write_study
+from provael.studies.cross_arch import (
+    build_eai04_study,
+    build_study,
+    render_eai04_table,
+    render_table,
+    write_eai04_study,
+    write_study,
+)
 from provael.types import ComponentProfile, RunReport, TransferTest
 
 
@@ -213,6 +220,29 @@ def study_cross_arch(
     if out is not None:
         write_study(summary, reports, out)
         _out.print(f"[green]Wrote[/green] {escape(str(out))}/ (summary.json + per-arch reports)")
+
+
+@study_app.command("eai04")
+def study_eai04(
+    episodes: Annotated[int, typer.Option(help="Episodes per attack (distinct seeds).")] = 10,
+    seed: Annotated[int, typer.Option(help="Base random seed.")] = 0,
+    out: Annotated[
+        Path | None, typer.Option(help="Write summary.json + the reference RunReport here.")
+    ] = None,
+) -> None:
+    """EAI04 action-space transfer study: action/action_space vectors × {reach, SmolVLA, pi0}.
+
+    Runs the deterministic CPU ``reach`` keep-out reference (ASR + 95% Wilson CI + benign-FPR +
+    Succ-But-Unsafe + BH-FDR + preliminary) and marks the real SmolVLA/pi0 LIBERO legs
+    NOT-APPLICABLE: these out-of-band-directive attacks do not reach a real VLA, so no real-policy
+    EAI04 transfer is obtainable through this mechanism. Reuses the runner + scoring — no ASR
+    reimplemented, no second harness.
+    """
+    summary, reports = build_eai04_study(episodes=episodes, seed=seed)
+    render_eai04_table(summary, _out)
+    if out is not None:
+        write_eai04_study(summary, reports, out)
+        _out.print(f"[green]Wrote[/green] {escape(str(out))}/ (summary.json + reference report)")
 
 
 @app.command("crosswalk")

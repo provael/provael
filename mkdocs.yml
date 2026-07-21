@@ -52,6 +52,7 @@ nav:
   - Accelerators & TPU: accelerators.md
   - Findings:
       - Cross-architecture transfer (2026): findings/2026-cross-arch-transfer.md
+      - EAI04 action-space transfer: studies/eai04-action-space-transfer.md
   - FAQ: faq.md
   - Roadmap: roadmap.md
 
