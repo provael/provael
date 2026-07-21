@@ -6,6 +6,25 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- **EAI04 action-space transfer study — a clearly-published negative result.** New
+  `provael study eai04` + `provael.studies.cross_arch.build_eai04_study` extend the v0.17.0
+  cross-architecture harness (reusing the runner + `provael.scoring.asr` — no ASR reimplemented, no
+  second harness) to the four EAI04 vectors (`freeze`, `trajectory_hijack`, `keepout_hijack`,
+  `critical_freeze`). Per (architecture × vector) it reports ASR + n + fixed-n 95% **Wilson** CI +
+  matched **benign-FPR** + **Succ-But-Unsafe** + **BH-FDR** across vectors, flagging `preliminary`
+  under 5 seeds. On the deterministic `reach` keep-out fixture all four fire 100% [72–100%] (BH-FDR
+  significant vs a 0% benign control; Succ-But-Unsafe n/a — the fixture surfaces no task-success).
+  **The real SmolVLA/π0 × LIBERO legs are `not-applicable`, not `pending`:** these out-of-band
+  directive attacks never reach a real VLA, and `libero` surfaces no `supports_action_integrity` /
+  `supports_action_space` signal (verified on a LIBERO-shaped observation, guarded by a test). So
+  `action`/`action_space` **remain stub-validated** — no real-policy EAI04 transfer is claimed or
+  obtainable through this mechanism; a real action-freeze/hijack needs the GPU-gated adversarial-image
+  path (`optimized_patch` / FreezeVLA / AttackVLA). Deterministic artifact at
+  `results/eai04_action_space_transfer/`; write-up `docs/studies/eai04-action-space-transfer.md`;
+  `provael certify` auto-composes the EAI04 evidence with its transfer statement (no fork). README +
+  TOP10 EAI04 updated; coverage unchanged (still 8/10). No "first" claim.
+
 ## [0.19.0] — 2026-07-20
 
 ### Added
