@@ -241,7 +241,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.20.0
+      - uses: provael/provael@v0.21.0
         with:
           attacks: instruction,visual,injection,action
           episodes: "10"
@@ -400,10 +400,22 @@ optional `provael[attest]` extra (`--no-sign` gives a digest-only bundle without
 nothing and is **evidence, not certification** — see
 [docs/ATTESTATION.md](https://github.com/provael/provael/blob/main/docs/ATTESTATION.md).
 
-> **Open-core.** The CLI, attacks, calibrated ASR, SARIF, the GitHub Action and local `attest` are
-> free and Apache-2.0. The *hosted, authoritative* attestation — signed with Provael's key and
-> backed by a real-VLA (GPU) transfer run — is the paid surface. The open tool never gates the
-> local stub path.
+`--profile <iso-10218-2|iec-62443|insurer>` embeds a **standards-aligned assurance view**: the per-EAI
+ASR as **ISO 10218-2:2025** cyber-risk-assessment evidence routed to **IEC 62443 SL2**, or an
+insurer-consumable summary with the honest *which-families-transfer-on-the-real-model* table (ASR +
+95% Wilson CI + benign-FPR + `measured-real-transfer` vs `stub-validated-scaffolding`), plus a
+third-party cert-readiness cross-reference (NVIDIA Halos / UL 4600 / ISO 21448 / ISO/PAS 8800). A
+worked example over the real SmolVLA×LIBERO run is committed at
+[`results/smolvla_libero_object/attestation.insurer.json`](https://github.com/provael/provael/blob/main/results/smolvla_libero_object/attestation.insurer.json).
+
+```bash
+uv run provael attest --run results/smolvla_libero_object --profile insurer --out runs/attest
+```
+
+> **Open-core.** The CLI, attacks, calibrated ASR, SARIF, the GitHub Action and local `attest`
+> (including the `--profile` assurance views) are free and Apache-2.0. The *hosted, authoritative*
+> attestation — signed with Provael's key and backed by a real-VLA (GPU) transfer run — is the paid
+> surface. The open tool never gates the local stub path.
 
 ## Open-core boundary (free vs paid)
 
