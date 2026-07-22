@@ -30,6 +30,7 @@ from rich.markup import escape
 from rich.table import Table
 
 from provael import __version__
+from provael.assurance import AssuranceProfile, build_assurance
 from provael.attacks.baseline import FAMILY as BASELINE_FAMILY
 from provael.attacks.registry import (
     available_attacks,
@@ -988,7 +989,17 @@ def serve(
 def attest(
     in_dir: Annotated[
         Path | None,
-        typer.Option("--in", help="Directory with a prior report.json to attest. Omit to run one."),
+        typer.Option(
+            "--in", "--run",
+            help="Directory with a prior report.json (RunReport) to attest. Omit to run one.",
+        ),
+    ] = None,
+    profile: Annotated[
+        AssuranceProfile | None,
+        typer.Option(
+            "--profile",
+            help="Embed a standards-aligned assurance view: iso-10218-2 | iec-62443 | insurer.",
+        ),
     ] = None,
     policy: Annotated[str, typer.Option(help="Policy to run (when --in is omitted).")] = "stub",
     suite: Annotated[str, typer.Option(help="Suite to run (when --in is omitted).")] = "stub",
@@ -1026,7 +1037,9 @@ def attest(
     `attest` wraps the SAME compliance evidence as `report --format compliance` — the ASR with its
     95% Wilson CI, the benign-FPR control, the per-EAI breakdown, and the EU/ISO/NIST/IEC crosswalk
     — then binds it with a SHA-256 digest, stamps a UTC date + ruleset + commit, and signs a
-    DSSE-style envelope (Ed25519). It is evidence, not certification.
+    DSSE-style envelope (Ed25519). `--profile` embeds a standards-aligned assurance view
+    (ISO 10218-2 -> IEC 62443 SL2, or an insurer summary) with the honest per-family transfer table
+    and a third-party cert-readiness cross-reference. It is evidence, not certification.
     """
     # -- verification mode -------------------------------------------------------------------
     if verify is not None:
@@ -1078,11 +1091,15 @@ def attest(
     issued_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     stamp = commit or _git_commit() or f"v{__version__}"
     private_key_pem = key.read_bytes() if key is not None else None
+    assurance = (
+        build_assurance(report, profile, issued_at=issued_at, commit=stamp)
+        if profile is not None else None
+    )
 
     try:
         bundle, pub_pem = to_bundle(
             report, issued_at=issued_at, commit=stamp,
-            private_key_pem=private_key_pem, sign=not no_sign,
+            private_key_pem=private_key_pem, sign=not no_sign, assurance=assurance,
         )
     except MissingAttestExtraError as exc:
         _fail(str(exc))
