@@ -6,6 +6,25 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- **`provael attest --profile` — signed standards-aligned assurance attestation (ISO 10218-2 /
+  IEC 62443 / insurer) from an ASR run.** The existing DSSE/Ed25519-signed attestation gains an
+  optional `--profile <iso-10218-2|iec-62443|insurer>` that embeds a standards-aligned **assurance
+  view** in the signed statement (new `provael.assurance`), mapping the *same* measured ASR +
+  EAI-Top-10 findings + per-family transfer-test results onto: (a) **ISO 10218-2:2025** cyber-risk-
+  assessment evidence routed to an **IEC 62443 SL2** target; (b) an **insurer-consumable** summary
+  with the honest *which-families-transfer-on-the-real-model* table (per family: ASR, n, 95% Wilson
+  CI, benign-FPR, `measured-real-transfer` vs `stub-validated-scaffolding`); (c) a third-party
+  **cert-readiness cross-reference** (NVIDIA Halos / UL 4600 / ISO/PAS 8800 / ISO 21448 / ISO/IEC
+  TR 5469 — a readiness input, not a certification or endorsement). It **reuses** the shipped
+  scoring, the compliance crosswalk, and the insurer report — nothing is re-measured or re-signed —
+  and reuses the existing DSSE Ed25519 path (no new signing dependency). Deterministic: a fixed
+  `(report, issued_at, commit)` yields a byte-identical attestation (the sample is digest-only for
+  reproducibility). Ruleset bumped to `provael-attest-ruleset/4`. A worked, verifiable example over
+  the real SmolVLA×LIBERO run is committed at `results/smolvla_libero_object/attestation.insurer.json`.
+  Honest per-family transfer caveat throughout; evidence, not certification; the Embodied AI Security
+  Top 10 is never branded "OWASP"; no "first" claim. `docs/ATTESTATION.md` + README updated.
+
 ## [0.20.0] — 2026-07-21
 
 ### Added
