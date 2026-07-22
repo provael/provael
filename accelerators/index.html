@@ -10,11 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.provael.com/roadmap/">
+        <link rel="canonical" href="https://docs.provael.com/accelerators/">
       
       
-        <link rel="prev" href="../faq/">
+        <link rel="prev" href="../handbook/">
       
+      
+        <link rel="next" href="../findings/2026-cross-arch-transfer/">
       
       
         
@@ -25,7 +27,7 @@
     
     
       
-        <title>Roadmap - Provael</title>
+        <title>Accelerators & TPU - Provael</title>
       
     
     
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#roadmap" class="md-skip">
+        <a href="#accelerators-and-why-tpu-is-not-supported-yet" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Roadmap
+              Accelerators & TPU
             
           </span>
         </div>
@@ -926,10 +928,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../accelerators/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accelerators & TPU
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -945,6 +974,48 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-tpu-raises-instead-of-running" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why tpu raises instead of running
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-revisit-trigger-both-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The revisit trigger (both required)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1095,37 +1166,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Roadmap
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
         
   
   
@@ -1141,48 +1185,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#shipped" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Shipped
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#planned-contributions-welcome" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Planned (contributions welcome)
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1214,10 +1216,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#shipped" class="md-nav__link">
+  <a href="#why-tpu-raises-instead-of-running" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Shipped
+        Why tpu raises instead of running
       
     </span>
   </a>
@@ -1225,10 +1227,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#planned-contributions-welcome" class="md-nav__link">
+  <a href="#the-revisit-trigger-both-required" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Planned (contributions welcome)
+        The revisit trigger (both required)
       
     </span>
   </a>
@@ -1255,39 +1257,60 @@
   
 
 
-<h1 id="roadmap">Roadmap</h1>
-<p>Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.</p>
-<h2 id="shipped">Shipped</h2>
-<ul>
-<li><strong>Attacks:</strong> 4 families (instruction / visual / injection / action) + a <code>none</code> baseline, mapped
-  to the <a href="../TOP10/">Embodied AI Security Top 10</a>.</li>
-<li><strong>Policies:</strong> <code>stub</code> (CPU); <code>smolvla</code>, <code>pi0</code>, <code>pi05</code>, <code>pi0fast</code>, <code>groot</code> (LeRobot); <code>openvla</code>
-  (HF transformers). Bring-your-own via the <code>PolicyAdapter</code> ABC.</li>
-<li><strong>Suites:</strong> <code>stub</code> (scalar, CPU), <code>reach</code> (spatial, CPU), <code>libero</code> + <code>metaworld</code> (gated).</li>
-<li><strong>Evidence:</strong> SARIF, compliance crosswalk, pre-deployment scorecard, OSCAL export, AVID export.</li>
-<li><strong>Reproductions:</strong> FreezeVLA, OpenVLA-patch, BadVLA, RoboPAIR.</li>
-<li><strong>Integrations:</strong> promptfoo provider; garak/PyRIT reference plugins; multi-CI (GitHub/GitLab/
-  Azure) SARIF; pre-commit; MLflow/W&amp;B logging; HF eval-results; Modal GPU-CI; Docker/devcontainer;
-  supply-chain (model-signing + ML-BOM).</li>
-<li><strong>Defense demo:</strong> action-stream firewall + ROS 2 guard node (sim/reference).</li>
-<li><strong>Optimized attacks (in progress):</strong> the <code>optimized</code> family — <code>targeted_hijack</code>, a black-box,
-  query-budgeted search — is the first non-templated attack (stub-validated; real transfer gated).</li>
-</ul>
-<h2 id="planned-contributions-welcome">Planned (contributions welcome)</h2>
-<ul>
-<li><strong>Suites:</strong> RoboCasa, CALVIN, SimplerEnv, and the AI2 vla-evaluation-harness bridge (one adapter
-  → ~18 benchmarks). See <a href="https://github.com/provael/provael/tree/main/examples/suites">examples/suites</a>.</li>
-<li><strong>Public leaderboard</strong> with open submission; <strong>docs site</strong> versioning.</li>
-<li><strong>Standards:</strong> MITRE ATLAS case study, OWASP Agentic embodied annex, OECD.AI listing (drafts in
-  <a href="https://github.com/provael/provael/tree/main/docs/standards">docs/standards</a>).</li>
-<li><strong>Stronger attacks:</strong> white-box gradient variants (GCG-style suffixes, transferable pixel/patch
-  search) and a real-model transfer of the <code>optimized</code> family beyond the stub.</li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>"Planned" means not yet shipped — we don't ship fabricated capability. Each lands behind tests
-and the same honesty discipline as the rest of the project.</p>
-</div>
+<h1 id="accelerators-and-why-tpu-is-not-supported-yet">Accelerators — and why TPU is not supported yet</h1>
+<p>Provael records <strong>where</strong> a run executed. The <code>RunConfig.accelerator</code> field (CLI: <code>--accelerator</code>)
+takes one of:</p>
+<table>
+<thead>
+<tr>
+<th>value</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cpu</code></td>
+<td>CPU (the deterministic stub core runs here)</td>
+</tr>
+<tr>
+<td><code>cuda</code></td>
+<td>an NVIDIA GPU (the real SmolVLA × LIBERO transfer path)</td>
+</tr>
+<tr>
+<td><code>mps</code></td>
+<td>Apple-silicon Metal</td>
+</tr>
+<tr>
+<td><em>unset</em></td>
+<td>let the policy choose its own device</td>
+</tr>
+<tr>
+<td><code>tpu</code></td>
+<td><strong>reserved but unimplemented</strong> — raises <code>NotImplementedError</code></td>
+</tr>
+</tbody>
+</table>
+<p>The value is threaded into the report and the signed attestation, so a measured number always says
+what hardware and precision produced it (D6).</p>
+<h2 id="why-tpu-raises-instead-of-running">Why <code>tpu</code> raises instead of running</h2>
+<p>Every policy Provael targets today — SmolVLA, OpenVLA/-OFT, π0, GR00T — ships a <strong>PyTorch</strong>
+inference path with <code>cpu</code> / <code>cuda</code> (and often <code>mps</code>) support. None ships a first-class, verified TPU
+inference path. Silently "supporting" TPU would mean either (a) a JAX/TPU reimplementation of each
+policy's forward pass that no upstream maintains, or (b) an <code>torch_xla</code> bridge whose numerical and
+performance parity with the CUDA path is unverified for these VLA-class models. Either route would
+produce a number we could not honestly attest as equivalent to the CUDA measurement — so instead of
+guessing, <code>accelerator='tpu'</code> fails loudly and points at this page and ROADMAP §8.</p>
+<h2 id="the-revisit-trigger-both-required">The revisit trigger (both required)</h2>
+<p>We will implement <code>tpu</code> when <strong>both</strong> of these hold — not one:</p>
+<ol>
+<li><strong>TorchTPU is generally available</strong> (a stable, non-experimental PyTorch-on-TPU path), and</li>
+<li><strong>a third-party, VLA-class policy ships verified PyTorch TPU inference at parity</strong> with its CUDA
+   path (so we are validating an existing path, not authoring one).</li>
+</ol>
+<p>Until both land, the honest answer is: use the PyTorch <code>cpu</code> / <code>cuda</code> / <code>mps</code> path every current
+target already provides. This mirrors Provael's general stance — we measure what a real, maintained
+inference path does; we do not stand up an unverified one to produce a number.</p>
+<p>See <a href="https://github.com/provael/provael">ROADMAP §8</a> for the decision record (D5/§8).</p>
 
 
 
