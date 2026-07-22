@@ -54,7 +54,8 @@ PAYLOAD_TYPE = "application/vnd.provael.attestation+json"
 #: Ruleset version for the framework crosswalk. Bump when compliance.REQUIREMENTS changes.
 #: /2: added the CRA + ISO/IEC TR 5469 + ISO 42001/23894 rows and the D1 run-level transfer tier.
 #: /3: added the eu-machinery:annex-i-part-a row (Machinery Reg Annex I Part A conformity route).
-RULESET_VERSION = "provael-attest-ruleset/3"
+#: /4: added the optional standards-aligned `assurance` view (--profile; see provael.assurance).
+RULESET_VERSION = "provael-attest-ruleset/4"
 
 ATTESTATION_JSON = "attestation.json"
 ATTESTATION_PUB = "attestation.pub"
@@ -163,6 +164,11 @@ class AttestationStatement(BaseModel):
     transfer: list[TransferStatus]
     predicate_type: str = PREDICATE_TYPE
     predicate: dict[str, Any] = Field(..., description="The full compliance-evidence crosswalk.")
+    assurance: dict[str, Any] | None = Field(
+        None,
+        description="Optional standards-aligned assurance view (iso-10218-2 / iec-62443 / insurer) "
+        "built by provael.assurance and embedded here when --profile is given; None otherwise.",
+    )
 
 
 class AttestationSignature(BaseModel):
@@ -356,8 +362,14 @@ def build_statement(
     issued_at: str,
     commit: str,
     ruleset: str = RULESET_VERSION,
+    assurance: dict[str, Any] | None = None,
 ) -> AttestationStatement:
-    """Build the attestation statement (pure): wraps the SAME compliance evidence as the export."""
+    """Build the attestation statement (pure): wraps the SAME compliance evidence as the export.
+
+    ``assurance`` (optional) is a standards-aligned view built by :mod:`provael.assurance` and
+    embedded verbatim into the signed payload; it is ``None`` for the default (no-profile) bundle,
+    so existing attestations are unchanged apart from the schema/ruleset bump.
+    """
     report_digest = _sha256_hex(_canonical(json.loads(report.model_dump_json())))
     return AttestationStatement(
         tool_version=report.tool_version,
@@ -373,6 +385,7 @@ def build_statement(
         regulatory_clock=list(REGULATORY_CLOCK),
         transfer=_transfer_status(report),
         predicate=to_compliance_dict(report),
+        assurance=assurance,
     )
 
 
@@ -384,14 +397,18 @@ def to_bundle(
     ruleset: str = RULESET_VERSION,
     private_key_pem: bytes | None = None,
     sign: bool = True,
+    assurance: dict[str, Any] | None = None,
 ) -> tuple[AttestationBundle, bytes | None]:
     """Build a bundle from a report. Returns ``(bundle, public_key_pem_or_None)``.
 
     ``sign=True`` (default) signs with Ed25519 (needs the ``attest`` extra); an ephemeral key is
     generated when ``private_key_pem`` is None, and its public PEM is returned so the caller can
     write it next to the bundle. ``sign=False`` yields a digest-only bundle and returns None.
+    ``assurance`` (optional) is embedded into the signed statement (see :func:`build_statement`).
     """
-    statement = build_statement(report, issued_at=issued_at, commit=commit, ruleset=ruleset)
+    statement = build_statement(
+        report, issued_at=issued_at, commit=commit, ruleset=ruleset, assurance=assurance
+    )
     payload_bytes = _canonical(json.loads(statement.model_dump_json()))
     payload_b64 = base64.b64encode(payload_bytes).decode("ascii")
     payload_digest = _sha256_hex(payload_bytes)

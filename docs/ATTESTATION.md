@@ -86,6 +86,36 @@ about. Dates only — no claim of conformity:
   industrial robots, feeding the Machinery Regulation cyber-risk assessment.
 - **NIST AI 100-2e2025** — adversarial-ML taxonomy; guidance, not a compliance deadline.
 
+## Standards-aligned assurance profiles (`--profile`)
+
+`--profile <iso-10218-2|iec-62443|insurer>` embeds a standards-aligned **assurance view** in the
+signed statement (under `assurance`), mapping the *same* measured ASR + EAI findings + per-family
+transfer results onto a framing an assessor or underwriter reads. Nothing is re-measured or
+re-scored — it reuses the shipped scoring, the compliance crosswalk, and the insurer report.
+
+- **`iso-10218-2`** — the per-EAI ASR as **ISO 10218-2:2025 cyber-risk-assessment evidence**, routed
+  to an **IEC 62443 SL2** target (a collaborative-robot cell's typical security level). Evidence
+  *input* to the assessment, not a security-level achievement.
+- **`iec-62443`** — the ASR mapped to the applicable IEC 62443 foundational requirements (FR3 System
+  Integrity; FR7 Resource Availability for the freeze/availability facet), toward an **SL2** case.
+- **`insurer`** — the insurer-consumable summary: the headline ASR with its Wilson CI + benign-FPR,
+  plus the honest **which-families-transfer-on-the-real-model** table (per family: ASR, n, 95% Wilson
+  CI, benign-FPR, and `measured-real-transfer` vs `stub-validated-scaffolding`).
+
+Every profile also carries a **third-party cert-readiness cross-reference** — which functional- and
+AI-safety frameworks (NVIDIA Halos, UL 4600, ISO/PAS 8800, ISO 21448 SOTIF, ISO/IEC TR 5469) this
+evidence is an *input* to. This is a readiness cross-reference, **not** a certification and **not**
+an endorsement by any of those owners.
+
+A worked example over the real SmolVLA×LIBERO run is committed at
+[`results/smolvla_libero_object/attestation.insurer.json`](https://github.com/provael/provael/blob/main/results/smolvla_libero_object/attestation.insurer.json)
+(digest-only for byte-reproducibility; `pip install 'provael[attest]'` and drop `--no-sign` to add
+the Ed25519 signature):
+
+```bash
+provael attest --run results/smolvla_libero_object --profile insurer --out runs/attest
+```
+
 ## Honest scope
 
 - **Simulation only.** An attestation records a policy's *decision* under attack in sim, not a
