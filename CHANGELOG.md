@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.21.0] — 2026-07-22
+
 ### Added
 - **`provael attest --profile` — signed standards-aligned assurance attestation (ISO 10218-2 /
   IEC 62443 / insurer) from an ASR run.** The existing DSSE/Ed25519-signed attestation gains an
