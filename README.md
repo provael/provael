@@ -15,10 +15,12 @@
 > simulation and report an **Attack Success Rate (ASR)**.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/provael/provael/main/docs/assets/demo.svg" alt="Provael attack — ASR across instruction/visual/injection families" width="760">
+  <a href="https://www.provael.com">
+    <img src="https://www.provael.com/media/demo.gif" alt="Provael red-teams a VLA robot policy in simulation: one command prints an ASR-by-attack table, a pass/fail scorecard, and a SARIF report tagged with the EAI rule." width="820">
+  </a>
 </p>
 
-<p align="center"><sub>Deterministic CPU run, seed 0 — regenerate with <code>vhs scripts/demo.tape</code> (or <code>./scripts/record_demo.sh</code>).</sub></p>
+<p align="center"><sub>Deterministic CPU stub run, seed 0. <code>pip install provael</code> and reproduce it in seconds.</sub></p>
 
 > **New here?** Run it in your browser in 5 minutes — [open the Colab notebook](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb) — or browse the [examples gallery](examples/) and the built-in `provael list-recipes`.
 
