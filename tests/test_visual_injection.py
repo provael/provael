@@ -163,6 +163,7 @@ def test_registry_includes_new_families() -> None:
         "critical_freeze",
         "targeted_hijack",
         "patch_hijack",
+        "targeted_redirect",
         "object_trigger",
         "phrase_trigger",
         "self_authorize_bypass",
@@ -176,8 +177,8 @@ def test_registry_includes_new_families() -> None:
     }
     assert available_families() == [
         "action", "action_space", "authorization", "backdoor", "baseline", "confidentiality",
-        "injection", "instruction", "misalignment", "optimized", "optimized_patch", "sensor_spoof",
-        "visual",
+        "injection", "instruction", "misalignment", "optimized", "optimized_instruction",
+        "optimized_patch", "sensor_spoof", "visual",
     ]
     assert [a.name for a in resolve_attacks(["baseline"])] == ["none"]
     assert [a.name for a in resolve_attacks(["visual"])] == ["patch", "decoy_object"]

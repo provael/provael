@@ -64,6 +64,34 @@ core dependency-free. A true white-box-gradient variant and an availability/free
 are noted as GPU/P1 follow-ups (see ROADMAP P0.3b). Like our other families, the transfer number is
 GPU-gated and unclaimed until the `PROVAEL_INTEGRATION=1` path is run.
 
+### Trajectory-Level Redirection — *Trajectory-Level Redirection Attacks on Vision-Language-Action Models*
+(2026). arXiv:[2606.12978](https://arxiv.org/abs/2606.12978) · [project page](https://vla-redirection-attack.github.io/)
+
+Formalizes **command-preserving trajectory redirection**: a prompt-only threat model in which the
+attacker picks one prompt before the episode (all policy/environment components fixed), and the prompt
+must stay close to the benign instruction *while omitting target words and correction language*. It
+introduces an **on-policy prompt search** that uses rollouts to discover perturbations whose
+closed-loop behaviour tracks an attacker target under those command-preserving constraints, shown in
+simulation and on hardware.
+
+### SABER — *A Stealthy Agentic Black-Box Attack Framework for Vision-Language-Action Models*
+Wu, Shi, Wang, Li, Bedi, Manocha (2026). arXiv:[2603.24935](https://arxiv.org/abs/2603.24935) · [code](https://github.com/wuxiyang1996/SABER)
+
+A black-box, agent-driven attacker that generates small, plausible **instruction edits** — character-,
+token-, and prompt-level — under a **bounded edit budget** to induce targeted behavioural degradation,
+probing the robustness of the *instruction channel* across VLA models.
+
+**How we differ:** our `optimized_instruction` family (`targeted_redirect`) is a compact,
+**reproducible reimplementation of the idea** — an on-policy, bounded-budget **greedy** instruction
+search with a command-preserving gate (benign-similarity floor + omit target words), scored by the
+policy's emitted redirection via an oracle and recording `attacker_access="black-box-query"`. We
+**port no code**: the greedy loop and the gate are from-scratch and dependency-free (SABER's
+GRPO/ReAct attacker and the paper's full search are not reimplemented). Consistent with our other
+families, the **real** SmolVLA×LIBERO redirection number is GPU-gated (`PROVAEL_INTEGRATION=1`) and
+unclaimed until run; on the CPU stub it is scored by the danger-threshold predicate with an honest
+sub-100% ceiling, plus a held-out transfer-test. We surface the papers' recommended defense —
+**instruction canonicalization / repair** — as the mitigation. No "first" claim.
+
 ### SafeVLA — *Towards Safety Alignment of Vision-Language-Action Models via Constrained Learning*
 (2025). arXiv:[2503.03480](https://arxiv.org/abs/2503.03480) · [safevla.github.io](https://safevla.github.io/)
 

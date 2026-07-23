@@ -58,6 +58,16 @@ the spirit of responsible disclosure.
   opaque markers and the leak is scored on a deterministic fixture, so a clean checkpoint screens ~0%.
   The real-model transfer (a membership-inference / extraction advantage measured by *querying* a real
   policy, never exfiltrating real data) is GPU-gated and not run in the CPU core — no cross-model claim.
+- The `optimized_instruction` family (EAI01; `targeted_redirect`) perturbs only the **instruction the
+  policy receives**, **never real-robot control**. It is an optimized, **command-preserving** search:
+  it keeps the operator's command and **never names the unsafe target object**, redirecting only
+  through subtle, benign manner/urgency cues, and is scored **in simulation** (on the CPU stub, by the
+  danger-threshold predicate). Command-preservation is a *realism constraint on the threat model*, **not
+  detection-evasion**: the attack makes no attempt to defeat, disable, or hide from any safety filter —
+  on the contrary, its recommended **defense (instruction canonicalization / repair)** is documented in
+  `PRIOR_ART.md` and `docs/TOP10.md`. It ships no real-world payload; the EAI04 targeted-redirection
+  outcome on a real policy is GPU-gated (`PROVAEL_INTEGRATION=1`) and not run in the CPU core, so no
+  cross-model claim is made.
 
 ## What we measure on LIBERO (redirection, not harm)
 
