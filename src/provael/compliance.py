@@ -30,6 +30,7 @@ from pydantic import BaseModel, Field
 from provael.attacks.registry import FAMILIES
 from provael.calibration import wilson_ci
 from provael.eai import CATALOG
+from provael.evidence import EvidenceState, evidence_state_of
 from provael.types import MEASURED_REAL_TRANSFER, STUB_VALIDATED_SCAFFOLDING, RunReport
 
 COMPLIANCE_JSON = "report.compliance.json"
@@ -357,6 +358,13 @@ class EvidenceResult(BaseModel):
         "conformity-relevant. Per-attack nuance (e.g. the optimized family) lives in the "
         "attestation's `transfer` list, which this run-level summary does not override.",
     )
+    evidence_state: str = Field(
+        EvidenceState.LEGACY_UNVERIFIED.value,
+        description="Evidence-ladder state (provael.evidence.EvidenceState) — the finer-grained "
+        "successor to transfer_status: 'stub' / 'real-episode' for a fresh run, else "
+        "'legacy-unverified'. Never 'measured-real-policy-effect' or higher without "
+        "the bound evidence those rungs require.",
+    )
     eai_ids_covered: list[str]
     attack_families: list[str]
     by_eai: list[EaiBreakdown]
@@ -468,6 +476,7 @@ def _evidence(report: RunReport) -> EvidenceResult:
         calibrated=report.calibrated,
         target_fpr=_target_fpr(report),
         transfer_status=MEASURED_REAL_TRANSFER if real_transfer else STUB_VALIDATED_SCAFFOLDING,
+        evidence_state=evidence_state_of(report).value,
         eai_ids_covered=eai_ids,
         attack_families=families,
         by_eai=_by_eai(report),
@@ -618,6 +627,7 @@ def to_compliance_markdown(report: RunReport) -> str:
         f"| overall redirection rate (95% CI) | {_rate_ci(ev.redirection_rate, ev.ci95)} |"
     )
     lines.append(f"| transfer status | **{ev.transfer_status}** |")
+    lines.append(f"| evidence state | **{ev.evidence_state}** |")
     lines.append(f"| benign baseline FPR (control) | {_pct(ev.benign_fpr)} |")
     lines.append(
         f"| clean-task-success (competence control) | {_pct(ev.clean_task_success_rate)} |"

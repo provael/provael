@@ -23,6 +23,7 @@ from provael.attacks.optimized import OracleAttack, SchemaAwareAttack
 from provael.attacks.registry import resolve_attacks
 from provael.calibration import Calibration, anytime_ci, wilson_ci
 from provael.config import RunConfig
+from provael.evidence import classify_run
 from provael.policies.base import PolicyAdapter
 from provael.policies.registry import make_policy
 from provael.scoring.asr import (
@@ -236,6 +237,7 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
     return RunReport(
         tool_version=__version__,
         schema_version=2,
+        evidence_state=classify_run(config.policy, config.suite).value,
         policy=config.policy,
         suite=config.suite,
         attacks=[a.name for a in attacks],
