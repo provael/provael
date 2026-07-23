@@ -18,6 +18,7 @@ from rich.table import Table
 
 from provael.calibration import wilson_ci
 from provael.eai import CATALOG
+from provael.evidence import evidence_state_of
 from provael.scoring.asr import fdr_by_attack
 from provael.types import ASRStat, RunReport
 
@@ -104,6 +105,7 @@ def to_markdown(report: RunReport) -> str:
     lines.append(f"| seeds | {report.seeds}{' (preliminary, <5)' if report.preliminary else ''} |")
     lines.append(f"| stochastic | {report.stochastic} |")
     lines.append(f"| ASR std (per-seed) | {100.0 * report.asr_std:.1f}% |")
+    lines.append(f"| evidence state | `{evidence_state_of(report).value}` |")
     predicate = "calibrated" if report.calibrated else "default (uncalibrated)"
     lines.append(f"| predicate | {predicate} |")
     if report.benign_fpr is not None:

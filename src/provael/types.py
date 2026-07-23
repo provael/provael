@@ -261,6 +261,12 @@ class RunReport(BaseModel):
         "ALL-episode observed-unsafe rate (benign control INCLUDED in the denominator). >=2 also "
         "carries the adversarial_* fields (the benign control excluded by role) and the roles map.",
     )
+    evidence_state: str | None = Field(
+        None,
+        description="Evidence-ladder state this run EARNED (see provael.evidence.EvidenceState): "
+        "'stub' for a stub run, 'real-episode' for a real policy on a real suite; never a higher "
+        "rung without the bound evidence it requires. None -> 'legacy-unverified' on read.",
+    )
     attempts: int
     successes: int
     asr: float = Field(
