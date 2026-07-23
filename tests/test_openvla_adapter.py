@@ -14,7 +14,11 @@ import os
 import numpy as np
 import pytest
 
-from provael.policies.openvla_adapter import MissingOpenVLAError, OpenVLAAdapter
+from provael.policies.openvla_adapter import (
+    MissingOpenVLAError,
+    OpenVLAAdapter,
+    UnpinnedRemoteCodeError,
+)
 
 _HAS_TRANSFORMERS = importlib.util.find_spec("transformers") is not None
 _INTEGRATION = os.environ.get("PROVAEL_INTEGRATION") == "1"
@@ -37,6 +41,30 @@ def test_act_before_load_raises() -> None:
     adapter = OpenVLAAdapter(unnorm_key="libero_object")
     with pytest.raises(RuntimeError, match="before load"):
         adapter.act({"image": np.zeros((8, 8, 3), dtype=np.uint8)}, "pick up the cup")
+
+
+# --------------------------------------------------------------------------------------------
+# trust_remote_code revision pinning (Phase 6) — CPU-testable, no transformers needed
+# --------------------------------------------------------------------------------------------
+
+def test_release_mode_refuses_unpinned_remote_code(monkeypatch: pytest.MonkeyPatch) -> None:
+    # trust_remote_code=True executes repo code; an unpinned load in release mode is refused.
+    monkeypatch.setenv("PROVAEL_REQUIRE_REAL_INTEGRATION", "1")
+    with pytest.raises(UnpinnedRemoteCodeError, match="commit SHA"):
+        OpenVLAAdapter()._resolve_revision()
+
+
+def test_pinned_revision_is_honoured_in_release_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PROVAEL_REQUIRE_REAL_INTEGRATION", "1")
+    adapter = OpenVLAAdapter(revision="0123abcd")
+    assert adapter._resolve_revision() == "0123abcd"
+
+
+def test_discovery_mode_warns_but_allows_unpinned(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("PROVAEL_REQUIRE_REAL_INTEGRATION", raising=False)
+    adapter = OpenVLAAdapter()
+    with pytest.warns(UserWarning, match="UNPINNED"):
+        assert adapter._resolve_revision() is None
 
 
 @pytest.mark.skipif(
