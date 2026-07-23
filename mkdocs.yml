@@ -47,6 +47,8 @@ nav:
       - RoboJailBench crosswalk: crosswalk/robojailbench.md
       - Listings & PRs: standards/listings.md
   - Python API: python-api.md
+  - Glossary: glossary.md
+  - Migration (schema v2): migration-v2.md
   - vs. LLM red-team tools: comparison.md
   - Handbook (outline): handbook.md
   - Accelerators & TPU: accelerators.md
