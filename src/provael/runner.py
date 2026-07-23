@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from provael import __version__
 from provael.attacks.base import Attack
-from provael.attacks.optimized import OracleAttack
+from provael.attacks.optimized import OracleAttack, SchemaAwareAttack
 from provael.attacks.registry import resolve_attacks
 from provael.calibration import Calibration, anytime_ci, wilson_ci
 from provael.config import RunConfig
@@ -50,19 +50,26 @@ from provael.types import (
 
 
 def _configure_optimized(
-    attacks: list[Attack], policy: PolicyAdapter, query_budget: int | None
+    attacks: list[Attack],
+    policy: PolicyAdapter,
+    suite: SuiteAdapter,
+    query_budget: int | None,
 ) -> None:
     """Wire a policy-query oracle (and optional budget override) into optimized attacks.
 
     Only the optimized family exposes ``attach_oracle``; the base ``Attack`` contract is
     untouched. Each search query resets the policy first, so it is an *independent* black-box
     query that never pollutes the live rollout's per-episode state (e.g. an action-chunk queue).
+    The suite's :meth:`~provael.suites.base.SuiteAdapter.action_schema` (when it declares one) is
+    handed to each attack so the search reads the policy's REAL translation channels, not a
+    hard-coded slice.
     """
 
     def _query(instruction: str, observation: Observation) -> Action:
         policy.reset()
         return policy.act(observation, instruction)
 
+    schema = suite.action_schema()
     for attack in attacks:
         # Any oracle-driven attack (the action-directive `targeted_hijack` and the image-channel
         # `patch_hijack`) is covered structurally via the OracleAttack protocol.
@@ -70,6 +77,10 @@ def _configure_optimized(
             if query_budget is not None:
                 attack.query_budget = query_budget
             attack.attach_oracle(_query, policy.reset)
+        # Hand the suite's real action layout to attacks that read motion channels (a superset check
+        # independent of oracle-ness), so the search reads the right channels, never a fixed slice.
+        if schema is not None and isinstance(attack, SchemaAwareAttack):
+            attack.action_schema = schema
 
 
 def run_episode(
@@ -185,7 +196,7 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
     policy.load()
 
     attacks = resolve_attacks(config.attacks)
-    _configure_optimized(attacks, policy, config.query_budget)
+    _configure_optimized(attacks, policy, suite, config.query_budget)
     tasks = config.tasks if config.tasks is not None else suite.tasks()
 
     results: list[AttackResult] = []

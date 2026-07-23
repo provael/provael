@@ -48,6 +48,7 @@ from provael.scoring.action import (
     ACTION_SURFACE_KEY,
     build_hijack_cue,
 )
+from provael.scoring.action_schema import STUB_ACTION_SCHEMA, ActionSchema
 from provael.types import Action, Observation
 
 FAMILY = "optimized"
@@ -86,6 +87,20 @@ class OracleAttack(Protocol):
     ) -> None: ...
 
 
+@runtime_checkable
+class SchemaAwareAttack(Protocol):
+    """Structural type for attacks that read an emitted action's motion channels.
+
+    These carry an :class:`~provael.scoring.action_schema.ActionSchema` (the optimized *action*
+    hijacks — :class:`TargetedTrajectoryHijack` and the image-channel
+    :class:`~provael.attacks.optimized_patch.OptimizedPatchHijack`), so the runner can hand them the
+    suite's real layout without importing every concrete class. Instruction/observation-channel
+    oracle attacks (which never read motion) deliberately do NOT match this.
+    """
+
+    action_schema: ActionSchema
+
+
 def _clip_magnitude(vec: Sequence[float], cap: float) -> tuple[float, float, float]:
     """Scale ``vec`` so its L2 norm is at most ``cap`` (leaves shorter vectors unchanged)."""
     x, y, z = (float(vec[0]), float(vec[1]), float(vec[2]))
@@ -106,8 +121,17 @@ def _cosine(a: Sequence[float], b: Sequence[float]) -> float:
     return dot / (na * nb)
 
 
-def _motion_of(action: Action) -> list[float]:
-    """Extract the end-effector translation delta from an emitted action (stub 7-DoF layout)."""
+def _motion_of(action: Action, schema: ActionSchema | None = None) -> list[float]:
+    """Extract the end-effector translation delta from an emitted action.
+
+    With an :class:`~provael.scoring.action_schema.ActionSchema` the translation channels come from
+    the runtime layout, and an *incompatible* action (wrong dimension / non-finite) yields a zero
+    motion — the honest "no usable motion to redirect" signal, not a guessed slice of the wrong
+    channels. Without a schema it falls back to the stub's ``MOTION_SLICE`` for the CPU core.
+    """
+    if schema is not None:
+        motion = schema.motion(action)
+        return list(motion) if motion is not None else [0.0, 0.0, 0.0]
     flat = [float(x) for x in action.reshape(-1)]
     lo, hi = MOTION_SLICE
     return flat[lo:hi] if len(flat) >= hi else [0.0, 0.0, 0.0]
@@ -132,10 +156,14 @@ class TargetedTrajectoryHijack(Attack):
         target: tuple[float, float, float] = DEFAULT_TARGET,
         query_budget: int = DEFAULT_QUERY_BUDGET,
         max_magnitude: float = DEFAULT_MAX_MAGNITUDE,
+        action_schema: ActionSchema | None = None,
     ) -> None:
         self.target = tuple(float(c) for c in target)
         self.query_budget = int(query_budget)
         self.max_magnitude = float(max_magnitude)
+        #: Which action channels are translation. Defaults to the stub layout; the runner overrides
+        #: it with the SUITE's real schema so a real 7-DoF policy is read on the right channels.
+        self.action_schema: ActionSchema = action_schema or STUB_ACTION_SCHEMA
         self._oracle: Oracle | None = None
         self._reset: Callable[[], None] | None = None
         self._cache: dict[int, str] = {}  # episode seed -> chosen cue (search once per episode)
@@ -175,7 +203,7 @@ class TargetedTrajectoryHijack(Attack):
         if self._oracle is not None:
             cand_obs = append_channel(observation, ACTION_DIRECTIVE_KEY, build_hijack_cue(cand))
             action = self._oracle(instruction, cand_obs)
-            motion: Sequence[float] = _motion_of(action)
+            motion: Sequence[float] = _motion_of(action, self.action_schema)
         else:
             motion = cand  # surrogate: the policy steers toward the commanded target
         return _cosine(motion, self.target)
@@ -215,5 +243,6 @@ __all__ = [
     "MOTION_SLICE",
     "Oracle",
     "OracleAttack",
+    "SchemaAwareAttack",
     "TargetedTrajectoryHijack",
 ]

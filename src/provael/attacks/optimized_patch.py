@@ -46,6 +46,7 @@ from provael.attacks._image import image_of, overlay_patch
 from provael.attacks.base import Attack
 from provael.attacks.optimized import Oracle, _cosine, _motion_of
 from provael.eai import CATALOG
+from provael.scoring.action_schema import STUB_ACTION_SCHEMA, ActionSchema
 from provael.types import IMAGE_KEY, Observation
 
 FAMILY = "optimized_patch"
@@ -84,10 +85,13 @@ class OptimizedPatchHijack(Attack):
         target: tuple[float, float, float] = DEFAULT_TARGET,
         query_budget: int = DEFAULT_QUERY_BUDGET,
         patch_fraction: float = DEFAULT_PATCH_FRACTION,
+        action_schema: ActionSchema | None = None,
     ) -> None:
         self.target = tuple(float(c) for c in target)
         self.query_budget = int(query_budget)
         self.patch_fraction = float(patch_fraction)
+        #: Which action channels are translation (see TargetedTrajectoryHijack). Runner-overridden.
+        self.action_schema: ActionSchema = action_schema or STUB_ACTION_SCHEMA
         self._oracle: Oracle | None = None
         self._reset: Callable[[], None] | None = None
         self._cache: dict[int, str] = {}  # episode seed -> chosen patch marker (search once)
@@ -144,7 +148,7 @@ class OptimizedPatchHijack(Attack):
             patched = overlay_patch(image, marker, self.patch_fraction)
             # Objective: cosine of the policy's emitted motion (under the patch) to the goal.
             action = oracle(instruction, {**observation, IMAGE_KEY: patched})
-            motion: Sequence[float] = _motion_of(action)
+            motion: Sequence[float] = _motion_of(action, self.action_schema)
             score = _cosine(motion, self.target)
             if score > best_score:
                 best_score = score
