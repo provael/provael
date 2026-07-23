@@ -22,5 +22,8 @@ FROM python:3.12-slim-bookworm AS runtime
 WORKDIR /app
 COPY --from=build /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
+# Defence in depth: the CPU CLI needs no root, so run as an unprivileged user.
+RUN useradd --create-home --uid 10001 provael
+USER provael
 ENTRYPOINT ["provael"]
 CMD ["--help"]

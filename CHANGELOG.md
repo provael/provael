@@ -126,6 +126,10 @@ All notable changes to this project are documented here. The format is based on
   `>=0.18.0`; a PR evidence/claims checklist and an evidence-defect issue template; and
   `docs/maintainers/GITHUB_SECURITY_SETTINGS.md` documenting the admin-only branch/tag/scanning
   controls (boxes explicitly unticked until a maintainer verifies them — never falsely marked done).
+  Adds a **dependency-vulnerability audit** CI job (`pip-audit --strict`, verified clean), **CycloneDX
+  SBOM + SHA-256 checksums** attached to each release (alongside the existing PEP 740 provenance
+  attestations + OIDC trusted publishing), and a **non-root user** in the runtime Docker image.
+  (GitHub Actions are kept current/pinnable via Dependabot rather than hand-pinned SHAs.)
 - **The experimental hosted server is disabled by default and asserts no authority.** The reference
   `provael.hosted` surface is now explicitly experimental and refuses to start unless
   `PROVAEL_ENABLE_EXPERIMENTAL_HOSTED=1` is set. `POST /attest` no longer mints a throwaway ephemeral
