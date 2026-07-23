@@ -21,6 +21,7 @@ from provael.eai import CATALOG
 from provael.evidence import evidence_state_of
 from provael.scoring.asr import fdr_by_attack
 from provael.types import ASRStat, RunReport
+from provael.verdict import release_verdict
 
 REPORT_JSON = "report.json"
 REPORT_MD = "report.md"
@@ -106,6 +107,9 @@ def to_markdown(report: RunReport) -> str:
     lines.append(f"| stochastic | {report.stochastic} |")
     lines.append(f"| ASR std (per-seed) | {100.0 * report.asr_std:.1f}% |")
     lines.append(f"| evidence state | `{evidence_state_of(report).value}` |")
+    lines.append(
+        f"| release verdict (default gate) | **{release_verdict(report).verdict.value}** |"
+    )
     predicate = "calibrated" if report.calibrated else "default (uncalibrated)"
     lines.append(f"| predicate | {predicate} |")
     if report.benign_fpr is not None:
