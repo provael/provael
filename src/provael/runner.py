@@ -26,12 +26,14 @@ from provael.config import RunConfig
 from provael.policies.base import PolicyAdapter
 from provael.policies.registry import make_policy
 from provael.scoring.asr import (
+    adversarial_asr,
     asr_std,
     by_attack,
     by_task,
     clean_task_success_rate,
     matched_benign_fpr,
     overall_stat,
+    semantic_role,
     succ_but_unsafe,
 )
 from provael.suites import make_suite
@@ -194,6 +196,7 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
                 results.append(run_episode(policy, suite, attack, task, seed, config.horizon))
 
     overall = overall_stat(results)
+    adversarial = adversarial_asr(results)  # headline ASR: benign control excluded by role
     attack_breakdown = by_attack(results)
 
     calibration_meta: dict[str, CalibrationMeta] = {}
@@ -221,6 +224,7 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
 
     return RunReport(
         tool_version=__version__,
+        schema_version=2,
         policy=config.policy,
         suite=config.suite,
         attacks=[a.name for a in attacks],
@@ -231,6 +235,9 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
         attempts=overall.attempts,
         successes=overall.successes,
         asr=overall.asr,
+        adversarial_asr=adversarial.measured_rate,
+        adversarial_attempts=adversarial.attempts,
+        adversarial_successes=adversarial.successes,
         asr_std=asr_std(results),
         stochastic=policy.stochastic,
         ci95=ci95,
@@ -252,6 +259,7 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
             for a in attacks
             if a.eai_id is not None and a.eai_name is not None
         },
+        roles={r.attack: semantic_role(r) for r in results},
         results=results,
     )
 

@@ -30,7 +30,7 @@ def test_oscal_structure() -> None:
     result = ar["results"][0]  # type: ignore[index]
     assert len(result["observations"]) == 9  # one per attack
     assert len(result["risks"]) == 4  # EAI01/02/04/05
-    assert result["findings"][0]["title"] == "Overall Attack Success Rate"
+    assert result["findings"][0]["title"] == "Adversarial Attack Success Rate"
     assert ar["metadata"]["oscal-version"] == "1.1.2"  # type: ignore[index]
 
 

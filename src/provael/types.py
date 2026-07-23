@@ -119,6 +119,15 @@ class ASRStat(BaseModel):
     successes: int = Field(..., description="Number of episodes that reached an unsafe state.")
     asr: float = Field(..., description="successes / attempts, or 0.0 when attempts == 0.")
 
+    @property
+    def measured_rate(self) -> float | None:
+        """The rate as a measured proportion, or None when there were no attempts.
+
+        An empty slice is an N/A, not a measured 0%: the stored ``asr`` is 0.0 there only as a
+        serialization sentinel. Read this (not ``asr``) whenever a 0-attempt group must show N/A.
+        """
+        return self.asr if self.attempts > 0 else None
+
 
 class EaiTag(BaseModel):
     """Embodied AI Security Top-10 risk an attack maps to (see :mod:`provael.eai`)."""
@@ -246,9 +255,32 @@ class RunReport(BaseModel):
     horizon: int = Field(..., description="Max timesteps per episode.")
     seed: int = Field(..., description="Base seed; episode i used seed + i.")
 
+    schema_version: int = Field(
+        1,
+        description="Report schema version. 1 = legacy: the asr/attempts/successes headline is the "
+        "ALL-episode observed-unsafe rate (benign control INCLUDED in the denominator). >=2 also "
+        "carries the adversarial_* fields (the benign control excluded by role) and the roles map.",
+    )
     attempts: int
     successes: int
-    asr: float = Field(..., description="Overall Attack Success Rate — the headline stat.")
+    asr: float = Field(
+        ...,
+        description="ALL-episode observed-unsafe rate: successes/attempts over EVERY applicable "
+        "episode, benign control INCLUDED. This is NOT the adversarial ASR (see adversarial_asr); "
+        "on a benign-heavy run it is diluted below it. Kept for backward compatibility.",
+    )
+    adversarial_asr: float | None = Field(
+        None,
+        description="Headline Attack Success Rate over ADVERSARIAL episodes only (the benign "
+        "baseline excluded by semantic role, so adding benign episodes never moves it). None on a "
+        "legacy (schema<2) report — recompute from `results` with scoring.asr.adversarial_asr.",
+    )
+    adversarial_attempts: int | None = Field(
+        None, description="Applicable adversarial episodes (excludes the benign control)."
+    )
+    adversarial_successes: int | None = Field(
+        None, description="Adversarial episodes that reached an unsafe state."
+    )
     asr_std: float = Field(0.0, description="Std-dev of per-seed ASR (seed/model spread).")
     stochastic: bool = Field(
         False, description="True for real (model-stochastic) policies; the stub is deterministic."
@@ -317,12 +349,43 @@ class RunReport(BaseModel):
         description="Attack name -> EAI Top-10 risk tag. Only attacks are tagged; the "
         "baseline control and any untagged attack are omitted.",
     )
+    roles: dict[str, str] = Field(
+        default_factory=dict,
+        description="Attack name -> semantic role ('benign-control' | 'adversarial-treatment'), so "
+        "a reader can tell controls from attacks. Empty on a legacy (schema<2) report.",
+    )
     results: list[AttackResult] = Field(default_factory=list)
 
+    def adversarial_headline(self) -> tuple[float, int, int]:
+        """(rate, successes, attempts) for the adversarial subset — the stored fields when present
+        (schema>=2), else recomputed from ``results`` (benign excluded by the 'baseline' family).
+
+        Recomputing a legacy report *corrects* its headline without reinterpreting the stored
+        ``asr`` (which stays the all-episode value it always was).
+        """
+        if self.adversarial_attempts is not None and self.adversarial_successes is not None:
+            att, succ = self.adversarial_attempts, self.adversarial_successes
+            rate = self.adversarial_asr if self.adversarial_asr is not None else (
+                succ / att if att else 0.0
+            )
+            return rate, succ, att
+        adv = [r for r in self.results if r.applicable and r.family != "baseline"]
+        att = len(adv)
+        succ = sum(1 for r in adv if r.success)
+        return (succ / att if att else 0.0), succ, att
+
     def headline(self) -> str:
-        """Single-line human summary of the headline ASR (± per-seed std for real policies)."""
-        pct = 100.0 * self.asr
-        base = f"Attack Success Rate (ASR): {pct:.1f}% ({self.successes}/{self.attempts})"
-        if self.stochastic:
-            return f"{base} ± {100.0 * self.asr_std:.1f}% (seeded, model-stochastic)"
-        return base
+        """Single-line human summary. Leads with the ADVERSARIAL ASR (benign control excluded); the
+        all-episode observed-unsafe rate is shown separately so the two are never conflated."""
+        rate, succ, att = self.adversarial_headline()
+        if att == 0:
+            adv = "Adversarial ASR: N/A (0 adversarial episodes)"
+        else:
+            adv = f"Adversarial ASR: {100.0 * rate:.1f}% ({succ}/{att})"
+            if self.stochastic:
+                adv += " (seeded, model-stochastic)"
+        allep = (
+            f"all-episode observed-unsafe {100.0 * self.asr:.1f}% "
+            f"({self.successes}/{self.attempts})"
+        )
+        return f"{adv} · {allep}"
