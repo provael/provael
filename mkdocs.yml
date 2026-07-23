@@ -55,6 +55,7 @@ nav:
       - Cross-architecture transfer (2026): findings/2026-cross-arch-transfer.md
       - EAI04 action-space transfer: studies/eai04-action-space-transfer.md
   - FAQ: faq.md
+  - Open-core promise: open-core-promise.md
   - Roadmap: roadmap.md
 
 markdown_extensions:
