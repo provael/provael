@@ -568,3 +568,11 @@ uv run pytest -q         # tests (CPU only; LeRobot tests skip unless gated)
 ## License
 
 [Apache-2.0](https://github.com/provael/provael/blob/main/LICENSE). Provael — *prove it, prevail.*
+
+## Trademarks
+
+**Provael™** (the product name and logo) is a trademark of the Provael maintainers; the code is
+Apache-2.0. The **Embodied AI Security Top 10** is a **separate**, independent community document
+licensed **CC-BY-SA 4.0** — deliberately **unbranded and donatable**, not a Provael™ product, and
+not affiliated with or endorsed by the OWASP® Foundation or MITRE®. Please keep the product name
+(Provael™) distinct from the standard's name when citing either.
