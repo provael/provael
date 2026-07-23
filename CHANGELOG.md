@@ -36,6 +36,13 @@ All notable changes to this project are documented here. The format is based on
   `True` for unsigned bundles); call `overall_strict_ok` or `integrity_only_ok` explicitly.
 
 ### Added
+- **Explicit evidence-state ladder** (`provael.evidence.EvidenceState`) — the finer-grained
+  successor to the binary transfer-status. A fresh stub run is `stub`, a real policy on a real suite
+  is `real-episode`, and the classifier **never** awards `measured-real-policy-effect` or any HIL /
+  hardware / external-reproduction / customer rung without the bound evidence those require. A report
+  predating the ladder (the committed SmolVLA×LIBERO artifact) reads `legacy-unverified` — the bottom
+  rung — never re-promoted from its non-stub policy/suite names. Surfaced additively in `report.md`
+  and the compliance evidence; the derived attestation golden was regenerated.
 - **First-class `ActionSchema`** (`provael.scoring.action_schema`) replacing the hard-coded
   `MOTION_SLICE = (1, 4)`. The optimized action attacks now read the end-effector translation
   channels from the **suite's declared layout** (wired in by the runner via a new
