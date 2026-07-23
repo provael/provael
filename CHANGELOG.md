@@ -36,6 +36,11 @@ All notable changes to this project are documented here. The format is based on
   `True` for unsigned bundles); call `overall_strict_ok` or `integrity_only_ok` explicitly.
 
 ### Added
+- **Paired McNemar test** (`scoring.asr.paired_mcnemar` / `mcnemar_exact`) — the right paired-binary
+  test for each attack vs its benign twin at the *same* `(task, seed)` cell, complementing the
+  existing benign control, matched-benign FPR, and BH-FDR. Exact (dependency-free), stable at the
+  small n a real-transfer run produces; returns `None` without a benign baseline (never a fabricated
+  significance).
 - **Bound execution manifest** (`provael.execution.ExecutionManifest`) — runtime provenance (code
   commit + dirty state, OS/Python, dependency-lock digest, hardware / accelerator / precision,
   checkpoint revision+digest, seeds / horizon / attacks, action-schema digest, evidence state,
