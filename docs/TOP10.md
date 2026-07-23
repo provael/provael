@@ -415,8 +415,35 @@ others credited in [Prior art](#prior-art-this-list-synthesizes-it-does-not-inve
 
 ## How to cite
 
-> Provael. *The Embodied AI Security Top 10 (v0.2).* 2026.
+Plain text:
+
+> Provael. *The Embodied AI Security Top 10 (v0.2).* 2026-06-27. Licensed CC-BY-SA 4.0.
 > <https://github.com/provael/provael/blob/main/docs/TOP10.md>
+
+BibTeX:
+
+```bibtex
+@misc{provael_embodied_ai_top10_2026,
+  title        = {The Embodied AI Security Top 10 (v0.2)},
+  author       = {{Provael}},
+  year         = {2026},
+  month        = jun,
+  note         = {Community draft, version 0.2. Licensed CC-BY-SA 4.0.
+                  Independent — not affiliated with OWASP or MITRE.},
+  howpublished = {\url{https://github.com/provael/provael/blob/main/docs/TOP10.md}}
+}
+```
+
+This is a **standalone, citable artifact** under **CC-BY-SA 4.0**: cite the version (v0.2) and date,
+keep the attribution and non-affiliation notice, and share adaptations under the same license.
+
+## Print / PDF
+
+To produce a citable PDF (no build dependency required): open this page at
+<https://docs.provael.com/TOP10/> and use your browser's **Print → Save as PDF** (portrait, default
+margins). The rendered page includes the version, date, CC-BY-SA notice, and non-affiliation
+disclaimer, so the exported PDF is self-contained and attributable. The `mkdocs.yml` sets a stable
+page URL, so a cited PDF and a cited web link resolve to the same versioned document.
 
 ---
 
