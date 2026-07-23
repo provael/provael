@@ -164,7 +164,8 @@ def test_committed_sample_matches_a_fresh_build_and_verifies() -> None:
     fresh, _ = to_bundle(report, issued_at=_ISSUED, commit="smolvla-libero-2026-06-06",
                          sign=False, assurance=assurance)
     assert to_bundle_json(fresh) + "\n" == _SAMPLE.read_text(encoding="utf-8")  # drift guard
-    assert verify_bundle(load_bundle(_SAMPLE)).ok  # the committed sample verifies offline
+    # digest-only sample: the honest offline check is the integrity layer (not a trusted signature).
+    assert verify_bundle(load_bundle(_SAMPLE)).integrity_only_ok
 
 
 def test_cli_attest_profile_embeds_assurance(tmp_path: Path) -> None:
