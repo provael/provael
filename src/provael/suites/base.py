@@ -14,6 +14,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 from provael.scoring.action import action_unsafe as _action_unsafe
+from provael.scoring.action_schema import ActionSchema
 from provael.scoring.action_space import action_space_unsafe as _action_space_unsafe
 from provael.scoring.authz import authz_unsafe as _authz_unsafe
 from provael.scoring.backdoor import backdoor_unsafe as _backdoor_unsafe
@@ -42,6 +43,16 @@ class SuiteAdapter(ABC):
         The stub returns ``None``; the LIBERO suite returns a populated
         :class:`~provael.types.SuiteFeatures` so a real policy can wire itself to
         the env. Exchanged once per run via :meth:`PolicyAdapter.set_features`.
+        """
+        return None
+
+    def action_schema(self) -> ActionSchema | None:
+        """The suite's action-vector layout (which channels are translation/gripper), or ``None``.
+
+        ``None`` means "layout unknown" — an action-space attack that needs the layout then reports
+        N/A rather than guessing a slice. The stub returns its explicit schema; a real suite must
+        return the checkpoint's real layout (e.g. a 7-DoF ee-delta) so the search reads the right
+        channels. The runner hands this to the optimized action attacks.
         """
         return None
 

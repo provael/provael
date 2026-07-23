@@ -36,6 +36,13 @@ All notable changes to this project are documented here. The format is based on
   `True` for unsigned bundles); call `overall_strict_ok` or `integrity_only_ok` explicitly.
 
 ### Added
+- **First-class `ActionSchema`** (`provael.scoring.action_schema`) replacing the hard-coded
+  `MOTION_SLICE = (1, 4)`. The optimized action attacks now read the end-effector translation
+  channels from the **suite's declared layout** (wired in by the runner via a new
+  `SchemaAwareAttack` protocol), and an action that does not match the declared layout (wrong
+  dimension / non-finite) yields an explicit **N/A** rather than a guessed slice — so a real 7-DoF
+  policy is read on channels 0-2, not the stub's 1-3. Ships `STUB_ACTION_SCHEMA` and a generic
+  `SEVEN_DOF_DELTA_SCHEMA`, each with a stable digest for execution-manifest provenance.
 - **Adversarial vs benign vs all-episode metrics** (`scoring.asr.adversarial_asr`,
   `benign_unsafe_rate`, `all_episode_observed_unsafe_rate`, `semantic_role`) plus a `reconcile()`
   tool that recovers the honest breakdown (benign 0/10, adversarial-only 17/60, all-episode 17/70,
