@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/provael/provael/main/docs/assets/provael_icon_512.png" alt="Provael logo" width="110" height="110">
+  <img src="https://raw.githubusercontent.com/provael/provael/main/docs/assets/provael_wordmark.png" alt="Provael — prove it, prevail" width="440">
 </p>
 
 # Provael™
