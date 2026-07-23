@@ -14,8 +14,10 @@ import pytest
 
 from provael.config import RunConfig
 from provael.hosted import (
+    ENABLE_HOSTED_ENV,
     HOSTED_LICENSE_ENV,
     EntitlementError,
+    HostedDisabledError,
     has_entitlement,
     require_entitlement,
 )
@@ -36,11 +38,13 @@ def _report():
 # the entitlement gate (pure stdlib — no extra needed)
 # --------------------------------------------------------------------------------------------
 
-def test_require_entitlement_raises_without_a_license(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_require_entitlement_raises_without_the_flag(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(HOSTED_LICENSE_ENV, raising=False)
     assert has_entitlement() is False
-    with pytest.raises(EntitlementError, match="paid Provael hosted tier"):
+    # The message must NOT sell this as a paid tier or authentication — it is a local feature flag.
+    with pytest.raises(EntitlementError, match="local feature flag") as exc:
         require_entitlement()
+    assert "NOT authentication" in str(exc.value)
 
 
 def test_require_entitlement_passes_with_a_license(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -56,7 +60,7 @@ def test_require_entitlement_passes_with_a_license(monkeypatch: pytest.MonkeyPat
 def test_insurer_report_is_pure_and_structured() -> None:
     report = _report()
     out = build_insurer_report(report, issued_at="2026-07-05T00:00:00Z", commit="deadbeef")
-    assert out["format"] == "provael-insurer-report/v1"
+    assert out["format"] == "provael-assurance-report-draft/v1"  # a draft, not an insurer opinion
     assert out["issued_at"] == "2026-07-05T00:00:00Z"
     assert set(out) >= {
         "attestation_statement", "compliance_crosswalk", "conformity_mapping",
@@ -118,9 +122,20 @@ def test_free_core_runs_without_the_hosted_extra() -> None:
     build_insurer_report(report, issued_at="2026-07-05T00:00:00Z", commit="x")
 
 
-def test_create_app_without_fastapi_raises_a_clear_hint() -> None:
+def test_create_app_is_disabled_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    # EXPERIMENTAL and off unless explicitly enabled — checked before anything else, so this holds
+    # whether or not fastapi is installed.
+    monkeypatch.delenv(ENABLE_HOSTED_ENV, raising=False)
+    from provael.hosted.server import create_app
+
+    with pytest.raises(HostedDisabledError, match="disabled by default"):
+        create_app()
+
+
+def test_create_app_without_fastapi_raises_a_clear_hint(monkeypatch: pytest.MonkeyPatch) -> None:
     if _HAS_FASTAPI:
         pytest.skip("fastapi is installed; the missing-extra path is not exercisable here")
+    monkeypatch.setenv(ENABLE_HOSTED_ENV, "1")  # get past the disabled-by-default gate
     from provael.hosted.server import MissingHostedExtraError, create_app
 
     with pytest.raises(MissingHostedExtraError, match="hosted"):
@@ -132,9 +147,34 @@ def test_create_app_without_fastapi_raises_a_clear_hint() -> None:
 # --------------------------------------------------------------------------------------------
 
 @pytest.mark.skipif(not _HAS_FASTAPI, reason="requires the `hosted` extra")
-def test_server_builds_with_expected_routes() -> None:
+def test_server_builds_with_expected_routes(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(ENABLE_HOSTED_ENV, "1")
     from provael.hosted.server import create_app
 
     app = create_app()
     paths = {getattr(r, "path", "") for r in app.routes}
-    assert {"/healthz", "/attest", "/insurer-report"} <= paths
+    # /insurer-report is gone: the endpoint is the honestly-named assurance-report DRAFT.
+    assert {"/healthz", "/attest", "/assurance-report"} <= paths
+    assert "/insurer-report" not in paths
+
+
+@pytest.mark.skipif(not _HAS_FASTAPI, reason="requires the `hosted` extra")
+def test_attest_refuses_to_sign_with_a_throwaway_ephemeral_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The server must never mint an ephemeral key whose public half it then discards.
+    monkeypatch.setenv(ENABLE_HOSTED_ENV, "1")
+    monkeypatch.delenv("PROVAEL_SIGNING_KEY", raising=False)
+    from fastapi.testclient import TestClient
+
+    from provael.hosted.server import create_app
+
+    report = _report()
+    client = TestClient(create_app())
+    resp = client.post("/attest?sign=true", json=report.model_dump(mode="json"))
+    assert resp.status_code == 400
+    assert "ephemeral" in resp.json()["detail"]
+    # digest-only still works and asserts no signer authority
+    ok = client.post("/attest", json=report.model_dump(mode="json"))
+    assert ok.status_code == 200
+    assert ok.json()["bundle"]["signed"] is False

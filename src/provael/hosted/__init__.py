@@ -1,4 +1,4 @@
-"""Provael hosted surface — the open-core paid tier (v0.10.0).
+"""Provael hosted surface — an EXPERIMENTAL, non-production reference implementation.
 
 **Open-core boundary (read this).** Everything a user needs to red-team a policy and produce
 evidence is **free and Apache-2.0**: the CLI, every attack family (including the EAI03 ``backdoor``
@@ -6,55 +6,72 @@ screen), the ASR + 95% Wilson CI + benign-FPR control, SARIF, the GitHub Action,
 Security Top 10, and **local** ``provael attest`` (digest-bound, optionally Ed25519-signed with your
 own key). None of that is gated.
 
-This module is the *reference implementation* of the hosted surface. The **code is open and
-self-hostable** — anyone can run :func:`provael.hosted.server.create_app` and get **self-signed**
-attestations. What is sold is the **operated service**, not the code:
+**This module is NOT a production signing service.** It is a *reference* surface for experimenting
+with a hosted attestation flow. It does **not** authenticate callers, establish tenant or artifact
+ownership, or bind a job — so it must not be operated as an authoritative signing service. It is
+**disabled by default**: :func:`provael.hosted.server.create_app` refuses to start unless
+``PROVAEL_ENABLE_EXPERIMENTAL_HOSTED=1`` is set, and even then it signs only with the operator's own
+key and labels every signature as **untrusted** (a verifier trusts a key by adding it to its own
+trust store — see :mod:`provael.attest` — never because Provael served it).
 
-* the **authoritative, project-key signature** (an insurer / Notified-Body can trust one key), and
-* the **insurer / Notified-Body-ready compliance report**
-  (:func:`provael.hosted.report.build_insurer_report`) and a curated/managed targeted-backdoor
-  screen.
+``PROVAEL_HOSTED_LICENSE`` is a **local feature flag**, not authentication or authorization: it
+gates the experimental assurance-report-draft endpoint on a single machine and establishes no
+caller identity. The requirements for a real operated service (authenticated identity, tenant and
+artifact ownership, job binding, KMS/HSM-backed signing, revocation, audit, abuse controls) are
+documented in ``docs/maintainers/`` and are deliberately **not** implemented here.
 
-Those paid surfaces are guarded by :func:`require_entitlement`, which checks the
-``PROVAEL_HOSTED_LICENSE`` environment variable. The gate lives ONLY on the operated endpoints —
-it never touches the free core. Installed only with the ``[hosted]`` extra
-(``pip install 'provael[hosted]'``), so the default CPU install stays lean.
+Installed only with the ``[hosted]`` extra (``pip install 'provael[hosted]'``), so the default CPU
+install stays lean.
 """
 
 from __future__ import annotations
 
 import os
 
-#: Environment variable carrying the paid hosted-tier entitlement token.
+#: Local feature flag gating the experimental assurance-report-draft endpoint. NOT authentication or
+#: authorization — it establishes no caller identity and must never be represented as a credential.
 HOSTED_LICENSE_ENV = "PROVAEL_HOSTED_LICENSE"
-#: Environment variable carrying the operated instance's Ed25519 signing-key PEM (path or inline).
+#: The operated instance's Ed25519 signing-key PEM (path or inline). A signature from it is the
+#: OPERATOR'S key — untrusted until a verifier adds it to their trust store; not a Provael identity.
 SIGNING_KEY_ENV = "PROVAEL_SIGNING_KEY"
+#: Master gate: the experimental hosted server refuses to start unless this is set truthy. Disabled
+#: by default because the reference server is not a production-grade, authenticated signing service.
+ENABLE_HOSTED_ENV = "PROVAEL_ENABLE_EXPERIMENTAL_HOSTED"
 
 
 class EntitlementError(RuntimeError):
-    """Raised when a paid hosted-tier surface is invoked without a valid entitlement."""
+    """Raised when the experimental assurance-report-draft endpoint is invoked without its flag."""
+
+
+class HostedDisabledError(RuntimeError):
+    """Raised when the experimental hosted server is started without its explicit enable flag."""
+
+
+def experimental_hosted_enabled() -> bool:
+    """Whether the experimental hosted server is explicitly enabled (disabled by default)."""
+    return os.environ.get(ENABLE_HOSTED_ENV, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def has_entitlement() -> bool:
-    """Whether a hosted-tier entitlement token is configured (non-empty license env var)."""
+    """Whether the assurance-draft feature flag is set (non-empty). Not authentication."""
     return bool(os.environ.get(HOSTED_LICENSE_ENV, "").strip())
 
 
 def require_entitlement() -> str:
-    """Return the hosted-tier entitlement token, or raise :class:`EntitlementError`.
+    """Return the experimental-endpoint feature flag, or raise :class:`EntitlementError`.
 
-    Guards ONLY the paid, operated surfaces (the project-key-signed insurer report). The free core —
-    the CLI, all attack families, ASR, SARIF, the GitHub Action, the Top-10, and local ``attest`` —
-    never calls this and is never gated.
+    This is a **local feature flag**, not authentication: it gates the experimental
+    assurance-report-draft endpoint on one machine and establishes no caller identity, ownership, or
+    authorization. The free core (CLI, all attack families, ASR, SARIF, the GitHub Action, the
+    Top-10, and local ``provael attest``) never calls this and is never gated.
     """
     token = os.environ.get(HOSTED_LICENSE_ENV, "").strip()
     if not token:
         raise EntitlementError(
-            "This is the paid Provael hosted tier: the operated, project-key-signed insurer / "
-            "Notified-Body-ready attestation. The free core (CLI, all attack families incl. the "
-            "backdoor screen, ASR, SARIF, the GitHub Action, the Top-10, and local `provael "
-            f"attest`) needs no license. Set {HOSTED_LICENSE_ENV} to use the hosted surface, or "
-            "self-host the reference server (`provael serve`) for self-signed attestations."
+            "This experimental endpoint is behind a local feature flag (it is NOT a paid tier and "
+            f"NOT authentication). Set {HOSTED_LICENSE_ENV} to any non-empty value to enable the "
+            "assurance-report-draft on this machine. The free core (CLI, all attack families, ASR, "
+            "SARIF, the GitHub Action, the Top-10, and local `provael attest`) needs no flag."
         )
     return token
 
@@ -62,7 +79,10 @@ def require_entitlement() -> str:
 __all__ = [
     "HOSTED_LICENSE_ENV",
     "SIGNING_KEY_ENV",
+    "ENABLE_HOSTED_ENV",
     "EntitlementError",
+    "HostedDisabledError",
+    "experimental_hosted_enabled",
     "has_entitlement",
     "require_entitlement",
 ]

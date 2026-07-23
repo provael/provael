@@ -72,7 +72,8 @@ def test_iec_62443_targets_sl2_with_foundational_requirements() -> None:
 def test_insurer_reuses_the_shipped_insurer_report_and_transfer_table() -> None:
     a = _assurance(_real_report(), AssuranceProfile.insurer)
     assert a["profile"] == "insurer"
-    assert a["insurer_report"]["format"] == "provael-insurer-report/v1"  # reused, not reimplemented
+    # reused, not reimplemented; the shipped report is an honestly-named assurance-report DRAFT
+    assert a["insurer_report"]["format"] == "provael-assurance-report-draft/v1"
     assert a["family_transfer_table"]
 
 
