@@ -81,6 +81,13 @@ All notable changes to this project are documented here. The format is based on
   signer, revoked/expired key, subject mismatch, digest mismatch, malformed — via `verify_exit_code`.
 
 ### Security
+- **Supply-chain & governance hardening.** Least-privilege `permissions: contents: read` + a job
+  timeout + `persist-credentials: false` + concurrency on the CI workflow; a Dependabot config for
+  GitHub Actions and pip; a `CODEOWNERS` gating the evidence-integrity surfaces; the composite
+  `action.yml` install bounded to the current minor (`>=0.22.0,<0.23.0`) instead of an open
+  `>=0.18.0`; a PR evidence/claims checklist and an evidence-defect issue template; and
+  `docs/maintainers/GITHUB_SECURITY_SETTINGS.md` documenting the admin-only branch/tag/scanning
+  controls (boxes explicitly unticked until a maintainer verifies them — never falsely marked done).
 - **The experimental hosted server is disabled by default and asserts no authority.** The reference
   `provael.hosted` surface is now explicitly experimental and refuses to start unless
   `PROVAEL_ENABLE_EXPERIMENTAL_HOSTED=1` is set. `POST /attest` no longer mints a throwaway ephemeral
