@@ -106,6 +106,80 @@ class StudySummary(BaseModel):
     honesty: str
 
 
+#: The versioned RPC contract exchanged between isolated architecture executors.
+CROSS_ARCH_REQUEST_FORMAT = "provael-cross-arch-request/v1"
+CROSS_ARCH_RESPONSE_FORMAT = "provael-cross-arch-response/v1"
+
+
+class CrossArchRequest(BaseModel):
+    """The versioned request handed to an ISOLATED architecture executor.
+
+    ``[openpi]`` and ``[lerobot]`` pin conflicting numpy majors, so each real architecture runs in
+    its own env/container; they exchange only this schema, never live Python objects. The request
+    pins both sides — the tool version, the architecture's extra, and the caller's lockfile digest —
+    so a response cannot be silently produced by a mismatched stack.
+    """
+
+    format: str = CROSS_ARCH_REQUEST_FORMAT
+    architecture: str
+    policy: str
+    suite: str
+    extra: str | None
+    attacks: list[str]
+    episodes: int
+    seed: int
+    tool_version: str
+    lockfile_digest: str | None = None
+
+
+class CrossArchResponse(BaseModel):
+    """The versioned response an isolated executor returns: its report + provenance + status.
+
+    ``status`` is 'measured' only when a real report was produced in the executor's own env;
+    'incomplete' when the architecture was NOT executed (never silently upgraded); a stub executor
+    is 'stub', never a cross-architecture transfer claim.
+    """
+
+    format: str = CROSS_ARCH_RESPONSE_FORMAT
+    request_format: str = CROSS_ARCH_REQUEST_FORMAT
+    architecture: str
+    status: str = "incomplete"
+    executor_tool_version: str | None = None
+    executor_extra_version: str | None = None
+    executor_numpy_major: int | None = None
+    report: RunReport | None = None
+
+
+def build_cross_arch_request(
+    arch: Architecture, *, episodes: int, seed: int, tool_version: str,
+    lockfile_digest: str | None = None,
+) -> CrossArchRequest:
+    """Build the pinned request for an isolated architecture executor."""
+    return CrossArchRequest(
+        architecture=arch.key, policy=arch.policy, suite=arch.suite, extra=arch.extra,
+        attacks=list(BATTERY), episodes=episodes, seed=seed, tool_version=tool_version,
+        lockfile_digest=lockfile_digest,
+    )
+
+
+def ingest_cross_arch_response(response: CrossArchResponse) -> str:
+    """Validate a response against the contract and return its HONEST status.
+
+    A missing report is 'incomplete' (the architecture was not executed) — never upgraded to
+    measured. A stub executor stays 'stub' (no real model, so no cross-architecture transfer claim).
+    Rejects a response whose request-format does not match this contract version.
+    """
+    if response.request_format != CROSS_ARCH_REQUEST_FORMAT:
+        raise ValueError(
+            f"response is for {response.request_format!r}, not {CROSS_ARCH_REQUEST_FORMAT!r}"
+        )
+    if response.report is None:
+        return "incomplete"
+    if response.status == "stub" or response.report.policy == "stub":
+        return "stub"
+    return "measured"
+
+
 def _arch_ready(arch: Architecture) -> bool:
     """Whether ``arch`` can be measured in this environment (stub always; real => gated)."""
     if arch.extra is None:

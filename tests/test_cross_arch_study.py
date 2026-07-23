@@ -121,3 +121,48 @@ def test_cli_study_cross_arch_writes_when_out_given(tmp_path: Path) -> None:
     result = runner.invoke(app, ["study", "cross-arch", "--out", str(out)])
     assert result.exit_code == 0
     assert (out / SUMMARY_JSON).is_file()
+
+
+# --------------------------------------------------------------------------------------------
+# the versioned cross-architecture RPC contract (Phase 6) — isolated stacks exchange only this
+# --------------------------------------------------------------------------------------------
+
+def test_cross_arch_request_pins_both_sides() -> None:
+    from provael.studies.cross_arch import build_cross_arch_request
+
+    arch = next(a for a in ARCHITECTURES if a.key == "pi0")
+    req = build_cross_arch_request(arch, episodes=10, seed=0, tool_version="0.22.0",
+                                   lockfile_digest="abc")
+    assert req.format == "provael-cross-arch-request/v1"
+    assert req.architecture == "pi0" and req.extra == "openpi"
+    assert req.tool_version == "0.22.0" and req.lockfile_digest == "abc"
+    # round-trips through JSON (the only thing crossing the env boundary)
+    from provael.studies.cross_arch import CrossArchRequest
+    assert CrossArchRequest.model_validate_json(req.model_dump_json()) == req
+
+
+def test_a_response_with_no_report_is_incomplete_not_measured() -> None:
+    from provael.studies.cross_arch import CrossArchResponse, ingest_cross_arch_response
+
+    resp = CrossArchResponse(architecture="pi0", status="incomplete", report=None)
+    assert ingest_cross_arch_response(resp) == "incomplete"  # not executed != measured
+
+
+def test_a_stub_response_is_never_a_cross_arch_transfer_claim() -> None:
+    from provael.config import RunConfig
+    from provael.runner import run
+    from provael.studies.cross_arch import CrossArchResponse, ingest_cross_arch_response
+
+    report = run(RunConfig(policy="stub", suite="stub", attacks=["none", "instruction"], episodes=4))
+    resp = CrossArchResponse(architecture="stub", status="measured", report=report)
+    assert ingest_cross_arch_response(resp) == "stub"  # a stub run is 'stub', not 'measured'
+
+
+def test_a_response_for_a_different_contract_version_is_rejected() -> None:
+    import pytest
+
+    from provael.studies.cross_arch import CrossArchResponse, ingest_cross_arch_response
+
+    resp = CrossArchResponse(architecture="pi0", request_format="provael-cross-arch-request/v0")
+    with pytest.raises(ValueError, match="not"):
+        ingest_cross_arch_response(resp)
