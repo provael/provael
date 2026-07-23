@@ -36,6 +36,14 @@ All notable changes to this project are documented here. The format is based on
   `True` for unsigned bundles); call `overall_strict_ok` or `integrity_only_ok` explicitly.
 
 ### Added
+- **Bound execution manifest** (`provael.execution.ExecutionManifest`) — runtime provenance (code
+  commit + dirty state, OS/Python, dependency-lock digest, hardware / accelerator / precision,
+  checkpoint revision+digest, seeds / horizon / attacks, action-schema digest, evidence state,
+  release verdict, timestamps) stored **separately** from the deterministic `report.json` and bound
+  to it by the report's SHA-256 digest — so time and machine identity never enter the byte-
+  deterministic report. Pure builder (provenance passed in), env allow-listed with secret values
+  redacted, and any provenance the caller could not supply recorded in `missing_fields` rather than
+  invented.
 - **Glossary + schema-v2 migration guide** (`docs/glossary.md`, `docs/migration-v2.md`) — precise
   definitions for adversarial ASR vs the all-episode rate vs the benign control, the evidence-state
   ladder, the release verdict, and integrity-vs-signature-vs-trust; plus the additive schema-1→2
