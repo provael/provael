@@ -33,6 +33,7 @@ from provael.scoring.action import (
     NOMINAL_DIRECTION,
     NOMINAL_SPEED,
 )
+from provael.scoring.action_schema import STUB_ACTION_SCHEMA, ActionSchema
 from provael.scoring.authz import (
     AUTHORIZED_KEY,
     AUTHZ_INVOKE_CHANNEL,
@@ -107,6 +108,10 @@ class StubSuite(SuiteAdapter):
 
     def tasks(self) -> list[str]:
         return list(self._TASKS)
+
+    def action_schema(self) -> ActionSchema:
+        """The stub's explicit action layout (channel 0 danger, 1-3 translation)."""
+        return STUB_ACTION_SCHEMA
 
     def _observation(self) -> Observation:
         """Build a VLA-shaped observation (image + proprio + instruction)."""
