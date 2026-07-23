@@ -41,6 +41,7 @@ from provael.attest import (
     ATTESTATION_JSON,
     ATTESTATION_PUB,
     EXIT_OK,
+    RULESET_VERSION,
     MissingAttestExtraError,
     generate_private_key_pem,
     load_bundle,
@@ -79,6 +80,7 @@ from provael.leaderboard import (
     load_leaderboard,
     verify_leaderboard,
 )
+from provael.manifest import to_evidence_manifest_json
 from provael.mlbom import ML_BOM_JSON, to_ml_bom_json, write_ml_bom
 from provael.oscal import OSCAL_JSON, to_oscal_json, write_oscal
 from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
@@ -989,6 +991,46 @@ def serve(
         f"[cyan]http://{host}:{port}[/cyan]  —  Ctrl-C to stop"
     )
     uvicorn.run(application, host=host, port=port)
+
+
+@app.command(name="evidence-manifest")
+def evidence_manifest(
+    in_dir: Annotated[
+        Path, typer.Option("--in", "--report", help="Directory with a report.json to describe.")
+    ],
+    commit: Annotated[
+        str,
+        typer.Option("--commit", help="Pinned source commit (required — never a moving branch)."),
+    ],
+    repo: Annotated[
+        str, typer.Option("--repo", help="Source repository URL.")
+    ] = "https://github.com/provael/provael",
+    out: Annotated[
+        Path, typer.Option("--out", help="Output path for the manifest JSON.")
+    ] = Path("artifacts/public-evidence-manifest.json"),
+) -> None:
+    """Build the deterministic public evidence manifest a website can consume.
+
+    Restates the honest metric semantics (adversarial ASR vs the all-episode rate vs the benign
+    control), per-attack results with Wilson intervals and applicability (N/A stays N/A), the
+    evidence-ladder state, the release verdict, and the limitations. It pins its source commit and
+    carries no wall-clock, so the same report + commit yields byte-identical output.
+    """
+    try:
+        report = load_report(in_dir)
+    except (FileNotFoundError, ValidationError):
+        _fail(f"{in_dir} does not contain a valid report.json")
+        return
+    try:
+        text = to_evidence_manifest_json(
+            report, repository=repo, commit=commit, regulatory_clock_version=RULESET_VERSION
+        )
+    except ValueError as exc:
+        _fail(str(exc))
+        return
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(text, encoding="utf-8")
+    _out.print(f"[green]wrote[/green] evidence manifest -> {out}")
 
 
 @app.command()

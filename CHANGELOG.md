@@ -36,6 +36,14 @@ All notable changes to this project are documented here. The format is based on
   `True` for unsigned bundles); call `overall_strict_ok` or `integrity_only_ok` explicitly.
 
 ### Added
+- **Deterministic public evidence manifest** (`provael.manifest`, `provael evidence-manifest`) — the
+  JSON a website can consume. Restates the exact metric semantics (adversarial ASR vs all-episode vs
+  benign control), per-attack results with Wilson intervals and applicability (N/A stays N/A, never a
+  fabricated 0), baseline-aware registry counts, the evidence-ladder state, and the release verdict.
+  Requires a **pinned commit** (never a moving branch), carries no wall-clock (byte-deterministic),
+  and makes no hardware / calibration / external-reproduction claim the evidence state does not
+  support. A checked-in manifest for the SmolVLA×LIBERO artifact ships alongside it
+  (legacy-unverified, incomplete verdict, adversarial 17/60 vs all-episode 17/70).
 - **Typed release verdict** (`provael.verdict.ReleaseVerdict`: incomplete / fail / conditional /
   pass) replacing binary pass/fail. Missing evidence is `incomplete`, not pass; a threshold breach or
   integrity/protocol violation is `fail`; a bounded exception (named approver + expiry + remediation)
