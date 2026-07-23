@@ -36,6 +36,17 @@ All notable changes to this project are documented here. The format is based on
   `True` for unsigned bundles); call `overall_strict_ok` or `integrity_only_ok` explicitly.
 
 ### Added
+- **Calibration as a bound, leakage-checked state** (`provael.calibration.CalibrationBinding`,
+  `build_calibration_binding`, `split_seeds_three`) — records the endpoint + oracle version, the
+  model/suite/task, digests of a **fit / calibration / eval** split, and the FPR achieved on the
+  **untouched eval** set. Seed leakage (eval overlapping fit/calibration) is **refused at build**;
+  `valid()` fails closed (leakage, an eval FPR above target, or an explicit invalidation all mean
+  *uncalibrated*, never "calibrated-with-a-warning").
+- **Independent semantic endpoints** (`provael.endpoints`) — `unsafe_envelope` (the legacy
+  `success`), `authorized_task_success`, `unauthorized_action`, `attacker_objective_success`,
+  `physical_hazard`, `controller_intervention`, each with a version-stamped oracle. A result carries
+  an `endpoints` map; endpoints with no signal are **N/A** (absent), never a fabricated `False`, so
+  the distinct questions are no longer collapsed into one boolean.
 - **Paired McNemar test** (`scoring.asr.paired_mcnemar` / `mcnemar_exact`) — the right paired-binary
   test for each attack vs its benign twin at the *same* `(task, seed)` cell, complementing the
   existing benign control, matched-benign FPR, and BH-FDR. Exact (dependency-free), stable at the
