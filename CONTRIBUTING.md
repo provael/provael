@@ -16,6 +16,10 @@ sim-only security-research tool — please read [SAFETY.md](SAFETY.md) first.
 - **Determinism.** The stub policy/suite are byte-deterministic; real policies are seeded
   but model-stochastic (reported as mean ± per-seed std). Don't put wall-clock into
   `report.json`.
+- **Open-core, kept.** New features land in the free Apache-2.0 core by default — see the
+  dated **[open-core promise](docs/open-core-promise.md)** (we never move a feature from free
+  to paid; the single paid surface is the operated, project-key-signed attestation). Don't add
+  entitlement checks to the core.
 
 ## Dev setup
 
