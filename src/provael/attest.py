@@ -43,7 +43,9 @@ from pydantic import BaseModel, Field
 from provael.attacks.optimized import FAMILY as OPTIMIZED_FAMILY
 from provael.attacks.registry import FAMILIES
 from provael.compliance import to_compliance_dict
+from provael.evidence import EvidenceState, evidence_state_of, transfer_status_of
 from provael.types import MEASURED_REAL_TRANSFER, STUB_VALIDATED_SCAFFOLDING, RunReport
+from provael.verdict import ReleaseVerdict, release_verdict
 
 #: The attestation statement format id (our own DSSE-style envelope, not in-toto conformance).
 STATEMENT_FORMAT = "provael-attestation/v1"
@@ -159,6 +161,14 @@ class AttestationStatement(BaseModel):
     )
     precision: str | None = Field(
         None, description="D6: compute precision the attested run recorded, or None."
+    )
+    evidence_state: str = Field(
+        EvidenceState.LEGACY_UNVERIFIED.value,
+        description="Evidence-ladder state of the attested run (provael.evidence.EvidenceState).",
+    )
+    release_verdict: str = Field(
+        ReleaseVerdict.INCOMPLETE.value,
+        description="Release verdict (provael.verdict): incomplete / fail / conditional / pass.",
     )
     regulatory_clock: list[RegulatoryClock]
     transfer: list[TransferStatus]
@@ -479,7 +489,9 @@ def verify_bytes(
 
 def _transfer_status(report: RunReport) -> list[TransferStatus]:
     """One honesty row per real attack: measured real transfer vs stub scaffolding."""
-    real = report.policy != "stub" and report.suite != "stub"
+    # Phase 2: the run-level status comes from the ONE shared evidence-derived helper; the optimized
+    # family keeps its per-family override below (GPU-gated, not yet measured).
+    real = transfer_status_of(report) == MEASURED_REAL_TRANSFER
     rows: list[TransferStatus] = []
     for attack in report.attacks:
         if attack == "none":
@@ -531,6 +543,8 @@ def build_statement(
         ),
         accelerator=report.accelerator,
         precision=report.precision,
+        evidence_state=evidence_state_of(report).value,
+        release_verdict=release_verdict(report).verdict.value,
         regulatory_clock=list(REGULATORY_CLOCK),
         transfer=_transfer_status(report),
         predicate=to_compliance_dict(report),

@@ -21,7 +21,9 @@ from pathlib import Path
 
 from provael.calibration import wilson_ci
 from provael.eai import CATALOG
-from provael.types import MEASURED_REAL_TRANSFER, STUB_VALIDATED_SCAFFOLDING, RunReport
+from provael.evidence import evidence_state_of, transfer_status_of
+from provael.types import RunReport
+from provael.verdict import release_verdict
 
 #: Filename written into a run's output directory.
 OSCAL_JSON = "report.oscal.json"
@@ -85,11 +87,7 @@ def to_oscal(
     lo, hi = wilson_ci(adv_s, adv_n) if adv_n else (0.0, 0.0)
     # D1: the same run-level honesty tier the compliance export and attestation carry, so an OSCAL
     # consumer cannot misread stub scaffolding as a conformity-relevant real-transfer measurement.
-    transfer_status = (
-        MEASURED_REAL_TRANSFER
-        if report.policy != "stub" and report.suite != "stub"
-        else STUB_VALIDATED_SCAFFOLDING
-    )
+    transfer_status = transfer_status_of(report)
     finding = {
         "uuid": _uid(report, "finding", "overall"),
         "title": "Adversarial Attack Success Rate",
@@ -106,6 +104,8 @@ def to_oscal(
             {"name": "ci95-high", "value": f"{hi:.4f}"},
             {"name": "calibrated", "value": str(report.calibrated).lower()},
             {"name": "transfer-status", "value": transfer_status},
+            {"name": "evidence-state", "value": evidence_state_of(report).value},
+            {"name": "release-verdict", "value": release_verdict(report).verdict.value},
         ],
     }
 

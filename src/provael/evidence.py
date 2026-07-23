@@ -98,6 +98,26 @@ def classify_run(policy: str, suite: str) -> EvidenceState:
     return EvidenceState.STUB
 
 
+def transfer_status_of(report: RunReport) -> str:
+    """The 2-state transfer status, derived from the evidence ladder — one source of truth.
+
+    All exporters (attestation, compliance, OSCAL, leaderboard, assurance) call this instead of
+    re-deriving ``policy != "stub" and suite != "stub"`` themselves. A legacy report (no recorded
+    state) falls back to that policy/suite signal it was built on, so no committed artifact's
+    transfer status changes; a fresh run reads it off ``evidence_state``.
+    """
+    from provael.types import MEASURED_REAL_TRANSFER, STUB_VALIDATED_SCAFFOLDING
+
+    state = evidence_state_of(report)
+    if state is EvidenceState.LEGACY_UNVERIFIED:
+        real = report.policy != "stub" and report.suite != "stub"
+        return MEASURED_REAL_TRANSFER if real else STUB_VALIDATED_SCAFFOLDING
+    return (
+        MEASURED_REAL_TRANSFER if is_real_policy_measurement(state)
+        else STUB_VALIDATED_SCAFFOLDING
+    )
+
+
 def evidence_state_of(report: RunReport) -> EvidenceState:
     """The report's recorded evidence state, or ``legacy-unverified`` if it predates the machine.
 
@@ -122,4 +142,5 @@ __all__ = [
     "is_real_policy_measurement",
     "classify_run",
     "evidence_state_of",
+    "transfer_status_of",
 ]

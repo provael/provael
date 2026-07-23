@@ -30,8 +30,8 @@ from pydantic import BaseModel, Field
 from provael.attacks.registry import FAMILIES
 from provael.calibration import wilson_ci
 from provael.eai import CATALOG
-from provael.evidence import EvidenceState, evidence_state_of
-from provael.types import MEASURED_REAL_TRANSFER, STUB_VALIDATED_SCAFFOLDING, RunReport
+from provael.evidence import EvidenceState, evidence_state_of, transfer_status_of
+from provael.types import RunReport
 
 COMPLIANCE_JSON = "report.compliance.json"
 COMPLIANCE_MD = "report.compliance.md"
@@ -464,9 +464,8 @@ def _evidence(report: RunReport) -> EvidenceResult:
     # benign 'none' control into the denominator. Legacy reports are recomputed from `results`.
     adv_rate, adv_successes, adv_attempts = report.adversarial_headline()
     has_adv = adv_attempts > 0
-    # D1: same derivation as attest._transfer_status / leaderboard.transfer_status — a run is a real
-    # transfer measurement only when BOTH the policy and the suite are real (not the stub fixture).
-    real_transfer = report.policy != "stub" and report.suite != "stub"
+    # D1/Phase-2: the transfer status is derived from the evidence ladder via the ONE shared helper
+    # (evidence.transfer_status_of), not re-inferred from policy/suite names here.
     return EvidenceResult(
         redirection_rate=adv_rate if has_adv else None,
         ci95=wilson_ci(adv_successes, adv_attempts) if has_adv else None,
@@ -475,7 +474,7 @@ def _evidence(report: RunReport) -> EvidenceResult:
         n=adv_attempts,
         calibrated=report.calibrated,
         target_fpr=_target_fpr(report),
-        transfer_status=MEASURED_REAL_TRANSFER if real_transfer else STUB_VALIDATED_SCAFFOLDING,
+        transfer_status=transfer_status_of(report),
         evidence_state=evidence_state_of(report).value,
         eai_ids_covered=eai_ids,
         attack_families=families,

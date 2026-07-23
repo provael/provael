@@ -7,6 +7,13 @@ All notable changes to this project are documented here. The format is based on
 ## [Unreleased]
 
 ### Changed
+- **Transfer status unified + evidence-state/verdict surfaced across exporters.** The scattered
+  `policy != "stub" and suite != "stub"` inference (attestation, compliance, OSCAL, hosted report)
+  now routes through one `provael.evidence.transfer_status_of` derived from the evidence ladder
+  (behaviour-preserving — a legacy artifact falls back to the policy/suite signal it was built on).
+  The **evidence state** and **release verdict** are now carried in the attestation statement, SARIF
+  run properties, OSCAL props, and compliance evidence (in addition to `report.md` + the public
+  manifest); the derived attestation golden was regenerated.
 - **Real-integration failures are no longer swallowed.** `scripts/run_real.sh` dropped the
   `|| true` that let a failing gated integration test (real load / real env / real step) continue on
   to the leaderboard refresh — a failure now stops the run. A new `PROVAEL_REQUIRE_REAL_INTEGRATION=1`
