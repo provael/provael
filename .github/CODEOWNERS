@@ -1,0 +1,16 @@
+# Default owner for everything in the repo.
+* @sattyamjjain
+
+# Evidence-integrity surfaces — changes here alter what a claim MEANS, so they always want a review.
+/src/provael/attest.py        @sattyamjjain
+/src/provael/evidence.py      @sattyamjjain
+/src/provael/verdict.py       @sattyamjjain
+/src/provael/manifest.py      @sattyamjjain
+/src/provael/scoring/         @sattyamjjain
+/src/provael/compliance.py    @sattyamjjain
+/src/provael/hosted/          @sattyamjjain
+
+# Release + CI infrastructure.
+/.github/                     @sattyamjjain
+/pyproject.toml               @sattyamjjain
+/action.yml                   @sattyamjjain
