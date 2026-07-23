@@ -40,12 +40,15 @@ from provael.attacks.registry import (
 from provael.attest import (
     ATTESTATION_JSON,
     ATTESTATION_PUB,
+    EXIT_OK,
     MissingAttestExtraError,
     generate_private_key_pem,
     load_bundle,
+    load_trust_store,
     public_key_pem,
     to_bundle,
     verify_bundle,
+    verify_exit_code,
     write_bundle,
 )
 from provael.avid import to_avid_json, write_avid
@@ -1025,6 +1028,30 @@ def attest(
     pubkey: Annotated[
         Path | None, typer.Option("--pubkey", help="Public-key PEM to verify a signed bundle with.")
     ] = None,
+    trust_store: Annotated[
+        Path | None,
+        typer.Option(
+            "--trust-store",
+            help="Local trust store (JSON) of trusted signer keys. Strict --verify needs it: a "
+            "valid signature from an unknown key is authentic but UNTRUSTED.",
+        ),
+    ] = None,
+    subject_report: Annotated[
+        Path | None,
+        typer.Option(
+            "--report",
+            help="A report.json to independently recheck against the attested subject digest "
+            "(--verify). Without it, the embedded digest is not independently confirmed.",
+        ),
+    ] = None,
+    integrity_only: Annotated[
+        bool,
+        typer.Option(
+            "--integrity-only",
+            help="Grade only the digest layer (--verify): pass if the payload is intact, WITHOUT "
+            "establishing signer identity or trust. Never reported as plain 'verified'.",
+        ),
+    ] = False,
     commit: Annotated[
         str | None, typer.Option("--commit", help="Override the source commit stamp.")
     ] = None,
@@ -1049,17 +1076,46 @@ def attest(
             _fail(f"{verify} is not a readable attestation bundle")
             return
         pub_bytes = pubkey.read_bytes() if pubkey is not None else None
+        store = None
+        if trust_store is not None:
+            try:
+                store = load_trust_store(trust_store)
+            except (FileNotFoundError, ValidationError):
+                _fail(f"{trust_store} is not a readable trust store")
+                return
+        subject = None
+        if subject_report is not None:
+            try:
+                subject = load_report(subject_report)
+            except (FileNotFoundError, ValidationError):
+                _fail(f"{subject_report} does not contain a valid report.json")
+                return
         try:
-            result = verify_bundle(bundle, public_key_pem_bytes=pub_bytes)
+            result = verify_bundle(
+                bundle,
+                public_key_pem_bytes=pub_bytes,
+                trust_store=store,
+                subject_report=subject,
+                now=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            )
         except MissingAttestExtraError as exc:
             _fail(str(exc))
             return
         for reason in result.reasons:
             _out.print(f"  - {reason}")
-        if result.ok:
-            _out.print("[green]attestation OK[/green]")
+        code = verify_exit_code(result, integrity_only=integrity_only)
+        if code == EXIT_OK and integrity_only:
+            _out.print(
+                "[yellow]attestation INTEGRITY-ONLY OK[/yellow] — payload intact; signer identity "
+                "and trust NOT established"
+            )
+        elif code == EXIT_OK:
+            _out.print("[green]attestation STRICT OK[/green] — integrity + trusted signature")
         else:
-            _fail("attestation verification FAILED", code=1)
+            _fail(
+                f"attestation verification FAILED [{'/'.join(result.codes) or 'not strict-OK'}]",
+                code=code,
+            )
         return
 
     # -- issuance mode -----------------------------------------------------------------------

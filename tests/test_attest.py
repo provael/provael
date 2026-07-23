@@ -17,13 +17,24 @@ import pytest
 from typer.testing import CliRunner
 
 from provael.attest import (
+    EXIT_KEY_REVOKED_OR_EXPIRED,
+    EXIT_MALFORMED,
+    EXIT_OK,
+    EXIT_SIGNATURE_INVALID,
+    EXIT_SUBJECT_MISMATCH,
+    EXIT_UNSIGNED,
+    EXIT_UNTRUSTED_SIGNER,
     REGULATORY_CLOCK,
     AttestationBundle,
+    TrustedKey,
+    TrustStore,
     build_statement,
     generate_private_key_pem,
+    keyid_of,
     public_key_pem,
     to_bundle,
     verify_bundle,
+    verify_exit_code,
 )
 from provael.cli import app
 from provael.compliance import to_compliance_dict
@@ -114,14 +125,18 @@ def test_digest_only_bundle_verifies_and_detects_tampering() -> None:
     result = verify_bundle(bundle)
     assert result.digest_ok is True
     assert result.signature_ok is None  # nothing signed, nothing to check
-    assert result.ok is True
+    assert result.signature_present is False
+    assert result.integrity_only_ok is True    # digest layer intact
+    assert result.overall_strict_ok is False   # unsigned is NEVER strict-OK (fail-closed)
+    assert result.ok is False                  # deprecated alias == overall_strict_ok
 
     # flip a byte of the payload -> the recomputed digest no longer matches
     raw = base64.b64decode(bundle.payload)
     tampered = base64.b64encode(raw.replace(b"stub", b"XXXX", 1)).decode("ascii")
     bad = bundle.model_copy(update={"payload": tampered})
     assert verify_bundle(bad).digest_ok is False
-    assert verify_bundle(bad).ok is False
+    assert verify_bundle(bad).integrity_only_ok is False
+    assert verify_bundle(bad).overall_strict_ok is False
 
 
 # --------------------------------------------------------------------------------------------
@@ -139,13 +154,26 @@ def test_sign_and_verify_roundtrip() -> None:
     assert returned_pub == pub
     assert bundle.signed is True and bundle.signatures[0].alg == "ed25519"
 
+    # crypto-valid but no trust store -> authentic yet UNTRUSTED (never strict-OK)
     good = verify_bundle(bundle, public_key_pem_bytes=pub)
-    assert good.digest_ok is True and good.signature_ok is True and good.ok is True
+    assert good.digest_ok is True and good.signature_ok is True
+    assert good.signer_trusted is None          # no trust store consulted
+    assert good.integrity_only_ok is True
+    assert good.overall_strict_ok is False      # a valid signature is not a trusted signer
+
+    # with the key in a trust store -> the whole chain holds -> strict-OK
+    store = TrustStore(keys=[TrustedKey(
+        keyid=keyid_of(pub), public_key_pem=pub.decode(), subject="Test Org",
+    )])
+    trusted = verify_bundle(bundle, trust_store=store)
+    assert trusted.signature_ok is True and trusted.signer_trusted is True
+    assert trusted.overall_strict_ok is True and trusted.ok is True
 
     # a different key must not verify
     other_pub = public_key_pem(generate_private_key_pem())
     bad = verify_bundle(bundle, public_key_pem_bytes=other_pub)
-    assert bad.signature_ok is False and bad.ok is False
+    assert bad.signature_ok is False and bad.overall_strict_ok is False
+    assert bad.integrity_only_ok is True        # the digest is still intact
 
 
 @_needs_crypto
@@ -167,6 +195,92 @@ def test_signed_payload_tamper_breaks_digest() -> None:
     tampered = base64.b64encode(raw.replace(b"evidence", b"XXXXXXXX", 1)).decode("ascii")
     bad = bundle.model_copy(update={"payload": tampered})
     assert verify_bundle(bad, public_key_pem_bytes=pub).digest_ok is False
+
+
+# --------------------------------------------------------------------------------------------
+# fail-closed verification — the decomposed VerifyResult + local trust store (Phase 3)
+# --------------------------------------------------------------------------------------------
+
+def test_unsigned_bundle_is_integrity_only_never_strict() -> None:
+    bundle, _ = to_bundle(_report(), issued_at=_ISSUED, commit=_COMMIT, sign=False)
+    r = verify_bundle(bundle)
+    assert r.digest_ok is True and r.signature_present is False
+    assert r.integrity_only_ok is True
+    assert r.overall_strict_ok is False and r.ok is False
+    assert verify_exit_code(r) == EXIT_UNSIGNED
+    assert verify_exit_code(r, integrity_only=True) == EXIT_OK  # only the digest layer is graded
+
+
+def test_malformed_payload_is_rejected_not_raised() -> None:
+    bundle, _ = to_bundle(_report(), issued_at=_ISSUED, commit=_COMMIT, sign=False)
+    bad = bundle.model_copy(update={"payload": "not$$$base64"})
+    r = verify_bundle(bad)
+    assert r.digest_ok is False and "MALFORMED" in r.codes
+    assert verify_exit_code(r) == EXIT_MALFORMED
+
+
+def test_subject_report_integrity_is_an_independent_recheck() -> None:
+    report = _report()
+    bundle, _ = to_bundle(report, issued_at=_ISSUED, commit=_COMMIT, sign=False)
+    ok = verify_bundle(bundle, subject_report=report)
+    assert ok.subject_report_integrity_ok is True
+    # a DIFFERENT report does not hash to the attested subject digest
+    other = _report(attacks=["none", "visual"])
+    bad = verify_bundle(bundle, subject_report=other)
+    assert bad.subject_report_integrity_ok is False
+    assert verify_exit_code(bad) == EXIT_SUBJECT_MISMATCH
+
+
+@_needs_crypto
+def test_wrong_key_makes_the_signature_invalid() -> None:
+    priv = generate_private_key_pem()
+    bundle, _ = to_bundle(_report(), issued_at=_ISSUED, commit=_COMMIT, private_key_pem=priv)
+    other_pub = public_key_pem(generate_private_key_pem())
+    r = verify_bundle(bundle, public_key_pem_bytes=other_pub)
+    assert r.signature_ok is False
+    assert verify_exit_code(r) == EXIT_SIGNATURE_INVALID
+
+
+@_needs_crypto
+def test_valid_signature_from_an_unknown_key_is_untrusted() -> None:
+    priv = generate_private_key_pem()
+    bundle, _ = to_bundle(_report(), issued_at=_ISSUED, commit=_COMMIT, private_key_pem=priv)
+    unrelated = public_key_pem(generate_private_key_pem())
+    store = TrustStore(keys=[TrustedKey(
+        keyid=keyid_of(unrelated), public_key_pem=unrelated.decode(), subject="Someone Else",
+    )])
+    r = verify_bundle(bundle, trust_store=store)
+    assert r.signer_trusted is False and r.overall_strict_ok is False
+    assert verify_exit_code(r) == EXIT_UNTRUSTED_SIGNER
+
+
+@_needs_crypto
+def test_revoked_trusted_key_fails_strict_even_with_a_valid_signature() -> None:
+    priv = generate_private_key_pem()
+    pub = public_key_pem(priv)
+    bundle, _ = to_bundle(_report(), issued_at=_ISSUED, commit=_COMMIT, private_key_pem=priv)
+    store = TrustStore(keys=[TrustedKey(
+        keyid=keyid_of(pub), public_key_pem=pub.decode(), subject="Org",
+        status="revoked", revocation_reason="key compromise",
+    )])
+    r = verify_bundle(bundle, trust_store=store)
+    assert r.signature_ok is True and r.key_not_revoked is False  # crypto valid, but revoked
+    assert r.overall_strict_ok is False
+    assert verify_exit_code(r) == EXIT_KEY_REVOKED_OR_EXPIRED
+
+
+@_needs_crypto
+def test_expired_trusted_key_fails_strict() -> None:
+    priv = generate_private_key_pem()
+    pub = public_key_pem(priv)
+    bundle, _ = to_bundle(_report(), issued_at=_ISSUED, commit=_COMMIT, private_key_pem=priv)
+    store = TrustStore(keys=[TrustedKey(
+        keyid=keyid_of(pub), public_key_pem=pub.decode(), subject="Org",
+        not_after="2020-01-01T00:00:00Z",
+    )])
+    r = verify_bundle(bundle, trust_store=store, now="2026-07-23T00:00:00Z")
+    assert r.validity_window_ok is False and r.overall_strict_ok is False
+    assert verify_exit_code(r) == EXIT_KEY_REVOKED_OR_EXPIRED
 
 
 # --------------------------------------------------------------------------------------------
@@ -196,12 +310,30 @@ def test_cli_attest_stub_e2e_then_verify(tmp_path: Path) -> None:
         assert bundle.signed is True
         assert (out / "attestation.pub").exists()
 
-    args = ["attest", "--verify", str(bundle_path)]
     if (out / "attestation.pub").exists():
-        args += ["--pubkey", str(out / "attestation.pub")]
-    verify = runner.invoke(app, args)
-    assert verify.exit_code == 0, verify.output
-    assert "OK" in verify.output
+        # signed bundle: strict verification needs a trust store (crypto-valid != trusted signer)
+        pub = (out / "attestation.pub").read_bytes()
+        store = TrustStore(keys=[TrustedKey(
+            keyid=keyid_of(pub), public_key_pem=pub.decode(), subject="Local",
+        )])
+        store_path = out / "trust.json"
+        store_path.write_text(store.model_dump_json())
+        strict = runner.invoke(
+            app, ["attest", "--verify", str(bundle_path), "--trust-store", str(store_path)]
+        )
+        assert strict.exit_code == 0, strict.output
+        assert "STRICT OK" in strict.output
+        # with only the pubkey (no trust store), strict verification fails closed as UNTRUSTED
+        untrusted = runner.invoke(
+            app, ["attest", "--verify", str(bundle_path), "--pubkey", str(out / "attestation.pub")]
+        )
+        assert untrusted.exit_code != 0
+        assert "UNTRUSTED" in untrusted.output
+    else:
+        # unsigned (no crypto extra): only integrity-only mode can pass, and it says so
+        integ = runner.invoke(app, ["attest", "--verify", str(bundle_path), "--integrity-only"])
+        assert integ.exit_code == 0, integ.output
+        assert "INTEGRITY-ONLY OK" in integ.output
 
 
 def test_cli_attest_no_sign_is_digest_only(tmp_path: Path) -> None:
