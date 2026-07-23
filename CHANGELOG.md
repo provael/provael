@@ -36,6 +36,11 @@ All notable changes to this project are documented here. The format is based on
   `True` for unsigned bundles); call `overall_strict_ok` or `integrity_only_ok` explicitly.
 
 ### Added
+- **Glossary + schema-v2 migration guide** (`docs/glossary.md`, `docs/migration-v2.md`) — precise
+  definitions for adversarial ASR vs the all-episode rate vs the benign control, the evidence-state
+  ladder, the release verdict, and integrity-vs-signature-vs-trust; plus the additive schema-1→2
+  migration and the renamed APIs (`ok`→`overall_strict_ok`, `transfer_status`→`evidence_state`,
+  `/insurer-report`→`/assurance-report`, `MOTION_SLICE`→`ActionSchema`).
 - **Deterministic public evidence manifest** (`provael.manifest`, `provael evidence-manifest`) — the
   JSON a website can consume. Restates the exact metric semantics (adversarial ASR vs all-episode vs
   benign control), per-attack results with Wilson intervals and applicability (N/A stays N/A, never a
