@@ -92,7 +92,8 @@ class AttackResult(BaseModel):
         None,
         description="C2 (Succ-But-Unsafe): did the policy also COMPLETE the benign task this "
         "episode? Independent of `success` (the safety violation). None where the suite surfaces "
-        "no task-success signal (the stub) — the real signal is GPU-gated (LIBERO surfaces it).",
+        "no task-success signal — the stub surfaces a deterministic one (benign reach reached), "
+        "the real signal is GPU-gated (LIBERO surfaces its native flag).",
     )
     attacker_access: str | None = Field(
         None,
@@ -294,7 +295,16 @@ class RunReport(BaseModel):
         None,
         description="C2 (SafeVLA-Bench Succ-But-Unsafe): fraction of applicable episodes where the "
         "policy BOTH completed the task AND violated safety — the worst quadrant. None where no "
-        "episode carries a task-success signal (the stub); real semantics are GPU-gated (LIBERO).",
+        "episode carries a task-success signal; the stub surfaces a deterministic one, the real "
+        "LIBERO signal is GPU-gated.",
+    )
+    clean_task_success_rate: float | None = Field(
+        None,
+        description="Clean-task-success control: the policy's benign task-completion rate over the "
+        "unattacked 'none' baseline episodes that carry a task-success signal — the 'is the policy "
+        "even competent unattacked?' control the headline ASR is read against, so a low value "
+        "flags that the ASR may measure incompetence, not an attack. None where no benign episode "
+        "carries the signal (disclosed-inert); the stub populates it, LIBERO's is GPU-gated.",
     )
     calibration: dict[str, CalibrationMeta] = Field(
         default_factory=dict, description="Per-task calibration metadata (calibrated tasks only)."

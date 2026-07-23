@@ -23,6 +23,7 @@ from provael.runner import run
 from provael.scoring.asr import (
     benjamini_hochberg,
     binom_test_greater,
+    clean_task_success_rate,
     fdr_by_attack,
     succ_but_unsafe,
 )
@@ -82,9 +83,8 @@ def test_fdr_by_attack_needs_a_control_and_flags_significance() -> None:
 # --------------------------------------------------------------------------------------------
 
 def test_succ_but_unsafe_is_none_without_a_task_success_signal() -> None:
+    # Pure function: with no task-success signal on any episode, the quadrant is honestly N/A.
     assert succ_but_unsafe([_res("roleplay", 0, True), _res("roleplay", 1, False)]) is None
-    report = run(RunConfig(policy="stub", suite="stub", attacks=["roleplay"], episodes=4))
-    assert report.succ_but_unsafe is None  # the stub surfaces no task-success -> honest N/A
 
 
 def test_succ_but_unsafe_counts_only_the_completed_and_unsafe_quadrant() -> None:
@@ -95,6 +95,46 @@ def test_succ_but_unsafe_counts_only_the_completed_and_unsafe_quadrant() -> None
         _res("a", 3, success=True, task_success=None),    # no signal -> excluded from denominator
     ]
     assert succ_but_unsafe(results) == 1 / 3  # 1 of the 3 signal-carrying episodes
+
+
+# --------------------------------------------------------------------------------------------
+# Clean-task-success control (the credibility fix) — competence of the policy, unattacked
+# --------------------------------------------------------------------------------------------
+
+def test_clean_task_success_rate_is_over_the_benign_baseline_only() -> None:
+    results = [
+        _res("none", 0, success=False, task_success=True),    # benign, completed -> counts
+        _res("none", 1, success=False, task_success=False),   # benign, failed   -> counts
+        _res("roleplay", 2, success=True, task_success=True),  # attacked -> excluded
+        _res("none", 3, success=False, task_success=None),     # no signal -> excluded
+    ]
+    assert clean_task_success_rate(results) == 1 / 2  # only the 2 signal-carrying benign episodes
+
+
+def test_clean_task_success_rate_is_none_without_a_benign_task_success_signal() -> None:
+    # No benign episode carries the signal -> honestly None (disclosed-inert), never fabricated.
+    assert clean_task_success_rate([_res("none", 0, success=False, task_success=None)]) is None
+    assert clean_task_success_rate([_res("roleplay", 0, success=True, task_success=True)]) is None
+
+
+def test_stub_surfaces_task_success_and_the_clean_control_is_populated() -> None:
+    # The credibility fix on the CPU path: the stub is competent on its benign reach task (100%),
+    # `freeze` fails the task, and the whole control is reported without a real model.
+    report = run(RunConfig(policy="stub", suite="stub",
+                           attacks=["none", "roleplay", "freeze"], episodes=6, seed=0))
+    assert report.clean_task_success_rate == 1.0  # benign baseline completes the reach task
+    assert report.succ_but_unsafe is not None     # the stub now surfaces a task-success signal
+    by_attack: dict[str, set[bool | None]] = {}
+    for r in report.results:
+        by_attack.setdefault(r.attack, set()).add(r.task_success)
+    assert by_attack["none"] == {True}    # benign reach completes
+    assert by_attack["freeze"] == {False}  # frozen motion never reaches the goal
+
+
+def test_clean_task_success_rate_surfaces_in_report_markdown() -> None:
+    report = run(RunConfig(policy="stub", suite="stub", attacks=["none", "roleplay"], episodes=4))
+    md = to_markdown(report)
+    assert "clean-task-success (benign control)" in md
 
 
 # --------------------------------------------------------------------------------------------

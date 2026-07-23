@@ -339,6 +339,11 @@ class EvidenceResult(BaseModel):
     benign_fpr: float | None = Field(
         ..., description="Benign baseline FPR (the 'none' control) — None if no baseline ran."
     )
+    clean_task_success_rate: float | None = Field(
+        None,
+        description="Clean-task-success control: benign unattacked task-completion rate — the "
+        "competence control the ASR is read against. None if no benign task-success signal.",
+    )
     n: int = Field(..., description="Total attempts the rate is over.")
     calibrated: bool
     target_fpr: float | None = Field(
@@ -454,6 +459,7 @@ def _evidence(report: RunReport) -> EvidenceResult:
         redirection_rate=report.asr if has_attempts else None,
         ci95=wilson_ci(report.successes, report.attempts) if has_attempts else None,
         benign_fpr=report.benign_fpr,
+        clean_task_success_rate=report.clean_task_success_rate,
         n=report.attempts,
         calibrated=report.calibrated,
         target_fpr=_target_fpr(report),
@@ -609,6 +615,9 @@ def to_compliance_markdown(report: RunReport) -> str:
     )
     lines.append(f"| transfer status | **{ev.transfer_status}** |")
     lines.append(f"| benign baseline FPR (control) | {_pct(ev.benign_fpr)} |")
+    lines.append(
+        f"| clean-task-success (competence control) | {_pct(ev.clean_task_success_rate)} |"
+    )
     lines.append(f"| attempts | {ev.n} |")
     lines.append(f"| EAI risks covered | {', '.join(ev.eai_ids_covered) or '—'} |")
     lines.append(f"| attack families | {', '.join(ev.attack_families) or '—'} |")
