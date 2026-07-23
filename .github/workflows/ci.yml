@@ -18,6 +18,16 @@ concurrency:
 # CPU-only by design: this workflow NEVER installs the optional `[lerobot]` extra,
 # so it pulls no torch / transformers / GPU stack. The LeRobot integration tests are
 # gated (PROVAEL_INTEGRATION) and skip here automatically.
+#
+# Coverage note — the prompt's required checks map to jobs here:
+#   lint / typing / unit ............ `check` (ruff / mypy / pytest)
+#   schema-migration + golden ....... pytest (test_assurance drift guard, test_manifest drift guard)
+#   evidence-integrity + property ... pytest (test_attest, test_adversarial_asr, test_evidence_state,
+#                                     test_verdict, test_action_schema)
+#   public-manifest gen + diff ...... pytest (test_manifest checked-in drift guard)
+#   package build + metadata ........ `build` (uv build + twine check)
+#   docs strict ..................... .github/workflows/docs.yml
+#   optional integration ............ gated (PROVAEL_INTEGRATION); skips here, must-fail in release
 jobs:
   check:
     name: ruff + mypy + pytest (CPU, no lerobot)
@@ -45,3 +55,23 @@ jobs:
 
       - name: Test (pytest, CPU only)
         run: uv run pytest -q
+
+  build:
+    name: package build + metadata check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install uv (pinned Python 3.12)
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build sdist + wheel
+        run: uv build
+
+      - name: Check distribution metadata
+        run: uvx twine check dist/*
