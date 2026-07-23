@@ -36,6 +36,13 @@ All notable changes to this project are documented here. The format is based on
   `True` for unsigned bundles); call `overall_strict_ok` or `integrity_only_ok` explicitly.
 
 ### Added
+- **Typed release verdict** (`provael.verdict.ReleaseVerdict`: incomplete / fail / conditional /
+  pass) replacing binary pass/fail. Missing evidence is `incomplete`, not pass; a threshold breach or
+  integrity/protocol violation is `fail`; a bounded exception (named approver + expiry + remediation)
+  softens `incomplete` to `conditional` but never a `fail`. Conservative by construction — stub
+  evidence cannot satisfy a real-policy gate, uncalibrated cannot satisfy a calibration gate, an
+  unsigned/untrusted attestation cannot satisfy a signed-evidence gate, and a skipped requested
+  integration is `incomplete`. Surfaced in `report.md`.
 - **Explicit evidence-state ladder** (`provael.evidence.EvidenceState`) — the finer-grained
   successor to the binary transfer-status. A fresh stub run is `stub`, a real policy on a real suite
   is `real-episode`, and the classifier **never** awards `measured-real-policy-effect` or any HIL /
