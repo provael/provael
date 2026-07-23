@@ -1,7 +1,7 @@
 site_name: Provael
 site_description: >-
-  Red-team open Vision-Language-Action (VLA) robot policies in simulation and report an
-  Attack Success Rate (ASR).
+  Provael™ — red-team open Vision-Language-Action (VLA) robot policies in simulation and report
+  an Attack Success Rate (ASR).
 site_url: https://docs.provael.com/
 repo_url: https://github.com/provael/provael
 repo_name: provael/provael
