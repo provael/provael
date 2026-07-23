@@ -95,7 +95,9 @@ def test_regulatory_clock_states_machinery_2027_and_both_ai_act_dates() -> None:
     # AI Act line names the statutory date and flags the proposed 2028 as not-yet-adopted.
     ai_act = by_id["eu-ai-act"]
     assert ai_act.applies_from == "2027-08-02"
-    assert "2028" in ai_act.note and "not yet adopted" in ai_act.note.lower()
+    # 2028 deferral is a PROVISIONAL agreement (May 2026), not yet formally adopted -> 2027 baseline.
+    assert "2028" in ai_act.note and "not yet formally adopted" in ai_act.note.lower()
+    assert ai_act.last_verified == "2026-07-23" and ai_act.source.startswith("http")
     # CRA (Reg. (EU) 2024/2847): main obligations 2027-12-11; the note states the 2026 reporting date.
     cra = by_id["eu-cra"]
     assert cra.applies_from == "2027-12-11"

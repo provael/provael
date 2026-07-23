@@ -75,6 +75,11 @@ All notable changes to this project are documented here. The format is based on
   invented. `provael attack` now **emits** `execution-manifest.json` alongside `report.json`, and a
   checked-in manifest ships for the committed artifact (legacy — unknown provenance recorded as
   missing, not faked).
+- **Regulatory clock refreshed + sourced.** Each `REGULATORY_CLOCK` entry now carries a
+  `last_verified` date (2026-07-23) and an official `source` (ELI URLs for the EU regulations). The
+  AI Act note is updated: the Digital Omnibus reached a **provisional agreement (7 May 2026)** to
+  defer Annex I embedded high-risk obligations to 2 Aug 2028, but it is **not yet formally adopted**,
+  so 2027-08-02 remains the legal baseline (verified against current sources).
 - **Glossary + schema-v2 migration guide** (`docs/glossary.md`, `docs/migration-v2.md`) — precise
   definitions for adversarial ASR vs the all-episode rate vs the benign control, the evidence-state
   ladder, the release verdict, and integrity-vs-signature-vs-trust; plus the additive schema-1→2

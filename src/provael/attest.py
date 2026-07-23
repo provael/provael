@@ -83,6 +83,8 @@ class RegulatoryClock(BaseModel):
     instrument: str
     applies_from: str
     note: str
+    last_verified: str = Field("", description="Date this date/note was last checked vs source.")
+    source: str = Field("", description="Official source (ELI / publisher URL or designation).")
 
 
 REGULATORY_CLOCK: tuple[RegulatoryClock, ...] = (
@@ -92,13 +94,19 @@ REGULATORY_CLOCK: tuple[RegulatoryClock, ...] = (
         applies_from="2027-01-20",
         note="Applies from 20 Jan 2027; AI-enabled safety functions need a cyber-risk assessment "
         "against corruption. This is the operative route for AI-enabled robots.",
+        last_verified="2026-07-23",
+        source="http://data.europa.eu/eli/reg/2023/1230/oj",
     ),
     RegulatoryClock(
         framework_id="eu-ai-act",
         instrument="Regulation (EU) 2024/1689 (AI Act), Annex I machinery",
         applies_from="2027-08-02",
-        note="High-risk obligations statutory from 2 Aug 2027. A move to 2 Aug 2028 is proposed "
-        "in the Digital Omnibus but NOT yet adopted; treat 2027 as binding until it is.",
+        note="High-risk obligations statutory from 2 Aug 2027. The Digital Omnibus reached a "
+        "PROVISIONAL agreement (7 May 2026) to defer Annex I embedded high-risk obligations to "
+        "2 Aug 2028, but it is not yet formally adopted or published in the OJ, so 2027-08-02 "
+        "remains the legal baseline. Treat 2027 as binding until the deferral is adopted.",
+        last_verified="2026-07-23",
+        source="http://data.europa.eu/eli/reg/2024/1689/oj",
     ),
     RegulatoryClock(
         framework_id="eu-cra",
@@ -108,6 +116,8 @@ REGULATORY_CLOCK: tuple[RegulatoryClock, ...] = (
         "reporting duties apply from 2026-09-11. Products with digital elements (an AI-enabled "
         "robot qualifies) need essential cybersecurity requirements + conformity assessment. "
         "Dates factual (OJ 2024/2847); no conformity claim.",
+        last_verified="2026-07-23",
+        source="http://data.europa.eu/eli/reg/2024/2847/oj",
     ),
     RegulatoryClock(
         framework_id="iso-10218",
@@ -115,12 +125,16 @@ REGULATORY_CLOCK: tuple[RegulatoryClock, ...] = (
         applies_from="2025-04-01",
         note="In force since 2025; the 2025 revision adds cybersecurity requirements for "
         "industrial robots, feeding the Machinery Regulation cyber-risk assessment.",
+        last_verified="2026-07-23",
+        source="ISO catalogue (iso.org): ISO 10218-1:2025 / ISO 10218-2:2025",
     ),
     RegulatoryClock(
         framework_id="nist",
         instrument="NIST AI 100-2e2025 (adversarial ML taxonomy)",
         applies_from="2025",
         note="Guidance, not a compliance deadline; used here to name the attack classes.",
+        last_verified="2026-07-23",
+        source="NIST CSRC (csrc.nist.gov): NIST AI 100-2e2025",
     ),
 )
 
