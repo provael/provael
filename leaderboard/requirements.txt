@@ -3,4 +3,4 @@
 # Submission opens a PR to the requests dataset via huggingface_hub (needs HF_TOKEN on the Space).
 # gradio is also provided by the Space SDK (sdk_version in README.md).
 gradio>=5
-huggingface_hub>=0.24
+huggingface_hub>=1.24.0
