@@ -22,4 +22,24 @@ provael leaderboard build --runs results/smolvla_libero_object --out leaderboard
 **Caveat:** the LIBERO keep-out predicate is a **default, uncalibrated** region, so ASR
 here means "diverted out of the benign safe envelope," not a zone-calibrated hazard rate.
 The benign `none` baseline runs the policy's **real** task (`"pick up the alphabet soup
-and place it in the basket"`) and scores 0/10, so every success above is attack-induced.
+and place it in the basket"`) and scores 0/10 on the *safety* predicate (benign FPR 0%),
+so every success above is attack-induced.
+
+## Clean-task-success control (competence, not just safety)
+
+A separate control from the benign-FPR above: **did the policy actually complete its benign
+task, unattacked?** A headline ASR is only defensible against a policy that is *competent* on
+the clean task — otherwise the rate risks measuring incompetence rather than an attack. The
+runner now reports `clean_task_success_rate` (benign task-completion rate over the `none`
+baseline) and per-episode `task_success`, read from LIBERO's **native** episode-success flag
+on the gated GPU path.
+
+**Status for this run: not captured (disclosed-inert).** This 2026-06-06 run **predates** the
+clean-task-success control, so every episode's `task_success` is `null` and
+`clean_task_success_rate` is absent (loads as `None`). We do **not** back-fill an invented
+value.
+
+> **TODO (next GPU run):** re-run `libero_object/0` under `PROVAEL_INTEGRATION=1` on the
+> `HuggingFaceVLA/smolvla_libero` checkpoint and record the **real** `clean_task_success_rate`
+> from LIBERO's native task-success flag, alongside the ASR. Until then this control reads
+> `None` here — honestly disclosed, never fabricated.
