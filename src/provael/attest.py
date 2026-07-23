@@ -191,19 +191,168 @@ class AttestationBundle(BaseModel):
 
 
 class VerifyResult(BaseModel):
-    """Outcome of verifying a bundle offline."""
+    """Decomposed, fail-closed outcome of verifying a bundle offline.
 
-    digest_ok: bool
+    Each field names ONE established fact, because they are not interchangeable: an intact digest is
+    not a signature, a cryptographically-valid signature is not a *trusted* one, and "no key given"
+    is not "valid". ``overall_strict_ok`` requires the whole trusted chain and fails closed — an
+    unsigned or untrusted bundle is never strict-OK. ``integrity_only_ok`` is the weaker digest-only
+    check and must never be printed as plain "verified".
+    """
+
+    # Integrity layer.
+    digest_ok: bool = Field(..., description="Payload SHA-256 matches the envelope digest.")
+    subject_report_integrity_ok: bool | None = Field(
+        None,
+        description="Source report.json digest matches the signed subject; None when the source "
+        "report was not supplied for an independent recheck (the embedded digest alone is not it).",
+    )
+    # Signature layer.
+    signature_present: bool = Field(False, description="The bundle carries at least one signature.")
     signature_ok: bool | None = Field(
-        None, description="True/False if a signature was checked, None if unsigned / no key given."
+        None,
+        description="Signature cryptographically valid; None if unsigned or no key was available.",
+    )
+    keyid_matches: bool | None = Field(
+        None, description="The verifying key's id matches the signature's declared keyid."
+    )
+    signer_trusted: bool | None = Field(
+        None,
+        description="Signer is in the supplied trust store, active, not revoked, in window. None "
+        "when no trust store was consulted — which is NOT trusted (strict fails closed on None).",
+    )
+    key_not_revoked: bool | None = Field(None, description="Trust-store status is not 'revoked'.")
+    validity_window_ok: bool | None = Field(
+        None, description="`now` is within the trusted key's validity window; None if not checked."
+    )
+    expected_binding_ok: bool | None = Field(
+        None, description="Subject name matches the caller's expected binding; None if none given."
     )
     keyid: str | None = None
     reasons: list[str] = Field(default_factory=list)
+    codes: list[str] = Field(
+        default_factory=list, description="Machine-readable status codes (see verify_exit_code)."
+    )
+
+    # -- named property aliases: the exact vocabulary the docs/CLI speak --
+    @property
+    def payload_integrity_ok(self) -> bool:
+        """The envelope payload was not altered (digest recomputes)."""
+        return self.digest_ok
+
+    @property
+    def signature_cryptographically_valid(self) -> bool | None:
+        """The signature verifies under the verifying key; None if not checked."""
+        return self.signature_ok
+
+    @property
+    def signing_key_matches_declared_keyid(self) -> bool | None:
+        """The verifying key's id equals the signature's declared keyid; None if not checked."""
+        return self.keyid_matches
+
+    @property
+    def signer_identity_trusted(self) -> bool | None:
+        """The signer is a trusted identity (via the trust store); None if none was consulted."""
+        return self.signer_trusted
+
+    @property
+    def integrity_only_ok(self) -> bool:
+        """Digest layer only: payload (and, if supplied, the source report) are intact. Proves
+        integrity, NOT signer identity or trust — never surface this as plain "verified"."""
+        return self.digest_ok and self.subject_report_integrity_ok is not False
+
+    @property
+    def overall_strict_ok(self) -> bool:
+        """Fail-closed verdict: intact payload AND a present, cryptographically-valid,
+        keyid-matching, TRUSTED, non-revoked, in-window signature. Unsigned/untrusted => False."""
+        return (
+            self.digest_ok
+            and self.subject_report_integrity_ok is not False
+            and self.expected_binding_ok is not False
+            and self.signature_present
+            and self.signature_ok is True
+            and self.keyid_matches is True
+            and self.signer_trusted is True
+            and self.key_not_revoked is not False
+            and self.validity_window_ok is not False
+        )
 
     @property
     def ok(self) -> bool:
-        """Overall pass: digest intact and, if a signature was checked, it verified."""
-        return self.digest_ok and self.signature_ok is not False
+        """DEPRECATED — alias for :attr:`overall_strict_ok` (fail-closed).
+
+        Before v0.23 ``ok`` returned ``digest_ok and signature_ok is not False``, so an *unsigned*
+        or unchecked bundle passed as "ok". It no longer does. Call :attr:`overall_strict_ok` or
+        :attr:`integrity_only_ok` explicitly for the property you actually mean.
+        """
+        return self.overall_strict_ok
+
+
+# --------------------------------------------------------------------------------------------
+# Local trust store — the ONLY thing that turns a cryptographically-valid signature into a
+# *trusted* one. Absent a trust store, a valid signature is authentic-but-untrusted (self-signed or
+# unknown signer) and strict verification fails closed. This is the verifier's own trust anchor; it
+# is never shipped inside a bundle (a bundle vouching for its own signer would be circular).
+# --------------------------------------------------------------------------------------------
+
+#: Local trust-store format id.
+TRUST_STORE_FORMAT = "provael-trust-store/v1"
+
+
+class TrustedKey(BaseModel):
+    """One trusted signer in a local trust store."""
+
+    keyid: str = Field(..., description="First 16 hex chars of SHA-256(public-key PEM).")
+    public_key_pem: str = Field(..., description="Ed25519 SubjectPublicKeyInfo PEM (text).")
+    subject: str = Field(..., description="Human label for the signer (organisation / project).")
+    not_before: str | None = Field(None, description="UTC ISO-8601; key invalid before this.")
+    not_after: str | None = Field(None, description="UTC ISO-8601; key invalid after this.")
+    status: str = Field("active", description="'active' | 'revoked'.")
+    revocation_reason: str | None = None
+    revoked_at: str | None = Field(
+        None, description="UTC ISO-8601 revocation timestamp, if revoked."
+    )
+
+
+class TrustStore(BaseModel):
+    """A local set of trusted signing keys — the verifier's trust anchor for strict verification."""
+
+    format: str = TRUST_STORE_FORMAT
+    keys: list[TrustedKey] = Field(default_factory=list)
+
+    def find(self, keyid: str) -> TrustedKey | None:
+        """The trusted key with this keyid, or None."""
+        return next((k for k in self.keys if k.keyid == keyid), None)
+
+
+def load_trust_store(path: Path) -> TrustStore:
+    """Load a local trust store (JSON) from ``path``."""
+    return TrustStore.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def keyid_of(public_key_pem_bytes: bytes) -> str:
+    """Keyid (first 16 hex of SHA-256(PEM)) of a public-key PEM — for building a trust store."""
+    return _keyid(public_key_pem_bytes)
+
+
+def _within_window(now: str | None, not_before: str | None, not_after: str | None) -> bool | None:
+    """Whether ``now`` (ISO-8601, …Z) is within [not_before, not_after]; None if uncheckable.
+
+    ISO-8601 UTC timestamps in the same ``…Z`` format sort lexicographically, so a string compare is
+    a correct window test without pulling in a date parser. Returns None when there is nothing to
+    check (no ``now`` given, or the key carries no window).
+    """
+    if now is None or (not_before is None and not_after is None):
+        return None
+    before_ok = not_before is None or now >= not_before
+    after_ok = not_after is None or now <= not_after
+    return before_ok and after_ok
+
+
+def _report_digest(report: RunReport | dict[str, Any]) -> str:
+    """The canonical report.json digest — what :func:`build_statement` binds as the subject."""
+    obj = json.loads(report.model_dump_json()) if isinstance(report, RunReport) else report
+    return _sha256_hex(_canonical(obj))
 
 
 # --------------------------------------------------------------------------------------------
@@ -457,34 +606,199 @@ def verify_bundle(
     bundle: AttestationBundle | dict[str, Any],
     *,
     public_key_pem_bytes: bytes | None = None,
+    trust_store: TrustStore | None = None,
+    subject_report: RunReport | dict[str, Any] | None = None,
+    expected_subject_name: str | None = None,
+    now: str | None = None,
 ) -> VerifyResult:
-    """Verify a bundle offline: recompute the digest, and check the signature if a key is given."""
+    """Verify a bundle offline, fail-closed, establishing each fact independently.
+
+    - **Payload integrity** (always): the base64 payload recomputes to the envelope digest.
+    - **Subject-report integrity** (only if ``subject_report`` is given): the report you hold
+      hashes to the digest the signed subject binds — the embedded digest alone is not that check.
+    - **Signature**: presence + cryptographic validity + keyid match, against the supplied public
+      key or, absent that, the trust-store key carrying the signature's keyid.
+    - **Signer trust** (ONLY via ``trust_store``): a valid signature from an unknown key is
+      authentic but UNTRUSTED. Revocation and the validity window (needs ``now``) are checked here.
+
+    ``overall_strict_ok`` holds only when the whole trusted chain does; ``integrity_only_ok`` is the
+    weaker digest-only check. Malformed input degrades to a failed result, never an exception leak.
+    """
     b = (
         bundle if isinstance(bundle, AttestationBundle)
         else AttestationBundle.model_validate(bundle)
     )
     reasons: list[str] = []
+    codes: list[str] = []
 
-    payload_bytes = base64.b64decode(b.payload)
+    # -- payload integrity --
+    try:
+        payload_bytes = base64.b64decode(b.payload, validate=True)
+    except ValueError:
+        return VerifyResult(
+            digest_ok=False,
+            reasons=["payload is not valid base64 (malformed bundle)"],
+            codes=["MALFORMED"],
+        )
     digest_ok = _sha256_hex(payload_bytes) == b.payloadSha256
     reasons.append("payload digest matches" if digest_ok else "payload digest MISMATCH (tampered)")
+    codes.append("PAYLOAD_OK" if digest_ok else "PAYLOAD_DIGEST_MISMATCH")
 
-    signature_ok: bool | None = None
+    statement: dict[str, Any] = {}
+    if digest_ok:
+        try:
+            statement = json.loads(payload_bytes)
+        except json.JSONDecodeError:
+            statement = {}
+
+    # -- subject-report integrity (independent recheck, only when a source report is supplied) --
+    subject_report_integrity_ok: bool | None = None
+    if subject_report is not None:
+        claimed = statement.get("subject", {}).get("digest", {}).get("sha256")
+        subject_report_integrity_ok = (
+            claimed is not None and _report_digest(subject_report) == claimed
+        )
+        reasons.append(
+            "subject report digest matches the attested subject" if subject_report_integrity_ok
+            else "subject report digest MISMATCH (report != attested subject)"
+        )
+        codes.append("SUBJECT_OK" if subject_report_integrity_ok else "SUBJECT_REPORT_MISMATCH")
+
+    # -- expected binding --
+    expected_binding_ok: bool | None = None
+    if expected_subject_name is not None:
+        expected_binding_ok = statement.get("subject", {}).get("name") == expected_subject_name
+        reasons.append(
+            "subject binding matches expectation" if expected_binding_ok
+            else "subject binding MISMATCH (not the expected run)"
+        )
+        codes.append("BINDING_OK" if expected_binding_ok else "BINDING_MISMATCH")
+
+    # -- signature layer --
+    signature_present = bool(b.signed and b.signatures)
     keyid: str | None = b.signatures[0].keyid if b.signatures else None
-    if not b.signed or not b.signatures:
-        reasons.append("bundle is digest-only (unsigned)")
-    elif public_key_pem_bytes is None:
-        reasons.append("signature present but no public key supplied — signature not checked")
-    else:
-        if _keyid(public_key_pem_bytes) != b.signatures[0].keyid:
-            reasons.append("supplied public key does not match the signature keyid")
-        signature = base64.b64decode(b.signatures[0].sig)
-        signature_ok = _verify(public_key_pem_bytes, signature, _pae(b.payloadType, payload_bytes))
-        reasons.append("signature verified" if signature_ok else "signature INVALID")
+    signature_ok: bool | None = None
+    keyid_matches: bool | None = None
+    signer_trusted: bool | None = None
+    key_not_revoked: bool | None = None
+    validity_window_ok: bool | None = None
 
-    return VerifyResult(
-        digest_ok=digest_ok, signature_ok=signature_ok, keyid=keyid, reasons=reasons
+    if not signature_present:
+        reasons.append("bundle is digest-only (unsigned) — integrity only, NOT a trusted signature")
+        codes.append("UNSIGNED")
+    else:
+        trusted_key = trust_store.find(keyid) if (trust_store is not None and keyid) else None
+        verify_pem = public_key_pem_bytes
+        if verify_pem is None and trusted_key is not None:
+            verify_pem = trusted_key.public_key_pem.encode("utf-8")
+
+        if verify_pem is None:
+            reasons.append("signature present but no public key or trust store — not checked")
+            codes.append("NO_KEY")
+        else:
+            keyid_matches = _keyid(verify_pem) == keyid
+            if not keyid_matches:
+                reasons.append("verifying key id does not match the signature keyid")
+                codes.append("KEYID_MISMATCH")
+            try:
+                signature = base64.b64decode(b.signatures[0].sig, validate=True)
+                signature_ok = _verify(verify_pem, signature, _pae(b.payloadType, payload_bytes))
+            except ValueError:
+                signature_ok = False
+            reasons.append(
+                "signature cryptographically valid" if signature_ok else "signature INVALID"
+            )
+            codes.append("SIGNATURE_VALID" if signature_ok else "SIGNATURE_INVALID")
+
+        # -- signer trust — established ONLY via the trust store --
+        if trust_store is None:
+            reasons.append("no trust store supplied — signer identity is UNTRUSTED")
+            codes.append("SIGNER_UNTRUSTED")
+        elif trusted_key is None:
+            signer_trusted = False
+            reasons.append(f"signer keyid {keyid} is not in the trust store — UNTRUSTED")
+            codes.append("SIGNER_UNTRUSTED")
+        else:
+            key_not_revoked = trusted_key.status != "revoked"
+            if not key_not_revoked:
+                reasons.append(
+                    f"trusted key is REVOKED ({trusted_key.revocation_reason or 'no reason given'})"
+                )
+                codes.append("KEY_REVOKED")
+            validity_window_ok = _within_window(now, trusted_key.not_before, trusted_key.not_after)
+            if validity_window_ok is False:
+                reasons.append(
+                    "outside the trusted key's validity window (expired / not yet valid)"
+                )
+                codes.append("OUTSIDE_VALIDITY_WINDOW")
+            signer_trusted = bool(
+                key_not_revoked
+                and validity_window_ok is not False
+                and keyid_matches is True
+                and signature_ok is True
+            )
+            if signer_trusted:
+                reasons.append(f"signer trusted: {trusted_key.subject}")
+                codes.append("SIGNER_TRUSTED")
+
+    result = VerifyResult(
+        digest_ok=digest_ok,
+        subject_report_integrity_ok=subject_report_integrity_ok,
+        signature_present=signature_present,
+        signature_ok=signature_ok,
+        keyid_matches=keyid_matches,
+        signer_trusted=signer_trusted,
+        key_not_revoked=key_not_revoked,
+        validity_window_ok=validity_window_ok,
+        expected_binding_ok=expected_binding_ok,
+        keyid=keyid,
+        reasons=reasons,
+        codes=codes,
     )
+    if result.overall_strict_ok:
+        result.codes.append("STRICT_OK")
+    elif result.integrity_only_ok:
+        result.codes.append("INTEGRITY_ONLY")
+    return result
+
+
+#: ``attest --verify`` exit codes — one per distinguishable verification state (fail-closed).
+EXIT_OK = 0
+EXIT_DIGEST_MISMATCH = 3
+EXIT_UNSIGNED = 4
+EXIT_SIGNATURE_INVALID = 5
+EXIT_UNTRUSTED_SIGNER = 6
+EXIT_KEYID_MISMATCH = 7
+EXIT_KEY_REVOKED_OR_EXPIRED = 8
+EXIT_SUBJECT_MISMATCH = 9
+EXIT_MALFORMED = 10
+
+
+def verify_exit_code(result: VerifyResult, *, integrity_only: bool = False) -> int:
+    """Map a VerifyResult to a distinct, fail-closed exit code.
+
+    ``integrity_only=True`` grades only the digest layer (exit 0 when ``integrity_only_ok``); the
+    default strict grading requires the whole trusted chain.
+    """
+    if "MALFORMED" in result.codes:
+        return EXIT_MALFORMED
+    if not result.digest_ok:
+        return EXIT_DIGEST_MISMATCH
+    if result.subject_report_integrity_ok is False or result.expected_binding_ok is False:
+        return EXIT_SUBJECT_MISMATCH
+    if integrity_only:
+        return EXIT_OK if result.integrity_only_ok else EXIT_DIGEST_MISMATCH
+    if not result.signature_present:
+        return EXIT_UNSIGNED
+    if result.signature_ok is False:
+        return EXIT_SIGNATURE_INVALID
+    if result.keyid_matches is False:
+        return EXIT_KEYID_MISMATCH
+    if result.key_not_revoked is False or result.validity_window_ok is False:
+        return EXIT_KEY_REVOKED_OR_EXPIRED
+    if result.signer_trusted is not True:
+        return EXIT_UNTRUSTED_SIGNER
+    return EXIT_OK if result.overall_strict_ok else EXIT_UNTRUSTED_SIGNER
 
 
 # --------------------------------------------------------------------------------------------
@@ -524,6 +838,21 @@ __all__ = [
     "AttestationSignature",
     "AttestationBundle",
     "VerifyResult",
+    "TRUST_STORE_FORMAT",
+    "TrustedKey",
+    "TrustStore",
+    "load_trust_store",
+    "keyid_of",
+    "verify_exit_code",
+    "EXIT_OK",
+    "EXIT_DIGEST_MISMATCH",
+    "EXIT_UNSIGNED",
+    "EXIT_SIGNATURE_INVALID",
+    "EXIT_UNTRUSTED_SIGNER",
+    "EXIT_KEYID_MISMATCH",
+    "EXIT_KEY_REVOKED_OR_EXPIRED",
+    "EXIT_SUBJECT_MISMATCH",
+    "EXIT_MALFORMED",
     "build_statement",
     "to_bundle",
     "verify_bundle",

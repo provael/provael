@@ -6,6 +6,26 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+- **Attestation verification now fails closed.** `attest --verify` and
+  `provael.attest.VerifyResult` no longer treat an unsigned or unchecked bundle as OK. Verification
+  is decomposed into independent facts — payload integrity, subject-report integrity, signature
+  presence, cryptographic validity, keyid match, and **signer trust** — and `overall_strict_ok`
+  requires the whole trusted chain. A cryptographically-valid signature from a key that is not in a
+  local trust store is authentic but *untrusted* and no longer passes strict verification.
+  `VerifyResult.ok` is **deprecated** as an alias for `overall_strict_ok` (it previously returned
+  `True` for unsigned bundles); call `overall_strict_ok` or `integrity_only_ok` explicitly.
+
+### Added
+- **Local trust store** (`provael.attest.TrustStore` / `TrustedKey`, `attest --verify --trust-store`)
+  with per-key validity window, revocation status, and subject label — the verifier's own trust
+  anchor, never shipped inside a bundle.
+- **Integrity-only verification** (`attest --verify --integrity-only`,
+  `VerifyResult.integrity_only_ok`) that grades only the digest layer and is never reported as plain
+  "verified".
+- **Distinct `attest --verify` exit codes** per state — unsigned, invalid signature, untrusted
+  signer, revoked/expired key, subject mismatch, digest mismatch, malformed — via `verify_exit_code`.
+
 ## [0.22.0] — 2026-07-23
 
 ### Added
