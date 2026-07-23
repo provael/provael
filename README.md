@@ -2,7 +2,32 @@
   <img src="https://raw.githubusercontent.com/provael/provael/main/docs/assets/provael_icon_512.png" alt="Provael logo" width="110" height="110">
 </p>
 
-# Provael
+# Provael™
+
+> **Red-team open Vision-Language-Action (VLA) robot policies in simulation and get an Attack
+> Success Rate.**
+
+<p align="center">
+  <a href="https://www.provael.com">
+    <img src="https://www.provael.com/media/demo.gif" alt="Provael red-teams a VLA robot policy in simulation: one command prints an ASR-by-attack table, a pass/fail scorecard, and a SARIF report tagged with the EAI rule." width="820">
+  </a>
+</p>
+
+<p align="center"><sub>Deterministic CPU stub run, seed 0 — reproduce it in seconds.</sub></p>
+
+**The finding.** A single `roleplay` instruction drives a **real SmolVLA** policy out of its safe
+envelope **100% of the time** — 10/10, 95% Wilson CI **[72–100%]** on SmolVLA × LIBERO
+`libero_object/0` — against a **0% benign control**. And the honest other half: of the attacks it
+was run with, **only the instruction family transferred**; the visual and injection families scored
+**0/10** on the real model. That contrast — a real transfer *and* the families it survived — is the
+whole point. [Read the write-up](docs/findings/2026-instruction-transfer.md) ·
+[Scope & honest limitations](#scope-and-honest-limitations).
+
+```bash
+pip install provael
+# deterministic CPU run — no GPU, no model download; prints an ASR-by-attack table (47/70)
+provael attack --policy stub --suite stub --attacks instruction,visual,injection --episodes 10 --seed 0
+```
 
 [![CI](https://github.com/provael/provael/actions/workflows/ci.yml/badge.svg)](https://github.com/provael/provael/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/provael.svg)](https://pypi.org/project/provael/)
@@ -11,23 +36,27 @@
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb)
 
-> **Prove it. Prevail.** — red-team open **Vision-Language-Action (VLA)** robot policies in
-> simulation and report an **Attack Success Rate (ASR)**.
+## Why the policy layer
 
-<p align="center">
-  <a href="https://www.provael.com">
-    <img src="https://www.provael.com/media/demo.gif" alt="Provael red-teams a VLA robot policy in simulation: one command prints an ASR-by-attack table, a pass/fail scorecard, and a SARIF report tagged with the EAI rule." width="820">
-  </a>
-</p>
+The fielded robot-security incidents so far — **UniPwn** (CVE-2025-60250 / CVE-2025-60251), the
+**Unitree Go1** backdoor (CVE-2025-2894), and **G1** telemetry exfiltration — are **firmware /
+supply-chain** bugs. Real, serious, and a **different layer**. Provael™ red-teams the **VLA policy
+itself** (EAI01–EAI06): the language-conditioned control policy that *becomes* the fielded attack
+surface as robots gain language-driven autonomy — and the layer a text-only jailbreak tool
+structurally can't reach, because a prompt that stays "safe" in text can still drive an **unsafe
+trajectory**. That gap is what the finding above measures. See the
+[Embodied AI Security Top 10](docs/TOP10.md).
 
-<p align="center"><sub>Deterministic CPU stub run, seed 0. <code>pip install provael</code> and reproduce it in seconds.</sub></p>
+---
 
-> **New here?** Run it in your browser in 5 minutes — [open the Colab notebook](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb) — or browse the [examples gallery](examples/) and the built-in `provael list-recipes`.
-
-**Provael** is the open-source red-team & assurance layer for physical AI. This repo is its
+**Provael™** is the open-source red-team & assurance layer for physical AI. This repo is its
 core: a small, **model-agnostic** harness that perturbs the instructions and observations a
 VLA policy receives inside a simulator and measures how often those perturbations drive the
-policy into an *unsafe* state. The headline number is the ASR.
+policy into an *unsafe* state. The headline number is the ASR — always reported with a 95% Wilson
+CI, a benign false-positive control, a clean-task-success (competence) control, and an honest
+`real-transfer` vs `stub-validated` label.
+
+> **New here?** Run it in your browser in 5 minutes — [open the Colab notebook](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb) — or browse the [examples gallery](examples/) and the built-in `provael list-recipes`.
 
 It ships **ten families of templated, auditable attacks** — `instruction` (text
 reframings), `visual` (observation-space markers), `sensor_spoof` (EAI02: a sim
