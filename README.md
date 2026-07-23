@@ -245,8 +245,8 @@ uv run provael leaderboard verify --in leaderboard/results/leaderboard.json --pu
 
 On the real **SmolVLA × LIBERO** policy only the **instruction** family transfers today
 (roleplay 100%, goal_substitution 60%); **visual and injection are 0%**. The free core builds and
-verifies boards; the hosted, project-key-signed board is the open-core paid surface. See
-[docs/leaderboard.md](docs/leaderboard.md). **Evidence, not certification.**
+verifies boards; a hosted, operator-signed board is the intended operated surface (experimental
+today). See [docs/leaderboard.md](docs/leaderboard.md). **Evidence, not certification.**
 
 ## What runs on CPU vs. what needs a GPU
 
@@ -311,7 +311,8 @@ EAI family surfaces in code scanning). See
 [examples/ci/regression-gate.md](examples/ci/regression-gate.md) for storing and rolling the
 baseline. Per-checkpoint regression evidence maps to standing-assurance expectations (e.g. EU
 Machinery Regulation 2023/1230 Annex III §1.1.9, safe behaviour across updates) — **evidence, not
-certification**, and the real-VLA (GPU) transfer run behind it is the open-core paid surface.
+certification**, and the real-VLA (GPU) transfer run behind it is the higher-assurance evidence a
+future operated service would sign.
 
 ## First real result (SmolVLA on LIBERO)
 
@@ -430,19 +431,25 @@ status, and wraps it in a DSSE-style envelope:
 
 ```bash
 uv run provael attest --policy stub --suite stub --out runs/attest   # issue a bundle + public key
-uv run provael attest --verify runs/attest/attestation.json \
-  --pubkey runs/attest/attestation.pub                               # verify offline, no network
+# Verification is FAIL-CLOSED. Integrity-only grades just the digest layer:
+uv run provael attest --verify runs/attest/attestation.json --integrity-only
+# Strict verification needs a trust store — a valid signature from an unknown key is UNTRUSTED:
+uv run provael attest --verify runs/attest/attestation.json --trust-store trust.json
 ```
 
-The digest layer is standard-library and always on. Cryptographic **Ed25519 signing** rides the
-optional `provael[attest]` extra (`--no-sign` gives a digest-only bundle without it). It re-runs
-nothing and is **evidence, not certification** — see
+Verification names the exact property it establishes: an unsigned bundle, or a valid signature from
+a key that is not in *your* trust store, is **never** reported as "verified" — integrity, signature
+validity, and signer trust are distinct. The digest layer is standard-library and always on.
+Cryptographic **Ed25519 signing** rides the optional `provael[attest]` extra (`--no-sign` gives a
+digest-only bundle without it). It re-runs nothing and is **evidence, not certification** — see
 [docs/ATTESTATION.md](https://github.com/provael/provael/blob/main/docs/ATTESTATION.md).
 
 `--profile <iso-10218-2|iec-62443|insurer>` embeds a **standards-aligned assurance view**: the per-EAI
-ASR as **ISO 10218-2:2025** cyber-risk-assessment evidence routed to **IEC 62443 SL2**, or an
-insurer-consumable summary with the honest *which-families-transfer-on-the-real-model* table (ASR +
-95% Wilson CI + benign-FPR + `measured-real-transfer` vs `stub-validated-scaffolding`), plus a
+ASR as **ISO 10218-2:2025** cyber-risk-assessment evidence routed to **IEC 62443 SL2**, or a
+structured **assurance-report draft** (an evidence export for a qualified assessor, *not* an insurer
+or conformity-assessment opinion) with the honest *which-families-transfer-on-the-real-model* table
+(ASR + 95% Wilson CI + benign-FPR + the `evidence_state` ladder + `measured-real-transfer` vs
+`stub-validated-scaffolding`), plus a
 third-party cert-readiness cross-reference (NVIDIA Halos / UL 4600 / ISO 21448 / ISO/PAS 8800). A
 worked example over the real SmolVLA×LIBERO run is committed at
 [`results/smolvla_libero_object/attestation.insurer.json`](https://github.com/provael/provael/blob/main/results/smolvla_libero_object/attestation.insurer.json).
@@ -452,35 +459,39 @@ uv run provael attest --run results/smolvla_libero_object --profile insurer --ou
 ```
 
 > **Open-core.** The CLI, attacks, calibrated ASR, SARIF, the GitHub Action and local `attest`
-> (including the `--profile` assurance views) are free and Apache-2.0. The *hosted, authoritative*
-> attestation — signed with Provael's key and backed by a real-VLA (GPU) transfer run — is the paid
-> surface. The open tool never gates the local stub path.
+> (including the `--profile` assurance views) are free and Apache-2.0. A **future operated service**
+> (an authenticated, KMS-backed signing service with a trusted key) is the intended paid surface; the
+> in-repo hosted server is an **experimental reference**, disabled by default, that signs only with
+> the operator's own (untrusted-by-default) key. The open tool never gates the local stub path.
 
-## Open-core boundary (free vs paid)
+## Open-core boundary (free vs a future operated service)
 
 Provael is **open-core**. Everything needed to red-team a policy and produce evidence is free and
-Apache-2.0; a small paid surface adds an *authoritative*, operated attestation for teams that need
-one. The free core is never crippled — and that is a durable, dated commitment:
+Apache-2.0 — a durable, dated commitment:
 **[the open-core promise](docs/open-core-promise.md)** (we will never move a feature from free to paid).
+The intended paid surface is a **future operated service**; the in-repo hosted server is an
+**experimental reference**, not that service.
 
-| Capability | Free (Apache-2.0) | Paid (the operated service) |
+| Capability | Free (Apache-2.0) | Future operated service |
 | --- | :---: | :---: |
 | CLI, all attack families (incl. the `backdoor` EAI03 screen), ASR + 95% CI + benign control | ✅ | |
 | `transfer-test`, SARIF, the GitHub Action, the Embodied AI Security Top 10 | ✅ | |
-| **Local `attest`** (digest-bound; Ed25519-signed with *your* key) + the leaderboard | ✅ | |
-| **Self-hosted** reference server (`provael serve`, `[hosted]` extra) → *self-signed* attestations | ✅ | |
-| **Authoritative project-key signature** (one key an insurer / Notified Body can trust) | | ✅ |
-| **Insurer / Notified-Body-ready compliance report** + curated targeted-backdoor screen | | ✅ |
+| **Local `attest`** (digest-bound; Ed25519-signed with *your* key, verified against *your* trust store) + the leaderboard | ✅ | |
+| **Experimental** reference server (`provael serve`, `[hosted]` extra) — disabled by default; operator-key, **untrusted by default** | ✅ | |
+| **Authenticated, trusted signing** (a KMS-backed key an assessor can trust) — [production requirements](docs/maintainers/HOSTED_PRODUCTION_REQUIREMENTS.md) | | ⏳ not built |
+| **Assurance-report draft** at scale (a structured evidence export, **not** an insurer / Notified-Body opinion) | | ⏳ not built |
 
 ```bash
-pip install 'provael[hosted]' && provael serve   # self-host the reference server (self-signed)
+pip install 'provael[hosted]'
+PROVAEL_ENABLE_EXPERIMENTAL_HOSTED=1 provael serve   # experimental reference server (operator-key, untrusted)
 ```
 
-The paid endpoints are guarded by an entitlement check that lives **only** on the operated service —
-it never touches the free core. The insurer report maps a `provael attest` bundle to the **EU
-Machinery Regulation 2023/1230** (applies **2027-01-20**), the **AI Act** Annex-I machinery route
-(statutory **2027-08-02**; a proposed **2028-08-02** move is *not yet adopted*), and **ISO
-10218:2025** — see
+The experimental endpoint is behind a **local feature flag** (`PROVAEL_HOSTED_LICENSE`) that is
+**not** authentication and lives **only** on the reference server — it never touches the free core.
+The assurance-report draft maps a `provael attest` bundle to the **EU Machinery Regulation
+2023/1230** (applies **2027-01-20**), the **AI Act** Annex-I machinery route (statutory
+**2027-08-02**; a provisional **2028-08-02** deferral is *not yet adopted*), and **ISO 10218:2025** —
+see
 [docs/compliance/machinery-reg-2027.md](https://github.com/provael/provael/blob/main/docs/compliance/machinery-reg-2027.md).
 **Evidence, not certification.**
 
