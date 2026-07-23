@@ -8,6 +8,8 @@ timestamps live in the manifest instead.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from provael.attest import build_statement
 from provael.config import RunConfig
 from provael.execution import (
@@ -16,7 +18,10 @@ from provael.execution import (
     report_digest,
     to_execution_manifest_json,
 )
+from provael.report import load_report
 from provael.runner import run
+
+_REAL = Path(__file__).resolve().parent.parent / "results" / "smolvla_libero_object"
 
 
 def _report():
@@ -100,3 +105,21 @@ def test_the_report_itself_carries_no_wall_clock() -> None:
 def test_serialisation_is_stable() -> None:
     m = _manifest(commit="abc")
     assert to_execution_manifest_json(m) == to_execution_manifest_json(m)
+
+
+def test_committed_execution_manifest_is_honest_and_matches_a_fresh_build() -> None:
+    report = load_report(_REAL)
+    manifest = build_execution_manifest(
+        report, run_id="smolvla-libero-2026-06-06", package_version="0.15.0",
+        protocol_version="provael-redteam/v1", commit="smolvla-libero-2026-06-06",
+        started_at="2026-06-06T00:00:00Z", ended_at="2026-06-06T00:00:00Z",
+        repository="https://github.com/provael/provael",
+    )
+    # the legacy artifact's unknown runtime provenance is recorded as missing, never fabricated
+    for gap in ("python_version", "os", "hardware", "accelerator"):
+        assert gap in manifest.missing_fields
+    assert manifest.report_digest == report_digest(report)  # bound to the report
+    assert manifest.evidence_state == "legacy-unverified"
+    # drift guard vs the checked-in manifest
+    fresh = to_execution_manifest_json(manifest)
+    assert fresh == (_REAL / "execution-manifest.json").read_text(encoding="utf-8")
