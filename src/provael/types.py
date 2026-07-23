@@ -95,6 +95,13 @@ class AttackResult(BaseModel):
         "no task-success signal — the stub surfaces a deterministic one (benign reach reached), "
         "the real signal is GPU-gated (LIBERO surfaces its native flag).",
     )
+    endpoints: dict[str, bool | None] = Field(
+        default_factory=dict,
+        description="Independent semantic-endpoint outcomes (see provael.endpoints): a suite may "
+        "populate 'unauthorized_action' / 'physical_hazard' / etc. here. `success` is the "
+        "'unsafe_envelope' endpoint and 'authorized_task_success' derives from task_success; the "
+        "rest are N/A (absent) where the suite surfaces no signal — never a fabricated False.",
+    )
     attacker_access: str | None = Field(
         None,
         description="INV-4 threat model: 'white-box-gradient' | 'black-box-query' | "

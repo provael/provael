@@ -21,9 +21,10 @@ Fitting is deterministic given the seeds, so the stub artifact is byte-reproduci
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -192,6 +193,114 @@ def split_seeds(seeds: list[int], holdout_frac: float = 0.3) -> tuple[list[int],
     n_holdout = max(1, min(len(seeds) - 1, round(len(seeds) * holdout_frac)))
     cut = len(seeds) - n_holdout
     return seeds[:cut], seeds[cut:]
+
+
+def seed_set_digest(seeds: Iterable[int]) -> str:
+    """Stable, order-independent digest of a seed set — binds *which* episodes a split used."""
+    payload = json.dumps(sorted({int(s) for s in seeds}), separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
+def split_seeds_three(seeds: list[int]) -> tuple[list[int], list[int], list[int]]:
+    """Deterministic fit / calibration / eval split (eval untouched by threshold selection).
+
+    The last third is the **eval** set — never used to fit or select the threshold — so a bound
+    calibration's achieved FPR is measured on data the fit never saw. Requires ``len(seeds) >= 3``.
+    """
+    if len(seeds) < 3:
+        raise ValueError("a bound calibration needs >= 3 seeds (fit / calibration / eval)")
+    n = len(seeds)
+    n_eval = max(1, n // 3)
+    n_cal = max(1, (n - n_eval) // 2)
+    cut_cal = n - n_eval - n_cal
+    return seeds[:cut_cal], seeds[cut_cal : n - n_eval], seeds[n - n_eval :]
+
+
+class SeedLeakageError(ValueError):
+    """Raised when a calibration's eval seeds overlap its fit/calibration seeds (data leakage)."""
+
+
+class CalibrationBinding(BaseModel):
+    """A calibration recorded as a VERIFIABLE bound state — not just a 'calibrated' label.
+
+    Carries the endpoint + oracle it calibrates, the model/suite/task it binds to, digests of the
+    three seed splits, the target and the FPR **achieved on the untouched eval set**, and an
+    invalidation flag. :meth:`valid` fails closed: leakage, an eval FPR above target, or an explicit
+    invalidation all make it invalid (i.e. *uncalibrated*), never "calibrated-with-a-warning".
+    """
+
+    schema_version: int = 1
+    endpoint_id: str
+    oracle_version: str
+    procedure_version: str = "scalar-threshold/v1"
+    policy: str
+    suite: str
+    task: str
+    target_fpr: float
+    achieved_eval_fpr: float = Field(..., description="Benign FPR on the UNTOUCHED eval split.")
+    threshold: float
+    fit_seeds_digest: str
+    calibration_seeds_digest: str
+    eval_seeds_digest: str
+    invalidated: bool = False
+    invalidation_reason: str | None = None
+
+    def valid(self) -> tuple[bool, str]:
+        """(is_valid, reason) — fail-closed. Seed disjointness is a construction invariant
+        (build_calibration_binding rejects overlaps); this rechecks target + invalidation."""
+        if self.invalidated:
+            return False, self.invalidation_reason or "explicitly invalidated"
+        digests = {self.fit_seeds_digest, self.calibration_seeds_digest, self.eval_seeds_digest}
+        if len(digests) != 3:
+            return False, "leakage: two seed splits share a digest (eval reused fit/calibration)"
+        if self.achieved_eval_fpr > self.target_fpr:
+            return False, (
+                f"achieved eval FPR {self.achieved_eval_fpr:.3f} exceeds target "
+                f"{self.target_fpr:.3f}"
+            )
+        return True, "bound calibration: disjoint splits, eval FPR within target"
+
+
+def build_calibration_binding(
+    *,
+    endpoint_id: str,
+    oracle_version: str,
+    policy: str,
+    suite: str,
+    task: str,
+    target_fpr: float,
+    achieved_eval_fpr: float,
+    threshold: float,
+    fit_seeds: list[int],
+    calibration_seeds: list[int],
+    eval_seeds: list[int],
+    procedure_version: str = "scalar-threshold/v1",
+) -> CalibrationBinding:
+    """Build a bound calibration, refusing seed leakage.
+
+    Raises :class:`SeedLeakageError` if the eval set overlaps the fit or calibration set — the eval
+    FPR could then not honestly be "measured on data the threshold never saw".
+    """
+    fit_s, cal_s, eval_s = set(fit_seeds), set(calibration_seeds), set(eval_seeds)
+    if (fit_s & eval_s) or (cal_s & eval_s):
+        raise SeedLeakageError(
+            "eval seeds overlap the fit/calibration seeds — the threshold cannot be selected on "
+            "the eval set"
+        )
+    return CalibrationBinding(
+        endpoint_id=endpoint_id,
+        oracle_version=oracle_version,
+        procedure_version=procedure_version,
+        policy=policy,
+        suite=suite,
+        task=task,
+        target_fpr=target_fpr,
+        achieved_eval_fpr=achieved_eval_fpr,
+        threshold=threshold,
+        fit_seeds_digest=seed_set_digest(fit_seeds),
+        calibration_seeds_digest=seed_set_digest(calibration_seeds),
+        eval_seeds_digest=seed_set_digest(eval_seeds),
+    )
 
 
 class Calibration(BaseModel):
@@ -452,6 +561,11 @@ __all__ = [
     "wilson_ci",
     "transfer_test",
     "split_seeds",
+    "split_seeds_three",
+    "seed_set_digest",
+    "SeedLeakageError",
+    "CalibrationBinding",
+    "build_calibration_binding",
     "Calibration",
     "fit_scalar_threshold",
     "fit_spatial_zone",
