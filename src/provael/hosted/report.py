@@ -22,7 +22,8 @@ from typing import Any
 
 from provael.attest import build_statement
 from provael.compliance import to_compliance_dict
-from provael.types import MEASURED_REAL_TRANSFER, STUB_VALIDATED_SCAFFOLDING, RunReport
+from provael.evidence import transfer_status_of
+from provael.types import RunReport
 
 #: The conformity mapping: each row lines a Provael artifact up against the instrument + date it
 #: informs. Dates mirror :data:`provael.attest.REGULATORY_CLOCK` (factual application dates).
@@ -84,11 +85,7 @@ def build_insurer_report(
     """
     statement = build_statement(report, issued_at=issued_at, commit=commit)
     stmt_dict: dict[str, Any] = json.loads(statement.model_dump_json())
-    transfer_status = (
-        MEASURED_REAL_TRANSFER
-        if report.policy != "stub" and report.suite != "stub"
-        else STUB_VALIDATED_SCAFFOLDING
-    )
+    transfer_status = transfer_status_of(report)
     adv_rate, _adv_s, adv_n = report.adversarial_headline()
     return {
         "format": "provael-assurance-report-draft/v1",

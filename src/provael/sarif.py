@@ -25,7 +25,9 @@ from typing import Any
 
 from provael.calibration import wilson_ci
 from provael.eai import CATALOG, TOP10_DOC_URL
+from provael.evidence import evidence_state_of
 from provael.types import RunReport
+from provael.verdict import release_verdict
 
 #: SARIF schema + tool identity.
 SARIF_SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json"
@@ -130,7 +132,11 @@ def to_sarif(report: RunReport) -> dict[str, Any]:
         )
 
     adv_rate, adv_s, adv_n = report.adversarial_headline()
-    run_properties: dict[str, Any] = {"calibrated": report.calibrated}
+    run_properties: dict[str, Any] = {
+        "calibrated": report.calibrated,
+        "evidenceState": evidence_state_of(report).value,
+        "releaseVerdict": release_verdict(report).verdict.value,
+    }
     if adv_n:
         run_properties["adversarialAsr"] = adv_rate
         run_properties["adversarialSuccesses"] = adv_s
