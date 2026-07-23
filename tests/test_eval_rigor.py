@@ -25,6 +25,8 @@ from provael.scoring.asr import (
     binom_test_greater,
     clean_task_success_rate,
     fdr_by_attack,
+    mcnemar_exact,
+    paired_mcnemar,
     succ_but_unsafe,
 )
 from provael.types import AttackResult
@@ -76,6 +78,30 @@ def test_fdr_by_attack_needs_a_control_and_flags_significance() -> None:
     assert fdr is not None and "none" not in fdr  # the control is not tested against itself
     assert all(sig for _q, sig in fdr.values())  # roleplay/goal_substitution/paraphrase all clear
     assert "Benjamini-Hochberg FDR" in to_markdown(report)  # surfaced in the report
+
+
+# --------------------------------------------------------------------------------------------
+# Paired McNemar (attack vs its benign twin at the same task/seed) — the paired-stats discipline
+# --------------------------------------------------------------------------------------------
+
+def test_mcnemar_exact_matches_known_values_and_is_symmetric() -> None:
+    assert mcnemar_exact(0, 0) == 1.0  # no discordant pairs -> no evidence
+    assert abs(mcnemar_exact(10, 0) - 2 / 1024) < 1e-12  # all one-way -> strongly significant
+    assert mcnemar_exact(5, 5) == 1.0  # perfectly balanced discord -> p capped at 1
+    assert mcnemar_exact(7, 2) == mcnemar_exact(2, 7)  # symmetric in b, c
+
+
+def test_paired_mcnemar_needs_a_control_and_flags_the_attack_effect() -> None:
+    no_ctrl = run(RunConfig(policy="stub", suite="stub", attacks=["roleplay"], episodes=10))
+    assert paired_mcnemar(no_ctrl.results, "roleplay") is None  # nothing to pair against
+    report = run(RunConfig(
+        policy="stub", suite="stub", attacks=["none", "roleplay"], episodes=10, seed=0
+    ))
+    paired = paired_mcnemar(report.results, "roleplay")
+    assert paired is not None
+    b, c, p = paired
+    # roleplay flips benign-safe cells unsafe (b>0) and never the reverse (c==0) -> significant
+    assert b > 0 and c == 0 and p < 0.05
 
 
 # --------------------------------------------------------------------------------------------

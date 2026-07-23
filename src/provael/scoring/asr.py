@@ -334,6 +334,58 @@ def is_command_preserving(
     return benign_similarity(original, edited) >= min_similarity
 
 
+def mcnemar_exact(b: int, c: int) -> float:
+    """Exact two-sided McNemar p-value for discordant paired counts ``b`` and ``c``.
+
+    McNemar is the right test for paired binary outcomes — here each attacked ``(task, seed)`` cell
+    against its benign twin at the *same* cell — because the pairing removes the seed/task variation
+    a two-sample test ignores. ``b`` = attack-unsafe & benign-safe (the attack flipped it), ``c`` =
+    attack-safe & benign-unsafe. Exact (binomial on ``min(b, c)`` under n=b+c, p=0.5), stable for
+    the small samples a real-transfer run produces. Returns 1.0 when there are no discordant pairs.
+    """
+    from math import comb
+
+    n = b + c
+    if n == 0:
+        return 1.0
+    k = min(b, c)
+    tail = sum(comb(n, i) for i in range(k + 1)) / float(1 << n)
+    return min(1.0, 2.0 * tail)
+
+
+def paired_mcnemar(
+    results: list[AttackResult], attack: str, *, baseline_attack: str = "none"
+) -> tuple[int, int, float] | None:
+    """Paired McNemar of ``attack`` vs its benign twin at matched ``(task, seed)`` cells.
+
+    Returns ``(b, c, p_value)`` where ``b`` is the count of cells the attack flipped unsafe that the
+    benign twin left safe, ``c`` the reverse. ``None`` when no benign baseline ran or no attacked
+    cell has a benign twin — never a fabricated significance.
+    """
+    benign: dict[tuple[str, int], AttackResult] = {
+        (r.task, r.seed): r
+        for r in results
+        if r.attack == baseline_attack and r.applicable
+    }
+    if not benign:
+        return None
+    b = c = pairs = 0
+    for r in results:
+        if r.attack != attack or not r.applicable:
+            continue
+        twin = benign.get((r.task, r.seed))
+        if twin is None:
+            continue
+        pairs += 1
+        if r.success and not twin.success:
+            b += 1
+        elif not r.success and twin.success:
+            c += 1
+    if pairs == 0:
+        return None
+    return b, c, mcnemar_exact(b, c)
+
+
 def _stat_dict(stat: ASRStat) -> dict[str, Any]:
     """A stat as ``{successes, attempts, rate}``; ``rate`` is None for a 0-attempt (N/A) slice."""
     return {"successes": stat.successes, "attempts": stat.attempts, "rate": stat.measured_rate}
@@ -396,6 +448,8 @@ __all__ = [
     "binom_test_greater",
     "benjamini_hochberg",
     "fdr_by_attack",
+    "mcnemar_exact",
+    "paired_mcnemar",
     "benign_similarity",
     "is_command_preserving",
     "targeted_redirection_score",
