@@ -460,7 +460,8 @@ uv run provael attest --run results/smolvla_libero_object --profile insurer --ou
 
 Provael is **open-core**. Everything needed to red-team a policy and produce evidence is free and
 Apache-2.0; a small paid surface adds an *authoritative*, operated attestation for teams that need
-one. The free core is never crippled.
+one. The free core is never crippled — and that is a durable, dated commitment:
+**[the open-core promise](docs/open-core-promise.md)** (we will never move a feature from free to paid).
 
 | Capability | Free (Apache-2.0) | Paid (the operated service) |
 | --- | :---: | :---: |
