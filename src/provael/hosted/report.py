@@ -1,17 +1,18 @@
-"""Insurer / Notified-Body-ready compliance report (the paid hosted deliverable).
+"""Structured assurance-report **draft** — an evidence export, NOT an insurer/conformity opinion.
 
 :func:`build_insurer_report` is a **pure function** of a :class:`~provael.types.RunReport` and the
-issuance metadata: it wraps the *same* signed attestation statement the free ``provael attest``
-produces (:func:`provael.attest.build_statement`) and adds a **conformity mapping** that lines each
+issuance metadata: it wraps the *same* attestation statement the free ``provael attest`` produces
+(:func:`provael.attest.build_statement`) and adds a **candidate conformity mapping** that lines each
 piece of Provael evidence up against the EU Machinery Regulation 2023/1230, the AI Act Annex-I
-machinery route, and ISO 10218:2025 — the artifact a Notified Body or an insurer reads.
+machinery route, and ISO 10218:2025.
 
-It is **evidence, not certification**, and **not legal advice**. Provael is an independent project
-and is not affiliated with ISO, the EU, NIST, IEC, OWASP, or MITRE. The regulatory dates are the
-factual application dates carried in :data:`provael.attest.REGULATORY_CLOCK`; confirm against the
-primary text. This function does no signing itself — the operated hosted service signs the wrapped
-attestation with the project key; a self-hoster gets the same report bound by the attestation's
-SHA-256 digest.
+It is a **structured evidence draft**, not an opinion: it is **evidence, not certification**, **not
+an insurer or conformity-assessment opinion**, and **not legal advice**. A qualified assessor (a
+Notified Body, an insurer, your safety engineer) reaches the actual conclusion. Provael is an
+independent project and is not affiliated with ISO, the EU, NIST, IEC, OWASP, or MITRE. The
+regulatory dates are the factual application dates carried in
+:data:`provael.attest.REGULATORY_CLOCK`; confirm against the primary text. This function does no
+signing itself; a bound SHA-256 digest ties the draft to its attestation.
 """
 
 from __future__ import annotations
@@ -52,8 +53,11 @@ CONFORMITY_MAPPING: tuple[dict[str, str], ...] = (
     },
 )
 
-#: Standing disclaimers carried on every insurer report.
+#: Standing disclaimers carried on every assurance-report draft.
 DISCLAIMERS: tuple[str, ...] = (
+    "Draft, not an opinion. This is a structured evidence export for a qualified assessor (a "
+    "Notified Body, an insurer, your safety engineer) to evaluate — not an insurer or "
+    "conformity-assessment opinion, and not a decision.",
     "Evidence, not certification. This report documents measured simulation results; it is not a "
     "conformity certificate and confers no legal presumption of conformity.",
     "Not legal advice. Confirm every instrument and date against its primary text.",
@@ -85,17 +89,21 @@ def build_insurer_report(
         if report.policy != "stub" and report.suite != "stub"
         else STUB_VALIDATED_SCAFFOLDING
     )
+    adv_rate, _adv_s, adv_n = report.adversarial_headline()
     return {
-        "format": "provael-insurer-report/v1",
+        "format": "provael-assurance-report-draft/v1",
         "tool_version": report.tool_version,
         "issued_at": issued_at,
         "subject": stmt_dict["subject"],
         "executive_summary": {
             "policy": report.policy,
             "suite": report.suite,
-            "headline_asr": report.asr,
+            # The headline is the ADVERSARIAL ASR (benign control excluded); the all-episode rate is
+            # shown separately so an assessor never reads the diluted figure as the attack rate.
+            "adversarial_asr": adv_rate if adv_n else None,
+            "all_episode_unsafe_rate": report.asr,
             # P0.4 honesty: read the headline against BOTH intervals + the matched-benign control,
-            # and the run-level transfer tier — so an insurer never reads a stub number as real.
+            # and the run-level transfer tier — so an assessor never reads a stub number as real.
             "wilson_ci95": list(report.ci95) if report.ci95 is not None else None,
             "anytime_ci": list(report.anytime_ci) if report.anytime_ci is not None else None,
             "benign_fpr": report.benign_fpr,

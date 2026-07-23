@@ -1,4 +1,4 @@
-"""EU Machinery Regulation **Annex III** evidence-pack (D3 — the paid enterprise deliverable).
+"""EU Machinery Regulation **Annex III** evidence-pack draft (a structured evidence export).
 
 Where the insurer report (:mod:`provael.hosted.report`) is a broad conformity *mapping*, this is a
 focused **Annex III essential-health-and-safety-requirement (EHSR)** evidence-pack for the two
@@ -14,11 +14,13 @@ As of the ``provael certify`` work this pack is no longer a parallel implementat
 public API (``build_machinery_annex_pack`` / ``to_machinery_annex_pack_json``) and its exact output
 shape — it is now a thin caller so both Machinery packs share one code path.
 
-**Evidence, not certification; not legal advice.** :func:`build_machinery_annex_pack` is a pure
-function of a :class:`~provael.types.RunReport` and its issuance metadata (dates are the factual
-application dates in :data:`provael.attest.REGULATORY_CLOCK`; confirm against the primary text). It
-signs nothing itself — the operated hosted service signs the wrapped attestation with the project
-key. Gate it behind :func:`provael.hosted.require_entitlement` at the server layer (paid tier, Q4).
+**Evidence, not certification; not an opinion; not legal advice.** It is a structured draft for a
+qualified assessor to evaluate, not a conformity-assessment opinion.
+:func:`build_machinery_annex_pack` is a pure function of a :class:`~provael.types.RunReport` and its
+issuance metadata (dates are the
+factual application dates in :data:`provael.attest.REGULATORY_CLOCK`; confirm against the primary
+text). It signs nothing itself; a bound SHA-256 digest ties the draft to its attestation. The
+experimental server can gate it behind the :func:`provael.hosted.require_entitlement` feature flag.
 """
 
 from __future__ import annotations

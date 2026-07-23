@@ -1,8 +1,8 @@
-# Provael hosted surface — the open-core boundary
+# Provael hosted surface — an EXPERIMENTAL reference, not a production service
 
 Provael is **open-core**. Everything you need to red-team a policy and produce evidence is free and
-Apache-2.0. A small paid surface sits on top for teams that need an *authoritative*, signed,
-insurer / Notified-Body-ready attestation.
+Apache-2.0. This directory is an **experimental reference** for a hosted attestation flow — it is
+**not** a production signing service and does **not** confer any authority.
 
 ## Free forever (Apache-2.0, no license, CPU-only)
 
@@ -11,30 +11,38 @@ insurer / Notified-Body-ready attestation.
 - ASR with a **95% Wilson CI** and the **benign-FPR control**; calibration; the `transfer-test`.
 - **SARIF** output, the reusable **GitHub Action**, and the **Embodied AI Security Top 10**.
 - **Local `provael attest`** — a digest-bound, dated evidence bundle, optionally **Ed25519-signed
-  with your own key** (`provael[attest]`), verifiable offline.
-- This **reference server** (`provael serve`, the `[hosted]` extra). Self-host it and you get
-  **self-signed** attestations for free.
+  with your own key** (`provael[attest]`), verifiable offline with a **trust store** you control.
 
-## Paid (the operated service, not the code)
+## The experimental reference server (not authoritative)
 
-The code here is open and self-hostable. What is sold is the **operated Provael instance**:
+This server is a reference surface for experimenting with a hosted flow. It is **disabled by
+default** and must be enabled explicitly (`PROVAEL_ENABLE_EXPERIMENTAL_HOSTED=1`). It deliberately
+does **not**:
 
-- the **authoritative project-key signature** — one key an insurer or a Notified Body can trust,
-  instead of a self-signed key per vendor;
-- the **insurer / Notified-Body-ready compliance report** (`POST /insurer-report`), which lines your
-  evidence up against the EU Machinery Regulation 2023/1230, the AI Act Annex-I machinery route, and
-  ISO 10218:2025 (see [`docs/compliance/machinery-reg-2027.md`](../../../docs/compliance/machinery-reg-2027.md));
-- a curated / managed **targeted-backdoor screen** and the hosted dashboard.
+- authenticate callers, or establish tenant / project / artifact **ownership**;
+- bind a job or its inputs;
+- hold any *authoritative* or *project* signing key.
 
-The paid endpoints are guarded by `require_entitlement()` (the `PROVAEL_HOSTED_LICENSE` environment
-variable). That gate lives **only** on the operated surfaces — it never touches the free core.
+Every signature it produces is the **operator's own key** (`PROVAEL_SIGNING_KEY`) and is **untrusted
+by default** — a verifier trusts a key only by adding it to their own trust store
+(`provael attest --verify --trust-store`), never because this server served it. `POST /attest`
+refuses to mint a throwaway ephemeral key whose public half would be discarded.
+
+`POST /assurance-report` produces a **structured assurance-report draft** — an evidence export for a
+qualified assessor to evaluate, **not** an insurer or conformity-assessment opinion. It is behind
+`PROVAEL_HOSTED_LICENSE`, which is a **local feature flag, not authentication or a paid license**.
+
+The requirements for a *real* operated service (authenticated identity, tenant/artifact ownership,
+job binding, KMS/HSM-backed signing, key rotation and revocation, audit logging, abuse controls) are
+documented under [`docs/maintainers/`](../../../docs/maintainers/) and are intentionally **not
+implemented here**.
 
 ## Run the reference server
 
 ```bash
 pip install 'provael[hosted]'
-provael serve                       # uvicorn on 127.0.0.1:8000
-# POST a report.json:
+PROVAEL_ENABLE_EXPERIMENTAL_HOSTED=1 provael serve   # uvicorn on 127.0.0.1:8000
+# POST a report.json (digest-only bundle):
 curl -s localhost:8000/attest -H 'content-type: application/json' --data @runs/stub/report.json
 ```
 

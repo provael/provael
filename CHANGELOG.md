@@ -51,6 +51,20 @@ All notable changes to this project are documented here. The format is based on
 - **Distinct `attest --verify` exit codes** per state — unsigned, invalid signature, untrusted
   signer, revoked/expired key, subject mismatch, digest mismatch, malformed — via `verify_exit_code`.
 
+### Security
+- **The experimental hosted server is disabled by default and asserts no authority.** The reference
+  `provael.hosted` surface is now explicitly experimental and refuses to start unless
+  `PROVAEL_ENABLE_EXPERIMENTAL_HOSTED=1` is set. `POST /attest` no longer mints a throwaway ephemeral
+  key (it refuses to sign without a configured operator key) and returns the operator's public key
+  labelled **untrusted by default** — every signature is the operator's own key, never a
+  Provael/project authority. `POST /insurer-report` is renamed `POST /assurance-report` and produces
+  a structured **assurance-report draft** (an evidence export, not an insurer / Notified-Body
+  opinion). `PROVAEL_HOSTED_LICENSE` is documented as a local feature flag, **not** authentication.
+  The "authoritative project-key signature" and "insurer / Notified-Body-ready" marketing wording was
+  removed; `docs/maintainers/HOSTED_PRODUCTION_REQUIREMENTS.md` records the controls a real operated
+  service would require (none implemented). The SmolVLA×LIBERO assurance golden was regenerated for
+  the renamed, adversarial-headline draft.
+
 ## [0.22.0] — 2026-07-23
 
 ### Added
