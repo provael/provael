@@ -132,6 +132,8 @@ def to_sarif(report: RunReport) -> dict[str, Any]:
     run_properties: dict[str, Any] = {"calibrated": report.calibrated}
     if report.benign_fpr is not None:
         run_properties["benignFpr"] = report.benign_fpr
+    if report.clean_task_success_rate is not None:
+        run_properties["cleanTaskSuccessRate"] = report.clean_task_success_rate
 
     return {
         "$schema": SARIF_SCHEMA,
