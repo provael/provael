@@ -75,3 +75,24 @@ jobs:
 
       - name: Check distribution metadata
         run: uvx twine check dist/*
+
+  audit:
+    name: dependency vulnerability audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install uv (pinned Python 3.12)
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      # Audit the locked dependency set for known CVEs. Documented exception mechanism: add an
+      # `--ignore-vuln <ID>` with a dated justification in a review comment when a fix is unavailable.
+      - name: Audit dependencies (pip-audit)
+        run: |
+          uv sync --locked
+          uvx pip-audit --strict --progress-spinner off
