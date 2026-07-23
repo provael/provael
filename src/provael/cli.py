@@ -16,6 +16,8 @@ exit code — never a raw traceback.
 from __future__ import annotations
 
 import json
+import os
+import platform
 import subprocess
 import time
 from datetime import UTC, datetime
@@ -198,6 +200,37 @@ def _git_commit() -> str | None:
         return None
     sha = result.stdout.strip()
     return sha if result.returncode == 0 and sha else None
+
+
+def _emit_execution_manifest(report: RunReport, out_dir: Path, *, elapsed: float) -> None:
+    """Write execution-manifest.json (runtime provenance) beside the deterministic report.json.
+
+    The manifest carries the wall-clock, OS/Python, commit, and (redacted) environment that must
+    NOT enter report.json; it is bound to the report by the report's canonical digest.
+    """
+    from datetime import timedelta
+
+    from provael.execution import build_execution_manifest, to_execution_manifest_json
+
+    end = datetime.now(UTC)
+    start = end - timedelta(seconds=elapsed)
+    fmt = "%Y-%m-%dT%H:%M:%SZ"
+    manifest = build_execution_manifest(
+        report,
+        run_id=f"{report.policy}-{report.suite}-{end.strftime(fmt)}",
+        package_version=__version__,
+        protocol_version="provael-redteam/v1",
+        commit=_git_commit(),
+        python_version=platform.python_version(),
+        os_name=f"{platform.system()} {platform.release()}",
+        hardware=platform.machine() or None,
+        started_at=start.strftime(fmt),
+        ended_at=end.strftime(fmt),
+        env=dict(os.environ),
+    )
+    (out_dir / "execution-manifest.json").write_text(
+        to_execution_manifest_json(manifest), encoding="utf-8"
+    )
 
 
 @app.command()
@@ -503,6 +536,7 @@ def attack(
     elapsed = time.perf_counter() - started
 
     json_path, md_path = write_report(report, config.out)
+    _emit_execution_manifest(report, config.out, elapsed=elapsed)
     render_summary(report, _out)
     _out.print(f"\nWrote [cyan]{json_path}[/cyan] and [cyan]{md_path}[/cyan]  ({elapsed:.2f}s)")
 

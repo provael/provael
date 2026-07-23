@@ -66,7 +66,9 @@ All notable changes to this project are documented here. The format is based on
   to it by the report's SHA-256 digest — so time and machine identity never enter the byte-
   deterministic report. Pure builder (provenance passed in), env allow-listed with secret values
   redacted, and any provenance the caller could not supply recorded in `missing_fields` rather than
-  invented.
+  invented. `provael attack` now **emits** `execution-manifest.json` alongside `report.json`, and a
+  checked-in manifest ships for the committed artifact (legacy — unknown provenance recorded as
+  missing, not faked).
 - **Glossary + schema-v2 migration guide** (`docs/glossary.md`, `docs/migration-v2.md`) — precise
   definitions for adversarial ASR vs the all-episode rate vs the benign control, the evidence-state
   ladder, the release verdict, and integrity-vs-signature-vs-trust; plus the additive schema-1→2
