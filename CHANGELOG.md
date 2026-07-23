@@ -6,6 +6,39 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- **`optimized_instruction` / `targeted_redirect` — an optimized, command-preserving instruction
+  attack.** The first optimized attack on the *instruction* channel (the other two optimized
+  families search the action-directive and image channels): a bounded-budget, on-policy **greedy
+  search** over command-preserving instruction edits — the command-preserving analogues of the
+  templated `roleplay` / `goal_substitution` / `paraphrase` operators (reframe / sequence / manner-
+  urgency cues) **minus the explicit target object** — for the edit that most redirects the policy's
+  emitted action toward an unsafe outcome, then commits it for the episode. Each candidate is rolled
+  out through the policy (an oracle the runner wires in via the existing `OracleAttack` protocol —
+  **no new backend, no runner change**), scored by the new
+  `scoring.asr.targeted_redirection_score`, gated by the new `scoring.asr.is_command_preserving` /
+  `benign_similarity` (it may not name a target/danger word nor drop below a benign-similarity floor
+  of the operator's command), under a `--query-budget` with early-stop on the redirection target.
+  A new `attacks.base.OptimizedAttack` base carries the reusable search loop (propose → roll out →
+  score → keep-best → early-stop), composing over `Attack.perturb`.
+- **Held-out transfer-test** (`attacks.targeted_redirect.frozen_transfer_test`): search on train
+  seeds, freeze the discovered *operator*, re-apply it verbatim to held-out seeds, and report
+  train + held-out ASR with a 95% Wilson CI — the honesty control that separates a generalising edit
+  from one overfit to a single episode. The standard ASR + Wilson CI + matched-benign-FPR travel
+  with the new family through the existing report path (no metric reimplemented).
+- **Scope + honesty.** Primary tag **EAI01** (instruction channel, scored on the CPU stub by the
+  danger-threshold predicate); it operationalizes the **EAI04** targeted-redirection *threat model*
+  through the one channel measured to transfer on a real SmolVLA×LIBERO policy — an honest
+  cross-reference (`THREAT_MODEL_EAI`), **not** a claim that EAI04 transfers: the real
+  motion-redirection outcome is GPU-gated (`PROVAEL_INTEGRATION=1`) and **not measured here**, and
+  the CPU stub shows an honest sub-100% ceiling (command-preserving cues cannot reach the top per-seed
+  thresholds). The `instruction,visual,injection` seed-0 **47/70 canary is byte-identical** (the new
+  attack is in its own `optimized_instruction` family). Recommended mitigation — **instruction
+  canonicalization / repair** — documented in `docs/TOP10.md` + `PRIOR_ART.md`. Sim-only: no
+  real-robot / hardware control, no real-world-harm payload, no detection-evasion; grounded in the
+  command-preserving / trajectory-level instruction-redirection line of work (`PRIOR_ART.md`); no
+  "first" claim; the Embodied AI Security Top 10 is never branded "OWASP".
+
 ## [0.21.0] — 2026-07-22
 
 ### Added

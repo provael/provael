@@ -10,10 +10,12 @@ into a keep-out zone),
 identity / access / excessive autonomy), ``confidentiality`` (EAI09 model & data
 confidentiality: a memorized-canary leak screen — membership inference / extraction),
 ``misalignment`` (EAI06 cross-domain safety misalignment / the embodiment gap: benign
-language → unsafe embodied action), ``optimized`` (a black-box action-directive search), and
+language → unsafe embodied action), ``optimized`` (a black-box action-directive search),
 ``optimized_patch`` (EAI02 the image-channel analogue: a query-budgeted adversarial-patch search,
-GPU-gated / inert on the image-less stub). The
-registry maps both individual attack names and family names to attacks, so
+GPU-gated / inert on the image-less stub), and ``optimized_instruction`` (an optimized, command-
+preserving *instruction-channel* search — EAI01 primary, EAI04 targeted-redirection threat model;
+unlike the other two optimized families it rides the channel measured to transfer on a real policy).
+The registry maps both individual attack names and family names to attacks, so
 ``--attacks instruction`` expands a whole family while ``--attacks none,patch,scene_text``
 selects specific attacks across families.
 """
@@ -105,6 +107,12 @@ from provael.attacks.sensor_spoof import (
     PatchSpoof,
     SignalSpoof,
 )
+from provael.attacks.targeted_redirect import (
+    FAMILY as OPTIMIZED_INSTRUCTION_FAMILY,
+)
+from provael.attacks.targeted_redirect import (
+    TargetedRedirect,
+)
 from provael.attacks.visual import (
     FAMILY as VISUAL_FAMILY,
 )
@@ -129,6 +137,7 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
     "critical_freeze": CriticalFreeze,
     "targeted_hijack": TargetedTrajectoryHijack,
     "patch_hijack": OptimizedPatchHijack,
+    "targeted_redirect": TargetedRedirect,
     "object_trigger": ObjectTriggerBackdoor,
     "phrase_trigger": PhraseTriggerBackdoor,
     "self_authorize_bypass": SelfAuthorizeBypass,
@@ -156,6 +165,7 @@ FAMILIES: dict[str, list[str]] = {
     MISALIGNMENT_FAMILY: ["benign_urgency_override", "euphemistic_reroute"],
     OPTIMIZED_FAMILY: ["targeted_hijack"],
     OPTIMIZED_PATCH_FAMILY: ["patch_hijack"],
+    OPTIMIZED_INSTRUCTION_FAMILY: ["targeted_redirect"],
 }
 
 

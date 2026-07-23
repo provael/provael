@@ -167,6 +167,19 @@ LIBERO path they are **not-applicable** — these out-of-band-directive attacks 
 and no real suite surfaces the action-integrity signal (verified). So `action`/`action_space` stay
 **stub-validated**; a real EAI04 number needs the adversarial-image path (`optimized_patch`), still
 GPU-gated. Coverage is unchanged (still 8/10).
+**Instruction-channel operationalization.** The EAI04 targeted-redirection *threat model* also has an
+**instruction-channel** operationalization: the `optimized_instruction` family (`targeted_redirect`,
+primary tag **EAI01**) — an optimized, **command-preserving** instruction search that redirects the
+policy through subtle manner / urgency cues while keeping the operator's command and **never naming
+the target object** (unlike the templated instruction attacks). It matters here because it rides the
+one channel *measured to transfer on a real SmolVLA × LIBERO policy*, where `action` / `action_space`
+do not. **Honest scope:** on the CPU stub it is scored by the danger-threshold predicate (EAI01
+semantics) and shows an honest sub-100% ceiling (command-preserving cues cannot cross the top per-seed
+thresholds); the EAI04 **motion-redirection outcome on a real policy is GPU-gated
+(`PROVAEL_INTEGRATION=1`) and not measured** — this is a candidate transferring path, **not** a claim
+that EAI04 transfers. Recommended mitigation: **instruction canonicalization / repair** (normalise
+phrasing, strip redundant manner/urgency adverbials, re-derive the canonical command), which collapses
+the search's edit space; see `PRIOR_ART.md`.
 **Why it matters.** A hijacked-trajectory robot and a frozen robot are different severe failures — and a
 single "task success" metric hides both.
 **Mitigations.** Report ASR as a matrix (untargeted / freeze / targeted) with a clean baseline; action

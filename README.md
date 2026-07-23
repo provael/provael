@@ -92,18 +92,26 @@ that tag as each finding's `EAIxx` ruleId:
 | `authorization` | `self_authorize_bypass`, `scope_escalation` (excessive agency) | [EAI08 — Identity, access & excessive autonomy](docs/TOP10.md#eai08--identity-access--excessive-autonomy) |
 | `confidentiality` | `membership_inference`, `model_extraction` (memorized-canary leak screen) | [EAI09 — Model & data confidentiality](docs/TOP10.md#eai09--model--data-confidentiality--theft-extraction-inversion--surveillance) |
 | `misalignment` | `benign_urgency_override`, `euphemistic_reroute` (benign language → keep-out violation) | [EAI06 — Cross-domain safety misalignment](docs/TOP10.md#eai06--cross-domain-safety-misalignment-the-embodiment-gap) |
-| `optimized` | `targeted_hijack` (black-box search) | [EAI04 — Action-space integrity](docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
+| `optimized` | `targeted_hijack` (black-box action-directive search) | [EAI04 — Action-space integrity](docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
+| `optimized_patch` | `patch_hijack` (query-budgeted adversarial-patch search, GPU-gated) | [EAI02 — Adversarial perception](docs/TOP10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) |
+| `optimized_instruction` | `targeted_redirect` (optimized, command-preserving instruction search) | [EAI01 — Policy & instruction jailbreak](docs/TOP10.md#eai01--policy--instruction-jailbreak-direct-command-channel) · EAI04 threat model |
 
 ## Scope and honest limitations
 
 This is an **early, research-grade** harness, built to be reproducible and honest rather than
 to oversell. Before you trust a number, know:
 
-- **Templated attacks, not optimized ones.** The attacks are auditable string/observation
-  templates (instruction reframings, image markers, scene text), **not** gradient- or
-  search-based adversarial methods (GCG/PGD-style). They probe *behavioral* susceptibility,
-  not worst-case robustness. Optimized VLA attacks are an open roadmap item (cf. prior art
-  **BadVLA**, **AttackVLA**).
+- **Mostly templated attacks, plus three optimized search families.** Most attacks are auditable
+  string/observation templates (instruction reframings, image markers, scene text) — behavioral
+  probes, not gradient-based worst-case robustness. Three **optimized** families now also ship as
+  bounded-budget *searches*: `optimized` (`targeted_hijack`, action-directive) and `optimized_patch`
+  (`patch_hijack`, adversarial patch — GPU-gated), and `optimized_instruction` (`targeted_redirect`)
+  — an optimized, **command-preserving** instruction search that redirects the policy through subtle
+  manner/urgency cues while keeping the operator's command and never naming the target object. Its
+  recommended mitigation is **instruction canonicalization / repair** (normalise phrasing, strip
+  redundant manner/urgency adverbials, re-derive the canonical command), which collapses the search's
+  edit space — see [PRIOR_ART.md](PRIOR_ART.md). Gradient-based (GCG/PGD-style) VLA attacks remain an
+  open roadmap item (cf. prior art **BadVLA**, **AttackVLA**).
 - **Only the instruction family transfers (so far).** On real SmolVLA × LIBERO, instruction
   reframings redirected the policy (roleplay 100%, goal-substitution 60%); the **visual and
   injection families produced 0% measurable lift** on the real model. Treat those two as
@@ -182,7 +190,7 @@ Other commands:
 
 ```bash
 uv run provael list-policies            # stub (CPU); smolvla (needs the [lerobot] extra)
-uv run provael list-attacks             # 22 attacks across instruction/visual/sensor_spoof/injection/action/action_space/backdoor/authorization/confidentiality/misalignment/optimized
+uv run provael list-attacks             # 25 attacks across instruction/visual/sensor_spoof/injection/action/action_space/backdoor/authorization/confidentiality/misalignment/optimized/optimized_patch/optimized_instruction
 uv run provael list-recipes             # named presets: quick / instruction-only / full-sweep / ci-gate
 uv run provael attack --recipe quick    # a recipe is the base config; explicit flags override it
 uv run provael report --in runs/stub/
@@ -216,7 +224,7 @@ verifies boards; the hosted, project-key-signed board is the open-core paid surf
 | Capability | CPU (default) | Needs GPU + `[lerobot]` extra |
 | --- | :---: | :---: |
 | `stub` (scalar) + `reach` (spatial) suites | ✅ | |
-| All 11 attack families (`instruction`/`visual`/`sensor_spoof`/`injection`/`action`/`action_space`/`backdoor`/`authorization`/`confidentiality`/`misalignment`/`optimized`) | ✅ | |
+| All 13 attack families (`instruction`/`visual`/`sensor_spoof`/`injection`/`action`/`action_space`/`backdoor`/`authorization`/`confidentiality`/`misalignment`/`optimized`/`optimized_patch`/`optimized_instruction`) | ✅ | |
 | Scoring, runner, report, CLI, recipes, `reproduce`, scorecard/SARIF/OSCAL/AVID | ✅ | |
 | `attest` — signed, dated evidence bundle (digest-only core; Ed25519 via `[attest]` extra) | ✅ | |
 | Full test suite (`pytest`), `ruff`, `mypy` | ✅ | |
@@ -243,7 +251,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.21.0
+      - uses: provael/provael@v0.22.0
         with:
           attacks: instruction,visual,injection,action
           episodes: "10"
