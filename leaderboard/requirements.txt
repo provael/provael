@@ -2,5 +2,5 @@
 # Viewing renders committed results/*.json — no GPU, no model, no provael install needed.
 # Submission opens a PR to the requests dataset via huggingface_hub (needs HF_TOKEN on the Space).
 # gradio is also provided by the Space SDK (sdk_version in README.md).
-gradio>=5
+gradio>=6.20.0
 huggingface_hub>=0.24
