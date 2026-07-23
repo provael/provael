@@ -51,6 +51,7 @@ nav:
   - Handbook (outline): handbook.md
   - Accelerators & TPU: accelerators.md
   - Findings:
+      - Instruction transfer — SmolVLA×LIBERO (2026): findings/2026-instruction-transfer.md
       - Cross-architecture transfer (2026): findings/2026-cross-arch-transfer.md
       - EAI04 action-space transfer: studies/eai04-action-space-transfer.md
   - FAQ: faq.md

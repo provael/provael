@@ -1,5 +1,22 @@
 # FAQ
 
+**UniPwn is a firmware bug — why do I need a VLA red-teamer?**
+Because they are **different layers**, and both have to hold. The fielded robot-security incidents
+so far — **UniPwn** (CVE-2025-60250 / CVE-2025-60251), the **Unitree Go1** backdoor
+(CVE-2025-2894), **G1** telemetry exfiltration — are **firmware / supply-chain / comms** bugs: an
+attacker who already has a foothold in the device or its update channel. Provael maps those to
+**EAI07** (CPS / firmware / comms) and deliberately leaves them to the tools built for that layer —
+CVE scanners, SBOM/supply-chain, pentest. What Provael red-teams is the layer *above*: the **VLA
+policy** (EAI01–EAI06), the language-conditioned control policy that turns an instruction into a
+trajectory. That layer **becomes** the fielded attack surface as robots gain language-driven
+autonomy, and a text-only jailbreak tool structurally can't reach it — a prompt that a language
+filter passes as "safe" can still drive the *arm* into an unsafe trajectory (the embodiment gap).
+Our real-model finding is exactly this: a single benign-looking `roleplay` instruction drove a real
+SmolVLA policy out of its safe envelope 100% of the time (10/10, 95% CI [72–100%]) against a 0%
+benign control — a policy-layer failure no firmware patch addresses. Full write-up:
+[The instruction-transfer finding](findings/2026-instruction-transfer.md); the layer split is the
+[Embodied AI Security Top 10](TOP10.md).
+
 **Is it only simulation?**
 Yes — Provael is a pre-deployment scanner. The literature says sim/edited-image red-teaming
 predicts real-robot brittleness well enough to be useful (Predictive Red Teaming, MAE < 0.19) —
