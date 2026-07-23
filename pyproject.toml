@@ -54,7 +54,7 @@ provael = "provael.cli:app"
 [project.optional-dependencies]
 # smolvla -> the policy (transformers); libero -> the simulator (Part 2 above). Both ride this one
 # GPU extra so a single `pip install 'provael[lerobot]'` gives the full real SmolVLA x LIBERO path.
-lerobot = ["lerobot[smolvla,libero]==0.5.1"]
+lerobot = ["lerobot[smolvla,libero]==0.6.0"]
 # OpenVLA / OpenVLA-OFT via Hugging Face transformers (the non-LeRobot, model-agnostic path).
 # GPU-only; pulled in explicitly by the user, never by the default install or CPU CI.
 openvla = ["transformers>=4.40", "torch", "timm", "accelerate", "pillow>=10"]
