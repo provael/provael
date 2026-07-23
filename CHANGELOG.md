@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.22.0] — 2026-07-23
+
 ### Added
 - **`optimized_instruction` / `targeted_redirect` — an optimized, command-preserving instruction
   attack.** The first optimized attack on the *instruction* channel (the other two optimized
