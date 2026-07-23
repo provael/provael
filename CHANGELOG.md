@@ -43,6 +43,12 @@ All notable changes to this project are documented here. The format is based on
   `True` for unsigned bundles); call `overall_strict_ok` or `integrity_only_ok` explicitly.
 
 ### Added
+- **Versioned cross-architecture RPC contract** (`provael.studies.cross_arch.CrossArchRequest` /
+  `CrossArchResponse`, `build_cross_arch_request`, `ingest_cross_arch_response`). Because `[openpi]`
+  and `[lerobot]` pin conflicting numpy majors, each real architecture runs in its own env; they now
+  exchange only this JSON schema, which pins both sides (tool version, extra, lockfile digest). A
+  response with no report is `incomplete` (not executed ≠ measured), a stub executor is `stub` (never
+  a cross-architecture transfer claim), and a mismatched contract version is rejected.
 - **Calibration as a bound, leakage-checked state** (`provael.calibration.CalibrationBinding`,
   `build_calibration_binding`, `split_seeds_three`) — records the endpoint + oracle version, the
   model/suite/task, digests of a **fit / calibration / eval** split, and the FPR achieved on the
