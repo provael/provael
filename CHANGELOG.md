@@ -7,6 +7,16 @@ All notable changes to this project are documented here. The format is based on
 ## [Unreleased]
 
 ### Changed
+- **Real-integration failures are no longer swallowed.** `scripts/run_real.sh` dropped the
+  `|| true` that let a failing gated integration test (real load / real env / real step) continue on
+  to the leaderboard refresh — a failure now stops the run. A new `PROVAEL_REQUIRE_REAL_INTEGRATION=1`
+  required mode turns a missing GPU (or a failing gated test) into a hard failure, so a skipped or
+  unavailable real integration can never masquerade as success.
+- **Pinned remote code for OpenVLA.** `OpenVLAAdapter` gained a `revision` parameter threaded into
+  every `from_pretrained`. Because the model loads with `trust_remote_code=True`, a release-gated run
+  (`PROVAEL_REQUIRE_REAL_INTEGRATION=1`) now refuses an unpinned revision (`UnpinnedRemoteCodeError`)
+  instead of executing whatever code the moving default branch ships; discovery mode warns and
+  proceeds. An allowlist (empty by default — no unverified SHA is shipped) holds vetted revisions.
 - **The headline ASR now excludes the benign control.** `RunReport` gained `adversarial_asr` /
   `adversarial_attempts` / `adversarial_successes` (the benign `none` baseline excluded by semantic
   *role*, so adding benign episodes never moves it) and a `schema_version` (2). The report headline,

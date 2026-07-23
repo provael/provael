@@ -30,6 +30,10 @@ CKPT="${PROVAEL_SMOLVLA_LIBERO_CKPT:-HuggingFaceVLA/smolvla_libero}"
 TASKS="${PROVAEL_ATTACKS:-none,instruction,visual,injection}"  # 'none' = benign baseline (lift)
 SEEDS="${PROVAEL_SEEDS:-10}"
 HORIZON="${PROVAEL_HORIZON:-280}"  # let LIBERO rollouts run to a realistic length (not the stub's 8)
+# Discovery mode (default): no GPU -> print commands and exit 0 (a clean no-op). Required/release
+# mode (PROVAEL_REQUIRE_REAL_INTEGRATION=1): a missing GPU or a failing gated test is a hard FAIL —
+# a skipped or unavailable real integration must NEVER masquerade as success.
+REQUIRE_REAL="${PROVAEL_REQUIRE_REAL_INTEGRATION:-0}"
 
 print_commands() {
   cat <<EOF
@@ -54,6 +58,12 @@ if ! { command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; }; t
   echo "No CUDA GPU detected on this machine — not running the real path."
   echo
   print_commands
+  if [ "${REQUIRE_REAL}" = "1" ]; then
+    echo >&2
+    echo "ERROR: PROVAEL_REQUIRE_REAL_INTEGRATION=1 but no CUDA GPU is available —" >&2
+    echo "       the real integration is UNAVAILABLE, which is a hard failure in required mode." >&2
+    exit 1
+  fi
   exit 0
 fi
 
@@ -63,8 +73,13 @@ uv venv "${VENV}" --python 3.12
 uv pip install --python "${VENV}/bin/python" -e '.[lerobot]' 'lerobot[libero]==0.5.1'
 
 echo ">> gated integration tests (real load + real env + one real step)…"
-PROVAEL_INTEGRATION=1 PROVAEL_SMOLVLA_LIBERO_CKPT="${CKPT}" "${VENV}/bin/python" -m pytest \
-  tests/test_lerobot_adapter.py tests/test_libero_adapter.py -q || true
+# NOTE: no `|| true`. A real-load / real-env / real-step failure here is a genuine failure and must
+# stop the run (set -e), not be swallowed so the leaderboard refreshes from a broken setup.
+if ! PROVAEL_INTEGRATION=1 PROVAEL_SMOLVLA_LIBERO_CKPT="${CKPT}" "${VENV}/bin/python" -m pytest \
+     tests/test_lerobot_adapter.py tests/test_libero_adapter.py -q; then
+  echo "ERROR: gated integration tests failed — refusing to produce or publish real numbers." >&2
+  exit 1
+fi
 
 echo ">> red-team SmolVLA in the LIBERO simulator (in-process attack-ASR)…"
 "${VENV}/bin/provael" attack --policy smolvla --suite libero \

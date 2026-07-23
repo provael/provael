@@ -32,6 +32,8 @@ Enable the real path on a GPU box::
 from __future__ import annotations
 
 import importlib.util
+import os
+import warnings
 from typing import Any
 
 import numpy as np
@@ -57,8 +59,28 @@ _UNNORM_HINT = (
 )
 
 
+#: Models whose remote code Provael will execute at a KNOWN-GOOD pinned revision without an explicit
+#: ``revision=``. Deliberately EMPTY: shipping an unverified commit SHA here would fabricate
+#: provenance. Populate only with a commit SHA verified against the upstream repo before enabling a
+#: model for release-gated use. Until then, a real run must pass ``revision=`` itself.
+_ALLOWLISTED_REVISIONS: dict[str, str] = {}
+
+
+def _release_gated() -> bool:
+    """True in a release / required-integration context (``PROVAEL_REQUIRE_REAL_INTEGRATION=1``).
+
+    There an unpinned ``trust_remote_code`` load is *refused* rather than silently pulling — and
+    executing — whatever code the model repo's moving default branch currently ships.
+    """
+    return os.environ.get("PROVAEL_REQUIRE_REAL_INTEGRATION") == "1"
+
+
 class MissingOpenVLAError(RuntimeError):
     """Raised when the OpenVLA adapter is used without the ``[openvla]`` extra."""
+
+
+class UnpinnedRemoteCodeError(RuntimeError):
+    """Raised when a release-gated run would run ``trust_remote_code`` from an unpinned branch."""
 
 
 class OpenVLAAdapter(PolicyAdapter):
@@ -79,17 +101,48 @@ class OpenVLAAdapter(PolicyAdapter):
         device: str = "cuda",
         unnorm_key: str | None = None,
         action_dim: int = 7,
+        revision: str | None = None,
     ) -> None:
         self.model_id = model_id
         self.name = name
         self.device = device
         self.unnorm_key = unnorm_key
         self.action_dim = action_dim
+        #: Immutable model revision (commit SHA) to load. Required for release-gated runs because
+        #: the model loads with trust_remote_code=True; None = the repo's moving default branch.
+        self.revision = revision
+        self._resolved_revision: str | None = None
         self._processor: Any = None
         self._model: Any = None
         self._torch: Any = None
         self._image_cls: Any = None
         self._loaded = False
+
+    def _resolve_revision(self) -> str | None:
+        """The immutable revision to load, or None (unpinned). Pure — no optional import, so it is
+        CPU-testable.
+
+        ``trust_remote_code=True`` executes code shipped in the model repo, so an unpinned load runs
+        whatever the moving default branch currently ships. Release-gated runs refuse that;
+        discovery runs warn and proceed. An explicit ``revision`` (or allow-listed one) is honoured.
+        """
+        revision = self.revision or _ALLOWLISTED_REVISIONS.get(self.model_id)
+        if revision is None:
+            msg = (
+                f"OpenVLA loads {self.model_id!r} with trust_remote_code=True — it executes code "
+                "shipped in the model repo. Pin an immutable revision (a commit SHA) via revision= "
+                "so a moving branch cannot swap that code under you."
+            )
+            if _release_gated():
+                raise UnpinnedRemoteCodeError(
+                    msg + " Refusing an unpinned revision in release mode "
+                    "(PROVAEL_REQUIRE_REAL_INTEGRATION=1)."
+                )
+            warnings.warn(
+                msg + " Proceeding UNPINNED (discovery mode); do not use for release evidence.",
+                stacklevel=2,
+            )
+        return revision
 
     @staticmethod
     def openvla_available() -> bool:
@@ -105,11 +158,18 @@ class OpenVLAAdapter(PolicyAdapter):
         from PIL import Image
         from transformers import AutoModelForVision2Seq, AutoProcessor
 
+        # Refuse (release) or warn (discovery) before executing any remote model code, then pin it.
+        revision = self._resolve_revision()
+        self._resolved_revision = revision
+
         self._torch = torch
         self._image_cls = Image
-        self._processor = AutoProcessor.from_pretrained(self.model_id, trust_remote_code=True)
+        self._processor = AutoProcessor.from_pretrained(
+            self.model_id, revision=revision, trust_remote_code=True
+        )
         self._model = AutoModelForVision2Seq.from_pretrained(
             self.model_id,
+            revision=revision,
             trust_remote_code=True,
             torch_dtype=torch.bfloat16,
             low_cpu_mem_usage=True,
@@ -144,4 +204,4 @@ class OpenVLAAdapter(PolicyAdapter):
         return clamp_action(np.asarray(action), self.action_dim)
 
 
-__all__ = ["OpenVLAAdapter", "MissingOpenVLAError"]
+__all__ = ["OpenVLAAdapter", "MissingOpenVLAError", "UnpinnedRemoteCodeError"]
