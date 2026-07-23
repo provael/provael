@@ -74,8 +74,12 @@ runs:
 
     - name: Install Provael
       shell: bash
-      # Pin the floor to the release that ships the baseline-regression gate.
-      run: python -m pip install --upgrade "provael>=0.18.0"
+      # Bound the install to the current minor so this action tag cannot silently pull a future,
+      # possibly-incompatible or compromised, major/minor. Bump PROVAEL_VERSION with each release
+      # (Dependabot/CI keeps the published action tag and this constraint in step).
+      env:
+        PROVAEL_VERSION: ">=0.22.0,<0.23.0"
+      run: python -m pip install --upgrade "provael${PROVAEL_VERSION}"
 
     - name: Run Provael red-team
       id: redteam

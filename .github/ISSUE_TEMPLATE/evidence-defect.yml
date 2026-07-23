@@ -1,0 +1,35 @@
+name: Evidence defect
+description: A result is over-claimed, mislabelled, or a metric is computed wrong
+title: "[evidence] "
+labels: ["evidence-integrity"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Use this for anything where the **evidence semantics** look wrong: an ASR that folds in the
+        benign control, an N/A rendered as 0%, an over-promoted `evidence_state`, an attestation that
+        verifies when it should not, a stale count, or a claim the data does not support.
+  - type: textarea
+    id: what
+    attributes:
+      label: What is wrong
+      description: What does the tool report, and why is it not honest?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What the honest output should be
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: Command / file / artifact (e.g. `provael report`, `results/<name>/report.json`).
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: The exact command(s), and the CPU/stub vs gated/real path.
+      render: shell

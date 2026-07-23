@@ -1,0 +1,20 @@
+version: 2
+updates:
+  # Keep GitHub Actions pinned and current (Dependabot rewrites tags to the latest, and can be
+  # configured to pin to commit SHAs). This is the mechanism that keeps third-party actions from
+  # silently drifting to a compromised release.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "ci"]
+
+  # Python dependencies (the uv lockfile). The core stays intentionally small; Dependabot surfaces
+  # security updates as PRs for review rather than auto-merging.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "python"]

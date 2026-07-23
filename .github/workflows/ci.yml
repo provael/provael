@@ -5,6 +5,16 @@ on:
     branches: [main]
   pull_request:
 
+# Least privilege: this workflow only needs to read the repo. A PR from a fork therefore cannot use
+# it to obtain a write token or secrets.
+permissions:
+  contents: read
+
+# Don't pile up runs on a busy branch/PR.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 # CPU-only by design: this workflow NEVER installs the optional `[lerobot]` extra,
 # so it pulls no torch / transformers / GPU stack. The LeRobot integration tests are
 # gated (PROVAEL_INTEGRATION) and skip here automatically.
@@ -12,8 +22,11 @@ jobs:
   check:
     name: ruff + mypy + pytest (CPU, no lerobot)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Install uv (pinned Python 3.12)
         uses: astral-sh/setup-uv@v5
