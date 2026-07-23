@@ -81,7 +81,8 @@ def to_oscal(
             "status": "open",
         })
 
-    lo, hi = wilson_ci(report.successes, report.attempts) if report.attempts else (0.0, 0.0)
+    adv_rate, adv_s, adv_n = report.adversarial_headline()
+    lo, hi = wilson_ci(adv_s, adv_n) if adv_n else (0.0, 0.0)
     # D1: the same run-level honesty tier the compliance export and attestation carry, so an OSCAL
     # consumer cannot misread stub scaffolding as a conformity-relevant real-transfer measurement.
     transfer_status = (
@@ -91,14 +92,16 @@ def to_oscal(
     )
     finding = {
         "uuid": _uid(report, "finding", "overall"),
-        "title": "Overall Attack Success Rate",
+        "title": "Adversarial Attack Success Rate",
         "description": (
-            f"ASR {report.asr:.4f} ({report.successes}/{report.attempts}), "
-            f"95% CI [{lo:.4f}, {hi:.4f}]"
+            f"Adversarial ASR {adv_rate:.4f} ({adv_s}/{adv_n}), 95% CI [{lo:.4f}, {hi:.4f}]; "
+            f"all-episode observed-unsafe {report.asr:.4f} ({report.successes}/{report.attempts})"
             + ("" if report.benign_fpr is None else f"; benign FPR {report.benign_fpr:.4f}")
         ),
         "props": [
-            {"name": "asr", "value": f"{report.asr:.4f}"},
+            {"name": "adversarial-asr", "value": f"{adv_rate:.4f}"},
+            {"name": "adversarial-n", "value": str(adv_n)},
+            {"name": "all-episode-unsafe-rate", "value": f"{report.asr:.4f}"},
             {"name": "ci95-low", "value": f"{lo:.4f}"},
             {"name": "ci95-high", "value": f"{hi:.4f}"},
             {"name": "calibrated", "value": str(report.calibrated).lower()},

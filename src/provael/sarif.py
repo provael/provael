@@ -129,7 +129,13 @@ def to_sarif(report: RunReport) -> dict[str, Any]:
             }
         )
 
+    adv_rate, adv_s, adv_n = report.adversarial_headline()
     run_properties: dict[str, Any] = {"calibrated": report.calibrated}
+    if adv_n:
+        run_properties["adversarialAsr"] = adv_rate
+        run_properties["adversarialSuccesses"] = adv_s
+        run_properties["adversarialAttempts"] = adv_n
+    run_properties["allEpisodeUnsafeRate"] = report.asr
     if report.benign_fpr is not None:
         run_properties["benignFpr"] = report.benign_fpr
     if report.clean_task_success_rate is not None:

@@ -7,6 +7,15 @@ All notable changes to this project are documented here. The format is based on
 ## [Unreleased]
 
 ### Changed
+- **The headline ASR now excludes the benign control.** `RunReport` gained `adversarial_asr` /
+  `adversarial_attempts` / `adversarial_successes` (the benign `none` baseline excluded by semantic
+  *role*, so adding benign episodes never moves it) and a `schema_version` (2). The report headline,
+  `report.md`, SARIF, OSCAL, and the compliance/attestation evidence all lead with the adversarial
+  ASR; the existing `asr` field is kept but relabelled as the **all-episode observed-unsafe rate**
+  (benign included) so the two are never conflated. Legacy (schema-1) reports are corrected on read
+  — recomputed from `results` — never silently reinterpreted. The committed SmolVLA×LIBERO
+  attestation golden was regenerated to reflect the grown schema (null/default fields only; the
+  source `report.json` is unchanged).
 - **Attestation verification now fails closed.** `attest --verify` and
   `provael.attest.VerifyResult` no longer treat an unsigned or unchecked bundle as OK. Verification
   is decomposed into independent facts — payload integrity, subject-report integrity, signature
@@ -17,6 +26,12 @@ All notable changes to this project are documented here. The format is based on
   `True` for unsigned bundles); call `overall_strict_ok` or `integrity_only_ok` explicitly.
 
 ### Added
+- **Adversarial vs benign vs all-episode metrics** (`scoring.asr.adversarial_asr`,
+  `benign_unsafe_rate`, `all_episode_observed_unsafe_rate`, `semantic_role`) plus a `reconcile()`
+  tool that recovers the honest breakdown (benign 0/10, adversarial-only 17/60, all-episode 17/70,
+  `mcp_tool_desc` N/A) from a legacy report **without editing it**. `ASRStat.measured_rate` returns
+  `None` for a 0-attempt slice (an N/A, not a measured 0%), and a `roles` map labels each attack
+  benign-control vs adversarial-treatment.
 - **Local trust store** (`provael.attest.TrustStore` / `TrustedKey`, `attest --verify --trust-store`)
   with per-key validity window, revocation status, and subject label — the verifier's own trust
   anchor, never shipped inside a bundle.

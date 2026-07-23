@@ -90,10 +90,17 @@ def to_markdown(report: RunReport) -> str:
         acc = report.accelerator or "unspecified"
         prec = report.precision or "unspecified"
         lines.append(f"| accelerator / precision | `{acc}` / `{prec}` |")
-    lines.append(f"| attempts | {report.attempts} |")
-    lines.append(f"| successes | {report.successes} |")
-    lines.append(f"| ASR 95% CI (Wilson) | {_fmt_ci(report.ci95)} |")
-    lines.append(f"| ASR anytime-valid CI | {_fmt_ci(report.anytime_ci)} |")
+    adv_rate, adv_s, adv_n = report.adversarial_headline()
+    adv_pct = "N/A" if adv_n == 0 else f"{100.0 * adv_rate:.1f}%"
+    adv_ci = wilson_ci(adv_s, adv_n) if adv_n else None
+    lines.append(f"| **adversarial ASR** (benign excluded) | **{adv_pct} ({adv_s}/{adv_n})** |")
+    lines.append(f"| adversarial ASR 95% CI (Wilson) | {_fmt_ci(adv_ci)} |")
+    lines.append(
+        f"| all-episode observed-unsafe (benign incl.) | "
+        f"{100.0 * report.asr:.1f}% ({report.successes}/{report.attempts}) |"
+    )
+    lines.append(f"| all-episode 95% CI (Wilson) | {_fmt_ci(report.ci95)} |")
+    lines.append(f"| all-episode anytime-valid CI | {_fmt_ci(report.anytime_ci)} |")
     lines.append(f"| seeds | {report.seeds}{' (preliminary, <5)' if report.preliminary else ''} |")
     lines.append(f"| stochastic | {report.stochastic} |")
     lines.append(f"| ASR std (per-seed) | {100.0 * report.asr_std:.1f}% |")
