@@ -49,6 +49,22 @@ inputs:
     description: "Fail the job when a regression is detected (in addition to the absolute threshold)."
     required: false
     default: "true"
+  sign:
+    description: "Ed25519-sign the regression attestation (else a digest-only integrity bundle)."
+    required: false
+    default: "false"
+  signing-key:
+    description: "Ed25519 private-key PEM to sign the regression attestation with (pass a secret). Empty uses an ephemeral key."
+    required: false
+    default: ""
+  attestation-output:
+    description: "Path to write the signed regression attestation — a tamper-evident, offline-verifiable diff bundle (SARIF + summary bound by digest) a safety case can reference."
+    required: false
+    default: "provael-regression.attestation.json"
+  install-spec:
+    description: "Override the pip install target (e.g. '.[attest]') to smoke-test the checked-out source. Empty installs the pinned release from PyPI."
+    required: false
+    default: ""
 
 outputs:
   asr:
@@ -63,6 +79,9 @@ outputs:
   asr-delta:
     description: "Overall ASR delta vs the baseline (candidate - baseline), empty when no baseline."
     value: ${{ steps.regression.outputs.asr-delta }}
+  regression-attestation:
+    description: "Path of the signed regression attestation (empty when no baseline given)."
+    value: ${{ steps.regression.outputs.regression-attestation }}
 
 runs:
   using: "composite"
@@ -76,10 +95,19 @@ runs:
       shell: bash
       # Bound the install to the current minor so this action tag cannot silently pull a future,
       # possibly-incompatible or compromised, major/minor. Bump PROVAEL_VERSION with each release
-      # (Dependabot/CI keeps the published action tag and this constraint in step).
+      # (Dependabot/CI keeps the published action tag and this constraint in step). The [attest]
+      # extra brings Ed25519 so the regression attestation can be signed. `install-spec` overrides
+      # the source (e.g. '.[attest]') so the checked-out action can be smoke-tested against local
+      # source without a published release.
       env:
-        PROVAEL_VERSION: ">=0.22.0,<0.23.0"
-      run: python -m pip install --upgrade "provael${PROVAEL_VERSION}"
+        PROVAEL_VERSION: ">=0.23.0,<0.24.0"
+        INSTALL_SPEC: ${{ inputs.install-spec }}
+      run: |
+        if [ -n "$INSTALL_SPEC" ]; then
+          python -m pip install --upgrade "$INSTALL_SPEC"
+        else
+          python -m pip install --upgrade "provael${PROVAEL_VERSION}[attest]"
+        fi
 
     - name: Run Provael red-team
       id: redteam
@@ -119,14 +147,23 @@ runs:
         PROVAEL_BASELINE: ${{ inputs.baseline }}
         PROVAEL_TOLERANCE: ${{ inputs.regression-tolerance }}
         PROVAEL_REG_SARIF: "provael-regression.sarif"
+        PROVAEL_REG_ATT: ${{ inputs.attestation-output }}
+        PROVAEL_SIGN: ${{ inputs.sign }}
+        # The regression signing key (a secret PEM); empty -> ephemeral key. Read by `provael report`.
+        PROVAEL_SIGNING_KEY: ${{ inputs.signing-key }}
       run: |
         # Capture the diff exit code (non-zero on regression) without aborting the step, so we can
-        # set outputs, write the job summary, and let the final gate step decide.
+        # set outputs, write the job summary, and let the final gate step decide. The signed
+        # attestation is written even on a regression (it is the evidence of the regression).
+        sign_flag=""
+        if [ "$PROVAEL_SIGN" != "true" ]; then sign_flag="--no-sign"; fi
         set +e
         provael report --in provael-run --baseline "$PROVAEL_BASELINE" \
           --regression-tolerance "$PROVAEL_TOLERANCE" \
-          --out provael-run/regression.json --sarif-out "$PROVAEL_REG_SARIF"
+          --out provael-run/regression.json --sarif-out "$PROVAEL_REG_SARIF" \
+          --attest-out "$PROVAEL_REG_ATT" $sign_flag
         set -e
+        echo "regression-attestation=$PROVAEL_REG_ATT" >> "$GITHUB_OUTPUT"
         python - <<'PY'
         import json, os
         d = json.load(open("provael-run/regression.json"))
@@ -160,6 +197,16 @@ runs:
       with:
         sarif_file: "provael-regression.sarif"
         category: provael-regression
+
+    - name: Upload signed regression attestation
+      # The safety-case-referenceable artifact: the diff + SARIF + summary bound under one
+      # signature. Retained as a build artifact whether or not the gate tripped.
+      if: inputs.baseline != '' && hashFiles(inputs.attestation-output) != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: provael-regression-attestation
+        path: ${{ inputs.attestation-output }}
+        if-no-files-found: warn
 
     - name: Enforce gate (absolute threshold + regression)
       shell: bash
