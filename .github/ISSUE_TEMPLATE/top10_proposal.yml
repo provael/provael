@@ -1,0 +1,65 @@
+name: "Top 10: propose a new risk"
+description: Propose a new risk for the Embodied AI Security Top 10 (the v0.2 → v0.3 RFC)
+title: "[top10-proposal] <risk title>"
+labels: ["top10"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Propose a **new risk** for [The Embodied AI Security Top 10](../blob/main/docs/TOP10.md).
+        The full process is in the [RFC (v0.2 → v0.3)](../blob/main/docs/TOP10_RFC.md). To *dispute
+        a ranking* or *fix a framework mapping* instead, use the
+        **"Top 10: propose / dispute / fix a mapping"** template. The bar: a concrete,
+        **adversarially-reachable** threat with at least one referenceable source.
+  - type: input
+    id: eai_id
+    attributes:
+      label: Proposed risk ID
+      description: The EAIxx id you propose, or "renumber" if you are re-ordering existing risks.
+      placeholder: "e.g. EAI11, or renumber"
+    validations:
+      required: true
+  - type: input
+    id: title
+    attributes:
+      label: Title
+      description: A short, specific name for the risk.
+      placeholder: "e.g. Indirect / embodied prompt injection"
+    validations:
+      required: true
+  - type: textarea
+    id: threat_model
+    attributes:
+      label: Threat model
+      description: Who the attacker is, what they control, and what they achieve. Must be adversarial and embodiment-relevant (see the Top-10 scope note).
+    validations:
+      required: true
+  - type: textarea
+    id: example_attack
+    attributes:
+      label: Example attack
+      description: One concrete, referenceable instance — a Provael attack family, a published paper, or a real advisory.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Measured evidence (if any)
+      description: What has actually been measured, and where. If nothing has been measured yet, say so — a risk can be listed on threat-model grounds and marked not-yet-measured, never dressed up as a result.
+    validations:
+      required: false
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: arXiv / CVE / advisory / standard clauses that back the entry.
+      placeholder: "https://arxiv.org/abs/…, CVE-…, ISO 10218-2:2025 §…"
+    validations:
+      required: true
+  - type: checkboxes
+    id: coauthor
+    attributes:
+      label: Co-authoring
+      options:
+        - label: "I'd be open to co-authoring / endorsing this entry in the Embodied AI Security Top 10"
+          required: false
