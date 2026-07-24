@@ -35,6 +35,7 @@ provael attack --policy stub --suite stub --attacks instruction,visual,injection
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/provael/provael/blob/main/LICENSE)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb)
+[![Assessment](https://img.shields.io/badge/assessment-design%20partners-blue.svg)](https://www.provael.com/assessment)
 
 ## Why the policy layer
 
@@ -91,10 +92,23 @@ simulator live behind an optional extra and a `PROVAEL_INTEGRATION=1` gate.
 > disclosure. It drives no physical robots and ships no real-world-harm payloads.
 > Read **[SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md)** before using it.
 
+## Commercial & design partners
+
+Provael is open core. The CLI, every attack family, calibration, SARIF/OSCAL/ML-BOM, and the
+GitHub Action are Apache-2.0, forever. The paid surface is operated work a solo tool can't sign
+for: a hosted real-VLA (GPU) transfer run, a project-key-signed leaderboard entry, and a
+compliance dossier. Design-partner assessments ($15K, first 3) and standard assessments ($25K):
+[www.provael.com/assessment](https://www.provael.com/assessment) — free PV-SCAN of your nearest
+public checkpoint included.
+
+Run Provael? Add yourself to [docs/ADOPTERS.md](docs/ADOPTERS.md) via PR.
+
 ## The Embodied AI Security Top 10
 
 An independent, community risk list for the security of VLA models and the robots they drive — the
 framework Provael's attacks map to. Read it: [docs/TOP10.md](docs/TOP10.md). Draft v0.2, PRs welcome.
+Shaping v0.3? The [Top-10 RFC process](docs/TOP10_RFC.md) covers how to propose a new risk or
+dispute an existing one.
 
 Comparing frameworks? See the [EAI ↔ RoboJailBench crosswalk](docs/crosswalk/robojailbench.md) — a
 machine-readable mapping between the Top 10 and RoboJailBench's 18 harm categories, with provael's
@@ -540,6 +554,8 @@ same config + seed always produces a byte-identical `report.json`.
 - **next** — optimized (gradient/search) attacks incl. real-model action-freeze (FreezeVLA); more
   suites (RoboCasa / CALVIN / SimplerEnv / the AI2 harness bridge). See the full
   [roadmap](docs/roadmap.md).
+- **defenses** — measured mitigations with pre/post ASR + CI, starting with **instruction
+  canonicalization** ([docs/DEFENSES.md](docs/DEFENSES.md)).
 
 ## Development
 
@@ -573,6 +589,7 @@ uv run pytest -q         # tests (CPU only; LeRobot tests skip unless gated)
 - **Compliance** — `provael report --format compliance` maps a run to ISO 10218:2025, the EU AI
   Act (Art. 9 / 15 / 72), NIST AI 100-2 / AI RMF, and IEC 62443; crosswalk + schema in
   **[docs/COMPLIANCE.md](https://github.com/provael/provael/blob/main/docs/COMPLIANCE.md)**.
+  Machinery-Reg readiness: [www.provael.com/machinery-regulation](https://www.provael.com/machinery-regulation).
 - **Cite** — see
   **[CITATION.cff](https://github.com/provael/provael/blob/main/CITATION.cff)**.
 
