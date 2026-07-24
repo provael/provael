@@ -31,8 +31,11 @@ nav:
   - Quickstart: quickstart.md
   - Examples gallery: examples.md
   - Attack catalog: attacks.md
+  - Defenses: DEFENSES.md
   - Leaderboard: leaderboard.md
-  - Embodied AI Top 10: TOP10.md
+  - Embodied AI Top 10:
+      - The list: TOP10.md
+      - RFC process (v0.2 → v0.3): TOP10_RFC.md
   - Compliance:
       - Crosswalk: COMPLIANCE.md
       - Signed attestation: ATTESTATION.md
@@ -56,6 +59,13 @@ nav:
       - Instruction transfer — SmolVLA×LIBERO (2026): findings/2026-instruction-transfer.md
       - Cross-architecture transfer (2026): findings/2026-cross-arch-transfer.md
       - EAI04 action-space transfer: studies/eai04-action-space-transfer.md
+  - Studies (pre-registered):
+      - π0 / openpi transfer: studies/pi0-openpi-transfer.md
+      - Meta-World transfer: studies/metaworld-transfer.md
+      - Sim-to-real (SO-ARM101): studies/sim-to-real-so101.md
+  - Community:
+      - Adopters: ADOPTERS.md
+      - Community & discussions: COMMUNITY.md
   - FAQ: faq.md
   - Open-core promise: open-core-promise.md
   - Roadmap: roadmap.md
