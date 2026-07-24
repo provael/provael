@@ -1,0 +1,49 @@
+name: "Contribute an attack family"
+description: Propose a new Provael attack family — a perturbation with a transfer test
+title: "[attack] <family name>"
+labels: ["attack-family"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Propose a new **attack family** for Provael. Every family ships with a transfer test
+        (rate + 95% Wilson CI + benign-FPR control) and an honest transfer status — see
+        [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md) and the
+        [attack catalog](../blob/main/docs/attacks.md). Sim-only and defensive: no real-robot
+        control code and no real-world-harm payloads ([SAFETY.md](../blob/main/SAFETY.md)).
+  - type: input
+    id: family
+    attributes:
+      label: Family name
+      placeholder: "e.g. optimized_patch"
+    validations:
+      required: true
+  - type: input
+    id: eai
+    attributes:
+      label: EAI mapping
+      description: Which Embodied AI Security Top 10 risk(s) this family exercises.
+      placeholder: "e.g. EAI02 — Adversarial perception"
+    validations:
+      required: true
+  - type: textarea
+    id: mechanism
+    attributes:
+      label: Perturbation mechanism
+      description: What the attack perturbs (instruction text, image/observation, action channel, …) and how. Templated, or an optimized/search family?
+    validations:
+      required: true
+  - type: textarea
+    id: transfer_plan
+    attributes:
+      label: Transfer plan
+      description: How real-model transfer would be measured — policy/suite, n, seeds, the benign control, and what a positive vs an honest-null result looks like.
+    validations:
+      required: true
+  - type: checkboxes
+    id: honest_limitations
+    attributes:
+      label: Honest limitations (required)
+      options:
+        - label: "I understand a new family ships as stub-validated scaffolding until real-model transfer is measured, and must not claim a transfer it has not demonstrated."
+          required: true

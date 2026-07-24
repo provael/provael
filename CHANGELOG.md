@@ -154,6 +154,19 @@ All notable changes to this project are documented here. The format is based on
   service would require (none implemented). The SmolVLA×LIBERO assurance golden was regenerated for
   the renamed, adversarial-headline draft.
 
+### Documentation & community
+- **Community & discoverability scaffolding (docs only — no `src/` change, no behaviour change).**
+  New `docs/ADOPTERS.md` (self-reported, ships empty), `docs/COMMUNITY.md` (a Discussions map plus a
+  maintainer TODO block for the social preview and repo topics), `docs/TOP10_RFC.md` (the v0.2 → v0.3
+  process for the Embodied AI Security Top 10), and `docs/DEFENSES.md` (a mitigation taxonomy and the
+  instruction-canonicalization spec — no defense claimed until measured). Three **pre-registered**
+  study protocols under `docs/studies/` (`pi0-openpi-transfer`, `metaworld-transfer`,
+  `sim-to-real-so101`) — protocol only, no results claimed. Three GitHub issue-form templates
+  (`top10_proposal`, `attack_family` with a required honest-limitations acknowledgement, and
+  `design_partner`). A README **Commercial & design partners** section, an Assessment badge, a
+  defenses roadmap bullet, and a 1280×640 social-preview image. No metrics, adopters, contributors,
+  or results were invented.
+
 ## [0.22.0] — 2026-07-23
 
 ### Added

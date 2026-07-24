@@ -1,0 +1,50 @@
+name: "Design-partner / assessment enquiry"
+description: Start a conversation about a hosted real-VLA transfer assessment
+title: "[assessment] <org>"
+labels: ["assessment"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a hosted **real-VLA (GPU) transfer assessment** — a signed transfer run, a leaderboard
+        entry, and a compliance dossier. Details and pricing:
+        **[www.provael.com/assessment](https://www.provael.com/assessment)** (a free PV-SCAN of
+        your nearest public checkpoint is included). This issue is a lightweight way to start in
+        the open — **do not post anything confidential** (weights, private checkpoints, internal
+        detail); share those privately once we connect.
+  - type: input
+    id: org
+    attributes:
+      label: Organization
+    validations:
+      required: true
+  - type: input
+    id: stack
+    attributes:
+      label: Stack (policy / suite)
+      description: The VLA policy and simulator/suite you run.
+      placeholder: "e.g. a SmolVLA fork on LIBERO; π0 on Meta-World"
+    validations:
+      required: true
+  - type: input
+    id: checkpoint
+    attributes:
+      label: Nearest public checkpoint
+      description: A public checkpoint close to yours, for the free PV-SCAN.
+      placeholder: "e.g. HuggingFaceVLA/smolvla_libero"
+    validations:
+      required: false
+  - type: textarea
+    id: measure
+    attributes:
+      label: What you want measured
+      description: The risk(s) or behaviour you care about — e.g. instruction-jailbreak transfer, keep-out integrity, or a compliance-evidence pack.
+    validations:
+      required: true
+  - type: input
+    id: contact
+    attributes:
+      label: Contact
+      description: How to reach you (email or handle). This is public — omit it if you would rather we reply on the issue.
+    validations:
+      required: false

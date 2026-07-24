@@ -25,6 +25,9 @@ Please report security issues **privately — do not open a public issue**:
 Please include reproduction steps, affected version(s), and impact. Good-faith reports are
 welcome and credited unless you'd prefer to stay anonymous.
 
+A machine-readable **security.txt** ([RFC 9116](https://www.rfc-editor.org/rfc/rfc9116)) is served at
+<https://www.provael.com/.well-known/security.txt>.
+
 ## Disclosure timeline
 
 - We aim to **acknowledge within 3 business days**.
