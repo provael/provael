@@ -4,6 +4,9 @@
 
 Maintained by [Provael](https://github.com/provael/provael) · **v0.2 draft** · 27 Jun 2026 · License: **CC-BY-SA 4.0** · PRs welcome.
 
+**Contributing to this list?** See the [RFC process (v0.2 → v0.3)](TOP10_RFC.md) — how to propose a
+new risk, dispute an existing one, and how a change is reviewed and versioned.
+
 > **Independent community project. Not affiliated with or endorsed by the OWASP® Foundation or MITRE®.**
 > This list is *modeled on the methodology* of the OWASP Top Ten and references OWASP/MITRE/NIST/ISO only
 > to cross-map. It is a **v0.2 draft built on prior work** — it credits the researchers it stands on and
