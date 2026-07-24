@@ -8,17 +8,36 @@ improvement) plus the non-zero CLI exit and the regression SARIF.
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import importlib.util
 import json
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from provael.cli import app
-from provael.regression import diff_reports, to_regression_sarif
+from provael.regression import (
+    RegressionAttestation,
+    RegressionSignature,
+    build_regression_attestation,
+    diff_reports,
+    to_diff_dict,
+    to_markdown,
+    to_regression_sarif,
+    verify_regression_attestation,
+)
 from provael.report import write_report
 from provael.types import ASRStat, EaiTag, RunReport
 
 runner = CliRunner()
+
+_HAS_CRYPTO = importlib.util.find_spec("cryptography") is not None
+_needs_crypto = pytest.mark.skipif(
+    not _HAS_CRYPTO, reason="requires the `attest` extra (cryptography)"
+)
+_ISSUED = "2026-07-24T00:00:00Z"
 
 
 def _report(successes: int, attempts: int, *, attack: str = "roleplay", eai: str = "EAI01") -> RunReport:
@@ -124,3 +143,103 @@ def test_cli_report_baseline_exit_codes(tmp_path: Path) -> None:
     )
     assert ok.exit_code == 0, ok.output
     assert "no regression" in ok.output.lower()
+
+
+# --------------------------------------------------------------------------------------------
+# the signed regression attestation
+# --------------------------------------------------------------------------------------------
+
+def _diff_and_candidate(cand_successes: int, base_successes: int, n: int = 30):  # noqa: ANN202
+    candidate = _report(cand_successes, n)
+    diff = diff_reports(candidate, _report(base_successes, n), tolerance=0.05)
+    return diff, candidate
+
+
+def test_digest_only_attestation_is_never_strict_ok() -> None:
+    diff, cand = _diff_and_candidate(27, 2)
+    att = build_regression_attestation(diff, cand, issued_at=_ISSUED, commit="abc", sign=False)
+    assert att.signed is False and att.signatures == [] and att.public_key is None
+    r = verify_regression_attestation(att)
+    assert r.digest_ok is True
+    assert r.signature_present is False
+    assert r.signature_valid is None
+    assert r.strict_ok is False  # a digest-only bundle is intact but never strict-OK (fail closed)
+
+
+def test_attestation_binds_the_diff_sarif_and_summary_and_reports_ci() -> None:
+    diff, cand = _diff_and_candidate(27, 2)
+    att = build_regression_attestation(diff, cand, issued_at=_ISSUED, commit="abc", sign=False)
+    st = json.loads(base64.b64decode(att.payload))
+    # Honesty: the signed headline is the ASR *with its 95% CI*, plus the verdict — never a bare rate.
+    assert st["regressed"] is True
+    assert st["candidate_asr"] is not None and st["candidate_ci"] is not None
+    # The subject digests bind the actual evidence files.
+    diff_digest = hashlib.sha256(
+        json.dumps(to_diff_dict(diff), sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    assert st["subject"]["diff_sha256"] == diff_digest
+    assert st["subject"]["summary_sha256"] == hashlib.sha256(to_markdown(diff).encode()).hexdigest()
+
+
+def test_tampered_payload_fails_the_digest() -> None:
+    diff, cand = _diff_and_candidate(27, 2)
+    att = build_regression_attestation(diff, cand, issued_at=_ISSUED, commit="abc", sign=False)
+    tampered = att.model_copy(update={"payloadSha256": "0" * 64})
+    r = verify_regression_attestation(tampered)
+    assert r.digest_ok is False
+    assert r.strict_ok is False
+
+
+@_needs_crypto
+def test_signed_attestation_verifies_and_is_deterministic() -> None:
+    from provael.attest import generate_private_key_pem
+
+    diff, cand = _diff_and_candidate(27, 2)
+    key = generate_private_key_pem()
+    a1 = build_regression_attestation(
+        diff, cand, issued_at=_ISSUED, commit="abc", private_key_pem=key
+    )
+    a2 = build_regression_attestation(
+        diff, cand, issued_at=_ISSUED, commit="abc", private_key_pem=key
+    )
+    assert a1.model_dump_json() == a2.model_dump_json()  # Ed25519 is deterministic + fixed key
+    r = verify_regression_attestation(a1)
+    assert r.signature_present is True
+    assert r.signature_valid is True
+    assert r.strict_ok is True
+
+
+@_needs_crypto
+def test_tampered_signature_fails_strict() -> None:
+    from provael.attest import generate_private_key_pem
+
+    diff, cand = _diff_and_candidate(27, 2)
+    att = build_regression_attestation(
+        diff, cand, issued_at=_ISSUED, commit="abc", private_key_pem=generate_private_key_pem()
+    )
+    s = att.signatures[0].sig
+    flipped = s[:10] + ("A" if s[10] != "A" else "B") + s[11:]  # keep length (64 bytes), wrong sig
+    bad = att.model_copy(update={"signatures": [RegressionSignature(keyid=att.signatures[0].keyid, sig=flipped)]})
+    r = verify_regression_attestation(bad)
+    assert r.digest_ok is True
+    assert r.signature_valid is False
+    assert r.strict_ok is False
+
+
+@_needs_crypto
+def test_cli_report_attest_out_writes_a_verifiable_bundle(tmp_path: Path) -> None:
+    base_json = _write(_report(2, 30), tmp_path / "baseline")
+    cand_dir = tmp_path / "candidate"
+    _write(_report(27, 30), cand_dir)  # a clear regression
+    att_path = tmp_path / "reg.att.json"
+    res = runner.invoke(
+        app,
+        ["report", "--in", str(cand_dir), "--baseline", str(base_json),
+         "--attest-out", str(att_path)],
+        env={"PROVAEL_SIGNING_KEY": ""},  # force an ephemeral key (deterministic test env)
+    )
+    # The gate exits non-zero on the regression, but the attestation is written regardless.
+    assert res.exit_code == 1, res.output
+    att = RegressionAttestation.model_validate_json(att_path.read_text())
+    assert att.signed is True  # ephemeral-signed by default
+    assert verify_regression_attestation(att).strict_ok is True

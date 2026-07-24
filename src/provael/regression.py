@@ -21,6 +21,8 @@ certification.**
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -332,13 +334,245 @@ def write_regression_sarif(diff: RegressionDiff, candidate: RunReport, path: Pat
     return path
 
 
+# --------------------------------------------------------------------------------------------
+# Signed regression attestation.
+#
+# A tamper-evident, offline-verifiable envelope that binds the regression diff, its SARIF, and the
+# human summary (each by SHA-256) under ONE Ed25519 signature. This is the artifact a safety case
+# references: it carries the gate verdict AND the honest ASR-with-95%-CI headline (never a bare
+# number), and the single signature covers the whole evidence set. Ed25519 signing rides the
+# optional ``provael[attest]`` extra (imported lazily to keep this module dependency-light and
+# free of any import cycle); ``sign=False`` yields a digest-only envelope. Signing is deterministic
+# given a fixed key + metadata (Ed25519 is deterministic), so a fixed input reproduces the same
+# bytes. **Evidence, not certification** — an embedded key is the signer's own and UNTRUSTED by
+# default.
+# --------------------------------------------------------------------------------------------
+
+#: Statement format id for the signed regression envelope.
+REGRESSION_STATEMENT_FORMAT = "provael-regression-attestation/v1"
+#: DSSE payload type for the regression envelope.
+REGRESSION_PAYLOAD_TYPE = "application/vnd.provael.regression+json"
+#: Default filename for the signed regression artifact.
+REGRESSION_ATTEST_JSON = "report.regression.attestation.json"
+
+
+def _canonical(obj: Any) -> bytes:
+    """Canonical JSON bytes (sorted keys, tight separators) — what gets hashed and signed."""
+    return json.dumps(obj, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def _sha256_hex(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+class RegressionSignature(BaseModel):
+    """One Ed25519 signature over the DSSE pre-authentication encoding of the payload."""
+
+    keyid: str = Field(..., description="First 16 hex chars of SHA-256(public-key PEM).")
+    alg: str = "ed25519"
+    sig: str = Field(..., description="Base64-encoded raw Ed25519 signature.")
+
+
+class RegressionSubject(BaseModel):
+    """What the signature binds: the policy/suite and the digests of the evidence files."""
+
+    name: str = Field(..., description="'<policy> x <suite>'.")
+    diff_sha256: str = Field(..., description="SHA-256 of the canonical regression diff JSON.")
+    sarif_sha256: str = Field(..., description="SHA-256 of the canonical regression SARIF.")
+    summary_sha256: str = Field(..., description="SHA-256 of the Markdown summary bytes.")
+
+
+class RegressionStatement(BaseModel):
+    """The signed payload: the verdict, an honest ASR-with-CI headline, and the bound digests."""
+
+    format: str = REGRESSION_STATEMENT_FORMAT
+    tool_version: str
+    issued_at: str
+    commit: str
+    policy: str
+    suite: str
+    tolerance: float
+    regressed: bool
+    regressed_keys: list[str]
+    baseline_asr: float | None
+    candidate_asr: float | None
+    overall_delta: float | None
+    baseline_ci: tuple[float, float] | None
+    candidate_ci: tuple[float, float] | None
+    subject: RegressionSubject
+
+
+class RegressionAttestation(BaseModel):
+    """DSSE-style envelope over a :class:`RegressionStatement`."""
+
+    payloadType: str = REGRESSION_PAYLOAD_TYPE
+    payload: str = Field(..., description="Base64 of the canonical statement JSON.")
+    payloadSha256: str = Field(..., description="Hex SHA-256 of the canonical statement bytes.")
+    signed: bool
+    signatures: list[RegressionSignature]
+    public_key: str | None = Field(
+        None,
+        description="Signer's Ed25519 SPKI PEM (present when signed). UNTRUSTED by default: "
+        "offline verification establishes integrity + signature validity, not trust — bring your "
+        "own out-of-band trust in this key.",
+    )
+    note: str
+
+
+class RegressionVerifyResult(BaseModel):
+    """Fail-closed outcome of verifying a regression attestation offline.
+
+    ``digest_ok`` is the integrity layer (payload intact). ``signature_valid`` is the crypto layer
+    (a signature checks out against an available key) — ``None`` when the bundle is unsigned or no
+    key is available to check. ``strict_ok`` requires both a present, valid signature and an intact
+    digest; an unsigned or unverifiable bundle is never strict-OK.
+    """
+
+    digest_ok: bool
+    signature_present: bool
+    signature_valid: bool | None
+    strict_ok: bool
+
+
+def build_regression_statement(
+    diff: RegressionDiff, candidate: RunReport, *, issued_at: str, commit: str
+) -> RegressionStatement:
+    """Build the signed payload, binding the diff / SARIF / summary by SHA-256 (pure)."""
+    diff_digest = _sha256_hex(_canonical(to_diff_dict(diff)))
+    sarif_digest = _sha256_hex(_canonical(to_regression_sarif(diff, candidate)))
+    summary_digest = _sha256_hex(to_markdown(diff).encode("utf-8"))
+    o = diff.overall
+    return RegressionStatement(
+        tool_version=candidate.tool_version,
+        issued_at=issued_at,
+        commit=commit,
+        policy=diff.policy,
+        suite=diff.suite,
+        tolerance=diff.tolerance,
+        regressed=diff.regressed,
+        regressed_keys=list(diff.regressed_keys),
+        baseline_asr=o.baseline_asr,
+        candidate_asr=o.candidate_asr,
+        overall_delta=o.delta,
+        baseline_ci=o.baseline_ci,
+        candidate_ci=o.candidate_ci,
+        subject=RegressionSubject(
+            name=f"{diff.policy} x {diff.suite}",
+            diff_sha256=diff_digest,
+            sarif_sha256=sarif_digest,
+            summary_sha256=summary_digest,
+        ),
+    )
+
+
+def build_regression_attestation(
+    diff: RegressionDiff,
+    candidate: RunReport,
+    *,
+    issued_at: str,
+    commit: str,
+    private_key_pem: bytes | None = None,
+    sign: bool = True,
+) -> RegressionAttestation:
+    """Build an (optionally Ed25519-signed) regression attestation.
+
+    ``sign=True`` signs over the DSSE pre-authentication encoding (needs ``provael[attest]``); an
+    ephemeral key is generated when ``private_key_pem`` is None. ``sign=False`` yields a digest-only
+    envelope. Deterministic given a fixed ``private_key_pem`` + ``issued_at`` + ``commit``.
+    """
+    statement = build_regression_statement(diff, candidate, issued_at=issued_at, commit=commit)
+    payload_bytes = _canonical(json.loads(statement.model_dump_json()))
+    payload_b64 = base64.b64encode(payload_bytes).decode("ascii")
+    payload_digest = _sha256_hex(payload_bytes)
+
+    if not sign:
+        return RegressionAttestation(
+            payload=payload_b64,
+            payloadSha256=payload_digest,
+            signed=False,
+            signatures=[],
+            public_key=None,
+            note="Digest-only: SHA-256 integrity binding, not a cryptographic signature. Install "
+            "'provael[attest]' and pass a key to sign with Ed25519.",
+        )
+
+    from provael.attest import generate_private_key_pem, public_key_pem, sign_bytes
+
+    priv = private_key_pem if private_key_pem is not None else generate_private_key_pem()
+    pub = public_key_pem(priv)
+    keyid, sig = sign_bytes(priv, REGRESSION_PAYLOAD_TYPE, payload_bytes)
+    ephemeral = private_key_pem is None
+    return RegressionAttestation(
+        payload=payload_b64,
+        payloadSha256=payload_digest,
+        signed=True,
+        signatures=[RegressionSignature(keyid=keyid, sig=sig)],
+        public_key=pub.decode("ascii"),
+        note=(
+            "Ed25519 over the DSSE pre-authentication encoding. The embedded key is the signer's "
+            "own and is UNTRUSTED by default — establish trust in it out of band. "
+            + ("Ephemeral key (generated per run)." if ephemeral else "Signed with a provided key.")
+        ),
+    )
+
+
+def verify_regression_attestation(
+    att: RegressionAttestation, *, public_key_pem_bytes: bytes | None = None
+) -> RegressionVerifyResult:
+    """Verify a regression attestation offline (fail-closed). Recomputes nothing about the diff —
+    it checks the envelope: the payload digest, and (when a key is available) the signature."""
+    payload_bytes = base64.b64decode(att.payload)
+    digest_ok = _sha256_hex(payload_bytes) == att.payloadSha256
+    signature_present = att.signed and len(att.signatures) > 0
+
+    key = public_key_pem_bytes
+    if key is None and att.public_key is not None:
+        key = att.public_key.encode("ascii")
+
+    signature_valid: bool | None = None
+    if signature_present and key is not None:
+        from provael.attest import verify_bytes
+
+        signature_valid = any(
+            verify_bytes(key, REGRESSION_PAYLOAD_TYPE, payload_bytes, s.sig)
+            for s in att.signatures
+        )
+
+    strict_ok = bool(digest_ok and signature_present and signature_valid is True)
+    return RegressionVerifyResult(
+        digest_ok=digest_ok,
+        signature_present=signature_present,
+        signature_valid=signature_valid,
+        strict_ok=strict_ok,
+    )
+
+
+def to_regression_attestation_json(att: RegressionAttestation) -> str:
+    """Serialise the attestation to stable, indented JSON (no trailing newline)."""
+    return json.dumps(json.loads(att.model_dump_json()), indent=2, sort_keys=True)
+
+
+def write_regression_attestation(att: RegressionAttestation, path: Path) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(to_regression_attestation_json(att) + "\n", encoding="utf-8")
+    return path
+
+
 __all__ = [
     "REGRESSION_JSON",
     "REGRESSION_SARIF",
     "REGRESSION_MD",
+    "REGRESSION_STATEMENT_FORMAT",
+    "REGRESSION_PAYLOAD_TYPE",
+    "REGRESSION_ATTEST_JSON",
     "DEFAULT_TOLERANCE",
     "SliceDelta",
     "RegressionDiff",
+    "RegressionSignature",
+    "RegressionSubject",
+    "RegressionStatement",
+    "RegressionAttestation",
+    "RegressionVerifyResult",
     "diff_reports",
     "to_diff_dict",
     "to_diff_json",
@@ -347,4 +581,9 @@ __all__ = [
     "write_diff_markdown",
     "to_regression_sarif",
     "write_regression_sarif",
+    "build_regression_statement",
+    "build_regression_attestation",
+    "verify_regression_attestation",
+    "to_regression_attestation_json",
+    "write_regression_attestation",
 ]

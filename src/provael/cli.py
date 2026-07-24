@@ -96,9 +96,11 @@ from provael.regression import (
     DEFAULT_TOLERANCE,
     RegressionDiff,
     SliceDelta,
+    build_regression_attestation,
     diff_reports,
     write_diff_json,
     write_diff_markdown,
+    write_regression_attestation,
     write_regression_sarif,
 )
 from provael.report import load_report, render_summary, write_report
@@ -635,9 +637,42 @@ def _diff_row(s: SliceDelta) -> tuple[str, str, str, str, str]:
             rate(s.candidate_asr, s.candidate_ci), delta, flag)
 
 
+def _emit_regression_attestation(
+    diff: RegressionDiff, candidate: RunReport, attest_out: Path, key: Path | None, no_sign: bool
+) -> None:
+    """Write a signed (or digest-only) regression attestation next to the diff."""
+    issued_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    stamp = _git_commit() or f"v{__version__}"
+    private_key_pem: bytes | None = None
+    if key is not None:
+        private_key_pem = key.read_bytes()
+    else:
+        env_key = os.environ.get("PROVAEL_SIGNING_KEY")
+        if env_key:
+            private_key_pem = env_key.encode("utf-8")
+    att = build_regression_attestation(
+        diff, candidate, issued_at=issued_at, commit=stamp,
+        private_key_pem=private_key_pem, sign=not no_sign,
+    )
+    write_regression_attestation(att, attest_out)
+    if att.signed:
+        _out.print(
+            f"Wrote [cyan]{attest_out}[/cyan]  (signed regression attestation, "
+            f"ed25519 keyid {att.signatures[0].keyid})"
+        )
+        if private_key_pem is None:
+            _err.print(
+                "[yellow]note:[/yellow] signed with an ephemeral key (integrity, not identity). "
+                "Pass --key <ed25519.pem> or set PROVAEL_SIGNING_KEY to sign with your org key."
+            )
+    else:
+        _out.print(f"Wrote [cyan]{attest_out}[/cyan]  (digest-only regression attestation)")
+
+
 def _report_baseline(
     candidate_report: RunReport, baseline: Path, tolerance: float,
     out: Path | None, sarif_out: Path | None,
+    attest_out: Path | None = None, key: Path | None = None, no_sign: bool = False,
 ) -> None:
     """Run the per-checkpoint regression diff and exit non-zero if the candidate regressed."""
     try:
@@ -673,6 +708,8 @@ def _report_baseline(
     if sarif_out is not None:
         write_regression_sarif(diff, candidate_report, sarif_out)
         _out.print(f"Wrote [cyan]{sarif_out}[/cyan]  (regression SARIF)")
+    if attest_out is not None:
+        _emit_regression_attestation(diff, candidate_report, attest_out, key, no_sign)
 
     if diff.regressed:
         _fail(
@@ -722,6 +759,29 @@ def report(
         Path | None,
         typer.Option("--sarif-out", help="With --baseline, write a regression SARIF here."),
     ] = None,
+    attest_out: Annotated[
+        Path | None,
+        typer.Option(
+            "--attest-out",
+            help="With --baseline, write a signed regression attestation here — a tamper-evident, "
+            "offline-verifiable envelope binding the diff + SARIF + summary under one Ed25519 "
+            "signature (the artifact a safety case references).",
+        ),
+    ] = None,
+    key: Annotated[
+        Path | None,
+        typer.Option(
+            "--key",
+            help="Ed25519 private-key PEM to sign the regression attestation with. Falls back to "
+            "the PROVAEL_SIGNING_KEY env (PEM contents); omit both for an ephemeral key.",
+        ),
+    ] = None,
+    no_sign: Annotated[
+        bool,
+        typer.Option(
+            "--no-sign", help="With --attest-out, emit a digest-only bundle (no signature)."
+        ),
+    ] = False,
 ) -> None:
     """Print a summary of a previously written report, or emit it as SARIF / compliance evidence."""
     try:
@@ -733,7 +793,9 @@ def report(
         _fail(f"{in_dir} does not contain a valid Provael report.json")
         return
     if baseline is not None:
-        _report_baseline(loaded, baseline, regression_tolerance, out, sarif_out)
+        _report_baseline(
+            loaded, baseline, regression_tolerance, out, sarif_out, attest_out, key, no_sign
+        )
         return
     if fmt is OutputFormat.sarif:
         if out is not None:
