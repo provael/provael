@@ -46,7 +46,7 @@ jobs:
       ATTACKS: ${{ github.event.inputs.attacks || 'instruction,visual,injection' }}
       BASELINE_FILE: .provael/baseline.report.json
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Restore the stored baseline
         uses: actions/cache/restore@v4
