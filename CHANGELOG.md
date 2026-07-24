@@ -43,6 +43,16 @@ All notable changes to this project are documented here. The format is based on
   `True` for unsigned bundles); call `overall_strict_ok` or `integrity_only_ok` explicitly.
 
 ### Added
+- **Continuous, signed per-checkpoint security gate.** The reusable GitHub Action now emits a signed
+  **regression attestation** (`provael report --baseline … --attest-out`, or the Action's `sign` +
+  `signing-key` inputs): a tamper-evident, offline-verifiable **Ed25519** envelope binding the
+  regression diff, its SARIF, and the human summary under one signature, stating the verdict with the
+  ASR **and its 95% Wilson CI** (never a bare number) — the artifact a safety case references
+  (`provael.regression.verify_regression_attestation` checks it offline; the key is untrusted by
+  default). A new reference workflow (`.github/workflows/checkpoint-security-gate.yml`) makes the gate
+  **self-maintaining** — it persists the baseline in the Actions cache and promotes each passing
+  checkpoint to the next baseline. Generic across the policy/suite abstraction (generality intended;
+  tested on SmolVLA × LIBERO). Free core unchanged, still Apache-2.0.
 - **Versioned cross-architecture RPC contract** (`provael.studies.cross_arch.CrossArchRequest` /
   `CrossArchResponse`, `build_cross_arch_request`, `ingest_cross_arch_response`). Because `[openpi]`
   and `[lerobot]` pin conflicting numpy majors, each real architecture runs in its own env; they now

@@ -294,7 +294,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.22.0
+      - uses: provael/provael@v0.23.0
         with:
           attacks: instruction,visual,injection,action
           episodes: "10"
@@ -317,7 +317,8 @@ can't fail a build. The same diff runs locally:
 
 ```bash
 provael report --in runs/candidate --baseline .provael/baseline.report.json \
-  --regression-tolerance 0.05 --sarif-out runs/candidate/regression.sarif
+  --regression-tolerance 0.05 --sarif-out runs/candidate/regression.sarif \
+  --attest-out runs/candidate/regression.attestation.json   # + a signed, offline-verifiable diff
 ```
 
 It prints a per-EAI diff, exits non-zero on a regression, and writes a regression SARIF (a regressed
@@ -327,6 +328,25 @@ baseline. Per-checkpoint regression evidence maps to standing-assurance expectat
 Machinery Regulation 2023/1230 Annex III §1.1.9, safe behaviour across updates) — **evidence, not
 certification**, and the real-VLA (GPU) transfer run behind it is the higher-assurance evidence a
 future operated service would sign.
+
+### Continuous gate + signed evidence
+
+The gate is **self-maintaining**. The reference workflow
+[`.github/workflows/checkpoint-security-gate.yml`](.github/workflows/checkpoint-security-gate.yml)
+persists the baseline in the Actions cache and, on each new checkpoint, restores it → red-teams +
+diffs → and **only when the gate passes, promotes the new run to the baseline**. The first run
+establishes the baseline; every run after diffs against it — nothing to commit or roll by hand.
+
+Each run also emits a **signed regression attestation** (`--attest-out` locally, or the Action's
+`sign: true` + `signing-key` inputs): a tamper-evident, offline-verifiable **Ed25519** envelope that
+binds the diff, its SARIF, and the human summary under one signature, and states the verdict with the
+ASR **and its 95% Wilson CI** — never a bare number. It is the artifact a safety case references
+(`provael.regression.verify_regression_attestation` checks it offline; the signer key is **untrusted
+by default** until you trust it out of band). This is the seed of the fleet-CI / insurer-ready
+evidence surface.
+
+The gate is **generic across the policy/suite abstraction** — point `policy`/`suite` at your own
+checkpoint on a GPU runner. Generality is intended; it is **tested on SmolVLA × LIBERO** today.
 
 ## First real result (SmolVLA on LIBERO)
 
