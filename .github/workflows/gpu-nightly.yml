@@ -50,7 +50,7 @@ jobs:
 
       - name: Upload the run artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: gpu-nightly-report
           path: gpu-nightly-report.txt
