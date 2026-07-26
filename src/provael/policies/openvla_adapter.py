@@ -91,6 +91,10 @@ class OpenVLAAdapter(PolicyAdapter):
     ``predict_action`` step, and returns a clamped ``(action_dim,)`` numpy action.
     """
 
+    #: OpenVLA emits discrete action tokens autoregressively, not a flow-matched chunk.
+    action_head_class = "token"
+
+
     #: Real VLA inference is model-stochastic (reports are seeded but not byte-identical).
     stochastic = True
 

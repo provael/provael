@@ -55,8 +55,39 @@ def test_registered_in_its_own_family_leaving_optimized_untouched() -> None:
 def test_records_threat_model_metadata() -> None:
     atk = OptimizedPatchHijack()
     assert atk.attacker_access == "black-box-query"  # honest: a query search, not white-box gradient
-    assert atk.action_head_class == "flow"  # measured against SmolVLA's flow-matching head
     assert isinstance(atk, OracleAttack)  # the runner wires an oracle into it
+    # The attack asserts NO head class. A patch search is head-agnostic — it perturbs pixels and
+    # reads the emitted action, so it runs against whatever head the policy under test has. This
+    # constant used to say "flow", which is a fact about SmolVLA, not about the attack: the same
+    # search against OpenVLA's discrete token head would have recorded "flow" in signed evidence.
+    assert atk.action_head_class is None
+
+
+def test_head_class_is_recorded_from_the_policy_not_the_attack() -> None:
+    """The head class on a result describes the policy that actually ran."""
+    from provael.config import RunConfig
+    from provael.policies.registry import POLICIES
+    from provael.policies.stub import StubPolicy
+    from provael.runner import run
+
+    class FlowStub(StubPolicy):  # type: ignore[misc]
+        name = "flowstub"
+        action_head_class = "flow"
+
+        def __init__(self, **_kwargs: object) -> None:
+            # make_policy forwards model/rename_map/unnorm_key to every factory; the stub's own
+            # factory absorbs them, so a bare subclass must too.
+            super().__init__()
+
+    POLICIES["flowstub"] = FlowStub
+    try:
+        report = run(
+            RunConfig(policy="flowstub", suite="stub", attacks=["instruction"], episodes=2)
+        )
+        assert report.results, "expected episodes to have run"
+        assert {r.action_head_class for r in report.results} == {"flow"}
+    finally:
+        POLICIES.pop("flowstub", None)
 
 
 # --------------------------------------------------------------------------- #

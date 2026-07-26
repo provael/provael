@@ -30,8 +30,14 @@ Everything you need to red-team a VLA policy and produce evidence is free, open-
 
 Exactly one thing is sold, and it is an **operated service, not code**:
 
-- The **authoritative, project-key-signed attestation** — one key an insurer or Notified Body can
-  trust — and the **insurer / Notified-Body-ready compliance report** built on top of it.
+- An attestation signed with a **published, stable project key** — one key an insurer or Notified
+  Body can add to its trust store, rather than verifying a different operator key per run — and
+  the **compliance report** built on top of it.
+
+  Deliberately not called *authoritative*: a signature proves who signed, never that the signer
+  is to be believed. Trust is the verifier's decision, made by adding a key to their own store
+  (see :mod:`provael.attest`), and the reference server labels every signature it makes as
+  untrusted for exactly that reason.
 
 The paid entitlement check lives **only** on the operated service; it never touches the free core,
 and the open tool never gates the local stub or real-model path.

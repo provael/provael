@@ -32,6 +32,15 @@ class PolicyAdapter(ABC):
     resolved_device: str | None = None
     #: The compute precision this adapter actually used (e.g. ``"bf16"``), set during :meth:`load`.
     resolved_precision: str | None = None
+    #: INV-4 threat-model metadata: this policy's action-head class — ``"token"`` (discrete
+    #: autoregressive) or ``"flow"`` (flow-matching). ``None`` where not asserted.
+    #:
+    #: It belongs here, not on the attack. An attack cannot know which head it is running against:
+    #: the same patch search hits a flow head on SmolVLA and a token head on OpenVLA, so a constant
+    #: on the attack class records a property of whichever policy the author had in mind. The
+    #: runner prefers this value when stamping :class:`~provael.types.AttackResult`, so a result is
+    #: self-describing about the head it actually ran against.
+    action_head_class: str | None = None
 
     def set_features(self, features: SuiteFeatures) -> None:  # noqa: B027
         """Receive the suite's observation/action features (called once before ``load``).
