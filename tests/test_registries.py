@@ -16,7 +16,7 @@ from provael.suites import available_suites, make_suite, suite_is_ready
 
 
 def test_suite_factory() -> None:
-    assert available_suites() == ["libero", "metaworld", "reach", "stub"]
+    assert available_suites() == ["humanoid", "libero", "metaworld", "reach", "stub"]
     suite = make_suite("stub")
     assert suite.name == "stub"
     assert suite.tasks() == ["reach"]
@@ -27,6 +27,7 @@ def test_cpu_suites_ready_real_suites_gated() -> None:
     # only "ready" when the [lerobot] extra is installed (absent on the CPU build).
     assert suite_is_ready("stub") is True
     assert suite_is_ready("reach") is True
+    assert suite_is_ready("humanoid") is True
     assert suite_is_ready("libero") is False
     assert suite_is_ready("metaworld") is False
     # Constructing the gated suites is cheap and never imports the simulator.

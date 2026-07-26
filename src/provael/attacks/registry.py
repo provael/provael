@@ -66,6 +66,14 @@ from provael.attacks.confidentiality import (
     MembershipInference,
     ModelExtraction,
 )
+from provael.attacks.humanoid import (
+    FAMILY as HUMANOID_FAMILY,
+)
+from provael.attacks.humanoid import (
+    BalanceSpoofAttack,
+    StrideFreezeAttack,
+    WholeBodyHijackAttack,
+)
 from provael.attacks.injection import (
     FAMILY as INJECTION_FAMILY,
 )
@@ -148,6 +156,9 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
     "signal_spoof": SignalSpoof,
     "benign_urgency_override": BenignUrgencyOverride,
     "euphemistic_reroute": EuphemisticReroute,
+    "balance_spoof": BalanceSpoofAttack,
+    "whole_body_hijack": WholeBodyHijackAttack,
+    "stride_freeze": StrideFreezeAttack,
 }
 
 #: Family name -> ordered member attack names.
@@ -163,6 +174,7 @@ FAMILIES: dict[str, list[str]] = {
     AUTHORIZATION_FAMILY: ["self_authorize_bypass", "scope_escalation"],
     CONFIDENTIALITY_FAMILY: ["membership_inference", "model_extraction"],
     MISALIGNMENT_FAMILY: ["benign_urgency_override", "euphemistic_reroute"],
+    HUMANOID_FAMILY: ["balance_spoof", "whole_body_hijack", "stride_freeze"],
     OPTIMIZED_FAMILY: ["targeted_hijack"],
     OPTIMIZED_PATCH_FAMILY: ["patch_hijack"],
     OPTIMIZED_INSTRUCTION_FAMILY: ["targeted_redirect"],

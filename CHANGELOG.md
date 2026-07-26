@@ -43,6 +43,17 @@ All notable changes to this project are documented here. The format is based on
   `True` for unsigned bundles); call `overall_strict_ok` or `integrity_only_ok` explicitly.
 
 ### Added
+- **Humanoid safety pack (whole-body / locomotion) — stub-validated.** A new deterministic CPU
+  `humanoid` suite (fall/topple, loss of balance = COM outside the support polygon, self-collision,
+  footstep keep-out) and a `humanoid` attack family — `balance_spoof` (EAI02), `whole_body_hijack`
+  (EAI04), `stride_freeze` (EAI04) — each with its transfer-test (ASR + 95% Wilson CI + a benign-FPR
+  control) and honestly labelled **stub-validated** (no real-model transfer claimed; N/A off the
+  humanoid suite). A dedicated, gated `GrootAdapter` (NVIDIA GR00T-N1, routed through LeRobot;
+  refused unless `PROVAEL_INTEGRATION` / `PROVAEL_REQUIRE_REAL_INTEGRATION` is set, so CPU CI stays
+  deterministic). Pre-registered real-model protocol:
+  `docs/studies/humanoid-locomotion-transfer.md`. The 47/70 canary and every existing family's ASR
+  are unchanged — the humanoid attacks reuse the disjoint EAI02/EAI04 channels. Sim-only, no
+  real-robot control code.
 - **Continuous, signed per-checkpoint security gate.** The reusable GitHub Action now emits a signed
   **regression attestation** (`provael report --baseline … --attest-out`, or the Action's `sign` +
   `signing-key` inputs): a tamper-evident, offline-verifiable **Ed25519** envelope binding the

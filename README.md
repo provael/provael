@@ -59,7 +59,7 @@ CI, a benign false-positive control, a clean-task-success (competence) control, 
 
 > **New here?** Run it in your browser in 5 minutes — [open the Colab notebook](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb) — or browse the [examples gallery](examples/) and the built-in `provael list-recipes`.
 
-It ships **ten families of templated, auditable attacks** — `instruction` (text
+It ships **eleven families of templated, auditable attacks** — `instruction` (text
 reframings), `visual` (observation-space markers), `sensor_spoof` (EAI02: a sim
 perception spoof driving the end-effector into a keep-out zone), `injection` (indirect /
 embodied prompt injection), `action` (action-space integrity: freeze / trajectory
@@ -67,17 +67,20 @@ hijack), `action_space` (EAI04 2nd vector: keep-out hijack of the *commanded end
 / critical-step freeze), `backdoor` (EAI03: an objective-decoupled trigger *screen*),
 `authorization` (EAI08: self-authorization / scope-escalation, i.e. excessive agency),
 `confidentiality` (EAI09: a memorized-canary leak *screen* — membership inference /
-extraction), and `misalignment` (EAI06: the embodiment gap — a benign-sounding instruction
-driving an unsafe embodied action into a keep-out zone) — plus an **`optimized`** family
+extraction), `misalignment` (EAI06: the embodiment gap — a benign-sounding instruction
+driving an unsafe embodied action into a keep-out zone), and **`humanoid`** (whole-body /
+locomotion — a balance spoof → loss of balance, a whole-body hijack → topple, a freeze mid-stride)
+— plus an **`optimized`** family
 (`targeted_hijack`: a black-box, query-budgeted *search*), a `none` baseline, and an ASR
 **leaderboard**. Every family carries its transfer-test (rate + 95% Wilson CI + benign-FPR
 control); run `provael transfer-test` to print it. The `action`, `action_space`, `sensor_spoof`,
-`backdoor`, `authorization`, `misalignment`, and `confidentiality` families are
+`backdoor`, `authorization`, `misalignment`, `confidentiality`, and `humanoid` families are
 **stub-validated only** (no real-model transfer claimed). It red-teams **8 policies** — the CPU `stub`
 plus real **SmolVLA / π0 / π0.5 / π0-FAST / GR00T** (via the `[lerobot]` extra), **OpenVLA**
 (via `[openvla]`), and **π0 served by openpi** — Physical Intelligence's own stack, via the CPU-only
-`[openpi]` websocket client to a GPU policy server — across **4 suites** (`stub` + `reach` on CPU;
-**LIBERO** + **Meta-World** gated), or any policy/suite you wrap with the tiny adapter ABCs. The templated families are
+`[openpi]` websocket client to a GPU policy server — across **5 suites** (`stub` + `reach` +
+`humanoid` on CPU; **LIBERO** + **Meta-World** gated), or any policy/suite you wrap with the tiny
+adapter ABCs. The templated families are
 heuristic perturbations (not gradient-based); the `optimized` family is a model-agnostic search
 that only *queries* the policy — see
 [Scope and honest limitations](#scope-and-honest-limitations) and the
@@ -138,6 +141,7 @@ that tag as each finding's `EAIxx` ruleId:
 | `optimized` | `targeted_hijack` (black-box action-directive search) | [EAI04 — Action-space integrity](docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
 | `optimized_patch` | `patch_hijack` (query-budgeted adversarial-patch search, GPU-gated) | [EAI02 — Adversarial perception](docs/TOP10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) |
 | `optimized_instruction` | `targeted_redirect` (optimized, command-preserving instruction search) | [EAI01 — Policy & instruction jailbreak](docs/TOP10.md#eai01--policy--instruction-jailbreak-direct-command-channel) · EAI04 threat model |
+| `humanoid` | `balance_spoof` (balance spoof → loss of balance), `whole_body_hijack` (→ topple/fall), `stride_freeze` (freeze mid-stride) — whole-body / locomotion, **stub-validated** | [EAI02 — Adversarial perception](docs/TOP10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) · [EAI04 — Action-space integrity](docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
 
 ## Scope and honest limitations
 
@@ -233,7 +237,7 @@ Other commands:
 
 ```bash
 uv run provael list-policies            # stub (CPU); smolvla (needs the [lerobot] extra)
-uv run provael list-attacks             # 25 attacks across instruction/visual/sensor_spoof/injection/action/action_space/backdoor/authorization/confidentiality/misalignment/optimized/optimized_patch/optimized_instruction
+uv run provael list-attacks             # 28 attacks across instruction/visual/sensor_spoof/injection/action/action_space/backdoor/authorization/confidentiality/misalignment/humanoid/optimized/optimized_patch/optimized_instruction
 uv run provael list-recipes             # named presets: quick / instruction-only / full-sweep / ci-gate
 uv run provael attack --recipe quick    # a recipe is the base config; explicit flags override it
 uv run provael report --in runs/stub/
@@ -267,7 +271,8 @@ today). See [docs/leaderboard.md](docs/leaderboard.md). **Evidence, not certific
 | Capability | CPU (default) | Needs GPU + `[lerobot]` extra |
 | --- | :---: | :---: |
 | `stub` (scalar) + `reach` (spatial) suites | ✅ | |
-| All 13 attack families (`instruction`/`visual`/`sensor_spoof`/`injection`/`action`/`action_space`/`backdoor`/`authorization`/`confidentiality`/`misalignment`/`optimized`/`optimized_patch`/`optimized_instruction`) | ✅ | |
+| All 14 attack families (`instruction`/`visual`/`sensor_spoof`/`injection`/`action`/`action_space`/`backdoor`/`authorization`/`confidentiality`/`misalignment`/`humanoid`/`optimized`/`optimized_patch`/`optimized_instruction`) | ✅ | |
+| `humanoid` whole-body / locomotion suite (fall / balance / self-collision / footstep keep-out) | ✅ | |
 | Scoring, runner, report, CLI, recipes, `reproduce`, scorecard/SARIF/OSCAL/AVID | ✅ | |
 | `attest` — signed, dated evidence bundle (digest-only core; Ed25519 via `[attest]` extra) | ✅ | |
 | Full test suite (`pytest`), `ruff`, `mypy` | ✅ | |
