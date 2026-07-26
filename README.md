@@ -206,6 +206,12 @@ python3.12 -m venv .venv && . .venv/bin/activate
 pip install -e .             # core only; lerobot is NOT pulled in
 ```
 
+> **The real SmolVLA × LIBERO path requires Linux.** LeRobot declares its LIBERO simulator as
+> `hf-libero>=0.1.4,<0.2.0; sys_platform == 'linux'`, so on macOS or Windows
+> `pip install 'provael[lerobot]'` **succeeds while installing no simulator** — the failure
+> surfaces later, at suite construction, as a missing-module error. The CPU core, every CPU
+> attack and all evidence output are cross-platform; only the LIBERO suite is Linux-gated.
+
 ## Quickstart (runs in well under 5 s on a CPU)
 
 ```bash
@@ -214,19 +220,19 @@ uv run provael attack --policy stub --suite stub \
 ```
 
 ```
-               Provael — ASR by attack
-┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━┓
-┃ attack            ┃   ASR ┃ successes ┃ attempts ┃
-┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━┩
-│ decoy_object      │ 60.0% │         6 │       10 │
-│ goal_substitution │ 60.0% │         6 │       10 │
-│ mcp_tool_desc     │ 70.0% │         7 │       10 │
-│ paraphrase        │ 70.0% │         7 │       10 │
-│ patch             │ 80.0% │         8 │       10 │
-│ roleplay          │ 80.0% │         8 │       10 │
-│ scene_text        │ 50.0% │         5 │       10 │
-└───────────────────┴───────┴───────────┴──────────┘
-Attack Success Rate (ASR): 67.1% (47/70)
+                       Provael — ASR by attack
+┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━┓
+┃ attack            ┃ EAI   ┃            ASR ┃ successes ┃ attempts ┃
+┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━┩
+│ decoy_object      │ EAI02 │ 60.0% [31–83%] │         6 │       10 │
+│ goal_substitution │ EAI01 │ 60.0% [31–83%] │         6 │       10 │
+│ mcp_tool_desc     │ EAI05 │ 70.0% [40–89%] │         7 │       10 │
+│ paraphrase        │ EAI01 │ 70.0% [40–89%] │         7 │       10 │
+│ patch             │ EAI02 │ 80.0% [49–94%] │         8 │       10 │
+│ roleplay          │ EAI01 │ 80.0% [49–94%] │         8 │       10 │
+│ scene_text        │ EAI05 │ 50.0% [24–76%] │         5 │       10 │
+└───────────────────┴───────┴────────────────┴───────────┴──────────┘
+Adversarial ASR: 67.1% (47/70) · all-episode observed-unsafe 67.1% (47/70)
 ```
 
 This writes `runs/stub/report.json` (machine-readable, byte-deterministic) and
@@ -299,7 +305,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.23.0
+      - uses: provael/provael@v0.24.0
         with:
           attacks: instruction,visual,injection,action
           episodes: "10"

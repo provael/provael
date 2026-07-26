@@ -19,10 +19,28 @@ SCORECARD_MD = "report.scorecard.md"
 
 
 def _pct(x: float) -> str:
+    """Format a rate that is known to exist (a threshold, a measured benign FPR)."""
     return f"{100.0 * x:.1f}%"
 
 
+def _rate(successes: int, attempts: int) -> str:
+    """A measured rate, or ``N/A`` when the slice has no applicable episode.
+
+    An empty slice is an N/A, not a measured 0%: :attr:`~provael.types.ASRStat.asr` is 0.0 at zero
+    attempts only as a serialisation sentinel. ``report.md`` already renders this case as ``N/A``,
+    so printing ``0.0%`` here made the two artifacts disagree about the same run.
+    """
+    return "N/A" if attempts == 0 else _pct(successes / attempts)
+
+
 def _ci(successes: int, attempts: int) -> str:
+    """The 95% Wilson interval, or ``N/A`` when nothing was measured.
+
+    ``wilson_ci(0, 0)`` returns ``(0.0, 0.0)`` — a zero-width interval at zero, which would assert
+    certainty that the rate is 0% for an attack that never ran.
+    """
+    if attempts == 0:
+        return "N/A"
     lo, hi = wilson_ci(successes, attempts)
     return f"[{100.0 * lo:.0f}–{100.0 * hi:.0f}%]"
 
@@ -82,10 +100,10 @@ def to_scorecard_markdown(report: RunReport, threshold: float = 0.5) -> str:
         f"**Verdict: {badge}**  ({headline})",
         "",
         f"- **Policy:** `{report.policy}`  **Suite:** `{report.suite}`",
-        f"- **Adversarial ASR (gated):** {_pct(adv_rate)} {_ci(adv_successes, adv_attempts)} "
-        f"({adv_successes}/{adv_attempts})",
+        f"- **Adversarial ASR (gated):** {_rate(adv_successes, adv_attempts)} "
+        f"{_ci(adv_successes, adv_attempts)} ({adv_successes}/{adv_attempts})",
         f"- **All-episode observed-unsafe rate (benign control included, NOT the ASR):** "
-        f"{_pct(report.asr)} {_ci(report.successes, report.attempts)} "
+        f"{_rate(report.successes, report.attempts)} {_ci(report.successes, report.attempts)} "
         f"({report.successes}/{report.attempts})",
         f"- **Predicate:** {'calibrated' if report.calibrated else 'default (uncalibrated)'}",
     ]
@@ -93,11 +111,15 @@ def to_scorecard_markdown(report: RunReport, threshold: float = 0.5) -> str:
         lines.append(f"- **Benign baseline FPR (control):** {_pct(report.benign_fpr)}")
     lines += [
         "", "## Risk heatmap (Embodied AI Security Top 10)", "",
-        "| EAI | risk | ASR | 95% CI |", "|---|---|---:|:---:|",
+        # `n` is carried here because the heatmap is the one table with no success/attempt
+        # columns: without it a reader cannot tell an N/A bucket from a measured one.
+        "| EAI | risk | ASR | 95% CI | n |", "|---|---|---:|:---:|---:|",
     ]
     for eai_id, name, attempts, successes in _by_eai(report):
-        asr = successes / attempts if attempts else 0.0
-        lines.append(f"| {eai_id} | {name} | {_pct(asr)} | {_ci(successes, attempts)} |")
+        lines.append(
+            f"| {eai_id} | {name} | {_rate(successes, attempts)} "
+            f"| {_ci(successes, attempts)} | {attempts} |"
+        )
 
     lines += [
         "", "## Per-attack", "",
@@ -107,8 +129,8 @@ def to_scorecard_markdown(report: RunReport, threshold: float = 0.5) -> str:
         tag = report.eai.get(name)
         eai = tag.id if tag is not None else "—"
         lines.append(
-            f"| {name} | {eai} | {_pct(stat.asr)} | {_ci(stat.successes, stat.attempts)} "
-            f"| {stat.successes} | {stat.attempts} |"
+            f"| {name} | {eai} | {_rate(stat.successes, stat.attempts)} "
+            f"| {_ci(stat.successes, stat.attempts)} | {stat.successes} | {stat.attempts} |"
         )
 
     lines += [

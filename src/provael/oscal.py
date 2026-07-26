@@ -22,7 +22,7 @@ from pathlib import Path
 from provael.calibration import wilson_ci
 from provael.eai import CATALOG
 from provael.evidence import evidence_state_of, transfer_status_of
-from provael.types import RunReport
+from provael.types import ASRStat, RunReport
 from provael.verdict import release_verdict
 
 #: Filename written into a run's output directory.
@@ -52,6 +52,36 @@ def _uid(report: RunReport, *parts: str) -> str:
 UNRECORDED_COLLECTED = "1970-01-01T00:00:00Z"
 
 
+def _observation_props(
+    report: RunReport, name: str, stat: ASRStat, *, collected: str | None
+) -> list[dict[str, str]]:
+    """Props for one attack's observation — self-describing, with no unmeasured rate.
+
+    ``asr`` is emitted ONLY when the attack had applicable episodes. ``ASRStat.asr`` is 0.0 at zero
+    attempts purely as a serialisation sentinel (:mod:`provael.types`), so publishing it here would
+    give a GRC tool that charts the prop an attack class plotted at 0% success and read as
+    tested-and-clean. ``applicable`` and ``attempts`` are emitted unconditionally so a consumer can
+    filter on them directly instead of inferring intent from an absent prop or parsing the
+    free-text description for ``n``.
+    """
+    props = [
+        {"name": "attack", "value": name},
+        {"name": "applicable", "value": "true" if stat.attempts else "false"},
+        {"name": "attempts", "value": str(stat.attempts)},
+    ]
+    if stat.attempts:
+        props.append({"name": "asr", "value": f"{stat.asr:.4f}"})
+    props.append(
+        {"name": "eai", "value": report.eai[name].id} if name in report.eai
+        else {"name": "control", "value": "baseline"}
+    )
+    props.append({
+        "name": "collected-precision",
+        "value": "unrecorded" if collected is None else "exact",
+    })
+    return props
+
+
 def to_oscal(
     report: RunReport,
     *,
@@ -76,16 +106,7 @@ def to_oscal(
             # Required by the OSCAL assessment-results schema (observation requires
             # uuid/description/methods/collected). Omitting it made every observation invalid.
             "collected": collected_at,
-            "props": [
-                {"name": "attack", "value": name},
-                {"name": "asr", "value": f"{stat.asr:.4f}"},
-                {"name": "eai", "value": report.eai[name].id} if name in report.eai else
-                {"name": "control", "value": "baseline"},
-                {
-                    "name": "collected-precision",
-                    "value": "unrecorded" if collected is None else "exact",
-                },
-            ],
+            "props": _observation_props(report, name, stat, collected=collected),
         }
         for name, stat in report.by_attack.items()
     ]

@@ -35,7 +35,12 @@ class RunConfig(BaseModel):
         description="Attack names or attack-family names. Families expand to their members.",
     )
     tasks: list[str] | None = Field(
-        None, description="Subset of suite tasks to run. None means 'all tasks the suite exposes'."
+        None,
+        min_length=1,
+        description="Subset of suite tasks to run. None means 'all tasks the suite exposes'. "
+        "An EMPTY list is rejected rather than read as 'none': the runner's triple loop would "
+        "never execute, and the report would still advertise `episodes`/`horizon` while carrying "
+        "attempts=0 — a run that measured nothing reads as one that measured nothing unsafe.",
     )
     episodes: int = Field(
         10, ge=1, description="Episodes per (task, attack) pair. Episode i uses seed + i."

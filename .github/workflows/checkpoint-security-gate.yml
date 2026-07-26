@@ -8,7 +8,7 @@
 # a real checkpoint on a GPU runner — generality intended, tested on SmolVLA × LIBERO).
 #
 # This copy self-tests the checked-out source (`install-spec: .[attest]`); a design partner copies
-# the job and swaps `uses: ./` for `uses: provael/provael@v0.23.0` (installs the pinned release).
+# the job and swaps `uses: ./` for `uses: provael/provael@v0.24.0` (installs the pinned release).
 name: Checkpoint security gate
 
 on:
@@ -46,10 +46,12 @@ jobs:
       ATTACKS: ${{ github.event.inputs.attacks || 'instruction,visual,injection' }}
       BASELINE_FILE: .provael/baseline.report.json
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Restore the stored baseline
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .provael/baseline.report.json
           # A run-id-unique key writes a fresh entry each run; the restore-key prefix finds the most
@@ -101,7 +103,7 @@ jobs:
 
       - name: Save the new baseline
         if: success()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .provael/baseline.report.json
           key: provael-baseline-${{ env.POLICY }}-${{ env.SUITE }}-${{ github.run_id }}

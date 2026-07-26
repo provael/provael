@@ -90,6 +90,7 @@ from provael.policies.registry import (
     available_policies,
     policy_extra,
     policy_is_ready,
+    policy_scaffolding_note,
 )
 from provael.recipes import RECIPES, available_recipes, load_recipe
 from provael.regression import (
@@ -323,10 +324,17 @@ def list_policies() -> None:
     table.add_column("ready here", justify="center")
     table.add_column("notes")
     for name in available_policies():
-        ready = policy_is_ready(name)
-        mark = "[green]yes[/green]" if ready else "[yellow]no[/yellow]"
         extra = policy_extra(name)
         note = escape(f"requires `provael[{extra}]` (GPU)") if extra else "CPU, no deps"
+        # An importable dependency is not a run. A scaffolding backend must never render "yes"
+        # here: for `groot` the advertised extra does not even provision it, so the import check
+        # would be answering for a capability the install cannot deliver.
+        scaffolding = policy_scaffolding_note(name)
+        if scaffolding is not None:
+            mark = "[yellow]no[/yellow]"
+            note = f"{note} — {escape(scaffolding)}"
+        else:
+            mark = "[green]yes[/green]" if policy_is_ready(name) else "[yellow]no[/yellow]"
         table.add_row(name, mark, note)
     _out.print(table)
 
@@ -471,13 +479,25 @@ def attack(
         source = ctx.get_parameter_source(name)
         return source is not None and source.name == "COMMANDLINE"
 
+    # `--seeds` and `--episodes` write the same config key, so passing both resolves by source
+    # order and the reported `n` is not the one the caller asked for. Aliases must be exclusive.
+    if _explicit("episodes") and _explicit("seeds"):
+        _fail("--seeds and --episodes are aliases for the same value; pass only one")
+        return
+
     overrides: dict[str, object] = {}
     if _explicit("policy"):
         overrides["policy"] = policy
     if _explicit("suite"):
         overrides["suite"] = suite
     if _explicit("attacks"):
-        overrides["attacks"] = _split_csv(attacks) or ["instruction"]
+        # An explicit `--attacks ""` (an unset CI variable) must not fall back to a default family:
+        # the run would be an EAI01-only sweep labelled as whatever the caller meant to configure.
+        selected = _split_csv(attacks)
+        if selected is None:
+            _fail("--attacks must name at least one attack or attack family")
+            return
+        overrides["attacks"] = selected
     if _explicit("tasks"):
         overrides["tasks"] = _split_csv(tasks)
     if _explicit("episodes"):
@@ -1315,12 +1335,23 @@ def attest(
         pub_path.write_bytes(pub_pem)
 
     render_summary(report, _out)
-    lo, hi = wilson_ci(report.successes, report.attempts) if report.attempts else (0.0, 0.0)
+    # The signed payload's evidence is the ADVERSARIAL headline (`compliance._evidence` reads
+    # `adversarial_headline`), so this line must read the same fields. Printing the all-episode
+    # rate made the console block and the bundle it had just written disagree by the width of the
+    # benign control — and the console figure is the one that gets pasted into tickets.
+    rate, succ, att = report.adversarial_headline()
     fpr = "n/a" if report.benign_fpr is None else f"{100.0 * report.benign_fpr:.1f}%"
+    if att == 0:
+        evidence = "adversarial ASR N/A (0 adversarial episodes)"
+    else:
+        lo, hi = wilson_ci(succ, att)
+        evidence = (
+            f"adversarial ASR {100.0 * rate:.1f}% ({succ}/{att}) "
+            f"[{100.0 * lo:.0f}-{100.0 * hi:.0f}%]"
+        )
     _out.print("\n[bold]Attestation[/bold]")
     _out.print(f"  subject   : {report.policy} x {report.suite}")
-    _out.print(f"  evidence  : ASR {100.0 * report.asr:.1f}% "
-               f"[{100.0 * lo:.0f}-{100.0 * hi:.0f}%], benign FPR {fpr}")
+    _out.print(f"  evidence  : {evidence}, benign FPR {fpr}")
     _out.print(f"  issued_at : {issued_at}   commit: {stamp}")
     if bundle.signed:
         _out.print(f"  signature : ed25519  keyid {bundle.signatures[0].keyid}")

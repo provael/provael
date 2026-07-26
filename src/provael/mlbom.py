@@ -18,7 +18,8 @@ import json
 from pathlib import Path
 
 from provael.calibration import wilson_ci
-from provael.types import MEASURED_REAL_TRANSFER, STUB_VALIDATED_SCAFFOLDING, RunReport
+from provael.evidence import transfer_status_of
+from provael.types import RunReport
 
 #: Filename written into a run's output directory.
 ML_BOM_JSON = "report.mlbom.json"
@@ -51,11 +52,11 @@ def to_ml_bom(report: RunReport) -> dict[str, object]:
     # adversarial numerator/denominator, or the published CI can exclude the published rate.
     adv_rate, adv_successes, adv_attempts = report.adversarial_headline()
     lo, hi = wilson_ci(adv_successes, adv_attempts) if adv_attempts else (0.0, 0.0)
-    transfer_status = (
-        MEASURED_REAL_TRANSFER
-        if report.policy != "stub" and report.suite != "stub"
-        else STUB_VALIDATED_SCAFFOLDING
-    )
+    # One source of truth for the tier: `transfer_status_of` reads the run's RECORDED evidence
+    # state. Re-deriving `policy != "stub" and suite != "stub"` here awarded measured-real-transfer
+    # to any non-stub name — including a real policy on a numpy fixture suite, which earns only
+    # adapter-smoke — so this exporter could disagree with the OSCAL/attestation view of one run.
+    transfer_status = transfer_status_of(report)
     metrics: list[dict[str, object]] = []
     if adv_attempts:
         metrics.append({

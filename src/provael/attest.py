@@ -11,8 +11,18 @@ Two layers, so the free core keeps working and nothing is over-claimed:
 
 * **Digest layer (always on, standard-library only).** The envelope carries the SHA-256 of the
   canonical statement bytes, and the statement's ``subject`` carries the SHA-256 of the canonical
-  ``report.json``. ``attest --verify`` recomputes both offline. Any change to the evidence breaks
-  the digest. This proves *integrity*, not identity, and the note on the bundle says exactly that.
+  ``report.json``. ``attest --verify`` recomputes both offline. This proves *integrity*, not
+  identity, and the note on the bundle says exactly that.
+
+  **Scope of the subject digest — read this before relying on it.** It binds the report's *model
+  projection* (``json.loads(report.model_dump_json())``), not the published file's bytes.
+  :class:`~provael.types.RunReport` sets ``extra="forbid"``, so a key appended to a signed
+  ``report.json`` is now rejected when the file is loaded rather than silently dropped before
+  hashing. One rewrite still reproduces the digest: DELETING a field whose stored value equals its
+  declared default (e.g. ``"stochastic": false``), because loading restores the default. Binding
+  the exact bytes would require the raw file to reach this module — callers hand it an already
+  parsed ``RunReport`` — so treat the subject digest as binding the measured evidence, not a
+  byte-for-byte file identity.
 * **Signature layer (opt-in, needs the ``attest`` extra).** With ``pip install 'provael[attest]'``
   the envelope is signed with Ed25519 over the DSSE pre-authentication encoding and verifies
   offline against the bundled public key. Ed25519 is deterministic, so a fixed
@@ -374,7 +384,11 @@ def _within_window(now: str | None, not_before: str | None, not_after: str | Non
 
 
 def _report_digest(report: RunReport | dict[str, Any]) -> str:
-    """The canonical report.json digest — what :func:`build_statement` binds as the subject."""
+    """The canonical report.json digest — what :func:`build_statement` binds as the subject.
+
+    Hashes the model projection, not the file's bytes; see the module docstring for exactly which
+    edits to a published ``report.json`` this does and does not detect.
+    """
     obj = json.loads(report.model_dump_json()) if isinstance(report, RunReport) else report
     return _sha256_hex(_canonical(obj))
 

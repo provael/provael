@@ -50,7 +50,14 @@ provael = "provael.cli:app"
 # CI never pulls a GPU/ML stack. SmolVLA needs lerobot's own [smolvla] extra
 # (transformers) — verified by introspection: base lerobot raises
 # "No module named 'transformers'" on importing SmolVLAPolicy. The LIBERO simulator
-# additionally needs lerobot[libero] (Part 2). Pin is the latest as of 2026-06-03.
+# additionally needs lerobot[libero] (Part 2).
+#
+# The 0.5.1 pin is held deliberately, not merely stale: lerobot_adapter.py's per-step rollout was
+# read off lerobot's own evaluator for exactly this version ("read, not guessed"), and 0.6.0 moved
+# import paths, split the dataset/training deps into new extras and raised the torch floor. Bumping
+# it therefore requires re-reading those call signatures and re-running the PROVAEL_INTEGRATION=1
+# lane on a GPU box — not a version-string edit. Note lerobot's main branch self-reports 0.6.1, but
+# 0.6.0 is the newest release on PyPI; pin only against a published release.
 [project.optional-dependencies]
 # smolvla -> the policy (transformers); libero -> the simulator (Part 2 above). Both ride this one
 # GPU extra so a single `pip install 'provael[lerobot]'` gives the full real SmolVLA x LIBERO path.
@@ -69,7 +76,11 @@ attest = ["cryptography>=42"]
 # The reference hosted attestation server (`provael serve`). Open-core: the server code is
 # Apache-2.0 and self-hostable; the operated, project-key-signed instance is the paid tier. Kept OUT
 # of the default install so the free CLI/attacks/ASR/SARIF core stays lean and CPU-only.
-hosted = ["fastapi>=0.110", "uvicorn>=0.27"]
+# cryptography is required, not optional: hosted/server.py exposes `?sign=true`, which calls
+# attest.to_bundle(sign=True) and therefore needs Ed25519. Without it here, `pip install
+# 'provael[hosted]'` yields a server whose signing endpoint fails at request time rather than at
+# install time. Keep the bound in step with the `attest` extra above.
+hosted = ["fastapi>=0.110", "uvicorn>=0.27", "cryptography>=42"]
 
 [dependency-groups]
 dev = [

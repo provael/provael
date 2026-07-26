@@ -1,4 +1,8 @@
 # Build the MkDocs site; deploy to GitHub Pages only on a manual dispatch (deploy is gated).
+#
+# `build` runs on untrusted PR code — `mkdocs build` executes the `docs` dependency group and any
+# plugin hooks the PR adds — so it holds a read-only token and drops the checkout credentials.
+# Write scope lives only in `deploy`, which no pull_request event can reach.
 name: Docs
 
 on:
@@ -13,20 +17,36 @@ on:
         default: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
           python-version: "3.12"
       - name: Build (strict)
         run: uv run --group docs mkdocs build --strict
-      - name: Deploy to gh-pages (manual only)
-        if: github.event_name == 'workflow_dispatch' && inputs.deploy
+
+  deploy:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # gh-deploy pushes to gh-pages, so this checkout keeps its credentials; full history is
+      # needed for mkdocs to commit onto the existing branch rather than orphan it.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          python-version: "3.12"
+      - name: Deploy to gh-pages
         run: uv run --group docs mkdocs gh-deploy --force

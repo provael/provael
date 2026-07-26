@@ -1,8 +1,10 @@
 version: 2
 updates:
-  # Keep GitHub Actions pinned and current (Dependabot rewrites tags to the latest, and can be
-  # configured to pin to commit SHAs). This is the mechanism that keeps third-party actions from
-  # silently drifting to a compromised release.
+  # Third-party actions are pinned to full commit SHAs with a trailing `# vX.Y.Z` comment, so a
+  # moved tag cannot silently swap the code we run; Dependabot rewrites the SHA in place and
+  # updates that comment, so the pin stays current without becoming mutable. A bare `@vN` tag is
+  # re-pointed by the action author on every release and would defeat this — keep new refs pinned.
+  # OpenSSF Scorecard's Pinned-Dependencies check scores exactly this.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

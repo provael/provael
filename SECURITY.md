@@ -8,10 +8,13 @@ sim-only by default, no physical robots, no real-world-harm payloads — see
 
 ## Supported versions
 
+Deliberately version-free: a pinned version line goes stale between releases and silently
+tells a reporter their finding is out of scope.
+
 | Version | Supported |
 | --- | --- |
-| latest `0.16.x` on [PyPI](https://pypi.org/project/provael/) | ✅ |
-| `< 0.16.0` | ❌ |
+| the latest release on [PyPI](https://pypi.org/project/provael/) | ✅ |
+| any earlier release | ❌ (please reproduce on the latest) |
 
 Fixes land in the latest release — please reproduce on the current version before reporting.
 

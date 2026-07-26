@@ -9,8 +9,10 @@ authors:
   - family-names: Jain
     given-names: Sattyam
     website: "https://github.com/sattyamjjain"
-version: "0.3.0"
-date-released: "2026-06-27"
+# Tracks the newest *released* tag, not the working tree — a citation must name a version a
+# reader can actually install. Bump both fields in the release commit.
+version: "0.24.0"
+date-released: "2026-07-23"
 license: Apache-2.0
 repository-code: "https://github.com/provael/provael"
 url: "https://github.com/provael/provael"

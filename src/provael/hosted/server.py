@@ -1,10 +1,18 @@
-"""Reference hosted attestation server (the ``[hosted]`` extra).
+"""Reference hosted attestation server (the ``[hosted]`` extra) — EXPERIMENTAL, off by default.
 
-A small, self-hostable FastAPI app that turns a posted ``report.json`` into a signed attestation
-bundle and (for entitled callers) an insurer / Notified-Body-ready compliance report. The **code is
-open and Apache-2.0**; running it yourself yields **self-signed** attestations. The paid tier is the
-**operated** instance: it holds the authoritative **project signing key** and grants the
-``/insurer-report`` entitlement — see :mod:`provael.hosted`.
+A small, self-hostable FastAPI app that turns a posted ``report.json`` into an attestation bundle
+(``POST /attest``) and, behind a local feature flag, a structured assurance-report **draft**
+(``POST /assurance-report`` — an evidence export for a qualified assessor, never an insurer or
+Notified-Body opinion). The **code is open and Apache-2.0**.
+
+**There is no paid tier and no project signing authority here.** Every signature this server
+produces is the **operator's own key** (``PROVAEL_SIGNING_KEY``), untrusted until a verifier adds
+that key to its own trust store — never because Provael served it (see :mod:`provael.attest`).
+``PROVAEL_HOSTED_LICENSE`` is a local feature flag on one machine, not authentication and not a
+credential: it establishes no caller identity, ownership, or authorization. The app refuses to
+start unless ``PROVAEL_ENABLE_EXPERIMENTAL_HOSTED`` is set, because it is a reference surface, not
+a production signing service — see :mod:`provael.hosted` for the boundary and what a real operated
+service would additionally require.
 
 ``fastapi`` is imported lazily inside :func:`create_app`, so this module imports fine on the CPU
 core; calling :func:`create_app` without the extra raises a clear, actionable error rather than an
