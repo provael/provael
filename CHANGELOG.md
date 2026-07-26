@@ -6,6 +6,30 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Security
+
+- **The dependency-audit gate in CI never audited the project.** The step ran `uv sync --locked`
+  and then a bare `uvx pip-audit`, but `uvx` builds an isolated environment for pip-audit itself,
+  so the audit inspected pip-audit's own dependencies (`boolean.py`, `CacheControl`, `certifi`, …)
+  and reported a clean tree on every run since the step was introduced. It now audits an exported
+  requirements file, with a guard that fails the job if the export contains no runtime dependencies
+  — a vacuous pass is treated as a failure, not a success.
+- **`pillow` floor raised `>=10` → `>=12.3`, and the lockfile moved 12.2.0 → 12.3.0.** The gate
+  above was masking 13 open advisories in the locked `pillow`, a *direct* runtime dependency.
+  Provael decodes and perturbs untrusted camera frames as its core function, so the image decoder
+  is squarely on the attack surface and the permissive `>=10` floor admitted a range with
+  RCE-class advisories. Every supported configuration already requires Python 3.12+, and all five
+  extras re-resolve on 12.3.0. `gitpython` (3.1.50 → 3.1.57, 5 advisories) and `setuptools`
+  (→ 83.0.0) were refreshed in the same lock.
+
+  The published 0.25.0 wheel is **not** affected: `pyproject.toml` declared `pillow>=10`, so
+  `pip install provael` resolved the newest `pillow` available. The vulnerable pin was reachable
+  only via `uv sync --locked` — developers, CI, and the container build.
+
+- GPU extras (`torch`, `transformers`, `diffusers`, `aiohttp`) are now audited in a second,
+  non-gating step. Those advisories frequently have no fixed version, so they are reported rather
+  than enforced; they are tracked with the GPU-dependency work.
+
 ## [0.25.0] — 2026-07-26
 
 First release since 0.22.0, and it carries three releases' worth of work: the continuous
