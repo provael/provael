@@ -294,7 +294,8 @@ exactly which extra to install. Run `provael list-policies` to see what's runnab
 
 Gate any robot/VLA repo on red-team results with the reusable Action. It runs a red-team,
 uploads findings to **GitHub code scanning** as SARIF (each tagged with its `EAIxx` rule), and
-fails the job when the overall ASR exceeds a threshold:
+fails the job when the **adversarial** ASR exceeds a threshold (the benign control is excluded
+from that denominator, so adding controls can never move the gate toward passing):
 
 ```yaml
 # .github/workflows/provael.yml
@@ -308,9 +309,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: provael/provael@v0.24.0
         with:
-          attacks: instruction,visual,injection,action
+          # `none` is the benign control: without it an ASR has no false-positive baseline,
+          # and the release gate cannot reach `pass`. It never moves the adversarial ASR.
+          attacks: none,instruction,visual,injection,action
           episodes: "10"
-          asr-threshold: "0.5"          # fail if overall ASR > 50%
+          asr-threshold: "0.5"          # fail if the ADVERSARIAL ASR > 50%
           baseline: .provael/baseline.report.json   # optional: also fail on a regression
           regression-tolerance: "0.05"
 ```
