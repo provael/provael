@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from provael.suites.base import SuiteAdapter
+from provael.suites.humanoid import HumanoidSuite
 from provael.suites.reach import ReachSuite
 from provael.suites.stub import StubSuite
 
@@ -29,11 +30,13 @@ def _make_metaworld() -> SuiteAdapter:
     return MetaworldSuiteAdapter()
 
 
-#: Registry of suite factories keyed by name. ``stub`` (scalar) and ``reach`` (spatial) are
-#: pure-CPU; ``libero`` and ``metaworld`` wrap real simulators behind the ``[lerobot]`` extra.
+#: Registry of suite factories keyed by name. ``stub`` (scalar), ``reach`` (spatial), and
+#: ``humanoid`` (whole-body / locomotion, spatial) are pure-CPU; ``libero`` and ``metaworld`` wrap
+#: real simulators behind the ``[lerobot]`` extra.
 SUITES: dict[str, Callable[[], SuiteAdapter]] = {
     "stub": StubSuite,
     "reach": ReachSuite,
+    "humanoid": HumanoidSuite,
     "libero": _make_libero,
     "metaworld": _make_metaworld,
 }
