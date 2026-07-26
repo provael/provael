@@ -165,7 +165,7 @@ runs:
         cat provael-run/gate-outputs.txt
 
     - name: Upload SARIF to code scanning
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: ${{ inputs.sarif-output }}
         category: provael
@@ -224,7 +224,7 @@ runs:
 
     - name: Upload regression SARIF to code scanning
       if: inputs.baseline != '' && hashFiles('provael-regression.sarif') != ''
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: "provael-regression.sarif"
         category: provael-regression
