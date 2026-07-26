@@ -174,11 +174,14 @@ def test_registry_includes_new_families() -> None:
         "signal_spoof",
         "benign_urgency_override",
         "euphemistic_reroute",
+        "balance_spoof",
+        "whole_body_hijack",
+        "stride_freeze",
     }
     assert available_families() == [
         "action", "action_space", "authorization", "backdoor", "baseline", "confidentiality",
-        "injection", "instruction", "misalignment", "optimized", "optimized_instruction",
-        "optimized_patch", "sensor_spoof", "visual",
+        "humanoid", "injection", "instruction", "misalignment", "optimized",
+        "optimized_instruction", "optimized_patch", "sensor_spoof", "visual",
     ]
     assert [a.name for a in resolve_attacks(["baseline"])] == ["none"]
     assert [a.name for a in resolve_attacks(["visual"])] == ["patch", "decoy_object"]
