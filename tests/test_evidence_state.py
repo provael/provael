@@ -80,3 +80,29 @@ def test_evidence_state_surfaces_in_report_and_compliance_markdown() -> None:
     assert "evidence state" in to_markdown(report)
     assert "stub" in to_markdown(report)
     assert "evidence state" in to_compliance_markdown(report)
+
+
+def test_fixture_suites_cannot_earn_a_real_episode_rung() -> None:
+    """`reach` and `humanoid` are pure-numpy fixtures, not simulators.
+
+    They compute state arithmetically from the action vector — no physics, no renderer, nothing
+    embodied — so no policy driving them produces a real embodied episode. Classifying by
+    `suite != "stub"` promoted them to `real-episode`, and therefore to the
+    `measured-real-transfer` transfer status: exactly the stub-as-real claim the ladder exists to
+    prevent. Real simulators must keep earning `real-episode`.
+    """
+    from provael.suites import FIXTURE_SUITES
+
+    assert frozenset({"stub", "reach", "humanoid"}) == FIXTURE_SUITES
+
+    for fixture in sorted(FIXTURE_SUITES):
+        assert classify_run("smolvla", fixture) is EvidenceState.ADAPTER_SMOKE
+        assert not is_at_least(classify_run("smolvla", fixture), EvidenceState.REAL_EPISODE)
+
+    # A real policy on a real simulator is unchanged — the published SmolVLA x LIBERO result keeps
+    # its rung.
+    for simulator in ("libero", "metaworld"):
+        assert classify_run("smolvla", simulator) is EvidenceState.REAL_EPISODE
+
+    # An unrecognised suite name fails closed rather than being assumed to be a simulator.
+    assert classify_run("smolvla", "not-a-registered-suite") is EvidenceState.ADAPTER_SMOKE

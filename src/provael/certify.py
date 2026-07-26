@@ -44,7 +44,6 @@ from provael.hosted.report import DISCLAIMERS
 from provael.mlbom import ML_BOM_JSON
 from provael.oscal import to_oscal
 from provael.scoring.asr import (
-    attack_success_rate,
     benjamini_hochberg,
     binom_test_greater,
     by_family,
@@ -253,15 +252,35 @@ def _family_evidence_rows(report: RunReport) -> list[dict[str, Any]]:
 
 
 def _headline(report: RunReport) -> dict[str, Any]:
-    """Overall adversarial evidence: ASR (recomputed from raw episodes) with both intervals."""
-    lo, hi = wilson_ci(report.successes, report.attempts) if report.attempts else (0.0, 0.0)
-    alo, ahi = anytime_ci(report.successes, report.attempts) if report.attempts else (0.0, 1.0)
+    """Overall adversarial evidence: the ADVERSARIAL ASR with both intervals.
+
+    A conformity-assessment dossier must carry the adversarial rate over the adversarial
+    denominator. ``report.asr`` (and :func:`provael.scoring.asr.attack_success_rate`, which is the
+    all-episode rate over every applicable episode) both fold the benign control into the
+    denominator, so on a run carrying one they understate the attack rate — and the interval
+    computed from those counts can exclude the true ASR entirely. The all-episode figure is kept
+    alongside under its own key so an assessor can see both without conflating them.
+    """
+    adv_rate, adv_successes, adv_attempts = report.adversarial_headline()
+    lo, hi = wilson_ci(adv_successes, adv_attempts) if adv_attempts else (0.0, 0.0)
+    alo, ahi = anytime_ci(adv_successes, adv_attempts) if adv_attempts else (0.0, 1.0)
+    all_lo, all_hi = wilson_ci(report.successes, report.attempts) if report.attempts else (0.0, 0.0)
     return {
-        "asr": attack_success_rate(report.results) if report.results else report.asr,
-        "attempts": report.attempts,
-        "successes": report.successes,
+        "asr": adv_rate,
+        "attempts": adv_attempts,
+        "successes": adv_successes,
         "wilson_ci95": [lo, hi],
         "anytime_ci": [alo, ahi],
+        "all_episode_observed_unsafe_rate": report.asr,
+        "all_episode_attempts": report.attempts,
+        "all_episode_successes": report.successes,
+        "all_episode_wilson_ci95": [all_lo, all_hi],
+        "denominator_note": (
+            "`asr` is measured over ADVERSARIAL episodes only (the benign control is excluded by "
+            "semantic role, so adding benign episodes never moves it). "
+            "`all_episode_observed_unsafe_rate` includes the benign control in its denominator and "
+            "is NOT the attack-success rate."
+        ),
         "benign_fpr": report.benign_fpr,
         "matched_benign_fpr": report.matched_benign_fpr,
         "succ_but_unsafe": report.succ_but_unsafe,
@@ -464,12 +483,20 @@ def to_dossier_json(dossier: dict[str, Any]) -> str:
     return json.dumps(dossier, indent=2, sort_keys=True)
 
 
-def to_dossier_oscal_json(report: RunReport, *, profile: CertifyProfile) -> str:
-    """The dossier's OSCAL twin — assessment-results bound to the crosswalk clauses under review."""
+def to_dossier_oscal_json(
+    report: RunReport, *, profile: CertifyProfile, issued_at: str | None = None
+) -> str:
+    """The dossier's OSCAL twin — assessment-results bound to the crosswalk clauses under review.
+
+    ``issued_at`` becomes each observation's OSCAL ``collected`` timestamp. It is caller-supplied
+    (never wall-clock) so the dossier stays byte-reproducible; omitting it falls back to
+    :data:`~provael.oscal.UNRECORDED_COLLECTED`, which is flagged in the emitted props.
+    """
     doc = to_oscal(
         report,
         profile_href=_PROFILE_HREF[profile.value],
         reviewed_control_ids=[_slug(key) for key in MACHINERY_CROSSWALK_KEYS],
+        collected=issued_at,
     )
     return json.dumps(doc, indent=2, sort_keys=True)
 
@@ -696,7 +723,9 @@ def write_dossier(
     json_path = out_dir / CERTIFY_JSON
     json_path.write_text(to_dossier_json(dossier) + "\n", encoding="utf-8")
     oscal_path = out_dir / CERTIFY_OSCAL_JSON
-    oscal_path.write_text(to_dossier_oscal_json(report, profile=profile) + "\n", encoding="utf-8")
+    oscal_path.write_text(
+        to_dossier_oscal_json(report, profile=profile, issued_at=issued_at) + "\n", encoding="utf-8"
+    )
     html_path = out_dir / CERTIFY_HTML
     html_path.write_text(to_dossier_html(dossier), encoding="utf-8")
     return {"json": json_path, "oscal": oscal_path, "html": html_path}

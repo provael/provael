@@ -175,6 +175,10 @@ class OpenVLAAdapter(PolicyAdapter):
             low_cpu_mem_usage=True,
         ).to(self.device)
         self._model.eval()
+        # The report must state the device/precision that actually ran, not the request. This load
+        # is hard-coded to bfloat16 above, so record that rather than any requested precision.
+        self.resolved_device = str(self.device)
+        self.resolved_precision = "bf16"
         self._loaded = True
 
     def _rgb(self, observation: Observation) -> npt.NDArray[Any]:

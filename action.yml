@@ -68,8 +68,14 @@ inputs:
 
 outputs:
   asr:
-    description: "Overall Attack Success Rate (0..1) measured by the run."
+    description: "ADVERSARIAL Attack Success Rate (0..1) — the benign control is excluded from the denominator, so adding it never moves this number. Empty when the run measured no adversarial episode. This is the value the threshold gates."
     value: ${{ steps.redteam.outputs.asr }}
+  adversarial-attempts:
+    description: "Applicable adversarial episodes behind `asr` (0 means nothing was measured)."
+    value: ${{ steps.redteam.outputs.adversarial-attempts }}
+  all-episode-unsafe-rate:
+    description: "All-episode observed-unsafe rate INCLUDING the benign control in its denominator. Diagnostic only — NOT the attack-success rate and never gated."
+    value: ${{ steps.redteam.outputs.all-episode-unsafe-rate }}
   sarif-file:
     description: "Path of the SARIF file that was written."
     value: ${{ inputs.sarif-output }}
@@ -100,13 +106,18 @@ runs:
       # the source (e.g. '.[attest]') so the checked-out action can be smoke-tested against local
       # source without a published release.
       env:
-        PROVAEL_VERSION: ">=0.23.0,<0.24.0"
+        PROVAEL_VERSION: ">=0.24.0,<0.25.0"
         INSTALL_SPEC: ${{ inputs.install-spec }}
       run: |
+        set -euo pipefail
         if [ -n "$INSTALL_SPEC" ]; then
           python -m pip install --upgrade "$INSTALL_SPEC"
         else
-          python -m pip install --upgrade "provael${PROVAEL_VERSION}[attest]"
+          # PEP 508 puts the extras bracket on the NAME, before the version specifier:
+          # `provael[attest]>=0.24.0,<0.25.0`. The reverse (`provael>=0.24.0,<0.25.0[attest]`)
+          # is not a valid requirement and pip rejects it outright — and because the smoke test
+          # always passes `install-spec`, this default branch is the one users hit.
+          python -m pip install --upgrade "provael[attest]${PROVAEL_VERSION}"
         fi
 
     - name: Run Provael red-team
@@ -129,9 +140,29 @@ runs:
           --seed "$PROVAEL_SEED" \
           --sarif-out "$PROVAEL_SARIF" \
           --out provael-run
-        asr=$(python -c "import json; print(json.load(open('provael-run/report.json'))['asr'])")
-        echo "asr=$asr" >> "$GITHUB_OUTPUT"
-        echo "Overall ASR: $asr"
+        # The gated number is the ADVERSARIAL ASR. `report.json['asr']` is the all-episode
+        # observed-unsafe rate: it folds the benign control into its denominator, so adding the
+        # `none` control (which provael itself tells users to add) pushes it BELOW the true attack
+        # rate and could turn a failing gate green. `adversarial_attempts == 0` means nothing was
+        # measured, which is not a pass either — emit an empty ASR so the gate step fails closed.
+        python - <<'PY' > provael-run/gate-outputs.txt
+        import json
+        r = json.load(open("provael-run/report.json"))
+        att, suc = r.get("adversarial_attempts"), r.get("adversarial_successes")
+        if att is None or suc is None:            # legacy report: recompute from raw episodes
+            adv = [x for x in r.get("results", [])
+                   if x.get("applicable", True) and x.get("family") != "baseline"]
+            att, suc = len(adv), sum(1 for x in adv if x.get("success"))
+        rate = r.get("adversarial_asr")
+        if rate is None and att:
+            rate = suc / att
+        print(f"asr={'' if not att else rate}")
+        print(f"adversarial-attempts={att}")
+        print(f"all-episode-unsafe-rate={r['asr']}")
+        PY
+        cat provael-run/gate-outputs.txt >> "$GITHUB_OUTPUT"
+        echo "--- Provael run ---"
+        cat provael-run/gate-outputs.txt
 
     - name: Upload SARIF to code scanning
       uses: github/codeql-action/upload-sarif@v3
@@ -220,8 +251,18 @@ runs:
         python - <<'PY'
         import os, sys
 
-        asr = float(os.environ["PROVAEL_ASR"])
+        raw = os.environ["PROVAEL_ASR"].strip()
         thr = float(os.environ["PROVAEL_THRESHOLD"])
+        if not raw:
+            # No adversarial episode was measured (all-benign, or every attack N/A for this
+            # suite). There is nothing to gate, and "nothing measured" must not read as a pass.
+            print(
+                "::error::Provael measured no adversarial episode, so the "
+                f"{thr:.1%} ASR threshold has no evidence to evaluate. Check that `attacks` "
+                "names at least one adversarial attack applicable to this suite."
+            )
+            sys.exit(1)
+        asr = float(raw)
         regressed = os.environ.get("PROVAEL_REGRESSED", "") == "true"
         fail_on_reg = os.environ.get("PROVAEL_FAIL_ON_REGRESSION", "true").lower() == "true"
 

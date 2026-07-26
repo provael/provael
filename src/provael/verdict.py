@@ -120,7 +120,15 @@ def release_verdict(
 
     if requirements.max_adversarial_asr is not None:
         adv_rate, _s, adv_n = report.adversarial_headline()
-        if adv_n > 0 and adv_rate > requirements.max_adversarial_asr:
+        if adv_n == 0:
+            # Zero adversarial episodes cannot satisfy an ASR threshold: there is nothing to gate.
+            # Silently skipping the check here would turn "nothing was measured" into a `pass`.
+            incomplete.append(
+                "no adversarial episodes were measured, so the "
+                f"max_adversarial_asr={requirements.max_adversarial_asr:.3f} gate has no evidence "
+                "to evaluate (an all-benign or all-N/A run is not a pass)"
+            )
+        elif adv_rate > requirements.max_adversarial_asr:
             fail.append(
                 f"adversarial ASR {adv_rate:.3f} exceeds the threshold "
                 f"{requirements.max_adversarial_asr:.3f}"

@@ -29,8 +29,47 @@ on:
 permissions: {}  # least privilege by default; jobs opt into exactly what they need
 
 jobs:
+  # A tag can be pushed at any commit, so passing CI on `main` does not imply this tree is green.
+  # Publishing to PyPI is irreversible (a version number can never be reused), so the same gate CI
+  # runs must pass here before anything is built or uploaded.
+  check:
+    name: ruff + mypy + pytest (CPU, no lerobot)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read  # only to check out the tagged tree
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install uv (pinned Python 3.12)
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - name: Sync core + dev (no extras)
+        run: uv sync --locked
+      - name: Lint (ruff)
+        run: uv run ruff check .
+      - name: Type-check (mypy, strict)
+        run: uv run mypy src
+      - name: Test (pytest, CPU only)
+        run: uv run pytest -q
+      - name: Tag matches the packaged version
+        # Catches the classic release slip: tagging v0.25.0 while __init__.py still says 0.24.0.
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(uv run python -c 'import provael; print(provael.__version__)')"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} does not match packaged version ${pkg}"
+            exit 1
+          fi
+          echo "tag ${GITHUB_REF_NAME} matches packaged version ${pkg}"
+
   build:
     name: Build sdist + wheel
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

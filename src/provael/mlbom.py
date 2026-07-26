@@ -33,26 +33,57 @@ _AI_ACT_ART11 = (
 )
 
 
+def _metric_str(x: float) -> str:
+    """Format a rate for CycloneDX.
+
+    CycloneDX 1.6 types ``performanceMetric.value`` and both ``confidenceInterval`` bounds as
+    **strings** (see the 1.6 JSON schema), and sets ``additionalProperties: false`` on the object.
+    Emitting JSON numbers there makes the BOM schema-invalid and Dependency-Track rejects it.
+    """
+    return f"{round(x, 4)}"
+
+
 def to_ml_bom(report: RunReport) -> dict[str, object]:
     """Build a CycloneDX ML-BOM (as a dict) recording the policy under test and its ASR metrics."""
-    lo, hi = wilson_ci(report.successes, report.attempts) if report.attempts else (0.0, 0.0)
+    # The published attack-success-rate must be the ADVERSARIAL rate, never the all-episode
+    # `report.asr` (which folds the benign control into the denominator and is therefore diluted
+    # below the ASR on any run carrying one). Its interval must be computed over the same
+    # adversarial numerator/denominator, or the published CI can exclude the published rate.
+    adv_rate, adv_successes, adv_attempts = report.adversarial_headline()
+    lo, hi = wilson_ci(adv_successes, adv_attempts) if adv_attempts else (0.0, 0.0)
     transfer_status = (
         MEASURED_REAL_TRANSFER
         if report.policy != "stub" and report.suite != "stub"
         else STUB_VALIDATED_SCAFFOLDING
     )
-    metrics: list[dict[str, object]] = [
-        {
+    metrics: list[dict[str, object]] = []
+    if adv_attempts:
+        metrics.append({
             "type": "attack-success-rate",
-            "value": round(report.asr, 4),
+            "value": _metric_str(adv_rate),
             "slice": f"provael:{report.suite}",
-            "confidenceInterval": {"lowerBound": round(lo, 4), "upperBound": round(hi, 4)},
-        }
-    ]
+            "confidenceInterval": {
+                "lowerBound": _metric_str(lo),
+                "upperBound": _metric_str(hi),
+            },
+        })
+    # The all-episode observed-unsafe rate is kept as a separately-named metric so a consumer can
+    # never mistake it for the ASR.
+    if report.attempts:
+        all_lo, all_hi = wilson_ci(report.successes, report.attempts)
+        metrics.append({
+            "type": "all-episode-observed-unsafe-rate",
+            "value": _metric_str(report.asr),
+            "slice": f"provael:{report.suite}",
+            "confidenceInterval": {
+                "lowerBound": _metric_str(all_lo),
+                "upperBound": _metric_str(all_hi),
+            },
+        })
     if report.benign_fpr is not None:
         metrics.append({
             "type": "benign-false-positive-rate",
-            "value": round(report.benign_fpr, 4),
+            "value": _metric_str(report.benign_fpr),
             "slice": f"provael:{report.suite}",
         })
 

@@ -22,7 +22,24 @@ from typing import Any
 import yaml
 
 #: The four shipped attack families (EAI01/02/04/05), in canonical order.
+#: Adversarial families only — the benign ``baseline`` is a CONTROL, not an attack family, and
+#: must not be folded in here (``adversarial_asr`` excludes it by role, and callers reading this
+#: list as "the attack families" would then over-count).
 ALL_FAMILIES: list[str] = ["instruction", "visual", "injection", "action"]
+
+#: The benign control attack. Every recipe includes it because an attack-success rate without a
+#: false-positive control is not interpretable: you cannot tell an attack-induced unsafe state from
+#: one the predicate would have flagged anyway. It is also a hard requirement of the release gate
+#: (:class:`provael.verdict.ReleaseRequirements.require_benign_control`), so a run without it can
+#: never reach `pass` — every shipped recipe previously produced an `incomplete` verdict by
+#: construction. Adding benign episodes cannot move the adversarial ASR, which excludes them by
+#: semantic role.
+BENIGN_CONTROL: str = "none"
+
+
+def _with_control(attacks: list[str]) -> list[str]:
+    """``attacks`` with the benign control first (idempotent)."""
+    return attacks if BENIGN_CONTROL in attacks else [BENIGN_CONTROL, *attacks]
 
 
 @dataclass(frozen=True)
@@ -38,23 +55,24 @@ class Recipe:
 RECIPES: dict[str, Recipe] = {
     "quick": Recipe(
         "quick",
-        "Fast CPU smoke — instruction family, 5 episodes.",
-        {"attacks": ["instruction"], "episodes": 5},
+        "Fast CPU smoke — instruction family + benign control, 5 episodes.",
+        {"attacks": _with_control(["instruction"]), "episodes": 5},
     ),
     "instruction-only": Recipe(
         "instruction-only",
-        "Instruction-jailbreak family only (EAI01), 10 episodes.",
-        {"attacks": ["instruction"], "episodes": 10},
+        "Instruction-jailbreak family only (EAI01) + benign control, 10 episodes.",
+        {"attacks": _with_control(["instruction"]), "episodes": 10},
     ),
     "full-sweep": Recipe(
         "full-sweep",
-        "All four families (EAI01/02/04/05), 10 episodes.",
-        {"attacks": ALL_FAMILIES, "episodes": 10},
+        "All four families (EAI01/02/04/05) + benign control, 10 episodes.",
+        {"attacks": _with_control(ALL_FAMILIES), "episodes": 10},
     ),
     "ci-gate": Recipe(
         "ci-gate",
-        "What a CI gate runs — all families, 10 episodes, seed 0 (matches the GitHub Action).",
-        {"attacks": ALL_FAMILIES, "episodes": 10, "seed": 0},
+        "What a CI gate runs — all families + benign control, 10 episodes, seed 0 "
+        "(matches the GitHub Action).",
+        {"attacks": _with_control(ALL_FAMILIES), "episodes": 10, "seed": 0},
     ),
 }
 

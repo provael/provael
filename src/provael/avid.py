@@ -31,7 +31,12 @@ _NS = uuid.uuid5(uuid.NAMESPACE_URL, "https://avidml.org/provael")
 def to_avid(report: RunReport) -> dict[str, object]:
     """Build an AVID report record (as a dict) from a Provael run."""
     eai_ids = sorted({tag.id for tag in report.eai.values()})
-    lo, hi = wilson_ci(report.successes, report.attempts) if report.attempts else (0.0, 0.0)
+    # An AVID record is a vulnerability-database submission, so "Attack Success Rate" there must be
+    # the ADVERSARIAL rate over the adversarial denominator — not report.asr, which folds the benign
+    # control in and understates the attack rate (with an interval that can exclude the true ASR).
+    adv_rate, adv_s, adv_n = report.adversarial_headline()
+    lo, hi = wilson_ci(adv_s, adv_n) if adv_n else (0.0, 0.0)
+    all_lo, all_hi = wilson_ci(report.successes, report.attempts) if report.attempts else (0.0, 0.0)
     risk_lines = "; ".join(
         f"{eid} {CATALOG[eid].name}" for eid in eai_ids if eid in CATALOG
     )
@@ -60,14 +65,34 @@ def to_avid(report: RunReport) -> dict[str, object]:
                 "name": "Attack Success Rate",
                 "detection_method": {"type": "Simulation red-team (templated attacks)"},
                 "results": {
-                    "asr": round(report.asr, 4),
+                    # Adversarial episodes only; the benign control is excluded by semantic role.
+                    "asr": None if adv_n == 0 else round(adv_rate, 4),
+                    "successes": adv_s,
+                    "attempts": adv_n,
+                    "ci95": None if adv_n == 0 else [round(lo, 4), round(hi, 4)],
+                    "benign_fpr": report.benign_fpr,
+                    # An attack with no applicable episode has no rate: null, never a measured 0.0.
+                    "by_attack": {
+                        n: (None if s.attempts == 0 else round(s.asr, 4))
+                        for n, s in report.by_attack.items()
+                    },
+                },
+            },
+            {
+                # Kept as a separately-named metric so a database consumer cannot read the diluted
+                # figure as the attack-success rate.
+                "name": "All-episode observed-unsafe rate",
+                "detection_method": {"type": "Simulation red-team (benign control included)"},
+                "results": {
+                    "rate": None if report.attempts == 0 else round(report.asr, 4),
                     "successes": report.successes,
                     "attempts": report.attempts,
-                    "ci95": [round(lo, 4), round(hi, 4)],
-                    "benign_fpr": report.benign_fpr,
-                    "by_attack": {n: round(s.asr, 4) for n, s in report.by_attack.items()},
+                    "ci95": (
+                        None if report.attempts == 0 else [round(all_lo, 4), round(all_hi, 4)]
+                    ),
+                    "note": "Includes the benign control in the denominator; NOT the ASR.",
                 },
-            }
+            },
         ],
         "references": [
             {

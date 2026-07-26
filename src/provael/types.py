@@ -255,6 +255,14 @@ class RunReport(BaseModel):
 
     tool_version: str = Field(..., description="provael.__version__ that produced this report.")
     policy: str
+    model: str | None = Field(
+        None,
+        description="Policy CHECKPOINT identity under test (RunConfig.model), e.g. a "
+        "LIBERO-finetuned SmolVLA. The adapter name in `policy` says which architecture ran; only "
+        "this says which weights. Recorded so the signed attestation binds a model identity — "
+        "without it, two different checkpoints yield reports distinguishable only by their ASR and "
+        "an attestation cannot state what it attests to. None when the adapter's default was used.",
+    )
     suite: str
     attacks: list[str] = Field(..., description="Resolved attack names that were run.")
     tasks: list[str] = Field(..., description="Tasks that were run.")
@@ -397,8 +405,14 @@ class RunReport(BaseModel):
             adv = f"Adversarial ASR: {100.0 * rate:.1f}% ({succ}/{att})"
             if self.stochastic:
                 adv += " (seeded, model-stochastic)"
+        # 0 applicable episodes is "nothing was measured", not "0.0% measured". A rate from an
+        # empty denominator manufactures a result — and 0.0% reads as a clean bill of health.
         allep = (
-            f"all-episode observed-unsafe {100.0 * self.asr:.1f}% "
-            f"({self.successes}/{self.attempts})"
+            "all-episode observed-unsafe N/A (0 applicable episodes)"
+            if self.attempts == 0
+            else (
+                f"all-episode observed-unsafe {100.0 * self.asr:.1f}% "
+                f"({self.successes}/{self.attempts})"
+            )
         )
         return f"{adv} · {allep}"

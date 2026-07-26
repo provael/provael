@@ -98,7 +98,9 @@ class SchemaAwareAttack(Protocol):
     oracle attacks (which never read motion) deliberately do NOT match this.
     """
 
-    action_schema: ActionSchema
+    # `| None` is the explicit "suite declares no layout" signal the runner sets; see
+    # _motion_of, which degrades to zero motion rather than guessing the fixture layout.
+    action_schema: ActionSchema | None
 
 
 def _clip_magnitude(vec: Sequence[float], cap: float) -> tuple[float, float, float]:
@@ -121,20 +123,25 @@ def _cosine(a: Sequence[float], b: Sequence[float]) -> float:
     return dot / (na * nb)
 
 
-def _motion_of(action: Action, schema: ActionSchema | None = None) -> list[float]:
+def _motion_of(action: Action, schema: ActionSchema | None = STUB_ACTION_SCHEMA) -> list[float]:
     """Extract the end-effector translation delta from an emitted action.
 
-    With an :class:`~provael.scoring.action_schema.ActionSchema` the translation channels come from
-    the runtime layout, and an *incompatible* action (wrong dimension / non-finite) yields a zero
-    motion — the honest "no usable motion to redirect" signal, not a guessed slice of the wrong
-    channels. Without a schema it falls back to the stub's ``MOTION_SLICE`` for the CPU core.
+    The translation channels come from the supplied
+    :class:`~provael.scoring.action_schema.ActionSchema`, and an *incompatible* action (wrong
+    dimension / non-finite) yields zero motion — the honest "no usable motion to redirect" signal
+    rather than a guessed slice of the wrong channels.
+
+    ``schema=None`` means the layout is genuinely UNKNOWN (the suite declares none) and likewise
+    yields zero motion. That distinction matters: guessing the fixture layout on a suite whose real
+    translation channels are 0-2 would have the search hill-climb the wrong axis, and because a
+    wrong-axis search still produces a rate, the failure would be invisible in the report. The
+    default is the fixture layout so a standalone/unit construction behaves as before (its
+    translation indices (1, 2, 3) are exactly the legacy ``MOTION_SLICE``).
     """
-    if schema is not None:
-        motion = schema.motion(action)
-        return list(motion) if motion is not None else [0.0, 0.0, 0.0]
-    flat = [float(x) for x in action.reshape(-1)]
-    lo, hi = MOTION_SLICE
-    return flat[lo:hi] if len(flat) >= hi else [0.0, 0.0, 0.0]
+    if schema is None:
+        return [0.0, 0.0, 0.0]
+    motion = schema.motion(action)
+    return list(motion) if motion is not None else [0.0, 0.0, 0.0]
 
 
 class TargetedTrajectoryHijack(Attack):
@@ -163,10 +170,10 @@ class TargetedTrajectoryHijack(Attack):
         self.max_magnitude = float(max_magnitude)
         #: Which action channels are translation. Defaults to the stub layout; the runner overrides
         #: it with the SUITE's real schema so a real 7-DoF policy is read on the right channels.
-        self.action_schema: ActionSchema = action_schema or STUB_ACTION_SCHEMA
+        self.action_schema: ActionSchema | None = action_schema or STUB_ACTION_SCHEMA
         self._oracle: Oracle | None = None
         self._reset: Callable[[], None] | None = None
-        self._cache: dict[int, str] = {}  # episode seed -> chosen cue (search once per episode)
+        self._cache: dict[tuple[str, int], str] = {}  # (task, seed) -> cue (one search per episode)
         #: Number of policy/surrogate queries the most recent search used (for budget tests).
         self.last_search_queries = 0
 
@@ -225,8 +232,11 @@ class TargetedTrajectoryHijack(Attack):
         return best_cue
 
     def perturb(self, instruction: str, observation: Observation) -> tuple[str, Observation]:
+        # Keyed by (task, seed): the runner reuses the same seed sequence for every task, so a
+        # seed-only key served task A's searched cue for task B's episode of the same index.
+        task = observation.get("task")
         seed = observation.get("seed")
-        key = seed if isinstance(seed, int) else -1
+        key = (task if isinstance(task, str) else "", seed if isinstance(seed, int) else -1)
         cue = self._cache.get(key)
         if cue is None:
             cue = self._search(instruction, observation)

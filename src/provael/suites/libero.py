@@ -50,6 +50,7 @@ import numpy.typing as npt
 from pydantic import BaseModel, Field
 
 from provael.policies.lerobot_adapter import MissingLeRobotError
+from provael.scoring.action_schema import SEVEN_DOF_DELTA_SCHEMA, ActionSchema
 from provael.suites.base import SuiteAdapter
 from provael.suites.keepout_zones import DEFAULT_KEEP_OUT_ZONE, KeepOutZone, zones_for
 from provael.types import IMAGE_KEY, Action, Observation, State, SuiteFeatures
@@ -206,6 +207,19 @@ class LiberoSuiteAdapter(SuiteAdapter):
         """Configured ``"<suite>/<task_id>"`` identifiers (no simulator needed)."""
         return [f"{self.task_suite}/{tid}" for tid in self.task_ids]
 
+    def action_schema(self) -> ActionSchema:
+        """LIBERO's real action layout: a 7-DoF OSC_POSE end-effector delta.
+
+        ``Box(-1, 1, shape=(7,))`` — 3 position deltas, 3 axis-angle rotation deltas, 1 gripper
+        (see the module docstring and :data:`LIBERO_ACTION_DIM`). Declaring it matters because
+        :func:`provael.runner._configure_optimized` hands the suite's schema to every
+        motion-reading attack; returning ``None`` (the base default) left those attacks on their
+        constructor fallback, :data:`~provael.scoring.action_schema.STUB_ACTION_SCHEMA`, whose
+        translation channels are 1-3 rather than LIBERO's 0-2 — so the search optimised the wrong
+        axes on the one suite that carries the project's real measured result.
+        """
+        return SEVEN_DOF_DELTA_SCHEMA
+
     def _ensure_env_cfg(self) -> Any:
         """Build (once) the verified LeRobot env config, with obs_type pinned."""
         self._ensure_lerobot()
@@ -236,15 +250,49 @@ class LiberoSuiteAdapter(SuiteAdapter):
             env_config=cfg,
         )
 
+    def _env_config_for(self, task_id: int) -> Any:
+        """An obs_type-pinned env config for exactly ``task_id``.
+
+        Deliberately NOT the cached :meth:`_ensure_env_cfg`: that one is built once from the
+        constructor's ``task_ids`` (``(0,)`` by default) and is the right thing for the
+        task-independent metadata in :meth:`features`, but reusing it to build environments meant
+        ``make_env`` only ever created the configured tasks. Any other requested task then fell
+        through to a different task's env (see :meth:`_build_env`).
+        """
+        self._ensure_lerobot()
+        from lerobot.envs.factory import make_env_config
+
+        return make_env_config(
+            "libero",
+            task=self.task_suite,
+            task_ids=[task_id],
+            obs_type="pixels_agent_pos",
+        )
+
     def _build_env(self, task_id: int) -> Any:
-        # Verified lerobot 0.5.1 factory path; reuse the cached, obs_type-pinned config.
+        # Verified lerobot 0.5.1 factory path. The config is built for the REQUESTED task id, and
+        # the lookup is strict.
+        #
+        # This previously read `suite_envs.get(task_id) or next(iter(suite_envs.values()))` against
+        # a config pinned to the constructor's task_ids, so requesting e.g. `libero_object/3` rolled
+        # out task 0's environment while `reset` recorded "libero_object/3" — every episode, rate
+        # and attestation attributed to a task that never ran. A silent misattribution in evidence
+        # is worse than a hard failure, so an env that is genuinely absent now raises.
         from lerobot.envs.factory import make_env
 
-        cfg = self._ensure_env_cfg()
+        cfg = self._env_config_for(task_id)
         _ensure_libero_initialized()  # write LIBERO's config so its import won't prompt
         envs = make_env(cfg, n_envs=1)  # -> {suite: {task_id: vec_env}}
         suite_envs = envs[self.task_suite]
-        return suite_envs.get(task_id) or next(iter(suite_envs.values()))
+        try:
+            return suite_envs[task_id]
+        except KeyError:
+            raise ValueError(
+                f"LIBERO built no environment for task id {task_id} in suite "
+                f"{self.task_suite!r} (got ids {sorted(suite_envs)}). Refusing to roll out a "
+                "different task's environment, which would attribute the result to a task that "
+                "never ran."
+            ) from None
 
     def reset(self, task: str, seed: int) -> Observation:
         self._ensure_lerobot()

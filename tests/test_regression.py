@@ -41,12 +41,19 @@ _ISSUED = "2026-07-24T00:00:00Z"
 
 
 def _report(successes: int, attempts: int, *, attack: str = "roleplay", eai: str = "EAI01") -> RunReport:
-    """A minimal deterministic report whose single attack == the overall stat."""
+    """A minimal deterministic report whose single attack == the overall stat.
+
+    The adversarial_* fields are populated to equal the overall stat because this fixture models a
+    run whose only applicable episodes ARE the adversarial ones. The gate compares the adversarial
+    subset (see :func:`provael.regression._adversarial_stat`), so leaving them unset would make the
+    fixture describe a run with no adversarial evidence at all.
+    """
     asr = successes / attempts if attempts else 0.0
     return RunReport(
         tool_version="9.9.9", policy="stub", suite="stub",
         attacks=["none", attack], tasks=["reach"], episodes=attempts, horizon=8, seed=0,
         attempts=attempts, successes=successes, asr=asr,
+        adversarial_attempts=attempts, adversarial_successes=successes, adversarial_asr=asr,
         by_attack={attack: ASRStat(attempts=attempts, successes=successes, asr=asr)},
         eai={attack: EaiTag(id=eai, name="Policy & instruction jailbreak")},
     )

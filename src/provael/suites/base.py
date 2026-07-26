@@ -36,6 +36,12 @@ class SuiteAdapter(ABC):
     #: stub) or ``"spatial"`` (an end-effector keep-out region, LIBERO). See
     #: :mod:`provael.calibration`.
     calibration_kind: str = "scalar"
+    #: Whether this suite is a deterministic in-process **fixture** rather than a real simulator.
+    #: A fixture computes its state arithmetically from the action vector — no physics engine, no
+    #: renderer, no embodiment. Runs on a fixture can never earn ``real-episode`` on the evidence
+    #: ladder no matter which policy drives them (see :func:`provael.evidence.classify_run`),
+    #: because nothing was actually embodied. Real simulator wrappers leave this ``False``.
+    is_fixture: bool = False
 
     def features(self) -> SuiteFeatures | None:
         """Env metadata for policies that need it; ``None`` when not applicable.

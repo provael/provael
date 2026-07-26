@@ -40,11 +40,24 @@ def _uid(report: RunReport, *parts: str) -> str:
     return str(uuid.uuid5(_NS, name))
 
 
+#: Sentinel for ``observation.collected`` when the caller supplies no collection time.
+#:
+#: OSCAL requires ``collected`` on every observation (a DateTimeWithTimezone), but a
+#: :class:`~provael.types.RunReport` deliberately carries no wall-clock so that it stays
+#: byte-reproducible — the run's real timestamps live in ``execution-manifest.json``. Rather than
+#: invent a plausible-looking date (which would put a false fact into a compliance artifact), an
+#: unsupplied collection time is emitted as the Unix epoch, which no reader can mistake for a real
+#: collection date, and flagged explicitly via the ``collected-precision`` property. Pass
+#: ``collected=`` (the CLI and ``certify`` do) to record the actual time.
+UNRECORDED_COLLECTED = "1970-01-01T00:00:00Z"
+
+
 def to_oscal(
     report: RunReport,
     *,
     profile_href: str | None = None,
     reviewed_control_ids: list[str] | None = None,
+    collected: str | None = None,
 ) -> dict[str, object]:
     """Build an OSCAL assessment-results object (as a dict).
 
@@ -54,16 +67,24 @@ def to_oscal(
     clauses), which populate ``import-ap.href`` and an OSCAL ``reviewed-controls`` block so a GRC
     consumer can bind each finding to the standard clause it informs.
     """
+    collected_at = collected or UNRECORDED_COLLECTED
     observations = [
         {
             "uuid": _uid(report, "obs", name),
             "description": f"Provael attack '{name}': {stat.successes}/{stat.attempts} unsafe.",
             "methods": ["TEST"],
+            # Required by the OSCAL assessment-results schema (observation requires
+            # uuid/description/methods/collected). Omitting it made every observation invalid.
+            "collected": collected_at,
             "props": [
                 {"name": "attack", "value": name},
                 {"name": "asr", "value": f"{stat.asr:.4f}"},
                 {"name": "eai", "value": report.eai[name].id} if name in report.eai else
                 {"name": "control", "value": "baseline"},
+                {
+                    "name": "collected-precision",
+                    "value": "unrecorded" if collected is None else "exact",
+                },
             ],
         }
         for name, stat in report.by_attack.items()
@@ -80,6 +101,15 @@ def to_oscal(
             "uuid": _uid(report, "risk", tag.id),
             "title": f"{tag.id}: {risk.name if risk is not None else tag.id}",
             "description": f"Embodied AI Security {tag.id} exercised by Provael attacks.",
+            # `statement` is required by the schema (risk requires
+            # uuid/title/description/statement/status) — an impact summary, distinct from the
+            # description of what the risk is.
+            "statement": (
+                f"If exploited, {tag.id} lets an adversary drive the policy under test outside its "
+                "safe operating envelope in simulation. Provael measures how often the shipped "
+                f"{tag.id} attacks achieve that, as an attack-success rate with a 95% Wilson "
+                "confidence interval read against a benign control."
+            ),
             "status": "open",
         })
 
@@ -88,9 +118,31 @@ def to_oscal(
     # D1: the same run-level honesty tier the compliance export and attestation carry, so an OSCAL
     # consumer cannot misread stub scaffolding as a conformity-relevant real-transfer measurement.
     transfer_status = transfer_status_of(report)
+    decision = release_verdict(report)
+    # `target` is required by the schema (finding requires uuid/title/description/target), and
+    # finding-target itself requires type/target-id/status{state}. The state is DERIVED from the
+    # run's own release verdict rather than hardcoded: emitting a fixed "satisfied" would publish a
+    # conformity conclusion the measurement does not support. Only an outright `pass` is satisfied —
+    # `fail`, `incomplete` and `conditional` are all not-satisfied for the purpose of this finding.
+    target_state = "satisfied" if decision.verdict.value == "pass" else "not-satisfied"
     finding = {
         "uuid": _uid(report, "finding", "overall"),
         "title": "Adversarial Attack Success Rate",
+        "target": {
+            # target-id is a TokenDatatype: no whitespace or colons.
+            "type": "objective-id",
+            "target-id": "provael.adversarial-attack-success-rate",
+            "title": "Adversarial robustness of the policy under test",
+            "status": {
+                "state": target_state,
+                "reason": f"release-verdict:{decision.verdict.value}",
+                "remarks": (
+                    "Provael measures behavioural susceptibility in simulation. This state "
+                    "reflects the run's own release verdict against the configured thresholds; it "
+                    "is evidence toward an assessment, not a conformity determination."
+                ),
+            },
+        },
         "description": (
             f"Adversarial ASR {adv_rate:.4f} ({adv_s}/{adv_n}), 95% CI [{lo:.4f}, {hi:.4f}]; "
             f"all-episode observed-unsafe {report.asr:.4f} ({report.successes}/{report.attempts})"

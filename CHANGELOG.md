@@ -6,6 +6,73 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- **The pass/fail gates measured the wrong number.** `scorecard.verdict`, the baseline-regression
+  gate in `regression.diff_reports`, the CycloneDX ML-BOM metric, the Machinery Annex I dossier
+  headline, the AVID record, and the published GitHub Action all read `RunReport.asr` — the
+  **all-episode** observed-unsafe rate, which includes the benign control in its denominator. Adding
+  the `none` control that `provael.compliance` tells users to add therefore pushed the gated figure
+  *below* the true attack rate: a run with an adversarial ASR of 80% printed
+  `Verdict: PASS (overall ASR 40.0%)` and exited 0. Every gate and published metric now reads
+  `RunReport.adversarial_headline()`, the all-episode figure is emitted under its own explicitly
+  labelled key, and a run with **zero** adversarial episodes reports `INSUFFICIENT` /
+  `incomplete` rather than passing vacuously. The regression gate additionally records an
+  `incomparable` list (differing policy / suite / horizon / predicate / tasks) so a delta across a
+  changed configuration is not silently gated.
+- **Fixture suites could fabricate a "real transfer".** `stub`, `reach` and `humanoid` read hazard
+  and flag signals from fixed channel positions that are only meaningful for the 11-channel fixture
+  layout. A real policy's 7-DoF end-effector delta had its *x-translation* read as the danger axis
+  and its rotation/gripper channels read as backdoor and self-authorization flags, yielding a 100%
+  ASR **and** a 100% benign false-positive rate labelled `measured-real-transfer`. All three now
+  declare an `action_schema()` and reject a mismatched action shape via
+  `scoring.action_schema.require_exact_layout`.
+- **Pure-numpy fixtures were classified as real embodied runs.** `evidence.classify_run` tested
+  `suite != "stub"`, so `reach` and `humanoid` earned `real-episode` (and thus
+  `measured-real-transfer`). Realism is now declared by the suite itself
+  (`SuiteAdapter.is_fixture`), an unknown suite name fails closed, and real simulators are
+  unaffected.
+- **Optimized attacks searched the wrong axis on real suites.** `LiberoSuiteAdapter` and
+  `MetaworldSuiteAdapter` declared no action layout, so motion-reading attacks kept the fixture
+  fallback (translation on channels 1-3) against LIBERO's OSC_POSE layout (0-2). Both now declare
+  their real schema, and an undeclared layout degrades to zero motion instead of guessing.
+- **`OptimizedAttack` leaked results across tasks.** The per-episode cache was keyed by seed alone,
+  but the runner reuses the same seed sequence for every task, so task A's winning edit was served
+  for task B. It is now keyed by `(task, seed)`, and the winning *edit* is cached rather than the
+  rendered pair — `perturb` runs every step, so caching the pair froze the policy's observation at
+  step 1 for the whole episode.
+- **Emitted OSCAL was schema-invalid.** Every `observation`, `risk` and `finding` omitted a
+  field required by NIST's assessment-results schema v1.1.2 (`collected`, `statement`, `target`
+  respectively). The finding's `target.status.state` is derived from the run's release verdict
+  rather than hardcoded, and an unsupplied collection time is emitted as an unmistakable epoch
+  sentinel with a `collected-precision` property instead of an invented date.
+- **CycloneDX ML-BOM emitted numbers where the 1.6 schema requires strings** for
+  `performanceMetric.value` and both `confidenceInterval` bounds.
+- **The published GitHub Action could not install Provael.** The default install spec expanded to
+  `provael>=0.23.0,<0.24.0[attest]`, which is not a valid PEP 508 requirement (extras must precede
+  the version specifier), and the pin excluded the current release. CI never caught it because the
+  smoke test always overrides `install-spec`.
+- **`--accelerator` was recorded but never applied.** The runner never forwarded a `device` to the
+  policy factory, so every real adapter loaded onto its `cuda` default while the report asserted the
+  requested device. The device is now forwarded, and the report records what the adapter actually
+  resolved to (`PolicyAdapter.resolved_device`).
+- **Non-finite actions scored as safe.** Every unsafe predicate is a threshold comparison, and every
+  comparison against NaN is False, so a policy emitting NaN was recorded as benign on all axes. The
+  runner now rejects non-finite actions at the single boundary they all cross.
+- **LIBERO attributed results to a task that never ran.** The env config was cached from the
+  constructor's `task_ids`, so a request for any other task fell through to a different task's
+  environment while `reset` recorded the requested name. The config is now built per requested task
+  and the lookup is strict.
+- **No shipped recipe included the benign control** the release gate requires, so every recipe
+  produced an `incomplete` verdict by construction.
+- **Releases published to PyPI untested.** `release.yml` ran no lint, type-check or tests; it now
+  runs the full CPU gate and asserts the tag matches `__version__` before anything is built.
+- **CLI help swallowed extra names.** Rich parsed `[hosted]` and `[lerobot]`/`[openpi]` in command
+  docstrings as markup, rendering "needs the `` extra" and "the / extra". `report --format` also
+  omitted `oscal` and `mlbom` from its help.
+- Rates are no longer printed from an empty denominator (`headline()`, the AVID record and the
+  per-attack rows report N/A rather than a measured 0.0%).
+
 ### Changed
 - **Transfer status unified + evidence-state/verdict surfaced across exporters.** The scattered
   `policy != "stub" and suite != "stub"` inference (attestation, compliance, OSCAL, hosted report)

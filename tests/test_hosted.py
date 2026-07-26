@@ -87,7 +87,13 @@ def test_insurer_report_carries_p04_honesty_signals() -> None:
         "executive_summary"
     ]
     assert es["transfer_status"] == "stub-validated-scaffolding"
-    assert es["anytime_ci"] is not None and es["wilson_ci95"] is not None
+    # The adversarial headline carries the interval computed over the ADVERSARIAL counts; the
+    # all-episode rate carries its own, separately named. The two must never be interchanged, or
+    # the published interval can exclude its own point estimate.
+    assert es["adversarial_anytime_ci"] is not None
+    assert es["adversarial_wilson_ci95"] is not None
+    assert es["all_episode_wilson_ci95"] is not None
+    assert es["adversarial_wilson_ci95"] != es["all_episode_wilson_ci95"]
     assert es["matched_benign_fpr"] == 0.0
     assert es["seeds"] == 5 and es["preliminary"] is False  # 5 seeds -> banked
 

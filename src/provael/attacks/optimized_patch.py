@@ -91,10 +91,11 @@ class OptimizedPatchHijack(Attack):
         self.query_budget = int(query_budget)
         self.patch_fraction = float(patch_fraction)
         #: Which action channels are translation (see TargetedTrajectoryHijack). Runner-overridden.
-        self.action_schema: ActionSchema = action_schema or STUB_ACTION_SCHEMA
+        self.action_schema: ActionSchema | None = action_schema or STUB_ACTION_SCHEMA
         self._oracle: Oracle | None = None
         self._reset: Callable[[], None] | None = None
-        self._cache: dict[int, str] = {}  # episode seed -> chosen patch marker (search once)
+        # (task, seed) -> chosen patch marker (one search per episode)
+        self._cache: dict[tuple[str, int], str] = {}
         #: Number of policy/surrogate queries the most recent search used (for budget tests).
         self.last_search_queries = 0
 
@@ -162,8 +163,11 @@ class OptimizedPatchHijack(Attack):
         image = image_of(observation)
         if image is None:  # defensive: applicable() gates this off, but never crash a rollout.
             return instruction, observation
+        # Keyed by (task, seed): the runner reuses the same seed sequence for every task, so a
+        # seed-only key served task A's searched marker for task B's episode of the same index.
+        task = observation.get("task")
         seed = observation.get("seed")
-        key = seed if isinstance(seed, int) else -1
+        key = (task if isinstance(task, str) else "", seed if isinstance(seed, int) else -1)
         marker = self._cache.get(key)
         if marker is None:
             marker = self._search(instruction, observation)

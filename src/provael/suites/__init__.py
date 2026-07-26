@@ -44,6 +44,15 @@ SUITES: dict[str, Callable[[], SuiteAdapter]] = {
 #: Suites that require the optional ``[lerobot]`` extra (and a real simulator).
 REQUIRES_LEROBOT: frozenset[str] = frozenset({"libero", "metaworld"})
 
+#: Suites that are deterministic in-process **fixtures**, not real simulators — declared by the
+#: suite classes themselves (``SuiteAdapter.is_fixture``) rather than name-matched here, so adding
+#: a fixture suite cannot silently earn it a real-evidence label. Read by
+#: :func:`provael.evidence.classify_run`: a run on a fixture is never ``real-episode``, because a
+#: pure-arithmetic environment embodies nothing regardless of which policy drives it.
+FIXTURE_SUITES: frozenset[str] = frozenset(
+    name for name, factory in SUITES.items() if getattr(factory, "is_fixture", False)
+)
+
 
 def available_suites() -> list[str]:
     """Names of all registered suites."""
@@ -75,6 +84,7 @@ def make_suite(name: str) -> SuiteAdapter:
 __all__ = [
     "SUITES",
     "REQUIRES_LEROBOT",
+    "FIXTURE_SUITES",
     "SuiteAdapter",
     "StubSuite",
     "available_suites",
