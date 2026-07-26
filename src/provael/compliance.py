@@ -58,8 +58,10 @@ _NAME_TO_FAMILY: dict[str, str] = {
 
 CAVEATS: dict[str, str] = {
     "adversarial-only": (
-        "Adversarial security only. Functional/mechanical safety (ISO 10218 safety clauses, "
-        "ISO 13482, ISO/TS 15066) and non-adversarial reliability are out of scope."
+        "Adversarial security only. Functional/mechanical safety (ISO 10218 safety clauses; "
+        "ISO 13482:2014, under revision as ISO/DIS 13482 — retitled to service robots; and "
+        "ISO/TS 15066:2016, whose power-and-force-limiting requirements are now incorporated into "
+        "ISO 10218-1/-2:2025) and non-adversarial reliability are out of scope."
     ),
     "evidence-not-certification": (
         "Evidence, not conformity. EU AI Act / ISO conformity also needs a quality-management "

@@ -72,6 +72,26 @@ All notable changes to this project are documented here. The format is based on
   omitted `oscal` and `mlbom` from its help.
 - Rates are no longer printed from an empty denominator (`headline()`, the AVID record and the
   per-attack rows report N/A rather than a measured 0.0%).
+- **Meta-World task ids were from a dead generation.** `reach-v2` and friends predate Farama's
+  V3 environments (LeRobot's `metaworld` extra pins `metaworld==3.0.0`, whose ids are `reach-v3`
+  …), so a run would have failed at env construction. The suite's error hint also claimed
+  `provael[lerobot]` ships Meta-World; it is a separate `lerobot[metaworld]` extra.
+- `ISO/TS 15066:2016` is now cited as incorporated into ISO 10218-1/-2:2025 rather than as a
+  current separate source, and `ISO 13482:2014` notes the in-progress ISO/DIS 13482 revision.
+
+### Security
+
+- `RunReport` now sets `extra="forbid"`, so an unrecognised key in a report file is rejected at
+  load instead of being absorbed into the digest that an attestation signs.
+
+### Documented
+
+- **The attestation digest contract is now stated on `RunReport`.** The digest covers the canonical
+  re-serialisation of the model, not the bytes of `report.json`, so adding any field changes the
+  digest of every historical report and breaks re-verification by an older-issued attestation.
+  Adding a field is therefore a breaking change that must bump `attest.RULESET_VERSION`. Switching
+  the subject to a raw-bytes digest of `report.json` would remove that coupling and is the
+  recommended follow-up; it changes the attestation format, so it wants its own release.
 
 ### Changed
 - **Transfer status unified + evidence-state/verdict surfaced across exporters.** The scattered

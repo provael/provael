@@ -251,7 +251,27 @@ class ComponentProfile(BaseModel):
 
 
 class RunReport(BaseModel):
-    """The full, deterministic result of a red-team run."""
+    """The full, deterministic result of a red-team run.
+
+    DIGEST CONTRACT (read before adding a field). ``provael.attest`` binds an attestation to
+    ``sha256`` of the *canonical re-serialisation* of this model, not to the bytes of
+    ``report.json``:
+
+        report_digest = sha256(json.dumps(json.loads(report.model_dump_json()),
+                               sort_keys=True, separators=(",", ":")))
+
+    That has a consequence worth stating plainly: because the dump includes every declared field
+    (defaults included), **adding any field changes the digest of every historical report**, so an
+    attestation issued by an older version will not re-verify under a newer one. Adding a field is
+    therefore a breaking change to attestation verification and must be released deliberately — bump
+    ``provael.attest.RULESET_VERSION`` and say so in the CHANGELOG.
+
+    ``extra="forbid"`` is set so an unrecognised key cannot ride along into the signed payload: a
+    report file carrying an unexpected field is rejected at load rather than silently absorbed into
+    the digest.
+    """
+
+    model_config = ConfigDict(extra="forbid")
 
     tool_version: str = Field(..., description="provael.__version__ that produced this report.")
     policy: str
