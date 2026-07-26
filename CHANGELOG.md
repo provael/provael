@@ -6,6 +6,23 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.25.0] — 2026-07-26
+
+First release since 0.22.0, and it carries three releases' worth of work: the continuous
+per-checkpoint CI security gate, the Humanoid safety pack, and the findings of a full
+adversarially-verified audit of the evidence pipeline.
+
+> **0.23.0 and 0.24.0 were never published.** Both version numbers exist as `__version__` values in
+> public commits, so anyone who installed from git at those points has a tree calling itself 0.23.0
+> or 0.24.0. Publishing a *different* artifact under either number would put two distinct trees
+> under one version — the exact provenance failure this project exists to prevent — so the release
+> moves to 0.25.0 and those numbers are retired unused. Their work is included below.
+
+> **Upgrading from 0.22.0 changes gate behaviour.** If you pin an ASR threshold in CI, read
+> "The pass/fail gates measured the wrong number" first: the gate now reads the adversarial ASR,
+> which is *higher* than the figure it previously compared on any run carrying a benign control.
+> A gate that passed at 0.22.0 may correctly fail now. That is the fix, not a regression.
+
 ### Fixed
 
 - **The pass/fail gates measured the wrong number.** `scorecard.verdict`, the baseline-regression

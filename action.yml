@@ -106,7 +106,7 @@ runs:
       # the source (e.g. '.[attest]') so the checked-out action can be smoke-tested against local
       # source without a published release.
       env:
-        PROVAEL_VERSION: ">=0.24.0,<0.25.0"
+        PROVAEL_VERSION: ">=0.25.0,<0.26.0"
         INSTALL_SPEC: ${{ inputs.install-spec }}
       run: |
         set -euo pipefail
@@ -114,7 +114,7 @@ runs:
           python -m pip install --upgrade "$INSTALL_SPEC"
         else
           # PEP 508 puts the extras bracket on the NAME, before the version specifier:
-          # `provael[attest]>=0.24.0,<0.25.0`. The reverse (`provael>=0.24.0,<0.25.0[attest]`)
+          # `provael[attest]>=0.25.0,<0.26.0`. The reverse (`provael>=0.25.0,<0.26.0[attest]`)
           # is not a valid requirement and pip rejects it outright — and because the smoke test
           # always passes `install-spec`, this default branch is the one users hit.
           python -m pip install --upgrade "provael[attest]${PROVAEL_VERSION}"
