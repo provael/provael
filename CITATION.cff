@@ -11,7 +11,7 @@ authors:
     website: "https://github.com/sattyamjjain"
 # Tracks the newest *released* tag, not the working tree — a citation must name a version a
 # reader can actually install. Bump both fields in the release commit.
-version: "0.24.0"
+version: "0.25.0"
 date-released: "2026-07-23"
 license: Apache-2.0
 repository-code: "https://github.com/provael/provael"
