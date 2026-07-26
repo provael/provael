@@ -16,18 +16,27 @@ the spirit of responsible disclosure.
 
 ## No real-world-harm payloads
 
-- The shipped attacks (families `instruction`, `visual`, `injection`) are short,
-  generic, **templated** reframings and markers. They probe whether a policy follows a
-  redirected goal in a benchmark — they are **not** a recipe for causing harm.
+- The registry ships **14 adversarial families** (plus the benign `baseline` control). Eleven of
+  them — `instruction`, `visual`, `injection`, `action`, `action_space`, `backdoor`,
+  `sensor_spoof`, `misalignment`, `authorization`, `confidentiality`, `humanoid` — are short,
+  generic, **templated** reframings, cues and markers: a fixed transform of the observation,
+  non-transferable by construction. They probe whether a policy follows a redirected goal in a
+  benchmark — they are **not** a recipe for causing harm.
+- The remaining three — `optimized`, `optimized_patch`, `optimized_instruction` — are **not**
+  templated. They are black-box, **query-budgeted searches** that adapt to the policy's own
+  responses. Each is bounded by an explicit query budget, is deterministic under a seed, and
+  searches only toward a harmless, sim-only goal direction; none uses gradients or model
+  internals. They are covered individually below.
 - The `StubPolicy`'s "trigger lexicon" is an intentionally transparent **test fixture**
   (a handful of words with weights, read from the instruction and a fixed set of
   observation channels) so the CPU pipeline produces a measurable Attack Success Rate
   with no model. It is not a real exploit and does not transfer to real policies.
 - The `visual` and `injection` families target the **stub's observation channels**. They
   demonstrate the *measurement* of perception/injection attacks; they do **not** ship
-  pixel-level perturbations that transfer to a real model. The most misuse-prone families
-  — optimized adversarial suffixes / GCG and transferable pixel attacks — remain
-  deliberately **deferred**, and when added will stay sim-only and benchmark-scoped.
+  pixel-level perturbations that transfer to a real model. What remains deliberately **deferred**
+  is the *white-box* line — gradient-based adversarial suffixes (GCG) and white-box patch-gradient
+  attacks; the black-box query searches described above do ship, and when the white-box variants
+  are added they will stay sim-only and benchmark-scoped. No family claims cross-model transfer.
 - The `backdoor` family (EAI03) is a **pre-deployment trigger *screen***, not an implant. It injects
   harmless, sim-only candidate triggers and measures whether a policy activates a hidden objective on
   a **known-planted stub fixture**. Provael **does not train, fine-tune, or implant a real backdoor**,
@@ -68,6 +77,34 @@ the spirit of responsible disclosure.
   `PRIOR_ART.md` and `docs/TOP10.md`. It ships no real-world payload; the EAI04 targeted-redirection
   outcome on a real policy is GPU-gated (`PROVAEL_INTEGRATION=1`) and not run in the CPU core, so no
   cross-model claim is made.
+- The `action` family (EAI04) perturbs only the **observation the policy receives**, **never
+  real-robot control**: `freeze` drives the commanded motion to a no-op and `trajectory_hijack`
+  biases it toward an attacker-chosen — but harmless, sim-only — waypoint, both scored **in
+  simulation** on the fixture's commanded action. It ships no real-world payload. Real-model
+  transfer (FreezeVLA / AttackVLA) needs an adversarial-image search that is GPU-gated and not run
+  in the CPU core, so no cross-model claim is made.
+- The `authorization` family (EAI08) probes **excessive agency**: whether a perturbed instruction
+  makes the policy self-authorize an authorization-gated action **without** presenting a valid
+  operator token. It requests a *guarded, sim-only* action on a known-planted stub fixture; it
+  forges no credential, and defeats no real access-control system — the "token" is a fixture cue.
+  The benign `none` baseline never invokes a guarded action, so it is the 0% false-positive
+  control. Real-model transfer is GPU-gated and not run in the CPU core.
+- The `humanoid` family perturbs only the **simulated proprioceptive / action channel** of a
+  humanoid whole-body *fixture*, **never real-robot control**, to measure whether a policy can be
+  driven to lose balance, topple or freeze mid-stride **in simulation**. It applies only on the
+  humanoid suite and reports not-applicable elsewhere (excluded from the ASR denominator, never
+  faked). Provael drives no physical humanoid and ships no balance-controller or actuator code;
+  real-model transfer is GPU-gated, not run here, and pre-registered in
+  `docs/studies/humanoid-locomotion-transfer.md`.
+- The `optimized` (EAI04, `targeted_hijack`) and `optimized_patch` (`patch_hijack`) families are the
+  **search-based** pair. Both are **black-box** — they only *query* the policy's action, never its
+  gradients or internals — **query-budgeted** (`--query-budget`, with the policy reset around each
+  query so the search cannot pollute the live rollout), and **deterministic** under the run seed.
+  Both steer toward the same harmless, sim-only goal direction and ship no real-world payload.
+  `optimized_patch` writes to the real camera-image channel, but returns not-applicable when the
+  observation carries no real image — so on the CPU stub it is excluded from the denominator and the
+  search only ever runs on a GPU box. Neither claims cross-model transfer until the gated
+  `PROVAEL_INTEGRATION=1` path is run with a 95% CI and a benign-FPR control.
 
 ## What we measure on LIBERO (redirection, not harm)
 

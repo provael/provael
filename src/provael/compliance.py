@@ -95,6 +95,12 @@ class Requirement:
     provael_signal: str
     evidence_refs: tuple[str, ...]
     indicative: bool
+    #: EAI families this row's ``provael_signal`` names as its on-point evidence. When set, the row
+    #: is a gap unless every listed family actually ran — otherwise a run containing any one tagged
+    #: attack marks it evidence-present while asserting a measurement that never happened. Left
+    #: empty for rows satisfied by adversarial evidence generally (e.g. the taxonomy mapping, which
+    #: maps risks rather than claiming all of them were exercised).
+    required_eai: tuple[str, ...] = ()
 
 
 _EU = "EU AI Act (Regulation (EU) 2024/1689)"
@@ -151,6 +157,7 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         ),
         evidence_refs=("report.json#/by_attack", "report.sarif", "docs/COMPLIANCE.md"),
         indicative=True,
+        required_eai=("EAI04",),
     ),
     Requirement(
         key="eu-machinery:annex-i-part-a",
@@ -185,6 +192,7 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         ),
         evidence_refs=("report.json#/by_attack", "docs/COMPLIANCE.md"),
         indicative=True,
+        required_eai=("EAI04",),
     ),
     Requirement(
         key="iso-10218-2:cyber",
@@ -222,6 +230,7 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         ),
         evidence_refs=("report.json#/by_attack", "report.json#/eai"),
         indicative=False,
+        required_eai=("EAI09",),
     ),
     Requirement(
         key="nist-ai-rmf:measure",
@@ -484,7 +493,7 @@ def _evidence(report: RunReport) -> EvidenceResult:
     )
 
 
-def _status(key: str, ev: EvidenceResult) -> tuple[Status, str | None]:
+def _status(req: Requirement, ev: EvidenceResult) -> tuple[Status, str | None]:
     """Decide whether the run carries evidence for a requirement, and why not when it doesn't.
 
     Gap rules (deterministic, so they're testable):
@@ -494,8 +503,13 @@ def _status(key: str, ev: EvidenceResult) -> tuple[Status, str | None]:
     * ``measure`` — a gap unless the run is calibrated *and* has a benign-FPR control (MEASURE
       asks for a controlled metric, not a bare rate).
     * ``art15`` — a gap without a benign baseline control, or with no EAI-tagged attacks.
+    * any row declaring :attr:`Requirement.required_eai` — a gap unless every family it names as
+      its on-point evidence actually ran. Without this, ANY tagged attack satisfied ANY row, so a
+      ``none,roleplay`` run signed an attestation asserting a measured EAI09 confidentiality-leak
+      rate and EAI04 keep-out evidence that no episode produced.
     * everything else — present once any EAI-tagged adversarial attack ran.
     """
+    key = req.key
     has_eai = bool(ev.eai_ids_covered)
     has_control = ev.benign_fpr is not None
 
@@ -524,13 +538,23 @@ def _status(key: str, ev: EvidenceResult) -> tuple[Status, str | None]:
             return "gap", "No benign baseline control in this run — add the `none` attack."
         return "gap", "No EAI-tagged adversarial families were run."
 
-    if has_eai:
-        return "evidence-present", None
-    return "gap", "No EAI-tagged adversarial attacks were run."
+    # Checked before `required_eai` so a run with NO adversarial evidence at all keeps the general
+    # reason: naming one missing family there would imply the others ran.
+    if not has_eai:
+        return "gap", "No EAI-tagged adversarial attacks were run."
+
+    missing = [eai for eai in req.required_eai if eai not in ev.eai_ids_covered]
+    if missing:
+        return "gap", (
+            f"This row's on-point evidence is the {'/'.join(missing)} family, which did not run "
+            "in this run — add its attacks and re-run before citing this control."
+        )
+
+    return "evidence-present", None
 
 
 def _entry(req: Requirement, ev: EvidenceResult) -> ComplianceEntry:
-    status, gap_reason = _status(req.key, ev)
+    status, gap_reason = _status(req, ev)
     return ComplianceEntry(
         key=req.key,
         framework=req.framework,

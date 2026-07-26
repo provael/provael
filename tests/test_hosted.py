@@ -22,7 +22,12 @@ from provael.hosted import (
     require_entitlement,
 )
 from provael.hosted.machinery import build_machinery_annex_pack, to_machinery_annex_pack_json
-from provael.hosted.report import CONFORMITY_MAPPING, DISCLAIMERS, build_insurer_report
+from provael.hosted.report import (
+    ANNEX_III_CORRUPTION,
+    CONFORMITY_MAPPING,
+    DISCLAIMERS,
+    build_insurer_report,
+)
 from provael.runner import run
 
 _HAS_FASTAPI = importlib.util.find_spec("fastapi") is not None
@@ -66,8 +71,14 @@ def test_insurer_report_is_pure_and_structured() -> None:
         "attestation_statement", "compliance_crosswalk", "conformity_mapping",
         "disclaimers", "executive_summary", "subject",
     }
-    assert len(out["conformity_mapping"]) == len(CONFORMITY_MAPPING) == 3
+    assert len(out["conformity_mapping"]) == len(CONFORMITY_MAPPING) == 4
     assert out["disclaimers"] == list(DISCLAIMERS)
+    # Protection-against-corruption is an Annex III EHSR; Annex I Part A is the separate routing
+    # rule for machinery categories. One row asserting both cited the wrong annex for the EHSR.
+    corruption = next(r for r in out["conformity_mapping"] if "corruption" in r["obligation"])
+    assert corruption["instrument"].endswith(ANNEX_III_CORRUPTION)
+    routing = next(r for r in out["conformity_mapping"] if "third-party" in r["obligation"])
+    assert "Annex I Part A" in routing["instrument"]
     # Honesty: the crosswalk carries the benign control and the transfer statuses.
     assert out["executive_summary"]["benign_fpr"] == 0.0
     assert "not affiliated" in " ".join(DISCLAIMERS)

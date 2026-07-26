@@ -78,11 +78,40 @@ All notable changes to this project are documented here. The format is based on
   `provael[lerobot]` ships Meta-World; it is a separate `lerobot[metaworld]` extra.
 - `ISO/TS 15066:2016` is now cited as incorporated into ISO 10218-1/-2:2025 rather than as a
   current separate source, and `ISO 13482:2014` notes the in-progress ISO/DIS 13482 revision.
+- **A Machinery Regulation citation named the wrong annex.** The protection-against-corruption
+  requirement was cited as Annex I, which is the numbering of the superseded Directive 2006/42/EC.
+  Under Regulation (EU) 2023/1230 the essential health and safety requirements moved to **Annex
+  III** (1.1.9), and Annex I now lists the machinery *categories* — Part A being the third-party
+  conformity-assessment route reached via Art. 6(1) → Art. 25(2). Those are two distinct
+  obligations and are now two rows.
+- **Version drift across the release surface.** `CITATION.cff` said 0.22.0 and copy-paste CI
+  snippets pinned `@v0.22.0` or `@v0.8.0` while the package built 0.24.0 — a snippet pinning a
+  version a user cannot resolve is worse than none. `tests/test_version_consistency.py` now pins
+  the citation file, every documented Action snippet, the Action's own install bound (which must
+  *admit* the packaged version, the failure mode being exclusion rather than mismatch), and the
+  presence of a CHANGELOG section.
+- Zero-attempt attacks no longer render a fabricated `0.0% [0–0%]` in the scorecard heatmap, the
+  per-attack table, the OSCAL observation props or the conformity dossier; they report N/A, and the
+  heatmap gained an `n` column so the denominator is visible.
+- `badvla` was tagged EAI02 and ran the visual family, contradicting both `docs/TOP10.md` and the
+  EAI03 backdoor family that the cited paper actually describes.
+- A `leaderboard build` against a submission naming an attack this build does not register died
+  with a raw `KeyError` instead of rendering the row.
 
 ### Security
 
 - `RunReport` now sets `extra="forbid"`, so an unrecognised key in a report file is rejected at
   load instead of being absorbed into the digest that an attestation signs.
+- **Every third-party GitHub Action is pinned to a full commit SHA** (with a `# vX.Y.Z` comment) in
+  all seven workflows and in `action.yml`. They were on mutable major tags while this repo runs
+  OpenSSF Scorecard, whose Pinned-Dependencies check penalises exactly that — a compromised or
+  retagged release would have been picked up silently, including on the PyPI publish path.
+- **`persist-credentials: false` on every checkout** (six were missing it). A checkout that leaves
+  the token in `.git/config` exposes it to every later step and anything those steps invoke; none
+  of these jobs pushes with it.
+- **`provael[hosted]` could not sign.** The extra omitted `cryptography`, yet the reference server's
+  `?sign=true` path calls `attest.to_bundle(sign=True)` — so the failure surfaced at request time
+  instead of install time.
 
 ### Documented
 

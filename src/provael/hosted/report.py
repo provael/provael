@@ -26,16 +26,42 @@ from provael.compliance import to_compliance_dict
 from provael.evidence import transfer_status_of
 from provael.types import RunReport
 
+#: The two cybersecurity-relevant Annex III EHSR ids of Regulation (EU) 2023/1230. Defined here
+#: because :mod:`provael.certify` imports this module (never the reverse — that would be an import
+#: cycle), so both Machinery packs cite one string and cannot drift apart.
+#:
+#: Under the 2023 Regulation — unlike Directive 2006/42/EC — **Annex III** carries the essential
+#: health and safety requirements and **Annex I** carries the categories of machinery routed to
+#: third-party conformity assessment. Citing Annex I for an EHSR is a citation a Notified Body
+#: rejects on sight.
+ANNEX_III_CORRUPTION = "Annex III, 1.1.9"
+ANNEX_III_CONTROL_SYSTEMS = "Annex III, 1.2.1"
+
 #: The conformity mapping: each row lines a Provael artifact up against the instrument + date it
 #: informs. Dates mirror :data:`provael.attest.REGULATORY_CLOCK` (factual application dates).
 CONFORMITY_MAPPING: tuple[dict[str, str], ...] = (
     {
-        "obligation": "Protection against corruption of safety functions; AI-enabled safety "
-        "components require third-party conformity assessment.",
-        "instrument": "Regulation (EU) 2023/1230 (Machinery Regulation), Annex I",
+        "obligation": "Protection against corruption of safety-related functions: connection to "
+        "the machinery, or corruption of software/data critical for safety, must not lead to a "
+        "hazardous situation.",
+        "instrument": f"Regulation (EU) 2023/1230 (Machinery Regulation), {ANNEX_III_CORRUPTION}",
         "applies_from": "2027-01-20",
         "provael_evidence": "Measured ASR per EAI risk with a 95% Wilson CI and the benign-FPR "
         "control (report.json + SARIF); the digest-bound, dated attestation statement.",
+    },
+    {
+        # Split from the corruption row: third-party conformity assessment is a ROUTING rule about
+        # machinery categories, not an essential health and safety requirement, and it lives in a
+        # different annex. Conflating the two put an Annex I citation on an Annex III obligation.
+        "obligation": "Machinery with safety components embedding self-evolving (ML) behaviour is "
+        "listed high-risk machinery and is routed to third-party conformity assessment.",
+        "instrument": "Regulation (EU) 2023/1230 (Machinery Regulation), Annex I Part A "
+        "(via Art. 6(1) -> Art. 25(2))",
+        "applies_from": "2027-01-20",
+        "provael_evidence": "The `provael certify --profile annex-i-part-a` dossier: per-family "
+        "adversarial evidence with the honest real-policy transfer statement, as the "
+        "adversarial-robustness input a notified body reviews. Routing determination is the "
+        "manufacturer's, not Provael's.",
     },
     {
         "obligation": "High-risk AI safety-component obligations for AI embedded in machinery "

@@ -76,6 +76,13 @@ def to_avid(report: RunReport) -> dict[str, object]:
                         n: (None if s.attempts == 0 else round(s.asr, 4))
                         for n, s in report.by_attack.items()
                     },
+                    # The benign control rows stay in `by_attack` (dropping them would hide the
+                    # control) but are named here, so a database reader cannot take the baseline's
+                    # rate for an attack's under a metric titled "Attack Success Rate". Untagged
+                    # rows are the control: `report.eai` tags adversarial attacks only.
+                    "baseline_control_attacks": sorted(
+                        n for n in report.by_attack if n not in report.eai
+                    ),
                 },
             },
             {

@@ -34,6 +34,12 @@ wiring are unit-tested). A real forward pass needs the ``[openpi]`` extra, ``PRO
 **no cross-model transfer number is claimed**. The observation schema (state dims, which cameras) is
 checkpoint-specific and must match the served policy, exactly as OpenVLA's ``unnorm_key`` is.
 
+TRANSPORT (honest scope). ``load()`` probes the server's TCP port under a bounded timeout before
+constructing the client, because the client retries a refused connection forever rather than
+raising; and every ``infer`` failure is re-raised as :class:`OpenPiTransportError`. What is **not**
+done: the runner does not isolate a transport failure to the episode it happened in, so a server
+that restarts mid-run still aborts the whole run instead of costing one episode.
+
 **One-env constraint (honest).** The ``[openpi]`` client and the ``[lerobot]`` extra are **mutually
 exclusive** — ``openpi-client`` pins ``numpy<2`` while ``lerobot`` pins ``numpy>=2`` (see pyproject
 ``[tool.uv] conflicts``). Provael's real image simulator (LIBERO) is lerobot-based, so a *single*
@@ -58,6 +64,7 @@ Run the real cross-architecture transfer path on a GPU box::
 from __future__ import annotations
 
 import importlib.util
+import socket
 from typing import Any
 
 import numpy as np
@@ -70,6 +77,13 @@ from provael.types import Action, Observation
 #: openpi's typical pre-trained input resolution (see docs/remote_inference.md).
 OPENPI_RESIZE = 224
 
+#: Seconds to wait for the policy server's TCP port before giving up in :meth:`OpenPiAdapter.load`.
+#: The deadline cannot be pushed into the client: ``WebsocketClientPolicy.__init__`` takes only
+#: ``(host, port, api_key)`` and its ``_wait_for_server`` retries ``ConnectionRefusedError`` in an
+#: unbounded ``while True`` loop, so without a probe first a run against a server that is not up
+#: hangs until the CI job times out.
+OPENPI_CONNECT_TIMEOUT = 10.0
+
 _INSTALL_HINT = (
     "The '{name}' policy requires the optional openpi client, which is not installed.\n"
     "  1. Install the extra:  pip install 'provael[openpi]'\n"
@@ -81,8 +95,26 @@ _INSTALL_HINT = (
 )
 
 
+_UNREACHABLE_HINT = (
+    "No openpi policy server answered at {host}:{port} within {timeout:.0f}s.\n"
+    "  1. Serve a checkpoint on the GPU box, from the openpi repo:\n"
+    "       uv run scripts/serve_policy.py --env LIBERO   # -> ws://<host>:8000\n"
+    "  2. Point this run at it with OPENPI_HOST / OPENPI_PORT.\n"
+    "Run on CPU with '--policy stub' to exercise the full pipeline with no model or server."
+)
+
+
 class MissingOpenPiError(RuntimeError):
     """Raised when the openpi adapter is used without the ``[openpi]`` extra."""
+
+
+class OpenPiTransportError(RuntimeError):
+    """Raised when the websocket transport to the openpi policy server fails.
+
+    A distinct type so a transport failure (server down, socket dropped mid-run) stays separable
+    from a modelling error: episodes already scored are unaffected by the former, whereas a bad
+    action or a schema mismatch calls them into question.
+    """
 
 
 class OpenPiAdapter(PolicyAdapter):
@@ -104,12 +136,14 @@ class OpenPiAdapter(PolicyAdapter):
         name: str = "openpi",
         action_dim: int = 7,
         resize: int = OPENPI_RESIZE,
+        connect_timeout: float = OPENPI_CONNECT_TIMEOUT,
     ) -> None:
         self.host = host
         self.port = int(port)
         self.name = name
         self.action_dim = int(action_dim)
         self.resize = int(resize)
+        self.connect_timeout = float(connect_timeout)
         self._client: Any = None
         self._image_tools: Any = None
         self._loaded = False
@@ -119,6 +153,24 @@ class OpenPiAdapter(PolicyAdapter):
         """True if ``openpi_client`` is importable without importing it."""
         return importlib.util.find_spec("openpi_client") is not None
 
+    def _require_server(self) -> None:
+        """Fail if nothing is listening on ``(host, port)`` within ``connect_timeout``.
+
+        The websocket client cannot be given a deadline and sleeps-and-retries forever on a refused
+        connection, so ``load()`` has no bounded failure of its own. A bounded TCP probe first turns
+        "the operator mistyped OPENPI_HOST" from a job-length hang into an actionable error.
+        """
+        try:
+            with socket.create_connection((self.host, self.port), timeout=self.connect_timeout):
+                return
+        except OSError as exc:
+            raise OpenPiTransportError(
+                _UNREACHABLE_HINT.format(
+                    host=self.host, port=self.port, timeout=self.connect_timeout
+                )
+                + f"\n  (underlying error: {exc})"
+            ) from exc
+
     def load(self) -> None:
         """Import the openpi client (guarded) and open the websocket to the policy server."""
         if not self.openpi_available():
@@ -127,7 +179,7 @@ class OpenPiAdapter(PolicyAdapter):
         from openpi_client import image_tools, websocket_client_policy
 
         self._image_tools = image_tools
-        # Creating the client connects to the server; a clear error surfaces if none is running.
+        self._require_server()
         self._client = websocket_client_policy.WebsocketClientPolicy(host=self.host, port=self.port)
         self._loaded = True
 
@@ -174,10 +226,22 @@ class OpenPiAdapter(PolicyAdapter):
             raise RuntimeError("OpenPiAdapter.act called before load(); call load() first.")
 
         obs = self._observation(observation, instruction)
-        result = self._client.infer(obs)
+        try:
+            result = self._client.infer(obs)
+        except Exception as exc:  # noqa: BLE001 - the client raises websocket/OS errors untyped
+            raise OpenPiTransportError(
+                f"openpi inference failed against {self.host}:{self.port}: {exc}. "
+                "Episodes already scored are unaffected; check the policy server's logs."
+            ) from exc
         actions = np.asarray(result["actions"])  # (action_horizon, action_dim) chunk
         first = actions[0] if actions.ndim == 2 else actions  # execute the first predicted step
         return clamp_action(first, self.action_dim)
 
 
-__all__ = ["OpenPiAdapter", "MissingOpenPiError", "OPENPI_RESIZE"]
+__all__ = [
+    "OpenPiAdapter",
+    "MissingOpenPiError",
+    "OpenPiTransportError",
+    "OPENPI_RESIZE",
+    "OPENPI_CONNECT_TIMEOUT",
+]

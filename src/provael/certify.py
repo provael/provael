@@ -40,7 +40,11 @@ from provael.attest import ATTESTATION_JSON, build_statement
 from provael.calibration import anytime_ci, wilson_ci
 from provael.compliance import CAVEATS, REQUIREMENTS
 from provael.crosswalk import build_appendix as _crosswalk_appendix
-from provael.hosted.report import DISCLAIMERS
+from provael.hosted.report import (
+    ANNEX_III_CONTROL_SYSTEMS,
+    ANNEX_III_CORRUPTION,
+    DISCLAIMERS,
+)
 from provael.mlbom import ML_BOM_JSON
 from provael.oscal import to_oscal
 from provael.scoring.asr import (
@@ -129,7 +133,7 @@ _NAME_TO_FAMILY: dict[str, str] = {
 #: The Annex III EHSRs the pack maps (moved here from hosted/machinery.py, which now calls us).
 _ANNEX_III_EHSRS: tuple[dict[str, str], ...] = (
     {
-        "ehsr_id": "Annex III, 1.1.9",
+        "ehsr_id": ANNEX_III_CORRUPTION,
         "ehsr_title": "Protection against corruption",
         "obligation": "Machinery must be designed and constructed so that connection to it, or any "
         "corruption of software/data critical for safety, does not lead to a hazardous situation.",
@@ -139,7 +143,7 @@ _ANNEX_III_EHSRS: tuple[dict[str, str], ...] = (
         "the benign-FPR control; bound by the dated, digest-verified attestation.",
     },
     {
-        "ehsr_id": "Annex III, 1.2.1",
+        "ehsr_id": ANNEX_III_CONTROL_SYSTEMS,
         "ehsr_title": "Safety and reliability of control systems",
         "obligation": "Control systems must be safe and reliable and withstand intended and "
         "unintended influences, including malicious attempts by third parties creating a hazard.",
@@ -190,6 +194,13 @@ def _statement(family: str, stat: ASRStat, transfer_tier: str) -> str:
         "demonstrated on a real policy" if demonstrated
         else "not demonstrated on a real policy"
     )
+    if stat.attempts == 0:
+        # "ASR 0.0% (0/0 applicable episodes)" reads as a clean result for a family that was never
+        # scored. An empty slice is an N/A, not a measured 0%.
+        return (
+            f"Family '{family}': not applicable to this suite — no episodes were scored, so no "
+            f"ASR is reported; {clause}."
+        )
     return (
         f"Family '{family}': ASR {100.0 * stat.asr:.1f}% "
         f"({stat.successes}/{stat.attempts} applicable episodes); {clause}."
@@ -208,8 +219,11 @@ def _family_evidence_rows(report: RunReport) -> list[dict[str, Any]]:
     benign = report.benign_fpr
 
     # One-sided exact binomial p per family vs the benign control, BH-corrected across families.
+    # A family with zero applicable episodes is NOT a hypothesis under test: including its
+    # degenerate 0/0 binomial (p = 1.0) would both publish a q-value for a family that never ran and
+    # inflate the correction's denominator for the families that did.
     pvalues: list[float | None] = [
-        None if benign is None else binom_test_greater(
+        None if benign is None or fam_stats[fam].attempts == 0 else binom_test_greater(
             fam_stats[fam].successes, fam_stats[fam].attempts, benign
         )
         for fam in families
@@ -229,17 +243,27 @@ def _family_evidence_rows(report: RunReport) -> list[dict[str, Any]]:
         stat = fam_stats[family]
         subset = [r for r in report.results if r.family == family]
         with_baseline = [r for r in report.results if r.family in (family, BASELINE_FAMILY)]
-        lo, hi = wilson_ci(stat.successes, stat.attempts)
-        alo, ahi = anytime_ci(stat.successes, stat.attempts)
+        # A family the suite declared inapplicable for every episode has no rate and no interval:
+        # `ASRStat.asr` is 0.0 there only as a serialisation sentinel and `wilson_ci(0, 0)` returns
+        # the zero-width (0.0, 0.0). Emitting them would put "ASR 0.0%, 95% CI [0, 0]" for an
+        # unexercised family into a conformity dossier — certainty about something never measured.
+        measured = stat.attempts > 0
+        wilson: list[float] | None = None
+        anytime: list[float] | None = None
+        if measured:
+            lo, hi = wilson_ci(stat.successes, stat.attempts)
+            alo, ahi = anytime_ci(stat.successes, stat.attempts)
+            wilson, anytime = [lo, hi], [alo, ahi]
         tier = _family_transfer_tier(family, report)
         q_sig = bh.get(family)
         rows.append({
             "family": family,
             "n": stat.attempts,
+            "applicable": measured,
             "successes": stat.successes,
-            "asr": stat.asr,
-            "wilson_ci95": [lo, hi],
-            "anytime_ci": [alo, ahi],
+            "asr": stat.asr if measured else None,
+            "wilson_ci95": wilson,
+            "anytime_ci": anytime,
             "matched_benign_fpr": matched_benign_fpr(with_baseline),
             "succ_but_unsafe": succ_but_unsafe(subset),
             "bh_qvalue": None if q_sig is None else q_sig[0],
@@ -319,6 +343,14 @@ def _residual_risk(report: RunReport) -> dict[str, Any]:
     """State plainly what was NOT tested — deferred classes, families not run, embodiments."""
     ran = sorted({_NAME_TO_FAMILY.get(a, a) for a in report.attacks})
     not_run = [f for f in sorted(FAMILIES) if f != BASELINE_FAMILY and f not in ran]
+    # Requested but scored nothing — the suite declared every episode inapplicable. Derived from the
+    # measured stats, NOT from `report.attacks`: such a family is present in `ran` (so it is absent
+    # from `not_run`) while carrying no evidence, which left it invisible in both this section and
+    # the per-family rows.
+    not_applicable = sorted(
+        f for f, s in by_family(report.results).items()
+        if f != BASELINE_FAMILY and s.attempts == 0
+    )
     no_real_transfer = [
         f for f in ran
         if f != BASELINE_FAMILY and _family_transfer_tier(f, report) != MEASURED_REAL_TRANSFER
@@ -327,6 +359,7 @@ def _residual_risk(report: RunReport) -> dict[str, Any]:
         "deferred_attack_classes": list(_DEFERRED_ATTACK_CLASSES),
         "out_of_scope": list(_OUT_OF_SCOPE),
         "families_not_exercised_this_run": not_run,
+        "families_requested_but_not_applicable": not_applicable,
         "families_without_real_policy_transfer": no_real_transfer,
         "suite_scope": (
             f"Only the '{report.suite}' suite was exercised; other suites and embodiments are not "

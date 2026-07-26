@@ -67,13 +67,16 @@ REPRODUCTIONS: dict[str, Reproduction] = {
         name="badvla",
         title="BadVLA: backdoor attacks on Vision-Language-Action models",
         arxiv="arXiv:2505.16640",
-        eai="EAI02",
-        attacks=["patch", "decoy_object"],
+        eai="EAI03",
+        attacks=["backdoor"],
         paper_asr="up to ~100% targeted ASR with a physical trigger (reported)",
-        summary="A physical-object / patch trigger in the scene flips the policy to an "
-        "attacker-chosen behaviour.",
-        mapping_note="Provael approximates the *trigger-in-the-scene* threat with the EAI02 "
-        "visual family (`patch` + `decoy_object`); it does not train or implant a real backdoor.",
+        summary="A benign-looking trigger planted at training time flips the policy to an "
+        "attacker-chosen objective while clean inputs behave normally.",
+        mapping_note="Provael runs the EAI03 `backdoor` family (`object_trigger` + "
+        "`phrase_trigger`) as a pre-deployment *trigger screen*: it injects the candidate-trigger "
+        "battery and measures activation. It neither trains nor implants a backdoor, so a clean "
+        "public checkpoint should screen ~0% — an honest null, not a failure. The paired stub "
+        "fixture carries a planted trigger, so the screen demonstrably fires on CPU.",
     ),
     "robopair": Reproduction(
         name="robopair",

@@ -132,11 +132,24 @@ def attack_examples(attack_names: list[str]) -> list[AttackExample]:
     Re-runs each attack's ``perturb`` on a canonical stub observation and reports the
     changed instruction (instruction family) or the injected observation channel
     (visual / injection families). Policy-agnostic — it describes what the attack does.
+
+    An attack name this build does not register is rendered as an unavailable row rather than
+    raised: ``validate_report`` only requires a non-empty attack name, so a submission produced by
+    a fork or by a newer Provael than the one rebuilding the board carries names the registry
+    cannot resolve. Failing there would take down the whole board over one unknown row.
     """
     base_obs = StubSuite().reset("reach", 0)
     examples: list[AttackExample] = []
     for name in attack_names:
-        attack = make_attack(name)
+        try:
+            attack = make_attack(name)
+        except KeyError:
+            examples.append(AttackExample(
+                attack=name,
+                family="unknown",
+                example="unavailable: attack not registered in this build",
+            ))
+            continue
         adv_instruction, adv_obs = attack.perturb(BASE_INSTRUCTION, base_obs)
         if adv_instruction != BASE_INSTRUCTION:
             artifact = adv_instruction

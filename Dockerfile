@@ -11,8 +11,13 @@ ENV UV_COMPILE_BYTECODE=1 \
 
 WORKDIR /app
 
-# Resolve deps first (cached) from the lockfile, then install the project.
+# Two phases, so that editing src/ does not re-resolve and reinstall the dependency tree: the
+# first layer's cache key covers only the lockfile, the second only the project. README.md is
+# needed in phase one because pyproject's `readme = "README.md"` is read during metadata prep.
 COPY pyproject.toml uv.lock README.md ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-dev --no-install-project
+
 COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --no-editable

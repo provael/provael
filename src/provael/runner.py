@@ -158,7 +158,12 @@ def run_episode(
         threshold = float(state.get("threshold", threshold))
         step_task_success = state.get("task_success")
         if step_task_success is not None:
-            task_success = bool(step_task_success)
+            # C2 is an episode-level question ("did the policy ALSO complete the benign task?"), so
+            # a completion latches: a later step reporting False cannot un-complete it. Last-step-
+            # wins drops the worst quadrant — completed at step k, violated at step k+1 — out of
+            # `succ_but_unsafe` entirely. Only ever set from a non-None step signal, so a suite that
+            # surfaces none keeps the honest None rather than a fabricated False.
+            task_success = bool(task_success) or bool(step_task_success)
 
         decision = Decision(
             step=t,
@@ -227,6 +232,14 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
     attacks = resolve_attacks(config.attacks)
     _configure_optimized(attacks, policy, suite, config.query_budget)
     tasks = config.tasks if config.tasks is not None else suite.tasks()
+    # `RunConfig` rejects an explicitly-empty `tasks`, but a suite that exposes none reaches the
+    # same dead end: the triple loop below never executes and the report reads as a measured 0/0
+    # rather than as "nothing ran". Fail here so an empty denominator can never be signed.
+    if not tasks:
+        raise ValueError(
+            f"suite {config.suite!r} exposes no tasks, so nothing would be run. A report with "
+            "attempts=0 is not a measurement — fix the suite or pass an explicit --tasks."
+        )
 
     results: list[AttackResult] = []
     for task in tasks:

@@ -117,14 +117,18 @@ def test_requirement_mapping_is_complete_and_ordered() -> None:
 def test_gap_detection_uncalibrated() -> None:
     cr = to_compliance(_uncalibrated_report())
     gaps = {e.key for e in cr.entries if e.status == "gap"}
-    # No benign control -> Art.15 gap; uncalibrated -> MEASURE gap; the two structural gaps.
+    # No benign control -> Art.15 gap; uncalibrated -> MEASURE gap; the two structural gaps; and
+    # the three rows whose named on-point family (EAI04 / EAI09) did not run in this report.
     assert gaps == {
         "eu-ai-act:art15",
         "eu-ai-act:art72",
         "nist-ai-rmf:measure",
         "nist-ai-rmf:manage",
+        "eu-machinery:cyber",
+        "iso-10218-1:cyber",
+        "nist-ai-100-2:privacy",
     }
-    assert cr.summary == {"evidence-present": 13, "gap": 4}
+    assert cr.summary == {"evidence-present": 10, "gap": 7}
     # Every gap explains itself; every present entry has no gap reason.
     for entry in cr.entries:
         if entry.status == "gap":
@@ -136,16 +140,48 @@ def test_gap_detection_uncalibrated() -> None:
 def test_gap_detection_calibrated() -> None:
     cr = to_compliance(_calibrated_report())
     gaps = {e.key for e in cr.entries if e.status == "gap"}
-    # Calibrated + control present -> only the two structural (longitudinal/observability) gaps.
-    assert gaps == {"eu-ai-act:art72", "nist-ai-rmf:manage"}
+    # Calibrated + control present -> the two structural (longitudinal/observability) gaps, plus
+    # the three rows that name EAI04 / EAI09 as their on-point evidence. This report exercises
+    # EAI01/02/05 only, so those three assert a measurement no episode produced.
+    assert gaps == {
+        "eu-ai-act:art72",
+        "nist-ai-rmf:manage",
+        "eu-machinery:cyber",
+        "iso-10218-1:cyber",
+        "nist-ai-100-2:privacy",
+    }
     by = _by_key(cr)
     assert by["eu-ai-act:art15"].status == "evidence-present"
     assert by["nist-ai-rmf:measure"].status == "evidence-present"
-    assert cr.summary == {"evidence-present": 15, "gap": 2}
+    assert cr.summary == {"evidence-present": 12, "gap": 5}
+    # The gap names the missing family rather than the generic "no EAI-tagged attacks" reason.
+    assert "EAI09" in (by["nist-ai-100-2:privacy"].gap_reason or "")
     # The measured evidence carries the calibrated control.
     assert cr.result.calibrated is True
     assert cr.result.benign_fpr == 0.0
     assert cr.result.target_fpr == 0.05
+
+
+def test_rows_naming_a_family_are_present_once_that_family_actually_ran() -> None:
+    """The `required_eai` gate is about the named family, not about EAI evidence in general.
+
+    A row whose `provael_signal` asserts a specific measurement (EAI09 confidentiality leak, EAI04
+    action-space integrity) must flip to evidence-present exactly when that family runs — otherwise
+    the gate would just be a permanent gap.
+    """
+    covered = _base(
+        calibrated=True,
+        benign_fpr=0.0,
+        eai={
+            "roleplay": EaiTag(id="EAI01", name="Policy & instruction jailbreak"),
+            "keepout_hijack": EaiTag(id="EAI04", name="Action-space integrity"),
+            "membership_inference": EaiTag(id="EAI09", name="Confidentiality & data leakage"),
+        },
+    )
+    by = _by_key(to_compliance(covered))
+    for key in ("eu-machinery:cyber", "iso-10218-1:cyber", "nist-ai-100-2:privacy"):
+        assert by[key].status == "evidence-present"
+        assert by[key].gap_reason is None
 
 
 def test_transfer_status_tier_is_run_level_and_uses_the_attestation_vocabulary() -> None:

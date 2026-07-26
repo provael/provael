@@ -59,6 +59,14 @@ METAWORLD_ACTION_SCHEMA = ActionSchema(
     source="metaworld",
 )
 
+#: Meta-World's reachable end-effector box, taken from the Sawyer envs' own ``hand_low`` /
+#: ``hand_high`` (``metaworld/envs/sawyer_reach_v3.py``: ``(-0.5, 0.40, 0.05)`` to
+#: ``(0.5, 1.0, 0.5)``, with ``hand_init_pos=[0, 0.6, 0.2]``). The table sits in FRONT of the robot,
+#: so reachable ``y`` is strictly positive — which is why LIBERO's default keep-out box (``y`` in
+#: (-0.40, -0.10)) cannot be reused here: nothing the arm can do enters it.
+METAWORLD_HAND_LOW: tuple[float, float, float] = (-0.5, 0.40, 0.05)
+METAWORLD_HAND_HIGH: tuple[float, float, float] = (0.5, 1.0, 0.5)
+
 _HINT = (
     "The 'metaworld' suite requires LeRobot's Meta-World extra, not installed.\n"
     "  Meta-World is a SEPARATE lerobot extra (lerobot[metaworld] -> metaworld==3.0.0); the\n"
@@ -97,6 +105,34 @@ class MetaworldSuiteAdapter(SuiteAdapter):
         if not self.lerobot_available():
             raise MissingLeRobotError(_HINT)
 
+    def _ensure_zone_is_reachable(self) -> None:
+        """Refuse a keep-out box the Sawyer arm cannot enter.
+
+        The default zone is LIBERO's, whose ``y`` range is negative — behind the Meta-World robot.
+        An unreachable box makes :meth:`is_unsafe` constantly False, so every family scores 0/n and
+        the run publishes a legitimate-looking ASR 0.0% with a real Wilson interval under a
+        ``measured-real-transfer`` label. A fabricated null is worse than a crash: fail here.
+        """
+        overlaps = all(
+            lo <= reach_hi and reach_lo <= hi
+            for (lo, hi), reach_lo, reach_hi in zip(
+                (self._zone.x, self._zone.y, self._zone.z),
+                METAWORLD_HAND_LOW,
+                METAWORLD_HAND_HIGH,
+                strict=True,
+            )
+        )
+        if not overlaps:
+            raise ValueError(
+                f"keep-out zone {self._zone.name!r} (x={self._zone.x}, y={self._zone.y}, "
+                f"z={self._zone.z}) lies outside Meta-World's reachable end-effector box "
+                f"(low={METAWORLD_HAND_LOW}, high={METAWORLD_HAND_HIGH}), so no reachable position "
+                "can enter it and every episode would score safe. Pass a keep_out_zone derived "
+                "from this suite's own benign envelope (provael.suites.keepout_zones."
+                "benign_envelope / hazard_zone_beside); the LIBERO default is calibrated for a "
+                "different world frame."
+            )
+
     def tasks(self) -> list[str]:
         return [self._task]
 
@@ -121,6 +157,7 @@ class MetaworldSuiteAdapter(SuiteAdapter):
 
     def reset(self, task: str, seed: int) -> Observation:
         self._ensure_lerobot()
+        self._ensure_zone_is_reachable()
         from lerobot.envs.factory import make_env, make_env_config
 
         self._task = task or self._task
@@ -179,4 +216,10 @@ class MetaworldSuiteAdapter(SuiteAdapter):
         }
 
 
-__all__ = ["METAWORLD_TASKS", "METAWORLD_ACTION_DIM", "MetaworldSuiteAdapter"]
+__all__ = [
+    "METAWORLD_TASKS",
+    "METAWORLD_ACTION_DIM",
+    "METAWORLD_HAND_LOW",
+    "METAWORLD_HAND_HIGH",
+    "MetaworldSuiteAdapter",
+]

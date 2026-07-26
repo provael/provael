@@ -20,8 +20,12 @@ framework asks for, and specs the report Provael generates from them.
 > health-and-safety expectations — including **robustness against manipulation** — reach robots
 > through **delegated acts to the Machinery Regulation** (the Machinery Regulation applies from
 > **2027-01-20**; AI-specific delegated acts expected by **2028-08-02**), alongside the new
-> **cybersecurity risk assessment** in **ISO 10218:2025**. High-risk AI Act deadlines also shifted
-> — stand-alone Annex III to **2027-12-02**, embedded Annex I to **2028-08-02**. The EU AI Act
+> **cybersecurity risk assessment** in **ISO 10218:2025**. The Omnibus *would* also shift the
+> high-risk AI Act deadlines — stand-alone Annex III to **2027-12-02**, embedded Annex I to
+> **2028-08-02** — but that deferral is **not yet formally adopted or published in the OJ**, so
+> **2027-08-02** remains the legal baseline for embedded Annex I; treat 2027 as binding until the
+> deferral is adopted. (This mirrors `attest.REGULATORY_CLOCK`, which is embedded in the payload of
+> every signed attestation — plan against the clock, not against the proposed dates.) The EU AI Act
 > **Article 15** robustness/cybersecurity language remains the substantive *measurement* anchor
 > (and still applies directly to non-machinery high-risk AI systems); for a robot, treat the
 > Machinery Regulation + ISO 10218:2025 cyber-risk assessment as the *operative route* and Art. 15

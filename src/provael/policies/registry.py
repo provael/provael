@@ -8,9 +8,16 @@ message instead of a traceback.
 
 Two adapter backends are reused across many models:
 
-* **LeRobot-native** (``smolvla``, ``pi0``, ``pi05``, ``pi0fast``, ``groot``) — all load through
-  LeRobot's generic ``PreTrainedConfig.from_pretrained`` + ``make_policy`` path, so adding one is
-  a config-level change (a different default checkpoint). Needs ``provael[lerobot]``.
+* **LeRobot-native** (``smolvla``, ``pi0``, ``pi05``, ``pi0fast``) — all load through LeRobot's
+  generic ``PreTrainedConfig.from_pretrained`` + ``make_policy`` path, so adding one is a
+  config-level change (a different default checkpoint). Needs ``provael[lerobot]``.
+* **LeRobot-native but NOT provisioned** (``groot``) — LeRobot does register a ``groot`` policy
+  type, but its dependencies live in LeRobot's own ``[groot]`` extra (peft, dm-tree, timm,
+  flash-attn) and ``provael[lerobot]`` pins ``lerobot[smolvla,libero]`` only. Installing the
+  advertised extra therefore does **not** make ``groot`` runnable, and no GR00T checkpoint has
+  been loaded in this repo. It is registered **scaffolding** — the same honesty scope ``openvla``
+  and ``openpi`` state in their module docstrings — and :data:`SCAFFOLDING_POLICIES` records that
+  so ``list-policies`` cannot advertise a capability the install cannot deliver.
 * **Hugging Face ``transformers``** (``openvla``) — loads OpenVLA / OpenVLA-OFT directly via
   ``AutoModelForVision2Seq``. Needs ``provael[openvla]``. This is the model-agnostic path that
   does not go through LeRobot.
@@ -40,9 +47,9 @@ def _make_stub(**_kwargs: object) -> PolicyAdapter:
 def _lerobot_native(default_model: str, policy_name: str) -> Callable[..., PolicyAdapter]:
     """Build a factory for a LeRobot-native policy (reuses the generic LeRobotAdapter).
 
-    ``smolvla`` / ``pi0`` / ``pi05`` / ``pi0fast`` / ``groot`` differ only by their default
-    checkpoint — LeRobot's ``make_policy`` selects the right policy class from the checkpoint
-    config. The optional ``lerobot`` import stays inside the adapter's ``load``.
+    ``smolvla`` / ``pi0`` / ``pi05`` / ``pi0fast`` differ only by their default checkpoint —
+    LeRobot's ``make_policy`` selects the right policy class from the checkpoint config. The
+    optional ``lerobot`` import stays inside the adapter's ``load``.
     """
 
     def factory(
@@ -135,6 +142,20 @@ REQUIRES_LEROBOT: frozenset[str] = frozenset(
     name for name, (extra, _module) in _REQUIRES_EXTRA.items() if extra == "lerobot"
 )
 
+#: policy name -> why it is scaffolding rather than a runnable backend. A policy listed here is
+#: registered and structurally unit-tested, but no checkpoint has ever been driven through it in
+#: this repo, so nothing may present it as ready. ``groot`` additionally has no extra that
+#: provisions it: LeRobot's ``groot`` policy type needs ``lerobot[groot]``, which
+#: ``provael[lerobot]`` does not pull in, so the extra the CLI names leaves it unrunnable.
+SCAFFOLDING_POLICIES: dict[str, str] = {
+    "groot": (
+        "scaffolding: needs lerobot[groot], which provael[lerobot] does not install; "
+        "no GR00T checkpoint has been loaded here"
+    ),
+    "openvla": "scaffolding: structurally tested on CPU; no real forward pass has been run here",
+    "openpi": "scaffolding: also needs a running openpi policy server; not exercised here",
+}
+
 
 def lerobot_available() -> bool:
     """True if the ``lerobot`` package is importable in the current environment."""
@@ -150,6 +171,16 @@ def policy_extra(name: str) -> str | None:
     """The optional extra a policy needs (e.g. ``"lerobot"`` / ``"openvla"``), or None for CPU."""
     req = _REQUIRES_EXTRA.get(name)
     return req[0] if req is not None else None
+
+
+def policy_scaffolding_note(name: str) -> str | None:
+    """Why ``name`` is scaffolding rather than a runnable backend, or ``None`` if it is real.
+
+    :func:`policy_is_ready` answers "is the declared dependency importable here", which is a
+    strictly weaker claim than "this backend has been run". Both are surfaced by ``list-policies``
+    so a reader is never told a policy is ready when all that was verified is an import.
+    """
+    return SCAFFOLDING_POLICIES.get(name)
 
 
 def policy_is_ready(name: str) -> bool:
@@ -179,9 +210,11 @@ def make_policy(name: str, **kwargs: object) -> PolicyAdapter:
 __all__ = [
     "POLICIES",
     "REQUIRES_LEROBOT",
+    "SCAFFOLDING_POLICIES",
     "available_policies",
     "lerobot_available",
     "make_policy",
     "policy_extra",
     "policy_is_ready",
+    "policy_scaffolding_note",
 ]
