@@ -124,7 +124,7 @@ def run_episode(
             adversarial_instruction=base_instruction,
             applicable=False,
             attacker_access=attack.attacker_access,
-            action_head_class=attack.action_head_class,
+            action_head_class=policy.action_head_class or attack.action_head_class,
         )
 
     success = False
@@ -194,7 +194,7 @@ def run_episode(
         adversarial_instruction=adversarial_instruction,
         task_success=task_success,
         attacker_access=attack.attacker_access,
-        action_head_class=attack.action_head_class,
+        action_head_class=policy.action_head_class or attack.action_head_class,
         decisions=decisions,
     )
 

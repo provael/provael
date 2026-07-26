@@ -76,9 +76,9 @@ locomotion — a balance spoof → loss of balance, a whole-body hijack → topp
 control); run `provael transfer-test` to print it. The `action`, `action_space`, `sensor_spoof`,
 `backdoor`, `authorization`, `misalignment`, `confidentiality`, and `humanoid` families are
 **stub-validated only** (no real-model transfer claimed). It red-teams **8 policies** — the CPU `stub`
-plus real **SmolVLA / π0 / π0.5 / π0-FAST / GR00T** (via the `[lerobot]` extra), **OpenVLA**
+plus real **SmolVLA / π0 / π0.5 / π0-FAST** (via the `[lerobot]` extra), **OpenVLA**
 (via `[openvla]`), and **π0 served by openpi** — Physical Intelligence's own stack, via the CPU-only
-`[openpi]` websocket client to a GPU policy server — across **5 suites** (`stub` + `reach` +
+`[openpi]` websocket client to a GPU policy server. A `groot` adapter is registered but is **scaffolding**: it needs `lerobot[groot]`, which `provael[lerobot]` does not provision, so no GR00T run has been made — `provael list-policies` says so too. Suites: **5** (`stub` + `reach` +
 `humanoid` on CPU; **LIBERO** + **Meta-World** gated), or any policy/suite you wrap with the tiny
 adapter ABCs. The templated families are
 heuristic perturbations (not gradient-based); the `optimized` family is a model-agnostic search
@@ -99,7 +99,8 @@ simulator live behind an optional extra and a `PROVAEL_INTEGRATION=1` gate.
 
 Provael is open core. The CLI, every attack family, calibration, SARIF/OSCAL/ML-BOM, and the
 GitHub Action are Apache-2.0, forever. The paid surface is operated work a solo tool can't sign
-for: a hosted real-VLA (GPU) transfer run, a project-key-signed leaderboard entry, and a
+for: a hosted real-VLA (GPU) transfer run, a leaderboard entry signed with a published, stable
+project key (which a verifier may choose to trust — no signature is authoritative on its own), and a
 compliance dossier. Design-partner assessments ($15K, first 3) and standard assessments ($25K):
 [www.provael.com/assessment](https://www.provael.com/assessment) — free PV-SCAN of your nearest
 public checkpoint included.

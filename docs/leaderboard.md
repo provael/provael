@@ -45,7 +45,7 @@ b=json.load(open('/tmp/rebuild/leaderboard.json'))['inputs_digest']; print('matc
 
 ## Signing and offline verification
 
-The authoritative hosted board is **Ed25519-signed** (via the `provael[attest]` extra). The
+The hosted board is **Ed25519-signed** (via the `provael[attest]` extra). The
 signature covers the whole board except the signature field, and verifies offline with no network:
 
 ```bash
@@ -59,7 +59,7 @@ public half next to the board.
 
 ## Open-core
 
-The CLI builds and verifies boards for anyone, free and Apache-2.0. The **hosted, project-key-signed
+The CLI builds and verifies boards for anyone, free and Apache-2.0. The **hosted board, signed with a published project key** — the
 board** — signed with Provael's key and backed by real-VLA (GPU) runs rather than the stub — is the
 paid surface. Submitting a result is a pull request; see
 [CONTRIBUTING-leaderboard.md](https://github.com/provael/provael/blob/main/CONTRIBUTING-leaderboard.md).

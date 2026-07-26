@@ -78,7 +78,9 @@ class OptimizedPatchHijack(Attack):
     #: INV-4: this is a black-box *query* search (not a white-box gradient attack — that variant is
     #: a GPU/P1 follow-up), measured against SmolVLA's flow-matching action head.
     attacker_access = "black-box-query"
-    action_head_class = "flow"
+    # action_head_class stays None: a patch search is head-agnostic — it perturbs pixels and reads
+    # the emitted action, so it hits whatever head the policy under test has. The head is recorded
+    # from the POLICY (PolicyAdapter.action_head_class), mirroring targeted_redirect.
 
     def __init__(
         self,

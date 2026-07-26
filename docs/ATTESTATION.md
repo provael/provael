@@ -136,7 +136,7 @@ provael attest --run results/smolvla_libero_object --profile insurer --out runs/
 ## Open-core
 
 The CLI, the attacks, the calibrated ASR, SARIF, the GitHub Action, and local `attest` are free and
-Apache-2.0 — anyone can self-attest their own runs. The **hosted, authoritative attestation** —
+Apache-2.0 — anyone can self-attest their own runs. The **hosted attestation, signed with a published project key** —
 signed with Provael's key and backed by a real-VLA (GPU) transfer run rather than the stub — is the
 paid surface. The open tool never gates the local stub path.
 

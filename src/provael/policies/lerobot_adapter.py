@@ -111,6 +111,11 @@ class LeRobotAdapter(PolicyAdapter):
     ``(action_dim,)`` numpy action.
     """
 
+    #: SmolVLA and the pi0 / pi0.5 checkpoints this adapter loads use flow-matching action
+    #: heads. pi0-FAST is the exception (discrete FAST tokens) and should override this.
+    action_head_class = "flow"
+
+
     #: Real VLA inference is model-stochastic (reports are seeded but not byte-identical).
     stochastic = True
 
