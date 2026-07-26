@@ -96,7 +96,23 @@ jobs:
 
       # Audit the locked dependency set for known CVEs. Documented exception mechanism: add an
       # `--ignore-vuln <ID>` with a dated justification in a review comment when a fix is unavailable.
+      #
+      # `-r` is load-bearing. A bare `uvx pip-audit` audits the ephemeral environment uvx builds for
+      # pip-audit itself, never the project — it passed on every run while pillow shipped 13 open
+      # advisories in the default install. Always audit an exported requirements file.
       - name: Audit dependencies (pip-audit)
         run: |
-          uv sync --locked
-          uvx pip-audit --strict --progress-spinner off
+          uv export --no-hashes --no-annotate --quiet --format requirements-txt -o audit-default.txt
+          grep -qE '^pillow==' audit-default.txt \
+            || { echo "::error::export produced no runtime deps — the audit would be vacuous"; exit 1; }
+          uvx pip-audit --strict --progress-spinner off -r audit-default.txt
+
+      # The GPU extras are not what `pip install provael` resolves, and torch advisories routinely
+      # have no fixed version, so this lane reports without gating. `lerobot` and `openpi` are
+      # declared conflicts and cannot be exported together.
+      - name: Audit GPU extras (informational)
+        continue-on-error: true
+        run: |
+          uv export --extra lerobot --extra openvla --extra attest --extra hosted \
+            --no-hashes --no-annotate --quiet --format requirements-txt -o audit-extras.txt
+          uvx pip-audit --progress-spinner off -r audit-extras.txt
