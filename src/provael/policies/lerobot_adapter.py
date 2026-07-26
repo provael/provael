@@ -163,6 +163,9 @@ class LeRobotAdapter(PolicyAdapter):
         self._action_constant = ACTION
         device = torch.device(self.device)
         self._device = device
+        # Record what we actually loaded onto (torch normalises e.g. "cuda" -> "cuda"), so the
+        # report states the resolved device rather than the requested one.
+        self.resolved_device = str(device)
 
         env_cfg = self._features.env_config if self._features is not None else None
 

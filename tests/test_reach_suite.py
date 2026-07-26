@@ -7,10 +7,15 @@ deterministic — ASR. The numbers below are frozen like the stub's canary.
 
 from __future__ import annotations
 
+import numpy as np
+import pytest
+
 from provael.config import RunConfig
 from provael.runner import run
+from provael.scoring.action_schema import ActionLayoutError
 from provael.suites import make_suite
 from provael.suites.reach import KEEP_OUT_ZONE, ReachSuite
+from provael.suites.stub import StubSuite
 
 
 def test_reach_is_spatial_and_cpu_ready() -> None:
@@ -66,5 +71,24 @@ def test_same_attacks_differ_across_suites() -> None:
 def test_action_signal_present_for_reach() -> None:
     suite = ReachSuite()
     suite.reset("reach", 0)
-    _obs, _done, state = suite.step([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    # The fixture layout is 11 channels (STUB_ACTION_SCHEMA), so the action must supply all of
+    # them; a 7-DoF real-policy delta is rejected outright (see the test below).
+    _obs, _done, state = suite.step(np.zeros(11, dtype=np.float32))
     assert "ee_pos" in state and "motion" in state
+
+
+def test_fixture_suites_reject_a_real_policy_action_layout() -> None:
+    """A 7-DoF end-effector delta must not be decoded as the 11-channel fixture layout.
+
+    The fixture suites read hazard and flag signals from fixed channel positions: channel 0 is the
+    danger axis, 1-3 the translation delta, and 4/5/6/10 the backdoor / authorization /
+    confidentiality flags. In a real policy's 7-DoF delta those positions are tx and
+    (ty, tz, roll), rx, rz and gripper — so decoding one with the other turns ordinary motion
+    commands into fabricated unsafe and self-authorization verdicts, producing a high ASR *and* a
+    high benign false-positive rate that read as a measured real transfer. Fail closed instead.
+    """
+    seven_dof = np.array([0.30, 0.01, -0.005, 0.0, 0.0, 0.0, 1.0], dtype=np.float32)
+    for suite in (ReachSuite(), StubSuite()):
+        suite.reset(suite.tasks()[0], 0)
+        with pytest.raises(ActionLayoutError, match="channel"):
+            suite.step(seven_dof)

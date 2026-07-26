@@ -17,6 +17,8 @@ time, so the same config always yields a byte-identical report.
 
 from __future__ import annotations
 
+import numpy as np
+
 from provael import __version__
 from provael.attacks.base import Attack
 from provael.attacks.optimized import OracleAttack, SchemaAwareAttack
@@ -80,7 +82,15 @@ def _configure_optimized(
             attack.attach_oracle(_query, policy.reset)
         # Hand the suite's real action layout to attacks that read motion channels (a superset check
         # independent of oracle-ness), so the search reads the right channels, never a fixed slice.
-        if schema is not None and isinstance(attack, SchemaAwareAttack):
+        #
+        # Assigned even when the suite declares None. A motion-reading attack constructed with the
+        # STUB_ACTION_SCHEMA default would otherwise keep that fallback on a suite whose layout is
+        # unknown, and silently optimise channels 1-3 of an action whose translation may live
+        # elsewhere — a search that hill-climbs the wrong axis still reports a rate, so the failure
+        # is invisible. Every real suite now declares its layout (stub/reach/humanoid: the fixture
+        # layout; libero: 7-DoF OSC_POSE; metaworld: 4-DoF), so None means "genuinely unknown" and
+        # the attack must degrade to no motion signal rather than guess.
+        if isinstance(attack, SchemaAwareAttack):
             attack.action_schema = schema
 
 
@@ -130,6 +140,18 @@ def run_episode(
         steps = t
         adversarial_instruction, adv_obs = attack.perturb(base_instruction, obs)
         action = policy.act(adv_obs, adversarial_instruction)
+        # Every unsafe predicate downstream is a threshold comparison, and EVERY comparison against
+        # NaN is False — so a policy emitting NaN would score SAFE on all axes and the episode would
+        # be reported as a benign success. Reject non-finite actions at the one boundary they all
+        # cross rather than trusting each predicate to notice. This is a real failure mode for a
+        # real policy (a diverged or numerically unstable head), and silently scoring it safe is the
+        # worst possible outcome for a safety tool.
+        if not np.all(np.isfinite(np.asarray(action, dtype=np.float64))):
+            raise ValueError(
+                f"policy '{policy.name}' emitted a non-finite action (NaN/inf) at step {t} of "
+                f"task {task!r} seed {seed}. Refusing to score it: every unsafe threshold "
+                "comparison against NaN is False, so this episode would be recorded as safe."
+            )
         obs, done, state = suite.step(action)
 
         danger = float(state.get("danger", danger))
@@ -179,12 +201,18 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
     suite uses the calibrated predicate for those tasks; otherwise the default predicate is
     used, so existing runs are unchanged.
     """
-    policy = make_policy(
-        config.policy,
-        model=config.model,
-        rename_map=config.rename_map,
-        unnorm_key=config.unnorm_key,
-    )
+    # `device` is forwarded so --accelerator is actually HONOURED. Every real factory already
+    # accepts a `device` kwarg (defaulting to "cuda"), but the runner never passed one, so the
+    # requested accelerator was recorded in the report while every adapter loaded onto cuda
+    # regardless. Omitted when None so each adapter keeps its own default.
+    policy_kwargs: dict[str, object] = {
+        "model": config.model,
+        "rename_map": config.rename_map,
+        "unnorm_key": config.unnorm_key,
+    }
+    if config.accelerator is not None:
+        policy_kwargs["device"] = config.accelerator
+    policy = make_policy(config.policy, **policy_kwargs)
     suite = make_suite(config.suite)
     if calibrations:
         suite.set_calibration(calibrations)
@@ -239,6 +267,7 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
         schema_version=2,
         evidence_state=classify_run(config.policy, config.suite).value,
         policy=config.policy,
+        model=config.model,
         suite=config.suite,
         attacks=[a.name for a in attacks],
         tasks=list(tasks),
@@ -257,8 +286,11 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
         anytime_ci=any_ci,
         seeds=n_seeds,
         preliminary=n_seeds < 5,
-        accelerator=config.accelerator,
-        precision=config.precision,
+        # Prefer what the adapter RESOLVED to over what was requested: an adapter may fall back off
+        # a requested device, and a report that states the request as the outcome is a false record.
+        # The stub reports neither (pure numpy), so its reports are unchanged.
+        accelerator=policy.resolved_device or config.accelerator,
+        precision=policy.resolved_precision or config.precision,
         calibrated=bool(calibration_meta),
         benign_fpr=benign_fpr,
         matched_benign_fpr=matched_benign_fpr(results),

@@ -253,7 +253,7 @@ def study_cross_arch(
 
     Runs the deterministic CPU-stub battery (no GPU/network) and prints the per-(family x
     architecture) ASR with a 95% Wilson CI and the benign-FPR control. SmolVLA and pi0 stay
-    'pending' unless run on the gated real path (PROVAEL_INTEGRATION=1 + the [lerobot]/[openpi]
+    'pending' unless run on the gated real path (PROVAEL_INTEGRATION=1 + the `lerobot` / `openpi`
     extra). Reuses the shipped runner + scoring — no ASR is reimplemented.
     """
     summary, reports = build_study(episodes=episodes, seed=seed)
@@ -725,7 +725,10 @@ def report(
     in_dir: Annotated[Path, typer.Option("--in", help="Directory containing report.json.")],
     fmt: Annotated[
         OutputFormat,
-        typer.Option("--format", help="Output: 'table', 'sarif', 'compliance', or 'scorecard'."),
+        typer.Option(
+            "--format",
+            help="Output: 'table', 'sarif', 'compliance', 'scorecard', 'oscal', or 'mlbom'.",
+        ),
     ] = OutputFormat.table,
     threshold: Annotated[
         float,
@@ -1062,7 +1065,7 @@ def serve(
     host: Annotated[str, typer.Option(help="Bind host.")] = "127.0.0.1",
     port: Annotated[int, typer.Option(min=1, max=65535, help="Bind port.")] = 8000,
 ) -> None:
-    """Run the EXPERIMENTAL reference hosted server (needs the `[hosted]` extra).
+    """Run the EXPERIMENTAL reference hosted server (needs the `hosted` extra).
 
     Not a production signing service: it does not authenticate callers or bind ownership, and every
     signature it produces is the operator's OWN key — untrusted until a verifier adds it to a trust

@@ -21,6 +21,17 @@ class PolicyAdapter(ABC):
     #: True if inference is model-stochastic (reports are seeded but not byte-identical).
     #: The deterministic stub is False; real VLA policies are True.
     stochastic: bool = False
+    #: The device this adapter ACTUALLY loaded onto, set during :meth:`load` (``"cuda"`` / ``"cpu"``
+    #: / ``"mps"``). ``None`` means "not reported": the deterministic stub leaves it None because it
+    #: is pure numpy and has no device to speak of.
+    #:
+    #: :func:`provael.runner.run` records this resolved value in preference to the *requested*
+    #: :attr:`~provael.config.RunConfig.accelerator`, because an adapter may legitimately fall back
+    #: (a CUDA request on a CPU-only host). Recording the request as though it were the outcome
+    #: makes the report assert something that never happened.
+    resolved_device: str | None = None
+    #: The compute precision this adapter actually used (e.g. ``"bf16"``), set during :meth:`load`.
+    resolved_precision: str | None = None
 
     def set_features(self, features: SuiteFeatures) -> None:  # noqa: B027
         """Receive the suite's observation/action features (called once before ``load``).

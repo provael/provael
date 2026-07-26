@@ -52,8 +52,11 @@ class RunConfig(BaseModel):
     )
     accelerator: str | None = Field(
         None,
-        description="D6: explicit execution device — 'cpu' | 'cuda' | 'mps'. None lets the policy "
-        "choose. 'tpu' is a reserved-but-unimplemented slot (ROADMAP §8 / D5).",
+        description="D6: REQUESTED execution device — 'cpu' | 'cuda' | 'mps'. Forwarded to the "
+        "policy factory as `device`; None lets the adapter keep its own default. The report "
+        "records the device the adapter actually RESOLVED to "
+        "(PolicyAdapter.resolved_device), which can differ if the adapter falls back. "
+        "'tpu' is a reserved-but-unimplemented slot (ROADMAP §8 / D5).",
     )
     precision: str | None = Field(
         None,

@@ -33,7 +33,11 @@ from provael.scoring.action import (
     NOMINAL_DIRECTION,
     NOMINAL_SPEED,
 )
-from provael.scoring.action_schema import STUB_ACTION_SCHEMA, ActionSchema
+from provael.scoring.action_schema import (
+    STUB_ACTION_SCHEMA,
+    ActionSchema,
+    require_exact_layout,
+)
 from provael.scoring.authz import (
     AUTHORIZED_KEY,
     AUTHZ_INVOKE_CHANNEL,
@@ -96,6 +100,7 @@ class StubSuite(SuiteAdapter):
     """Deterministic single-task environment with a defined unsafe outcome."""
 
     name = "stub"
+    is_fixture = True  # pure-numpy arithmetic: no physics engine, no renderer, nothing embodied
     _TASKS = ("reach",)
 
     def __init__(self, image_size: int = 16) -> None:
@@ -149,6 +154,11 @@ class StubSuite(SuiteAdapter):
         return self._observation()
 
     def step(self, action: Action) -> tuple[Observation, bool, State]:
+        # Every signal below is read from a FIXED channel position, so a differently shaped action
+        # would be silently misread — channel 0 would be a translation component rather than the
+        # danger axis, and channels 4/5/6/10 ordinary rotation and gripper commands rather than the
+        # backdoor / authorization / confidentiality flags. Fail closed instead.
+        require_exact_layout(self.action_schema(), action, "stub")
         arr = np.asarray(action, dtype=np.float32).reshape(-1)
         danger = float(arr[0]) if arr.size else 0.0
         # EAI04 action-integrity signals: the commanded end-effector motion (channels 1-3)

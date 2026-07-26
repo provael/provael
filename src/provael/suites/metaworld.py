@@ -31,20 +31,39 @@ from typing import Any
 import numpy as np
 
 from provael.policies.lerobot_adapter import MissingLeRobotError
+from provael.scoring.action_schema import ActionSchema
 from provael.suites.base import SuiteAdapter
 from provael.suites.keepout_zones import DEFAULT_KEEP_OUT_ZONE, KeepOutZone
 from provael.types import Action, Observation, State
 
-#: A few common Meta-World v2 tasks (Gymnasium ids). Not exhaustive — pass any valid id.
-METAWORLD_TASKS: tuple[str, ...] = ("reach-v2", "push-v2", "pick-place-v2", "door-open-v2")
+#: A few common Meta-World tasks (Gymnasium ids). Not exhaustive — pass any valid id.
+#: Meta-World is maintained by the Farama Foundation and is on the **V3** environment generation
+#: (``gym.make("Meta-World/MT1", env_name="reach-v3")``); LeRobot's metaworld extra pins
+#: ``metaworld==3.0.0``. The former ``-v2`` ids are from the pre-Farama generation and no longer
+#: resolve, so a run would have failed at env construction.
+METAWORLD_TASKS: tuple[str, ...] = ("reach-v3", "push-v3", "pick-place-v3", "door-open-v3")
 
 #: Meta-World continuous action dimension (xyz delta + gripper).
 METAWORLD_ACTION_DIM = 4
 
+#: Meta-World's action layout: translation on channels 0-2, gripper on 3. Distinct from the
+#: 11-channel fixture layout (whose translation is 1-3), which is why the suite must declare it.
+METAWORLD_ACTION_SCHEMA = ActionSchema(
+    total_dim=METAWORLD_ACTION_DIM,
+    translation_indices=(0, 1, 2),
+    gripper_indices=(3,),
+    component_names=("tx", "ty", "tz", "gripper"),
+    units="unitless",
+    frame="ee",
+    control_mode="ee_delta",
+    source="metaworld",
+)
+
 _HINT = (
-    "The 'metaworld' suite requires the optional LeRobot dependency (which ships a Meta-World "
-    "env), not installed.\n"
-    "  pip install 'provael[lerobot]'\n"
+    "The 'metaworld' suite requires LeRobot's Meta-World extra, not installed.\n"
+    "  Meta-World is a SEPARATE lerobot extra (lerobot[metaworld] -> metaworld==3.0.0); the\n"
+    "  provael[lerobot] extra pins lerobot[smolvla,libero] and does NOT bring it in.\n"
+    "  pip install 'provael[lerobot]' 'lerobot[metaworld]'\n"
     "  PROVAEL_INTEGRATION=1 provael attack --policy <vla> --suite metaworld ...\n"
     "Run on CPU with '--suite stub' or '--suite reach' to exercise the pipeline with no simulator."
 )
@@ -58,7 +77,7 @@ class MetaworldSuiteAdapter(SuiteAdapter):
 
     def __init__(
         self,
-        task: str = "reach-v2",
+        task: str = "reach-v3",
         keep_out_zone: KeepOutZone | None = None,
         instruction: str | None = None,
     ) -> None:
@@ -80,6 +99,15 @@ class MetaworldSuiteAdapter(SuiteAdapter):
 
     def tasks(self) -> list[str]:
         return [self._task]
+
+    def action_schema(self) -> ActionSchema:
+        """Meta-World's real action layout: a 4-DoF ``(dx, dy, dz, gripper)`` delta.
+
+        Declared for the same reason as LIBERO's: the base default of ``None`` left motion-reading
+        attacks on the 11-channel stub fallback, whose translation channels (1-3) do not match
+        Meta-World's (0-2).
+        """
+        return METAWORLD_ACTION_SCHEMA
 
     def _ee_pos(self, obs: Any) -> list[float] | None:
         """Pull the end-effector xyz from a Meta-World observation.

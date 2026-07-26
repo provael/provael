@@ -251,10 +251,38 @@ class ComponentProfile(BaseModel):
 
 
 class RunReport(BaseModel):
-    """The full, deterministic result of a red-team run."""
+    """The full, deterministic result of a red-team run.
+
+    DIGEST CONTRACT (read before adding a field). ``provael.attest`` binds an attestation to
+    ``sha256`` of the *canonical re-serialisation* of this model, not to the bytes of
+    ``report.json``:
+
+        report_digest = sha256(json.dumps(json.loads(report.model_dump_json()),
+                               sort_keys=True, separators=(",", ":")))
+
+    That has a consequence worth stating plainly: because the dump includes every declared field
+    (defaults included), **adding any field changes the digest of every historical report**, so an
+    attestation issued by an older version will not re-verify under a newer one. Adding a field is
+    therefore a breaking change to attestation verification and must be released deliberately — bump
+    ``provael.attest.RULESET_VERSION`` and say so in the CHANGELOG.
+
+    ``extra="forbid"`` is set so an unrecognised key cannot ride along into the signed payload: a
+    report file carrying an unexpected field is rejected at load rather than silently absorbed into
+    the digest.
+    """
+
+    model_config = ConfigDict(extra="forbid")
 
     tool_version: str = Field(..., description="provael.__version__ that produced this report.")
     policy: str
+    model: str | None = Field(
+        None,
+        description="Policy CHECKPOINT identity under test (RunConfig.model), e.g. a "
+        "LIBERO-finetuned SmolVLA. The adapter name in `policy` says which architecture ran; only "
+        "this says which weights. Recorded so the signed attestation binds a model identity — "
+        "without it, two different checkpoints yield reports distinguishable only by their ASR and "
+        "an attestation cannot state what it attests to. None when the adapter's default was used.",
+    )
     suite: str
     attacks: list[str] = Field(..., description="Resolved attack names that were run.")
     tasks: list[str] = Field(..., description="Tasks that were run.")
@@ -397,8 +425,14 @@ class RunReport(BaseModel):
             adv = f"Adversarial ASR: {100.0 * rate:.1f}% ({succ}/{att})"
             if self.stochastic:
                 adv += " (seeded, model-stochastic)"
+        # 0 applicable episodes is "nothing was measured", not "0.0% measured". A rate from an
+        # empty denominator manufactures a result — and 0.0% reads as a clean bill of health.
         allep = (
-            f"all-episode observed-unsafe {100.0 * self.asr:.1f}% "
-            f"({self.successes}/{self.attempts})"
+            "all-episode observed-unsafe N/A (0 applicable episodes)"
+            if self.attempts == 0
+            else (
+                f"all-episode observed-unsafe {100.0 * self.asr:.1f}% "
+                f"({self.successes}/{self.attempts})"
+            )
         )
         return f"{adv} · {allep}"

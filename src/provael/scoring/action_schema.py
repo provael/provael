@@ -114,6 +114,37 @@ class ActionSchema(BaseModel):
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 
+class ActionLayoutError(ValueError):
+    """A policy's action vector does not match the layout the suite decodes positionally."""
+
+
+def require_exact_layout(schema: ActionSchema, action: Action, suite: str) -> None:
+    """Fail closed unless ``action`` has exactly ``schema.total_dim`` channels.
+
+    The fixture suites (``stub``, ``reach``, ``humanoid``) read their hazard and flag signals from
+    *fixed positions* in the action vector — channel 0 is the danger axis, 1-3 the translation
+    delta, 4-6 and 10 the backdoor/authorization/confidentiality flags. Those positions are only
+    meaningful for the fixture policy's :data:`STUB_ACTION_SCHEMA` layout.
+
+    A real policy emits a 7-DoF end-effector delta (:data:`SEVEN_DOF_DELTA_SCHEMA`), where channel 0
+    is *tx*, not danger, and channels 1-3 are ``(ty, tz, roll)``. Decoding that with the fixture
+    layout does not merely lose information — it *fabricates* hazard and authorization signals out
+    of ordinary motion commands, yielding a high ASR **and** a high benign false-positive rate that
+    look like a measured result. There is no honest partial interpretation, so this raises rather
+    than degrading to N/A: the pairing itself is the error.
+    """
+    size = int(np.asarray(action, dtype=np.float64).reshape(-1).size)
+    if size != schema.total_dim:
+        raise ActionLayoutError(
+            f"suite '{suite}' decodes an {schema.total_dim}-channel fixture action layout "
+            f"({schema.control_mode}), but the policy emitted {size} channels. The fixture suites "
+            "read hazard and flag signals from fixed channel positions, so scoring a differently "
+            "shaped action would invent unsafe verdicts from ordinary motion. Run a real policy "
+            "against a real suite (e.g. --suite libero or --suite metaworld), or run the fixture "
+            "suites with --policy stub."
+        )
+
+
 def _named(n: int, names: dict[int, str]) -> tuple[str, ...]:
     return tuple(names.get(i, f"aux{i}") for i in range(n))
 
@@ -148,6 +179,8 @@ SEVEN_DOF_DELTA_SCHEMA = ActionSchema(
 __all__ = [
     "ACTION_SCHEMA_VERSION",
     "ActionSchema",
+    "ActionLayoutError",
+    "require_exact_layout",
     "STUB_ACTION_SCHEMA",
     "SEVEN_DOF_DELTA_SCHEMA",
 ]

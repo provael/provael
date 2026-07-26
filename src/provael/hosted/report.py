@@ -21,6 +21,7 @@ import json
 from typing import Any
 
 from provael.attest import build_statement
+from provael.calibration import anytime_ci, wilson_ci
 from provael.compliance import to_compliance_dict
 from provael.evidence import transfer_status_of
 from provael.types import RunReport
@@ -86,7 +87,7 @@ def build_insurer_report(
     statement = build_statement(report, issued_at=issued_at, commit=commit)
     stmt_dict: dict[str, Any] = json.loads(statement.model_dump_json())
     transfer_status = transfer_status_of(report)
-    adv_rate, _adv_s, adv_n = report.adversarial_headline()
+    adv_rate, adv_s, adv_n = report.adversarial_headline()
     return {
         "format": "provael-assurance-report-draft/v1",
         "tool_version": report.tool_version,
@@ -101,8 +102,19 @@ def build_insurer_report(
             "all_episode_unsafe_rate": report.asr,
             # P0.4 honesty: read the headline against BOTH intervals + the matched-benign control,
             # and the run-level transfer tier — so an assessor never reads a stub number as real.
-            "wilson_ci95": list(report.ci95) if report.ci95 is not None else None,
-            "anytime_ci": list(report.anytime_ci) if report.anytime_ci is not None else None,
+            #
+            # report.ci95 / report.anytime_ci are computed over the ALL-EPISODE counts
+            # (runner.py binds them to the overall stat), so they are the interval for
+            # `all_episode_unsafe_rate` — NOT for `adversarial_asr`. Pairing them with the
+            # adversarial headline would publish an interval that can exclude its own point
+            # estimate. Compute the adversarial interval from the adversarial counts instead, and
+            # label the all-episode one for what it is.
+            "adversarial_wilson_ci95": list(wilson_ci(adv_s, adv_n)) if adv_n else None,
+            "adversarial_anytime_ci": list(anytime_ci(adv_s, adv_n)) if adv_n else None,
+            "all_episode_wilson_ci95": list(report.ci95) if report.ci95 is not None else None,
+            "all_episode_anytime_ci": (
+                list(report.anytime_ci) if report.anytime_ci is not None else None
+            ),
             "benign_fpr": report.benign_fpr,
             "matched_benign_fpr": report.matched_benign_fpr,
             "transfer_status": transfer_status,

@@ -85,17 +85,38 @@ def classify_run(policy: str, suite: str) -> EvidenceState:
     """The state a freshly-produced run has EARNED from its policy/suite alone.
 
     Never awards ``measured-real-policy-effect`` or higher — those require a predeclared endpoint,
-    controls, and external references a bare run does not carry. A real policy on a real suite that
-    completed a rollout is ``real-episode``; a real adapter paired with the stub (or vice versa) is
-    ``adapter-smoke`` (construction, not an embodied run); a full stub run is ``stub``.
+    controls, and external references a bare run does not carry. A real policy on a real *simulator*
+    that completed a rollout is ``real-episode``; a real adapter paired with a fixture suite (or a
+    stub policy on a real simulator) is ``adapter-smoke`` (construction, not an embodied run); a
+    stub policy on a fixture is ``stub``.
+
+    "Real suite" means a real simulator, decided by the suite's own
+    :attr:`~provael.suites.base.SuiteAdapter.is_fixture` declaration — NOT by ``suite != "stub"``.
+    ``reach`` and ``humanoid`` are pure-numpy fixtures that compute their state arithmetically from
+    the action vector: no physics, no renderer, nothing embodied. Treating them as real simulators
+    let a fixture run earn ``real-episode`` and therefore ``measured-real-transfer``, which is
+    precisely the stub-as-real claim the evidence ladder exists to prevent.
     """
+    # Lazy import: `evidence` is imported by `types`/`verdict` and must stay import-cycle free at
+    # module scope (mirrors the deferred `provael.types` import in transfer_status_of).
+    from provael.suites import FIXTURE_SUITES
+
     real_policy = policy != "stub"
-    real_suite = suite != "stub"
+    # An unknown suite name is treated as NOT a real simulator: fail closed rather than award a
+    # real-evidence rung to something we cannot verify is a simulator.
+    real_suite = suite not in FIXTURE_SUITES and suite in _known_suites()
     if real_policy and real_suite:
         return EvidenceState.REAL_EPISODE
     if real_policy or real_suite:
         return EvidenceState.ADAPTER_SMOKE
     return EvidenceState.STUB
+
+
+def _known_suites() -> frozenset[str]:
+    """Registered suite names (lazy, to keep this module import-cycle free)."""
+    from provael.suites import SUITES
+
+    return frozenset(SUITES)
 
 
 def transfer_status_of(report: RunReport) -> str:

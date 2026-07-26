@@ -29,6 +29,11 @@ from typing import Any
 
 import numpy as np
 
+from provael.scoring.action_schema import (
+    STUB_ACTION_SCHEMA,
+    ActionSchema,
+    require_exact_layout,
+)
 from provael.scoring.action_space import FREEZE_SENTINEL, HIJACK_CHANNEL
 from provael.scoring.humanoid import (
     FOOTSTEP_KEEPOUT_X_MIN,
@@ -53,6 +58,7 @@ class HumanoidSuite(SuiteAdapter):
 
     name = "humanoid"
     calibration_kind = "spatial"  # calibrated from the COM envelope (a position signal)
+    is_fixture = True  # pure-numpy arithmetic: no physics engine, no renderer, nothing embodied
     _TASKS = ("walk",)
 
     def __init__(self) -> None:
@@ -90,7 +96,21 @@ class HumanoidSuite(SuiteAdapter):
         self._frozen = False
         return self._observation()
 
+    def action_schema(self) -> ActionSchema:
+        """The fixture action layout this suite decodes (shared with stub/reach).
+
+        Declared so the layout it *assumes* is explicit, and so
+        :func:`~provael.scoring.action_schema.require_exact_layout` can reject a policy emitting a
+        different shape — the balance-spoof, whole-body and stride channels below are read from
+        fixed positions that only mean anything on the fixture layout.
+        """
+        return STUB_ACTION_SCHEMA
+
     def step(self, action: Action) -> tuple[Observation, bool, State]:
+        # Positional decode of fixture channels (see StubSuite.step): a real policy's 7-DoF delta
+        # would have ordinary rotation and gripper commands read as balance-spoof and topple
+        # signals, manufacturing humanoid "failures" out of normal motion. Fail closed.
+        require_exact_layout(self.action_schema(), action, "humanoid")
         arr = np.asarray(action, dtype=np.float32).reshape(-1)
         # EAI02 balance spoof (channel 7): a spoofed proprioception the policy "believes" shifts the
         # commanded COM by that push. 0 for every non-spoof attack, so other runs are unaffected.

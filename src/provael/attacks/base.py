@@ -116,7 +116,9 @@ class OptimizedAttack[Edit](Attack):
         self.rollouts_per_candidate = max(1, int(rollouts_per_candidate))
         self._oracle: OptimizedOracle | None = None
         self._reset: Callable[[], None] | None = None
-        self._cache: dict[int, tuple[str, Observation]] = {}
+        #: Winning edit per episode, keyed by ``(task, seed)`` — see :meth:`perturb` for why the
+        #: key needs the task and why the EDIT is cached rather than the rendered pair.
+        self._cache: dict[tuple[str, int], Edit | None] = {}
         #: Queries the most recent :meth:`_search` used (asserted by the budget/early-stop tests).
         self.last_search_queries = 0
         #: The winning edit of the most recent :meth:`_search` (``None`` if every candidate was
@@ -231,12 +233,34 @@ class OptimizedAttack[Edit](Attack):
             self._reset()  # restore clean policy state for the live rollout
         return best_pair
 
-    def perturb(self, instruction: str, observation: Observation) -> tuple[str, Observation]:
-        """Return the search's winning pair for this episode (searched once, cached per seed)."""
+    def _episode_key(self, observation: Observation) -> tuple[str, int]:
+        """Cache key for one episode: ``(task, seed)``.
+
+        The seed alone is NOT unique. The runner loops ``task × attack × episode`` with
+        ``seed = config.seed + episode``, so every task reuses the same seed sequence. Keying on the
+        seed alone made task A's winning edit the cached answer for task B's episode of the same
+        index — a search result attributed to a task it was never run against.
+        """
+        task = observation.get("task")
         seed = observation.get("seed")
-        key = seed if isinstance(seed, int) else -1
-        cached = self._cache.get(key)
-        if cached is None:
-            cached = self._search(instruction, observation)
-            self._cache[key] = cached
-        return cached
+        return (task if isinstance(task, str) else "", seed if isinstance(seed, int) else -1)
+
+    def perturb(self, instruction: str, observation: Observation) -> tuple[str, Observation]:
+        """Apply this episode's winning edit to the **current** observation.
+
+        The budgeted search runs once per ``(task, seed)`` episode; what is cached is the winning
+        *edit*, not the pair it rendered. ``perturb`` is called on every step of the rollout, so
+        returning a stored pair replayed the observation captured when the search ran — freezing
+        the policy's view at step 1 (stale step counter, stale danger / end-effector state) for the
+        whole episode instead of perturbing the live observation. Re-rendering the edit keeps the
+        perturbation fixed (one search per episode, budget unchanged) while the observation stays
+        live.
+        """
+        key = self._episode_key(observation)
+        if key not in self._cache:
+            self._search(instruction, observation)  # sets self.best_edit / last_search_queries
+            self._cache[key] = self.best_edit
+        edit = self._cache[key]
+        if edit is None:
+            return instruction, observation  # every candidate rejected → benign passthrough
+        return self._render(edit, instruction, observation)

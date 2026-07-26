@@ -56,3 +56,73 @@ def test_oscal_cli_stdout_and_file(tmp_path) -> None:  # noqa: ANN001
     res = runner.invoke(app, ["report", "--in", str(out), "--format", "oscal"])
     assert res.exit_code == 0
     assert json.loads(res.stdout)["assessment-results"]["results"]  # valid JSON to stdout
+
+
+def test_oscal_carries_every_schema_required_field() -> None:
+    """Required-field conformance to the OSCAL assessment-results schema (v1.1.2).
+
+    Verified against the required arrays in NIST's own
+    ``oscal_assessment-results_schema.json`` for the version this exporter declares:
+
+        observation     -> uuid, description, methods, collected
+        risk            -> uuid, title, description, statement, status
+        finding         -> uuid, title, description, target
+        finding-target  -> type, target-id, status (status -> state)
+
+    `collected`, `statement` and `target` were all absent, which made every observation, risk and
+    finding schema-invalid — the export loaded in no conforming OSCAL tool.
+    """
+    report = run(
+        RunConfig(policy="stub", suite="stub", attacks=["none", "instruction", "action"], episodes=4)
+    )
+    doc = to_oscal(report, collected="2026-07-26T00:00:00Z")
+    res = doc["assessment-results"]["results"][0]  # type: ignore[index]
+
+    assert res["observations"]
+    for obs in res["observations"]:
+        assert {"uuid", "description", "methods", "collected"} <= set(obs)
+        assert obs["collected"] == "2026-07-26T00:00:00Z"
+
+    assert res["risks"]
+    for risk in res["risks"]:
+        assert {"uuid", "title", "description", "statement", "status"} <= set(risk)
+        assert risk["statement"].strip()
+
+    assert res["findings"]
+    for finding in res["findings"]:
+        assert {"uuid", "title", "description", "target"} <= set(finding)
+        target = finding["target"]
+        assert {"type", "target-id", "status"} <= set(target)
+        assert target["type"] in {"statement-id", "objective-id"}
+        # target-id is a TokenDatatype: no whitespace, no colons.
+        assert not any(c.isspace() or c == ":" for c in target["target-id"])
+        assert target["status"]["state"] in {"satisfied", "not-satisfied"}
+
+
+def test_oscal_target_state_follows_the_release_verdict() -> None:
+    """The finding's state is derived, never a hardcoded conformity conclusion.
+
+    A stub run cannot satisfy the default release gate (it is not a real-policy measurement), so it
+    must report not-satisfied rather than a fixed `satisfied`.
+    """
+    from provael.verdict import release_verdict
+
+    report = run(RunConfig(policy="stub", suite="stub", attacks=["none", "instruction"], episodes=4))
+    decision = release_verdict(report)
+    assert decision.verdict.value != "pass"  # a stub run is `incomplete` by design
+
+    ar = to_oscal(report)["assessment-results"]  # type: ignore[index]
+    target = ar["results"][0]["findings"][0]["target"]
+    assert target["status"]["state"] == "not-satisfied"
+    assert target["status"]["reason"] == f"release-verdict:{decision.verdict.value}"
+
+
+def test_oscal_flags_an_unrecorded_collection_time_instead_of_inventing_one() -> None:
+    """A RunReport carries no wall-clock, so an unsupplied `collected` must be visibly a sentinel."""
+    from provael.oscal import UNRECORDED_COLLECTED
+
+    report = run(RunConfig(policy="stub", suite="stub", attacks=["instruction"], episodes=2))
+    ar = to_oscal(report)["assessment-results"]  # type: ignore[index]
+    obs = ar["results"][0]["observations"][0]
+    assert obs["collected"] == UNRECORDED_COLLECTED
+    assert {"name": "collected-precision", "value": "unrecorded"} in obs["props"]
