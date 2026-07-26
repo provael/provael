@@ -94,6 +94,18 @@ def _make_openpi(
     )
 
 
+def _make_groot(
+    model: str | None = None,
+    rename_map: dict[str, str] | None = None,
+    device: str = "cuda",
+    **_kwargs: object,
+) -> PolicyAdapter:
+    """Build the dedicated, gated GR00T-N1 humanoid adapter (routed through the LeRobot path)."""
+    from provael.policies.groot_adapter import DEFAULT_GROOT_MODEL, GrootAdapter
+
+    return GrootAdapter(model_id=model or DEFAULT_GROOT_MODEL, device=device, rename_map=rename_map)
+
+
 #: Registry of policy factories keyed by name. Factories accept (and ignore unknown) keyword
 #: overrides so the CLI can pass e.g. a fine-tuned checkpoint via ``--model``.
 POLICIES: dict[str, Callable[..., PolicyAdapter]] = {
@@ -102,7 +114,7 @@ POLICIES: dict[str, Callable[..., PolicyAdapter]] = {
     "pi0": _lerobot_native("lerobot/pi0", "pi0"),
     "pi05": _lerobot_native("lerobot/pi05_base", "pi05"),
     "pi0fast": _lerobot_native("lerobot/pi0fast_base", "pi0fast"),
-    "groot": _lerobot_native("nvidia/GR00T-N1.5-3B", "groot"),
+    "groot": _make_groot,
     "openvla": _make_openvla,
     "openpi": _make_openpi,
 }
