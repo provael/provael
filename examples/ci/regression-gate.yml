@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4   # the baseline lives in-repo at .provael/baseline.report.json
 
       - name: Provael baseline-regression gate
-        uses: provael/provael@v0.25.0
+        uses: provael/provael@v0.25.1
         with:
           policy: stub
           suite: stub

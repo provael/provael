@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.25.1] — 2026-07-27
+
+A security-only patch. No behaviour, API, or report-schema change, so an attestation issued by
+0.25.0 still verifies under 0.25.1.
+
 ### Security
 
 - **The dependency-audit gate in CI never audited the project.** The step ran `uv sync --locked`
@@ -29,6 +34,15 @@ All notable changes to this project are documented here. The format is based on
 - GPU extras (`torch`, `transformers`, `diffusers`, `aiohttp`) are now audited in a second,
   non-gating step. Those advisories frequently have no fixed version, so they are reported rather
   than enforced; they are tracked with the GPU-dependency work.
+- The published Action's install bound moves to `provael[attest]>=0.25.1,<0.26.0`. It stays a
+  *range* on purpose: pip re-resolves it on every run, so an adopter still pinned at
+  `uses: provael/provael@v0.25.0` picks this patch up without waiting for a new action tag.
+
+### Fixed
+
+- `CITATION.cff` gave `date-released: 2026-07-23` for 0.25.0 — 0.22.0's date, three days before
+  the 0.25.0 artifact existed. The 0.25.0 release commit bumped `version` and left the date behind,
+  despite the comment above both fields saying to bump both. A citation now names the real date.
 
 ## [0.25.0] — 2026-07-26
 
