@@ -35,6 +35,7 @@ from provael.crosswalk import (
     to_crosswalk_json,
     to_crosswalk_markdown,
 )
+from provael.eai import CATALOG, EaiCoverage
 from provael.runner import run
 
 runner = CliRunner()
@@ -218,3 +219,50 @@ def test_committed_json_matches_current_emit() -> None:
     # The committed artifact must stay byte-identical to the deterministic emit (guards drift).
     committed = Path(__file__).resolve().parent.parent / "results" / "crosswalk" / cw_mod.CROSSWALK_JSON
     assert committed.read_text(encoding="utf-8").rstrip("\n") == to_crosswalk_json()
+
+
+# --------------------------------------------------------------------------- #
+# second target: MITRE ATLAS
+# --------------------------------------------------------------------------- #
+
+
+def test_atlas_crosswalk_covers_all_ten_risks() -> None:
+    """The ATLAS target renders every EAI id, not only the ones carrying a technique."""
+    payload = json.loads(cw_mod.to_atlas_json())
+    assert payload["target"] == cw_mod.ATLAS_TARGET
+    ids = [row["id"] for row in payload["eai_to_atlas"]]
+    assert ids == sorted(CATALOG)
+    assert len(ids) == 10
+
+
+def test_atlas_rows_carry_coverage_and_never_invent_technique_ids() -> None:
+    for row in json.loads(cw_mod.to_atlas_json())["eai_to_atlas"]:
+        assert row["coverage"] in {c.value for c in EaiCoverage}
+        assert row["coverage_note"], f"{row['id']} carries no coverage note"
+        for technique in row["atlas_techniques"]:
+            # Descriptive tactic -> technique phrasing only; a fabricated AML.TXXXX id would give
+            # the mapping a precision it has not earned.
+            assert "→" in technique and "AML.T" not in technique
+
+
+def test_atlas_mapping_is_derived_from_the_catalog_not_restated() -> None:
+    """A change in the catalog must move the ATLAS artifact, or the two can disagree."""
+    for row in json.loads(cw_mod.to_atlas_json())["eai_to_atlas"]:
+        entry = CATALOG[row["id"]]
+        assert row["name"] == entry.name
+        assert row["coverage"] == entry.coverage.value
+        assert row["atlas_techniques"] == list(entry.atlas_techniques)
+
+
+def test_atlas_is_deterministic_and_matches_the_committed_artifact() -> None:
+    assert cw_mod.to_atlas_json() == cw_mod.to_atlas_json()  # no clock, no random
+    committed = Path(__file__).resolve().parent.parent / "results" / "crosswalk" / cw_mod.ATLAS_JSON
+    assert committed.read_text(encoding="utf-8").rstrip("\n") == cw_mod.to_atlas_json()
+
+
+def test_atlas_markdown_names_the_uncovered_risks_and_the_mapping_status() -> None:
+    md = cw_mod.to_atlas_markdown()
+    assert "EAI07" in md and "EAI10" in md
+    assert "no on-point ATLAS technique" in md
+    # The mapping is ours, not MITRE's, and the artifact has to say so wherever it is pasted.
+    assert "not reviewed or endorsed by MITRE" in md

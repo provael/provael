@@ -1,8 +1,15 @@
 # Attack catalog
 
-Four families of templated, auditable attacks, each tagged with its [Embodied AI Security Top
-10](TOP10.md) risk. These are heuristic perturbations, **not** gradient/optimisation-based
-adversarial attacks. List them with `provael list-attacks`.
+**Fourteen** adversarial families of templated, auditable attacks plus the `baseline` benign
+control, each tagged with its [Embodied AI Security Top 10](TOP10.md) risk. Most are heuristic
+perturbations rather than gradient/optimisation-based attacks; the three `optimized*` families are
+the exception — bounded-budget black-box searches. List them with `provael list-attacks`.
+
+!!! warning "This page documents four of them in depth"
+    The sections below pre-date the other ten families and have not caught up. The **registry** is
+    the authority: `provael list-attacks` enumerates every family that actually ships, and
+    `--recipe full-sweep` runs all fourteen. This page said "Four families" while the registry held
+    fourteen, which is the same drift that left `full-sweep` sweeping four of them.
 
 !!! note "How to read the numbers"
     Stub ASRs are properties of the deterministic test fixture, not of any real VLA. Real-model

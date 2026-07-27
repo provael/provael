@@ -29,7 +29,7 @@ from pydantic import BaseModel, Field
 
 from provael.attacks.registry import FAMILIES
 from provael.calibration import wilson_ci
-from provael.eai import CATALOG
+from provael.eai import CATALOG, EaiCoverage, status_for
 from provael.evidence import EvidenceState, evidence_state_of, transfer_status_of
 from provael.types import RunReport
 
@@ -331,7 +331,12 @@ REQUIREMENTS: tuple[Requirement, ...] = (
 # --------------------------------------------------------------------------------------------
 
 class EaiBreakdown(BaseModel):
-    """Measured evidence for one EAI risk, aggregated across the attacks that exercise it."""
+    """Evidence for one EAI risk, aggregated across the attacks that exercise it.
+
+    Emitted for **all ten** risks, including those with ``attempts == 0``. A conformity reader is
+    reconciling this table against a clause list, so a risk that is simply absent reads as one
+    with nothing to report — ``coverage`` and ``status`` say which kind of nothing it is.
+    """
 
     eai_id: str
     name: str
@@ -339,6 +344,22 @@ class EaiBreakdown(BaseModel):
     successes: int
     redirection_rate: float
     ci95: tuple[float, float]
+    coverage: str = Field(
+        EaiCoverage.attacks_implemented.value,
+        description="Whether Provael ships attacks for this risk (provael.eai.EaiCoverage).",
+    )
+    status: str = Field(
+        "measured",
+        description="Why this row is empty when it is: not exercised, or not testable at all.",
+    )
+    coverage_note: str = Field(
+        "", description="One sentence: what is covered, or what closing the gap would take."
+    )
+
+    @property
+    def measured(self) -> bool:
+        """Whether this row carries a real rate. ``redirection_rate`` is 0.0 at zero attempts."""
+        return self.attempts > 0
 
 
 class EvidenceResult(BaseModel):
@@ -432,7 +453,12 @@ class ComplianceReport(BaseModel):
 # --------------------------------------------------------------------------------------------
 
 def _by_eai(report: RunReport) -> list[EaiBreakdown]:
-    """Aggregate per-attack stats into per-EAI-risk evidence rows (sorted by id)."""
+    """Per-EAI-risk evidence rows for **all ten** risks, sorted by id.
+
+    Rows used to be emitted only for the risks a run happened to exercise, so EAI07 and EAI10 —
+    absent from the catalog entirely — could never appear, and a risk Provael does not test looked
+    identical to one it never got around to. Both now appear with an explicit status.
+    """
     buckets: dict[str, tuple[int, int]] = {}  # eai_id -> (attempts, successes)
     for attack, tag in report.eai.items():
         stat = report.by_attack.get(attack)
@@ -440,11 +466,17 @@ def _by_eai(report: RunReport) -> list[EaiBreakdown]:
             continue
         att, suc = buckets.get(tag.id, (0, 0))
         buckets[tag.id] = (att + stat.attempts, suc + stat.successes)
+
+    attributable = bool(report.eai)
     rows: list[EaiBreakdown] = []
-    for eai_id in sorted(buckets):
-        attempts, successes = buckets[eai_id]
+    for eai_id in sorted(set(CATALOG) | set(buckets)):
+        attempts, successes = buckets.get(eai_id, (0, 0))
         rate = successes / attempts if attempts else 0.0
         risk = CATALOG.get(eai_id)
+        if risk is None:
+            status = "measured" if attempts else "not in the catalog"
+        else:
+            status = status_for(risk.coverage, attempts=attempts, attributable=attributable)
         rows.append(
             EaiBreakdown(
                 eai_id=eai_id,
@@ -453,6 +485,9 @@ def _by_eai(report: RunReport) -> list[EaiBreakdown]:
                 successes=successes,
                 redirection_rate=rate,
                 ci95=wilson_ci(successes, attempts),
+                coverage=risk.coverage.value if risk is not None else "unknown",
+                status=status,
+                coverage_note=risk.coverage_note if risk is not None else "",
             )
         )
     return rows
@@ -664,14 +699,30 @@ def to_compliance_markdown(report: RunReport) -> str:
     if ev.by_eai:
         lines.append("### By EAI risk")
         lines.append("")
-        lines.append("| EAI | risk | redirection rate (95% CI) | successes | attempts |")
-        lines.append("| --- | --- | --- | --- | --- |")
+        lines.append(
+            "All ten Top-10 risks are listed. A risk with no measured rate is stated as such — "
+            "an omitted row would read as nothing to report."
+        )
+        lines.append("")
+        lines.append("| EAI | risk | redirection rate (95% CI) | successes | attempts | status |")
+        lines.append("| --- | --- | --- | --- | --- | --- |")
         for row in ev.by_eai:
+            rate = _rate_ci(row.redirection_rate, row.ci95) if row.measured else "—"
             lines.append(
-                f"| {row.eai_id} | {row.name} | "
-                f"{_rate_ci(row.redirection_rate, row.ci95)} | {row.successes} | {row.attempts} |"
+                f"| {row.eai_id} | {row.name} | {rate} | "
+                f"{row.successes if row.measured else '—'} | "
+                f"{row.attempts if row.measured else '—'} | {row.status} |"
             )
         lines.append("")
+        uncovered = [r for r in ev.by_eai if r.coverage != EaiCoverage.attacks_implemented.value]
+        if uncovered:
+            lines.append("**Risks Provael ships no attacks for:**")
+            lines.append("")
+            for row in uncovered:
+                lines.append(
+                    f"- **{row.eai_id} {row.name}** ({row.coverage}) — {row.coverage_note}"
+                )
+            lines.append("")
 
     lines.append("## Scope and caveats")
     lines.append("")

@@ -40,6 +40,7 @@ from provael.attest import ATTESTATION_JSON, build_statement
 from provael.calibration import anytime_ci, wilson_ci
 from provael.compliance import CAVEATS, REQUIREMENTS
 from provael.crosswalk import build_appendix as _crosswalk_appendix
+from provael.eai import CATALOG, all_ids, attacked_ids
 from provael.hosted.report import (
     ANNEX_III_CONTROL_SYSTEMS,
     ANNEX_III_CORRUPTION,
@@ -358,6 +359,22 @@ def _residual_risk(report: RunReport) -> dict[str, Any]:
     return {
         "deferred_attack_classes": list(_DEFERRED_ATTACK_CLASSES),
         "out_of_scope": list(_OUT_OF_SCOPE),
+        # All ten Top-10 risks with their coverage state, so the dossier states which risks carry
+        # no Provael evidence at all — distinct from those merely not run here. A conformity file
+        # is read as a coverage claim, and a category absent from it reads as one with nothing to
+        # declare.
+        "eai_coverage": [
+            {
+                "id": eai_id,
+                "name": CATALOG[eai_id].name,
+                "coverage": CATALOG[eai_id].coverage.value,
+                "coverage_note": CATALOG[eai_id].coverage_note,
+            }
+            for eai_id in all_ids()
+        ],
+        "eai_risks_with_no_provael_attacks": [
+            eai_id for eai_id in all_ids() if eai_id not in attacked_ids()
+        ],
         "families_not_exercised_this_run": not_run,
         "families_requested_but_not_applicable": not_applicable,
         "families_without_real_policy_transfer": no_real_transfer,

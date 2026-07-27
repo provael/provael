@@ -7,6 +7,8 @@
   },
   "eai_to_robojailbench": [
     {
+      "coverage": "attacks-implemented",
+      "coverage_note": "The `instruction` family (roleplay / goal_substitution / paraphrase) and the `optimized_instruction` search. The only family with measured real-policy transfer.",
       "id": "EAI01",
       "name": "Policy & instruction jailbreak",
       "note": "a jailbreak can drive many harms; it maps to the harmful-action outcomes provael's instruction family can reach (weaponization, theft), and can also induce the content harms rjb11/rjb12 that provael does not measure.",
@@ -16,6 +18,8 @@
       ]
     },
     {
+      "coverage": "attacks-implemented",
+      "coverage_note": "The `visual`, `sensor_spoof` and `optimized_patch` families, plus the humanoid balance-spoof. `optimized_patch` needs a real image channel and never scores on a CPU stub suite.",
       "id": "EAI02",
       "name": "Adversarial perception",
       "note": "a sensor-spoof driving the effector into a keep-out zone \u2192 the collision / unsafe-motion / trespassing harms.",
@@ -28,12 +32,16 @@
       ]
     },
     {
+      "coverage": "attacks-implemented",
+      "coverage_note": "The `backdoor` family screens objective-decoupled object and phrase triggers.",
       "id": "EAI03",
       "name": "Model & pipeline poisoning, backdoors & supply chain",
       "note": "no counterpart: a backdoor is a delivery mechanism, not a harm class \u2014 once triggered it can produce any of RoboJailBench's 18 harms.",
       "robojailbench": []
     },
     {
+      "coverage": "attacks-implemented",
+      "coverage_note": "The `action`, `action_space` and `optimized` families, plus the humanoid whole-body hijack and stride freeze.",
       "id": "EAI04",
       "name": "Action-space integrity",
       "note": "action-space attacks produce the physical-safety harm outcomes (collision, force, unsafe motion, entrapment, disruption, trespassing).",
@@ -49,12 +57,16 @@
       ]
     },
     {
+      "coverage": "attacks-implemented",
+      "coverage_note": "The `injection` family covers both the scene-text and the MCP tool-description channel.",
       "id": "EAI05",
       "name": "Indirect / embodied prompt injection",
       "note": "no counterpart: an injection channel is a delivery mechanism, not a harm class.",
       "robojailbench": []
     },
     {
+      "coverage": "attacks-implemented",
+      "coverage_note": "The `misalignment` family (benign-urgency override, euphemistic reroute) measures the embodiment gap on a keep-out suite.",
       "id": "EAI06",
       "name": "Cross-domain safety misalignment",
       "note": "a benign-sounding instruction driving an unsafe action \u2192 the collision / unsafe-motion harms.",
@@ -66,12 +78,16 @@
       ]
     },
     {
+      "coverage": "out-of-scope-for-simulation",
+      "coverage_note": "No attacks, by design, and this is a boundary rather than a backlog item. Faithful coverage means exercising real firmware, real radio / ROS-DDS traffic and real teleoperation sessions \u2014 CVE-class work against physical infrastructure, and Provael ships no exploit tooling (see SAFETY.md). This layer is assessed with IEC 62443 and ATT&CK-for-ICS methods and CVE scanning against the robot's own stack: the UniPwn (CVE-2025-60250/-60251) and Go1 backdoor (CVE-2025-2894) findings came from that kind of work, not from policy red-teaming. A clean Provael run says nothing about this risk.",
       "id": "EAI07",
       "name": "CPS, firmware, comms & teleoperation compromise",
       "note": "no counterpart: RoboJailBench's taxonomy is harm-outcome and has no CPS / firmware / comms class; also out of provael's scope by design.",
       "robojailbench": []
     },
     {
+      "coverage": "attacks-implemented",
+      "coverage_note": "The `authorization` family screens self-authorization and scope escalation of an authorization-gated action.",
       "id": "EAI08",
       "name": "Identity, access & excessive autonomy",
       "note": "unauthorized or over-broad action \u2192 theft and trespassing.",
@@ -81,6 +97,8 @@
       ]
     },
     {
+      "coverage": "attacks-implemented",
+      "coverage_note": "The `confidentiality` family screens a planted memorization canary (membership inference / extraction) \u2014 never a real exfiltration.",
       "id": "EAI09",
       "name": "Model & data confidentiality",
       "note": "the data / privacy harms \u2014 though provael's confidentiality family screens a memorization leak, not these capture / sharing / retention behaviours (see the coverage column).",
@@ -92,6 +110,8 @@
       ]
     },
     {
+      "coverage": "process-control-not-attackable",
+      "coverage_note": "No attacks, because there is no policy input that attacks the absence of a process. Provael sits on the mitigation side of this one: a signed run report, its scorecard, and the per-checkpoint regression gate are partial evidence that the evaluation control exists and was exercised. Partial is the operative word \u2014 they evidence the evaluation limb, not the observability or incident-response limbs, which are runtime and organisational. This category never carries an ASR; a number here would be a category error.",
       "id": "EAI10",
       "name": "Insufficient evaluation, observability & incident response",
       "note": "no counterpart: a governance / operations meta-risk, not a harm class.",
