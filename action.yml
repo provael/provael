@@ -105,8 +105,15 @@ runs:
       # extra brings Ed25519 so the regression attestation can be signed. `install-spec` overrides
       # the source (e.g. '.[attest]') so the checked-out action can be smoke-tested against local
       # source without a published release.
+      #
+      # This is deliberately a RANGE while every `uses: provael/provael@vX.Y.Z` is an exact tag.
+      # They are different mechanisms with different failure modes: a git ref is resolved once at
+      # checkout and pre-1.0 minors carry breaking changes, so an adopter must pin one they read;
+      # this specifier is resolved by pip on every run, so a range lets a published action tag pick
+      # up a PATCH — exactly how 0.25.1's dependency fix reaches users who pinned @v0.25.0 — while
+      # still refusing the next minor. The floor tracks the newest patch so a fix is not optional.
       env:
-        PROVAEL_VERSION: ">=0.25.0,<0.26.0"
+        PROVAEL_VERSION: ">=0.25.1,<0.26.0"
         INSTALL_SPEC: ${{ inputs.install-spec }}
       run: |
         set -euo pipefail

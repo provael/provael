@@ -10,9 +10,13 @@ authors:
     given-names: Sattyam
     website: "https://github.com/sattyamjjain"
 # Tracks the newest *released* tag, not the working tree — a citation must name a version a
-# reader can actually install. Bump both fields in the release commit.
-version: "0.25.0"
-date-released: "2026-07-23"
+# reader can actually install. Bump BOTH fields in the release commit: the 0.25.0 commit bumped
+# `version` and left `date-released` on 0.22.0's date (2026-07-23), which is why a citation to
+# 0.25.0 named a date three days before the artifact existed. `version` is guarded by
+# tests/test_version_consistency.py; the date is not machine-checkable against a tag, so it is on
+# the release author.
+version: "0.25.1"
+date-released: "2026-07-27"
 license: Apache-2.0
 repository-code: "https://github.com/provael/provael"
 url: "https://github.com/provael/provael"
