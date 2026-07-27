@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -135,6 +136,14 @@ def test_version_flag_matches_the_version_subcommand() -> None:
 
 
 def test_no_args_still_prints_help_not_the_version() -> None:
-    """Adding an app callback must not turn a bare `provael` into a no-op."""
+    """Adding an app callback must not turn a bare `provael` into a no-op.
+
+    Rich wraps the usage line to the terminal width and interleaves ANSI styling, and CI's width
+    differs from a developer's, so the raw substring matched locally and not in CI. Strip the
+    escapes and collapse whitespace before asserting on rendered text.
+    """
     result = runner.invoke(app, [])
-    assert "Usage: provael" in result.stdout
+    plain = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
+    plain = " ".join(plain.split())
+    assert "Usage: provael" in plain
+    assert "COMMAND" in plain  # the command list, not just a version string
