@@ -37,6 +37,12 @@ A security-only patch. No behaviour, API, or report-schema change, so an attesta
 - The published Action's install bound moves to `provael[attest]>=0.25.1,<0.26.0`. It stays a
   *range* on purpose: pip re-resolves it on every run, so an adopter still pinned at
   `uses: provael/provael@v0.25.0` picks this patch up without waiting for a new action tag.
+- **The rebuilt audit gate could not survive a release PR.** `uv export` emits the project itself,
+  so `pip-audit --strict` tried to resolve `provael==<version-being-released>` on PyPI, failed with
+  "Dependency not found on PyPI", and exited non-zero. Every release PR would have been blocked by
+  the gate meant to protect it — latent in the 0.25.0 tree because that version was already
+  published. The export now passes `--no-emit-project`: the gate audits our dependencies, not our
+  own unpublished artifact.
 
 ### Fixed
 

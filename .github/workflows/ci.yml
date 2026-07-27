@@ -100,9 +100,15 @@ jobs:
       # `-r` is load-bearing. A bare `uvx pip-audit` audits the ephemeral environment uvx builds for
       # pip-audit itself, never the project — it passed on every run while pillow shipped 13 open
       # advisories in the default install. Always audit an exported requirements file.
+      #
+      # `--no-emit-project` is equally load-bearing, for the opposite reason. Without it the export
+      # carries provael itself, and `--strict` fails on "Dependency not found on PyPI" for the very
+      # version being prepared — so every RELEASE PR failed this gate, since the version under
+      # release is by definition not published yet. We audit our dependencies, not our own artifact.
       - name: Audit dependencies (pip-audit)
         run: |
-          uv export --no-hashes --no-annotate --quiet --format requirements-txt -o audit-default.txt
+          uv export --no-emit-project --no-hashes --no-annotate --quiet \
+            --format requirements-txt -o audit-default.txt
           grep -qE '^pillow==' audit-default.txt \
             || { echo "::error::export produced no runtime deps — the audit would be vacuous"; exit 1; }
           uvx pip-audit --strict --progress-spinner off -r audit-default.txt
@@ -114,5 +120,6 @@ jobs:
         continue-on-error: true
         run: |
           uv export --extra lerobot --extra openvla --extra attest --extra hosted \
-            --no-hashes --no-annotate --quiet --format requirements-txt -o audit-extras.txt
+            --no-emit-project --no-hashes --no-annotate --quiet \
+            --format requirements-txt -o audit-extras.txt
           uvx pip-audit --progress-spinner off -r audit-extras.txt
