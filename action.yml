@@ -18,9 +18,20 @@ inputs:
     required: false
     default: "stub"
   attacks:
-    description: "Comma-separated attack or family names."
+    # `none` is the benign control and is NOT optional. Without it the run has no control arm:
+    # `verdict.ReleaseRequirements.require_benign_control` can never be satisfied, so the gate
+    # returns `incomplete` by construction, and the reported ASR has no false-positive baseline to
+    # read against — you cannot tell an attack-induced unsafe state from one the danger predicate
+    # would have flagged anyway. This default shipped without it.
+    #
+    # Kept byte-identical to the `ci-gate` recipe (provael.recipes) and asserted by
+    # tests/test_recipes.py, so the Action and the recipe it claims to match cannot drift.
+    # For every family rather than the core four, pass `--recipe full-sweep`.
+    description: >-
+      Comma-separated attack or family names. Keep `none` (the benign control) in the list — the
+      release gate requires it and an ASR without it has no control arm.
     required: false
-    default: "instruction,visual,injection"
+    default: "none,instruction,visual,injection,action"
   episodes:
     description: "Episodes per (task, attack) pair."
     required: false

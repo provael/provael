@@ -41,6 +41,15 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
+          # tests/test_version_consistency.py resolves every documented `@vX.Y.Z` pin against the
+          # real tag list. A default shallow checkout fetches no tags, which would leave that guard
+          # unable to verify anything — so it asserts it is not running tagless in CI rather than
+          # skipping. Dropping this makes the version guard fail loudly, not pass vacuously.
+          #
+          # `fetch-depth: 0` and not `fetch-tags: true`: the latter was tried first and CI still
+          # came up tagless on a PR's merge ref, which the guard caught. Full history is cheap on
+          # a repo this size and is unambiguous.
+          fetch-depth: 0
 
       - name: Install uv (pinned Python 3.12)
         uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2

@@ -22,6 +22,7 @@ from provael.compliance import (
     write_compliance_markdown,
 )
 from provael.config import RunConfig
+from provael.eai import CATALOG
 from provael.runner import run
 from provael.types import ASRStat, CalibrationMeta, EaiTag, RunReport
 
@@ -211,13 +212,39 @@ def test_indicative_flags_match_catalog() -> None:
 def test_by_eai_aggregation_and_families() -> None:
     cr = to_compliance(_calibrated_report())
     rows = {row.eai_id: row for row in cr.result.by_eai}
-    assert set(rows) == {"EAI01", "EAI02", "EAI05"}
+
+    # ALL ten risks are emitted, not just the three this run exercised. A conformity reader
+    # reconciles this table against a clause list, so a risk that is simply absent reads as one
+    # with nothing to report — which is the opposite of "we do not test this".
+    assert set(rows) == set(CATALOG)
+    assert {r for r, row in rows.items() if row.measured} == {"EAI01", "EAI02", "EAI05"}
+
     assert rows["EAI01"].attempts == 10 and rows["EAI01"].successes == 8
     lo, hi = rows["EAI01"].ci95
     assert 0.0 <= lo <= rows["EAI01"].redirection_rate <= hi <= 1.0
+
+    # An unmeasured risk must never look like a clean 0%: it carries no attempts and says why.
+    assert rows["EAI04"].attempts == 0
+    assert rows["EAI04"].status == "not exercised by this run"
+    assert rows["EAI07"].status == "out of scope for simulation"
+    assert rows["EAI10"].status == "process control — not attackable"
+    for eai_id in ("EAI07", "EAI10"):
+        assert rows[eai_id].coverage != "attacks-implemented"
+        assert rows[eai_id].coverage_note, f"{eai_id} must explain its boundary"
+
+    # `eai_ids_covered` keeps its narrower meaning: what THIS run exercised, not what exists.
     assert cr.result.eai_ids_covered == ["EAI01", "EAI02", "EAI05"]
     # Families resolved from the registry (baseline because `none` ran).
     assert cr.result.attack_families == ["baseline", "injection", "instruction", "visual"]
+
+
+def test_uncovered_risks_are_named_in_the_markdown() -> None:
+    """EAI07/EAI10 must appear in the rendered report, with the reason, not just the JSON."""
+    md = to_compliance_markdown(_calibrated_report())
+    assert "Risks Provael ships no attacks for" in md
+    assert "EAI07" in md and "EAI10" in md
+    assert "out of scope for simulation" in md
+    assert "process control — not attackable" in md
 
 
 def test_markdown_renders_key_sections() -> None:

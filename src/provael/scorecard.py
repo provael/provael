@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from provael.calibration import wilson_ci
-from provael.eai import CATALOG
+from provael.eai import CATALOG, coverage_headline, status_for
 from provael.types import RunReport
 
 #: Default filename written into a run's output directory.
@@ -45,8 +45,14 @@ def _ci(successes: int, attempts: int) -> str:
     return f"[{100.0 * lo:.0f}–{100.0 * hi:.0f}%]"
 
 
-def _by_eai(report: RunReport) -> list[tuple[str, str, int, int]]:
-    """Aggregate per-attack stats into ``(eai_id, name, attempts, successes)`` rows, sorted."""
+def _by_eai(report: RunReport) -> list[tuple[str, str, int, int, str]]:
+    """``(eai_id, name, attempts, successes, status)`` for **all ten** risks, sorted by id.
+
+    Every Top-10 risk is rendered, including the ones this run did not touch and the two Provael
+    ships no attacks for. Previously only the risks the run happened to exercise appeared, so a
+    category Provael cannot test was indistinguishable from one it tests and passed — both were
+    simply absent from the heatmap, which a reader scans as "nothing to see here".
+    """
     buckets: dict[str, tuple[int, int]] = {}
     for attack, tag in report.eai.items():
         stat = report.by_attack.get(attack)
@@ -54,11 +60,18 @@ def _by_eai(report: RunReport) -> list[tuple[str, str, int, int]]:
             continue
         att, suc = buckets.get(tag.id, (0, 0))
         buckets[tag.id] = (att + stat.attempts, suc + stat.successes)
-    rows: list[tuple[str, str, int, int]] = []
-    for eai_id in sorted(buckets):
-        attempts, successes = buckets[eai_id]
+
+    attributable = bool(report.eai)
+    rows: list[tuple[str, str, int, int, str]] = []
+    for eai_id in sorted(set(CATALOG) | set(buckets)):
+        attempts, successes = buckets.get(eai_id, (0, 0))
         risk = CATALOG.get(eai_id)
-        rows.append((eai_id, risk.name if risk is not None else eai_id, attempts, successes))
+        name = risk.name if risk is not None else eai_id
+        if risk is None:
+            status = "measured" if attempts else "not in the catalog"
+        else:
+            status = status_for(risk.coverage, attempts=attempts, attributable=attributable)
+        rows.append((eai_id, name, attempts, successes, status))
     return rows
 
 
@@ -111,15 +124,18 @@ def to_scorecard_markdown(report: RunReport, threshold: float = 0.5) -> str:
         lines.append(f"- **Benign baseline FPR (control):** {_pct(report.benign_fpr)}")
     lines += [
         "", "## Risk heatmap (Embodied AI Security Top 10)", "",
-        # `n` is carried here because the heatmap is the one table with no success/attempt
-        # columns: without it a reader cannot tell an N/A bucket from a measured one.
-        "| EAI | risk | ASR | 95% CI | n |", "|---|---|---:|:---:|---:|",
+        # All ten risks, always. `n` is carried because the heatmap is the one table with no
+        # success/attempt columns: without it a reader cannot tell an N/A bucket from a measured
+        # one. `status` then says WHY an N/A is N/A — untested here, or untestable at all.
+        "| EAI | risk | ASR | 95% CI | n | status |",
+        "|---|---|---:|:---:|---:|---|",
     ]
-    for eai_id, name, attempts, successes in _by_eai(report):
+    for eai_id, name, attempts, successes, status in _by_eai(report):
         lines.append(
             f"| {eai_id} | {name} | {_rate(successes, attempts)} "
-            f"| {_ci(successes, attempts)} | {attempts} |"
+            f"| {_ci(successes, attempts)} | {attempts} | {status} |"
         )
+    lines += ["", f"*{coverage_headline()}*"]
 
     lines += [
         "", "## Per-attack", "",

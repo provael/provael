@@ -16,6 +16,7 @@ from typing import Any
 
 from provael.attest import canonical_json, sha256_hex
 from provael.calibration import wilson_ci
+from provael.eai import CATALOG, all_ids, coverage_counts, coverage_headline
 from provael.evidence import evidence_state_of
 from provael.scoring.asr import (
     BASELINE_FAMILY,
@@ -41,6 +42,23 @@ def _registry_counts() -> dict[str, int]:
         "attacks_total": total,
         "attacks_adversarial": total - baseline,
         "attacks_baseline": baseline,
+    }
+
+
+def _eai_coverage() -> dict[str, Any]:
+    """Every Top-10 risk and whether Provael ships attacks for it (independent of any run)."""
+    return {
+        "counts": coverage_counts(),
+        "headline": coverage_headline(),
+        "risks": [
+            {
+                "id": eai_id,
+                "name": CATALOG[eai_id].name,
+                "coverage": CATALOG[eai_id].coverage.value,
+                "coverage_note": CATALOG[eai_id].coverage_note,
+            }
+            for eai_id in all_ids()
+        ],
     }
 
 
@@ -98,6 +116,11 @@ def build_evidence_manifest(
         "calibrated": report.calibrated,
         "release_verdict": decision.verdict.value,
         "registry": _registry_counts(),
+        # All ten Top-10 risks with their coverage state. Carried in the manifest — not only in
+        # the human-readable report — so a downstream consumer reading this file learns which
+        # risks Provael does not test, instead of inferring coverage from which ids happen to
+        # appear under `per_attack`.
+        "eai_coverage": _eai_coverage(),
         "metric_semantics": {
             "adversarial_asr": "successes / attempts over ADVERSARIAL episodes (benign excluded "
             "by role); the headline.",

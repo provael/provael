@@ -6,6 +6,85 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+> **`full-sweep` now sweeps 14 families instead of 4, so the ASR it reports moves.** On the CPU
+> stub it goes from 74.4% to 82.4% — the recipe was always *meant* to be a full sweep, and the
+> number it printed before was computed over 4 of the registry's 14 adversarial families with
+> nothing in the output saying so. If you gate on a `full-sweep` threshold, re-baseline it. To keep
+> the old behaviour exactly, switch to the new **`core-sweep`** recipe.
+
+### Fixed
+
+- **`full-sweep` swept 4 of 14 attack families.** `recipes.ALL_FAMILIES` was the literal
+  `["instruction", "visual", "injection", "action"]` sitting beside a registry that had grown to
+  fourteen adversarial families, so a user running the recipe named *full-sweep* got an ASR
+  computed over 29% of the catalogue and no indication of it. That number is exactly the kind that
+  ends up in a conformity file. `ALL_FAMILIES` is now derived from the registry at import, so a
+  newly-registered family joins `full-sweep` automatically — the hardcoded list beside a growing
+  registry was the actual defect.
+- **The GitHub Action's default `attacks` omitted the `none` benign control.** A sweep without the
+  control produces an ASR with no false-positive baseline, and
+  `verdict.ReleaseRequirements.require_benign_control` cannot be satisfied — so the default could
+  only ever return `incomplete`. The default is now
+  `none,instruction,visual,injection,action`, kept byte-identical to the `ci-gate` recipe and
+  asserted by a test so the two cannot drift. The same fix lands in the reference
+  checkpoint-security-gate workflow.
+- **All five `examples/recipes/*.yml` templates were missing the benign control**, so anyone
+  starting from a copy-paste template inherited the same uninterpretable ASR. They are now
+  generated from the built-ins and a test asserts each mirrors the recipe it documents.
+- **`docs/attacks.md` said "Four families"** against a registry of fourteen, and `docs/roadmap.md`
+  said "4 families". Both corrected, with the doc pointing at `provael list-attacks` as the
+  authority.
+- **The security-gate reference workflow pinned the action at `v0.24.0` — a tag that has never
+  existed**, so the workflow a design partner is told to copy failed at ref resolution. (Written
+  without the full `owner/repo@tag` syntax on purpose: the new guard scans this file too, and
+  spelling it out here would make the CHANGELOG fail its own check — which is precisely how this
+  entry was caught.)
+  `.pre-commit-hooks.yaml` documented `rev: v0.6.0`, nineteen releases stale. Both repinned to
+  `v0.25.1`.
+- **`tests/test_version_consistency.py` could not have caught either**, because it checked five
+  *named* files and neither pin was on the list. It now scans every tracked file, and the
+  exemptions are the short deliberate list — a missing exemption fails loudly rather than passing
+  silently. Two separate checks: a pin naming a nonexistent tag is fatal anywhere (including the
+  CHANGELOG); a stale pin is fatal only in copy-paste surfaces. CI's checkout gains `fetch-tags`
+  so the guard is authoritative there rather than skipping.
+
+### Added
+
+- **The Top 10 catalog now holds all ten risks.** `docs/TOP10.md` defines EAI01–EAI10; `eai.py`
+  held eight. **EAI07** (CPS / firmware / comms / teleop) and **EAI10** (evaluation / observability
+  / incident response) were absent from the code, so they were silently dropped from every
+  crosswalk, scorecard, compliance report, dossier and evidence manifest. A category that vanishes
+  reads as covered; "we do not test this, and here is why" is a legitimate answer, and an omission
+  is not. Every entry carries an explicit `EaiCoverage` — `attacks-implemented`, `no-attacks-yet`,
+  `out-of-scope-for-simulation`, or `process-control-not-attackable` — plus a note a buyer can
+  read, and the coverage claim is cross-checked against the attack registry by test rather than
+  asserted by hand.
+- **Every evidence artifact renders all ten categories** with a `status` column, so an empty row
+  says *why* it is empty rather than leaving a reader to infer it from an absence.
+- **`provael crosswalk --target atlas`** — a second crosswalk target driven by the
+  `atlas_techniques` already sitting unused on every catalog entry. EAI07 and EAI10 keep an
+  **empty** ATLAS mapping: ATLAS enumerates adversary techniques against ML systems, and neither a
+  firmware compromise nor a missing governance control is one. Padding the column would fabricate
+  the precision the "no invented `AML.TXXXX` ids" rule exists to prevent.
+- **`core-sweep`** — the previous four-family `full-sweep`, under a name that describes it.
+- **`provael --version`** as a flag, mirroring the existing `version` subcommand. There was only
+  the subcommand, so the conventional first thing anyone types exited 2 with "No such option".
+- **`recipes.CONDITIONAL_FAMILIES`** — the precondition each suite-dependent family needs, carried
+  into the certify dossier as `families_skipped_with_reason`. A test runs every family on every CPU
+  suite and asserts the declared preconditions match reality, so a reason cannot rot into an excuse
+  for a family that is actually broken.
+
+### Changed
+
+- A run report that predates `RunReport.eai` (schema v1) now reports its per-risk rows as
+  **`unknown — this report carries no EAI map`** rather than "not exercised by this run". Such a
+  report may well have exercised a risk while attributing nothing — the insurer fixture ran
+  `roleplay`, `patch` and `scene_text`, covering EAI01/02/05 — so the stronger phrasing would have
+  stated a falsehood, and signed it into an attestation. An absent measurement and an absent
+  *mapping* are different claims.
+- `RunReport` is **unchanged**, so the attestation subject digest is byte-identical and
+  attestations issued by earlier versions still verify.
+
 ## [0.25.1] — 2026-07-27
 
 A security-only patch. No behaviour, API, or report-schema change, so an attestation issued by

@@ -7,13 +7,36 @@ imports them, so nothing notices when a release bumps the package and leaves the
 found at three different versions at once — 0.24.0 packaged, 0.22.0 in CITATION.cff, and 0.8.0 in
 an examples snippet — and a snippet that pins a version users cannot get is worse than no snippet.
 
+WHY THIS SCANS THE REPO INSTEAD OF A LIST OF FILES. The first version of this module checked five
+named files. Two pins lived outside that list and drifted for exactly that reason:
+``.github/workflows/checkpoint-security-gate.yml`` pinned the action at ``@v0.24.0`` — **a tag that
+has never existed**, so the reference workflow a design partner is told to copy failed at ref
+resolution — and ``.pre-commit-hooks.yaml`` documented ``v0.6.0`` as its rev, nineteen releases
+stale. An allow-list can only guard what someone remembered to add to it, which is the one thing a
+drifting pin is guaranteed not to be. So the scan now walks every tracked file and the *exemptions*
+are the short, deliberate list.
+
+Note the pins named in this docstring are written without their full syntax on purpose: this file
+is scanned like any other, and spelling one out here would make the guard flag its own prose. The
+exemption list stays for genuine historical records only, and a missing entry fails loudly rather
+than passing silently — the safe direction for a check like this.
+
+Two distinct failures are checked, because they are distinct:
+
+1. **A pin that names a version that does not exist.** Fatal anywhere, including historical
+   CHANGELOG entries: a ref that cannot resolve is broken wherever it appears.
+2. **An adopter-facing pin that names an older release.** Fatal in copy-paste surfaces, but
+   correct and expected in the CHANGELOG, where old entries legitimately name old versions.
+
 These assertions are deliberately cheap and mechanical so a release can satisfy them by search and
 replace.
 """
 
 from __future__ import annotations
 
+import os
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -23,16 +46,58 @@ from provael import __version__
 
 REPO = Path(__file__).resolve().parent.parent
 
-#: Files carrying a copy-paste `uses: provael/provael@vX.Y.Z` snippet.
-_ACTION_SNIPPETS = [
-    "README.md",
-    "docs/quickstart.md",
-    "examples/ci/github-actions.yml",
-    "examples/ci/regression-gate.yml",
-    "examples/ci/regression-gate.md",
-]
+#: Pin syntaxes that resolve a **git ref** on the user's side, and therefore break loudly when the
+#: ref is wrong. Keyed by a human name used in assertion messages.
+_PIN_PATTERNS: dict[str, re.Pattern[str]] = {
+    "action ref": re.compile(r"provael/provael@v(\d+\.\d+\.\d+)"),
+    "pre-commit rev": re.compile(r"^\s*#?\s*rev:\s*v(\d+\.\d+\.\d+)", re.MULTILINE),
+}
 
-_ACTION_REF = re.compile(r"provael/provael@v(\d+\.\d+\.\d+)")
+#: Files whose pins are historical by nature and must NOT be forced to the current release. The
+#: CHANGELOG's 0.3.0 entry describing the Action as it shipped in 0.3.0 is correct, not stale.
+#: They are still subject to the "must name a real tag" check — a dead ref is dead anywhere.
+_HISTORICAL = frozenset({"CHANGELOG.md"})
+
+#: Surfaces that must never *lose* their pin. The scan below catches a pin that is wrong; it cannot
+#: catch one that was deleted, because a file with no pin trivially satisfies every other check.
+_MUST_CARRY_A_PIN = ("README.md", "docs/quickstart.md")
+
+
+def _tracked_text_files() -> list[Path]:
+    """Every git-tracked file that reads as text, relative to the repo root."""
+    out = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=REPO, capture_output=True, text=True, check=True,
+    ).stdout
+    return [REPO / name for name in out.split("\0") if name]
+
+
+def _released_versions() -> set[str]:
+    """Versions a user can actually resolve — the git tags, which are the only authority.
+
+    The CHANGELOG is deliberately *not* used as a fallback: it and the tag list disagree in both
+    directions (0.2.x is tagged with no CHANGELOG section; 0.1.0 has a section and no tag), so a
+    CHANGELOG-derived set would both miss real tags and vouch for versions nobody can fetch.
+    """
+    proc = subprocess.run(
+        ["git", "tag", "--list", "v*"], cwd=REPO, capture_output=True, text=True, check=False
+    )
+    if proc.returncode != 0:
+        return set()
+    return {line.lstrip("v").strip() for line in proc.stdout.splitlines() if line.strip()}
+
+
+def _pins_in_repo() -> list[tuple[Path, str, str]]:
+    """Every ``(path, kind, version)`` git-ref pin in the tree."""
+    found: list[tuple[Path, str, str]] = []
+    for path in _tracked_text_files():
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue  # a binary asset cannot carry a pin
+        for kind, pattern in _PIN_PATTERNS.items():
+            found.extend((path, kind, version) for version in pattern.findall(text))
+    return found
 
 
 def test_citation_version_matches_the_package() -> None:
@@ -41,16 +106,65 @@ def test_citation_version_matches_the_package() -> None:
     assert cff["version"] == __version__
 
 
-@pytest.mark.parametrize("relpath", _ACTION_SNIPPETS)
-def test_action_snippets_pin_the_current_release(relpath: str) -> None:
-    """Every documented `uses: provael/provael@vX.Y.Z` names the version this tree builds."""
-    path = REPO / relpath
-    if not path.is_file():  # a snippet file may legitimately be removed
-        pytest.skip(f"{relpath} not present")
-    found = _ACTION_REF.findall(path.read_text(encoding="utf-8"))
-    assert found, f"{relpath} carries no provael/provael@vX.Y.Z reference to check"
-    stale = sorted({v for v in found if v != __version__})
-    assert not stale, f"{relpath} pins {stale}, but this tree is {__version__}"
+def test_the_scan_actually_finds_pins() -> None:
+    """Guard the guard: a scan that silently matches nothing passes every assertion below.
+
+    This is the same failure the CI dependency audit had — a check that inspected the wrong thing
+    and reported success on every run. A structural check needs its own vacuity guard.
+    """
+    pins = _pins_in_repo()
+    assert len(pins) >= 5, f"the repo-wide pin scan found only {len(pins)} pins; it is not working"
+    kinds = {pin[1] for pin in pins}
+    assert kinds == set(_PIN_PATTERNS), f"no pins matched for {set(_PIN_PATTERNS) - kinds}"
+
+
+@pytest.mark.parametrize("relpath", _MUST_CARRY_A_PIN)
+def test_the_adopter_surfaces_still_carry_a_pin(relpath: str) -> None:
+    """A deleted snippet passes every correctness check by having nothing to check."""
+    pinned = {pin[0].relative_to(REPO).as_posix() for pin in _pins_in_repo()}
+    assert relpath in pinned, f"{relpath} no longer carries a provael/provael@vX.Y.Z snippet"
+
+
+def test_every_pin_names_a_tag_that_exists() -> None:
+    """The `@v0.24.0` failure: a documented ref pointing at a release that was never tagged.
+
+    ``__version__`` is accepted alongside the published tags because a release PR legitimately
+    repins everything to the version it is about to tag. That still catches the original bug: the
+    tree was 0.25.0 when the workflow said 0.24.0, so 0.24.0 was neither tagged nor in flight.
+    """
+    released = _released_versions()
+    if not released:
+        # Never let this pass quietly where it matters. A shallow CI clone fetches no tags, so the
+        # workflow sets `fetch-tags: true`; if that regresses, fail rather than skip.
+        assert not os.environ.get("CI"), (
+            "no git tags available in CI — the checkout must set `fetch-tags: true` or this "
+            "guard silently passes"
+        )
+        pytest.skip("no git tags available (shallow clone or no git); cannot verify")
+
+    resolvable = released | {__version__}
+    broken = sorted(
+        {
+            f"{path.relative_to(REPO).as_posix()} pins a nonexistent v{version} ({kind})"
+            for path, kind, version in _pins_in_repo()
+            if version not in resolvable
+        }
+    )
+    assert not broken, "pins naming a tag that does not exist:\n  " + "\n  ".join(broken)
+
+
+def test_adopter_facing_pins_name_the_current_release() -> None:
+    """Every copy-paste pin outside the CHANGELOG names the version this tree builds."""
+    stale = sorted(
+        {
+            f"{path.relative_to(REPO).as_posix()} pins v{version} ({kind})"
+            for path, kind, version in _pins_in_repo()
+            if path.relative_to(REPO).as_posix() not in _HISTORICAL and version != __version__
+        }
+    )
+    assert not stale, (
+        f"this tree is {__version__}, but these pins are stale:\n  " + "\n  ".join(stale)
+    )
 
 
 def test_action_install_pin_admits_the_current_version() -> None:

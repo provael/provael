@@ -71,7 +71,10 @@ from provael.compliance import (
 )
 from provael.config import RunConfig
 from provael.crosswalk import (
+    ATLAS_TARGET,
     CROSSWALK_TARGET,
+    to_atlas_json,
+    to_atlas_markdown,
     to_crosswalk_json,
     to_crosswalk_markdown,
 )
@@ -142,6 +145,7 @@ class CrosswalkTarget(StrEnum):
     """Taxonomy a ``provael crosswalk`` maps the Embodied AI Security Top 10 against."""
 
     robojailbench = CROSSWALK_TARGET
+    atlas = ATLAS_TARGET
 
 
 class CrosswalkFormat(StrEnum):
@@ -242,6 +246,33 @@ def version() -> None:
     _out.print(f"provael (provael) {__version__}")
 
 
+def _version_flag(value: bool) -> None:
+    """Eager ``--version`` callback: print and exit before any subcommand is resolved."""
+    if value:
+        _out.print(f"provael (provael) {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def _main(
+    _version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            callback=_version_flag,
+            is_eager=True,
+            help="Print the Provael version and exit.",
+        ),
+    ] = False,
+) -> None:
+    """Provael — red-team open Vision-Language-Action (VLA) robot policies in simulation.
+
+    ``--version`` mirrors the ``version`` subcommand. Both exist because ``--version`` is what
+    everyone reaches for first (and what the documented smoke test in the release checklist
+    calls), while the subcommand is what scripts already pin to.
+    """
+
+
 @study_app.command("cross-arch")
 def study_cross_arch(
     episodes: Annotated[int, typer.Option(help="Episodes per attack (distinct seeds).")] = 10,
@@ -299,15 +330,20 @@ def crosswalk_cmd(
         Path | None, typer.Option(help="Write the crosswalk JSON here instead of stdout.")
     ] = None,
 ) -> None:
-    """Emit the Embodied AI Security Top 10 ↔ RoboJailBench taxonomy crosswalk (deterministic).
+    """Emit an Embodied AI Security Top 10 taxonomy crosswalk (deterministic).
 
-    A machine-readable mapping of RoboJailBench's 18 harm categories to the EAI id(s) and provael
+    ``--target robojailbench`` maps RoboJailBench's 18 harm categories to the EAI id(s) and provael
     attack family/families that cover them, with an honest coverage state per category. Sim-only;
     no RoboJailBench benchmark is run and no comparative scores are produced.
+
+    ``--target atlas`` maps all ten EAI risks to MITRE ATLAS tactic → technique phrasing, each with
+    its coverage state. Proposed mapping, not endorsed by MITRE, and deliberately free of
+    ``AML.TXXXX`` ids.
     """
-    if target is not CrosswalkTarget.robojailbench:  # pragma: no cover - single target today
-        _fail(f"unknown crosswalk target {target.value!r}; available: {CROSSWALK_TARGET}")
-    payload = to_crosswalk_markdown() if fmt is CrosswalkFormat.md else to_crosswalk_json()
+    if target is CrosswalkTarget.atlas:
+        payload = to_atlas_markdown() if fmt is CrosswalkFormat.md else to_atlas_json()
+    else:
+        payload = to_crosswalk_markdown() if fmt is CrosswalkFormat.md else to_crosswalk_json()
     if out is not None:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(payload + "\n", encoding="utf-8")

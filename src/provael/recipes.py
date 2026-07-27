@@ -21,11 +21,66 @@ from typing import Any
 
 import yaml
 
-#: The four shipped attack families (EAI01/02/04/05), in canonical order.
-#: Adversarial families only — the benign ``baseline`` is a CONTROL, not an attack family, and
-#: must not be folded in here (``adversarial_asr`` excludes it by role, and callers reading this
-#: list as "the attack families" would then over-count).
-ALL_FAMILIES: list[str] = ["instruction", "visual", "injection", "action"]
+from provael.attacks.baseline import FAMILY as BASELINE_FAMILY
+from provael.attacks.registry import FAMILIES
+
+#: **Every** adversarial family in the registry, in registry order — derived at import, never
+#: hand-listed. This was a literal `["instruction", "visual", "injection", "action"]` sitting next
+#: to a registry that had grown to fourteen, so `--recipe full-sweep` computed an ASR over four of
+#: them and reported it as a full sweep. A hardcoded list beside a growing registry is the bug; a
+#: newly-registered family now joins `full-sweep` automatically.
+#:
+#: Adversarial families only — the benign ``baseline`` is a CONTROL, not an attack family, and must
+#: not be folded in here (``adversarial_asr`` excludes it by role, and callers reading this list as
+#: "the attack families" would then over-count).
+ALL_FAMILIES: list[str] = [f for f in FAMILIES if f != BASELINE_FAMILY]
+
+#: The original four (EAI01/02/04/05) — every one applicable on the default CPU ``stub`` suite.
+#: Kept as a deliberately smaller recipe, but no longer under the name ``full-sweep``.
+CORE_FAMILIES: list[str] = ["instruction", "visual", "injection", "action"]
+
+#: Families that cannot score on every suite, and the precondition each needs. Applicability is
+#: ultimately decided per episode by :meth:`~provael.attacks.base.Attack.applicable`, which the
+#: recipe layer cannot predict — so this records the *declared* precondition and
+#: ``tests/test_recipes.py`` checks each claim against a real run on every CPU suite, so a reason
+#: cannot quietly go stale.
+#:
+#: A family listed here is **skipped, not scored zero**. The runner marks an inapplicable episode
+#: ``applicable=False``, scoring drops it from the ASR denominator, and the evidence artifacts
+#: render ``N/A`` — never ``0.0%``, which would read as "we attacked it and it held".
+CONDITIONAL_FAMILIES: dict[str, str] = {
+    "sensor_spoof": (
+        "needs a suite with spatial keep-out zones (reach / keepout_zones); no episode is "
+        "applicable on the scalar-danger stub suite"
+    ),
+    "action_space": (
+        "needs a suite with spatial keep-out zones (reach / keepout_zones); no episode is "
+        "applicable on the scalar-danger stub suite"
+    ),
+    "misalignment": (
+        "needs a suite with spatial keep-out zones (reach / keepout_zones); no episode is "
+        "applicable on the scalar-danger stub suite"
+    ),
+    "backdoor": (
+        "needs the scalar-danger stub suite; the trigger screen has no meaning on the spatial "
+        "keep-out suites"
+    ),
+    "authorization": (
+        "needs the scalar-danger stub suite; the authorization screen has no meaning on the "
+        "spatial keep-out suites"
+    ),
+    "confidentiality": (
+        "needs the scalar-danger stub suite; the memorized-canary screen has no meaning on the "
+        "spatial keep-out suites"
+    ),
+    "action": "not applicable on the humanoid suite, which has no end-effector action channel",
+    "optimized": "not applicable on the humanoid suite (same action-channel precondition)",
+    "humanoid": "needs the humanoid suite (whole-body / locomotion observations)",
+    "optimized_patch": (
+        "needs a real image channel from a GPU policy; inert on every CPU suite, so it scores no "
+        "episode in any CPU run"
+    ),
+}
 
 #: The benign control attack. Every recipe includes it because an attack-success rate without a
 #: false-positive control is not interpretable: you cannot tell an attack-induced unsafe state from
@@ -63,16 +118,23 @@ RECIPES: dict[str, Recipe] = {
         "Instruction-jailbreak family only (EAI01) + benign control, 10 episodes.",
         {"attacks": _with_control(["instruction"]), "episodes": 10},
     ),
+    "core-sweep": Recipe(
+        "core-sweep",
+        "The four core families (EAI01/02/04/05) + benign control, 10 episodes — every one "
+        "applicable on the default CPU stub suite.",
+        {"attacks": _with_control(CORE_FAMILIES), "episodes": 10},
+    ),
     "full-sweep": Recipe(
         "full-sweep",
-        "All four families (EAI01/02/04/05) + benign control, 10 episodes.",
+        f"Every one of the {len(ALL_FAMILIES)} adversarial families + benign control, 10 "
+        "episodes. Families inapplicable to the chosen suite are SKIPPED (N/A), never scored 0.",
         {"attacks": _with_control(ALL_FAMILIES), "episodes": 10},
     ),
     "ci-gate": Recipe(
         "ci-gate",
-        "What a CI gate runs — all families + benign control, 10 episodes, seed 0 "
-        "(matches the GitHub Action).",
-        {"attacks": _with_control(ALL_FAMILIES), "episodes": 10, "seed": 0},
+        "What a CI gate runs — the core families + benign control, 10 episodes, seed 0 "
+        "(kept byte-identical to the GitHub Action's default `attacks` input).",
+        {"attacks": _with_control(CORE_FAMILIES), "episodes": 10, "seed": 0},
     ),
 }
 
@@ -107,4 +169,13 @@ def load_recipe(name_or_path: str) -> dict[str, Any]:
     )
 
 
-__all__ = ["ALL_FAMILIES", "Recipe", "RECIPES", "available_recipes", "load_recipe"]
+__all__ = [
+    "ALL_FAMILIES",
+    "CORE_FAMILIES",
+    "CONDITIONAL_FAMILIES",
+    "BENIGN_CONTROL",
+    "Recipe",
+    "RECIPES",
+    "available_recipes",
+    "load_recipe",
+]

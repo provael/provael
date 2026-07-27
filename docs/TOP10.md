@@ -75,12 +75,26 @@ latency, freeze). **Watchlist (emerging):** multi-robot / wormable propagation �
 failures · rogue/self-evolving agents · long-lived memory poisoning.
 
 **Provael attack coverage: 8 / 10.** Eight categories ship a runnable, sim-only Provael attack family
-with a transfer-test — **EAI01–EAI06, EAI08, EAI09**. **EAI07** (CPS / firmware / comms / teleop) and
-**EAI10** (evaluation / observability) are **out of scope for a VLA-policy red-teamer by design**:
-EAI07 is an infrastructure / CVE layer (IEC 62443 · ATT&CK-ICS — faithful coverage would need real
-exploit tooling, which this tool will not ship), and EAI10 is a governance meta-risk that Provael's
-own eval *mitigates* rather than attacks. "Shipped" means a sim-only screen with a benign-FPR control;
-real-model transfer varies by family and is called out honestly in each entry.
+with a transfer-test — **EAI01–EAI06, EAI08, EAI09**. The two gaps are *different kinds* of gap, and
+the tool now says which is which rather than filing both under "out of scope":
+
+- **EAI07** (CPS / firmware / comms / teleop) — `out-of-scope-for-simulation`. An infrastructure /
+  CVE layer (IEC 62443 · ATT&CK-ICS). Faithful coverage would need real exploit tooling against real
+  firmware and radio traffic, which this tool will not ship. **A clean Provael run says nothing about
+  this risk.**
+- **EAI10** (evaluation / observability / incident response) — `process-control-not-attackable`.
+  A governance meta-risk with no attack surface: Provael's own signed report and regression gate are
+  *partial evidence for* the evaluation limb, not an attack on it. It never carries an ASR.
+
+"Shipped" means a sim-only screen with a benign-FPR control; real-model transfer varies by family and
+is called out honestly in each entry.
+
+> This paragraph is **machine-checked**. `provael.eai.CATALOG` carries all ten risks with an explicit
+> coverage state, `tests/test_eai.py` asserts the catalog and this document define the same ten ids,
+> and that the "8 / 10" above matches the count the catalog generates and names both gaps. Prior to
+> that check the number was hand-typed while EAI07 and EAI10 were **missing from the code entirely** —
+> right by coincidence, and invisible in every crosswalk, scorecard and compliance report. Run
+> `provael crosswalk --target atlas` for the generated per-risk view.
 
 ---
 

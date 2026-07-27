@@ -1,4 +1,6 @@
 # Recipe: instruction-only — instruction-jailbreak family (EAI01) only, 10 episodes.
 #   provael attack --recipe instruction-only
-attacks: [instruction]
+# `none` is the benign control and is REQUIRED: the release gate cannot pass without it,
+# and an ASR with no false-positive baseline is not interpretable.
+attacks: [none, instruction]
 episodes: 10
