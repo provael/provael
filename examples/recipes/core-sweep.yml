@@ -1,0 +1,8 @@
+# Recipe: core-sweep — the four core families (EAI01/02/04/05), 10 episodes.
+# Every one is applicable on the default CPU stub suite. This is what `full-sweep`
+# used to be; it was renamed because it swept 4 of the registry's 14 families.
+#   provael attack --recipe core-sweep
+# `none` is the benign control and is REQUIRED: the release gate cannot pass without it,
+# and an ASR with no false-positive baseline is not interpretable.
+attacks: [none, instruction, visual, injection, action]
+episodes: 10

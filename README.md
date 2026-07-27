@@ -59,7 +59,7 @@ CI, a benign false-positive control, a clean-task-success (competence) control, 
 
 > **New here?** Run it in your browser in 5 minutes — [open the Colab notebook](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb) — or browse the [examples gallery](examples/) and the built-in `provael list-recipes`.
 
-It ships **eleven families of templated, auditable attacks** — `instruction` (text
+It ships **fourteen adversarial families of auditable attacks** — `instruction` (text
 reframings), `visual` (observation-space markers), `sensor_spoof` (EAI02: a sim
 perception spoof driving the end-effector into a keep-out zone), `injection` (indirect /
 embodied prompt injection), `action` (action-space integrity: freeze / trajectory
@@ -70,9 +70,12 @@ hijack), `action_space` (EAI04 2nd vector: keep-out hijack of the *commanded end
 extraction), `misalignment` (EAI06: the embodiment gap — a benign-sounding instruction
 driving an unsafe embodied action into a keep-out zone), and **`humanoid`** (whole-body /
 locomotion — a balance spoof → loss of balance, a whole-body hijack → topple, a freeze mid-stride)
-— plus an **`optimized`** family
-(`targeted_hijack`: a black-box, query-budgeted *search*), a `none` baseline, and an ASR
-**leaderboard**. Every family carries its transfer-test (rate + 95% Wilson CI + benign-FPR
+— plus three **optimized** search families: **`optimized`**
+(`targeted_hijack`: a black-box, query-budgeted *search*), **`optimized_patch`** (the image-channel
+analogue, GPU-gated and inert on CPU suites) and **`optimized_instruction`** (`targeted_redirect`,
+a command-preserving instruction search) — a `none` benign control, and an ASR
+**leaderboard**. `--recipe full-sweep` runs every one of the fourteen; families the chosen suite
+cannot support are skipped and reported N/A, never scored 0%. Every family carries its transfer-test (rate + 95% Wilson CI + benign-FPR
 control); run `provael transfer-test` to print it. The `action`, `action_space`, `sensor_spoof`,
 `backdoor`, `authorization`, `misalignment`, `confidentiality`, and `humanoid` families are
 **stub-validated only** (no real-model transfer claimed). It red-teams **8 policies** — the CPU `stub`
@@ -119,10 +122,19 @@ machine-readable mapping between the Top 10 and RoboJailBench's 18 harm categori
 honest measured coverage (and transfer status) per category.
 
 **Coverage: 8 / 10.** Provael ships a runnable, sim-only attack family with a transfer-test for eight
-categories — **EAI01–EAI06, EAI08, EAI09**. **EAI07** (CPS / firmware / comms / teleop) and **EAI10**
-(evaluation / observability) are **out of a VLA-policy red-teamer's scope by design** — EAI07 is an
-infrastructure / CVE layer (would need real exploit tooling this tool won't ship) and EAI10 is a
-governance meta-risk Provael's own eval *mitigates* rather than attacks.
+categories — **EAI01–EAI06, EAI08, EAI09**. The other two are gaps of *different kinds*, and every
+artifact now says which:
+
+- **EAI07** (CPS / firmware / comms / teleop) is `out-of-scope-for-simulation` — an infrastructure /
+  CVE layer that would need real exploit tooling this tool will not ship. **A clean Provael run says
+  nothing about this risk.**
+- **EAI10** (evaluation / observability / incident response) is `process-control-not-attackable` — a
+  governance meta-risk with no attack surface. Provael's own signed report is *partial evidence for*
+  its evaluation limb, not an attack on it, and it never carries an ASR.
+
+All ten appear in the scorecard, compliance report, dossier and evidence manifest with an explicit
+coverage status — a category with no attacks is shown as uncovered, never omitted. `provael
+crosswalk --target atlas` prints the generated per-risk view.
 
 Every attack is tagged with the risk it exercises; the SARIF output (`--format sarif`) carries
 that tag as each finding's `EAIxx` ruleId:
@@ -245,7 +257,7 @@ Other commands:
 ```bash
 uv run provael list-policies            # stub (CPU); smolvla (needs the [lerobot] extra)
 uv run provael list-attacks             # 28 attacks across instruction/visual/sensor_spoof/injection/action/action_space/backdoor/authorization/confidentiality/misalignment/humanoid/optimized/optimized_patch/optimized_instruction
-uv run provael list-recipes             # named presets: quick / instruction-only / full-sweep / ci-gate
+uv run provael list-recipes             # named presets: quick / instruction-only / core-sweep / full-sweep / ci-gate
 uv run provael attack --recipe quick    # a recipe is the base config; explicit flags override it
 uv run provael report --in runs/stub/
 uv run provael calibrate --policy stub --suite stub --seeds 20 --out calib/  # fit a per-task predicate

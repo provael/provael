@@ -26,8 +26,10 @@ on:
         description: "Registered suite (stub on CPU; libero needs the [lerobot] extra)."
         default: "stub"
       attacks:
-        description: "Comma-separated attack/family names."
-        default: "instruction,visual,injection"
+        # Keep `none`: it is the benign control the release gate requires, and without it the ASR
+        # has no false-positive baseline. Matches action.yml's default.
+        description: "Comma-separated attack/family names (keep `none`, the benign control)."
+        default: "none,instruction,visual,injection,action"
   push:
     branches: [main]
   schedule:

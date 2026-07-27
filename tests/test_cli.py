@@ -123,3 +123,18 @@ def test_seeds_alias_and_bad_rename_map(tmp_path: Path) -> None:
     # Invalid JSON rename-map -> clean error.
     bad = runner.invoke(app, ["attack", "--rename-map", "not-json", "--episodes", "1"])
     assert bad.exit_code == 2
+
+
+def test_version_flag_matches_the_version_subcommand() -> None:
+    """`--version` is what everyone reaches for; the subcommand is what scripts pin to."""
+    flag = runner.invoke(app, ["--version"])
+    sub = runner.invoke(app, ["version"])
+    assert flag.exit_code == 0 and sub.exit_code == 0
+    assert flag.stdout.strip() == sub.stdout.strip()
+    assert __version__ in flag.stdout
+
+
+def test_no_args_still_prints_help_not_the_version() -> None:
+    """Adding an app callback must not turn a bare `provael` into a no-op."""
+    result = runner.invoke(app, [])
+    assert "Usage: provael" in result.stdout

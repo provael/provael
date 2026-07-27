@@ -246,6 +246,33 @@ def version() -> None:
     _out.print(f"provael (provael) {__version__}")
 
 
+def _version_flag(value: bool) -> None:
+    """Eager ``--version`` callback: print and exit before any subcommand is resolved."""
+    if value:
+        _out.print(f"provael (provael) {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def _main(
+    _version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            callback=_version_flag,
+            is_eager=True,
+            help="Print the Provael version and exit.",
+        ),
+    ] = False,
+) -> None:
+    """Provael — red-team open Vision-Language-Action (VLA) robot policies in simulation.
+
+    ``--version`` mirrors the ``version`` subcommand. Both exist because ``--version`` is what
+    everyone reaches for first (and what the documented smoke test in the release checklist
+    calls), while the subcommand is what scripts already pin to.
+    """
+
+
 @study_app.command("cross-arch")
 def study_cross_arch(
     episodes: Annotated[int, typer.Option(help="Episodes per attack (distinct seeds).")] = 10,

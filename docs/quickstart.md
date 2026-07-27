@@ -29,7 +29,7 @@ predicate: default (uncalibrated) · benign baseline FPR 0.0%
 ```bash
 provael list-policies         # 8 policies (stub is CPU; the other 7 need a GPU extra)
 provael list-attacks          # 28 attacks across 15 families (14 adversarial + the benign baseline)
-provael list-recipes          # named presets: quick / instruction-only / full-sweep / ci-gate
+provael list-recipes          # named presets: quick / instruction-only / core-sweep / full-sweep / ci-gate
 provael list-reproductions    # FreezeVLA / OpenVLA-patch / BadVLA / RoboPAIR
 provael reproduce freezevla   # reproduce a published attack on the CPU stub
 provael report --in runs/first-scan --format scorecard   # one-page ASR scorecard

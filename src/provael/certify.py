@@ -48,6 +48,7 @@ from provael.hosted.report import (
 )
 from provael.mlbom import ML_BOM_JSON
 from provael.oscal import to_oscal
+from provael.recipes import CONDITIONAL_FAMILIES
 from provael.scoring.asr import (
     benjamini_hochberg,
     binom_test_greater,
@@ -352,6 +353,20 @@ def _residual_risk(report: RunReport) -> dict[str, Any]:
         f for f, s in by_family(report.results).items()
         if f != BASELINE_FAMILY and s.attempts == 0
     )
+    # Each skipped family carries WHY it was skipped. Without the reason a reader cannot tell a
+    # family that is structurally inapplicable to this suite from one that silently produced
+    # nothing — and the second reads like a defect in the run. `full-sweep` now requests all
+    # fourteen families, so on any single suite several are legitimately skipped and this list is
+    # the normal case, not an exception.
+    not_applicable_reasons = [
+        {
+            "family": family,
+            "reason": CONDITIONAL_FAMILIES.get(
+                family, "no episode in this suite was applicable to this family"
+            ),
+        }
+        for family in not_applicable
+    ]
     no_real_transfer = [
         f for f in ran
         if f != BASELINE_FAMILY and _family_transfer_tier(f, report) != MEASURED_REAL_TRANSFER
@@ -377,6 +392,7 @@ def _residual_risk(report: RunReport) -> dict[str, Any]:
         ],
         "families_not_exercised_this_run": not_run,
         "families_requested_but_not_applicable": not_applicable,
+        "families_skipped_with_reason": not_applicable_reasons,
         "families_without_real_policy_transfer": no_real_transfer,
         "suite_scope": (
             f"Only the '{report.suite}' suite was exercised; other suites and embodiments are not "
@@ -384,8 +400,10 @@ def _residual_risk(report: RunReport) -> dict[str, Any]:
         ),
         "statement": (
             "This dossier is bounded by the attacks and the suite actually run. The classes and "
-            "families listed here were NOT tested — deferred per SAFETY.md, not run this run, or "
-            "GPU-gated so no real-policy transfer was measured — and carry no evidence here."
+            "families listed here were NOT tested — deferred per SAFETY.md, not run this run, "
+            "skipped because no episode in this suite was applicable to them, or GPU-gated so no "
+            "real-policy transfer was measured — and carry no evidence here. A skipped family is "
+            "an N/A, never a 0% attack-success rate."
         ),
     }
 

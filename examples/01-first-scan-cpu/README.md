@@ -10,7 +10,10 @@ pip install provael            # or: uv run ...
 provael attack --recipe full-sweep --out runs/first-scan
 ```
 
-`--recipe full-sweep` expands to `--attacks instruction,visual,injection,action --episodes 10`.
+`--recipe full-sweep` expands to the benign control plus **every** adversarial family in the
+registry, at 10 episodes. Families the chosen suite cannot support are skipped and reported as
+N/A — never as a 0% attack-success rate. For just the four core families (all applicable on the
+CPU stub), use `--recipe core-sweep`.
 (Equivalent long form: `provael attack --policy stub --suite stub
 --attacks instruction,visual,injection,action --episodes 10 --seed 0 --out runs/first-scan`.)
 
