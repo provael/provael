@@ -21,7 +21,13 @@ from provael.types import RunReport
 from provael.verdict import release_verdict
 
 #: ExecutionManifest format version.
-EXECUTION_MANIFEST_VERSION = 1
+#:
+#: 1 -> 2: added ``defense``. The manifest is PROVENANCE — it records what ran — and it is bound to
+#: the report by digest rather than being part of it, so growing it does NOT move the attestation
+#: subject. That is exactly why the defense identity is recorded here and not on ``RunReport``:
+#: a field there would change the canonical JSON every attestation is signed over, and every
+#: attestation issued by an earlier version would stop verifying.
+EXECUTION_MANIFEST_VERSION = 2
 
 #: Environment-variable names allowed into the manifest. Anything else is dropped entirely; an
 #: allow-listed name whose value looks secret is redacted (belt and braces).
@@ -86,6 +92,12 @@ class ExecutionManifest(BaseModel):
     seeds: int
     horizon: int
     attacks: list[str] = Field(default_factory=list)
+    defense: str | None = Field(
+        None,
+        description="Registered defense applied as a pre-processing wrapper, or None for an "
+        "undefended run. Recorded here rather than on RunReport so the attested subject is "
+        "unchanged (see EXECUTION_MANIFEST_VERSION).",
+    )
     action_schema_digest: str | None = None
     # evidence
     evidence_state: str
@@ -134,6 +146,7 @@ def build_execution_manifest(
     checkpoint_repo: str | None = None,
     checkpoint_revision: str | None = None,
     checkpoint_digest: str | None = None,
+    defense: str | None = None,
     suite_config_digest: str | None = None,
     action_schema_digest: str | None = None,
     started_at: str | None = None,
@@ -160,6 +173,7 @@ def build_execution_manifest(
     missing = [name for name in _PROVENANCE_FIELDS if values.get(name) is None]
     return ExecutionManifest(
         run_id=run_id,
+        defense=defense,
         protocol_version=protocol_version,
         designation=designation,
         repository=repository,

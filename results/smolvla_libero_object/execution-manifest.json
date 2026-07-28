@@ -15,6 +15,7 @@
   "checkpoint_repo": null,
   "checkpoint_revision": null,
   "commit": "smolvla-libero-2026-06-06",
+  "defense": null,
   "dep_lock_digest": null,
   "designation": "exploratory",
   "deviations": [],
@@ -25,7 +26,7 @@
   "evidence_state": "legacy-unverified",
   "hardware": null,
   "horizon": 280,
-  "manifest_schema_version": 1,
+  "manifest_schema_version": 2,
   "missing_fields": [
     "python_version",
     "os",

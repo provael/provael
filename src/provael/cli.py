@@ -78,6 +78,12 @@ from provael.crosswalk import (
     to_crosswalk_json,
     to_crosswalk_markdown,
 )
+from provael.defenses.measure import (
+    MitigationVerdict,
+    build_mitigation_report,
+    write_mitigation,
+)
+from provael.defenses.registry import available_defenses, make_defense
 from provael.leaderboard import (
     LEADERBOARD_JSON,
     Leaderboard,
@@ -209,7 +215,13 @@ def _git_commit() -> str | None:
     return sha if result.returncode == 0 and sha else None
 
 
-def _emit_execution_manifest(report: RunReport, out_dir: Path, *, elapsed: float) -> None:
+#: Repo root, used to check whether a defense has a published study behind it.
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+
+
+def _emit_execution_manifest(
+    report: RunReport, out_dir: Path, *, elapsed: float, defense: str | None = None
+) -> None:
     """Write execution-manifest.json (runtime provenance) beside the deterministic report.json.
 
     The manifest carries the wall-clock, OS/Python, commit, and (redacted) environment that must
@@ -227,6 +239,7 @@ def _emit_execution_manifest(report: RunReport, out_dir: Path, *, elapsed: float
         run_id=f"{report.policy}-{report.suite}-{end.strftime(fmt)}",
         package_version=__version__,
         protocol_version="provael-redteam/v1",
+        defense=defense,
         commit=_git_commit(),
         python_version=platform.python_version(),
         os_name=f"{platform.system()} {platform.release()}",
@@ -238,6 +251,38 @@ def _emit_execution_manifest(report: RunReport, out_dir: Path, *, elapsed: float
     (out_dir / "execution-manifest.json").write_text(
         to_execution_manifest_json(manifest), encoding="utf-8"
     )
+
+
+def _defense_from_manifest(run_dir: Path) -> str | None:
+    """Read the defense name from a run's execution manifest.
+
+    The manifest is where the defense identity lives (report.json deliberately does not carry it),
+    so this is the authoritative source rather than asking the operator to retype it.
+    """
+    path = run_dir / "execution-manifest.json"
+    if not path.is_file():
+        return None
+    try:
+        value = json.loads(path.read_text(encoding="utf-8")).get("defense")
+    except (OSError, json.JSONDecodeError):
+        return None
+    return str(value) if value else None
+
+
+def _write_defense_log(rows: list[dict[str, str]], out_dir: Path) -> Path:
+    """Write the defense's raw -> canonical audit trail as a JSONL sidecar.
+
+    A SIDECAR, deliberately. docs/DEFENSES.md requires the canonical form to be "logged next to the
+    raw instruction", and the obvious place — a field on AttackResult — is exactly the place it must
+    not go: AttackResult is nested in RunReport.results, so a field there moves the canonical JSON
+    the attestation is signed over. JSONL so it stays greppable and diffable at any run size.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / "defense-log.jsonl"
+    path.write_text(
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows), encoding="utf-8"
+    )
+    return path
 
 
 @app.command()
@@ -420,6 +465,31 @@ def list_reproductions() -> None:
     _out.print("Use: [cyan]provael reproduce <name>[/cyan]  (defaults to the CPU stub)")
 
 
+@app.command("list-defenses")
+def list_defenses() -> None:
+    """List registered defenses (mitigations measured under the docs/DEFENSES.md protocol)."""
+    table = Table(title="Defenses")
+    table.add_column("defense", style="cyan", no_wrap=True)
+    table.add_column("kind", style="magenta")
+    table.add_column("EAI ids")
+    table.add_column("status")
+    for name in available_defenses():
+        d = make_defense(name)
+        # "measured" ONLY where a study exists. docs/DEFENSES.md keeps every other taxonomy row at
+        # "specified, unproven", and this column must not quietly upgrade one.
+        study = _REPO_ROOT / "docs" / "studies" / f"{name.replace('_', '-')}.md"
+        status = "measured" if study.is_file() else "specified, unproven"
+        table.add_row(name, d.kind, ", ".join(d.eai_ids) or "—", status)
+    _out.print(table)
+    _out.print(
+        "Five of the six docs/DEFENSES.md taxonomy rows ship no implementation and are "
+        "deliberately absent: an unmeasured mitigation is not a registered one."
+    )
+    _out.print(
+        "Use: [cyan]provael attack --defense <name>[/cyan] then [cyan]provael mitigation[/cyan]"
+    )
+
+
 @app.command()
 def attack(
     ctx: typer.Context,
@@ -482,6 +552,14 @@ def attack(
             "--query-budget",
             min=1,
             help="Per-episode policy-query budget for the optimized (search) attack family.",
+        ),
+    ] = None,
+    defense: Annotated[
+        str | None,
+        typer.Option(
+            "--defense",
+            help="Registered defense applied between the attack and the policy "
+            "(see `provael list-defenses`). Writes a defense-log.jsonl audit sidecar.",
         ),
     ] = None,
     recipe: Annotated[
@@ -556,6 +634,8 @@ def attack(
         overrides["precision"] = precision
     if _explicit("query_budget"):
         overrides["query_budget"] = query_budget
+    if _explicit("defense"):
+        overrides["defense"] = defense
     if _explicit("out"):
         overrides["out"] = out
 
@@ -579,8 +659,11 @@ def attack(
             )
 
     started = time.perf_counter()
+    # The defense audit trail is collected here and written as a SIDECAR, never merged into
+    # report.json — a field on RunReport would move the attestation subject digest.
+    defense_audit: list[dict[str, str]] = []
     try:
-        report = run(config, calibrations)
+        report = run(config, calibrations, audit_sink=defense_audit)
     except (MissingLeRobotError, IncompatiblePolicyError) as exc:
         _fail(str(exc))
         return
@@ -594,7 +677,10 @@ def attack(
     elapsed = time.perf_counter() - started
 
     json_path, md_path = write_report(report, config.out)
-    _emit_execution_manifest(report, config.out, elapsed=elapsed)
+    _emit_execution_manifest(report, config.out, elapsed=elapsed, defense=config.defense)
+    if config.defense:
+        log_path = _write_defense_log(defense_audit, config.out)
+        _out.print(f"Defense [cyan]{config.defense}[/cyan] audit trail -> [cyan]{log_path}[/cyan]")
     render_summary(report, _out)
     _out.print(f"\nWrote [cyan]{json_path}[/cyan] and [cyan]{md_path}[/cyan]  ({elapsed:.2f}s)")
 
@@ -1601,3 +1687,75 @@ def leaderboard_verify(
 
 if __name__ == "__main__":  # pragma: no cover
     app()
+
+
+@app.command()
+def mitigation(
+    defended: Annotated[
+        Path, typer.Option("--defended", help="Run directory from `attack --defense <name>`.")
+    ],
+    baseline: Annotated[
+        Path, typer.Option("--baseline", help="Run directory from the SAME config, undefended.")
+    ],
+    out: Annotated[
+        Path, typer.Option("--out", help="Directory to write the mitigation report into.")
+    ] = Path("runs/mitigation"),
+    defense: Annotated[
+        str | None,
+        typer.Option("--defense", help="Defense name for the report. Read from the defended run's "
+                     "execution manifest when omitted."),
+    ] = None,
+) -> None:
+    """Measure a defense: pre/post ASR per family under the docs/DEFENSES.md protocol.
+
+    Exits non-zero on `rejected-benign-cost` so it is usable as a CI gate — a defense that lowers
+    ASR by breaking the benign task must fail a pipeline, not be reported and ignored.
+    """
+    try:
+        defended_report = load_report(defended)
+        undefended_report = load_report(baseline)
+    except FileNotFoundError as exc:
+        _fail(str(exc))
+        return
+    except ValidationError:
+        _fail("--defended and --baseline must both be valid Provael run directories")
+        return
+
+    name = defense or _defense_from_manifest(defended) or "unknown"
+    report = build_mitigation_report(
+        defended_report,
+        undefended_report,
+        defense=name,
+        issued_at=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        commit=_git_commit() or "unknown",
+    )
+
+    table = Table(title=f"Mitigation — {name}")
+    table.add_column("family", style="cyan", no_wrap=True)
+    table.add_column("pre ASR", justify="right")
+    table.add_column("pre 95% CI", justify="center")
+    table.add_column("post ASR", justify="right")
+    table.add_column("post 95% CI", justify="center")
+    table.add_column("credited", justify="center")
+    for row in report.rows:
+        pre = "N/A" if row.pre_asr is None else f"{100 * row.pre_asr:.1f}%"
+        post = "N/A" if row.post_asr is None else f"{100 * row.post_asr:.1f}%"
+        pre_ci = "N/A" if row.pre_ci95 is None else (
+            f"[{100 * row.pre_ci95[0]:.0f}-{100 * row.pre_ci95[1]:.0f}%]"
+        )
+        post_ci = "N/A" if row.post_ci95 is None else (
+            f"[{100 * row.post_ci95[0]:.0f}-{100 * row.post_ci95[1]:.0f}%]"
+        )
+        table.add_row(row.family, pre, pre_ci, post, post_ci, "yes" if row.credited else "no")
+    _out.print(table)
+    _out.print(f"Acceptance gate: {report.acceptance_gate}")
+
+    json_path, md_path = write_mitigation(report, out)
+    _out.print(f"Wrote [cyan]{json_path}[/cyan] and [cyan]{md_path}[/cyan]")
+    _out.print(f"\n[bold]Verdict:[/bold] {report.verdict.value}")
+
+    if report.verdict is MitigationVerdict.rejected_benign_cost:
+        _fail(
+            "defense REJECTED: it raised the benign FPR or moved clean-task success outside its "
+            "CI. Lowering ASR by breaking the task is not a mitigation."
+        )
