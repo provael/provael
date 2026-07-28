@@ -1,6 +1,6 @@
 """Defenses: the ABC contract, the canonicaliser, the registry, and the measurement protocol.
 
-The load-bearing test in this file is ``test_report_schema_is_unmoved_by_the_defense_feature``.
+The load-bearing test in this file is ``test_the_attested_subject_of_a_real_issued_attestation_still_verifies``.
 Everything else checks that the defense works; that one checks that adding it did not silently
 break every attestation ever issued.
 """
@@ -28,6 +28,7 @@ from provael.defenses.measure import (
     build_mitigation_report,
 )
 from provael.execution import report_digest
+from provael.report import load_report
 from provael.runner import run
 from provael.scoring.asr import is_command_preserving
 from provael.suites import make_suite
@@ -35,13 +36,29 @@ from provael.types import ASRStat, AttackResult, RunReport
 
 runner = CliRunner()
 
-#: Sentinel substituted for `tool_version` before digesting, so the schema guard below survives a
-#: version bump but not a schema change. See the test for why that distinction is the whole point.
-_PINNED_VERSION = "PINNED-FOR-SCHEMA-GUARD"
-#: Digest of the undefended report for _GOLDEN_CONFIG with the version held constant.
-_SCHEMA_GOLDEN = "8162e296c4fc1c8b1a6da446ef8d330546da12e41008956817385af073e9e2e5"
-#: RunReport's top-level keys, pinned literally so a new field names itself in the failure.
-_RUNREPORT_KEYS = {'suite', 'successes', 'stochastic', 'succ_but_unsafe', 'results', 'roles', 'accelerator', 'seed', 'attempts', 'by_attack', 'clean_task_success_rate', 'episodes', 'eai', 'calibration', 'tasks', 'asr', 'policy', 'evidence_state', 'attacks', 'calibrated', 'model', 'adversarial_attempts', 'matched_benign_fpr', 'adversarial_asr', 'tool_version', 'by_task', 'asr_std', 'schema_version', 'horizon', 'seeds', 'adversarial_successes', 'preliminary', 'ci95', 'precision', 'benign_fpr', 'anytime_ci'}
+#: A COMMITTED report — the real SmolVLA x LIBERO run an attestation was actually issued over.
+#: Digesting committed bytes is portable; digesting a live run is not (see the test).
+_REAL_RUN = Path(__file__).resolve().parent.parent / "results" / "smolvla_libero_object"
+#: That report's canonical digest — the literal attestation subject of an issued attestation.
+_ATTESTED_SUBJECT = "280401608e5f5814f8f6c705e49cfd6e208cef1d3d8e1228d230cb9a684f4e26"
+#: RunReport's and AttackResult's field sets, pinned so a new field names itself in the failure.
+#: AttackResult matters as much as RunReport: it is nested inside RunReport.results, so a field
+#: there moves the canonical JSON just the same.
+_RUNREPORT_KEYS = frozenset(RunReport.model_fields)
+_ATTACKRESULT_KEYS = frozenset(AttackResult.model_fields)
+_EXPECTED_RUNREPORT_KEYS = frozenset({
+    "accelerator", "adversarial_asr", "adversarial_attempts", "adversarial_successes",
+    "anytime_ci", "asr", "asr_std", "attacks", "attempts", "benign_fpr", "by_attack", "by_task",
+    "calibrated", "calibration", "ci95", "clean_task_success_rate", "eai", "episodes",
+    "evidence_state", "horizon", "matched_benign_fpr", "model", "policy", "precision",
+    "preliminary", "results", "roles", "schema_version", "seed", "seeds", "stochastic",
+    "succ_but_unsafe", "successes", "suite", "tasks", "tool_version",
+})
+_EXPECTED_ATTACKRESULT_KEYS = frozenset({
+    "action_head_class", "adversarial_instruction", "applicable", "attack", "attacker_access",
+    "danger", "decisions", "endpoints", "family", "original_instruction", "seed", "steps",
+    "steps_to_success", "success", "task", "task_success", "threshold",
+})
 _GOLDEN_CONFIG = {
     "policy": "stub",
     "suite": "stub",
@@ -162,29 +179,34 @@ def test_defended_run_is_deterministic() -> None:
     assert run(config).model_dump_json() == run(config).model_dump_json()
 
 
-def test_report_schema_is_unmoved_by_the_defense_feature() -> None:
-    """THE GUARD. Adding the defense feature must not move the attestation subject's SHAPE.
+def test_the_attested_subject_of_a_real_issued_attestation_still_verifies() -> None:
+    """THE GUARD, part 1: an already-issued attestation's subject digest is unmoved.
 
     CHANGELOG promises "`RunReport` is **unchanged**, so the attestation subject digest is
-    byte-identical and attestations issued by earlier versions still verify". This pins that.
+    byte-identical and attestations issued by earlier versions still verify". This is that promise
+    against the actual artifact: the committed SmolVLA x LIBERO report an attestation was issued
+    over. Adding a field to `RunReport` re-serialises it and this digest moves.
 
-    `tool_version` is held to a constant before digesting, and that is not a loophole — it is what
-    makes the test mean anything. `RunReport` embeds the package version, so the raw digest moves on
-    EVERY release whether or not the schema changed. A guard that fails on every version bump gets
-    its golden updated reflexively, and then it no longer catches the thing it exists for. Holding
-    the version constant isolates *schema* drift from *version* drift, which is the actual promise.
-
-    Adding a field to `RunReport` — or to `AttackResult`, nested inside `RunReport.results` — still
-    fails this. Mutation-tested against exactly that.
+    Digests COMMITTED BYTES, not a fresh run. A live-run digest is not portable — the first version
+    of this test pinned one computed on macOS and it failed on Linux CI, because the determinism
+    contract is "same machine, same seed -> byte-identical", not cross-platform. The committed
+    artifact is the same bytes everywhere, and it is also the thing that actually matters.
     """
-    report = run(RunConfig(**_GOLDEN_CONFIG))
-    pinned = report.model_copy(update={"tool_version": _PINNED_VERSION})
-    assert report_digest(pinned) == _SCHEMA_GOLDEN
+    assert report_digest(load_report(_REAL_RUN)) == _ATTESTED_SUBJECT
 
-    # Belt and braces, and a far more readable failure than a digest mismatch: the top-level key
-    # set is pinned literally, so a new field names itself in the diff.
-    assert "defense" not in report.model_dump()
-    assert set(report.model_dump()) == _RUNREPORT_KEYS
+
+def test_runreport_and_attackresult_fields_are_unchanged() -> None:
+    """THE GUARD, part 2: the schema itself, pinned by name.
+
+    A far more readable failure than a digest mismatch — a new field names itself in the diff.
+    `AttackResult` is pinned too because it is nested inside `RunReport.results`, so a field there
+    moves the canonical JSON exactly as one on `RunReport` would. That is the tempting mistake: a
+    `defense` field on the result looks local and is not.
+    """
+    assert _RUNREPORT_KEYS == _EXPECTED_RUNREPORT_KEYS
+    assert _ATTACKRESULT_KEYS == _EXPECTED_ATTACKRESULT_KEYS
+    assert "defense" not in _RUNREPORT_KEYS
+    assert "defense" not in _ATTACKRESULT_KEYS
 
 
 def test_defense_changes_the_instruction_the_policy_actually_saw() -> None:
