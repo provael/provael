@@ -53,6 +53,16 @@ class Defense(ABC):
     #: Embodied AI Security Top-10 risk ids this mitigation primarily addresses. Empty means the
     #: defense makes no coverage claim — the honest default for a scaffold.
     eai_ids: tuple[str, ...] = ()
+    #: Path of the published study measuring this defense, relative to the repo root, or ``None``
+    #: for one that has not been measured. ``None`` is the default, so a new defense is *unproven*
+    #: until someone sets this — the same direction of failure as an empty ``eai_ids``.
+    #:
+    #: DATA, NOT A FILESYSTEM PROBE. ``provael list-defenses`` first decided "measured" by checking
+    #: whether ``docs/studies/<name>.md`` existed on disk. That worked in a git checkout and never
+    #: in an installed wheel, because ``docs/`` is not packaged — so 0.26.0 shipped telling every
+    #: user that its one measured defense was "specified, unproven", the tool contradicting its own
+    #: published study. A class attribute travels with the code.
+    study: str | None = None
 
     def applicable(self, observation: Observation) -> bool:
         """Whether this defense has a surface in the given suite's observation.

@@ -215,10 +215,6 @@ def _git_commit() -> str | None:
     return sha if result.returncode == 0 and sha else None
 
 
-#: Repo root, used to check whether a defense has a published study behind it.
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-
-
 def _emit_execution_manifest(
     report: RunReport, out_dir: Path, *, elapsed: float, defense: str | None = None
 ) -> None:
@@ -475,10 +471,13 @@ def list_defenses() -> None:
     table.add_column("status")
     for name in available_defenses():
         d = make_defense(name)
-        # "measured" ONLY where a study exists. docs/DEFENSES.md keeps every other taxonomy row at
-        # "specified, unproven", and this column must not quietly upgrade one.
-        study = _REPO_ROOT / "docs" / "studies" / f"{name.replace('_', '-')}.md"
-        status = "measured" if study.is_file() else "specified, unproven"
+        # "measured" ONLY where a study exists — docs/DEFENSES.md keeps every other taxonomy row at
+        # "specified, unproven" and this column must not quietly upgrade one.
+        #
+        # Read from the class attribute, NOT from the filesystem. Probing for
+        # docs/studies/<name>.md worked in a git checkout and never in an installed wheel (docs/ is
+        # not packaged), so 0.26.0 told every user its one measured defense was unproven.
+        status = "measured" if d.study else "specified, unproven"
         table.add_row(name, d.kind, ", ".join(d.eai_ids) or "—", status)
     _out.print(table)
     _out.print(
