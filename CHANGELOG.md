@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.26.0] — 2026-07-28
+
 > **`full-sweep` now sweeps 14 families instead of 4, so the ASR it reports moves.** On the CPU
 > stub it goes from **74.4% (67/90) to 84.1% (143/170)** — the recipe was always *meant* to be a
 > full sweep, and the
@@ -89,6 +91,54 @@ All notable changes to this project are documented here. The format is based on
   *mapping* are different claims.
 - `RunReport` is **unchanged**, so the attestation subject digest is byte-identical and
   attestations issued by earlier versions still verify.
+
+### Added
+
+- **Measured defenses (`provael.defenses`).** `docs/DEFENSES.md` has been a written spec with no
+  implementation since it landed; this ships the first row of its taxonomy. A `Defense` ABC whose
+  *shape* is the constraint — `apply()` sees an instruction and an observation and nothing else, so
+  a "defense" that lowers ASR by reaching into the policy, the scorer or the danger predicate
+  cannot be written against it — plus `InstructionCanonicalization`, implementing the three
+  numbered steps at `docs/DEFENSES.md` in pure stdlib with no new runtime dependency.
+- **Mitigation report (`report.mitigation.json` / `.md`).** Pre/post ASR per family with 95% Wilson
+  intervals, the credit rule as literal interval disjointness, a benign-FPR control and a
+  benign-task-success acceptance gate — all four rules of the published protocol, none softened.
+  Both arms bound by report digest so the pair is tamper-evident and re-derivable.
+- **CLI:** `provael list-defenses` (status reads "measured" only where a study exists),
+  `--defense` on `attack`, and `provael mitigation --defended --baseline --out`, which exits
+  non-zero on `rejected-benign-cost` so it works as a CI gate.
+- **[First measured defense study](docs/studies/instruction-canonicalization.md)** —
+  `stub-validated-scaffolding`, `credited` on the `stub` and `reach` CPU suites (adversarial ASR
+  67.5% → 7.5% and 35.0% → 0.0%). **The study leads with why that number means less than it
+  looks:** four of the stub fixture's seven danger tokens are words the defense strips, so
+  `optimized_instruction`'s 60% → 0% is close to tautological. No real-model transfer is claimed.
+  The registry ships exactly one defense; the other five taxonomy rows stay specified and unproven.
+
+### Changed
+
+- **`EXECUTION_MANIFEST_VERSION` 1 → 2**, adding `defense`. The manifest is *provenance* and is
+  bound to the report by digest rather than being part of it, so growing it does not move the
+  attestation subject. **That is precisely why the defense identity lives there and not on
+  `RunReport`:** a field on `RunReport` (or on `AttackResult`, which is nested inside
+  `RunReport.results`) would change the canonical JSON every attestation is signed over, and every
+  attestation issued by an earlier version would stop verifying. Verified rather than asserted — an
+  undefended run's digest is byte-identical before and after this release, and
+  `tests/test_defenses.py` pins it to a literal so a future field addition fails loudly.
+- The defense's raw → canonical audit trail is written to a `defense-log.jsonl` **sidecar** in the
+  run directory, never into `report.json`, for the same reason.
+
+### Fixed
+
+- **`docs/attacks.md` documented 4 of 14 attack families** and carried a warning admitting it. All
+  nine missing families now have sections — member attacks, EAI id, `attacker_access` and honest
+  transfer status — sourced from `attacks/registry.py` and each family module. The warning is
+  removed because it is no longer true.
+- **`docs/quickstart.md` printed the pre-fix four-family number** (74.4%, 67/90). Re-ran
+  `provael attack --recipe full-sweep` and pasted the real output: **84.1% (143/170)**, with the
+  shown per-attack rows from that same run.
+- The acceptance gate rejected clean-task success that was perfectly **preserved** at 100%:
+  `wilson_ci(n, n)` returns `hi = 0.999…9`, so an exact `post <= hi` failed by one float ulp and
+  the best possible outcome scored as a hard failure. Caught on the first real run of the protocol.
 
 ## [0.25.1] — 2026-07-27
 

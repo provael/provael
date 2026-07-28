@@ -74,7 +74,11 @@ locomotion — a balance spoof → loss of balance, a whole-body hijack → topp
 (`targeted_hijack`: a black-box, query-budgeted *search*), **`optimized_patch`** (the image-channel
 analogue, GPU-gated and inert on CPU suites) and **`optimized_instruction`** (`targeted_redirect`,
 a command-preserving instruction search) — a `none` benign control, and an ASR
-**leaderboard**. `--recipe full-sweep` runs every one of the fourteen; families the chosen suite
+**leaderboard**, and — new in 0.26.0 — **measured defenses**: `--defense` installs a mitigation in
+the deployment position and `provael mitigation` reports pre/post ASR per family with 95% Wilson
+intervals, a benign-FPR control and a benign-task-success acceptance gate. Measuring a defense is
+in the **free** tool, not behind the operated tier: a mitigation you cannot measure is a marketing
+claim. `--recipe full-sweep` runs every one of the fourteen; families the chosen suite
 cannot support are skipped and reported N/A, never scored 0%. Every family carries its transfer-test (rate + 95% Wilson CI + benign-FPR
 control); run `provael transfer-test` to print it. The `action`, `action_space`, `sensor_spoof`,
 `backdoor`, `authorization`, `misalignment`, `confidentiality`, and `humanoid` families are
@@ -319,7 +323,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.25.1
+      - uses: provael/provael@v0.26.0
         with:
           # `none` is the benign control: without it an ASR has no false-positive baseline,
           # and the release gate cannot reach `pass`. It never moves the adversarial ASR.
@@ -559,21 +563,32 @@ see
 ## How it works
 
 ```
-        ┌───────────┐    instruction     ┌──────────┐   adversarial    ┌──────────┐
- task → │ SuiteAdapter│ ───────────────→ │  Attack  │ ───instruction─→ │ Policy   │
-        │  reset/step │                   │ perturb()│                  │  Adapter │
-        │  is_unsafe()│ ←─── action ──────┴──────────┘                  │  act()   │
-        └─────┬───────┘                                                 └────┬─────┘
-              │  for t in horizon: if is_unsafe(state) → success              │
-              └──────────────────────── runner ─────────────────────────────┘
+        ┌───────────┐   instruction   ┌──────────┐  adversarial  ┌─────────┐        ┌──────────┐
+ task → │ SuiteAdapter│ ──────────────→ │  Attack  │ ─instruction→ │ Defense │ ─────→ │ Policy   │
+        │  reset/step │                  │ perturb()│               │ apply() │ canon. │  Adapter │
+        │  is_unsafe()│ ←──── action ────┴──────────┘               │ (opt-in)│        │  act()   │
+        └─────┬───────┘                                             └────┬────┘        └────┬─────┘
+              │  for t in horizon: if is_unsafe(state) → success          │                 │
+              └───────────────────────── runner ───────────────────────────────────────────┘
+                                          │                               │
+                                          ▼                               ▼
+              scoring (ASR) → RunReport → report.json / report.md    defense-log.jsonl
                                           │
                                           ▼
-                               scoring (ASR) → RunReport → report.json / report.md
+                    mitigation report (pre/post ASR + Wilson CI + controls)
 ```
+
+The **Defense** step is opt-in (`--defense`) and sits in the *deployment position* — after the
+attack, before the policy — so what is measured is what an operator would actually install. It
+never sees the policy, the scorer, or the danger predicate. Its raw → canonical trail goes to a
+`defense-log.jsonl` sidecar and its identity to the execution manifest: **nothing is added to
+`RunReport`**, so the attestation subject digest is unmoved.
 
 - **`PolicyAdapter`** — `load()`, `act(observation, instruction) -> np.ndarray`.
 - **`SuiteAdapter`** — `tasks()`, `reset(task, seed)`, `step(action)`, `is_unsafe(state)`.
 - **`Attack`** — `perturb(instruction, observation) -> (instruction, observation)`.
+- **`Defense`** — `apply(instruction, observation) -> (instruction, observation)`; a pre-processing
+  wrapper that changes no policy weights. `provael list-defenses`.
 - **`runner`** — runs every `(task, attack, seed)` episode and aggregates.
 - **ASR** — `successes / attempts`, with `by_attack` and `by_task` breakdowns.
 

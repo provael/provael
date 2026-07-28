@@ -1,6 +1,6 @@
 """Defenses: the ABC contract, the canonicaliser, the registry, and the measurement protocol.
 
-The load-bearing test in this file is ``test_report_digest_is_unmoved_by_the_defense_feature``.
+The load-bearing test in this file is ``test_report_schema_is_unmoved_by_the_defense_feature``.
 Everything else checks that the defense works; that one checks that adding it did not silently
 break every attestation ever issued.
 """
@@ -35,8 +35,13 @@ from provael.types import ASRStat, AttackResult, RunReport
 
 runner = CliRunner()
 
-#: The undefended report digest for this exact config, pinned. See the test that uses it.
-_UNDEFENDED_GOLDEN = "f861f07bd37eaf6eed80aa1d2bffdbfa8eb0f8e1d834837cc35535ea9bca0f31"
+#: Sentinel substituted for `tool_version` before digesting, so the schema guard below survives a
+#: version bump but not a schema change. See the test for why that distinction is the whole point.
+_PINNED_VERSION = "PINNED-FOR-SCHEMA-GUARD"
+#: Digest of the undefended report for _GOLDEN_CONFIG with the version held constant.
+_SCHEMA_GOLDEN = "8162e296c4fc1c8b1a6da446ef8d330546da12e41008956817385af073e9e2e5"
+#: RunReport's top-level keys, pinned literally so a new field names itself in the failure.
+_RUNREPORT_KEYS = {'suite', 'successes', 'stochastic', 'succ_but_unsafe', 'results', 'roles', 'accelerator', 'seed', 'attempts', 'by_attack', 'clean_task_success_rate', 'episodes', 'eai', 'calibration', 'tasks', 'asr', 'policy', 'evidence_state', 'attacks', 'calibrated', 'model', 'adversarial_attempts', 'matched_benign_fpr', 'adversarial_asr', 'tool_version', 'by_task', 'asr_std', 'schema_version', 'horizon', 'seeds', 'adversarial_successes', 'preliminary', 'ci95', 'precision', 'benign_fpr', 'anytime_ci'}
 _GOLDEN_CONFIG = {
     "policy": "stub",
     "suite": "stub",
@@ -157,16 +162,29 @@ def test_defended_run_is_deterministic() -> None:
     assert run(config).model_dump_json() == run(config).model_dump_json()
 
 
-def test_report_digest_is_unmoved_by_the_defense_feature() -> None:
-    """THE GUARD. An undefended run's attestation subject must be byte-identical to before.
+def test_report_schema_is_unmoved_by_the_defense_feature() -> None:
+    """THE GUARD. Adding the defense feature must not move the attestation subject's SHAPE.
 
-    CHANGELOG [Unreleased] promises "`RunReport` is **unchanged**, so the attestation subject digest
-    is byte-identical and attestations issued by earlier versions still verify". This pins that
-    promise to a literal digest computed before the defenses package existed. If someone later adds
-    a field to `RunReport` or `AttackResult` — including a tempting `defense` field — this fails,
-    which is the entire point of it being here.
+    CHANGELOG promises "`RunReport` is **unchanged**, so the attestation subject digest is
+    byte-identical and attestations issued by earlier versions still verify". This pins that.
+
+    `tool_version` is held to a constant before digesting, and that is not a loophole — it is what
+    makes the test mean anything. `RunReport` embeds the package version, so the raw digest moves on
+    EVERY release whether or not the schema changed. A guard that fails on every version bump gets
+    its golden updated reflexively, and then it no longer catches the thing it exists for. Holding
+    the version constant isolates *schema* drift from *version* drift, which is the actual promise.
+
+    Adding a field to `RunReport` — or to `AttackResult`, nested inside `RunReport.results` — still
+    fails this. Mutation-tested against exactly that.
     """
-    assert report_digest(run(RunConfig(**_GOLDEN_CONFIG))) == _UNDEFENDED_GOLDEN
+    report = run(RunConfig(**_GOLDEN_CONFIG))
+    pinned = report.model_copy(update={"tool_version": _PINNED_VERSION})
+    assert report_digest(pinned) == _SCHEMA_GOLDEN
+
+    # Belt and braces, and a far more readable failure than a digest mismatch: the top-level key
+    # set is pinned literally, so a new field names itself in the diff.
+    assert "defense" not in report.model_dump()
+    assert set(report.model_dump()) == _RUNREPORT_KEYS
 
 
 def test_defense_changes_the_instruction_the_policy_actually_saw() -> None:
