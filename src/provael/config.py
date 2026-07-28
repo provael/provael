@@ -47,6 +47,13 @@ class RunConfig(BaseModel):
     )
     seed: int = Field(0, ge=0, description="Base random seed for reproducibility.")
     horizon: int = Field(8, ge=1, description="Maximum timesteps per episode.")
+    defense: str | None = Field(
+        None,
+        description="Registered defense name applied as a pre-processing wrapper between the "
+        "attack and the policy (e.g. 'instruction_canonicalization'). None runs undefended. The "
+        "defense identity is recorded in the EXECUTION MANIFEST, not in report.json — adding a "
+        "field to RunReport would move the attestation subject digest.",
+    )
     query_budget: int | None = Field(
         None,
         ge=1,

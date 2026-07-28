@@ -25,6 +25,8 @@ from provael.attacks.optimized import OracleAttack, SchemaAwareAttack
 from provael.attacks.registry import resolve_attacks
 from provael.calibration import Calibration, anytime_ci, wilson_ci
 from provael.config import RunConfig
+from provael.defenses.base import Defense
+from provael.defenses.registry import make_defense
 from provael.evidence import classify_run
 from provael.policies.base import PolicyAdapter
 from provael.policies.registry import make_policy
@@ -101,8 +103,23 @@ def run_episode(
     task: str,
     seed: int,
     horizon: int,
+    *,
+    defense: Defense | None = None,
+    audit_sink: list[dict[str, str]] | None = None,
 ) -> AttackResult:
-    """Play a single episode and return its :class:`AttackResult`."""
+    """Play a single episode and return its :class:`AttackResult`.
+
+    ``defense``, when given, is applied strictly BETWEEN the attack's perturbation and
+    ``policy.act`` — the deployment position an operator would actually install a pre-processing
+    mitigation in, so what is measured is what would ship. It cannot see the policy, the scorer or
+    the danger predicate (see :class:`~provael.defenses.base.Defense`).
+
+    ``audit_sink``, when given, collects the defense's raw → canonical trail per step for the
+    ``defense-log.jsonl`` sidecar. It is deliberately a caller-owned list rather than a field on
+    :class:`~provael.types.AttackResult`: adding a field there would move ``RunReport``'s canonical
+    JSON and therefore the attestation subject digest, invalidating every attestation issued by an
+    earlier version.
+    """
     policy.reset()  # clear per-episode policy state (e.g. SmolVLA's action-chunk queue)
     obs = suite.reset(task, seed)
     base_instruction = str(obs.get("instruction", ""))
@@ -139,6 +156,25 @@ def run_episode(
     for t in range(1, horizon + 1):
         steps = t
         adversarial_instruction, adv_obs = attack.perturb(base_instruction, obs)
+        # The defense sits HERE and nowhere else: after the attack has produced what the policy
+        # would otherwise receive, before the policy receives it. That is the deployment position,
+        # so a credited result is a claim about a mitigation someone could actually install.
+        #
+        # `adversarial_instruction` is deliberately reassigned, so the recorded instruction is what
+        # the policy ACTUALLY saw. Recording the pre-defense text would make `report.json` describe
+        # an input that was never used.
+        if defense is not None and defense.applicable(adv_obs):
+            if audit_sink is not None:
+                audit_sink.append(
+                    {
+                        "task": task,
+                        "attack": attack.name,
+                        "seed": str(seed),
+                        "step": str(t),
+                        **defense.audit(adversarial_instruction),
+                    }
+                )
+            adversarial_instruction, adv_obs = defense.apply(adversarial_instruction, adv_obs)
         action = policy.act(adv_obs, adversarial_instruction)
         # Every unsafe predicate downstream is a threshold comparison, and EVERY comparison against
         # NaN is False — so a policy emitting NaN would score SAFE on all axes and the episode would
@@ -199,12 +235,22 @@ def run_episode(
     )
 
 
-def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -> RunReport:
+def run(
+    config: RunConfig,
+    calibrations: dict[str, Calibration] | None = None,
+    *,
+    audit_sink: list[dict[str, str]] | None = None,
+) -> RunReport:
     """Execute a full red-team run described by ``config`` and return a report.
 
     If ``calibrations`` (task -> :class:`~provael.calibration.Calibration`) is given, the
     suite uses the calibrated predicate for those tasks; otherwise the default predicate is
     used, so existing runs are unchanged.
+
+    ``config.defense``, when set, installs a pre-processing mitigation in the deployment position
+    (see :func:`run_episode`). ``audit_sink`` collects its raw → canonical trail for the caller to
+    write as a ``defense-log.jsonl`` sidecar — this function performs no file IO, and the trail is
+    deliberately NOT part of the report, so the attestation subject digest is unaffected.
     """
     # `device` is forwarded so --accelerator is actually HONOURED. Every real factory already
     # accepts a `device` kwarg (defaulting to "cuda"), but the runner never passed one, so the
@@ -229,6 +275,7 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
 
     policy.load()
 
+    defense = make_defense(config.defense) if config.defense else None
     attacks = resolve_attacks(config.attacks)
     _configure_optimized(attacks, policy, suite, config.query_budget)
     tasks = config.tasks if config.tasks is not None else suite.tasks()
@@ -246,7 +293,12 @@ def run(config: RunConfig, calibrations: dict[str, Calibration] | None = None) -
         for attack in attacks:
             for episode in range(config.episodes):
                 seed = config.seed + episode
-                results.append(run_episode(policy, suite, attack, task, seed, config.horizon))
+                results.append(
+                    run_episode(
+                        policy, suite, attack, task, seed, config.horizon,
+                        defense=defense, audit_sink=audit_sink,
+                    )
+                )
 
     overall = overall_stat(results)
     adversarial = adversarial_asr(results)  # headline ASR: benign control excluded by role
