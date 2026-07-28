@@ -42,6 +42,13 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
+          # Full history, for the same reason ci.yml needs it: this job re-runs the whole test
+          # suite, and tests/test_version_consistency.py resolves every documented `@vX.Y.Z` pin
+          # against the real tag list. A default shallow checkout of a TAG resolves almost no
+          # tags, so the guard reported v0.25.0 and v0.3.0 -- both real -- as nonexistent and
+          # failed the release. ci.yml got this in #62; release.yml re-runs the same gate from
+          # its own checkout and was missed, so v0.26.0 was the first release to hit it.
+          fetch-depth: 0
       - name: Install uv (pinned Python 3.12)
         uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
