@@ -195,6 +195,7 @@ class InstructionCanonicalization(Defense):
     name = "instruction_canonicalization"
     kind = "input-canonicalization"
     eai_ids = ("EAI01", "EAI05", "EAI06")
+    study = "docs/studies/instruction-canonicalization.md"
 
     def apply(self, instruction: str, observation: Observation) -> tuple[str, Observation]:
         """Return the canonicalised instruction and the observation unchanged."""

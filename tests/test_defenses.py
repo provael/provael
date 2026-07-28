@@ -16,6 +16,7 @@ from typer.testing import CliRunner
 from provael.cli import app
 from provael.config import RunConfig
 from provael.defenses import (
+    Defense,
     InstructionCanonicalization,
     available_defenses,
     make_defense,
@@ -392,3 +393,33 @@ def test_cli_list_defenses_lists_only_the_measured_one() -> None:
     assert result.exit_code == 0
     assert "instruction_canonicalization" in result.output
     assert "input-canoni" in result.output  # rich may wrap the column
+
+
+def test_measured_status_does_not_depend_on_a_repo_checkout() -> None:
+    """0.26.0 shipped `list-defenses` saying its one MEASURED defense was "specified, unproven".
+
+    The status was decided by probing for `docs/studies/<name>.md` on disk. That resolves in a git
+    checkout and never in an installed wheel, because `docs/` is not packaged — so the tool
+    contradicted its own published study for every user who installed it. Found by the release
+    smoke test against the real artifact, which is what that step is for.
+
+    The fix is that `study` is a class attribute, so this asserts the property that matters: the
+    status is derivable from the code alone.
+    """
+    defense = make_defense("instruction_canonicalization")
+    assert defense.study == "docs/studies/instruction-canonicalization.md"
+    # The study it names must actually exist in the repo — a dangling pointer would be the same
+    # defect wearing a different hat.
+    assert (Path(__file__).resolve().parent.parent / defense.study).is_file()
+
+
+def test_an_unmeasured_defense_defaults_to_unproven() -> None:
+    """`study` defaults to None, so a new defense is unproven until someone says otherwise."""
+
+    class _Scaffold(Defense):
+        name = "scaffold"
+
+        def apply(self, instruction: str, observation: dict[str, object]):  # noqa: ANN201
+            return instruction, observation
+
+    assert _Scaffold.study is None

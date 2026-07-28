@@ -6,6 +6,22 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.26.1] — 2026-07-28
+
+### Fixed
+
+- **`provael list-defenses` told every installed user that the one measured defense was
+  "specified, unproven".** The status was decided by probing for `docs/studies/<name>.md` on disk,
+  which resolves in a git checkout and never in an installed wheel — `docs/` is not packaged. So
+  0.26.0, the release whose headline feature *is* the measured defense, shipped a CLI that
+  contradicted its own published study. `Defense.study` is now a class attribute, so the status
+  travels with the code and is derivable without a checkout. Found by the release smoke test
+  against the published artifact, which is exactly what that step exists for.
+- **`release.yml` fetched no tags**, so `test_every_pin_names_a_tag_that_exists` reported the real
+  `v0.25.0` and `v0.3.0` as nonexistent and blocked the 0.26.0 release. `ci.yml` got
+  `fetch-depth: 0` in #62; the release workflow re-runs the same gate from its own checkout and was
+  missed. It failed closed and published nothing, which is the gate working.
+
 ## [0.26.0] — 2026-07-28
 
 > **`full-sweep` now sweeps 14 families instead of 4, so the ASR it reports moves.** On the CPU
