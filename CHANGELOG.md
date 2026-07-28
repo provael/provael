@@ -7,10 +7,15 @@ All notable changes to this project are documented here. The format is based on
 ## [Unreleased]
 
 > **`full-sweep` now sweeps 14 families instead of 4, so the ASR it reports moves.** On the CPU
-> stub it goes from 74.4% to 82.4% — the recipe was always *meant* to be a full sweep, and the
+> stub it goes from **74.4% (67/90) to 84.1% (143/170)** — the recipe was always *meant* to be a
+> full sweep, and the
 > number it printed before was computed over 4 of the registry's 14 adversarial families with
 > nothing in the output saying so. If you gate on a `full-sweep` threshold, re-baseline it. To keep
 > the old behaviour exactly, switch to the new **`core-sweep`** recipe.
+>
+> An earlier draft of this note said 82.4%. That figure came from a 4-episode spot check, not from
+> the recipe, whose default is 10 episodes. Both arms of the comparison are now measured at the
+> recipe's own default and pasted from the run — see `docs/quickstart.md`.
 
 ### Fixed
 
