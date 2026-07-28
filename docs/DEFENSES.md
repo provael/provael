@@ -1,7 +1,11 @@
 # Defenses
 
-> Status: IN PROGRESS — results land in `docs/studies/` with the same controls as attacks. No
-> defense is claimed until measured.
+> Status: **ONE ROW MEASURED** (`input canonicalization`, `stub-validated-scaffolding` — see
+> [the study](studies/instruction-canonicalization.md)). Every other row below remains
+> **specified and unproven**. Results land in `docs/studies/` with the same controls as attacks.
+> No defense is claimed until measured, and a measured defense is claimed only as far as the
+> evidence reaches — the study's own headline warning is that its result is substantially
+> circular on a fixture whose danger function is lexical.
 
 Provael measures attacks. A defense is only worth shipping if it **measurably** lowers Attack Success
 Rate without breaking the benign task — so every defense here is held to the same bar as an attack: a
@@ -55,7 +59,15 @@ auditable (the canonical form is logged next to the raw instruction).
   attacks off) must be **unchanged** within its CI. A defense that lowers ASR by breaking the task is
   rejected — the acceptance gate is a hard requirement, not a trade-off to be reported and ignored.
 - **Where it lands.** Results are published in `docs/studies/` in the same format and under the same
-  controls as an attack transfer study, and this page links them once they exist.
+  controls as an attack transfer study. **Measured:**
+  [instruction-canonicalization](studies/instruction-canonicalization.md) — `credited` on the
+  `stub` and `reach` CPU suites (adversarial ASR 67.5% → 7.5% and 35.0% → 0.0%), benign FPR
+  unchanged at 0%, acceptance gate passed on `stub` and not evaluable on `reach`. Read the study's
+  circularity section before quoting the number: four of the fixture's seven danger tokens are
+  words this defense strips, so `optimized_instruction`'s 60% → 0% is close to tautological.
+  `stub-validated-scaffolding`; no real-model transfer is claimed.
 
-Until that study reports, instruction canonicalization is a **specified, unproven** mitigation — the
-honest status for every row in the taxonomy above.
+Instruction canonicalization is now **measured** — under the controls above, on CPU fixture suites,
+with its limits stated in the study. Every **other** row in the taxonomy above remains a
+**specified, unproven** mitigation, and none of them is registered in `provael list-defenses`:
+an unmeasured mitigation is not a shipped one.
