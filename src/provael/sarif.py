@@ -26,6 +26,7 @@ from typing import Any
 from provael.calibration import wilson_ci
 from provael.eai import CATALOG, TOP10_DOC_URL
 from provael.evidence import evidence_state_of
+from provael.integrity import CheckpointIntegrity
 from provael.types import RunReport
 from provael.verdict import release_verdict
 
@@ -59,7 +60,7 @@ def _fingerprint(policy: str, suite: str, attack: str, eai_id: str) -> str:
     return hashlib.sha256(raw).hexdigest()[:16]
 
 
-def to_sarif(report: RunReport) -> dict[str, Any]:
+def to_sarif(report: RunReport, integrity: CheckpointIntegrity | None = None) -> dict[str, Any]:
     """Build a SARIF 2.1.0 log (as a dict) from a run report."""
     id_to_name = {tag.id: tag.name for tag in report.eai.values()}
     rule_ids = sorted(set(id_to_name))
@@ -146,6 +147,23 @@ def to_sarif(report: RunReport) -> dict[str, Any]:
         run_properties["benignFpr"] = report.benign_fpr
     if report.clean_task_success_rate is not None:
         run_properties["cleanTaskSuccessRate"] = report.clean_task_success_rate
+    if integrity is not None:
+        # A SUPPLY-CHAIN control, carried beside the rates and deliberately not among them.
+        # Nested under its own key rather than flattened next to `adversarialAsr`, so nothing here
+        # can be read as, aggregated into, or mistaken for an attack-success rate. See
+        # provael.integrity: a checkpoint that passes every check can still be driven off-task at
+        # exactly the rate the ASR reports.
+        run_properties["checkpointIntegrity"] = {
+            "verdict": integrity.verdict.value,
+            "eaiId": integrity.eai_id,
+            "checkpoint": integrity.checkpoint,
+            "format": integrity.checkpoint_format.value,
+            "digestSha256": integrity.digest_sha256,
+            "digestMatch": integrity.digest_match,
+            "pickleAllowed": integrity.pickle_allowed,
+            "findings": list(integrity.findings),
+            "note": integrity.note,
+        }
 
     return {
         "$schema": SARIF_SCHEMA,

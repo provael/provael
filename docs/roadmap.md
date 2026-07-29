@@ -13,7 +13,10 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
 - **Reproductions:** FreezeVLA, OpenVLA-patch, BadVLA, RoboPAIR.
 - **Integrations:** promptfoo provider; garak/PyRIT reference plugins; multi-CI (GitHub/GitLab/
   Azure) SARIF; pre-commit; MLflow/W&B logging; HF eval-results; Modal GPU-CI; Docker/devcontainer;
-  supply-chain (model-signing + ML-BOM).
+  supply-chain: **checkpoint-integrity verification shipped in 0.27.0** (pinned-digest + pickle
+  refusal, fail-closed, in the reusable Action — see
+  [checkpoint-integrity](checkpoint-integrity.md)); model-*signing* (Sigstore) and ML-BOM remain
+  planned. The public leaderboard is Ed25519-signed as of 0.27.0.
 - **Defense demo:** action-stream firewall + ROS 2 guard node (sim/reference).
 - **Optimized attacks (in progress):** the `optimized` family — `targeted_hijack`, a black-box,
   query-budgeted search — is the first non-templated attack (stub-validated; real transfer gated).

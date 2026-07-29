@@ -43,10 +43,44 @@ python -c "import json; a=json.load(open('leaderboard/results/leaderboard.json')
 b=json.load(open('/tmp/rebuild/leaderboard.json'))['inputs_digest']; print('match:', a==b)"
 ```
 
+## What a re-stamp does and does not change
+
+A board is rebuilt by **aggregating committed `report.json` files** — it does not re-run a policy.
+So re-running the generator moves `generated_at` and `commit` to today while **every row still
+carries the measurement it always did**, possibly made by a much older release.
+
+That is a trap: a board carrying only `generated_at` reads as a fresh measurement. Schema v3 adds
+**`measured_with`** — the sorted `tool_version` values of the aggregated reports, i.e. the versions
+the *numbers* came from — and `Leaderboard.is_restamp()` answers the question directly. The
+published board reports `measured_with: ["0.1.0"]` against a build commit from 0.26.x: the
+provenance envelope is current, the measurement is the SmolVLA × LIBERO run it has always been.
+
 ## Signing and offline verification
 
-The hosted board is **Ed25519-signed** (via the `provael[attest]` extra). The
-signature covers the whole board except the signature field, and verifies offline with no network:
+The published board is **Ed25519-signed** (via the `provael[attest]` extra). The
+signature covers the whole board except the signature field, and verifies offline with no network.
+
+**Verify the published board in two commands** — no network, no trust in this page:
+
+```bash
+pip install "provael[attest]"
+curl -fsSLO https://raw.githubusercontent.com/provael/provael/main/leaderboard/results/leaderboard.json
+curl -fsSLO https://raw.githubusercontent.com/provael/provael/main/leaderboard/results/leaderboard.pub
+provael leaderboard verify --in leaderboard.json --pubkey leaderboard.pub
+# -> leaderboard OK  keyid 5b9a65790d93d0bc
+```
+
+A non-zero exit and `leaderboard signature INVALID` is the answer you should get if anything in the
+board was altered — including a single success count. That is the point: the numbers are covered by
+the signature, not merely published alongside it.
+
+The public key lives at **`leaderboard/results/leaderboard.pub`** (keyid `5b9a65790d93d0bc`) and is
+the only key the published board is signed with. CI enforces three things so this cannot rot: the
+board is signed, the signature verifies **against that published key**, and the build commit is no
+more than **3 released tags** behind — re-stamping is a GPU-free one-command operation, so the cost
+of staying current is low.
+
+Rebuild and re-sign:
 
 ```bash
 provael leaderboard build --real results/smolvla_libero_object --sign --key provael-ed25519.pem \

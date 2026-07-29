@@ -39,6 +39,7 @@ nav:
   - Compliance:
       - Crosswalk: COMPLIANCE.md
       - Signed attestation: ATTESTATION.md
+      - Checkpoint integrity (supply chain): checkpoint-integrity.md
       - Machinery Regulation 2027: compliance/machinery-reg-2027.md
       - Machinery Annex I Part A dossier: compliance/machinery-annex-i-part-a.md
       - Per-persona cards: crosswalk/README.md
