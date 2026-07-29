@@ -6,6 +6,64 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.27.0] — 2026-07-30
+
+### Fixed
+
+- **The public leaderboard artifact was stale and unsigned**, which made the product's own claim —
+  "a dated, signed record, not a screenshot" — false in the one place a buyer checks. It was stamped
+  2026-07-04 at commit `a5fdd13` (first released in **v0.18.0**, so 8 released tags back) with
+  `signature: null`. Regenerated and Ed25519-signed; the public key is published beside it at
+  `leaderboard/results/leaderboard.pub` (keyid `5b9a65790d93d0bc`).
+
+  **Nothing was fabricated and no GPU was needed.** The board is built by *aggregating committed
+  `report.json` files*, not by re-running a policy, so rebuilding reproduces the same measurement
+  exactly — rows and examples are byte-identical to the previous board. Only the provenance envelope
+  moved.
+- `.gitignore` carried **no key rules at all** while a workflow already consumed
+  `secrets.PROVAEL_SIGNING_KEY`. `*.pem` / `*.key` are now ignored, with an explicit negation for
+  the published `.pub`.
+
+### Added
+
+- **Checkpoint supply-chain integrity in the CI gate** (`provael verify-checkpoint`, and a step in
+  the reusable Action that runs **before any policy is instantiated** — the check is worthless after
+  the load). Verifies a pinned SHA-256 over the checkpoint's weight files and refuses pickle-format
+  weights, **both fail-closed**, each with an explicit opt-out that is recorded in the evidence
+  rather than being silent. "We did not check" and "we checked and it matched" must not produce the
+  same verdict.
+
+  Motivated by [CVE-2026-25874](https://nvd.nist.gov/vuln/detail/CVE-2026-25874), which
+  `SECURITY.md` already documents: LeRobot unauthenticated pickle-deserialization RCE (CVSS 9.8),
+  affecting `lerobot` through `0.5.1`, in the async-inference `PolicyServer` which `pickle.loads`
+  untrusted payloads over an unauthenticated gRPC endpoint. **Provael never starts that
+  PolicyServer**, so that path is not reachable through Provael — but loading *any* third-party
+  pickle executes it, and the tool named the risk publicly while the Action did not check for it.
+
+  Mapped to **EAI03 — Model & pipeline poisoning, backdoors & supply chain** (the mapping is in the
+  title), deliberately **not** EAI07: that entry declares CPS/firmware/teleop out of scope for
+  *attacks*, and filing a control there would imply this closes part of it. It does not.
+
+  > **This is a supply-chain control, not an adversarial-robustness result.** It emits a *verdict*,
+  > never a rate; a checkpoint that passes every check can still be driven off-task at exactly the
+  > rate the ASR reports. In SARIF it is nested under `checkpointIntegrity`, never flattened beside
+  > `adversarialAsr`, and the record carries that sentence with it. A test asserts the evidence
+  > contains no rate-shaped field at all.
+- Three CI guards on the published board: it is signed, the signature **verifies against the
+  published key** (a signature under an unpublished key is worse than none — a buyer following our
+  own docs would get `INVALID`), and its build commit is no more than **3 released tags** behind.
+  Three because re-stamping is a GPU-free one-command operation, while failing on every release
+  would be noise.
+
+### Changed
+
+- **Leaderboard `schema_version` 2 → 3**, adding `measured_with`. A re-stamp moves `generated_at`
+  to today while every row still carries the measurement it always did, so a board carrying only
+  `generated_at` reads as a fresh measurement — the one thing a dated record must not do.
+  `measured_with` records the tool versions the *numbers* came from, and `Leaderboard.is_restamp()`
+  answers it directly. The published board reports `measured_with: ["0.1.0"]`.
+
+
 ## [0.26.1] — 2026-07-28
 
 ### Fixed

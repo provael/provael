@@ -92,18 +92,41 @@ class Leaderboard(BaseModel):
     real-run build path, so a plain ``build_leaderboard`` stays deterministic.
     """
 
-    schema_version: int = 2
+    #: 2 -> 3: added ``measured_with``. See that field for why.
+    schema_version: int = 3
     is_demo: bool = Field(..., description="True when every aggregated run used the stub policy.")
     rows: list[LeaderboardRow] = Field(default_factory=list)
     examples: list[AttackExample] = Field(default_factory=list)
     inputs_digest: str | None = Field(
         None, description="SHA-256 of the canonical aggregated input reports (deterministic)."
     )
-    generated_at: str | None = Field(None, description="UTC ISO-8601 build time (…Z), if stamped.")
+    generated_at: str | None = Field(
+        None,
+        description="UTC ISO-8601 time the BOARD was assembled (…Z), if stamped. This is not when "
+        "the underlying runs were measured — see `measured_with`.",
+    )
     commit: str | None = Field(
         None, description="Source commit the board was built from, if stamped."
     )
+    measured_with: list[str] = Field(
+        default_factory=list,
+        description="Sorted, de-duplicated `tool_version` values of the aggregated run reports — "
+        "the versions the NUMBERS were actually measured with.",
+    )
     signature: LeaderboardSignature | None = None
+
+    def is_restamp(self) -> bool:
+        """Whether the board was assembled by a tool version that measured none of its own rows.
+
+        A board is rebuilt from committed ``report.json`` files, so re-running the generator moves
+        ``generated_at`` and ``commit`` to today while every row still carries the measurement it
+        always did. Without this distinction a freshly-stamped board reads as a fresh measurement,
+        which is the one thing a dated, signed record must not do. Returns True when the board's
+        own build commit is newer than every version that produced its rows.
+        """
+        from provael import __version__
+
+        return bool(self.measured_with) and __version__ not in self.measured_with
 
 
 def find_reports(paths: list[str]) -> list[Path]:
@@ -217,6 +240,8 @@ def aggregate(reports: list[RunReport]) -> Leaderboard:
         rows=rows,
         examples=attack_examples(sorted(attack_names)),
         inputs_digest=_inputs_digest(reports) if reports else None,
+        # The versions the NUMBERS came from, not the version assembling the board.
+        measured_with=sorted({r.tool_version for r in reports}),
     )
 
 

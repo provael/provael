@@ -72,6 +72,22 @@ inputs:
     description: "Path to write the signed regression attestation — a tamper-evident, offline-verifiable diff bundle (SARIF + summary bound by digest) a safety case can reference."
     required: false
     default: "provael-regression.attestation.json"
+  checkpoint-path:
+    description: "Local path to the fetched checkpoint to verify BEFORE the policy is loaded. Empty skips the check unless checkpoint-digest is set."
+    required: false
+    default: ""
+  checkpoint-digest:
+    description: "Pinned SHA-256 the checkpoint must match (provael verify-checkpoint prints it). Without this the step FAILS CLOSED unless require-checkpoint-digest is false."
+    required: false
+    default: ""
+  require-checkpoint-digest:
+    description: "Fail when no checkpoint digest is pinned. Default true — an unverified checkpoint is the supply-chain risk this exists for. Set false to opt out explicitly."
+    required: false
+    default: "true"
+  allow-pickle-checkpoint:
+    description: "Explicitly opt in to loading pickle-format weights. Loading a pickle EXECUTES it (cf. CVE-2026-25874); default false prefers safetensors."
+    required: false
+    default: "false"
   install-spec:
     description: "Override the pip install target (e.g. '.[attest]') to smoke-test the checked-out source. Empty installs the pinned release from PyPI."
     required: false
@@ -124,7 +140,7 @@ runs:
       # up a PATCH — exactly how 0.25.1's dependency fix reaches users who pinned @v0.25.0 — while
       # still refusing the next minor. The floor tracks the newest patch so a fix is not optional.
       env:
-        PROVAEL_VERSION: ">=0.26.1,<0.27.0"
+        PROVAEL_VERSION: ">=0.27.0,<0.28.0"
         INSTALL_SPEC: ${{ inputs.install-spec }}
       run: |
         set -euo pipefail
@@ -137,6 +153,33 @@ runs:
           # always passes `install-spec`, this default branch is the one users hit.
           python -m pip install --upgrade "provael[attest]${PROVAEL_VERSION}"
         fi
+
+    # Supply-chain control, run BEFORE any policy is instantiated: loading a pickle executes it,
+    # so the check is worthless after the load. Provael's own SECURITY.md documents
+    # CVE-2026-25874 (LeRobot unauthenticated pickle-deserialization RCE, CVSS 9.8, through
+    # lerobot 0.5.1) — Provael never starts that PolicyServer, but the same class of risk reaches
+    # any tool that loads a third-party checkpoint.
+    #
+    # This produces a VERDICT, not an attack-success rate, and does not reduce one.
+    - name: Verify checkpoint integrity (supply chain)
+      id: integrity
+      shell: bash
+      if: inputs.checkpoint-path != '' || inputs.checkpoint-digest != ''
+      env:
+        CKPT_PATH: ${{ inputs.checkpoint-path }}
+        CKPT_DIGEST: ${{ inputs.checkpoint-digest }}
+        REQUIRE_DIGEST: ${{ inputs.require-checkpoint-digest }}
+        ALLOW_PICKLE: ${{ inputs.allow-pickle-checkpoint }}
+        CKPT_ID: ${{ inputs.policy }}
+      run: |
+        set -euo pipefail
+        args=(--checkpoint "$CKPT_ID" --out provael-run)
+        [ -n "$CKPT_PATH" ] && args+=(--path "$CKPT_PATH")
+        [ -n "$CKPT_DIGEST" ] && args+=(--digest "$CKPT_DIGEST")
+        [ "$REQUIRE_DIGEST" = "false" ] && args+=(--no-require-digest) || args+=(--require-digest)
+        [ "$ALLOW_PICKLE" = "true" ] && args+=(--allow-pickle) || args+=(--no-allow-pickle)
+        # No `|| true`: a failed integrity check must stop the job before the policy loads.
+        provael verify-checkpoint "${args[@]}"
 
     - name: Run Provael red-team
       id: redteam

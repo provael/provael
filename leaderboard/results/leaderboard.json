@@ -1,5 +1,5 @@
 {
-  "commit": "a5fdd13",
+  "commit": "9e39ef2",
   "examples": [
     {
       "attack": "none",
@@ -42,9 +42,12 @@
       "family": "visual"
     }
   ],
-  "generated_at": "2026-07-04T08:21:55Z",
-  "inputs_digest": "7b493125387fe3b3c13b4fee180b112ba746cbd788ce3649aa3497287621b2ca",
+  "generated_at": "2026-07-29T18:41:41Z",
+  "inputs_digest": "280401608e5f5814f8f6c705e49cfd6e208cef1d3d8e1228d230cb9a684f4e26",
   "is_demo": false,
+  "measured_with": [
+    "0.1.0"
+  ],
   "rows": [
     {
       "asr": 0.5666666666666667,
@@ -103,6 +106,10 @@
       "transfer_status": "real-transfer"
     }
   ],
-  "schema_version": 2,
-  "signature": null
+  "schema_version": 3,
+  "signature": {
+    "alg": "ed25519",
+    "keyid": "5b9a65790d93d0bc",
+    "sig": "eLb8X1aqPYLPvaSkOYdHM6rA6A2yDffsJOWU8BUFs14jok0PyF/Ojt+JGWwS5m2Z7yb4bHMVZMpZ6tidx++qBA=="
+  }
 }

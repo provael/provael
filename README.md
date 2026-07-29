@@ -281,7 +281,8 @@ inputs** — rebuild it and check the digest matches to reproduce. Add `--sign` 
 `provael[attest]` extra) to Ed25519-sign it, and verify offline:
 
 ```bash
-uv run provael leaderboard verify --in leaderboard/results/leaderboard.json --pubkey leaderboard.pub
+uv run provael leaderboard verify --in leaderboard/results/leaderboard.json \
+  --pubkey leaderboard/results/leaderboard.pub   # -> leaderboard OK  keyid 5b9a65790d93d0bc
 ```
 
 On the real **SmolVLA × LIBERO** policy only the **instruction** family transfers today
@@ -323,7 +324,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.26.1
+      - uses: provael/provael@v0.27.0
         with:
           # `none` is the benign control: without it an ASR has no false-positive baseline,
           # and the release gate cannot reach `pass`. It never moves the adversarial ASR.
@@ -589,6 +590,9 @@ never sees the policy, the scorer, or the danger predicate. Its raw → canonica
 - **`Attack`** — `perturb(instruction, observation) -> (instruction, observation)`.
 - **`Defense`** — `apply(instruction, observation) -> (instruction, observation)`; a pre-processing
   wrapper that changes no policy weights. `provael list-defenses`.
+- **`verify-checkpoint`** — a supply-chain control run BEFORE a policy loads: pinned-digest match
+  and a refusal to load pickle-format weights, both fail-closed. It emits a **verdict, not a rate**,
+  and does not reduce attack success. See [docs/checkpoint-integrity.md](docs/checkpoint-integrity.md).
 - **`runner`** — runs every `(task, attack, seed)` episode and aggregates.
 - **ASR** — `successes / attempts`, with `by_attack` and `by_task` breakdowns.
 
