@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import importlib.util
+import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -230,3 +232,103 @@ def test_cli_leaderboard_build_real_rejects_stub(tmp_path: Path) -> None:
     write_report(_stub_report(), stub / "one")
     result = runner.invoke(app, ["leaderboard", "build", "--real", str(stub)])
     assert result.exit_code == 2  # _fail on ValueError (no real runs)
+
+
+# --------------------------------------------------------------------------- #
+# The committed public artifact: freshness + signature
+#
+# The product's commercial claim is "a dated, signed record, not a screenshot". The committed
+# board spent 22 releases at generated_at 2026-07-04 with signature: null, which makes that claim
+# false in the one place a buyer checks. These two guards are what stop it drifting again.
+# --------------------------------------------------------------------------- #
+
+#: How many released tags the committed board may fall behind before CI fails.
+#:
+#: THREE, chosen deliberately. Re-stamping is cheap and GPU-free — the board is rebuilt from
+#: committed report.json files, so `leaderboard build --real … --sign` is a one-command operation
+#: that does not re-measure anything. Against that, failing on EVERY release would be noise: a
+#: board whose inputs have not changed is not wrong, merely re-datable. Three tolerates a normal
+#: patch cadence (a release, a hotfix, one more) without nagging, and would have caught the actual
+#: 22-release drift on the very next release after it appeared.
+MAX_RELEASES_BEHIND = 3
+
+_BOARD = Path(__file__).resolve().parent.parent / "leaderboard" / "results" / "leaderboard.json"
+_BOARD_PUB = _BOARD.with_suffix(".pub")
+
+
+def _tags_newest_first() -> list[str]:
+    proc = subprocess.run(
+        ["git", "tag", "--list", "v*", "--sort=-v:refname"],
+        cwd=_BOARD.parent.parent.parent, capture_output=True, text=True, check=False,
+    )
+    return [t for t in proc.stdout.splitlines() if t.strip()] if proc.returncode == 0 else []
+
+
+def test_committed_leaderboard_is_signed() -> None:
+    """`signature: null` on the public artifact contradicts the product's own claim."""
+    board = load_leaderboard(_BOARD)
+    assert board.signature is not None, (
+        "the committed leaderboard is UNSIGNED. Rebuild and sign it:\n"
+        "  provael leaderboard build --real results/smolvla_libero_object "
+        "--sign --key <PROVAEL_SIGNING_KEY> --out leaderboard/results"
+    )
+    assert board.signature.alg == "ed25519"
+    assert _BOARD_PUB.is_file(), "the public key must be published beside the board"
+
+
+def test_committed_leaderboard_signature_actually_verifies() -> None:
+    """A signature that does not check out against the PUBLISHED key is worse than none.
+
+    Guards the case where the board is re-signed with a key nobody published, which would leave a
+    buyer following our own documented verification steps and getting INVALID.
+    """
+    board = load_leaderboard(_BOARD)
+    assert board.signature is not None
+    assert verify_leaderboard(board, _BOARD_PUB.read_bytes()), (
+        "the committed board does not verify against the committed public key"
+    )
+
+
+def test_committed_leaderboard_is_not_too_many_releases_behind() -> None:
+    """Fail when the board's build commit falls more than MAX_RELEASES_BEHIND tags back."""
+    tags = _tags_newest_first()
+    if not tags:
+        # Same posture as the version guard: never pass quietly where it matters.
+        assert not os.environ.get("CI"), (
+            "no git tags available in CI — the checkout must fetch tags or this guard silently "
+            "passes"
+        )
+        pytest.skip("no git tags available (shallow clone or no git); cannot verify")
+
+    board = load_leaderboard(_BOARD)
+    assert board.commit, "the committed board carries no source commit"
+
+    repo = _BOARD.parent.parent.parent
+    containing = subprocess.run(
+        ["git", "tag", "--contains", board.commit, "--sort=-v:refname"],
+        cwd=repo, capture_output=True, text=True, check=False,
+    ).stdout.split()
+    # No containing tag means the board was built from a commit newer than every release — that is
+    # the freshest possible state, not staleness.
+    if not containing:
+        return
+    behind = tags.index(containing[-1])
+    assert behind <= MAX_RELEASES_BEHIND, (
+        f"the committed leaderboard was built at {board.commit} (first released in "
+        f"{containing[-1]}), which is {behind} releases behind {tags[0]}. Rebuild and re-sign it — "
+        f"it is a GPU-free re-stamp from the committed run reports."
+    )
+
+
+def test_board_records_what_measured_it_not_just_when_it_was_stamped() -> None:
+    """`generated_at` moves on every re-stamp; the NUMBERS do not. Both must be legible.
+
+    Rebuilding stamps today's date onto rows measured long ago, so a board carrying only
+    `generated_at` reads as a fresh measurement. `measured_with` is the correction, and
+    `is_restamp()` is how a consumer asks the question directly.
+    """
+    board = load_leaderboard(_BOARD)
+    assert board.measured_with, "the board does not record which tool versions measured its rows"
+    assert board.schema_version >= 3
+    # This board's rows were measured long before the version assembling it — say so.
+    assert board.is_restamp() is True

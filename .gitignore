@@ -62,3 +62,11 @@ docs/assets/*.gif
 
 # private strategy/market docs — never publish
 /vla-redteam-*.md
+
+# Signing keys. The repo signs the public leaderboard and per-checkpoint regression
+# attestations with Ed25519; the PRIVATE key belongs in a secret store
+# (secrets.PROVAEL_SIGNING_KEY), never in git. Public keys are published deliberately
+# and are added with an explicit negation below.
+*.pem
+*.key
+!leaderboard/results/leaderboard.pub
