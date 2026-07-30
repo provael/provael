@@ -58,7 +58,7 @@ jobs:
           persist-credentials: false
 
       - name: Restore the stored baseline
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .provael/baseline.report.json
           # A run-id-unique key writes a fresh entry each run; the restore-key prefix finds the most
