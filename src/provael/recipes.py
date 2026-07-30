@@ -80,6 +80,10 @@ CONDITIONAL_FAMILIES: dict[str, str] = {
         "needs a real image channel from a GPU policy; inert on every CPU suite, so it scores no "
         "episode in any CPU run"
     ),
+    "universal_patch": (
+        "needs a real image channel from a GPU policy; inert on every CPU suite, so it scores no "
+        "episode in any CPU run"
+    ),
 }
 
 #: The benign control attack. Every recipe includes it because an attack-success rate without a

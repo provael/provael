@@ -5,5 +5,5 @@
 # and an ASR with no false-positive baseline is not interpretable.
 attacks: [none, instruction, visual, sensor_spoof, injection, action, action_space,
   backdoor, authorization, confidentiality, misalignment, humanoid, optimized, optimized_patch,
-  optimized_instruction]
+  universal_patch, optimized_instruction]
 episodes: 10

@@ -173,11 +173,27 @@ that tag as each finding's `EAIxx` ruleId:
 This is an **early, research-grade** harness, built to be reproducible and honest rather than
 to oversell. Before you trust a number, know:
 
-- **Mostly templated attacks, plus three optimized search families.** Most attacks are auditable
+- **Everything here is simulation. No number in this repository has ever been produced on
+  physical hardware.** Provael has never been run against a real robot, a real controller or a
+  real safety PLC, and it is not built to be. Every ASR is a claim about the simulator that
+  produced it — **not** evidence that the same policy fails the same way on a bench. That gap is
+  not a formality: an adversarial patch here is composited into a frame as an array, and is never
+  printed, photographed, or subjected to lighting, viewing angle, print gamut, motion blur or
+  sensor noise — the factors that decide whether a simulated patch survives contact with a camera.
+  A patch that works at 100% in this harness may do nothing on a bench, and a policy that looks
+  clean here may still fail physically for reasons the harness cannot see.
+  **We have not measured sim-to-real transfer, and we do not claim it.** Establishing it needs a
+  hardware lab and a published study; until one exists, read every number as simulator-scoped.
+  (Independent groups such as [Robocurve](https://www.ycombinator.com/companies/robocurve) make the
+  same point from the performance side — models strong in simulation show large real-world gaps.)
+- **Mostly templated attacks, plus four optimized search families.** Most attacks are auditable
   string/observation templates (instruction reframings, image markers, scene text) — behavioral
-  probes, not gradient-based worst-case robustness. Three **optimized** families now also ship as
-  bounded-budget *searches*: `optimized` (`targeted_hijack`, action-directive) and `optimized_patch`
-  (`patch_hijack`, adversarial patch — GPU-gated), and `optimized_instruction` (`targeted_redirect`)
+  probes, not gradient-based worst-case robustness. Four **optimized** families now also ship as
+  bounded-budget *searches*: `optimized` (`targeted_hijack`, action-directive), `optimized_patch`
+  (`patch_hijack`, adversarial patch — GPU-gated), `universal_patch` (one patch fit **once** then
+  frozen and carried to episodes and tasks it never queried — the constraint a *printed* sticker
+  actually faces, where `patch_hijack` re-optimises per episode; GPU-gated, and its transfer rate
+  is **unclaimed** until that run happens), and `optimized_instruction` (`targeted_redirect`)
   — an optimized, **command-preserving** instruction search that redirects the policy through subtle
   manner/urgency cues while keeping the operator's command and never naming the target object. Its
   recommended mitigation is **instruction canonicalization / repair** (normalise phrasing, strip

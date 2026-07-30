@@ -163,6 +163,7 @@ def test_registry_includes_new_families() -> None:
         "critical_freeze",
         "targeted_hijack",
         "patch_hijack",
+        "universal_patch",
         "targeted_redirect",
         "object_trigger",
         "phrase_trigger",
@@ -181,7 +182,7 @@ def test_registry_includes_new_families() -> None:
     assert available_families() == [
         "action", "action_space", "authorization", "backdoor", "baseline", "confidentiality",
         "humanoid", "injection", "instruction", "misalignment", "optimized",
-        "optimized_instruction", "optimized_patch", "sensor_spoof", "visual",
+        "optimized_instruction", "optimized_patch", "sensor_spoof", "universal_patch", "visual",
     ]
     assert [a.name for a in resolve_attacks(["baseline"])] == ["none"]
     assert [a.name for a in resolve_attacks(["visual"])] == ["patch", "decoy_object"]
@@ -201,6 +202,7 @@ def test_registry_includes_new_families() -> None:
     ]
     assert [a.name for a in resolve_attacks(["optimized"])] == ["targeted_hijack"]
     assert [a.name for a in resolve_attacks(["optimized_patch"])] == ["patch_hijack"]
+    assert [a.name for a in resolve_attacks(["universal_patch"])] == ["universal_patch"]
     # Cross-family selection by individual name.
     assert [a.name for a in resolve_attacks(["patch", "scene_text"])] == ["patch", "scene_text"]
 

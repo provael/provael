@@ -12,7 +12,10 @@ confidentiality: a memorized-canary leak screen — membership inference / extra
 ``misalignment`` (EAI06 cross-domain safety misalignment / the embodiment gap: benign
 language → unsafe embodied action), ``optimized`` (a black-box action-directive search),
 ``optimized_patch`` (EAI02 the image-channel analogue: a query-budgeted adversarial-patch search,
-GPU-gated / inert on the image-less stub), and ``optimized_instruction`` (an optimized, command-
+GPU-gated / inert on the image-less stub), ``universal_patch`` (EAI02 the same channel under the
+PHYSICAL attacker's constraint: one patch fit once, then frozen and carried to unseen episodes and
+tasks — where ``optimized_patch`` re-searches per episode, which a printed sticker cannot do),
+and ``optimized_instruction`` (an optimized, command-
 preserving *instruction-channel* search — EAI01 primary, EAI04 targeted-redirection threat model;
 unlike the other two optimized families it rides the channel measured to transfer on a real policy).
 The registry maps both individual attack names and family names to attacks, so
@@ -121,6 +124,12 @@ from provael.attacks.targeted_redirect import (
 from provael.attacks.targeted_redirect import (
     TargetedRedirect,
 )
+from provael.attacks.universal_patch import (
+    FAMILY as UNIVERSAL_PATCH_FAMILY,
+)
+from provael.attacks.universal_patch import (
+    UniversalPatchTransfer,
+)
 from provael.attacks.visual import (
     FAMILY as VISUAL_FAMILY,
 )
@@ -145,6 +154,7 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
     "critical_freeze": CriticalFreeze,
     "targeted_hijack": TargetedTrajectoryHijack,
     "patch_hijack": OptimizedPatchHijack,
+    "universal_patch": UniversalPatchTransfer,
     "targeted_redirect": TargetedRedirect,
     "object_trigger": ObjectTriggerBackdoor,
     "phrase_trigger": PhraseTriggerBackdoor,
@@ -177,6 +187,7 @@ FAMILIES: dict[str, list[str]] = {
     HUMANOID_FAMILY: ["balance_spoof", "whole_body_hijack", "stride_freeze"],
     OPTIMIZED_FAMILY: ["targeted_hijack"],
     OPTIMIZED_PATCH_FAMILY: ["patch_hijack"],
+    UNIVERSAL_PATCH_FAMILY: ["universal_patch"],
     OPTIMIZED_INSTRUCTION_FAMILY: ["targeted_redirect"],
 }
 

@@ -6,6 +6,56 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### The prior-art finding
+
+`PRIOR_ART.md` cited seven papers and was missing the one that most constrains what this project
+may claim. **AttackVLA** (arXiv:2511.12149) is a unified evaluation framework for adversarial and
+backdoor attacks on VLA models, reporting attack success rates, evaluated in **both simulation and
+real-world robotic settings**. The README already named it as prior art; the prior-art file had no
+entry for it.
+
+That matters because "What is actually novel here" claimed a model-agnostic harness with a
+comparable ASR metric — a position AttackVLA already occupies, with hardware evaluation this
+project does not have. The claim was rewritten rather than restated.
+
+A second gap was larger and closer to home: the README's limitations list contained **no**
+occurrence of "hardware", "physical world" or "printed". The most load-bearing caveat in the
+project — that nothing here has ever run on a real robot — was not written down anywhere a reader
+would find it.
+
+### Added
+
+- **`universal_patch` family (EAI02)** — one adversarial patch, fit **once**, then frozen and
+  carried unchanged to every episode and task it never queried. `optimized_patch` re-searches a
+  fresh patch per episode, which is the right measurement for "does a patch exist for this
+  episode" and the wrong one for a *printed* sticker, which cannot be re-optimised between
+  frames. Reimplements the **threat model** of UPA-RFAS (arXiv:2511.21192, CVPR 2026), not its
+  method: this is a black-box **query** search over placements with no gradients, no feature-space
+  access, no InfoNCE and no attention objective, so it will find a weaker patch than that paper
+  reports and its numbers must not be read as reproducing them. Ports no code.
+  Records `attacker_access="black-box-query"`. GPU-gated; inert (`N/A`, never `0%`) on the
+  image-less CPU stub, so the golden canary stays at 47/70.
+- **Prior-art entries for AttackVLA (arXiv:2511.12149), UPA-RFAS (arXiv:2511.21192) and ADVLA
+  (arXiv:2511.21663)**, each stating where we differ *and where we do not*.
+
+### Changed
+
+- **`PRIOR_ART.md` "What is actually novel here" rewritten.** The surviving claims are narrower and
+  checkable: a deterministic CPU-only no-download core (auditable by a third party, not merely
+  published), the evidence/compliance layer (SARIF / OSCAL / CycloneDX ML-BOM / signed attestation
+  / Wilson-CI regression gate), and a refusal to report a number we did not measure. Adds an
+  explicit "what we do NOT claim" list: not the unified-harness idea, not sim-to-real, not parity
+  with white-box attacks, not certification.
+- **README gained a sim-only limitation as its FIRST bullet.** No number in this repository has
+  been produced on physical hardware; a patch here is composited into a frame as an array and is
+  never printed, photographed, or subjected to lighting, viewing angle, print gamut, motion blur
+  or sensor noise. Sim-to-real transfer is unmeasured and explicitly unclaimed.
+- `full-sweep` covers 15 adversarial families (was 14) — derived from the registry, so the new
+  family joined automatically; only the declared precondition and the asserted count changed.
+- `results/smolvla_libero_object/evidence-manifest.json` regenerated. **Registry counts only**
+  (28 attacks / 15 adversarial families); every measured value — adversarial 17/60, all-episode
+  17/70, benign 0/10 — is byte-identical.
+
 ## [0.28.0] — 2026-07-30
 
 ### The interface finding
