@@ -92,6 +92,64 @@ unclaimed until run; on the CPU stub it is scored by the danger-threshold predic
 sub-100% ceiling, plus a held-out transfer-test. We surface the papers' recommended defense —
 **instruction canonicalization / repair** — as the mitigation. No "first" claim.
 
+### AttackVLA — *Benchmarking Adversarial and Backdoor Attacks on Vision-Language-Action Models*
+(2025). arXiv:[2511.12149](https://arxiv.org/abs/2511.12149)
+
+**The closest work to this repository, and the one that most constrains what we may claim.** A
+**unified evaluation framework** for adversarial and backdoor attacks on VLAs: it implements
+existing VLA attacks plus attacks adapted from vision-language models, evaluates them in **both
+simulation and real-world robotic settings**, and reports attack success rates (58.4% average for
+targeted attacks, reaching 100% on some tasks). It also introduces *BackdoorVLA*, a targeted
+backdoor forcing an attacker-specified multi-step action sequence. Its stated gap: "current methods
+tend to induce untargeted failures or static action states, leaving targeted attacks that drive VLAs
+to perform precise long-horizon action sequences largely unexplored."
+
+**How we differ — and where we do not.** Being honest here matters more than sounding novel:
+AttackVLA **already occupies** the "one harness, many attacks, comparable ASR" position, and it
+does so with **real-robot evaluation we do not have**. We do not claim to have originated a unified
+VLA attack harness, and we do not claim parity with a benchmark that has been run on hardware. What
+remains genuinely different is narrower and worth stating exactly: a **deterministic CPU-only,
+no-download core** so every number is reproducible without a GPU or model weights, and an
+**evidence/compliance layer** (SARIF, OSCAL, CycloneDX ML-BOM, signed attestation, a Wilson-CI
+regression gate wired into CI) — engineering a research benchmark has no reason to build. See
+"What is actually novel here" below, which was rewritten after reading this paper.
+
+### UPA-RFAS — *When Robots Obey the Patch: Universal Transferable Patch Attacks on VLA Models*
+(2025). arXiv:[2511.21192](https://arxiv.org/abs/2511.21192) · CVPR 2026
+
+Learns a **single universal physical patch** in a shared feature space and reports transfer across
+unknown architectures, finetuned variants, tasks, viewpoints and **sim-to-real shifts**. The method
+is white-box and feature-space: an ℓ1 deviation prior plus a repulsive InfoNCE loss, a two-phase
+min-max robustness loop (inner: sample-wise invisible perturbations; outer: the universal patch
+against that hardened neighbourhood), and two VLA-specific losses — *Patch Attention Dominance*
+(hijack text→vision attention) and *Patch Semantic Misalignment* (label-free image-text mismatch).
+
+**How we differ:** our `universal_patch` family reimplements the **threat model, not the method**,
+and ports no code. What is shared is the question — does *one frozen patch* keep working on episodes
+and tasks it never queried, which is the constraint a printed sticker actually faces and which our
+per-episode `optimized_patch` family deliberately does not model. What is **not** shared is how the
+patch is found: ours is an inference-time **black-box query** search over placements (the access
+class it records), with no gradients, no feature-space access, no InfoNCE and no attention
+objective. It will therefore find a **weaker** patch than UPA-RFAS reports, and our numbers must
+never be read as reproducing theirs. Consistent with our other image-channel families the real
+transfer rate is GPU-gated (`PROVAEL_INTEGRATION=1`) and **unclaimed** until run. Critically, the
+paper's sim-to-real component is **theirs, not ours** — we have no hardware result of any kind.
+
+### ADVLA — *Attention-Guided Patch-Wise Sparse Adversarial Attacks on VLA Models*
+(2025). arXiv:[2511.21663](https://arxiv.org/abs/2511.21663)
+
+Applies perturbations directly to features projected from the visual encoder into the *textual*
+feature space, using attention guidance to keep them focused and sparse. Reports that under an
+L∞ = 4/255 constraint, ADVLA with Top-K masking modifies **under 10% of patches** while reaching
+near-100% attack success — without the costly end-to-end training or conspicuous patches earlier
+methods needed.
+
+**How we differ:** ADVLA is a **white-box** attack requiring encoder-internal feature access. Every
+image-channel family we ship is **black-box query** only, so we cannot and do not reproduce its
+imperceptibility or its success rate. It is recorded here because it sets the bar for what a
+gradient-based variant would need to reach, and because a reader comparing our sub-100% patch
+numbers to the literature deserves to know a far stronger white-box attack exists.
+
 ### SafeVLA — *Towards Safety Alignment of Vision-Language-Action Models via Constrained Learning*
 (2025). arXiv:[2503.03480](https://arxiv.org/abs/2503.03480) · [safevla.github.io](https://safevla.github.io/)
 
@@ -106,15 +164,32 @@ meant to quantify.
 
 ## What is actually novel here
 
-Not the attacks — the **packaging**:
+Not the attacks. **And — since AttackVLA (arXiv:2511.12149) — not simply "a unified harness with a
+comparable ASR" either.** That claim stood in earlier versions of this file and it no longer
+survives contact with the literature: AttackVLA is a unified VLA attack framework with a comparable
+ASR *and* real-robot evaluation. Restating it would have been the easy thing and the false thing.
 
-1. A small, **model-agnostic** interface (`PolicyAdapter` / `SuiteAdapter` / `Attack`)
-   so the same attacks and the same ASR metric run against any policy or simulator.
-2. A **deterministic, CPU-only, no-download core** (StubPolicy + StubSuite) so the
-   tool is testable and reproducible without a GPU or model weights — the ASR for a
-   fixed seed is an exact, asserted number.
-3. A clean separation between the **headline metric (ASR)** and the backends, so
-   results are comparable across policies, attacks, tasks, and seeds.
+What is left is narrower, and it is the part a research benchmark has no incentive to build:
+
+1. A **deterministic, CPU-only, no-download core** (StubPolicy + StubSuite). The ASR for a fixed
+   seed is an exact, asserted number, reproducible in seconds with no GPU, no weights and no
+   network. This is what makes a result *auditable by a third party* rather than merely published.
+2. An **evidence and compliance layer**: SARIF for code scanning, OSCAL, a CycloneDX ML-BOM, signed
+   attestation over a canonical serialisation, and a **Wilson-CI regression gate** wired into CI
+   that fails a checkpoint on a statistically-disjoint regression rather than a hand-picked
+   threshold. The output is designed to be *evidence*, not a table in a paper.
+3. **A refusal to report a number we did not measure.** Inapplicable episodes are reported `N/A`
+   and excluded from the denominator, never scored 0%; every rate ships with its 95% Wilson CI and
+   a benign-FPR control arm; families that have not been shown to transfer to a real policy are
+   labelled stub-validated scaffolding in the README. This is enforced by tests, not by intent.
+
+3 is not a marketing line. It is the reason 1 and 2 are worth anything, and it is the only one of
+the three that a better-funded competitor cannot simply out-build.
+
+**What we explicitly do NOT claim:** originating the unified-VLA-harness idea (AttackVLA), any
+sim-to-real transfer result (we have never run on hardware — see the README's first limitation),
+parity with white-box attacks (UPA-RFAS, ADVLA), or any certification, conformity or functional-safety
+status.
 
 ## What this is *not*
 

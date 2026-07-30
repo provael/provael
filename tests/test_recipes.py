@@ -130,7 +130,7 @@ def test_full_sweep_covers_every_registry_family() -> None:
     registry_adversarial = {f for f in FAMILIES if f != BASELINE_FAMILY}
     swept = set(load_recipe("full-sweep")["attacks"]) - {BENIGN_CONTROL}
     assert swept == registry_adversarial
-    assert len(swept) == 14
+    assert len(swept) == 15
 
 
 def test_every_family_is_swept_or_declared_conditional_with_a_reason() -> None:
