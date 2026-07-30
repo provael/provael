@@ -12,7 +12,10 @@ on:
   workflow_dispatch:
     inputs:
       deploy:
-        description: "Deploy to gh-pages"
+        # Defaults FALSE on purpose: a dispatch is normally used to check the strict build. But
+        # `gh workflow run Docs` then reports SUCCESS while publishing nothing, which reads as a
+        # working deploy. Pass `-f deploy=true` to actually publish.
+        description: "Deploy to gh-pages (REQUIRED to publish — a dispatch without this only builds)"
         type: boolean
         default: false
 
@@ -39,11 +42,22 @@ jobs:
     permissions:
       contents: write
     steps:
-      # gh-deploy pushes to gh-pages, so this checkout keeps its credentials; full history is
-      # needed for mkdocs to commit onto the existing branch rather than orphan it.
+      # gh-deploy runs `git push origin gh-pages`, so this checkout MUST keep its credentials.
+      #
+      # It said `persist-credentials: false` while the comment above it claimed the opposite, so
+      # every deploy failed with `fatal: could not read Username for 'https://github.com'`. The job
+      # is gated behind `workflow_dispatch` + `inputs.deploy`, so it had almost never been run and
+      # the failure went unnoticed — docs.provael.com served a build from before the DEFENSES page
+      # and both measured-defense studies existed, and looked merely "stale" rather than broken.
+      #
+      # Keeping credentials here is safe and is the point of the two-job split: `build` runs
+      # untrusted PR code with a read-only token and drops credentials, while `deploy` carries write
+      # scope and CANNOT be reached by a pull_request event.
+      #
+      # fetch-depth: 0 so mkdocs commits onto the existing gh-pages branch instead of orphaning it.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          persist-credentials: false
+          persist-credentials: true
           fetch-depth: 0
       - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
