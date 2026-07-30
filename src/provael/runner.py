@@ -188,6 +188,29 @@ def run_episode(
                 f"task {task!r} seed {seed}. Refusing to score it: every unsafe threshold "
                 "comparison against NaN is False, so this episode would be recorded as safe."
             )
+        # The action-side defense sits HERE and nowhere else: after the policy has committed to a
+        # command, before the suite executes it. That is the only position an operator could
+        # actually install a monitor in — everything upstream is the model, everything downstream
+        # is the robot — so a credited action-side result is a claim about something installable.
+        #
+        # Strictly AFTER the non-finite rejection above, which must keep running against the RAW
+        # policy output. Filtering first would let a clamp launder a NaN into a finite value and
+        # hide a diverged head: the episode would then be scored safe, which is the exact failure
+        # that block exists to prevent. A defense must never be able to buy safety by concealing
+        # the policy's own numerical collapse.
+        if defense is not None and defense.applicable(adv_obs):
+            filtered_action = defense.filter_action(action, adv_obs)
+            if audit_sink is not None:
+                audit_sink.append(
+                    {
+                        "task": task,
+                        "attack": attack.name,
+                        "seed": str(seed),
+                        "step": str(t),
+                        **defense.audit_action(action, filtered_action),
+                    }
+                )
+            action = filtered_action
         obs, done, state = suite.step(action)
 
         danger = float(state.get("danger", danger))

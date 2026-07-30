@@ -194,6 +194,9 @@ class InstructionCanonicalization(Defense):
 
     name = "instruction_canonicalization"
     kind = "input-canonicalization"
+    #: Input-side only. It never sees the commanded action, so nothing it does can be confused with
+    #: an output monitor when the mitigation report is read as conformity evidence.
+    position = "input"
     eai_ids = ("EAI01", "EAI05", "EAI06")
     study = "docs/studies/instruction-canonicalization.md"
 

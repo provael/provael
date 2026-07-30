@@ -8,7 +8,7 @@
 # a real checkpoint on a GPU runner — generality intended, tested on SmolVLA × LIBERO).
 #
 # This copy self-tests the checked-out source (`install-spec: .[attest]`); a design partner copies
-# the job and swaps `uses: ./` for `uses: provael/provael@v0.27.0` (installs the pinned release).
+# the job and swaps `uses: ./` for `uses: provael/provael@v0.28.0` (installs the pinned release).
 #
 # Pin an EXACT tag, never a range: a git ref is resolved once at checkout, and pre-1.0 minors carry
 # breaking changes. `tests/test_version_consistency.py` scans the whole repo for these refs and

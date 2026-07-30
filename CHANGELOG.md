@@ -6,6 +6,126 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.28.0] — 2026-07-30
+
+### The interface finding
+
+`docs/DEFENSES.md` specified **six** mitigation rows. The `Defense` ABC could only ever express
+**two** of them.
+
+Four rows — action clamping / keep-out enforcement, trajectory anomaly detection, rate limiting /
+scope enforcement, output / memory screening — act on what comes **out** of the policy. The ABC
+offered a single pre-processing hook, `apply(instruction, observation)`, so those four were not
+merely unmeasured: they were **unimplementable by construction**. "Specified, unproven" was
+overstating their status. A taxonomy the interface cannot satisfy is a spec, not a plan.
+
+### Added
+
+- **`Defense.filter_action(action, observation) -> action`** — a non-abstract, no-op-by-default
+  action-side hook, so `InstructionCanonicalization` and any third-party defense keep working
+  untouched. It is handed only the action and the observation — never the policy, the suite, the
+  report, the attack, the task id or the danger predicate — must be deterministic, and must not
+  mutate the array in place.
+- **`Defense.position`** (`"input"` / `"action"` / `"input+action"`), surfaced as a column in
+  `provael list-defenses` and carried on the mitigation report beside the verdict. A certifier
+  reading "a defense was applied" needs to know whether it was a text pre-filter or an output
+  monitor: different protective measures, different failure modes.
+- **`Defense.audit_action(raw, filtered)`**, feeding the same `defense-log.jsonl` sidecar as
+  `audit()`. The envelope clamp overrides it to name *which* channel engaged. "The number moved" is
+  not evidence — what changed is.
+- **`action_envelope` (`ActionEnvelopeClamp`)** — the first action-side defense, implementing
+  `docs/DEFENSES.md` row 3. A scalar cap on the danger channel and an L2 cap on the motion channels,
+  **clipping rather than zeroing** (zeroing is itself an availability failure). Bounds derived from a
+  committed measurement of the *benign* policy's own commanded envelope, following the
+  `suites/keepout_zones.py` calibration pattern — **never** from a suite's unsafe predicate. A
+  structural guard in `tests/test_defenses.py` parses the module's AST and fails if it imports
+  anything from `provael.suites.*` or `provael.scoring.*`, because a clamp tuned against the bound it
+  is measured on has measured nothing.
+- **`risk_reduction_measures`** in the `provael certify` dossier (JSON, OSCAL and HTML section 4), via
+  a new `--mitigation <report.mitigation.json>`. Carries the measure's name, kind, position, the
+  per-family pre/post ASR with both 95% Wilson intervals, the credited families, the acceptance gate,
+  the verdict verbatim, the transfer status and **both arm digests** so a reader can re-derive the
+  comparison. Free core, no entitlement check — `docs/open-core-promise.md` v1.0 unchanged.
+- **`defense` input on the reusable Action** (opt-in, empty by default so existing consumers are
+  unaffected), with `residual-asr`, `mitigation-verdict`, `mitigation-report` and `defense-log`
+  outputs, both arms uploaded as artifacts.
+- **`defenses_total` / `defenses_measured`** in the evidence manifest, derived from the registry and
+  each `Defense.study` so they cannot drift from the code.
+- **`docs/studies/action-envelope.md`** and **`studies/action_envelope/run.py`** (a thin driver over
+  the public API, following the `studies/cross_arch_transfer/run.py` precedent).
+
+### Measured — as measured
+
+Policy `stub`, 10 episodes per (task, attack), seed base 0, `none` benign control in both arms, the
+**full 14-family adversarial registry**. Bounds: danger cap `0.0`, motion-L2 cap `0.125`
+(benign-derived). Transfer status `stub-validated-scaffolding` — **no real-model transfer is claimed**.
+
+| suite | verdict | adversarial ASR | credited families |
+| --- | --- | --- | --- |
+| `stub` | `credited` | 84.1% [78-89%] → 52.9% [45-60%] | `injection`, `instruction`, `optimized_instruction`, `visual` |
+| `reach` | `credited` | 72.9% [66-79%] → 52.9% [45-60%] | `injection`, `instruction`, `visual` |
+| `humanoid` | **`not-credited`** | 27.3% [20-36%] → 27.3% [20-36%] | none |
+
+**`humanoid` is `not-credited` and that is published, not hidden.** Not one interval moved: the
+whole-body balance predicate is not a magnitude cap on the channels this defense bounds.
+
+**Most of the credit above carries no information, and the study says so first.** The benign policy
+commands **exactly 0.0** on the danger channel, so any honestly benign-derived cap pins that channel
+to zero while `stub` calls an episode unsafe at a threshold in [0.5, 0.9) and `reach` at 0.75. Every
+family whose success routes through that channel goes to 0% **by construction**. The tautology is
+structural, not a tuning choice.
+
+Controls: benign FPR `0.0% → 0.0%` on all three suites. Clean-task success `100.0% → 100.0%` on
+`stub` (pre 95% CI [72-100%], n=10, accepted); **not evaluable** on `reach` and `humanoid`, which
+surface no task-success signal — a limitation, not a pass.
+
+**The acceptance-gate sweep is the part that carries information.** Tightening the motion cap on
+`stub`: `0.1250` and `0.0600` → `credited`, task preserved; `0.0400` and `0.0200` →
+**`rejected-benign-cost`**, clean-task success `100.0% → 0.0%`. Between 0.06 and 0.04 the clamp stops
+being a mitigation and becomes an availability failure, and the protocol rejects it outright.
+
+**The coverage map — the headline.** One protective measure does not cover a hazard list. A magnitude
+cap **cannot** credit `action` / `action_space` / `humanoid` (`freeze`, `critical_freeze`,
+`stride_freeze` are availability attacks pushing toward *zero*; no upper bound restores a suppressed
+command), and does not reach `backdoor`, `authorization` or `confidentiality`, whose successes route
+through a decoupled flag rather than a clamped channel. `optimized` stayed at 100%. The measure is
+credited on rows mapped to EAI04/EAI06 and addresses nothing on EAI03, EAI08 or EAI09 — carried into
+the dossier so a safety case cannot imply otherwise.
+
+### Changed
+
+- **`examples/runtime/robot_firewall.py` rewritten.** It printed a bare `base - firewalled`
+  point-estimate delta and ended with `assert fw_s < base_s` — no confidence interval, no credit
+  rule, no benign-FPR control, no acceptance gate: exactly the reasoning `docs/DEFENSES.md` and
+  `defenses/measure.py` exist to forbid, in the project's own "show defense" demo. Two specifics: its
+  clamp sat at `0.4`, **below** the fixture's own unsafe threshold (so its ASR reduction was
+  tautological), and it ran **no benign control**, so the comparison could not have been valid even
+  with intervals added. It now drives the registered defense through `build_mitigation_report` and
+  prints verdicts and intervals. `tests/test_runtime_firewall.py` no longer asserts a direction of
+  effect — `not-credited` must remain a representable outcome.
+- `provael list-defenses` gained a `position` column, and its footer now says **four** of the six
+  taxonomy rows are unregistered rather than five.
+- `docs/DEFENSES.md` status header: **two rows measured, four specified and unproven**, with the
+  action-clamping row linked to its study. `docs/roadmap.md`'s defense line was understated and now
+  states what is measured and what is not.
+- Regenerated `results/smolvla_libero_object/evidence-manifest.json`. **Only the derived registry
+  section changed** — two added keys, `defenses_measured: 2` and `defenses_total: 2`. The manifest is
+  built from the committed `report.json` at a pinned commit; **no measurement moved and
+  `report.json` was not touched** (same discipline as the 0.27.0 leaderboard re-stamp).
+
+### Unchanged, deliberately
+
+- **Nothing was added to `RunReport` or `AttackResult`.** The action-side hook was the obvious excuse
+  to record a filtered action on the result, and that is exactly where it must not go: `AttackResult`
+  is nested in `RunReport.results`, so a field there moves the canonical JSON the attestation is
+  signed over. The trail lives in the sidecar, the position on the mitigation report. Asserted by
+  test, and a real issued attestation still verifies.
+- **`asr-threshold` still gates the UNDEFENDED adversarial ASR.** `residual-asr` is an additional,
+  separately-named output. Letting a filter of unproven real-model efficacy lower the number a release
+  gate reads is precisely how a team ships an unmitigated policy behind a text-and-clamp wrapper. The
+  job fails on `rejected-benign-cost`, and on `insufficient` with a message naming the missing benign
+  control — nothing measured is not a pass.
+
 ## [0.27.0] — 2026-07-30
 
 ### Fixed

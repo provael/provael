@@ -1,99 +1,84 @@
-"""A model-agnostic action-stream firewall — show defense, not just offense.
+"""Show defense, not just offense — driven through the measurement protocol.
 
-Wraps ANY Provael policy and applies cheap, literature-backed safety checks to its action stream
-before it reaches the robot, then measures ASR **with vs. without** the firewall on the same
-attacks. The checks:
-
-  * **velocity / magnitude bound** — clamp the commanded danger and motion (a safety envelope, like
-    nav2_collision_monitor).
-  * **direction-reversal-rate** — a universal black-box failure predictor for VLAs
-    (AUROC ~0.79–0.93, arXiv:2605.28726); we count reversals over the action history.
-  * **jerk** — large step-to-step action change (predicts failure for discrete-token VLAs).
-  * **watchdog** — flag a stalled (near-zero motion) stream.
+Runs Provael's **registered** action-side defense (``action_envelope``) against the attack battery
+in both arms and reports what ``provael mitigation`` reports: a per-family pre/post attack-success
+rate with 95% Wilson confidence intervals, the benign controls, the acceptance gate, and a verdict.
 
 IMPORTANT — HONEST SCOPE: this is a **sim / reference monitor**, NOT a certified safety controller.
 The real functional-safety bar (NVIDIA Halos, ISO 26262 / IEC 61508) is out of scope and Provael
 does not claim it. This demonstrates that the measured ASR *moves* when a defense is applied — the
 point of a red-team + harden loop.
 
+WHY THIS FILE WAS REWRITTEN (0.28.0)
+------------------------------------
+It used to wrap the policy in an ad-hoc clamp, print ``base - firewalled`` as a percentage, and end
+with ``assert fw_s < base_s``. That is a bare point-estimate comparison — precisely the reasoning
+``docs/DEFENSES.md`` and :mod:`provael.defenses.measure` exist to forbid: no confidence interval, no
+credit rule, no benign false-positive control, no acceptance gate. It was the project's "show
+defense" demo the whole time, arguing for a defense in the one style the project tells everyone else
+not to use.
+
+Two specifics, because they are instructive rather than cosmetic:
+
+* **Its clamp sat below the fixture's own unsafe threshold** (danger cap ``0.4`` against a per-seed
+  threshold drawn from ``[0.5, 0.9)``), which drives the ASR to zero *by construction*. The
+  registered defense derives its bounds from a measured benign envelope instead, and
+  ``tests/test_defenses.py`` structurally forbids it from importing a suite's predicate.
+* **It ran no benign control.** Without the ``none`` arm the protocol returns ``insufficient`` and
+  nothing can be concluded in either direction — so the old comparison could not have been valid
+  even with intervals bolted on.
+
+What this prints now is a verdict, and on some suites that verdict is ``not-credited``. See
+``docs/studies/action-envelope.md``, which leads with how much of the credit is tautological on a
+fixture and publishes the coverage map of families one envelope provably cannot address.
+
+The runtime monitor this file used to define is still useful as a *shape* — see
+``examples/runtime/ros2_guard_node.py`` for a reference node that makes no measurement claim. The
+taxonomy rows it gestured at (trajectory anomaly detection, rate limiting, output screening) remain
+**specified and unproven** and are deliberately unregistered.
+
     python examples/runtime/robot_firewall.py
 """
 
 from __future__ import annotations
 
-import numpy as np
-import numpy.typing as npt
-
 from provael.config import RunConfig
-from provael.policies.base import PolicyAdapter
-from provael.policies.registry import POLICIES, make_policy
+from provael.defenses.measure import build_mitigation_report, to_mitigation_markdown
 from provael.runner import run
-from provael.types import Observation
 
+#: The battery. ``none`` is first and is not optional: it is the benign control, and both arms need
+#: it or the verdict is ``insufficient``.
+ATTACKS = ["none", "instruction", "visual", "injection", "action"]
 
-class FirewallPolicy(PolicyAdapter):
-    """Wrap an inner policy and clamp/monitor its action stream (safety envelope + watchdog)."""
-
-    name = "firewalled"
-
-    def __init__(
-        self, inner: PolicyAdapter, max_danger: float = 0.4, max_speed: float = 0.15
-    ) -> None:
-        self.inner = inner
-        self.max_danger = max_danger
-        self.max_speed = max_speed
-        self._prev: npt.NDArray[np.float32] | None = None
-        self.blocked = 0
-        self.reversals = 0
-
-    def load(self) -> None:
-        self.inner.load()
-
-    def reset(self) -> None:
-        self.inner.reset()
-        self._prev = None
-
-    def act(self, observation: Observation, instruction: str) -> npt.NDArray[np.float32]:
-        action = np.asarray(self.inner.act(observation, instruction), dtype=np.float32).copy()
-        # 1. Velocity/magnitude envelope: clamp the danger axis (0) and the motion axes (1-4).
-        if action.size and action[0] > self.max_danger:
-            action[0] = self.max_danger
-            self.blocked += 1
-        if action.size >= 4:
-            speed = float(np.linalg.norm(action[1:4]))
-            if speed > self.max_speed and speed > 0:
-                action[1:4] *= self.max_speed / speed
-        # 2. Direction-reversal monitor (black-box failure predictor) over the action history.
-        prev = self._prev
-        if prev is not None and action.size >= 4 and prev.size >= 4 and (
-            float(np.dot(prev[1:4], action[1:4])) < 0
-        ):
-            self.reversals += 1
-        self._prev = action.copy()
-        return action
-
-
-def _asr(policy_name: str) -> tuple[int, int]:
-    report = run(
-        RunConfig(
-            policy=policy_name, suite="stub",
-            attacks=["instruction", "visual", "injection", "action"], episodes=10, seed=0,
-        )
-    )
-    return report.successes, report.attempts
+#: Fixed, so the demo is byte-reproducible — the protocol is pure and takes these from the caller.
+ISSUED_AT = "1970-01-01T00:00:00Z"
+COMMIT = "example"
 
 
 def main() -> None:
-    # Register a firewalled stub so the runner can resolve it by name.
-    POLICIES["firewalled-stub"] = lambda **_kwargs: FirewallPolicy(make_policy("stub"))
+    for suite in ("stub", "reach"):
+        base = {"policy": "stub", "suite": suite, "attacks": list(ATTACKS),
+                "episodes": 10, "seed": 0}
+        # Byte-identical config in both arms except for the defense. Anything else differing would
+        # make the comparison meaningless.
+        undefended = run(RunConfig(**base))  # type: ignore[arg-type]
+        defended = run(RunConfig(**base, defense="action_envelope"))  # type: ignore[arg-type]
 
-    base_s, base_n = _asr("stub")
-    fw_s, fw_n = _asr("firewalled-stub")
-    print(f"ASR without firewall: {base_s}/{base_n} ({base_s / base_n:.0%})")
-    print(f"ASR with    firewall: {fw_s}/{fw_n} ({fw_s / fw_n:.0%})")
-    print(f"Reduction: {(base_s - fw_s) / base_n:.0%} of episodes made safe by the envelope.")
+        report = build_mitigation_report(
+            defended, undefended, defense="action_envelope",
+            issued_at=ISSUED_AT, commit=COMMIT,
+        )
+        print(f"\n{'=' * 78}\nsuite: {suite}\n{'=' * 78}")
+        print(to_mitigation_markdown(report))
+
+    print(
+        "\nRead the verdict, not the delta. A credited family means the post-attack 95% "
+        "interval was separated from the pre-attack interval; overlapping intervals are NOT "
+        "credited however good the point estimate looks. See docs/studies/action-envelope.md "
+        "for how much of this credit is tautological on a CPU fixture, and for the families "
+        "an envelope cannot address."
+    )
     print("\n(Sim/reference monitor — not a certified safety controller. See the docstring.)")
-    assert fw_s < base_s, "firewall should reduce ASR on the stub"
 
 
 if __name__ == "__main__":

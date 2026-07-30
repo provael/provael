@@ -208,6 +208,8 @@
     "attacks_adversarial": 27,
     "attacks_baseline": 1,
     "attacks_total": 28,
+    "defenses_measured": 2,
+    "defenses_total": 2,
     "families_adversarial": 14,
     "families_total": 15
   },

@@ -28,7 +28,15 @@ from provael.certify import (
 )
 from provael.cli import app
 from provael.config import RunConfig
+from provael.defenses.envelope import ActionEnvelopeClamp
+from provael.defenses.measure import (
+    MitigationReport,
+    MitigationVerdict,
+    build_mitigation_report,
+)
+from provael.defenses.registry import DEFENSES
 from provael.hosted.machinery import build_machinery_annex_pack
+from provael.hosted.report import DISCLAIMERS
 from provael.runner import run
 from provael.types import ComponentProfile, RunReport
 
@@ -261,3 +269,178 @@ def test_cli_certify_help() -> None:
     res = runner.invoke(app, ["certify", "--help"])
     assert res.exit_code == 0
     assert "evidence" in res.output.lower()
+
+
+# --------------------------------------------------------------------------- #
+# WI4 — risk-reduction measures: the five honesty rules (0.28.0)
+#
+# Before 0.28.0 this dossier could state the hazard and the residual risk and had NO way to state a
+# protective measure. Annex III's "protection against corruption" and ISO 10218-2:2025's demand for
+# a precise description of safety-relevant functions AND their validation are both about the measure.
+# Every rule below exists because the obvious implementation of that section would have been a lie.
+# --------------------------------------------------------------------------- #
+
+
+def _pair(suite: str = "stub", defense: str = "action_envelope") -> tuple[RunReport, RunReport]:
+    base = {"policy": "stub", "suite": suite,
+            "attacks": ["none", "instruction", "action"], "episodes": 6, "seed": 0}
+    undef = run(RunConfig(**base))  # type: ignore[arg-type]
+    defended = run(RunConfig(**base, defense=defense))  # type: ignore[arg-type]
+    return defended, undef
+
+
+def _mitigation(suite: str = "stub", defense: str = "action_envelope") -> MitigationReport:
+    defended, undef = _pair(suite, defense)
+    return build_mitigation_report(
+        defended, undef, defense=defense, issued_at="1970-01-01T00:00:00Z", commit="t",
+    )
+
+
+def _dossier_with(mit: MitigationReport | None) -> tuple[dict, str, str]:
+    """The JSON dossier, its HTML and its OSCAL, for one mitigation (or none)."""
+    report, _ = _pair()
+    kwargs = {"profile": CertifyProfile.annex_i_part_a, "issued_at": "1970-01-01T00:00:00Z",
+              "commit": "t"}
+    dossier = build_dossier(report, mitigation=mit, **kwargs)  # type: ignore[arg-type]
+    html = to_dossier_html(dossier)
+    oscal = to_dossier_oscal_json(
+        report, profile=CertifyProfile.annex_i_part_a, issued_at="1970-01-01T00:00:00Z",
+        mitigation=mit,
+    )
+    return dossier, html, oscal
+
+
+def test_rule0_the_section_is_present_even_when_nothing_was_measured() -> None:
+    """An absent section reads as covered.
+
+    Follows the precedent in provael.eai's docstring — "a category that silently disappears is not —
+    it reads as covered". Omitting the section when no --mitigation is given would be the same bug in
+    a document a notified body reads.
+    """
+    dossier, html, oscal = _dossier_with(None)
+    rrm = dossier["risk_reduction_measures"]
+    assert rrm["measured"] is False
+    assert "No protective measure was measured" in rrm["statement"]
+    assert "Risk-reduction measures" in html
+    assert "risk-reduction-measured" in oscal
+
+
+def test_rule1_a_not_credited_verdict_is_never_summarised_as_mitigated() -> None:
+    """`not-credited` renders as that word in the JSON, the OSCAL and the HTML.
+
+    The humanoid suite genuinely produces this verdict against the action envelope — a real measured
+    null, and the case most at risk of being smoothed into "a defense was applied".
+    """
+    mit = _mitigation(suite="humanoid")
+    assert mit.verdict is MitigationVerdict.not_credited, "fixture no longer yields a null"
+    dossier, html, oscal = _dossier_with(mit)
+    rrm = dossier["risk_reduction_measures"]
+
+    assert rrm["verdict"] == "not-credited"
+    assert rrm["verdict_is_credited"] is False
+    assert "NOT-CREDITED" in rrm["statement"]
+    assert "must not be described as mitigated" in rrm["statement"]
+    for surface, name in ((json.dumps(dossier), "json"), (html, "html"), (oscal, "oscal")):
+        assert "not-credited" in surface, f"the verdict word is missing from the {name}"
+        assert "mitigated" not in surface.replace("described as mitigated", ""), (
+            f"the {name} summarises a null as mitigated"
+        )
+
+
+def test_rule1b_an_insufficient_verdict_says_nothing_measured_is_not_a_pass() -> None:
+    """No benign control in either arm → `insufficient`, and it must not read as a clean result."""
+    base = {"policy": "stub", "suite": "stub", "attacks": ["instruction"], "episodes": 4, "seed": 0}
+    undef = run(RunConfig(**base))  # type: ignore[arg-type]
+    defended = run(RunConfig(**base, defense="action_envelope"))  # type: ignore[arg-type]
+    mit = build_mitigation_report(
+        defended, undef, defense="action_envelope", issued_at="1970-01-01T00:00:00Z", commit="t",
+    )
+    assert mit.verdict is MitigationVerdict.insufficient
+    dossier, html, oscal = _dossier_with(mit)
+    rrm = dossier["risk_reduction_measures"]
+    assert rrm["verdict"] == "insufficient"
+    assert "INSUFFICIENT" in rrm["statement"]
+    assert "Nothing measured is not a pass" in rrm["statement"]
+    assert "insufficient" in html and "insufficient" in oscal
+
+
+def test_rule2_a_rejected_benign_cost_verdict_says_the_measure_was_rejected() -> None:
+    """A clamp tight enough to destroy the clean task must be reported as REJECTED.
+
+    Built by registering a deliberately over-tight envelope: below the stub's clean-task floor the
+    acceptance gate fires regardless of what happened to the ASR, which is the whole purpose of the
+    gate. The dossier has to carry that as a rejection, not as a mitigation with a caveat.
+    """
+    DEFENSES["_test_overtight_envelope"] = lambda: ActionEnvelopeClamp(max_motion_l2=0.01)
+    try:
+        mit = _mitigation(defense="_test_overtight_envelope")
+        assert mit.verdict is MitigationVerdict.rejected_benign_cost, mit.verdict
+        dossier, html, oscal = _dossier_with(mit)
+        rrm = dossier["risk_reduction_measures"]
+        assert rrm["verdict"] == "rejected-benign-cost"
+        assert "REJECTED" in rrm["statement"]
+        assert "must not be presented as a protective measure" in rrm["statement"]
+        assert "rejected-benign-cost" in html and "rejected-benign-cost" in oscal
+    finally:
+        DEFENSES.pop("_test_overtight_envelope", None)
+
+
+def test_rule3_stub_validated_transfer_status_forces_the_fixture_sentence() -> None:
+    """A fixture result must never read as protection on a real policy."""
+    mit = _mitigation()
+    assert mit.transfer_status == "stub-validated-scaffolding"
+    dossier, html, oscal = _dossier_with(mit)
+    statement = dossier["risk_reduction_measures"]["statement"]
+    assert "validated on a CPU fixture" in statement
+    assert "not evidence of protection on a real policy" in statement
+    assert "stub-validated-scaffolding" in html
+    assert "stub-validated-scaffolding" in oscal
+
+
+def test_rule4_a_measure_credited_on_eai04_does_not_read_as_covering_eai08() -> None:
+    """The coverage map from the study, carried into the dossier.
+
+    One protective measure does not cover a hazard list. The action envelope is credited on rows
+    mapped to EAI04/EAI06 and reaches nothing on EAI08 (authorization) or EAI09 (confidentiality),
+    whose successes route through a decoupled flag rather than a clamped magnitude.
+    """
+    mit = _mitigation()
+    dossier, html, _ = _dossier_with(mit)
+    cov = dossier["risk_reduction_measures"]["coverage_limitation"]
+    assert cov["addresses"] == ["EAI04", "EAI06"]
+    assert "EAI08" in cov["does_not_address"]
+    assert "EAI09" in cov["does_not_address"]
+    assert "EAI04" not in cov["does_not_address"]
+    assert "does NOT address" in cov["statement"]
+    assert "Coverage limitation" in html
+
+
+def test_rule5_the_existing_disclaimers_still_apply_verbatim() -> None:
+    """The new section must not become a hole in the disclaimer discipline."""
+    for mit in (None, _mitigation()):
+        dossier, html, _ = _dossier_with(mit)
+        assert dossier["disclaimers"] == list(DISCLAIMERS)
+        assert dossier["risk_reduction_measures"]["note"] == DISCLAIMERS[1]
+        assert "Evidence, not certification" in html
+
+
+def test_the_section_carries_both_arm_digests_so_the_comparison_is_re_derivable() -> None:
+    """A reader must be able to recompute the pair rather than trust the document."""
+    mit = _mitigation()
+    rrm, html, _ = _dossier_with(mit)
+    section = rrm["risk_reduction_measures"]
+    assert section["undefended_report_digest"] == mit.undefended_report_digest
+    assert section["defended_report_digest"] == mit.defended_report_digest
+    assert mit.undefended_report_digest != mit.defended_report_digest
+    assert mit.undefended_report_digest in html
+
+
+def test_certify_is_free_core_with_no_entitlement_check_near_the_new_section() -> None:
+    """docs/open-core-promise.md v1.0: a capability that is free today stays free.
+
+    certify, mitigation and this section are all in the free core. The single paid surface is the
+    project-key-signed operated attestation, and nothing in this code path may gate on entitlement.
+    """
+    source = Path(certify_mod.__file__).read_text(encoding="utf-8")
+    for token in ("entitlement", "license_key", "licence_key", "paid_tier", "require_subscription"):
+        assert token not in source, f"certify.py must not gate on {token!r}"

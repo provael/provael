@@ -49,3 +49,29 @@ how a policy behaved under red-team, with every rate carrying its 95% Wilson CI 
 - The **hosted, project-key-signed** insurer / Notified-Body-ready report (see
   [the hosted surface README](https://github.com/provael/provael/blob/main/src/provael/hosted/README.md))
   is the paid tier; the free core produces the same evidence, self-signed or digest-bound.
+
+## The protective measure, not only the hazard
+
+A dossier that states a hazard and a residual risk answers half the question. Annex III's
+"protection against corruption" and ISO 10218-2:2025's requirement for a **precise description of
+safety-relevant functions AND their validation** are both about the *measure*: what was installed,
+where it acts, and what measuring it actually showed.
+
+`provael certify --mitigation <report.mitigation.json>` emits a `risk_reduction_measures` section
+carrying the measure's name, kind and **position** (input-side filter vs action-side monitor — different
+protective measures with different failure modes), the per-family pre/post ASR with both 95% Wilson
+intervals, the benign controls, the acceptance gate, the verdict **verbatim**, and both arm digests so
+an assessor can re-derive the comparison rather than trust the document.
+
+Four things it will not do:
+
+* It never summarises `not-credited`, `insufficient` or `rejected-benign-cost` as "mitigated". A
+  four-valued verdict exists because "did it work?" has four honest answers.
+* A `stub-validated-scaffolding` measure carries a sentence saying it was validated on a CPU fixture
+  and is **not** evidence of protection on a real policy.
+* It carries the **coverage map**: which EAI risks the measure does not address. A measure credited on
+  EAI04 must not read as covering EAI08.
+* Without `--mitigation` the section is still present and says no protective measure was measured. An
+  absent section reads as covered.
+
+None of this is a conformity assessment, and Provael is not a notified body.

@@ -79,6 +79,7 @@ from provael.crosswalk import (
     to_crosswalk_markdown,
 )
 from provael.defenses.measure import (
+    MitigationReport,
     MitigationVerdict,
     build_mitigation_report,
     write_mitigation,
@@ -468,6 +469,9 @@ def list_defenses() -> None:
     table = Table(title="Defenses")
     table.add_column("defense", style="cyan", no_wrap=True)
     table.add_column("kind", style="magenta")
+    # A certifier reading "a defense was applied" needs to know whether it was a text pre-filter or
+    # an output monitor: different protective measures, different failure modes.
+    table.add_column("position")
     table.add_column("EAI ids")
     table.add_column("status")
     for name in available_defenses():
@@ -479,10 +483,10 @@ def list_defenses() -> None:
         # docs/studies/<name>.md worked in a git checkout and never in an installed wheel (docs/ is
         # not packaged), so 0.26.0 told every user its one measured defense was unproven.
         status = "measured" if d.study else "specified, unproven"
-        table.add_row(name, d.kind, ", ".join(d.eai_ids) or "—", status)
+        table.add_row(name, d.kind, d.position, ", ".join(d.eai_ids) or "—", status)
     _out.print(table)
     _out.print(
-        "Five of the six docs/DEFENSES.md taxonomy rows ship no implementation and are "
+        "Four of the six docs/DEFENSES.md taxonomy rows ship no implementation and are "
         "deliberately absent: an unmeasured mitigation is not a registered one."
     )
     _out.print(
@@ -1122,6 +1126,14 @@ def certify(
             help="Append the EAI ↔ RoboJailBench taxonomy-crosswalk appendix (Annex I Part A).",
         ),
     ] = False,
+    mitigation: Annotated[
+        Path | None,
+        typer.Option(
+            "--mitigation",
+            help="report.mitigation.json from `provael mitigation`, to state the protective "
+            "measure and its measured effect. Omit and the dossier says so explicitly.",
+        ),
+    ] = None,
 ) -> None:
     """Emit a Machinery Regulation conformity-assessment evidence dossier (JSON + OSCAL + HTML).
 
@@ -1168,11 +1180,27 @@ def certify(
             _fail(f"{component_metadata} is not valid ComponentProfile JSON: {exc}")
             return
 
+    # The protective measure. Absent is FINE and is not silent: the dossier renders a
+    # risk_reduction_measures section saying no measure was measured, because an absent section
+    # reads as covered.
+    mitigation_report: MitigationReport | None = None
+    if mitigation is not None:
+        try:
+            mitigation_report = MitigationReport.model_validate_json(
+                mitigation.read_text(encoding="utf-8")
+            )
+        except FileNotFoundError:
+            _fail(f"{mitigation} not found")
+            return
+        except ValidationError as exc:
+            _fail(f"{mitigation} is not a valid report.mitigation.json: {exc}")
+            return
+
     issued_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     stamp = commit or _git_commit() or f"v{__version__}"
     paths = write_dossier(
         report, out, profile=profile, issued_at=issued_at, commit=stamp, component=component,
-        include_crosswalk=include_crosswalk,
+        include_crosswalk=include_crosswalk, mitigation=mitigation_report,
     )
 
     render_summary(report, _out)

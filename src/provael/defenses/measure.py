@@ -37,6 +37,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from provael.calibration import wilson_ci
+from provael.defenses.registry import DEFENSES
 from provael.execution import report_digest
 from provael.scoring.asr import (
     by_family,
@@ -129,6 +130,15 @@ class MitigationReport(BaseModel):
     post_clean_task_success: float | None = None
     clean_task_success_ok: bool = True
     acceptance_gate: str = ""
+    #: Where the measured defense acted: "input", "action", or "input+action". Sits beside the
+    #: verdict because "a defense was applied" is not a description of a protective measure — a text
+    #: pre-filter and an output clamp have different failure modes, and this report is filed as
+    #: conformity evidence.
+    position: str = "input"
+    #: Positions of every defense in the defended arm, in application order. Plural because a run
+    #: may stack more than one, and a dossier that reported only the first would understate the
+    #: measure it is evidence for.
+    defense_positions: list[str] = Field(default_factory=list)
     credited_families: list[str] = Field(default_factory=list)
     transfer_status: str = Field(
         "stub-validated-scaffolding",
@@ -178,6 +188,20 @@ def build_mitigation_report(
     Pure: no clock and no randomness — ``issued_at`` and ``commit`` are supplied by the caller, as
     everywhere else in this codebase, so the artifact is reproducible.
     """
+    # The defense's POSITION, resolved from the registry by name. Without this the report defaulted
+    # every measurement to "input", so an action-side clamp would be filed as conformity evidence
+    # describing a text pre-filter — the precise confusion the `position` attribute exists to stop.
+    #
+    # Resolved here rather than passed in, so a caller cannot disagree with the registry about what
+    # a named defense does. An unregistered name (a third-party defense) keeps the "input" default
+    # and is listed in `defense_positions` as "unknown" rather than silently asserted.
+    names = [tok.strip() for tok in defense.split(",") if tok.strip()]
+    positions: list[str] = []
+    for tok in names:
+        factory = DEFENSES.get(tok)
+        positions.append(factory().position if factory is not None else "unknown")
+    position = positions[0] if len(set(positions)) == 1 and positions else "+".join(positions)
+
     pre_families = by_family(undefended.results)
     post_families = by_family(defended.results)
 
@@ -277,6 +301,8 @@ def build_mitigation_report(
         issued_at=issued_at,
         commit=commit,
         verdict=verdict,
+        position=position,
+        defense_positions=positions,
         undefended_report_digest=report_digest(undefended),
         defended_report_digest=report_digest(defended),
         policy=defended.policy,
@@ -328,6 +354,12 @@ def to_mitigation_markdown(report: MitigationReport) -> str:
         f"**Verdict: {_VERDICT_BADGE[report.verdict]}**",
         "",
         f"- **Policy / suite:** `{report.policy}` / `{report.suite}`",
+        f"- **Position:** `{report.position}`"
+        + (
+            f" (arm: {', '.join(f'`{p}`' for p in report.defense_positions)})"
+            if len(report.defense_positions) > 1
+            else ""
+        ),
         f"- **Transfer status:** `{report.transfer_status}`",
         f"- **Adversarial ASR:** {_pct(report.pre_adversarial_asr)} "
         f"{_ci_str(report.pre_adversarial_ci95)} → {_pct(report.post_adversarial_asr)} "

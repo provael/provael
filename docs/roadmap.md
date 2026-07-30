@@ -17,7 +17,14 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
   refusal, fail-closed, in the reusable Action — see
   [checkpoint-integrity](checkpoint-integrity.md)); model-*signing* (Sigstore) and ML-BOM remain
   planned. The public leaderboard is Ed25519-signed as of 0.27.0.
-- **Defense demo:** action-stream firewall + ROS 2 guard node (sim/reference).
+- **Defenses — what is measured and what is not.** Two of the six `docs/DEFENSES.md` taxonomy rows
+  are measured under the protocol, both `stub-validated-scaffolding` on CPU fixtures:
+  `instruction_canonicalization` (input side) and `action_envelope` (action side). The action-envelope
+  study is `credited` on `stub` and `reach` and **`not-credited` on `humanoid`**, and both studies
+  open by stating how much of their own credit is circular on a fixture. **No real-model transfer is
+  claimed for either defense.** The four remaining rows are *specified and unproven*; three of them
+  act on the policy's output and became expressible only with `Defense.filter_action` in 0.28.0.
+  The ROS 2 guard node stays a sim/reference node that makes no measurement claim.
 - **Optimized attacks (in progress):** the `optimized` family — `targeted_hijack`, a black-box,
   query-budgeted search — is the first non-templated attack (stub-validated; real transfer gated).
 
