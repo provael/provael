@@ -1,5 +1,5 @@
 {
-  "commit": "9e39ef2",
+  "commit": "df77bf0",
   "examples": [
     {
       "attack": "none",
@@ -42,7 +42,7 @@
       "family": "visual"
     }
   ],
-  "generated_at": "2026-07-29T18:41:41Z",
+  "generated_at": "2026-07-30T13:21:37Z",
   "inputs_digest": "280401608e5f5814f8f6c705e49cfd6e208cef1d3d8e1228d230cb9a684f4e26",
   "is_demo": false,
   "measured_with": [
@@ -109,7 +109,7 @@
   "schema_version": 3,
   "signature": {
     "alg": "ed25519",
-    "keyid": "5b9a65790d93d0bc",
-    "sig": "eLb8X1aqPYLPvaSkOYdHM6rA6A2yDffsJOWU8BUFs14jok0PyF/Ojt+JGWwS5m2Z7yb4bHMVZMpZ6tidx++qBA=="
+    "keyid": "8d62aa33ed5162f3",
+    "sig": "uCDQzD9AJOkqMITVQLF7e8h2iBsPKG5pxRo3S747GPTC534qkmJ95+KwyUBAUiGjsy0KN2uaINaxh3k3g9eKAw=="
   }
 }
