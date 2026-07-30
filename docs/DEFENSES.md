@@ -1,11 +1,22 @@
 # Defenses
 
-> Status: **ONE ROW MEASURED** (`input canonicalization`, `stub-validated-scaffolding` — see
-> [the study](studies/instruction-canonicalization.md)). Every other row below remains
-> **specified and unproven**. Results land in `docs/studies/` with the same controls as attacks.
-> No defense is claimed until measured, and a measured defense is claimed only as far as the
-> evidence reaches — the study's own headline warning is that its result is substantially
-> circular on a fixture whose danger function is lexical.
+> Status: **TWO ROWS MEASURED, FOUR SPECIFIED AND UNPROVEN.**
+>
+> * `input canonicalization` — `stub-validated-scaffolding`, see
+>   [the study](studies/instruction-canonicalization.md).
+> * `action clamping / keep-out enforcement` — `stub-validated-scaffolding`, see
+>   [the study](studies/action-envelope.md). `credited` on `stub` and `reach`, **`not-credited` on
+>   `humanoid`** — a published null, not an omission.
+>
+> Results land in `docs/studies/` with the same controls as attacks. No defense is claimed until
+> measured, and a measured defense is claimed only as far as the evidence reaches: both studies open
+> by stating how much of their own credit is circular on a fixture, and the action-envelope study's
+> headline is the **coverage map** — the families one protective measure provably cannot address.
+>
+> Until 0.28.0 the four output-side rows below were not merely unmeasured but **unimplementable**:
+> the `Defense` ABC offered only a pre-processing hook, so a taxonomy row acting on the policy's
+> output could not be written against the interface at all. `Defense.filter_action` fixed that; one
+> of the four is now measured and three remain unwritten.
 
 Provael measures attacks. A defense is only worth shipping if it **measurably** lowers Attack Success
 Rate without breaking the benign task — so every defense here is held to the same bar as an attack: a
@@ -19,7 +30,7 @@ claimed as effective until a study reports it.
 | --- | --- | --- |
 | **Input canonicalization / instruction repair** | Normalise phrasing, strip manner/urgency adverbials, re-derive the canonical command before it reaches the policy | EAI01 instruction jailbreak · EAI05 indirect/embodied injection · EAI06 manner/urgency misalignment |
 | **Observation filtering** | Detect / attenuate adversarial patches, decoy objects, and sensor-spoof markers in the image or observation | EAI02 adversarial perception |
-| **Action clamping / keep-out enforcement** | Reject or clip a commanded action that leaves the safe envelope or enters a keep-out zone | EAI04 action-space integrity · EAI06 embodiment-gap keep-out |
+| **Action clamping / keep-out enforcement** ([study](studies/action-envelope.md)) | Reject or clip a commanded action that leaves the safe envelope or enters a keep-out zone | EAI04 action-space integrity · EAI06 embodiment-gap keep-out |
 | **Rate limiting / scope enforcement** | Bound the actions and authority a single instruction can exercise | EAI08 identity, access & excessive autonomy |
 | **Trajectory anomaly detection** | Flag episodes whose trajectory departs from the benign distribution (freeze, hijack, objective-decoupled triggers) | EAI04 action-space integrity · EAI03 backdoor triggers |
 | **Output / memory screening** | Screen for memorised-canary leakage and extraction signals | EAI09 model & data confidentiality |
@@ -67,7 +78,17 @@ auditable (the canonical form is logged next to the raw instruction).
   words this defense strips, so `optimized_instruction`'s 60% → 0% is close to tautological.
   `stub-validated-scaffolding`; no real-model transfer is claimed.
 
-Instruction canonicalization is now **measured** — under the controls above, on CPU fixture suites,
-with its limits stated in the study. Every **other** row in the taxonomy above remains a
-**specified, unproven** mitigation, and none of them is registered in `provael list-defenses`:
-an unmeasured mitigation is not a shipped one.
+Two rows are now **measured** — under the controls above, on CPU fixture suites, with their limits
+stated in their studies: `input canonicalization`
+([study](studies/instruction-canonicalization.md)) and `action clamping / keep-out enforcement`
+([study](studies/action-envelope.md)). The action-envelope study reports `credited` on `stub` and
+`reach` and **`not-credited` on `humanoid`**, and its headline is that one protective measure does
+not cover a hazard list: a magnitude cap cannot restore a frozen action, and it does not reach
+successes that route through a decoupled flag (EAI03 backdoor activation, EAI08 authorization,
+EAI09 canary leak).
+
+The **four other** rows in the taxonomy above remain **specified, unproven** mitigations, and none of
+them is registered in `provael list-defenses`: an unmeasured mitigation is not a shipped one. Three of
+those four act on the policy's output and became *expressible* only with `Defense.filter_action` in
+0.28.0 — they are now writable and still unwritten, which is a different and more honest status than
+the one they had before.

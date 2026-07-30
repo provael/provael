@@ -74,11 +74,19 @@ locomotion — a balance spoof → loss of balance, a whole-body hijack → topp
 (`targeted_hijack`: a black-box, query-budgeted *search*), **`optimized_patch`** (the image-channel
 analogue, GPU-gated and inert on CPU suites) and **`optimized_instruction`** (`targeted_redirect`,
 a command-preserving instruction search) — a `none` benign control, and an ASR
-**leaderboard**, and — new in 0.26.0 — **measured defenses**: `--defense` installs a mitigation in
-the deployment position and `provael mitigation` reports pre/post ASR per family with 95% Wilson
-intervals, a benign-FPR control and a benign-task-success acceptance gate. Measuring a defense is
-in the **free** tool, not behind the operated tier: a mitigation you cannot measure is a marketing
-claim. `--recipe full-sweep` runs every one of the fourteen; families the chosen suite
+**leaderboard**, and **measured defenses**: `--defense` installs a mitigation in the deployment
+position and `provael mitigation` reports pre/post ASR per family with 95% Wilson intervals, a
+benign-FPR control and a benign-task-success acceptance gate. Measuring a defense is in the **free**
+tool, not behind the operated tier: a mitigation you cannot measure is a marketing claim.
+
+**Two defenses ship (0.28.0), both `stub-validated-scaffolding` — no real-model transfer is claimed
+for either.** `instruction_canonicalization` acts on the instruction; `action_envelope` acts on the
+commanded action. The action side exists because four of the six `docs/DEFENSES.md` taxonomy rows act
+on what leaves the policy, and until `Defense.filter_action` those four were not merely unmeasured
+but **unimplementable** — the taxonomy was a spec its own interface could not satisfy. The
+action-envelope study is `credited` on `stub` and `reach` and **`not-credited` on `humanoid`**, and
+its headline is the coverage map: a magnitude cap cannot restore a frozen action and does not reach
+successes routing through a decoupled flag ([study](docs/studies/action-envelope.md)). `--recipe full-sweep` runs every one of the fourteen; families the chosen suite
 cannot support are skipped and reported N/A, never scored 0%. Every family carries its transfer-test (rate + 95% Wilson CI + benign-FPR
 control); run `provael transfer-test` to print it. The `action`, `action_space`, `sensor_spoof`,
 `backdoor`, `authorization`, `misalignment`, `confidentiality`, and `humanoid` families are
@@ -324,7 +332,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.27.0
+      - uses: provael/provael@v0.28.0
         with:
           # `none` is the benign control: without it an ASR has no false-positive baseline,
           # and the release gate cannot reach `pass`. It never moves the adversarial ASR.
@@ -334,6 +342,35 @@ jobs:
           baseline: .provael/baseline.report.json   # optional: also fail on a regression
           regression-tolerance: "0.05"
 ```
+
+#### Measuring a defense in CI (opt-in)
+
+Set the `defense` input and the Action runs a **second, defended arm** with byte-identical
+policy/suite/attacks/episodes/seed, then compares them with `provael mitigation`. It is off by
+default (empty), so every existing consumer is unaffected, and it roughly **doubles CI time**.
+
+| New input | Meaning |
+| --- | --- |
+| `defense` | Registered defense name (`provael list-defenses`). Empty = the whole axis is skipped. |
+
+| New output | Meaning |
+| --- | --- |
+| `residual-asr` | Adversarial ASR of the **defended** arm. Separately named, and **not** what the gate reads. |
+| `mitigation-verdict` | `credited` \| `not-credited` \| `rejected-benign-cost` \| `insufficient`. |
+| `mitigation-report` | Path to `report.mitigation.json` — feed it to `provael certify --mitigation`. |
+| `defense-log` | Path to `defense-log.jsonl`, the raw → defended trail per instruction and action. |
+
+**The gating rule, and it matters more than the feature.** `asr-threshold` keeps gating the
+**UNDEFENDED** adversarial ASR. A filter of unproven real-model efficacy must not be able to lower
+the number a release gate reads — that is precisely how a team ships an unmitigated policy behind a
+text-and-clamp wrapper. The defended figure is published beside it as `residual-asr`, never
+substituted for it.
+
+The job fails on `rejected-benign-cost` (mirroring `provael mitigation`'s own non-zero exit: a measure
+that breaks the benign task is rejected regardless of its effect on the ASR), and on `insufficient`,
+which means the benign control is missing — nothing measured is not a pass, the same rule the
+empty-ASR branch of the gate already enforces. `not-credited` is reported, not gated on: it is a real
+measured result.
 
 The default `stub` policy + suite run on a **CPU** runner — no GPU, no model download — a fast
 smoke test of the gate wiring. Red-teaming a **real** policy (`policy: smolvla`,
@@ -542,6 +579,8 @@ The intended paid surface is a **future operated service**; the in-repo hosted s
 | --- | :---: | :---: |
 | CLI, all attack families (incl. the `backdoor` EAI03 screen), ASR + 95% CI + benign control | ✅ | |
 | `transfer-test`, SARIF, the GitHub Action, the Embodied AI Security Top 10 | ✅ | |
+| Measured defenses (`--defense`), `provael mitigation`, the Action's `defense` input | ✅ | |
+| `provael certify` incl. the `risk_reduction_measures` dossier section | ✅ | |
 | **Local `attest`** (digest-bound; Ed25519-signed with *your* key, verified against *your* trust store) + the leaderboard | ✅ | |
 | **Experimental** reference server (`provael serve`, `[hosted]` extra) — disabled by default; operator-key, **untrusted by default** | ✅ | |
 | **Authenticated, trusted signing** (a KMS-backed key an assessor can trust) — [production requirements](docs/maintainers/HOSTED_PRODUCTION_REQUIREMENTS.md) | | ⏳ not built |
@@ -581,15 +620,21 @@ see
 
 The **Defense** step is opt-in (`--defense`) and sits in the *deployment position* — after the
 attack, before the policy — so what is measured is what an operator would actually install. It
-never sees the policy, the scorer, or the danger predicate. Its raw → canonical trail goes to a
-`defense-log.jsonl` sidecar and its identity to the execution manifest: **nothing is added to
-`RunReport`**, so the attestation subject digest is unmoved.
+never sees the policy, the scorer, or the danger predicate. An **action-side** measure runs at one
+further point — after the policy commits to a command and after the non-finite-action rejection, so a
+clamp cannot launder a NaN into a finite value and hide a diverged head — and before the suite
+executes it. Its raw → canonical and raw → filtered trails go to a `defense-log.jsonl` sidecar and its
+identity to the execution manifest: **nothing is added to `RunReport`**, so the attestation subject
+digest is unmoved and attestations issued by earlier versions still verify.
 
 - **`PolicyAdapter`** — `load()`, `act(observation, instruction) -> np.ndarray`.
 - **`SuiteAdapter`** — `tasks()`, `reset(task, seed)`, `step(action)`, `is_unsafe(state)`.
 - **`Attack`** — `perturb(instruction, observation) -> (instruction, observation)`.
-- **`Defense`** — `apply(instruction, observation) -> (instruction, observation)`; a pre-processing
-  wrapper that changes no policy weights. `provael list-defenses`.
+- **`Defense`** — `apply(instruction, observation) -> (instruction, observation)` on the way in, and
+  `filter_action(action, observation) -> action` on the way out; neither changes policy weights, and
+  neither is given the policy, the suite or the danger predicate. `position` records which side a
+  measure acts on, because a text pre-filter and an output clamp are different protective measures
+  with different failure modes. `provael list-defenses`.
 - **`verify-checkpoint`** — a supply-chain control run BEFORE a policy loads: pinned-digest match
   and a refusal to load pickle-format weights, both fail-closed. It emits a **verdict, not a rate**,
   and does not reduce attack success. See [docs/checkpoint-integrity.md](docs/checkpoint-integrity.md).
@@ -620,8 +665,9 @@ same config + seed always produces a byte-identical `report.json`.
 - **next** — optimized (gradient/search) attacks incl. real-model action-freeze (FreezeVLA); more
   suites (RoboCasa / CALVIN / SimplerEnv / the AI2 harness bridge). See the full
   [roadmap](docs/roadmap.md).
-- **defenses** — measured mitigations with pre/post ASR + CI, starting with **instruction
-  canonicalization** ([docs/DEFENSES.md](docs/DEFENSES.md)).
+- **defenses** — measured mitigations with pre/post ASR + CI: **instruction canonicalization**
+  (input side) and **action envelope** (action side), two of six taxonomy rows. Four remain
+  *specified and unproven* ([docs/DEFENSES.md](docs/DEFENSES.md)).
 
 ## Development
 

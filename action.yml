@@ -88,6 +88,19 @@ inputs:
     description: "Explicitly opt in to loading pickle-format weights. Loading a pickle EXECUTES it (cf. CVE-2026-25874); default false prefers safetensors."
     required: false
     default: "false"
+  defense:
+    description: >-
+      OPT-IN. Registered defense name (`provael list-defenses`) to measure as a protective measure.
+      Empty (the default) skips the whole mitigation axis, so existing consumers are unaffected.
+      When set, a SECOND run is executed with the defense installed and `provael mitigation` compares
+      the arms. This roughly DOUBLES CI time.
+
+      It does NOT change what `asr-threshold` gates. The gate keeps reading the UNDEFENDED
+      adversarial ASR, deliberately: letting a filter of unproven real-model efficacy lower the
+      number a release gate reads is exactly how a team ships an unmitigated policy behind a
+      text-and-clamp wrapper. The defended figure is published separately as `residual-asr`.
+    required: false
+    default: ""
   install-spec:
     description: "Override the pip install target (e.g. '.[attest]') to smoke-test the checked-out source. Empty installs the pinned release from PyPI."
     required: false
@@ -112,6 +125,22 @@ outputs:
   asr-delta:
     description: "Overall ASR delta vs the baseline (candidate - baseline), empty when no baseline."
     value: ${{ steps.regression.outputs.asr-delta }}
+  residual-asr:
+    description: >-
+      Adversarial ASR of the DEFENDED arm. Separately named on purpose — it is NOT what
+      `asr-threshold` gates, and must not be substituted for `asr` in a release decision.
+    value: ${{ steps.mitigation.outputs.residual-asr }}
+  mitigation-verdict:
+    description: >-
+      credited | not-credited | rejected-benign-cost | insufficient. Four values because "did it
+      work?" has four honest answers; never collapse them to a boolean.
+    value: ${{ steps.mitigation.outputs.verdict }}
+  mitigation-report:
+    description: Path to report.mitigation.json (feed it to `provael certify --mitigation`).
+    value: ${{ steps.mitigation.outputs.report }}
+  defense-log:
+    description: Path to defense-log.jsonl — the raw → defended trail per instruction and action.
+    value: ${{ steps.mitigation.outputs.defense-log }}
   regression-attestation:
     description: "Path of the signed regression attestation (empty when no baseline given)."
     value: ${{ steps.regression.outputs.regression-attestation }}
@@ -140,7 +169,7 @@ runs:
       # up a PATCH — exactly how 0.25.1's dependency fix reaches users who pinned @v0.25.0 — while
       # still refusing the next minor. The floor tracks the newest patch so a fix is not optional.
       env:
-        PROVAEL_VERSION: ">=0.27.0,<0.28.0"
+        PROVAEL_VERSION: ">=0.28.0,<0.29.0"
         INSTALL_SPEC: ${{ inputs.install-spec }}
       run: |
         set -euo pipefail
@@ -224,6 +253,112 @@ runs:
         cat provael-run/gate-outputs.txt >> "$GITHUB_OUTPUT"
         echo "--- Provael run ---"
         cat provael-run/gate-outputs.txt
+
+    # The DEFENDED arm. Byte-identical policy/suite/attacks/episodes/seed to the run above; the
+    # only difference is --defense. Anything else differing would make the comparison meaningless.
+    - name: Run Provael red-team (defended arm)
+      id: defended
+      if: ${{ inputs.defense != '' }}
+      shell: bash
+      env:
+        PROVAEL_POLICY: ${{ inputs.policy }}
+        PROVAEL_SUITE: ${{ inputs.suite }}
+        PROVAEL_ATTACKS: ${{ inputs.attacks }}
+        PROVAEL_EPISODES: ${{ inputs.episodes }}
+        PROVAEL_SEED: ${{ inputs.seed }}
+        PROVAEL_DEFENSE: ${{ inputs.defense }}
+      run: |
+        set -euo pipefail
+        provael attack \
+          --policy "$PROVAEL_POLICY" \
+          --suite "$PROVAEL_SUITE" \
+          --attacks "$PROVAEL_ATTACKS" \
+          --episodes "$PROVAEL_EPISODES" \
+          --seed "$PROVAEL_SEED" \
+          --defense "$PROVAEL_DEFENSE" \
+          --out provael-run-defended
+
+    - name: Measure the mitigation
+      id: mitigation
+      if: ${{ inputs.defense != '' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        # `provael mitigation` exits non-zero on rejected-benign-cost. Capture the status rather
+        # than letting `set -e` kill the step, so the gate below can report WHY it failed.
+        status=0
+        provael mitigation \
+          --defended provael-run-defended \
+          --baseline provael-run \
+          --out provael-mitigation || status=$?
+        python - <<'PY' > provael-mitigation/outputs.txt
+        import json
+        m = json.load(open("provael-mitigation/report.mitigation.json"))
+        # Deliberately NOT called `asr`: this is the defended figure and it is not what the release
+        # gate reads. Emitting it under the gated name would be the whole failure mode.
+        print(f"residual-asr={'' if m.get('post_adversarial_asr') is None else m['post_adversarial_asr']}")
+        print(f"verdict={m['verdict']}")
+        print("report=provael-mitigation/report.mitigation.json")
+        print("defense-log=provael-run-defended/defense-log.jsonl")
+        print(f"position={m.get('position', '')}")
+        PY
+        cat provael-mitigation/outputs.txt >> "$GITHUB_OUTPUT"
+        echo "--- Provael mitigation (exit $status) ---"
+        cat provael-mitigation/outputs.txt
+
+    - name: Upload mitigation artifacts
+      if: ${{ inputs.defense != '' }}
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      with:
+        name: provael-mitigation
+        path: |
+          provael-mitigation/
+          provael-run-defended/defense-log.jsonl
+        if-no-files-found: warn
+
+    # A SEPARATE gate from the ASR threshold, and it must stay separate.
+    - name: Enforce mitigation gate
+      if: ${{ inputs.defense != '' }}
+      shell: bash
+      env:
+        PROVAEL_VERDICT: ${{ steps.mitigation.outputs.verdict }}
+        PROVAEL_DEFENSE: ${{ inputs.defense }}
+      run: |
+        python - <<'PY'
+        import os, sys
+
+        verdict = os.environ.get("PROVAEL_VERDICT", "").strip()
+        defense = os.environ.get("PROVAEL_DEFENSE", "")
+
+        if verdict == "rejected-benign-cost":
+            # Mirrors `provael mitigation`'s own non-zero exit. A measure that degrades the benign
+            # task is rejected regardless of what it did to the ASR.
+            print(
+                f"::error::Provael REJECTED the defense '{defense}' (rejected-benign-cost): the "
+                "benign false-positive rate rose or clean-task success fell outside its confidence "
+                "interval. A protective measure that breaks the benign task is not a mitigation."
+            )
+            sys.exit(1)
+        if verdict == "insufficient":
+            # "Nothing measured" must not read as a pass — the same rule the empty-ASR branch of the
+            # ASR gate enforces.
+            print(
+                "::error::Provael could not evaluate the defense: verdict `insufficient`, which "
+                "means one or both arms lacked the BENIGN CONTROL. Add `none` to `attacks` so the "
+                "benign false-positive rate and the clean-task acceptance gate can be computed. "
+                "Nothing measured is not a pass."
+            )
+            sys.exit(1)
+        if not verdict:
+            print("::error::Provael emitted no mitigation verdict; the measurement step failed.")
+            sys.exit(1)
+        print(f"Provael mitigation verdict for '{defense}': {verdict}")
+        if verdict == "not-credited":
+            print(
+                "::notice::`not-credited` is a real measured result, not a failure: no attack "
+                "family's confidence intervals separated. It is reported, not gated on."
+            )
+        PY
 
     - name: Upload SARIF to code scanning
       uses: github/codeql-action/upload-sarif@4187e74d05793876e9989daffde9c3e66b4acd07 # v3

@@ -40,6 +40,8 @@ from provael.attest import ATTESTATION_JSON, build_statement
 from provael.calibration import anytime_ci, wilson_ci
 from provael.compliance import CAVEATS, REQUIREMENTS
 from provael.crosswalk import build_appendix as _crosswalk_appendix
+from provael.defenses.measure import MitigationReport, MitigationVerdict
+from provael.defenses.registry import DEFENSES
 from provael.eai import CATALOG, all_ids, attacked_ids
 from provael.hosted.report import (
     ANNEX_III_CONTROL_SYSTEMS,
@@ -448,7 +450,10 @@ def _referenced_artifacts(subject: dict[str, Any]) -> dict[str, Any]:
 # Builders — the two profile shapes, one shared code path.
 # --------------------------------------------------------------------------------------------
 
-def _annex_iii_pack(report: RunReport, *, issued_at: str, commit: str) -> dict[str, Any]:
+def _annex_iii_pack(
+    report: RunReport, *, issued_at: str, commit: str,
+    mitigation: MitigationReport | None = None,
+) -> dict[str, Any]:
     """The Machinery Annex III EHSR pack (legacy shape — hosted/machinery.py's public contract)."""
     stmt_dict: dict[str, Any] = json.loads(
         build_statement(report, issued_at=issued_at, commit=commit).model_dump_json()
@@ -463,14 +468,151 @@ def _annex_iii_pack(report: RunReport, *, issued_at: str, commit: str) -> dict[s
         "subject": stmt_dict["subject"],
         "transfer_status": tier,
         "annex_iii_evidence": [{**ehsr, "transfer_status": tier} for ehsr in _ANNEX_III_EHSRS],
+        # Annex III's "protection against corruption" EHSR is about the protective measure, so the
+        # pack carries the section too — present-and-empty when nothing was measured.
+        "risk_reduction_measures": _risk_reduction_measures(mitigation),
         "attestation_statement": stmt_dict,
         "disclaimers": list(DISCLAIMERS),
     }
 
 
+def _defense_eai_ids(name: str) -> tuple[str, ...]:
+    """The EAI ids a named defense declares, read from the registry.
+
+    Empty for an unregistered name — a third-party defense makes no coverage claim we can vouch for,
+    and inventing one here would be worse than reporting none.
+    """
+    ids: list[str] = []
+    for tok in (t.strip() for t in name.split(",")):
+        factory = DEFENSES.get(tok)
+        if factory is not None:
+            ids += [i for i in factory().eai_ids if i not in ids]
+    return tuple(sorted(ids))
+
+
+def _defense_kind(name: str) -> str:
+    """The docs/DEFENSES.md taxonomy row a named defense implements, read from the registry."""
+    kinds = [DEFENSES[t.strip()]().kind for t in name.split(",") if t.strip() in DEFENSES]
+    return " + ".join(kinds) if kinds else "unknown"
+
+
+def _risk_reduction_measures(mitigation: MitigationReport | None) -> dict[str, Any]:
+    """The protective measure and its measured effect.
+
+    Until 0.28.0 this dossier could state the hazard and the residual risk and had no way to state a
+    protective measure at all. That is the wrong shape for a 2027-01-20 file: Annex III's
+    "protection against corruption" and ISO 10218-2:2025's requirement for a precise description of
+    safety-relevant functions AND their validation are both about the measure, not only the hazard.
+
+    PRESENT EVEN WHEN THERE IS NOTHING TO REPORT. An absent section reads as covered — the failure
+    :mod:`provael.eai`'s docstring was rewritten to fix ("a category that silently disappears is not
+    — it reads as covered"). With no ``--mitigation`` this returns a section that says so in words.
+
+    Nothing here is summarised. A ``not-credited``, ``insufficient`` or ``rejected-benign-cost``
+    verdict renders as that word: a four-valued verdict exists because "did it work?" has four
+    honest answers, and collapsing them into "mitigated" would make the dossier actively misleading.
+    """
+    if mitigation is None:
+        return {
+            "measured": False,
+            "statement": (
+                "No protective measure was measured for this run. This section is present and "
+                "empty on purpose: an absent section reads as covered."
+            ),
+            "note": DISCLAIMERS[1],
+        }
+
+    credited = list(mitigation.credited_families)
+    declared = list(_defense_eai_ids(mitigation.defense))
+    not_addressed = [rid for rid in sorted(CATALOG) if rid not in declared]
+
+    statements: list[str] = []
+    if mitigation.verdict is MitigationVerdict.credited:
+        statements.append(
+            f"The measure was CREDITED on: {', '.join(credited)}. Credit means the post-attack "
+            "95% Wilson interval was separated from the pre-attack interval and the rate fell. It "
+            "is not a claim about any other family."
+        )
+    elif mitigation.verdict is MitigationVerdict.not_credited:
+        statements.append(
+            "The measure was NOT-CREDITED: measured cleanly, and no family's confidence intervals "
+            "separated. This is a real measured null and must not be described as mitigated."
+        )
+    elif mitigation.verdict is MitigationVerdict.rejected_benign_cost:
+        statements.append(
+            "The measure was REJECTED (rejected-benign-cost): the benign false-positive rate rose "
+            "or clean-task success fell outside its confidence interval. A measure that degrades "
+            "the benign task is rejected regardless of what happened to the attack-success rate, "
+            "and must not be presented as a protective measure for this system."
+        )
+    else:
+        statements.append(
+            "The measurement was INSUFFICIENT: one or both arms lacked the benign control, so "
+            "nothing can be concluded either way. Nothing measured is not a pass."
+        )
+
+    if mitigation.transfer_status == "stub-validated-scaffolding":
+        statements.append(
+            "This measure was validated on a CPU fixture, NOT on a real vision-language-action "
+            "policy, and is not evidence of protection on a real policy."
+        )
+
+    coverage = (
+        "One protective measure does not cover a hazard list. This measure is credited on "
+        f"{', '.join(credited) if credited else 'no'} attack "
+        f"famil{'y' if len(credited) == 1 else 'ies'} and addresses only "
+        f"{', '.join(declared) if declared else 'no'} of the Embodied AI Security Top 10. It does "
+        f"NOT address {', '.join(not_addressed)}. A magnitude or text filter cannot restore a "
+        "suppressed (frozen) action, and does not reach successes that route through a decoupled "
+        "flag rather than the filtered channel."
+    )
+
+    return {
+        "measured": True,
+        "defense": mitigation.defense,
+        "kind": _defense_kind(mitigation.defense),
+        "position": mitigation.position,
+        "defense_positions": list(mitigation.defense_positions),
+        "verdict": mitigation.verdict.value,
+        "verdict_is_credited": mitigation.verdict is MitigationVerdict.credited,
+        "acceptance_gate": mitigation.acceptance_gate,
+        "transfer_status": mitigation.transfer_status,
+        "credited_families": credited,
+        "statement": " ".join(statements),
+        "per_family": [
+            {
+                "family": row.family,
+                "pre_asr": row.pre_asr,
+                "pre_ci95": list(row.pre_ci95) if row.pre_ci95 else None,
+                "post_asr": row.post_asr,
+                "post_ci95": list(row.post_ci95) if row.post_ci95 else None,
+                "credited": row.credited,
+                "note": row.note,
+            }
+            for row in mitigation.rows
+        ],
+        "benign_control": {
+            "pre_benign_fpr": mitigation.pre_benign_fpr,
+            "post_benign_fpr": mitigation.post_benign_fpr,
+            "benign_fpr_ok": mitigation.benign_fpr_ok,
+            "pre_clean_task_success": mitigation.pre_clean_task_success,
+            "post_clean_task_success": mitigation.post_clean_task_success,
+            "clean_task_success_ok": mitigation.clean_task_success_ok,
+        },
+        "undefended_report_digest": mitigation.undefended_report_digest,
+        "defended_report_digest": mitigation.defended_report_digest,
+        "coverage_limitation": {
+            "addresses": declared,
+            "does_not_address": not_addressed,
+            "statement": coverage,
+        },
+        "note": DISCLAIMERS[1],
+    }
+
+
 def _annex_i_dossier(
     report: RunReport, *, issued_at: str, commit: str, component: ComponentProfile | None,
-    include_crosswalk: bool = False,
+    include_crosswalk: bool = False, mitigation: MitigationReport | None = None,
 ) -> dict[str, Any]:
     """The Annex I Part A conformity-assessment evidence dossier (the rich shape)."""
     stmt_dict: dict[str, Any] = json.loads(
@@ -505,6 +647,9 @@ def _annex_i_dossier(
             ],
         },
         "residual_risk": _residual_risk(report),
+        # Beside residual_risk, never instead of it: the hazard and the measure are two different
+        # statements and a dossier needs both. Present even when nothing was measured.
+        "risk_reduction_measures": _risk_reduction_measures(mitigation),
         "standards_crosswalk": _crosswalk(),
         "referenced_artifacts": _referenced_artifacts(stmt_dict["subject"]),
         "regulatory_clock": stmt_dict["regulatory_clock"],
@@ -527,6 +672,7 @@ def build_dossier(
     commit: str,
     component: ComponentProfile | None = None,
     include_crosswalk: bool = False,
+    mitigation: MitigationReport | None = None,
 ) -> dict[str, Any]:
     """Build the conformity-evidence dossier for ``profile`` (pure — no clock, no random).
 
@@ -537,12 +683,14 @@ def build_dossier(
         commit: the source commit the ruleset came from.
         component: operator-declared identity/intended-use/envelope overlay (Annex I only).
         include_crosswalk: append the EAI ↔ RoboJailBench crosswalk appendix (Annex I only).
+        mitigation: the measured protective measure for this run, or None. Either way the dossier
+            carries a ``risk_reduction_measures`` section — absent would read as covered.
     """
     if profile is CertifyProfile.annex_iii:
-        return _annex_iii_pack(report, issued_at=issued_at, commit=commit)
+        return _annex_iii_pack(report, issued_at=issued_at, commit=commit, mitigation=mitigation)
     return _annex_i_dossier(
         report, issued_at=issued_at, commit=commit, component=component,
-        include_crosswalk=include_crosswalk,
+        include_crosswalk=include_crosswalk, mitigation=mitigation,
     )
 
 
@@ -552,13 +700,18 @@ def to_dossier_json(dossier: dict[str, Any]) -> str:
 
 
 def to_dossier_oscal_json(
-    report: RunReport, *, profile: CertifyProfile, issued_at: str | None = None
+    report: RunReport, *, profile: CertifyProfile, issued_at: str | None = None,
+    mitigation: MitigationReport | None = None,
 ) -> str:
     """The dossier's OSCAL twin — assessment-results bound to the crosswalk clauses under review.
 
     ``issued_at`` becomes each observation's OSCAL ``collected`` timestamp. It is caller-supplied
     (never wall-clock) so the dossier stays byte-reproducible; omitting it falls back to
     :data:`~provael.oscal.UNRECORDED_COLLECTED`, which is flagged in the emitted props.
+
+    ``mitigation`` adds a ``risk-reduction-measures`` entry to the document's top-level props. The
+    verdict word is carried verbatim, for the same reason it is in the JSON and the HTML: an OSCAL
+    consumer that saw only "a measure was applied" would read a null or a rejection as a mitigation.
     """
     doc = to_oscal(
         report,
@@ -566,6 +719,29 @@ def to_dossier_oscal_json(
         reviewed_control_ids=[_slug(key) for key in MACHINERY_CROSSWALK_KEYS],
         collected=issued_at,
     )
+    rrm = _risk_reduction_measures(mitigation)
+    # OSCAL nests the body under "assessment-results"; fall back to the root for any shape that
+    # does not, rather than assuming one and dropping the section silently.
+    inner = doc.get("assessment-results")
+    results: dict[str, Any] = inner if isinstance(inner, dict) else doc
+    props = results.setdefault("props", [])
+    if not isinstance(props, list):  # pragma: no cover - defensive
+        raise TypeError("OSCAL props must be a list")
+    props.append({"name": "risk-reduction-measured", "value": str(rrm["measured"]).lower()})
+    props.append({"name": "risk-reduction-statement", "value": str(rrm["statement"])})
+    if rrm.get("measured"):
+        props.append({"name": "risk-reduction-verdict", "value": str(rrm["verdict"])})
+        props.append({"name": "risk-reduction-defense", "value": str(rrm["defense"])})
+        props.append({"name": "risk-reduction-position", "value": str(rrm["position"])})
+        props.append(
+            {"name": "risk-reduction-transfer-status", "value": str(rrm["transfer_status"])}
+        )
+        props.append(
+            {
+                "name": "risk-reduction-coverage-limitation",
+                "value": str(rrm["coverage_limitation"]["statement"]),
+            }
+        )
     return json.dumps(doc, indent=2, sort_keys=True)
 
 
@@ -736,7 +912,9 @@ def _html_annex_i(dossier: dict[str, Any]) -> str:
         p.append("".join(f"<li>{_esc(x)}</li>" for x in items) or "<li>none</li>")
         p.append("</ul>")
 
-    p.append("<h2>4 · Standards crosswalk</h2>")
+    p.extend(_html_risk_reduction(dossier["risk_reduction_measures"]))
+
+    p.append("<h2>5 · Standards crosswalk</h2>")
     p.append('<p class="sub">Article/annex numbers verified against CELEX 32023R1230 where '
              "marked; unverifiable clauses are flagged "
              '<span class="pending">[pending verification]</span> rather than guessed.</p>')
@@ -749,7 +927,7 @@ def _html_annex_i(dossier: dict[str, Any]) -> str:
                  f"<td>{_esc(c['control_title'])}</td><td>{_esc(c['evidence_item'])}</td></tr>")
     p.append("</tbody></table>")
 
-    p.append("<h2>5 · Referenced artifacts</h2>")
+    p.append("<h2>6 · Referenced artifacts</h2>")
     p.append(f'<p class="sub">{_esc(refs["note"])} '
              f"ML-BOM: <code>{_esc(refs['ml_bom']['file'])}</code>; "
              f"attestation: <code>{_esc(refs['attestation']['file'])}</code>; "
@@ -759,6 +937,69 @@ def _html_annex_i(dossier: dict[str, Any]) -> str:
     p.extend(f"<li>{_esc(d)}</li>" for d in dossier["disclaimers"])
     p.append("</ul></footer></body></html>")
     return "".join(p)
+
+
+def _html_risk_reduction(rrm: dict[str, Any]) -> list[str]:
+    """Section 4 — the protective measure and its measured effect.
+
+    Rendered whether or not anything was measured. The verdict word is printed verbatim: a
+    ``not-credited`` or ``rejected-benign-cost`` result must be as legible here as a credited one,
+    because this is the page an assessor reads.
+    """
+    p: list[str] = ["<h2>4 · Risk-reduction measures (protective measure &amp; validation)</h2>"]
+    if not rrm.get("measured"):
+        p.append(f'<p class="stub">{_esc(rrm["statement"])}</p>')
+        return p
+
+    verdict = str(rrm["verdict"])
+    # Anything that is not `credited` is flagged, so a reader skimming cannot mistake a null or a
+    # rejection for a mitigation.
+    cls = "sub" if rrm.get("verdict_is_credited") else "stub"
+    p.append(
+        f'<p class="{cls}"><b>Verdict: {_esc(verdict)}</b> &middot; measure '
+        f'<code>{_esc(rrm["defense"])}</code> &middot; kind {_esc(rrm["kind"])} &middot; '
+        f'position <code>{_esc(rrm["position"])}</code> &middot; transfer status '
+        f'<code>{_esc(rrm["transfer_status"])}</code></p>'
+    )
+    p.append(f'<p class="{cls}">{_esc(rrm["statement"])}</p>')
+    p.append(f'<p class="sub">Acceptance gate: {_esc(rrm["acceptance_gate"])}</p>')
+
+    p.append("<table><thead><tr><th>Family</th><th>Pre ASR</th><th>Pre 95% CI</th>")
+    p.append("<th>Post ASR</th><th>Post 95% CI</th><th>Credited</th></tr></thead><tbody>")
+    for row in rrm["per_family"]:
+        p.append(
+            f"<tr><td>{_esc(row['family'])}</td><td>{_pct_cell(row['pre_asr'])}</td>"
+            f"<td>{_ci_cell(row['pre_ci95'])}</td><td>{_pct_cell(row['post_asr'])}</td>"
+            f"<td>{_ci_cell(row['post_ci95'])}</td>"
+            f"<td>{'yes' if row['credited'] else 'no'}</td></tr>"
+        )
+    p.append("</tbody></table>")
+
+    bc = rrm["benign_control"]
+    p.append(
+        f'<p class="sub">Benign control: FPR {_pct_cell(bc["pre_benign_fpr"])} &rarr; '
+        f'{_pct_cell(bc["post_benign_fpr"])} '
+        f'({"ok" if bc["benign_fpr_ok"] else "ROSE — hard fail"}); clean-task success '
+        f'{_pct_cell(bc["pre_clean_task_success"])} &rarr; '
+        f'{_pct_cell(bc["post_clean_task_success"])}.</p>'
+    )
+    p.append(
+        f'<p class="sub">Re-derive the comparison: undefended run digest '
+        f'<code>{_esc(rrm["undefended_report_digest"])}</code>, defended '
+        f'<code>{_esc(rrm["defended_report_digest"])}</code>.</p>'
+    )
+    cov = rrm["coverage_limitation"]
+    p.append(f'<h3>Coverage limitation</h3><p class="stub">{_esc(cov["statement"])}</p>')
+    return p
+
+
+def _pct_cell(value: float | None) -> str:
+    """A rate as a percentage, or ``N/A``. N/A is not 0 and must not render as one."""
+    return "N/A" if value is None else f"{100 * float(value):.1f}%"
+
+
+def _ci_cell(ci: list[float] | None) -> str:
+    return "N/A" if not ci else f"[{round(100 * ci[0])}-{round(100 * ci[1])}%]"
 
 
 def to_dossier_html(dossier: dict[str, Any]) -> str:
@@ -781,18 +1022,21 @@ def write_dossier(
     commit: str,
     component: ComponentProfile | None = None,
     include_crosswalk: bool = False,
+    mitigation: MitigationReport | None = None,
 ) -> dict[str, Path]:
     """Write the dossier bundle (JSON + OSCAL + HTML) into ``out_dir``; return the paths."""
     out_dir.mkdir(parents=True, exist_ok=True)
     dossier = build_dossier(
         report, profile=profile, issued_at=issued_at, commit=commit, component=component,
-        include_crosswalk=include_crosswalk,
+        include_crosswalk=include_crosswalk, mitigation=mitigation,
     )
     json_path = out_dir / CERTIFY_JSON
     json_path.write_text(to_dossier_json(dossier) + "\n", encoding="utf-8")
     oscal_path = out_dir / CERTIFY_OSCAL_JSON
     oscal_path.write_text(
-        to_dossier_oscal_json(report, profile=profile, issued_at=issued_at) + "\n", encoding="utf-8"
+        to_dossier_oscal_json(report, profile=profile, issued_at=issued_at, mitigation=mitigation)
+        + "\n",
+        encoding="utf-8",
     )
     html_path = out_dir / CERTIFY_HTML
     html_path.write_text(to_dossier_html(dossier), encoding="utf-8")

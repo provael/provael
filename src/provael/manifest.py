@@ -32,16 +32,27 @@ EVIDENCE_MANIFEST_FORMAT = "provael-evidence-manifest/v1"
 
 
 def _registry_counts() -> dict[str, int]:
+    # Imported here rather than at module scope, matching the existing deferral for FAMILIES.
     from provael.attacks.registry import FAMILIES
+    from provael.defenses.registry import DEFENSES, make_defense
 
     baseline = len(FAMILIES.get(BASELINE_FAMILY, []))
     total = sum(len(names) for names in FAMILIES.values())
+    # Defense counts, DERIVED so they cannot drift from the code. `defenses_measured` reads each
+    # Defense.study — the same class attribute `provael list-defenses` uses for its status column —
+    # so a defense registered without a published study raises the total and NOT the measured
+    # count. The manifest is what a buyer reads; now that the tool files a measured mitigation as
+    # conformity evidence, a manifest that could not say how many mitigations exist, or how many are
+    # actually measured, was materially incomplete.
+    measured = sum(1 for name in DEFENSES if make_defense(name).study)
     return {
         "families_total": len(FAMILIES),
         "families_adversarial": len(FAMILIES) - (1 if baseline else 0),
         "attacks_total": total,
         "attacks_adversarial": total - baseline,
         "attacks_baseline": baseline,
+        "defenses_total": len(DEFENSES),
+        "defenses_measured": measured,
     }
 
 
