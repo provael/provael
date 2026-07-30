@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.29.0] — 2026-07-31
+
 ### The prior-art finding
 
 `PRIOR_ART.md` cited seven papers and was missing the one that most constrains what this project

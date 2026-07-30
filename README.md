@@ -79,7 +79,7 @@ position and `provael mitigation` reports pre/post ASR per family with 95% Wilso
 benign-FPR control and a benign-task-success acceptance gate. Measuring a defense is in the **free**
 tool, not behind the operated tier: a mitigation you cannot measure is a marketing claim.
 
-**Two defenses ship (0.28.0), both `stub-validated-scaffolding` — no real-model transfer is claimed
+**Two defenses ship (0.29.0), both `stub-validated-scaffolding` — no real-model transfer is claimed
 for either.** `instruction_canonicalization` acts on the instruction; `action_envelope` acts on the
 commanded action. The action side exists because four of the six `docs/DEFENSES.md` taxonomy rows act
 on what leaves the policy, and until `Defense.filter_action` those four were not merely unmeasured
@@ -348,7 +348,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.28.0
+      - uses: provael/provael@v0.29.0
         with:
           # `none` is the benign control: without it an ASR has no false-positive baseline,
           # and the release gate cannot reach `pass`. It never moves the adversarial ASR.
