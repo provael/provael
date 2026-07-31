@@ -226,8 +226,9 @@ carry to the next. Three failure sub-modes (BadRobot, ICLR 2025):
   or a person). Nothing looks unsafe at the language layer; the harm is in the world model.
 - **Instruction jailbreak → action** — the [EAI01](#eai01--policy--instruction-jailbreak-direct-command-channel)
   channel, viewed as the language→action leg of the same misalignment.
-**Evidence.** *[research]* **BadRobot** (ICLR 2025) names cross-domain safety misalignment — including the
-world-knowledge failure mode — as a core embodied surface: safe language, unsafe action.
+**Evidence.** *[research]* **BadRobot** (ICLR 2025, arXiv 2407.20242) names cross-domain safety
+misalignment — including the world-knowledge failure mode — as a core embodied surface: safe
+language, unsafe action.
 **Why it matters.** Teams that bolt an LLM-style refusal filter onto a robot get false confidence — a
 benign-looking, "safely-reasoned" instruction can still drive a dangerous action.
 **Attack shipped (Provael):** the `misalignment` family (`benign_urgency_override` + `euphemistic_reroute`)
@@ -268,8 +269,11 @@ treat the robot as hostile-internet-exposed CPS.
 **What.** Weak or missing authentication/authorization on robot control surfaces (open ROS graphs,
 unauthenticated APIs, static credentials) **and** over-broad agent autonomy — a policy permitted to take
 high-consequence physical actions without scoping, approval, or least-privilege.
-**Evidence.** *[incident]* unauthenticated ROS/DDS and static-credential findings across commercial robots;
-*[framework]* OWASP elevates both as first-class (ASI03, LLM06).
+**Evidence.** *[incident]* unauthenticated ROS/DDS exposure and static-credential findings across
+commercial robots — **Cybersecurity AI: Hacking Consumer Robots in the AI Era** (arXiv 2603.08665)
+pivoted one device's static credentials into fleet-wide reach over 267+ connected robots;
+*[framework]* OWASP elevates both as first-class (ASI03; LLM06 "Excessive Agency",
+<https://genai.owasp.org/llm-top-10/>).
 **Why it matters.** The difference between "an attack reaches the policy" and "an attack reaches the
 actuators" is access control — and an over-empowered agent turns a small compromise into a large one.
 **Attack shipped (Provael):** the `authorization` family (`self_authorize_bypass` + `scope_escalation`)
@@ -291,9 +295,12 @@ query-based extraction, model inversion, membership inference) — which also *e
 attacks; and (b) **the robot as a persistent surveillance device** — covert or designed-in harvesting of
 its rich multimodal stream (video, audio, LiDAR, maps), affecting operators and bystanders.
 **Evidence.** *[incident]* the **Unitree G1 streaming telemetry to servers in China** ~every 5 minutes
-without notification (arXiv 2509.14096), cited at the U.S. Senate. *[research]* model extraction/inversion
-of learned policies (DRL policy stealing; SoK on foundation-model-powered robots, arXiv 2606.16788). NIST
-makes confidentiality/privacy one of its three core attack goals.
+without notification (arXiv 2509.14096), cited in testimony to the **U.S. Senate** Commerce
+Subcommittee on Science, Manufacturing, and Competitiveness — "Less Hype, More Help: AI That Improves
+Safety, Productivity, and Care", 3 Mar 2026, written testimony of D. Shelton (Agility Robotics).
+*[research]* model extraction/inversion of learned policies (DRL policy stealing, arXiv 2006.05032;
+SoK on foundation-model-powered robots, arXiv 2606.16788). NIST makes confidentiality/privacy one of
+its three core attack goals.
 **Why it matters.** A stolen policy is permanent leverage; a robot's data stream is among the most
 sensitive that exists (inside homes, factories, secure sites) — and bystanders never consented.
 **Attack shipped (Provael):** the `confidentiality` family (`membership_inference` + `model_extraction`)
@@ -315,9 +322,10 @@ weights; minimize + disclose telemetry; on-device processing; data-residency con
 ## EAI10 — Insufficient evaluation, observability & incident response
 **What.** The meta-risk: no standardized real-world safety eval, no logging/telemetry to *detect* an
 attack, no policy rollback, no incident process — so the other nine go undetected and unmanaged.
-**Evidence.** *[emerging]* a16z's "The Physical AI Deployment Gap": *"the robotics equivalent of DevOps
-practices doesn't exist yet"* — missing observability, failure-mode testing, behavioral characterization.
-No agreed embodied-AI incident-reporting framework exists.
+**Evidence.** *[emerging]* a16z's "The Physical AI Deployment Gap" (Oliver Hsu, 13 Jan 2026,
+<https://www.a16z.news/p/the-physical-ai-deployment-gap>): *"the robotics equivalent of DevOps
+practices doesn't exist yet"* — missing observability, failure-mode testing, behavioral
+characterization. No agreed embodied-AI incident-reporting framework exists.
 **Why it matters.** You cannot defend, detect, or recover from what you cannot measure or see — weak ops
 turns one compromise into an undetected, unbounded one.
 **Mitigations.** Pre-deploy red-team + ASR scorecard (with n, CIs, clean baseline); runtime observability
