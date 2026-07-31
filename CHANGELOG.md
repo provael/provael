@@ -6,6 +6,48 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Citations a reader can resolve
+
+An independent audit fact-checked this repo's citation corpus in July 2026 and came back clean on
+almost all of it — roughly fifteen papers and four CVEs, real and correctly attributed, zero
+fabricated or transposed identifiers, including every 2026-dated arXiv ID. It flagged exactly two
+citations as unverifiable and advised "verify or soften both before any deck": EAI09's *"cited at
+the U.S. Senate"* (it found only a *House* committee reference and concluded the chamber was wrong)
+and EAI10's a16z *"The Physical AI Deployment Gap"* ("no independent trace found").
+
+Both claims are true. The Senate citation is written testimony to the Commerce Subcommittee on
+Science, Manufacturing & Competitiveness, hearing of 3 Mar 2026, hosted on commerce.senate.gov — a
+*different, also-real* event from the House hearing the audit surfaced. The a16z piece is by Oliver
+Hsu, published 13 Jan 2026, and the quoted sentence is verbatim.
+
+The audit being wrong twice is the finding, because of *why* it was wrong. Every citation it
+confirmed carried an arXiv ID or a CVE number; the two it failed on carried neither. A named
+document with no identifier is not a weaker citation, it is an **unresolvable** one — and a
+diligent reader who cannot resolve a citation records "probably made up", not "unverified", and
+then discounts the ninety that were fine. That is this project's own thesis pointed back at its own
+documentation: a defence is a number you can re-derive, not a press release.
+
+### Added
+
+- **`tests/test_citations_resolvable.py`** — every tagged evidence segment in `docs/TOP10.md` must
+  carry at least one globally resolvable identifier (arXiv ID, CVE number, or URL). It deliberately
+  does **not** dereference them: CI here is hermetic and offline, so the invariant is "a reader can
+  check this", not "this checked out today". A vacuity guard asserts the parser's own yield against
+  the ten `## EAIxx` headings — a citation rule that silently matches nothing is worse than no rule
+  — and a regression pin holds the specific attribution detail on the two claims that were read as
+  fabrications once already.
+
+### Fixed
+
+- **EAI09** now names the chamber, subcommittee, hearing title and date for the Unitree G1 Senate
+  citation, and pins "DRL policy stealing" to arXiv 2006.05032.
+- **EAI10** now names the a16z piece's author, date and URL.
+- **EAI08** now cites arXiv 2603.08665 for the static-credential fleet finding (one device's
+  credentials to 267+ connected robots) and links the OWASP LLM Top 10 behind `ASI03`/`LLM06`.
+- **EAI06** now carries BadRobot's arXiv ID (2407.20242) — cited at EAI01 but not here.
+
+No attack, scorer, evidence format or measured number changed.
+
 ## [0.29.1] — 2026-07-31
 
 A correctness release about **what the project says about itself**. No attack, scorer or evidence
