@@ -8,7 +8,7 @@ Every "proven" red-team tool scores LLM/agent *text I/O*. Provael measures the *
 
 ```bash
 pip install provael
-provael attack --recipe full-sweep        # all 14 adversarial families (suite-inapplicable ones are skipped)
+provael attack --recipe full-sweep        # all 15 adversarial families (suite-inapplicable ones are skipped)
 ```
 
 [Quickstart](quickstart.md){ .md-button .md-button--primary }

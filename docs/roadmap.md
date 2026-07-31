@@ -4,11 +4,15 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
 
 ## Shipped
 
-- **Attacks:** 14 adversarial families + a `none` benign control, mapped
+- **Attacks:** 15 adversarial families + a `none` benign control, mapped
   to the [Embodied AI Security Top 10](TOP10.md).
 - **Policies:** `stub` (CPU); `smolvla`, `pi0`, `pi05`, `pi0fast`, `groot` (LeRobot); `openvla`
-  (HF transformers). Bring-your-own via the `PolicyAdapter` ABC.
-- **Suites:** `stub` (scalar, CPU), `reach` (spatial, CPU), `libero` + `metaworld` (gated).
+  (HF transformers); `openpi` (websocket client to a π0 policy *server*). Bring-your-own via the
+  `PolicyAdapter` ABC. **`groot`, `openvla` and `openpi` are registered scaffolding** — no
+  checkpoint has been loaded through any of them here, and `provael list-policies` says so per
+  backend. Only `smolvla` has produced a committed real-model result.
+- **Suites:** `stub` (scalar, CPU), `reach` (spatial, CPU), `humanoid` (whole-body, CPU),
+  `libero` + `metaworld` (real simulators, gated). `provael list-suites` marks which is which.
 - **Evidence:** SARIF, compliance crosswalk, pre-deployment scorecard, OSCAL export, AVID export.
 - **Reproductions:** FreezeVLA, OpenVLA-patch, BadVLA, RoboPAIR.
 - **Integrations:** promptfoo provider; garak/PyRIT reference plugins; multi-CI (GitHub/GitLab/

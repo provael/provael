@@ -6,6 +6,102 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.29.1] — 2026-07-31
+
+A correctness release about **what the project says about itself**. No attack, scorer or evidence
+format changed, and no measured number moved. Three claims were wrong or invisible; all three were
+the kind a reader can check in under a minute, which is the kind that costs the most when wrong.
+
+### The counted-claim drift
+
+0.29.0 registered `universal_patch` and its own CHANGELOG entry said "15 adversarial families (was
+14)". `README.md`, `SAFETY.md` and `docs/roadmap.md` shipped that release still saying **fourteen**.
+`tests/test_recipes.py` already asserted that `full-sweep` covers every registry family — what no
+test could see was that the prose *describing* that sweep had fallen a family behind.
+
+The count is now derived from `ATTACKS` and checked against every restatement of it by
+**`tests/test_counted_claims.py`**, which fails with both numbers and names the file. It runs two
+independent checks: enumerated patterns pinned to exact sentences (so a *reworded* claim fails
+loudly rather than silently ceasing to be checked), and a tree-wide sweep that catches a stale
+count in a file nobody remembered to enumerate. Historical statements are exempt by design —
+`CHANGELOG.md` describes each release as it shipped, and `docs/studies/action-envelope.md` reports
+a study measured on 0.28.0 over the fourteen families that existed then; forcing either to today's
+number would attribute a measurement to a registry that never produced it.
+
+### Fixed
+
+- **Family count corrected to 15** in `README.md` (two places), `SAFETY.md`, `docs/roadmap.md`,
+  `docs/index.md` and a `certify.py` comment. `docs/quickstart.md` also said "28 attacks across 15
+  families (14 adversarial)"; the registry holds **29 attacks across 16 families, 15 adversarial**.
+- **`SAFETY.md` mis-partitioned the registry.** It split families into "eleven templated" and "the
+  remaining three" non-templated searches — but `universal_patch` is a query-budgeted search, so
+  the second group is **four**. A safety document that under-counts its own non-templated attacks
+  is wrong in the direction that matters.
+- **`docs/roadmap.md` omitted `openpi`** from its policy list, which therefore showed seven of the
+  eight registered backends. Added, with the scaffolding caveat `groot` and `openvla` carry.
+- **`README.md` named only `groot` as scaffolding.** `openvla` and `openpi` are equally
+  scaffolding — registered and structurally tested, never given a checkpoint.
+
+### Added
+
+- **`provael list-suites`** — a command that did not exist. It marks `stub`, `reach` and `humanoid`
+  as **CPU fixtures** and `libero` / `metaworld` as **real simulators**, deriving the split from
+  `SuiteAdapter.is_fixture` (which the suite classes declare) rather than a hand-kept list, so a
+  new fixture cannot inherit a "real simulator" label by omission.
+- **A `status` column on `provael list-policies`**, reading `measured` / `CPU fixture` /
+  `scaffolding — no checkpoint ever run` / `no run committed here`. The table already carried
+  scaffolding notes, but its only status-like column was **"ready here"** — an *import* check. On a
+  CPU box every non-stub backend renders `no`, so the one backend that has produced a real result
+  looked exactly like the three that have never loaded a checkpoint.
+
+  The categories are four, not the two an obvious reading suggests: `pi0`/`pi05`/`pi0fast` are
+  genuinely provisioned by `provael[lerobot]` (unlike `groot`) yet have no committed run, so
+  calling them scaffolding understates them and calling them measured overstates them.
+  `MEASURED_POLICIES` is a **declared constant, never a filesystem probe** — `list-defenses` shipped
+  that bug in 0.26.0 by looking for `docs/studies/<name>.md`, which resolves in a git checkout and
+  not in an installed wheel; `results/` is not packaged either, and a probe that fails *toward*
+  "measured" ships a false claim.
+
+### Changed — the public leaderboard took **PATH B** (stamp the staleness), not PATH A (re-run)
+
+The published board reports `measured_with: ["0.1.0"]` — 28 releases behind — covering 1 policy and
+3 of 15 adversarial families, and it is Ed25519-signed, so the signature lends currency to stale
+data.
+
+**Re-running was not possible here and was not faked.** A re-run needs `lerobot` + LIBERO on a GPU;
+this environment is macOS arm64 with no `torch`, no `lerobot` and no CUDA. A partial or simulated
+substitute would have been worse than the staleness, so the numbers are untouched and the staleness
+is now stated where a reader meets it:
+
+- **`leaderboard/app.py` renders a staleness-and-coverage banner above the tables** — measured-with
+  vs current release, policy/suite coverage, `3 of 15 adversarial families`, and
+  **`12 families have no real-model measurement at all`** with the explicit warning that absent is
+  not 0%. Every figure is computed from the loaded board and its rows, so the banner cannot drift
+  from what it describes.
+- **`measured_with` joins `generated_at`** in the provenance footer. The two are routinely
+  different and only one of them is about the numbers.
+- **The competence control is stated on the page**: that run predates `clean_task_success_rate`, so
+  the board has a benign false-positive control (0%) but no measured benign task-completion rate.
+- **`docs/leaderboard.md` and `README.md`** carry the same four limits.
+
+**`results/smolvla_libero_object/report.json` was deliberately left byte-identical.** Its own
+README already discloses the missing control in full ("predates the clean-task-success control …
+We do **not** back-fill an invented value"). A free-text note cannot go in the report — `RunReport`
+is `extra="forbid"` — and adding an explicit `"clean_task_success_rate": null` is **provably
+information-free**: the canonical digest is taken over the *model dump*, where the field already
+defaults to `null`, so the digest is unchanged (verified: `280401608e5f58…`, matching
+`evidence-manifest.source_report_sha256`, `execution-manifest.report_digest` and the board's
+`inputs_digest`), and `jq` returns `null` for an absent key regardless. Editing a file whose README
+calls it "the **canonical, unedited** artifact" for zero information gain is a worse trade than
+leaving it exactly as measured.
+
+### Note
+
+`leaderboard/app.py` hardcodes `TOTAL_ADVERSARIAL_FAMILIES` and `CURRENT_RELEASE` because the
+Hugging Face Space installs no `provael` (viewing renders committed JSON). Both are pinned to the
+live registry and to `__version__` by `tests/test_counted_claims.py`, so the release that forgets
+them fails its own gate.
+
 ## [0.29.0] — 2026-07-31
 
 ### The prior-art finding

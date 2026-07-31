@@ -2,7 +2,9 @@
 
 Commands:
   * ``attack``         — run a red-team evaluation and write a report.
-  * ``list-policies``  — show registered policies and whether they're runnable here.
+  * ``list-policies``  — show registered policies, whether they're runnable here, and whether a
+    real checkpoint has ever been run through them (measured vs. scaffolding).
+  * ``list-suites``    — show registered suites, marking CPU fixtures apart from real simulators.
   * ``list-attacks``   — show registered attacks and families.
   * ``report``         — print a previously written report.
   * ``transfer-test``  — per-family rate + 95% Wilson CI + benign control + transfer-status.
@@ -98,10 +100,16 @@ from provael.mlbom import ML_BOM_JSON, to_ml_bom_json, write_ml_bom
 from provael.oscal import OSCAL_JSON, to_oscal_json, write_oscal
 from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
 from provael.policies.registry import (
+    MEASURED_POLICIES,
+    STATUS_FIXTURE,
+    STATUS_MEASURED,
+    STATUS_SCAFFOLDING,
+    STATUS_UNRUN,
     available_policies,
     policy_extra,
     policy_is_ready,
     policy_scaffolding_note,
+    policy_status,
 )
 from provael.recipes import RECIPES, available_recipes, load_recipe
 from provael.regression import (
@@ -129,6 +137,7 @@ from provael.studies.cross_arch import (
     write_eai04_study,
     write_study,
 )
+from provael.suites import KIND_FIXTURE, available_suites, suite_is_ready, suite_kind
 from provael.types import ComponentProfile, RunReport, TransferTest
 
 
@@ -395,12 +404,27 @@ def crosswalk_cmd(
         print(payload)
 
 
+#: How each status renders. Colour carries the warning a skim-reader takes from the table: only a
+#: measured backend is green, because only a measured backend has ever produced a real number.
+_POLICY_STATUS_STYLE = {
+    STATUS_MEASURED: "green",
+    STATUS_FIXTURE: "cyan",
+    STATUS_SCAFFOLDING: "red",
+    STATUS_UNRUN: "yellow",
+}
+
+
 @app.command("list-policies")
 def list_policies() -> None:
-    """List registered policies and whether they can run in this environment."""
+    """List registered policies, whether they can run here, and whether they have ever been run."""
     table = Table(title="Policies")
     table.add_column("name", style="cyan", no_wrap=True)
     table.add_column("ready here", justify="center")
+    # "Ready" answers "does the dependency import", which is a strictly weaker claim than "this has
+    # produced a real number". Without this column all seven non-stub backends render identically,
+    # and someone shopping for a `--policy` value cannot tell the one measured backend from the
+    # three that have never loaded a checkpoint. An ASR from the latter measures scaffolding.
+    table.add_column("status", no_wrap=True)
     table.add_column("notes")
     for name in available_policies():
         extra = policy_extra(name)
@@ -411,11 +435,55 @@ def list_policies() -> None:
         scaffolding = policy_scaffolding_note(name)
         if scaffolding is not None:
             mark = "[yellow]no[/yellow]"
-            note = f"{note} — {escape(scaffolding)}"
+            # The `status` column already says "scaffolding"; repeating the word here only steals
+            # width from the part a reader needs, which is *why* this one is scaffolding.
+            why = scaffolding.removeprefix("scaffolding: ")
+            note = f"{note} — {escape(why)}"
         else:
             mark = "[green]yes[/green]" if policy_is_ready(name) else "[yellow]no[/yellow]"
-        table.add_row(name, mark, note)
+        status = policy_status(name)
+        evidence = MEASURED_POLICIES.get(name)
+        if evidence is not None:
+            note = f"{note} — {escape(evidence)}"
+        table.add_row(
+            name, mark, f"[{_POLICY_STATUS_STYLE[status]}]{status}[/]", note
+        )
     _out.print(table)
+    _out.print(
+        "[dim]`ready here` = the dependency imports. `status` = whether a real checkpoint has ever "
+        "been run and committed. They are different questions.[/dim]"
+    )
+
+
+@app.command("list-suites")
+def list_suites() -> None:
+    """List registered suites, marking CPU fixtures apart from real simulators."""
+    table = Table(title="Suites")
+    table.add_column("name", style="cyan", no_wrap=True)
+    table.add_column("ready here", justify="center")
+    table.add_column("kind", no_wrap=True)
+    table.add_column("notes")
+    for name in available_suites():
+        kind = suite_kind(name)
+        fixture = kind == KIND_FIXTURE
+        # A fixture is deterministic arithmetic: it embodies nothing, so a rate measured on it is
+        # scaffolding regardless of which policy drove it (see evidence.classify_run, which refuses
+        # to label such a run `real-episode`). Saying so here is cheaper than discovering it after
+        # a number has been quoted.
+        note = (
+            "deterministic, in-process; no physics — never a real-episode measurement"
+            if fixture
+            else escape("requires `provael[lerobot]` and a real simulator")
+        )
+        mark = "[green]yes[/green]" if suite_is_ready(name) else "[yellow]no[/yellow]"
+        table.add_row(
+            name, mark, f"[{'cyan' if fixture else 'green'}]{kind}[/]", note
+        )
+    _out.print(table)
+    _out.print(
+        "[dim]A CPU fixture is reproducible scaffolding, not evidence about a robot. Only a real "
+        "simulator produces a `real-episode` run.[/dim]"
+    )
 
 
 @app.command("list-attacks")

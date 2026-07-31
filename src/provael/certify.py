@@ -358,7 +358,7 @@ def _residual_risk(report: RunReport) -> dict[str, Any]:
     # Each skipped family carries WHY it was skipped. Without the reason a reader cannot tell a
     # family that is structurally inapplicable to this suite from one that silently produced
     # nothing — and the second reads like a defect in the run. `full-sweep` now requests all
-    # fourteen families, so on any single suite several are legitimately skipped and this list is
+    # fifteen families, so on any single suite several are legitimately skipped and this list is
     # the normal case, not an exception.
     not_applicable_reasons = [
         {
