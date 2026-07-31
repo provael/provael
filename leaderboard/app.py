@@ -28,6 +28,21 @@ RESULTS_DIR = Path(__file__).parent / "results"
 #: The requests dataset a submission opens a PR against (Open-LLM-Leaderboard pattern).
 REQUESTS_REPO = "provael-submissions/requests"
 
+#: Adversarial families in the `provael` registry (excluding the benign `baseline` control) — the
+#: denominator of the coverage line below.
+#:
+#: Hardcoded because this Space deliberately installs **no** `provael` (see requirements.txt:
+#: viewing renders committed JSON and needs no package), so it cannot import the registry to count
+#: them. A hardcoded count is a claim, and claims here drift: the repo shipped a release with three
+#: documents still saying "fourteen" after this number became 15. `tests/test_counted_claims.py`
+#: therefore checks this constant against the live registry and fails the build if they disagree.
+TOTAL_ADVERSARIAL_FAMILIES = 15
+
+#: The release this Space was published from — the "you are here" against which `measured_with`
+#: reads as stale. Checked against `provael.__version__` by `tests/test_counted_claims.py` for the
+#: same reason as above: an unguarded version string in an uninstalled Space rots invisibly.
+CURRENT_RELEASE = "0.29.1"
+
 #: Policies considered open-source (weights available) — drives the RoboArena-style split.
 OPEN_SOURCE_POLICIES = frozenset(
     {"stub", "smolvla", "pi0", "pi05", "pi0fast", "groot", "openvla"}
@@ -56,11 +71,58 @@ def _load_results() -> tuple[list[dict], list[dict], bool, list[dict]]:
                 "generated_at": data.get("generated_at"),
                 "commit": data.get("commit"),
                 "inputs_digest": data.get("inputs_digest"),
+                "measured_with": data.get("measured_with") or [],
                 "signed": data.get("signature") is not None,
             })
     rows.sort(key=lambda r: (-r["asr"], r["policy"], r["suite"], r["family"]))
     ordered_examples = sorted(examples.values(), key=lambda e: (e["family"], e["attack"]))
     return rows, ordered_examples, not real_seen, provenance
+
+
+def _coverage_banner(rows: list[dict], provenance: list[dict]) -> str:
+    """State what this board measured, with what, and — the part that rots silently — how long ago.
+
+    A board is rebuilt by re-aggregating committed report files, so `generated_at` moves to today
+    while the numbers stay exactly as old as they were. Schema v3 records `measured_with` for that
+    reason, but it lived only inside the JSON: the rendered page showed a fresh build date over
+    numbers measured 28 releases earlier, and a signature underneath. A signature over stale data
+    is worse than no signature, because it reads as currency.
+
+    Everything here is computed from the loaded board rather than written into prose, so the
+    statement cannot drift from the rows it describes. The one exception is
+    :data:`TOTAL_ADVERSARIAL_FAMILIES`, which the repo's test suite pins to the live registry.
+    """
+    measured_with = sorted({v for p in provenance for v in p["measured_with"]})
+    policies = sorted({r["policy"] for r in rows})
+    suites = sorted({r["suite"] for r in rows})
+    # The benign control is not an adversarial family; counting it as coverage would inflate the
+    # numerator with the one arm that is definitionally not an attack.
+    covered = sorted({r["family"] for r in rows if r["family"] != "baseline"})
+    missing = TOTAL_ADVERSARIAL_FAMILIES - len(covered)
+
+    if not measured_with:
+        return ""
+    stale = CURRENT_RELEASE not in measured_with
+    versions = ", ".join(f"`{v}`" for v in measured_with)
+    lines = [
+        f"> {'⚠️ **Stale measurement.**' if stale else '**Measurement provenance.**'} "
+        f"The rows below were measured with **provael {versions}**"
+        + (f", not the current release (`{CURRENT_RELEASE}`). " if stale else ". ")
+        + "Rebuilding a board re-stamps its date and commit but **never re-runs a policy**, so "
+        "the build stamp below is newer than the numbers.",
+        "",
+        f"> **Coverage.** {len(policies)} policy ({', '.join(policies)}) on "
+        f"{len(suites)} suite ({', '.join(suites)}); **{len(covered)} of "
+        f"{TOTAL_ADVERSARIAL_FAMILIES} adversarial families** measured "
+        f"({', '.join(covered)}). **{missing} families have no real-model measurement at all** — "
+        "they are absent from this board, which is not the same as scoring 0%.",
+        "",
+        "> **No clean-task-success control.** The underlying SmolVLA × LIBERO run predates the "
+        "competence control, so `clean_task_success_rate` is unrecorded: these rates are read "
+        "against a 0% benign false-positive control, but not against a measured demonstration "
+        "that the policy completes its benign task unattacked. Not back-filled.",
+    ]
+    return "\n".join(lines)
 
 
 def _ci(row: dict) -> str:
@@ -146,9 +208,13 @@ def _provenance_md(provenance: list[dict]) -> str:
     for p in provenance:
         digest = (p.get("inputs_digest") or "")[:16]
         signed = " · signed" if p.get("signed") else ""
+        # `measured_with` belongs next to `generated_at`, because the two are routinely different
+        # and only one of them is about the numbers.
+        measured = ", ".join(p.get("measured_with") or []) or "n/a"
         lines.append(
             f"- `{p['file']}` — built {p.get('generated_at') or 'n/a'} from commit "
-            f"`{p.get('commit') or 'n/a'}`, inputs `sha256:{digest}…`{signed}"
+            f"`{p.get('commit') or 'n/a'}`, **measured with provael {measured}**, "
+            f"inputs `sha256:{digest}…`{signed}"
         )
     return "\n".join(lines)
 
@@ -160,6 +226,11 @@ def build_demo() -> gr.Blocks:
         gr.Markdown(_INTRO)
         gr.Markdown(_DEMO_BANNER if is_demo else _REAL_BANNER)
         if not is_demo:
+            # Above the tables, not below them: a reader who takes one number away should have
+            # passed the sentence saying how old it is on the way to it.
+            coverage = _coverage_banner(rows, provenance)
+            if coverage:
+                gr.Markdown(coverage)
             gr.Markdown(_TRANSFER_NOTE)
         with gr.Tabs():
             with gr.Tab("All policies"):

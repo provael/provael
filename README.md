@@ -59,7 +59,7 @@ CI, a benign false-positive control, a clean-task-success (competence) control, 
 
 > **New here?** Run it in your browser in 5 minutes — [open the Colab notebook](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb) — or browse the [examples gallery](examples/) and the built-in `provael list-recipes`.
 
-It ships **fourteen adversarial families of auditable attacks** — `instruction` (text
+It ships **fifteen adversarial families of auditable attacks** — `instruction` (text
 reframings), `visual` (observation-space markers), `sensor_spoof` (EAI02: a sim
 perception spoof driving the end-effector into a keep-out zone), `injection` (indirect /
 embodied prompt injection), `action` (action-space integrity: freeze / trajectory
@@ -70,10 +70,12 @@ hijack), `action_space` (EAI04 2nd vector: keep-out hijack of the *commanded end
 extraction), `misalignment` (EAI06: the embodiment gap — a benign-sounding instruction
 driving an unsafe embodied action into a keep-out zone), and **`humanoid`** (whole-body /
 locomotion — a balance spoof → loss of balance, a whole-body hijack → topple, a freeze mid-stride)
-— plus three **optimized** search families: **`optimized`**
+— plus four **optimized** search families: **`optimized`**
 (`targeted_hijack`: a black-box, query-budgeted *search*), **`optimized_patch`** (the image-channel
-analogue, GPU-gated and inert on CPU suites) and **`optimized_instruction`** (`targeted_redirect`,
-a command-preserving instruction search) — a `none` benign control, and an ASR
+analogue, GPU-gated and inert on CPU suites), **`optimized_instruction`** (`targeted_redirect`,
+a command-preserving instruction search) and **`universal_patch`** (one patch fit **once** and
+carried unchanged to episodes it never queried — GPU-gated, transfer rate unmeasured) — a `none`
+benign control, and an ASR
 **leaderboard**, and **measured defenses**: `--defense` installs a mitigation in the deployment
 position and `provael mitigation` reports pre/post ASR per family with 95% Wilson intervals, a
 benign-FPR control and a benign-task-success acceptance gate. Measuring a defense is in the **free**
@@ -86,14 +88,14 @@ on what leaves the policy, and until `Defense.filter_action` those four were not
 but **unimplementable** — the taxonomy was a spec its own interface could not satisfy. The
 action-envelope study is `credited` on `stub` and `reach` and **`not-credited` on `humanoid`**, and
 its headline is the coverage map: a magnitude cap cannot restore a frozen action and does not reach
-successes routing through a decoupled flag ([study](docs/studies/action-envelope.md)). `--recipe full-sweep` runs every one of the fourteen; families the chosen suite
+successes routing through a decoupled flag ([study](docs/studies/action-envelope.md)). `--recipe full-sweep` runs every one of the fifteen; families the chosen suite
 cannot support are skipped and reported N/A, never scored 0%. Every family carries its transfer-test (rate + 95% Wilson CI + benign-FPR
 control); run `provael transfer-test` to print it. The `action`, `action_space`, `sensor_spoof`,
 `backdoor`, `authorization`, `misalignment`, `confidentiality`, and `humanoid` families are
 **stub-validated only** (no real-model transfer claimed). It red-teams **8 policies** — the CPU `stub`
 plus real **SmolVLA / π0 / π0.5 / π0-FAST** (via the `[lerobot]` extra), **OpenVLA**
 (via `[openvla]`), and **π0 served by openpi** — Physical Intelligence's own stack, via the CPU-only
-`[openpi]` websocket client to a GPU policy server. A `groot` adapter is registered but is **scaffolding**: it needs `lerobot[groot]`, which `provael[lerobot]` does not provision, so no GR00T run has been made — `provael list-policies` says so too. Suites: **5** (`stub` + `reach` +
+`[openpi]` websocket client to a GPU policy server. **Three of those eight are registered scaffolding**: `groot` (needs `lerobot[groot]`, which `provael[lerobot]` does not provision), `openvla` and `openpi` have each been structurally tested but have **never had a checkpoint loaded here**. Only `smolvla` has produced a committed real-model result. `provael list-policies` gives each backend a `status` of `measured` / `scaffolding` / `no run committed here`, so the difference is visible before you point `--policy` at one. Suites: **5** (`stub` + `reach` +
 `humanoid` on CPU; **LIBERO** + **Meta-World** gated), or any policy/suite you wrap with the tiny
 adapter ABCs. The templated families are
 heuristic perturbations (not gradient-based); the `optimized` family is a model-agnostic search
@@ -314,6 +316,14 @@ On the real **SmolVLA × LIBERO** policy only the **instruction** family transfe
 verifies boards; a hosted, operator-signed board is the intended operated surface (experimental
 today). See [docs/leaderboard.md](docs/leaderboard.md). **Evidence, not certification.**
 
+**What the published board does not cover.** It is one run and it is old: measured with
+**`provael 0.1.0`**, covering **1 policy on 1 suite** and **3 of the 15 adversarial families**. The
+other **twelve families have no real-model measurement at all** — they are *absent* from the board,
+which is not the same as scoring 0%. That run also predates the clean-task-success control, so it
+carries a benign false-positive control but no measured competence baseline. The Space states all
+of this above its own tables; rebuilding cannot fix it, because a re-stamp re-aggregates committed
+reports and never re-runs a policy. Closing the gap needs GPU time.
+
 ## What runs on CPU vs. what needs a GPU
 
 | Capability | CPU (default) | Needs GPU + `[lerobot]` extra |
@@ -348,7 +358,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.29.0
+      - uses: provael/provael@v0.29.1
         with:
           # `none` is the benign control: without it an ASR has no false-positive baseline,
           # and the release gate cannot reach `pass`. It never moves the adversarial ASR.

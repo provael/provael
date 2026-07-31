@@ -54,9 +54,27 @@ FIXTURE_SUITES: frozenset[str] = frozenset(
 )
 
 
+#: Suite kind labels rendered by ``list-suites``. A fixture and a simulator produce numbers that
+#: mean different things — the first is deterministic arithmetic that embodies nothing, the second
+#: is a physics rollout — so the board, the evidence classifier and the CLI all name the difference
+#: in the same words rather than leaving a reader to infer it from the suite's name.
+KIND_FIXTURE = "CPU fixture"
+KIND_SIMULATOR = "real simulator"
+
+
 def available_suites() -> list[str]:
     """Names of all registered suites."""
     return sorted(SUITES)
+
+
+def suite_kind(name: str) -> str:
+    """Whether ``name`` is a deterministic CPU fixture or a real simulator.
+
+    Read from :data:`FIXTURE_SUITES`, which the suite classes declare themselves via
+    ``SuiteAdapter.is_fixture`` — so a new fixture suite cannot earn a "real simulator" label by
+    being absent from a hand-maintained list here.
+    """
+    return KIND_FIXTURE if name in FIXTURE_SUITES else KIND_SIMULATOR
 
 
 def suite_is_ready(name: str) -> bool:
@@ -85,9 +103,12 @@ __all__ = [
     "SUITES",
     "REQUIRES_LEROBOT",
     "FIXTURE_SUITES",
+    "KIND_FIXTURE",
+    "KIND_SIMULATOR",
     "SuiteAdapter",
     "StubSuite",
     "available_suites",
     "suite_is_ready",
+    "suite_kind",
     "make_suite",
 ]

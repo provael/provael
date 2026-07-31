@@ -156,6 +156,23 @@ SCAFFOLDING_POLICIES: dict[str, str] = {
     "openpi": "scaffolding: also needs a running openpi policy server; not exercised here",
 }
 
+#: policy name -> the committed evidence that a real checkpoint has actually been driven through
+#: it. **Declared here, never inferred from the filesystem.** `list-defenses` learned this the hard
+#: way in 0.26.0: it probed for ``docs/studies/<name>.md`` to decide "measured", which worked in a
+#: git checkout and silently reported the opposite in an installed wheel, because ``docs/`` is not
+#: packaged. ``results/`` is not packaged either, so a probe for a committed run report would fail
+#: the same way — and failing *toward* "measured" is the direction that ships a false claim.
+MEASURED_POLICIES: dict[str, str] = {
+    "smolvla": "real SmolVLA x LIBERO run committed in results/smolvla_libero_object",
+}
+
+#: Status labels rendered by ``list-policies``. Kept as constants so the CLI, the tests and any
+#: future emitter all say the same words about the same backend.
+STATUS_MEASURED = "measured"
+STATUS_FIXTURE = "CPU fixture"
+STATUS_SCAFFOLDING = "scaffolding — no checkpoint ever run"
+STATUS_UNRUN = "no run committed here"
+
 
 def lerobot_available() -> bool:
     """True if the ``lerobot`` package is importable in the current environment."""
@@ -183,6 +200,29 @@ def policy_scaffolding_note(name: str) -> str | None:
     return SCAFFOLDING_POLICIES.get(name)
 
 
+def policy_status(name: str) -> str:
+    """How much is actually known about ``name``: measured, fixture, scaffolding, or never run.
+
+    This answers a strictly different question from :func:`policy_is_ready`, and conflating the two
+    is the failure this exists to prevent. "Ready" means *the declared dependency imports in this
+    environment* — a statement about the machine. "Status" means *has a real checkpoint ever been
+    driven through this adapter and the result committed* — a statement about the evidence. A
+    backend can be ready and never run; ``list-policies`` showed only readiness, so all seven
+    non-stub backends rendered identically to anyone skimming for something to point `--policy` at.
+
+    The distinction is the whole product: someone who runs against a backend that has never loaded
+    a checkpoint and reports the resulting ASR as a measurement has produced a number about
+    scaffolding. Three of the eight registered backends are in exactly that state.
+    """
+    if name in SCAFFOLDING_POLICIES:
+        return STATUS_SCAFFOLDING
+    if name in MEASURED_POLICIES:
+        return STATUS_MEASURED
+    if policy_extra(name) is None:
+        return STATUS_FIXTURE  # `stub`: deterministic CPU arithmetic, embodies nothing
+    return STATUS_UNRUN
+
+
 def policy_is_ready(name: str) -> bool:
     """Whether ``name`` can run in the current environment right now."""
     req = _REQUIRES_EXTRA.get(name)
@@ -208,13 +248,19 @@ def make_policy(name: str, **kwargs: object) -> PolicyAdapter:
 
 
 __all__ = [
+    "MEASURED_POLICIES",
     "POLICIES",
     "REQUIRES_LEROBOT",
     "SCAFFOLDING_POLICIES",
+    "STATUS_FIXTURE",
+    "STATUS_MEASURED",
+    "STATUS_SCAFFOLDING",
+    "STATUS_UNRUN",
     "available_policies",
     "lerobot_available",
     "make_policy",
     "policy_extra",
     "policy_is_ready",
     "policy_scaffolding_note",
+    "policy_status",
 ]

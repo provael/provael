@@ -16,17 +16,19 @@ the spirit of responsible disclosure.
 
 ## No real-world-harm payloads
 
-- The registry ships **14 adversarial families** (plus the benign `baseline` control). Eleven of
+- The registry ships **15 adversarial families** (plus the benign `baseline` control). Eleven of
   them — `instruction`, `visual`, `injection`, `action`, `action_space`, `backdoor`,
   `sensor_spoof`, `misalignment`, `authorization`, `confidentiality`, `humanoid` — are short,
   generic, **templated** reframings, cues and markers: a fixed transform of the observation,
   non-transferable by construction. They probe whether a policy follows a redirected goal in a
   benchmark — they are **not** a recipe for causing harm.
-- The remaining three — `optimized`, `optimized_patch`, `optimized_instruction` — are **not**
-  templated. They are black-box, **query-budgeted searches** that adapt to the policy's own
-  responses. Each is bounded by an explicit query budget, is deterministic under a seed, and
-  searches only toward a harmless, sim-only goal direction; none uses gradients or model
-  internals. They are covered individually below.
+- The remaining four — `optimized`, `optimized_patch`, `optimized_instruction`,
+  `universal_patch` — are **not** templated. They are black-box, **query-budgeted searches** that
+  adapt to the policy's own responses. Each is bounded by an explicit query budget, is
+  deterministic under a seed, and searches only toward a harmless, sim-only goal direction; none
+  uses gradients or model internals. `universal_patch` differs from the other three in *when* it
+  pays that budget — once for the whole run rather than per episode — not in what it may search
+  for. They are covered individually below.
 - The `StubPolicy`'s "trigger lexicon" is an intentionally transparent **test fixture**
   (a handful of words with weights, read from the instruction and a fixed set of
   observation channels) so the CPU pipeline produces a measurable Attack Success Rate
