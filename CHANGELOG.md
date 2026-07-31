@@ -16,7 +16,7 @@ the U.S. Senate"* (it found only a *House* committee reference and concluded the
 and EAI10's a16z *"The Physical AI Deployment Gap"* ("no independent trace found").
 
 Both claims are true. The Senate citation is written testimony to the Commerce Subcommittee on
-Science, Manufacturing & Competitiveness, hearing of 3 Mar 2026, hosted on commerce.senate.gov — a
+Science, Manufacturing, and Competitiveness, hearing of 3 Mar 2026, hosted on commerce.senate.gov — a
 *different, also-real* event from the House hearing the audit surfaced. The a16z piece is by Oliver
 Hsu, published 13 Jan 2026, and the quoted sentence is verbatim.
 

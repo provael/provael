@@ -11,7 +11,7 @@ unverifiable and told the founder to "verify or soften both before any deck":
   * EAI10's a16z "The Physical AI Deployment Gap" — "no independent trace found".
 
 Both are true. The Senate one is written testimony to the Commerce Subcommittee on Science,
-Manufacturing & Competitiveness, hearing of 3 Mar 2026, hosted on commerce.senate.gov — a
+Manufacturing, and Competitiveness, hearing of 3 Mar 2026, hosted on commerce.senate.gov — a
 *different, also-real* event from the House hearing the audit surfaced. The a16z piece is by
 Oliver Hsu, published 13 Jan 2026, and the quoted sentence is verbatim.
 
@@ -145,7 +145,7 @@ def test_the_two_citations_an_external_audit_could_not_verify_stay_pinned() -> N
 
     # EAI09 — the chamber, the subcommittee, and the hearing date, so nobody lands on the House
     # hearing on the same subject and concludes the chamber is wrong (which is what happened).
-    for fragment in ("U.S. Senate", "Science, Manufacturing & Competitiveness", "3 Mar 2026"):
+    for fragment in ("U.S. Senate", "Science, Manufacturing, and Competitiveness", "3 Mar 2026"):
         assert fragment in doc, (
             f"docs/TOP10.md no longer names {fragment!r} for the Unitree G1 Senate citation. An "
             "external audit already mistook this claim for a fabrication when it read only "

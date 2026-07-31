@@ -296,7 +296,7 @@ attacks; and (b) **the robot as a persistent surveillance device** — covert or
 its rich multimodal stream (video, audio, LiDAR, maps), affecting operators and bystanders.
 **Evidence.** *[incident]* the **Unitree G1 streaming telemetry to servers in China** ~every 5 minutes
 without notification (arXiv 2509.14096), cited in testimony to the **U.S. Senate** Commerce
-Subcommittee on Science, Manufacturing & Competitiveness — "Less Hype, More Help: AI That Improves
+Subcommittee on Science, Manufacturing, and Competitiveness — "Less Hype, More Help: AI That Improves
 Safety, Productivity, and Care", 3 Mar 2026, written testimony of D. Shelton (Agility Robotics).
 *[research]* model extraction/inversion of learned policies (DRL policy stealing, arXiv 2006.05032;
 SoK on foundation-model-powered robots, arXiv 2606.16788). NIST makes confidentiality/privacy one of
