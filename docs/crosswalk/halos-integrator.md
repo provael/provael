@@ -23,7 +23,8 @@ recognised by
 
 with Agility Robotics' Digit assessed against
 
-> "rigorous standards such as IEC 61508, ISO 13849 and ISO/IEC TR…"
+> "rigorous standards such as IEC 61508, ISO 13849 and ISO/IEC TR 5469 before final third-party
+> certification"
 
 Source:
 <https://nvidianews.nvidia.com/news/nvidia-announces-halos-for-robotics-the-industrys-first-full-stack-safety-system-for-physical-ai>
@@ -32,11 +33,13 @@ Two notes on that quotation, because both matter:
 
 - **The "first" claims are NVIDIA's, quoted as theirs.** Provael makes no priority claim of its own
   here or anywhere — not about this programme, not about its own taxonomy, not about its tooling.
-- **The third standard is truncated in the quoted fragment.** It is reproduced with its ellipsis
-  rather than completed, because guessing the number would be exactly the unresolvable citation
-  this repo's own [citation guard](https://github.com/provael/provael/blob/main/tests/test_citations_resolvable.py)
-  exists to prevent. Provael separately carries an **ISO/IEC TR 5469:2024** row on its own merits;
-  that is not an assertion about what the fragment says.
+- **The third standard was resolved from the primary source, not guessed.** This quote first
+  reached us truncated — `"ISO/IEC TR…"` — and shipped that way, with its ellipsis intact, because
+  completing a standard number from context would be exactly the unresolvable citation this repo's
+  own [citation guard](https://github.com/provael/provael/blob/main/tests/test_citations_resolvable.py)
+  exists to prevent. It is now completed against the NVIDIA newsroom release itself (read
+  2026-08-01), which names **ISO/IEC TR 5469**. The rule that produced the ellipsis is the same
+  rule that removed it: quote the source, and go read the source.
 
 ## The obligation → instrument → artifact map
 
