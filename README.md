@@ -329,7 +329,7 @@ reports and never re-runs a policy. Closing the gap needs GPU time.
 | Capability | CPU (default) | Needs GPU + `[lerobot]` extra |
 | --- | :---: | :---: |
 | `stub` (scalar) + `reach` (spatial) suites | ✅ | |
-| All 14 attack families (`instruction`/`visual`/`sensor_spoof`/`injection`/`action`/`action_space`/`backdoor`/`authorization`/`confidentiality`/`misalignment`/`humanoid`/`optimized`/`optimized_patch`/`optimized_instruction`) | ✅ | |
+| All 15 adversarial families (`instruction`/`visual`/`sensor_spoof`/`injection`/`action`/`action_space`/`backdoor`/`authorization`/`confidentiality`/`misalignment`/`humanoid`/`optimized`/`optimized_patch`/`universal_patch`/`optimized_instruction`) | ✅ | |
 | `humanoid` whole-body / locomotion suite (fall / balance / self-collision / footstep keep-out) | ✅ | |
 | Scoring, runner, report, CLI, recipes, `reproduce`, scorecard/SARIF/OSCAL/AVID | ✅ | |
 | `attest` — signed, dated evidence bundle (digest-only core; Ed25519 via `[attest]` extra) | ✅ | |

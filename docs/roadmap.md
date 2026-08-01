@@ -19,8 +19,9 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
   Azure) SARIF; pre-commit; MLflow/W&B logging; HF eval-results; Modal GPU-CI; Docker/devcontainer;
   supply-chain: **checkpoint-integrity verification shipped in 0.27.0** (pinned-digest + pickle
   refusal, fail-closed, in the reusable Action — see
-  [checkpoint-integrity](checkpoint-integrity.md)); model-*signing* (Sigstore) and ML-BOM remain
-  planned. The public leaderboard is Ed25519-signed as of 0.27.0.
+  [checkpoint-integrity](checkpoint-integrity.md)); the CycloneDX **ML-BOM ships** (`provael report
+  --format mlbom`), while model-*signing* (Sigstore) remains planned. The public leaderboard is
+  Ed25519-signed as of 0.27.0.
 - **Defenses — what is measured and what is not.** Two of the six `docs/DEFENSES.md` taxonomy rows
   are measured under the protocol, both `stub-validated-scaffolding` on CPU fixtures:
   `instruction_canonicalization` (input side) and `action_envelope` (action side). The action-envelope
