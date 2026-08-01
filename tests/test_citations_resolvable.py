@@ -50,7 +50,7 @@ from pathlib import Path
 import pytest
 
 _DOCS = Path(__file__).resolve().parents[1] / "docs"
-_TOP10 = _DOCS / "TOP10.md"
+_TOP10 = _DOCS / "top10.md"
 
 # The published-baselines table cites OTHER PEOPLE'S numbers, which makes the invariant sharper
 # there than in the Top 10: a reader who cannot resolve a competitor's figure does not conclude the

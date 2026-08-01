@@ -40,7 +40,7 @@ from provael.runner import run
 
 runner = CliRunner()
 
-_TOP10 = Path(__file__).resolve().parent.parent / "docs" / "TOP10.md"
+_TOP10 = Path(__file__).resolve().parent.parent / "docs" / "top10.md"
 
 #: The 18 RoboJailBench categories, verbatim from arXiv 2605.19328v1 Table 2 (do not paraphrase).
 _RJB_18_VERBATIM = [

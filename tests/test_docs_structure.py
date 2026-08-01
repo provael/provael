@@ -154,6 +154,42 @@ def test_retired_uppercase_urls_still_redirect() -> None:
         assert (DOCS / new).is_file(), f"redirect target {new} does not exist"
 
 
+def test_no_code_references_a_retired_uppercase_docs_filename() -> None:
+    """Catches the rename bug that macOS structurally cannot show you.
+
+    The lowercase migration replaced the literal string ``docs/TOP10.md`` everywhere it appeared -
+    but several tests build the path from separate components, ``REPO / "docs" / "TOP10.md"``, which
+    that search never matched. On macOS the stale references kept working, because the filesystem is
+    case-insensitive and ``TOP10.md`` still resolves to ``top10.md``. On Linux CI they were a
+    FileNotFoundError, and six tests failed.
+
+    The deeper error was in the verification, not the fix: the grep used to confirm the migration was
+    the SAME pattern as the sed used to perform it, so it could only ever report success. A check
+    that shares its blind spot with the change it verifies is not a check.
+
+    This searches for the retired BASENAME in any quoted form, so a split path cannot hide. The
+    redirect map in this file legitimately names the old paths and is exempt by construction: it is
+    matched by filename, not by content.
+    """
+    retired = (
+        "TOP10.md", "TOP10_RFC.md", "DEFENSES.md", "COMPLIANCE.md", "ATTESTATION.md",
+        "ADOPTERS.md", "COMMUNITY.md", "SIM_PREDICTS_REAL.md", "MEASURE-2-7.md",
+    )
+    offenders: list[str] = []
+    for path in REPO.rglob("*.py"):
+        rel = path.relative_to(REPO).as_posix()
+        if rel.startswith((".venv/", "site/")) or path.name == "test_docs_structure.py":
+            continue
+        body = path.read_text(encoding="utf-8")
+        for name in retired:
+            if f'"{name}"' in body or f"'{name}'" in body:
+                offenders.append(f"{rel} -> {name}")
+    assert not offenders, (
+        "code references a docs filename retired by the lowercase migration. These resolve on a "
+        f"case-insensitive filesystem and raise FileNotFoundError on Linux: {offenders}"
+    )
+
+
 def test_the_docs_reach_the_commercial_offer() -> None:
     """The docs had zero routes to the operated work — a dead end for a convinced reader.
 

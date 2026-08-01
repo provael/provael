@@ -163,7 +163,7 @@ def test_catalog_and_top10_doc_define_the_same_risks() -> None:
     crosswalk, scorecard and compliance report — a category vanishing rather than being reported
     as untested. Both sides must enumerate the same set, in both directions.
     """
-    top10 = (REPO / "docs" / "TOP10.md").read_text(encoding="utf-8")
+    top10 = (REPO / "docs" / "top10.md").read_text(encoding="utf-8")
     documented = set(re.findall(r"^## (EAI\d\d) — ", top10, re.MULTILINE))
 
     assert documented, "found no `## EAIxx — ` headings in docs/top10.md; the scan is broken"
@@ -176,7 +176,7 @@ def test_catalog_and_top10_doc_define_the_same_risks() -> None:
 
 def test_the_published_coverage_claim_is_generated_not_typed() -> None:
     """docs/top10.md's headline number must match the catalog, not a hand-typed count."""
-    top10 = (REPO / "docs" / "TOP10.md").read_text(encoding="utf-8")
+    top10 = (REPO / "docs" / "top10.md").read_text(encoding="utf-8")
     expected = f"{len(attacked_ids())} / {len(CATALOG)}"
     assert expected in top10, f"docs/top10.md does not state the generated coverage {expected!r}"
     # And every uncovered risk must be named where the claim is made — "8 / 10" alone tells a
