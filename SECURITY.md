@@ -23,7 +23,15 @@ Fixes land in the latest release — please reproduce on the current version bef
 Please report security issues **privately — do not open a public issue**:
 
 - **Preferred:** open a [GitHub private security advisory](https://github.com/provael/provael/security/advisories/new).
-- **Email:** **getprovael@gmail.com** — use this if you can't open an advisory.
+- **Email:** **hello@provael.com** — use this if you can't open an advisory.
+
+<!-- This address must match the Contact: line in the website's .well-known/security.txt. The two
+     disagreed (security.txt said hello@provael.com, this file said a gmail address), which leaves a
+     researcher choosing between two channels with no way to tell which is monitored — at exactly
+     the moment you want the report to arrive somewhere. Both sides now pin the same literal and
+     each repo tests its own copy, because they are different runtimes and cannot share a constant:
+     tests/test_security_contact.py here, check-facts.mjs there. Change one, change both. -->
+
 
 Please include reproduction steps, affected version(s), and impact. Good-faith reports are
 welcome and credited unless you'd prefer to stay anonymous.
