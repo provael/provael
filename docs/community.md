@@ -8,8 +8,8 @@ become a community-owned list. Here is where things happen and what to expect.
 [GitHub Discussions](https://github.com/provael/provael/discussions) is the front door:
 
 - **Announcements** — releases, new studies, roadmap notes (maintainer-posted).
-- **Top-10 RFC** — propose or dispute a risk for the [Embodied AI Security Top 10](TOP10.md); see the
-  [RFC process](TOP10_RFC.md).
+- **Top-10 RFC** — propose or dispute a risk for the [Embodied AI Security Top 10](top10.md); see the
+  [RFC process](top10-rfc.md).
 - **Results** — share a run, a transfer result, or a checkpoint you red-teamed. Numbers welcome — with
   their controls (ASR + 95% CI + benign FPR).
 - **Q&A** — usage questions, adapters, calibration, CI wiring.

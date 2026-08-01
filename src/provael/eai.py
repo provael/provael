@@ -1,14 +1,14 @@
 """The Embodied AI Security Top 10 — the catalog Provael's attacks map to.
 
 Each attack family is tagged with the ``EAIxx`` risk it exercises (see
-``docs/TOP10.md``). This module is the **single source of truth** for those ids,
+``docs/top10.md``). This module is the **single source of truth** for those ids,
 their human names, a one-line description, and a stable ``helpUri`` deep-link into
 the Top-10 document. Attacks import their tag from here (so the id/name on an
 :class:`~provael.attacks.base.Attack` never drifts from the catalog), and the SARIF
 exporter builds its ``rules[]`` from the same entries.
 
 **All ten risks are listed, including the two Provael ships no attacks for.** They used to be
-omitted: the catalog held eight entries while ``docs/TOP10.md`` defined ten, so EAI07 and EAI10
+omitted: the catalog held eight entries while ``docs/top10.md`` defined ten, so EAI07 and EAI10
 vanished from every crosswalk, scorecard and compliance report without a word. For a buyer
 assembling conformity evidence, "we do not test this, and here is why" is a legitimate answer; a
 category that silently disappears is not — it reads as covered. Every entry therefore carries an
@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 #: Canonical home of the Top-10 document (anchors below are GitHub-rendered slugs).
-TOP10_DOC_URL = "https://github.com/provael/provael/blob/main/docs/TOP10.md"
+TOP10_DOC_URL = "https://github.com/provael/provael/blob/main/docs/top10.md"
 
 
 class EaiCoverage(StrEnum):
@@ -51,7 +51,7 @@ class EaiRisk:
     id: str
     name: str
     description: str
-    anchor: str  # GitHub heading slug within docs/TOP10.md
+    anchor: str  # GitHub heading slug within docs/top10.md
     #: Whether attacks ship for this risk. Required — a new entry cannot be added without stating
     #: its coverage, which is exactly what let two categories go missing silently.
     coverage: EaiCoverage
@@ -330,7 +330,7 @@ def coverage_counts() -> dict[str, int]:
 def coverage_headline() -> str:
     """The one-line coverage claim, generated so a doc can never drift from the catalog.
 
-    ``docs/TOP10.md`` used to hard-code "8 / 10" in prose. It happened to be right, but nothing
+    ``docs/top10.md`` used to hard-code "8 / 10" in prose. It happened to be right, but nothing
     connected the number to the catalog, and the two categories behind the gap were missing from
     the code entirely — so the sentence was accurate by coincidence.
     """

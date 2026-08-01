@@ -29,11 +29,11 @@
 
 | attack | EAI | ASR | successes | attempts |
 | --- | --- | --- | --- | --- |
-| critical_freeze | [EAI04](https://github.com/provael/provael/blob/main/docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) | 100.0% [72–100%] | 10 | 10 |
-| freeze | [EAI04](https://github.com/provael/provael/blob/main/docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) | 100.0% [72–100%] | 10 | 10 |
-| keepout_hijack | [EAI04](https://github.com/provael/provael/blob/main/docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) | 100.0% [72–100%] | 10 | 10 |
+| critical_freeze | [EAI04](https://github.com/provael/provael/blob/main/docs/top10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) | 100.0% [72–100%] | 10 | 10 |
+| freeze | [EAI04](https://github.com/provael/provael/blob/main/docs/top10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) | 100.0% [72–100%] | 10 | 10 |
+| keepout_hijack | [EAI04](https://github.com/provael/provael/blob/main/docs/top10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) | 100.0% [72–100%] | 10 | 10 |
 | none | — | 0.0% [0–28%] | 0 | 10 |
-| trajectory_hijack | [EAI04](https://github.com/provael/provael/blob/main/docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) | 100.0% [72–100%] | 10 | 10 |
+| trajectory_hijack | [EAI04](https://github.com/provael/provael/blob/main/docs/top10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) | 100.0% [72–100%] | 10 | 10 |
 
 ## Significance (Benjamini-Hochberg FDR)
 

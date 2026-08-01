@@ -9,7 +9,7 @@
 
 A notified body, an insurer, or a design partner comparing embodied-security frameworks asks one
 question: *how do these two map to each other, and what does each actually measure?* This document
-answers that for the [Embodied AI Security Top 10](../TOP10.md) and **RoboJailBench**. It is **not** a
+answers that for the [Embodied AI Security Top 10](../top10.md) and **RoboJailBench**. It is **not** a
 benchmark comparison — we do not run their harness or score provael against their leaderboard; that is
 a separate task with its own licensing and reproducibility review.
 
@@ -145,7 +145,7 @@ Conversely, EAI07 (CPS/firmware/comms/teleop) and EAI10 (evaluation/observabilit
 provael's scope removes **no** RoboJailBench category — their harm-outcome taxonomy has no
 CPS/firmware or governance class, so nothing is lost there. And the reverse also holds: **neither list
 covers the multi-robot / wormable-propagation and cascading-multi-agent risks** on the Top 10's
-[watchlist](../TOP10.md) — RoboJailBench's 18 categories are single-robot harm outcomes.
+[watchlist](../top10.md) — RoboJailBench's 18 categories are single-robot harm outcomes.
 
 ## Reproduce
 

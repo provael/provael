@@ -78,7 +78,7 @@ def test_sarif_rules_are_the_eai_ids_used() -> None:
     for rule in rules:
         assert rule["name"]
         assert rule["shortDescription"]["text"]
-        assert "docs/TOP10.md#" in rule["helpUri"]
+        assert "docs/top10.md#" in rule["helpUri"]
         # D5: each rule routes external validation through MITRE ATLAS via structured properties.
         techniques = rule["properties"]["atlasTechniques"]
         assert techniques and all("→" in t for t in techniques)

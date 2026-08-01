@@ -155,7 +155,7 @@ def to_scorecard_markdown(report: RunReport, threshold: float = 0.5) -> str:
         "",
         "_Behavioural-susceptibility measurement via templated attacks (not a certified bound). "
         "Read each rate against the benign control. Stub numbers are properties of the test "
-        "fixture, not a real VLA. See docs/SIM_PREDICTS_REAL.md and docs/COMPLIANCE.md._",
+        "fixture, not a real VLA. See docs/sim-predicts-real.md and docs/compliance/index.md._",
         "",
     ]
     return "\n".join(lines)

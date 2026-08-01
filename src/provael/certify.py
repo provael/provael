@@ -500,7 +500,7 @@ def _defense_eai_ids(name: str) -> tuple[str, ...]:
 
 
 def _defense_kind(name: str) -> str:
-    """The docs/DEFENSES.md taxonomy row a named defense implements, read from the registry."""
+    """The docs/defenses.md taxonomy row a named defense implements, read from the registry."""
     kinds = [DEFENSES[t.strip()]().kind for t in name.split(",") if t.strip() in DEFENSES]
     return " + ".join(kinds) if kinds else "unknown"
 

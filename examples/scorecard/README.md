@@ -35,4 +35,4 @@ With no `--out` on `report`, the Markdown is printed to stdout — handy in CI l
 
 Pair it with the [CI regression-gate](../ci/regression-gate.md) to block a PR when a retrain makes
 a policy more attackable. Stub numbers are fixture properties — run a real policy + suite for
-real-model numbers, read against the benign control (see [docs/SIM_PREDICTS_REAL.md](../../docs/SIM_PREDICTS_REAL.md)).
+real-model numbers, read against the benign control (see [docs/sim-predicts-real.md](../../docs/sim-predicts-real.md)).

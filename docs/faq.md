@@ -15,12 +15,12 @@ Our real-model finding is exactly this: a single benign-looking `roleplay` instr
 SmolVLA policy out of its safe envelope 100% of the time (10/10, 95% CI [72–100%]) against a 0%
 benign control — a policy-layer failure no firmware patch addresses. Full write-up:
 [The instruction-transfer finding](findings/2026-instruction-transfer.md); the layer split is the
-[Embodied AI Security Top 10](TOP10.md).
+[Embodied AI Security Top 10](top10.md).
 
 **Is it only simulation?**
 Yes — Provael is a pre-deployment scanner. The literature says sim/edited-image red-teaming
 predicts real-robot brittleness well enough to be useful (Predictive Red Teaming, MAE < 0.19) —
-see [Sim predicts real](SIM_PREDICTS_REAL.md). Treat ASR as a floor on susceptibility, not a
+see [Sim predicts real](sim-predicts-real.md). Treat ASR as a floor on susceptibility, not a
 guarantee.
 
 **Do the stub numbers mean anything about real VLAs?**
@@ -45,7 +45,7 @@ attacks. That's deliberate (reproducible, inspectable). `provael reproduce` maps
 **Does running Provael make my system compliant?**
 No. It produces *engineering evidence* (SARIF / OSCAL / AVID / a compliance crosswalk) you can put
 into a conformity or assurance file. It is not certification and not legal advice. See
-[Compliance](COMPLIANCE.md).
+[Compliance](compliance/index.md).
 
 **Is it a runtime safety controller?**
 No. The runtime firewall example is a *sim/reference* monitor for demonstrating a red-team → harden

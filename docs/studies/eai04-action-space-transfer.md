@@ -6,7 +6,7 @@
 
 ## Question
 
-Do Provael's [EAI04](../TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze)
+Do Provael's [EAI04](../top10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze)
 action-space-integrity attacks — the `action` family (`freeze`, `trajectory_hijack`) and the
 `action_space` family (`keepout_hijack`, `critical_freeze`) — **transfer to a real VLA policy**, or
 are they properties of the deterministic fixture? This study extends the

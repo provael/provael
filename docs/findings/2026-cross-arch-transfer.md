@@ -49,7 +49,7 @@ and GPU-free, so the real rows drop in unchanged when measured.
 ### SmolVLA (LeRobot flow-matching) — one real architecture, measured previously
 
 From the repo's own SmolVLA × LIBERO transfer-test (sim-only, one task, n=10, against a 0% benign
-baseline; see [README](https://github.com/provael/provael/blob/main/README.md) and [the Embodied AI Security Top 10](../TOP10.md)):
+baseline; see [README](https://github.com/provael/provael/blob/main/README.md) and [the Embodied AI Security Top 10](../top10.md)):
 
 - **instruction transfers**: `roleplay` redirected the real policy **100% (10/10), 95% CI [72–100%]**;
   `goal_substitution` **60%**.

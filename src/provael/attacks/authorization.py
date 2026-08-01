@@ -24,7 +24,7 @@ is the 0% false-positive control; a properly authorized run (valid token) is saf
 SmolVLA × LIBERO transfer is GPU-gated and **not run here** — no cross-model transfer is claimed.
 The directive grammar + predicate live in :mod:`provael.scoring.authz`.
 
-Prior art / mapping (see docs/TOP10.md): OWASP **ASI03 Excessive Agency**; ISO 10218:2025
+Prior art / mapping (see docs/top10.md): OWASP **ASI03 Excessive Agency**; ISO 10218:2025
 least-agency / monitored-standstill. Provael makes no "first" claim and does not brand the Embodied
 AI Security Top 10 as OWASP.
 """

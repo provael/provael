@@ -35,7 +35,7 @@ claimed as effective until a study reports it.
 | **Trajectory anomaly detection** | Flag episodes whose trajectory departs from the benign distribution (freeze, hijack, objective-decoupled triggers) | EAI04 action-space integrity · EAI03 backdoor triggers |
 | **Output / memory screening** | Screen for memorised-canary leakage and extraction signals | EAI09 model & data confidentiality |
 
-Risk ids above are defined in [the Embodied AI Security Top 10](TOP10.md). Each mitigation is a
+Risk ids above are defined in [the Embodied AI Security Top 10](top10.md). Each mitigation is a
 **claim to be tested**, not a shipped guarantee — it earns a row in a results table only after a
 study measures its pre/post ASR under the controls below.
 

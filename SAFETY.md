@@ -76,7 +76,7 @@ the spirit of responsible disclosure.
   danger-threshold predicate). Command-preservation is a *realism constraint on the threat model*, **not
   detection-evasion**: the attack makes no attempt to defeat, disable, or hide from any safety filter —
   on the contrary, its recommended **defense (instruction canonicalization / repair)** is documented in
-  `PRIOR_ART.md` and `docs/TOP10.md`. It ships no real-world payload; the EAI04 targeted-redirection
+  `PRIOR_ART.md` and `docs/top10.md`. It ships no real-world payload; the EAI04 targeted-redirection
   outcome on a real policy is GPU-gated (`PROVAEL_INTEGRATION=1`) and not run in the CPU core, so no
   cross-model claim is made.
 - The `action` family (EAI04) perturbs only the **observation the policy receives**, **never

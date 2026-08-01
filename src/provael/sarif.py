@@ -4,7 +4,7 @@ Emits a static-analysis-style result per attack so red-team findings surface in
 GitHub code scanning (and any other SARIF consumer). Each result's ``ruleId`` is the
 attack's Embodied AI Top-10 id (``EAIxx``); the ``rules[]`` catalog is built from the
 same :mod:`provael.eai` source as the rest of the tool, with ``helpUri`` deep-linking
-into ``docs/TOP10.md``.
+into ``docs/top10.md``.
 
 Severity follows the measured ASR:
 

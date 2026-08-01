@@ -1,7 +1,7 @@
 # EU AI Act Article 15 — robustness evidence pack (worked example)
 
 A worked example of turning one Provael run into the **adversarial-robustness testing evidence**
-Article 15 expects, mapped clause-by-clause. Read [docs/COMPLIANCE.md](../../../docs/COMPLIANCE.md)
+Article 15 expects, mapped clause-by-clause. Read [docs/compliance/index.md](../../../docs/compliance/index.md)
 first for the regulatory routing (post-Digital-Omnibus, robots route via the Machinery Regulation
 + ISO 10218:2025; Art. 15 remains the measurement anchor).
 

@@ -1,6 +1,6 @@
 """Mitigation report — the artifact a buyer files when a defense is claimed.
 
-Implements the measurement protocol written at ``docs/DEFENSES.md`` exactly, with none of the four
+Implements the measurement protocol written at ``docs/defenses.md`` exactly, with none of the four
 rules softened:
 
 * **Pre/post ASR per family**, each with its 95% Wilson interval. Read from
@@ -97,7 +97,7 @@ class MitigationRow(BaseModel):
     credited: bool = Field(
         False,
         description="True only when both intervals exist and are DISJOINT — the literal rule from "
-        "docs/DEFENSES.md, not a point-estimate improvement.",
+        "docs/defenses.md, not a point-estimate improvement.",
     )
     note: str = ""
 
@@ -183,7 +183,7 @@ def build_mitigation_report(
     issued_at: str,
     commit: str,
 ) -> MitigationReport:
-    """Apply the docs/DEFENSES.md measurement protocol to a defended/undefended pair.
+    """Apply the docs/defenses.md measurement protocol to a defended/undefended pair.
 
     Pure: no clock and no randomness — ``issued_at`` and ``commit`` are supplied by the caller, as
     everywhere else in this codebase, so the artifact is reproducible.

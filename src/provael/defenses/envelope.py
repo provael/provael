@@ -1,4 +1,4 @@
-"""Action-envelope clamp — ``docs/DEFENSES.md`` row 3 (action clamping / keep-out enforcement).
+"""Action-envelope clamp — ``docs/defenses.md`` row 3 (action clamping / keep-out enforcement).
 
 The first **action-side** defense: it acts on what comes out of the policy, using the
 :meth:`~provael.defenses.base.Defense.filter_action` hook, and leaves the instruction untouched.

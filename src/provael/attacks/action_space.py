@@ -27,7 +27,7 @@ cell, or frozen at a critical step (AttackVLA / FreezeVLA × SmolVLA × LIBERO) 
 **not run here**, so no cross-model transfer is claimed. The cue grammar + predicate live in
 :mod:`provael.scoring.action_space`.
 
-Prior art / mapping (see docs/TOP10.md): **EAI04 Action-space integrity attacks (hijack / targeted
+Prior art / mapping (see docs/top10.md): **EAI04 Action-space integrity attacks (hijack / targeted
 trajectory / freeze)**. Provael makes no "first" claim and does not brand the Embodied AI Security
 Top 10 as OWASP.
 """

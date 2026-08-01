@@ -1,7 +1,7 @@
 """EAI ↔ RoboJailBench crosswalk: integrity, determinism, and the certify appendix.
 
 The load-bearing guards (what stops the crosswalk silently rotting as families change):
-  * every referenced EAI id exists in ``docs/TOP10.md``;
+  * every referenced EAI id exists in ``docs/top10.md``;
   * every referenced provael family name exists in the attack registry;
   * the emitted JSON is deterministic across two runs AND across ``PYTHONHASHSEED``;
   * the certify appendix reuses ``provael.scoring.asr`` (it does not reimplement ASR).

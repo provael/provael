@@ -3,7 +3,7 @@
 RoboJailBench (Yeke, Zhou, Lin, Cai, Bianchi & Celik, Purdue; arXiv 2605.19328v1, 2026-05-19)
 defines an **18-category, harm-outcome** security taxonomy for embodied agents, derived from ISO/TS
 15066:2016 + ISO 10218-1/-2, Asimov's Laws, and FDA/news incident reports. The **Embodied AI
-Security Top 10** (``docs/TOP10.md``) is an **attack-mechanism/surface** taxonomy. The two are
+Security Top 10** (``docs/top10.md``) is an **attack-mechanism/surface** taxonomy. The two are
 orthogonal axes — *what harm results* vs *how it is attacked* — so a clean 1:1 does not exist and a
 mapping that showed 18/18 covered would not be credible. This module encodes the mapping
 declaratively (so a test can catch it rotting as families change) and emits it deterministically. It
@@ -311,7 +311,7 @@ class EaiEntry:
     """One EAI Top-10 id and the RoboJailBench categories it corresponds to (or none)."""
 
     id: str
-    name: str  # short name, must match docs/TOP10.md
+    name: str  # short name, must match docs/top10.md
     robojailbench: tuple[str, ...]  # RJB category ids, or empty for 'no counterpart'
     note: str
 

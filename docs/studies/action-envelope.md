@@ -10,7 +10,7 @@
 **Verdicts: `credited` on `stub` and `reach`, `not-credited` on `humanoid`** — and most of the
 credit carries no information. Read the next two sections before quoting any of it.
 
-This is the second defense measured under the protocol in [DEFENSES.md](../DEFENSES.md), and the
+This is the second defense measured under the protocol in [defenses](../defenses.md), and the
 first on the **action side**: it acts on what leaves the policy, not on the instruction going in.
 
 ---

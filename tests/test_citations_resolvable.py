@@ -111,7 +111,7 @@ def test_every_evidence_citation_carries_a_resolvable_identifier() -> None:
     if unresolvable:
         detail = "\n".join(f"  {s.risk} *[{s.tag}]* {s.text[:160]}" for s in unresolvable)
         pytest.fail(
-            f"{len(unresolvable)} evidence citation(s) in docs/TOP10.md name a source with no "
+            f"{len(unresolvable)} evidence citation(s) in docs/top10.md name a source with no "
             f"arXiv ID, CVE number, or URL — a reader cannot check them, and an auditor who "
             f"cannot check a citation records it as fabricated rather than as unverified:\n"
             f"{detail}\n\n"
@@ -222,7 +222,7 @@ def test_the_two_citations_an_external_audit_could_not_verify_stay_pinned() -> N
     # hearing on the same subject and concludes the chamber is wrong (which is what happened).
     for fragment in ("U.S. Senate", "Science, Manufacturing, and Competitiveness", "3 Mar 2026"):
         assert fragment in doc, (
-            f"docs/TOP10.md no longer names {fragment!r} for the Unitree G1 Senate citation. An "
+            f"docs/top10.md no longer names {fragment!r} for the Unitree G1 Senate citation. An "
             "external audit already mistook this claim for a fabrication when it read only "
             '"cited at the U.S. Senate" — the hearing has to stay identifiable.'
         )
@@ -231,6 +231,6 @@ def test_the_two_citations_an_external_audit_could_not_verify_stay_pinned() -> N
     # returned as "no independent trace found".
     for fragment in ("Oliver Hsu", "13 Jan 2026", "a16z.news/p/the-physical-ai-deployment-gap"):
         assert fragment in doc, (
-            f"docs/TOP10.md no longer names {fragment!r} for the a16z deployment-gap citation, "
+            f"docs/top10.md no longer names {fragment!r} for the a16z deployment-gap citation, "
             "which an external audit previously could not trace at all."
         )

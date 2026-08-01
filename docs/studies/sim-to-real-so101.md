@@ -6,7 +6,7 @@
 > payloads**; the physical eval uses LeRobot's own standard evaluation loop, and Provael's role is
 > limited to the sim-side attack and the offline correlation analysis. See
 > [SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md) and
-> [Sim predicts real](../SIM_PREDICTS_REAL.md).
+> [Sim predicts real](../sim-predicts-real.md).
 
 > Status: PRE-REGISTERED — protocol only, no results claimed.
 

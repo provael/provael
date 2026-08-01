@@ -40,7 +40,7 @@ no "first" claim is made.
 **Defense.** The recommended mitigation is **instruction canonicalization / repair** before the
 policy consumes the text: normalise phrasing, strip redundant manner/urgency adverbials, and
 re-derive the canonical command, which collapses the search's edit space. Reported in
-``PRIOR_ART.md`` and ``docs/TOP10.md``. Sim-only: this attack controls no real robot and carries no
+``PRIOR_ART.md`` and ``docs/top10.md``. Sim-only: this attack controls no real robot and carries no
 real-world-harm payload.
 """
 

@@ -93,13 +93,13 @@ Open a GitHub issue (templates provided). For security vulnerabilities, see
 
 ## Contributing to the Embodied AI Security Top 10
 
-[docs/TOP10.md](docs/TOP10.md) — *The Embodied AI Security Top 10* — is a community draft we
+[docs/top10.md](docs/top10.md) — *The Embodied AI Security Top 10* — is a community draft we
 actively want challenged. **You don't need to touch any code to contribute.**
 
 - **Propose / dispute / fix a mapping** via the issue form:
   [Top 10: propose / dispute / fix a mapping](https://github.com/provael/provael/issues/new?template=top10-feedback.yml)
   — argue a rank, a category, a framework cross-map, or a missing risk.
-- **Or open a PR** editing `docs/TOP10.md` directly (small fixes, fresh evidence, clearer wording).
+- **Or open a PR** editing `docs/top10.md` directly (small fixes, fresh evidence, clearer wording).
 - **Licensing.** The Top 10 is **CC-BY-SA 4.0** (the code is Apache-2.0). By contributing you agree
   your contribution is licensed CC-BY-SA 4.0, so the list stays freely shareable and donatable.
 - **Versioning.** It's at **v0.x** — deliberately a draft, made to be argued with; material changes

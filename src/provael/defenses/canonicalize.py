@@ -1,6 +1,6 @@
 """Instruction canonicalization — the first measured defense in this repo's own sequence.
 
-Implements the three numbered steps written at ``docs/DEFENSES.md``:
+Implements the three numbered steps written at ``docs/defenses.md``:
 
 1. **Normalise phrasing** — lowercase / whitespace / punctuation normalisation and paraphrase
    folding.
@@ -22,7 +22,7 @@ construction and generalise to nothing.
 
 Two things keep this honest rather than circular, and both are stated again in the study:
 
-* the list is written from the *general* class named in ``docs/DEFENSES.md`` (and includes entries
+* the list is written from the *general* class named in ``docs/defenses.md`` (and includes entries
   the attack never emits, e.g. ``"no matter what"``, ``"asap"``, ``"at once"``), not copied from
   ``targeted_redirect._CUES``; and
 * the measurement is reported against the ``instruction`` family as a **reference arm** as well, a
@@ -184,7 +184,7 @@ def canonicalize(instruction: str) -> str:
 class InstructionCanonicalization(Defense):
     """Collapse the manner/urgency edit space before the instruction reaches the policy.
 
-    The mitigation ``docs/DEFENSES.md`` recommends for ``optimized_instruction``
+    The mitigation ``docs/defenses.md`` recommends for ``optimized_instruction``
     (``targeted_redirect``), which "redirects a policy through subtle manner/urgency cues while
     keeping the operator's command and never naming the target object".
 

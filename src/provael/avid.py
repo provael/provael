@@ -110,7 +110,7 @@ def to_avid(report: RunReport) -> dict[str, object]:
             {
                 "type": "taxonomy",
                 "label": "Embodied AI Security Top 10",
-                "url": "https://github.com/provael/provael/blob/main/docs/TOP10.md",
+                "url": "https://github.com/provael/provael/blob/main/docs/top10.md",
             },
         ],
         "impact": {

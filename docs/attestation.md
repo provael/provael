@@ -18,7 +18,7 @@ a customer's security team, or an insurer keeps on file. It re-runs nothing: it 
 | **When** it was issued (UTC), against **which ruleset** and **source commit**. | That the numbers **transfer to real hardware**. Provael measures a policy's decision in simulation. |
 | **Who** issued it, when signed with a known key (Ed25519, offline-verifiable). | Anything about attacks Provael does not run. Absence of a finding is not proof of safety. |
 
-The honest-scope caveats from [COMPLIANCE.md](COMPLIANCE.md) — adversarial-only, evidence-not-
+The honest-scope caveats from [compliance](compliance/index.md) — adversarial-only, evidence-not-
 certification, behavioural-not-worst-case — travel *inside* the bundle, because the bundle wraps
 the same compliance report verbatim.
 
@@ -79,9 +79,10 @@ about. Dates only — no claim of conformity:
 - **EU Machinery Regulation (EU) 2023/1230** — applies **20 January 2027**. AI-enabled safety
   functions need a cyber-risk assessment against corruption; this is the operative route for
   AI-enabled robots.
-- **EU AI Act (EU) 2024/1689, Annex I machinery** — high-risk obligations are statutory from
-  **2 August 2027**. A move to **2 August 2028** is proposed in the Digital Omnibus but **not yet
-  adopted**; treat 2027 as binding until it is.
+- **EU AI Act (EU) 2024/1689, Annex I machinery** — high-risk obligations were statutory from
+  **2 August 2027**. Regulation (EU) 2026/1744 (Digital Omnibus on AI), in the OJ on
+  **24 July 2026** and in force **27 July 2026**, moved embedded Annex I application to
+  **2 August 2028** — the operative date. Plan against 2028; 2027 is the superseded baseline.
 - **ISO 10218-1/-2:2025** — in force since 2025; the revision adds cybersecurity requirements for
   industrial robots, feeding the Machinery Regulation cyber-risk assessment.
 - **NIST AI 100-2e2025** — adversarial-ML taxonomy; guidance, not a compliance deadline.
@@ -119,7 +120,7 @@ provael attest --run results/smolvla_libero_object --profile insurer --out runs/
 ## Honest scope
 
 - **Simulation only.** An attestation records a policy's *decision* under attack in sim, not a
-  hardware outcome. See [SIM_PREDICTS_REAL.md](SIM_PREDICTS_REAL.md) for what that does and does not
+  hardware outcome. See [sim-predicts-real](sim-predicts-real.md) for what that does and does not
   transfer.
 - **Real-VLA transfer is narrow today.** On a real **SmolVLA × LIBERO** policy, only the
   **instruction** family currently transfers: it redirects the policy **100% (10/10), 95% CI
@@ -140,5 +141,5 @@ Apache-2.0 — anyone can self-attest their own runs. The **hosted attestation, 
 signed with Provael's key and backed by a real-VLA (GPU) transfer run rather than the stub — is the
 paid surface. The open tool never gates the local stub path.
 
-*Independent · not legal advice · evidence, not certification. See [COMPLIANCE.md](COMPLIANCE.md)
+*Independent · not legal advice · evidence, not certification. See [compliance](compliance/index.md)
 for the full crosswalk.*

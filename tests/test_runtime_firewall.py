@@ -3,7 +3,7 @@
 This file used to assert a DIRECTION OF EFFECT — `assert fw < base`, plus frozen point estimates
 `base == 67 and fw == 20`. That mirrored the example it was testing, and it was the same mistake: a
 bare pre/post comparison with no interval, no credit rule and no benign control is exactly the
-reasoning `docs/DEFENSES.md` and `provael.defenses.measure` exist to forbid.
+reasoning `docs/defenses.md` and `provael.defenses.measure` exist to forbid.
 
 A test may legitimately pin what a fixture does. It may not encode "a defense lowers ASR" as a
 property, because that is the empirical question the protocol answers and the answer is allowed to be

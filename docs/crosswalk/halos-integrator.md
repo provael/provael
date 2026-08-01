@@ -3,7 +3,7 @@
 > **Independent project. Not affiliated with or endorsed by NVIDIA, ANAB, ISO, IEC, or any of the
 > certification bodies named below. Not legal advice.** Provael produces adversarial-robustness
 > **evidence**. It is not an inspection, not an accreditation, and not a functional-safety
-> determination. See [COMPLIANCE.md](../COMPLIANCE.md) for the full crosswalk and
+> determination. See [compliance](../compliance/index.md) for the full crosswalk and
 > [the per-persona cards](README.md) for the other robot categories.
 
 ## Why this card exists
@@ -64,7 +64,7 @@ This is the part an assessor will check first, so it is stated before the eviden
   opinion. Provael is not part of the Halos programme and holds no accreditation from ANAB or from
   any body named above.
 - **Adversarial security only.** Functional and mechanical safety are out of scope by design — see
-  the [honest-scope box](../COMPLIANCE.md#honest-scope--what-this-does-not-cover).
+  the [honest-scope box](../compliance/index.md#honest-scope--what-this-does-not-cover).
 
 What Provael *does* is narrower and checkable: it measures how often a perturbation drove a policy
 out of its benign envelope, reports that rate with a 95% Wilson confidence interval against a

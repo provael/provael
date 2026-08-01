@@ -14,7 +14,7 @@
       "coverage": "attacks-implemented",
       "coverage_note": "The `instruction` family (roleplay / goal_substitution / paraphrase) and the `optimized_instruction` search. The only family with measured real-policy transfer.",
       "description": "A reframed or substituted instruction overrides the policy's safe task and drives it into an unsafe action.",
-      "help_uri": "https://github.com/provael/provael/blob/main/docs/TOP10.md#eai01--policy--instruction-jailbreak-direct-command-channel",
+      "help_uri": "https://github.com/provael/provael/blob/main/docs/top10.md#eai01--policy--instruction-jailbreak-direct-command-channel",
       "id": "EAI01",
       "name": "Policy & instruction jailbreak"
     },
@@ -25,7 +25,7 @@
       "coverage": "attacks-implemented",
       "coverage_note": "The `visual`, `sensor_spoof` and `optimized_patch` families, plus the humanoid balance-spoof. `optimized_patch` needs a real image channel and never scores on a CPU stub suite.",
       "description": "A perturbation of what the policy sees (patch, decoy, sensor spoof) redirects its behaviour while the text goal stays benign.",
-      "help_uri": "https://github.com/provael/provael/blob/main/docs/TOP10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing",
+      "help_uri": "https://github.com/provael/provael/blob/main/docs/top10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing",
       "id": "EAI02",
       "name": "Adversarial perception"
     },
@@ -36,7 +36,7 @@
       "coverage": "attacks-implemented",
       "coverage_note": "The `backdoor` family screens objective-decoupled object and phrase triggers.",
       "description": "A hidden, objective-decoupled trigger (a benign-looking object or phrase) planted at train/fine-tune time or via a poisoned open-weights checkpoint: normal behaviour until the trigger fires an attacker-chosen action.",
-      "help_uri": "https://github.com/provael/provael/blob/main/docs/TOP10.md#eai03--model--pipeline-poisoning-backdoors--supply-chain",
+      "help_uri": "https://github.com/provael/provael/blob/main/docs/top10.md#eai03--model--pipeline-poisoning-backdoors--supply-chain",
       "id": "EAI03",
       "name": "Model & pipeline poisoning, backdoors & supply chain"
     },
@@ -47,7 +47,7 @@
       "coverage": "attacks-implemented",
       "coverage_note": "The `action`, `action_space` and `optimized` families, plus the humanoid whole-body hijack and stride freeze.",
       "description": "An attack on the policy's action output itself \u2014 freezing it into a no-op (availability) or hijacking its trajectory toward an attacker-chosen waypoint.",
-      "help_uri": "https://github.com/provael/provael/blob/main/docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze",
+      "help_uri": "https://github.com/provael/provael/blob/main/docs/top10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze",
       "id": "EAI04",
       "name": "Action-space integrity"
     },
@@ -58,7 +58,7 @@
       "coverage": "attacks-implemented",
       "coverage_note": "The `injection` family covers both the scene-text and the MCP tool-description channel.",
       "description": "Text the agent ingests from its environment or tools (a sign, a poisoned tool description) carries an imperative the policy then executes.",
-      "help_uri": "https://github.com/provael/provael/blob/main/docs/TOP10.md#eai05--indirect--embodied-prompt-injection",
+      "help_uri": "https://github.com/provael/provael/blob/main/docs/top10.md#eai05--indirect--embodied-prompt-injection",
       "id": "EAI05",
       "name": "Indirect / embodied prompt injection"
     },
@@ -69,7 +69,7 @@
       "coverage": "attacks-implemented",
       "coverage_note": "The `misalignment` family (benign-urgency override, euphemistic reroute) measures the embodiment gap on a keep-out suite.",
       "description": "A benign-sounding instruction a language-layer safety filter passes still drives an unsafe embodied action (motion into a keep-out zone / contact with a flagged object): the embodiment gap between safe language and unsafe physical action.",
-      "help_uri": "https://github.com/provael/provael/blob/main/docs/TOP10.md#eai06--cross-domain-safety-misalignment-the-embodiment-gap",
+      "help_uri": "https://github.com/provael/provael/blob/main/docs/top10.md#eai06--cross-domain-safety-misalignment-the-embodiment-gap",
       "id": "EAI06",
       "name": "Cross-domain safety misalignment (the embodiment gap)"
     },
@@ -78,7 +78,7 @@
       "coverage": "out-of-scope-for-simulation",
       "coverage_note": "No attacks, by design, and this is a boundary rather than a backlog item. Faithful coverage means exercising real firmware, real radio / ROS-DDS traffic and real teleoperation sessions \u2014 CVE-class work against physical infrastructure, and Provael ships no exploit tooling (see SAFETY.md). This layer is assessed with IEC 62443 and ATT&CK-for-ICS methods and CVE scanning against the robot's own stack: the UniPwn (CVE-2025-60250/-60251) and Go1 backdoor (CVE-2025-2894) findings came from that kind of work, not from policy red-teaming. A clean Provael run says nothing about this risk.",
       "description": "Compromise of the robot's own cyber-physical stack rather than its policy \u2014 firmware, the radio/ROS-DDS control plane, or a teleoperation session \u2014 which reaches the actuators without ever touching the model.",
-      "help_uri": "https://github.com/provael/provael/blob/main/docs/TOP10.md#eai07--cps-firmware-comms--teleoperation-compromise",
+      "help_uri": "https://github.com/provael/provael/blob/main/docs/top10.md#eai07--cps-firmware-comms--teleoperation-compromise",
       "id": "EAI07",
       "name": "CPS, firmware, comms & teleoperation compromise"
     },
@@ -89,7 +89,7 @@
       "coverage": "attacks-implemented",
       "coverage_note": "The `authorization` family screens self-authorization and scope escalation of an authorization-gated action.",
       "description": "A perturbed instruction drives the policy to self-authorize and execute a consequential, authorization-gated action without the required operator-authorization token \u2014 an embodied instance of excessive agency (OWASP ASI03).",
-      "help_uri": "https://github.com/provael/provael/blob/main/docs/TOP10.md#eai08--identity-access--excessive-autonomy",
+      "help_uri": "https://github.com/provael/provael/blob/main/docs/top10.md#eai08--identity-access--excessive-autonomy",
       "id": "EAI08",
       "name": "Identity, access & excessive autonomy"
     },
@@ -100,7 +100,7 @@
       "coverage": "attacks-implemented",
       "coverage_note": "The `confidentiality` family screens a planted memorization canary (membership inference / extraction) \u2014 never a real exfiltration.",
       "description": "A query-based confidentiality attack \u2014 model extraction, membership inference, or inversion \u2014 that recovers a memorized training canary from the policy; screened sim-only against a planted fixture, never a real exfiltration.",
-      "help_uri": "https://github.com/provael/provael/blob/main/docs/TOP10.md#eai09--model--data-confidentiality--theft-extraction-inversion--surveillance",
+      "help_uri": "https://github.com/provael/provael/blob/main/docs/top10.md#eai09--model--data-confidentiality--theft-extraction-inversion--surveillance",
       "id": "EAI09",
       "name": "Model & data confidentiality"
     },
@@ -109,7 +109,7 @@
       "coverage": "process-control-not-attackable",
       "coverage_note": "No attacks, because there is no policy input that attacks the absence of a process. Provael sits on the mitigation side of this one: a signed run report, its scorecard, and the per-checkpoint regression gate are partial evidence that the evaluation control exists and was exercised. Partial is the operative word \u2014 they evidence the evaluation limb, not the observability or incident-response limbs, which are runtime and organisational. This category never carries an ASR; a number here would be a category error.",
       "description": "Deploying an embodied policy with no adversarial evaluation, no runtime observability and no rehearsed incident response \u2014 the governance failure that leaves every other risk on this list undetected in production.",
-      "help_uri": "https://github.com/provael/provael/blob/main/docs/TOP10.md#eai10--insufficient-evaluation-observability--incident-response",
+      "help_uri": "https://github.com/provael/provael/blob/main/docs/top10.md#eai10--insufficient-evaluation-observability--incident-response",
       "id": "EAI10",
       "name": "Insufficient evaluation, observability & incident response"
     }

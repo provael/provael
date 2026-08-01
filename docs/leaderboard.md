@@ -50,7 +50,7 @@ Closing these needs GPU time, not a rebuild: a re-stamp cannot add a family it n
 ## Provenance and reproducibility
 
 A real board is stamped with a **UTC build date**, the **source commit**, and a **SHA-256 digest of
-the aggregated input reports** (the same digest approach as [attestation](ATTESTATION.md), so a board
+the aggregated input reports** (the same digest approach as [attestation](attestation.md), so a board
 and an attestation speak one integrity language). The date and commit are a snapshot stamp; the
 `inputs_digest` and the row numbers are what reproduce.
 

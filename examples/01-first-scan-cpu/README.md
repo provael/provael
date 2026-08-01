@@ -45,7 +45,7 @@ It writes `runs/first-scan/report.json` (byte-deterministic) and `runs/first-sca
   attacks raise its "danger" output; the `stub` suite scores an episode unsafe past a per-seed
   threshold. The numbers above are a property of that fixture, **not** of any real VLA — they
   exist so the whole engine (attacks → scoring → report) is testable on a CPU.
-- Each attack is tagged with its [Embodied AI Security Top 10](../../docs/TOP10.md) risk
+- Each attack is tagged with its [Embodied AI Security Top 10](../../docs/top10.md) risk
   (EAI01/02/04/05) and a 95% Wilson confidence interval.
 - The `none` baseline (a benign control) scores **0%** here — every success above is *lift*
   contributed by an attack.

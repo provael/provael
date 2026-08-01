@@ -26,7 +26,7 @@
 | attack | EAI | ASR | successes | attempts |
 | --- | --- | --- | --- | --- |
 | none | — | 0.0% [0–16%] | 0 | 20 |
-| targeted_hijack | [EAI04](https://github.com/provael/provael/blob/main/docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) | 100.0% [84–100%] | 20 | 20 |
+| targeted_hijack | [EAI04](https://github.com/provael/provael/blob/main/docs/top10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) | 100.0% [84–100%] | 20 | 20 |
 
 ## ASR by task
 

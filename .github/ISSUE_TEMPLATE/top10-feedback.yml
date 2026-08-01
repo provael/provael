@@ -6,9 +6,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping sharpen [The Embodied AI Security Top 10](../blob/main/docs/TOP10.md)
+        Thanks for helping sharpen [The Embodied AI Security Top 10](../blob/main/docs/top10.md)
         — a **v0.2 community draft, made to be argued with.** No code required. For a small,
-        concrete fix, a pull request editing `docs/TOP10.md` is even faster; see the
+        concrete fix, a pull request editing `docs/top10.md` is even faster; see the
         [contributing guide](../blob/main/CONTRIBUTING.md#contributing-to-the-embodied-ai-security-top-10).
   - type: dropdown
     id: type

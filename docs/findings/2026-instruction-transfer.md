@@ -99,6 +99,6 @@ literature this build leans on:
   correlates strongly with real hardware — the reason VLA papers rank policies in sim at all.
   [arXiv:2405.05941](https://arxiv.org/abs/2405.05941)
 
-See [Does sim red-teaming predict real-robot behaviour?](../SIM_PREDICTS_REAL.md) for the full framing
+See [Does sim red-teaming predict real-robot behaviour?](../sim-predicts-real.md) for the full framing
 and its limits. Treat the ASR as a **floor on susceptibility**, measured under a benign control — not
 a certification, and not a prediction of a specific robot's behaviour on a specific day.

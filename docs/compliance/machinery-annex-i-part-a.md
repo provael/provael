@@ -2,7 +2,7 @@
 
 `provael certify` produces the adversarial-robustness **evidence dossier** a notified body reviews
 for an **ML-based safety component** under the EU Machinery Regulation. It extends the
-[`provael attest`](../ATTESTATION.md) bundle and the [Machinery Annex III pack](machinery-reg-2027.md)
+[`provael attest`](../attestation.md) bundle and the [Machinery Annex III pack](machinery-reg-2027.md)
 into the assessor-facing artifact a buyer hands over — as machine-readable **OSCAL** and a single
 self-contained, print-to-PDF **HTML** page a safety engineer can read without ever having used
 Provael.

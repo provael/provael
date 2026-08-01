@@ -1,11 +1,11 @@
 # The Embodied AI Security Top 10 — RFC process (v0.2 → v0.3)
 
 > Status: PLANNED — no results claimed. This document governs how the
-> [Embodied AI Security Top 10](TOP10.md) evolves. It is about process, not measurement: every risk
+> [Embodied AI Security Top 10](top10.md) evolves. It is about process, not measurement: every risk
 > entry still stands on its own cited evidence.
 
 The Top 10 is a **community draft, licensed CC-BY-SA 4.0**, deliberately unbranded and donatable —
-[not affiliated with OWASP® or MITRE®](TOP10.md). It is currently at **v0.2**. This page is the
+[not affiliated with OWASP® or MITRE®](top10.md). It is currently at **v0.2**. This page is the
 process for reaching **v0.3**: how to propose a new risk, dispute an existing one, and how a change
 gets reviewed and merged.
 
@@ -17,18 +17,18 @@ gets reviewed and merged.
    [propose / dispute / fix template](https://github.com/provael/provael/issues/new?template=top10-feedback.yml)
    to dispute a ranking or fix a framework mapping. State the threat model and link the evidence.
 2. **Discuss in the open.** Discussion happens on the issue and in the **Top-10 RFC**
-   [discussion category](COMMUNITY.md). The bar is a concrete, adversarially-reachable threat with
+   [discussion category](community.md). The bar is a concrete, adversarially-reachable threat with
    at least one referenceable source (arXiv, CVE, advisory, or a reproducible attack).
 3. **Review.** A change is reviewed by the maintainer **and** at least one contributor from a
    different organization (see the goal below). Review checks the threat model, the evidence, the
    cross-framework mapping (MITRE ATLAS / NIST / ISO), and that the change does not overstate what
    is measured.
-4. **Versioned merge.** An accepted change lands in `docs/TOP10.md` with the version bumped and a
+4. **Versioned merge.** An accepted change lands in `docs/top10.md` with the version bumped and a
    dated line recording what changed. No silent edits: a risk enters, moves, or leaves the list
    only through a merged PR that says why.
 
 A small, concrete fix (a broken mapping, a typo, a clarified sentence) can skip straight to a PR
-editing `docs/TOP10.md` — the issue step is for anything that changes the *set* or the *ranking*.
+editing `docs/top10.md` — the issue step is for anything that changes the *set* or the *ranking*.
 
 ## Entry template
 
@@ -37,13 +37,13 @@ Every risk on the list carries these fields; a proposal for a new one should fil
 - **ID** — the proposed `EAIxx` id, or "renumber" if you are re-ordering existing risks.
 - **Title** — a short, specific name (e.g. "Indirect / embodied prompt injection").
 - **Threat model** — who the attacker is, what they control, and what they achieve. Must be
-  **adversarial** and **embodiment-relevant** (see the [Top-10 scope note](TOP10.md)).
+  **adversarial** and **embodiment-relevant** (see the [Top-10 scope note](top10.md)).
 - **Example attack** — one concrete, referenceable instance. A Provael attack family is ideal but
   not required; a published paper or a real advisory also counts.
 - **Measured evidence** — what has actually been measured, and where. If nothing has been measured
   yet, say so: a risk can be listed on threat-model grounds and marked not-yet-measured, but it is
   never dressed up as a result.
-- **Mitigations** — the known defenses, and whether any is measured (see [DEFENSES.md](DEFENSES.md)).
+- **Mitigations** — the known defenses, and whether any is measured (see [defenses](defenses.md)).
 - **References** — the arXiv / CVE / advisory / standard clauses that back the entry.
 
 ## Governance
@@ -56,7 +56,7 @@ body.
   reviewing-contributor requirement above is the check on unilateral changes.
 - **Community calls** — a public call to work through open proposals is planned. Schedule: **to be
   announced — watch this file.**
-- **Attribution** — every accepted contributor is credited in `docs/TOP10.md`. The list credits the
+- **Attribution** — every accepted contributor is credited in `docs/top10.md`. The list credits the
   researchers it stands on.
 
 ## The v0.3 goal (and the honest current count)

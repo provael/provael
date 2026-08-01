@@ -28,7 +28,7 @@ real-robot failure well enough to be useful** — without breaking real robots t
   correlates with real-robot brittleness.
 - **Does not:** certify real-world safety, predict a specific robot's behaviour on a specific day,
   or replace hardware testing and functional-safety processes. Treat the ASR as a **floor on
-  susceptibility**, not a guarantee. See [COMPLIANCE.md](COMPLIANCE.md) (evidence, not
+  susceptibility**, not a guarantee. See [compliance](compliance/index.md) (evidence, not
   certification) and the README's "Scope and honest limitations."
 
 ## How to keep your own results honest
