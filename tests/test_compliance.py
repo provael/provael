@@ -128,8 +128,12 @@ def test_gap_detection_uncalibrated() -> None:
         "eu-machinery:cyber",
         "iso-10218-1:cyber",
         "nist-ai-100-2:privacy",
+        # The three functional-safety rows name EAI04 (the action channel) as their on-point
+        # evidence. This report never ran it, so they are gaps — which is the point of the gate:
+        # a systematic-capability or PL-validation argument citing an ASR from a run that never
+        # touched the action channel would be citing a measurement nobody made.
     }
-    assert cr.summary == {"evidence-present": 10, "gap": 7}
+    assert cr.summary == {"evidence-present": 11, "gap": 7}
     # Every gap explains itself; every present entry has no gap reason.
     for entry in cr.entries:
         if entry.status == "gap":
@@ -154,7 +158,8 @@ def test_gap_detection_calibrated() -> None:
     by = _by_key(cr)
     assert by["eu-ai-act:art15"].status == "evidence-present"
     assert by["nist-ai-rmf:measure"].status == "evidence-present"
-    assert cr.summary == {"evidence-present": 12, "gap": 5}
+    assert by["eu-machinery:annex-i-part-a-6"].status == "evidence-present"
+    assert cr.summary == {"evidence-present": 13, "gap": 5}
     # The gap names the missing family rather than the generic "no EAI-tagged attacks" reason.
     assert "EAI09" in (by["nist-ai-100-2:privacy"].gap_reason or "")
     # The measured evidence carries the calibrated control.
@@ -207,6 +212,44 @@ def test_indicative_flags_match_catalog() -> None:
     assert by["eu-ai-act:art15"].indicative is False  # Article 15 is named explicitly
     assert by["eu-ai-act:art9"].indicative is True  # sub-clause indicative
     assert by["iec-62443:slv"].indicative is True
+
+
+def test_machinery_annex_i_part_a_points_are_pinned() -> None:
+    """The two Annex I Part A points, cited by number rather than deferred.
+
+    Point 5 is the standalone ML safety COMPONENT; point 6 is the machinery with an EMBEDDED
+    self-evolving safety system, which is what an integrator shipping a whole robot places on the
+    market. Both are pinned by literal so a future edit cannot quietly renumber them, and both are
+    asserted distinct: Part B point 19 is the Article 25(3) sibling and is not interchangeable
+    with either — substituting it would route a file down the wrong conformity procedure.
+    """
+    by = _by_key(to_compliance(_calibrated_report()))
+    assert by["eu-machinery:annex-i-part-a"].control_id.endswith("Annex I Part A, point 5")
+    assert by["eu-machinery:annex-i-part-a-6"].control_id.endswith("Annex I Part A, point 6")
+    for key in ("eu-machinery:annex-i-part-a", "eu-machinery:annex-i-part-a-6"):
+        assert "Article 25(2) via Article 6(1)" in by[key].control_id
+        assert "CELEX 32023R1230" in by[key].provael_signal
+
+
+def test_no_control_id_defers_its_clause_to_a_later_verification() -> None:
+    """No requirement may ship a clause it has not verified. This prevents the CLASS.
+
+    ``eu-machinery:annex-i-part-a`` shipped for several releases reading "[point reference pending
+    verification]", and ``certify._crosswalk`` renders exactly that string as
+    ``clause_verification: pending-verification`` in a document whose entire purpose is to be filed
+    with a notified body. A placeholder is the right call at the moment of writing and the wrong
+    thing to still be shipping a release later — pinning the individual string that was fixed would
+    not have caught the next one, so the rule is the assertion.
+    """
+    offenders = [
+        r.key for r in REQUIREMENTS
+        if "pending verification" in r.control_id.lower() or "pending" in r.control_id.lower()
+    ]
+    assert not offenders, (
+        f"{offenders} defer their clause reference to a later verification. Resolve the clause "
+        f"against the primary text and cite it, or drop the row — a compliance artifact that "
+        f"tells an assessor its own citation is unverified is worse than one that omits it."
+    )
 
 
 def test_by_eai_aggregation_and_families() -> None:
