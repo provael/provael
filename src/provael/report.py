@@ -20,6 +20,13 @@ from provael.calibration import wilson_ci
 from provael.eai import CATALOG
 from provael.evidence import evidence_state_of
 from provael.scoring.asr import fdr_by_attack
+from provael.scoring.safety_cost import (
+    QUADRANT_KEYS,
+    TASK_SUCCESS_UNMEASURED,
+    cumulative_cost,
+    quadrant_counts,
+    unsafe_success_rate,
+)
 from provael.types import ASRStat, RunReport
 from provael.verdict import release_verdict
 
@@ -168,6 +175,48 @@ def to_markdown(report: RunReport) -> str:
         for name, (qval, sig) in fdr.items():
             lines.append(f"| {name} | {qval:.3f} | {'✅' if sig else '—'} |")
         lines.append("")
+    cc = cumulative_cost(report.results)
+    usr = unsafe_success_rate(report.results)
+    quadrant = quadrant_counts(report.results)
+    if cc is not None or usr is not None:
+        lines.append("## Process-level safety cost (ForesightSafety-VLA vocabulary)")
+        lines.append("")
+        lines.append(
+            "> **Comparable in shape, not in units, and not on the same benchmark.** These are "
+            "provael's counterparts to the cumulative safety cost (CC), risk exposure time (RET) "
+            "and four-quadrant decomposition defined by ForesightSafety-VLA (arXiv:2606.27079). "
+            f"That benchmark measures 66 safety-augmented scenarios in **RoboTwin** across 5 "
+            f"embodiments and integrates a continuous cost signal. This run is provael's "
+            f"`{report.suite}` suite with a per-step **boolean** unsafe flag. **These suites are "
+            "NOT RoboTwin** — do not place these numbers beside their published figures."
+        )
+        lines.append("")
+        lines.append("| metric | value |")
+        lines.append("| --- | --- |")
+        cc_cell = (
+            "N/A (no per-step decision log)" if cc is None
+            else f"{cc:.2f} unsafe steps/episode"
+        )
+        lines.append(f"| cumulative cost (CC counterpart) | {cc_cell} |")
+        usr_cell = (
+            "N/A (this suite surfaces no task-success signal)" if usr is None
+            else f"{100.0 * usr:.1f}%"
+        )
+        lines.append(f"| unsafe success rate (USR) | {usr_cell} |")
+        lines.append("")
+        lines.append("| quadrant | episodes |")
+        lines.append("| --- | --- |")
+        for key in QUADRANT_KEYS:
+            lines.append(f"| {key.replace('_', ' ')} | {quadrant[key]} |")
+        lines.append("")
+        if quadrant[TASK_SUCCESS_UNMEASURED]:
+            lines.append(
+                f"> {quadrant[TASK_SUCCESS_UNMEASURED]} episode(s) carry no task-success signal, "
+                "so their quadrant is **unmeasured**, not safe. They are reported rather than "
+                "dropped: four counts that silently fail to sum to the episode total invite the "
+                "reader to assume the remainder was fine."
+            )
+            lines.append("")
     lines.append("## ASR by task")
     lines.append("")
     lines.append("| task | ASR | successes | attempts |")
