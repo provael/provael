@@ -92,12 +92,25 @@ def test_subject_digest_binds_the_run() -> None:
 def test_regulatory_clock_states_machinery_2027_and_both_ai_act_dates() -> None:
     by_id = {c.framework_id: c for c in REGULATORY_CLOCK}
     assert by_id["eu-machinery"].applies_from == "2027-01-20"
-    # AI Act line names the statutory date and flags the proposed 2028 as not-yet-adopted.
+    # The AI Act line carries the OPERATIVE date and still names the superseded statutory one.
+    # Reg (EU) 2026/1744 (Digital Omnibus on AI) was published in the OJ on 24 Jul 2026 and entered
+    # into force on 27 Jul 2026, deferring embedded Annex I application to 2 Aug 2028.
+    #
+    # This assertion used to pin 2027-08-02 and REQUIRE the note to state that the deferral was
+    # still pending adoption. (That phrase is deliberately not spelled out here: this file is
+    # scanned by tests/test_regulatory_consistency.py, and quoting the banned string would make the
+    # guard flag its own explanation.) The clock was last verified 2026-07-23 — one day before OJ
+    # publication —
+    # so from 24 Jul the suite was actively holding a superseded legal fact in place, inside a
+    # SIGNED artifact. A test that pins a fact has to be revised with the fact, or it stops being a
+    # guard and becomes the thing preventing the correction. Regression to the old framing is now
+    # caught repo-wide by tests/test_regulatory_consistency.py, which scans every tracked file —
+    # so this test asserts the positive facts only and does not restate the banned phrasing.
     ai_act = by_id["eu-ai-act"]
-    assert ai_act.applies_from == "2027-08-02"
-    # 2028 deferral is a PROVISIONAL agreement (May 2026), not yet formally adopted -> 2027 baseline.
-    assert "2028" in ai_act.note and "not yet formally adopted" in ai_act.note.lower()
-    assert ai_act.last_verified == "2026-07-23" and ai_act.source.startswith("http")
+    assert ai_act.applies_from == "2028-08-02"
+    assert "2027" in ai_act.note, "the superseded statutory baseline must still be named"
+    assert "2026/1744" in ai_act.note, "the instrument that moved the date must be cited"
+    assert ai_act.last_verified >= "2026-08-01" and ai_act.source.startswith("http")
     # CRA (Reg. (EU) 2024/2847): main obligations 2027-12-11; the note states the 2026 reporting date.
     cra = by_id["eu-cra"]
     assert cra.applies_from == "2027-12-11"

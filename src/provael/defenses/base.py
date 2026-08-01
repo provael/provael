@@ -2,11 +2,11 @@
 
 A :class:`Defense` wraps the policy from **both sides**: :meth:`Defense.apply` pre-processes the
 ``(instruction, observation)`` pair on its way in, and :meth:`Defense.filter_action` inspects the
-commanded action on its way out. ``docs/DEFENSES.md`` states the contract this ABC exists to
+commanded action on its way out. ``docs/defenses.md`` states the contract this ABC exists to
 enforce: the pipeline "runs as a pre-processing wrapper on the instruction; it changes no policy
 weights and is auditable (the canonical form is logged next to the raw instruction)".
 
-**Why there are two hooks.** The taxonomy in ``docs/DEFENSES.md`` lists six mitigation rows, and
+**Why there are two hooks.** The taxonomy in ``docs/defenses.md`` lists six mitigation rows, and
 four of them — action clamping / keep-out enforcement, trajectory anomaly detection, rate limiting /
 scope enforcement, and output / memory screening — act on what comes *out* of the policy, not on
 what goes in. With only a pre-processing hook those four could not be written against this
@@ -75,7 +75,7 @@ class Defense(ABC):
 
     #: Stable, human-readable identifier (also the registry key).
     name: str = "base"
-    #: Taxonomy row from ``docs/DEFENSES.md`` (e.g. ``"input-canonicalization"``). Kept as free
+    #: Taxonomy row from ``docs/defenses.md`` (e.g. ``"input-canonicalization"``). Kept as free
     #: text rather than an enum because the taxonomy is a document the reader can check, and a
     #: mitigation whose row is not yet written should be able to say so.
     kind: str = "base"

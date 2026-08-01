@@ -24,15 +24,30 @@ state. The headline number is the ASR, reported with a 95% Wilson CI and a benig
 - **CPU-first.** The whole engine (attacks, scoring, runner, report, CLI) runs and is tested on a
   plain CPU with a deterministic stub. Real policies (SmolVLA, π0, GR00T, OpenVLA…) and real
   simulators (LIBERO, Meta-World) live behind optional extras + a `PROVAEL_INTEGRATION` gate.
-- **Fifteen adversarial families** mapped to the [Embodied AI Security Top 10](TOP10.md) — 8 of the 10
+- **Fifteen adversarial families** mapped to the [Embodied AI Security Top 10](top10.md) — 8 of the 10
   categories (EAI01–06, EAI08, EAI09): `instruction`, `visual`, `sensor_spoof`, `injection`, `action`,
   `action_space`, `backdoor`, `authorization`, `confidentiality`, `misalignment`, `humanoid`, plus the
   black-box, query-budgeted searches `optimized`, `optimized_patch`, `universal_patch` and
   `optimized_instruction`.
 - **Evidence, not certification.** SARIF, an OSCAL assessment-results export, an AVID record, and a
-  compliance crosswalk — see [Compliance](COMPLIANCE.md).
+  compliance crosswalk — see [Compliance](compliance/index.md).
 
 !!! warning "Defensive, sim-only"
     Provael is a defensive tool for hardening policies via responsible disclosure. It drives no
     physical robots and ships no real-world-harm payloads. Stub numbers are properties of the test
-    fixture, not of any real VLA — see [Sim predicts real](SIM_PREDICTS_REAL.md).
+    fixture, not of any real VLA — see [Sim predicts real](sim-predicts-real.md).
+
+## If you would rather not run it yourself
+
+The CLI, every attack family, the ASR with its benign control, SARIF, the GitHub Action and local
+attestation are free and always will be. Nothing below is required to use any of it.
+
+These docs had no route to the operated work at all — a reader who got here, decided the tooling was
+right and wanted someone to run it had nowhere to go but the back button.
+
+- **[Read the deliverable first](https://www.provael.com/sample-evidence-pack)** — the evidence pack
+  an assessment produces, in full, before any conversation.
+- **[Assessment and pricing](https://www.provael.com/pricing)** — what the operated work costs and
+  what it includes.
+- **[Design partners](https://www.provael.com/design-partners)** — a founding rate in exchange for
+  the right to publish the result.

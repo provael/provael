@@ -2,7 +2,7 @@
 
 One card per robot category: **your obligation → the exact instrument & date → the Provael
 artifact that evidences it.** Independent project, not legal advice; dates are *indicative* —
-confirm against the primary text. See [COMPLIANCE.md](../COMPLIANCE.md) for the full crosswalk and
+confirm against the primary text. See [compliance](../compliance/index.md) for the full crosswalk and
 the 2026 Digital-Omnibus routing.
 
 ---

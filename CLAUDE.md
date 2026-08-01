@@ -65,7 +65,8 @@ src/provael/
 ├── policies/         adapters: lerobot (SmolVLA), openvla, openpi, groot (GR00T-N1),
 │                     stub (deterministic CPU) + registry.py; base.py is the ABC
 ├── suites/           simulators: libero, metaworld, reach, humanoid, keepout_zones, stub
-├── scoring/          per-family scorers + asr.py (ASR + Wilson CI)
+├── scoring/          per-family scorers, asr.py (ASR + Wilson CI), safety_cost.py
+│                     (risk-exposure time, cumulative cost, safe·unsafe × success·failure)
 ├── hosted/           FastAPI reference attestation server (open-core paid tier)
 ├── studies/          pre-registered studies (e.g. cross-architecture transfer)
 ├── evidence.py       evidence-state ladder — how far a result has actually been verified
@@ -85,7 +86,8 @@ src/provael/
 - `attacks/base.py` carries threat-model metadata per attack: `eai_id`/`eai_name` (Embodied-AI Top-10 mapping), `attacker_access`, `action_head_class` — results are self-describing.
 - A result is not just a number: `evidence.py` records how far it was verified, `endpoints.py` separates the questions a run can answer, and `verdict.py` refuses to collapse them into one boolean. Preserve that separation — flattening it back into pass/fail is the failure mode these modules exist to prevent.
 - `tests/` mirrors modules 1:1 (`test_<module>.py`) with golden/drift-guard tests pinning the registry, manifest, and assurance schema.
-- `docs/` is the MkDocs-Material site (docs.provael.com); `examples/` holds runnable scenario dirs; `leaderboard/` + `action.yml` power submissions and the GitHub Action.
+- `docs/` is the MkDocs-Material site (docs.provael.com); `examples/` holds runnable scenario dirs. Besides the CLI, three adopter surfaces ship from this repo: `action.yml` (GitHub Action), `.pre-commit-hooks.yaml` (pre-commit hook), and `leaderboard/` (public submissions).
+- `docs/standards/` and `docs/crosswalk/` map provael onto outside benchmarks and standards. `tests/test_citations_resolvable.py` requires every row there to carry a globally resolvable identifier — an arXiv ID, a CVE, or a URL.
 
 <!-- END AUTO-MANAGED -->
 
@@ -100,6 +102,9 @@ src/provael/
 - Never introduce wall-clock time, unseeded randomness, or process-varying values into report-producing code — determinism is tested.
 - New attacks: subclass `Attack` (or `OptimizedAttack`), set `name`/`family`/`eai_id` plus threat-model fields, register in `attacks/registry.py`, add the mirrored test, and refresh golden manifests via the drift-guard tests.
 - New defenses follow the same shape through `defenses/registry.py`, and carry the same burden of proof: a defense that is only *specified* must be labelled as such and never counted as measured risk reduction.
+- **Unmeasured is `None`, never `0.0`.** A metric whose input signal is absent is unmeasured, not zero — `scoring/safety_cost.py` and `scoring/asr.py` both hold this line, and quadrant output reports an explicit `task_success_unmeasured` bucket rather than letting the parts silently fail to sum, which would invite the reader to assume the remainder was safe.
+- Borrowing another benchmark's vocabulary never implies borrowing its units. `safety_cost.py` computes provael's counterparts to ForesightSafety-VLA's CC/RET from a per-step boolean, not a continuous cost integrated over RoboTwin — comparable in shape, not in number. Say so at the definition site, and never place the two in one table.
+- A figure whose source cannot be checked is withheld, not printed, and the withholding is documented where the row would have gone. Checking an abstract is not checking a paper.
 
 <!-- END AUTO-MANAGED -->
 
@@ -113,16 +118,18 @@ src/provael/
 - Signed evidence: Ed25519 attestation (`provael attest`, per-checkpoint regression attestations in CI) with the cryptography dep kept out of the default install but exercised by the dev group.
 - Claims are typed by strength, not asserted flatly — the evidence ladder, semantic endpoints, and a non-binary verdict all exist so an unverified result cannot be read as a verified one. Symmetrically, defenses are measured or explicitly labelled unproven.
 - Provenance is bound to results by digest (`ExecutionManifest`) rather than recorded alongside them, so a report cannot be paired with the wrong run.
+- Crosswalks translate provael into an external frame — a benchmark's metrics (ForesightSafety-VLA) or a standard's clauses (IEC 61508, ISO 13849, ISO 25785-1, ISO/IEC TR 5469) — and state comparability as a field rather than letting adjacency imply it.
+- Guards invert the allow-list where the thing being guarded is "whatever nobody remembered." `tests/test_version_consistency.py` scans every tracked file and keeps a short exemption list, because the pins that drift are exactly the ones missing from an enumerated list.
 
 <!-- END AUTO-MANAGED -->
 
 <!-- AUTO-MANAGED: git-insights -->
 ## Git Insights
 
-- Work lands via PR branches (`feat/…`, `docs/…`) merged to `main`; commits use conventional prefixes (`feat:`, `fix:`, `docs:`, `test:`, `chore:`) with scopes like `(policies)`, `(ci)`, `(attacks)`, `(defenses)`, `(leaderboard)`.
-- Recent direction: measured defenses (action-side mitigation hook, action envelope, risk-reduction evidence in the dossier), the `universal_patch` family alongside a corrected prior-art record, a signed public leaderboard, and checkpoint supply-chain integrity folded into the CI security gate.
-- **A large share of `fix:` commits are self-corrections of the project's own claims** — a family count that was wrong, backends silently shown as run, a leaderboard signed/unsigned statement that contradicted its data, unresolvable Top-10 citations. The pattern to copy: correct the claim *and* land the guard that makes the error impossible to repeat.
-- Releases bump the version in `src/provael/__init__.py` (hatch reads it) and refresh goldens/manifest in the same PR; the website's public-evidence manifest is re-pinned after each release.
+- Work lands via PR branches (`feat/…`, `docs/…`) merged to `main`; commits use conventional prefixes (`feat:`, `fix:`, `docs:`, `test:`, `chore:`) with scopes like `(policies)`, `(ci)`, `(attacks)`, `(defenses)`, `(compliance)`, `(crosswalk)`, `(standards)`, `(leaderboard)`.
+- Recent direction: standards coverage and external crosswalks — safety-cost metrics borrowed in vocabulary (not units) from ForesightSafety-VLA, functional-safety rows for the integrator certification path, and a published-ASR-baselines table whose comparability column is the point of the table — layered on the earlier measured-defenses and checkpoint-integrity work.
+- **A large share of `fix:`/`docs:` commits are self-corrections of the project's own claims** — a family count that was wrong, backends silently shown as run, a leaderboard signed/unsigned statement that contradicted its data, unresolvable Top-10 citations, a baseline figure taken from an abstract instead of the paper, a standard's name left truncated inside a quote. The pattern to copy: correct the claim *and* land the guard that makes the error impossible to repeat.
+- A release moves more than the package version. `provael.__version__` is the source of truth (hatch reads it), but roughly a dozen adopter-facing files restate it — `CITATION.cff`, `action.yml`, `.pre-commit-hooks.yaml`, `README.md`, `docs/quickstart.md`, `examples/ci/*`, `leaderboard/app.py`, the reference security-gate workflow. `tests/test_version_consistency.py` fails on both a stale pin and a pin naming a tag that never existed, so a release is a search-and-replace the suite then confirms. Goldens and the manifest refresh in the same PR; the website's public-evidence manifest is re-pinned afterwards.
 - The project reports honest nulls (attack families that did NOT transfer) alongside positive findings — preserve that framing in README and docs edits.
 
 <!-- END AUTO-MANAGED -->

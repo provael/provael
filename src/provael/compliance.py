@@ -3,7 +3,7 @@
 Turns a calibrated red-team run into an **auditor-readable evidence artifact** that maps the
 run's measured signals (calibrated redirection rate + 95% Wilson CI, the benign-FPR control, the
 EAI risks exercised, the per-task calibration metadata) onto the framework requirements in
-``docs/COMPLIANCE.md`` — **EU AI Act** (Reg. (EU) 2024/1689), the **EU Machinery Regulation**
+``docs/compliance/index.md`` — **EU AI Act** (Reg. (EU) 2024/1689), the **EU Machinery Regulation**
 (Reg. (EU) 2023/1230 — the operative route for AI-enabled robots after the 2026 Digital Omnibus),
 **ISO 10218-1/-2:2025** (cyber), **NIST AI 100-2 / AI RMF**, and **IEC 62443** — plus the
 functional-safety standards an accredited AI-safety inspection programme assesses robot software
@@ -15,7 +15,7 @@ A boundary that holds across all of those: Provael supplies adversarial-robustne
 functional-safety claim** — those are determined from architecture, MTTFd, diagnostic coverage and
 CCF by the designer and confirmed by an assessor. An attack-success rate is not one of those inputs.
 
-This is the generator the ``docs/COMPLIANCE.md`` pre-spec described. It is **evidence, not
+This is the generator the ``docs/compliance/index.md`` pre-spec described. It is **evidence, not
 certification**: each requirement entry carries a ``status`` of ``evidence-present`` or ``gap``
 against what *this run* actually produced, never an assertion of legal conformity. Three
 honest-scope caveats from the crosswalk travel with every entry (adversarial-only,
@@ -61,7 +61,8 @@ _NAME_TO_FAMILY: dict[str, str] = {
 
 
 # --------------------------------------------------------------------------------------------
-# Honest-scope caveats (from docs/COMPLIANCE.md "Honest scope"). Attached to every entry by id.
+# Honest-scope caveats (from docs/compliance/index.md "Honest scope"). Attached to every entry
+# by id.
 # --------------------------------------------------------------------------------------------
 
 CAVEATS: dict[str, str] = {
@@ -88,7 +89,8 @@ _ENTRY_CAVEATS: tuple[str, ...] = ("adversarial-only", "evidence-not-certificati
 
 
 # --------------------------------------------------------------------------------------------
-# Requirement catalog — the crosswalk targets (docs/COMPLIANCE.md). One entry per mapped control.
+# Requirement catalog — the crosswalk targets (docs/compliance/index.md). One entry per mapped
+# control.
 # --------------------------------------------------------------------------------------------
 
 @dataclass(frozen=True)
@@ -147,7 +149,7 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         framework=_EU, framework_id="eu-ai-act",
         control_id="Article 9", control_title="Risk-management system",
         provael_signal="EAI risk taxonomy as the threat catalogue + a measured rate per risk",
-        evidence_refs=("report.json#/eai", "docs/TOP10.md"),
+        evidence_refs=("report.json#/eai", "docs/top10.md"),
         indicative=True,
     ),
     Requirement(
@@ -171,7 +173,7 @@ REQUIREMENTS: tuple[Requirement, ...] = (
             "hijack / critical-step freeze of the commanded motion) as the on-point evidence for "
             "the corruption-of-safety-function essential requirement; SARIF for the security file"
         ),
-        evidence_refs=("report.json#/by_attack", "report.sarif", "docs/COMPLIANCE.md"),
+        evidence_refs=("report.json#/by_attack", "report.sarif", "docs/compliance/index.md"),
         indicative=True,
         required_eai=("EAI04",),
     ),
@@ -229,7 +231,7 @@ REQUIREMENTS: tuple[Requirement, ...] = (
             "action-space integrity (EAI04: keepout_hijack / critical_freeze) as the on-point "
             "evidence for the monitored-stop / space-limiting safety functions"
         ),
-        evidence_refs=("report.json#/by_attack", "docs/COMPLIANCE.md"),
+        evidence_refs=("report.json#/by_attack", "docs/compliance/index.md"),
         indicative=True,
         required_eai=("EAI04",),
     ),
@@ -239,7 +241,7 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         control_id="ISO 10218-2:2025",
         control_title="Robot applications & cells — Part 2 (cybersecurity requirements)",
         provael_signal="Measured redirection rate per EAI risk as cyber-risk-assessment input",
-        evidence_refs=("report.json#/by_attack", "docs/COMPLIANCE.md"),
+        evidence_refs=("report.json#/by_attack", "docs/compliance/index.md"),
         indicative=True,
     ),
     Requirement(
@@ -253,7 +255,7 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         ),
         evidence_refs=(
             "report.json#/eai",
-            "docs/TOP10.md#cross-framework-crosswalk-corrected-verbatim-source-items",
+            "docs/top10.md#cross-framework-crosswalk-corrected-verbatim-source-items",
         ),
         indicative=False,
     ),
@@ -288,7 +290,7 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         control_id="AI RMF — GOVERN / MAP",
         control_title="Govern & map the risk context",
         provael_signal="Red-team process + EAI taxonomy as the mapped risk context",
-        evidence_refs=("report.json#/eai", "docs/TOP10.md"),
+        evidence_refs=("report.json#/eai", "docs/top10.md"),
         indicative=False,
     ),
     Requirement(
@@ -309,7 +311,7 @@ REQUIREMENTS: tuple[Requirement, ...] = (
             "Measured redirection rate per EAI as control-system security input; "
             "security-level verification"
         ),
-        evidence_refs=("report.json#/by_attack", "docs/COMPLIANCE.md"),
+        evidence_refs=("report.json#/by_attack", "docs/compliance/index.md"),
         indicative=True,
     ),
     Requirement(
@@ -431,7 +433,7 @@ REQUIREMENTS: tuple[Requirement, ...] = (
             "The EAI taxonomy as the mapped AI-risk context and the measured rate per risk as "
             "risk-assessment input to the AI risk-management process"
         ),
-        evidence_refs=("report.json#/eai", "docs/TOP10.md"),
+        evidence_refs=("report.json#/eai", "docs/top10.md"),
         indicative=True,
     ),
 )
@@ -882,7 +884,7 @@ def to_compliance_markdown(report: RunReport) -> str:
     lines.append("---")
     lines.append("")
     lines.append("*Independent · not legal advice · evidence, not certification. See "
-                 "[docs/COMPLIANCE.md](COMPLIANCE.md) for the full crosswalk.*")
+                 "[docs/compliance/index.md](COMPLIANCE.md) for the full crosswalk.*")
     lines.append("")
     return "\n".join(lines)
 

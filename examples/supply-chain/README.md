@@ -14,4 +14,4 @@ python examples/supply-chain/mlbom_emit.py            # writes provael.mlbom.jso
 ```
 
 Ties Provael's evidence into the same supply-chain artifacts auditors already ask for (see
-[docs/COMPLIANCE.md](../../docs/COMPLIANCE.md)).
+[docs/compliance/index.md](../../docs/compliance/index.md)).

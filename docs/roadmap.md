@@ -5,7 +5,7 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
 ## Shipped
 
 - **Attacks:** 15 adversarial families + a `none` benign control, mapped
-  to the [Embodied AI Security Top 10](TOP10.md).
+  to the [Embodied AI Security Top 10](top10.md).
 - **Policies:** `stub` (CPU); `smolvla`, `pi0`, `pi05`, `pi0fast`, `groot` (LeRobot); `openvla`
   (HF transformers); `openpi` (websocket client to a π0 policy *server*). Bring-your-own via the
   `PolicyAdapter` ABC. **`groot`, `openvla` and `openpi` are registered scaffolding** — no
@@ -22,7 +22,7 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
   [checkpoint-integrity](checkpoint-integrity.md)); the CycloneDX **ML-BOM ships** (`provael report
   --format mlbom`), while model-*signing* (Sigstore) remains planned. The public leaderboard is
   Ed25519-signed as of 0.27.0.
-- **Defenses — what is measured and what is not.** Two of the six `docs/DEFENSES.md` taxonomy rows
+- **Defenses — what is measured and what is not.** Two of the six `docs/defenses.md` taxonomy rows
   are measured under the protocol, both `stub-validated-scaffolding` on CPU fixtures:
   `instruction_canonicalization` (input side) and `action_envelope` (action side). The action-envelope
   study is `credited` on `stub` and `reach` and **`not-credited` on `humanoid`**, and both studies

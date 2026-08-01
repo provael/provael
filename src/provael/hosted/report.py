@@ -67,10 +67,11 @@ CONFORMITY_MAPPING: tuple[dict[str, str], ...] = (
         "obligation": "High-risk AI safety-component obligations for AI embedded in machinery "
         "(robustness, accuracy, cybersecurity — Art. 15).",
         "instrument": "Regulation (EU) 2024/1689 (AI Act), Annex I machinery",
-        "applies_from": "2027-08-02",
+        "applies_from": "2028-08-02",
         "provael_evidence": "Per-family transfer-test (rate + 95% Wilson CI + benign control) and "
-        "the compliance crosswalk, carried inside the attestation. A move to 2028-08-02 is "
-        "proposed in the Digital Omnibus but NOT yet adopted; treat 2027 as binding until it is.",
+        "the compliance crosswalk, carried inside the attestation. Reg (EU) 2026/1744 (Digital "
+        "Omnibus on AI, OJ 24 Jul 2026, in force 27 Jul 2026) moved embedded Annex I application "
+        "to 2028-08-02; 2027-08-02 is the superseded statutory baseline.",
     },
     {
         "obligation": "Cybersecurity risk assessment for industrial / collaborative robots.",

@@ -9,7 +9,7 @@
 
 **Verdict: `credited` on both suites — and read the next section before quoting that word.**
 
-This is the first defense measured under the protocol in [DEFENSES.md](../DEFENSES.md), and the
+This is the first defense measured under the protocol in [defenses](../defenses.md), and the
 first in *this repository's own sequence*. It is not a claim about the field.
 
 ---

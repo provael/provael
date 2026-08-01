@@ -25,7 +25,7 @@ measured by *querying* a real policy, never exfiltrating real data) is GPU-gated
 here**, so no cross-model transfer is claimed. The probe protocol + predicate live in
 :mod:`provael.scoring.confidentiality`.
 
-Prior art (see docs/TOP10.md EAI09): query-based model extraction / inversion / membership inference
+Prior art (see docs/top10.md EAI09): query-based model extraction / inversion / membership inference
 of learned policies; the Unitree G1 telemetry-exfiltration incident (arXiv 2509.14096). Maps to NIST
 AI 100-2 **Privacy (model extraction, NISTAML.03)**, MITRE ATLAS **Exfiltration**, OWASP **LLM02**.
 """

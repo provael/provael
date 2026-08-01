@@ -99,6 +99,10 @@ docs = [
     "mkdocs-material",
     "mkdocs-jupyter",
     "mike",
+    # Serves 301s for the uppercase docs URLs retired in the lowercase migration. Without it those
+    # URLs 404 outright, which trades a case-sensitivity trap for a dead-link one — worse, because
+    # the uppercase URLs are the ones already published and linked to.
+    "mkdocs-redirects",
 ]
 
 # The `lerobot` and `openpi` extras are mutually exclusive: lerobot pins numpy>=2.0 while

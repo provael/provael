@@ -28,7 +28,7 @@ real-model transfer — a benign-sounding instruction driving a real policy's en
 keep-out zone (BadRobot × SmolVLA × LIBERO) — is GPU-gated and **not run here**, so no cross-model
 transfer is claimed. The cue grammar + predicate live in :mod:`provael.scoring.misalignment`.
 
-Prior art / mapping (see docs/TOP10.md): **EAI06 Cross-domain safety misalignment (the embodiment
+Prior art / mapping (see docs/top10.md): **EAI06 Cross-domain safety misalignment (the embodiment
 gap)**. Provael makes no "first" claim and does not brand the Embodied AI Security Top 10 as OWASP.
 """
 

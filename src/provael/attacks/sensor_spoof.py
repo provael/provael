@@ -26,7 +26,7 @@ policy's RGB stream driving its end-effector into a keep-out zone (SmolVLA × LI
 and **not run here**, so no cross-model transfer is claimed. The spoof grammar + predicate live in
 :mod:`provael.scoring.perception`.
 
-Prior art / mapping (see docs/TOP10.md): **EAI02 Adversarial perception** (patches / textures /
+Prior art / mapping (see docs/top10.md): **EAI02 Adversarial perception** (patches / textures /
 sensor spoofing). Provael makes no "first" claim and does not brand the Embodied AI Security Top 10
 as OWASP.
 """

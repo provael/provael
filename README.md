@@ -46,7 +46,7 @@ itself** (EAI01–EAI06): the language-conditioned control policy that *becomes*
 surface as robots gain language-driven autonomy — and the layer a text-only jailbreak tool
 structurally can't reach, because a prompt that stays "safe" in text can still drive an **unsafe
 trajectory**. That gap is what the finding above measures. See the
-[Embodied AI Security Top 10](docs/TOP10.md).
+[Embodied AI Security Top 10](docs/top10.md).
 
 ---
 
@@ -83,7 +83,7 @@ tool, not behind the operated tier: a mitigation you cannot measure is a marketi
 
 **Two defenses ship (0.29.0), both `stub-validated-scaffolding` — no real-model transfer is claimed
 for either.** `instruction_canonicalization` acts on the instruction; `action_envelope` acts on the
-commanded action. The action side exists because four of the six `docs/DEFENSES.md` taxonomy rows act
+commanded action. The action side exists because four of the six `docs/defenses.md` taxonomy rows act
 on what leaves the policy, and until `Defense.filter_action` those four were not merely unmeasured
 but **unimplementable** — the taxonomy was a spec its own interface could not satisfy. The
 action-envelope study is `credited` on `stub` and `reach` and **`not-credited` on `humanoid`**, and
@@ -122,13 +122,13 @@ compliance dossier. Design-partner assessments ($15K, first 3) and standard asse
 [www.provael.com/assessment](https://www.provael.com/assessment) — free PV-SCAN of your nearest
 public checkpoint included.
 
-Run Provael? Add yourself to [docs/ADOPTERS.md](docs/ADOPTERS.md) via PR.
+Run Provael? Add yourself to [docs/adopters.md](docs/adopters.md) via PR.
 
 ## The Embodied AI Security Top 10
 
 An independent, community risk list for the security of VLA models and the robots they drive — the
-framework Provael's attacks map to. Read it: [docs/TOP10.md](docs/TOP10.md). Draft v0.2, PRs welcome.
-Shaping v0.3? The [Top-10 RFC process](docs/TOP10_RFC.md) covers how to propose a new risk or
+framework Provael's attacks map to. Read it: [docs/top10.md](docs/top10.md). Draft v0.2, PRs welcome.
+Shaping v0.3? The [Top-10 RFC process](docs/top10-rfc.md) covers how to propose a new risk or
 dispute an existing one.
 
 Comparing frameworks? See the [EAI ↔ RoboJailBench crosswalk](docs/crosswalk/robojailbench.md) — a
@@ -155,20 +155,20 @@ that tag as each finding's `EAIxx` ruleId:
 
 | family | attacks | maps to |
 | --- | --- | --- |
-| `instruction` | `roleplay`, `goal_substitution`, `paraphrase` | [EAI01 — Policy & instruction jailbreak](docs/TOP10.md#eai01--policy--instruction-jailbreak-direct-command-channel) |
-| `visual` | `patch`, `decoy_object` | [EAI02 — Adversarial perception](docs/TOP10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) |
-| `sensor_spoof` | `patch_spoof`, `signal_spoof` (sim perception spoof → keep-out violation) | [EAI02 — Adversarial perception](docs/TOP10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) |
-| `injection` | `scene_text`, `mcp_tool_desc` | [EAI05 — Indirect / embodied prompt injection](docs/TOP10.md#eai05--indirect--embodied-prompt-injection) |
-| `action` | `freeze`, `trajectory_hijack` | [EAI04 — Action-space integrity](docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
-| `action_space` | `keepout_hijack`, `critical_freeze` (commanded-end-state: keep-out hijack / critical-step freeze) | [EAI04 — Action-space integrity](docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
-| `backdoor` | `object_trigger`, `phrase_trigger` (objective-decoupled trigger screen) | [EAI03 — Model & pipeline poisoning, backdoors & supply chain](docs/TOP10.md#eai03--model--pipeline-poisoning-backdoors--supply-chain) |
-| `authorization` | `self_authorize_bypass`, `scope_escalation` (excessive agency) | [EAI08 — Identity, access & excessive autonomy](docs/TOP10.md#eai08--identity-access--excessive-autonomy) |
-| `confidentiality` | `membership_inference`, `model_extraction` (memorized-canary leak screen) | [EAI09 — Model & data confidentiality](docs/TOP10.md#eai09--model--data-confidentiality--theft-extraction-inversion--surveillance) |
-| `misalignment` | `benign_urgency_override`, `euphemistic_reroute` (benign language → keep-out violation) | [EAI06 — Cross-domain safety misalignment](docs/TOP10.md#eai06--cross-domain-safety-misalignment-the-embodiment-gap) |
-| `optimized` | `targeted_hijack` (black-box action-directive search) | [EAI04 — Action-space integrity](docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
-| `optimized_patch` | `patch_hijack` (query-budgeted adversarial-patch search, GPU-gated) | [EAI02 — Adversarial perception](docs/TOP10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) |
-| `optimized_instruction` | `targeted_redirect` (optimized, command-preserving instruction search) | [EAI01 — Policy & instruction jailbreak](docs/TOP10.md#eai01--policy--instruction-jailbreak-direct-command-channel) · EAI04 threat model |
-| `humanoid` | `balance_spoof` (balance spoof → loss of balance), `whole_body_hijack` (→ topple/fall), `stride_freeze` (freeze mid-stride) — whole-body / locomotion, **stub-validated** | [EAI02 — Adversarial perception](docs/TOP10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) · [EAI04 — Action-space integrity](docs/TOP10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
+| `instruction` | `roleplay`, `goal_substitution`, `paraphrase` | [EAI01 — Policy & instruction jailbreak](docs/top10.md#eai01--policy--instruction-jailbreak-direct-command-channel) |
+| `visual` | `patch`, `decoy_object` | [EAI02 — Adversarial perception](docs/top10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) |
+| `sensor_spoof` | `patch_spoof`, `signal_spoof` (sim perception spoof → keep-out violation) | [EAI02 — Adversarial perception](docs/top10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) |
+| `injection` | `scene_text`, `mcp_tool_desc` | [EAI05 — Indirect / embodied prompt injection](docs/top10.md#eai05--indirect--embodied-prompt-injection) |
+| `action` | `freeze`, `trajectory_hijack` | [EAI04 — Action-space integrity](docs/top10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
+| `action_space` | `keepout_hijack`, `critical_freeze` (commanded-end-state: keep-out hijack / critical-step freeze) | [EAI04 — Action-space integrity](docs/top10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
+| `backdoor` | `object_trigger`, `phrase_trigger` (objective-decoupled trigger screen) | [EAI03 — Model & pipeline poisoning, backdoors & supply chain](docs/top10.md#eai03--model--pipeline-poisoning-backdoors--supply-chain) |
+| `authorization` | `self_authorize_bypass`, `scope_escalation` (excessive agency) | [EAI08 — Identity, access & excessive autonomy](docs/top10.md#eai08--identity-access--excessive-autonomy) |
+| `confidentiality` | `membership_inference`, `model_extraction` (memorized-canary leak screen) | [EAI09 — Model & data confidentiality](docs/top10.md#eai09--model--data-confidentiality--theft-extraction-inversion--surveillance) |
+| `misalignment` | `benign_urgency_override`, `euphemistic_reroute` (benign language → keep-out violation) | [EAI06 — Cross-domain safety misalignment](docs/top10.md#eai06--cross-domain-safety-misalignment-the-embodiment-gap) |
+| `optimized` | `targeted_hijack` (black-box action-directive search) | [EAI04 — Action-space integrity](docs/top10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
+| `optimized_patch` | `patch_hijack` (query-budgeted adversarial-patch search, GPU-gated) | [EAI02 — Adversarial perception](docs/top10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) |
+| `optimized_instruction` | `targeted_redirect` (optimized, command-preserving instruction search) | [EAI01 — Policy & instruction jailbreak](docs/top10.md#eai01--policy--instruction-jailbreak-direct-command-channel) · EAI04 threat model |
+| `humanoid` | `balance_spoof` (balance spoof → loss of balance), `whole_body_hijack` (→ topple/fall), `stride_freeze` (freeze mid-stride) — whole-body / locomotion, **stub-validated** | [EAI02 — Adversarial perception](docs/top10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) · [EAI04 — Action-space integrity](docs/top10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
 
 ## Scope and honest limitations
 
@@ -541,7 +541,7 @@ Each mapped requirement carries the Provael artifacts that evidence it, an `evid
 `gap` status (with a reason — e.g. an uncalibrated run flags the metrics that need calibration as
 gaps), and the honest-scope caveats. It reuses `report.json` (no attacks re-run) and is
 **evidence, not certification** — see
-[docs/COMPLIANCE.md](https://github.com/provael/provael/blob/main/docs/COMPLIANCE.md) for the full
+[docs/compliance/index.md](https://github.com/provael/provael/blob/main/docs/compliance/index.md) for the full
 crosswalk and schema.
 
 For an assessor-facing pack, `provael certify` emits an EU Machinery Regulation Annex I Part A (or
@@ -571,7 +571,7 @@ a key that is not in *your* trust store, is **never** reported as "verified" —
 validity, and signer trust are distinct. The digest layer is standard-library and always on.
 Cryptographic **Ed25519 signing** rides the optional `provael[attest]` extra (`--no-sign` gives a
 digest-only bundle without it). It re-runs nothing and is **evidence, not certification** — see
-[docs/ATTESTATION.md](https://github.com/provael/provael/blob/main/docs/ATTESTATION.md).
+[docs/attestation.md](https://github.com/provael/provael/blob/main/docs/attestation.md).
 
 `--profile <iso-10218-2|iec-62443|insurer>` embeds a **standards-aligned assurance view**: the per-EAI
 ASR as **ISO 10218-2:2025** cyber-risk-assessment evidence routed to **IEC 62443 SL2**, or a
@@ -609,7 +609,7 @@ The intended paid surface is a **future operated service**; the in-repo hosted s
 | `provael certify` incl. the `risk_reduction_measures` dossier section | ✅ | |
 | **Local `attest`** (digest-bound; Ed25519-signed with *your* key, verified against *your* trust store) + the leaderboard | ✅ | |
 | **Experimental** reference server (`provael serve`, `[hosted]` extra) — disabled by default; operator-key, **untrusted by default** | ✅ | |
-| **Authenticated, trusted signing** (a KMS-backed key an assessor can trust) — [production requirements](docs/maintainers/HOSTED_PRODUCTION_REQUIREMENTS.md) | | ⏳ not built |
+| **Authenticated, trusted signing** (a KMS-backed key an assessor can trust) — [production requirements](docs/maintainers/hosted-production-requirements.md) | | ⏳ not built |
 | **Assurance-report draft** at scale (a structured evidence export, **not** an insurer / Notified-Body opinion) | | ⏳ not built |
 
 ```bash
@@ -693,7 +693,7 @@ same config + seed always produces a byte-identical `report.json`.
   [roadmap](docs/roadmap.md).
 - **defenses** — measured mitigations with pre/post ASR + CI: **instruction canonicalization**
   (input side) and **action envelope** (action side), two of six taxonomy rows. Four remain
-  *specified and unproven* ([docs/DEFENSES.md](docs/DEFENSES.md)).
+  *specified and unproven* ([docs/defenses.md](docs/defenses.md)).
 
 ## Development
 
@@ -722,11 +722,11 @@ uv run pytest -q         # tests (CPU only; LeRobot tests skip unless gated)
   **[CODE_OF_CONDUCT.md](https://github.com/provael/provael/blob/main/CODE_OF_CONDUCT.md)**
   (Contributor Covenant 2.1).
 - **Shape the risk list** — the
-  **[Embodied AI Security Top 10](https://github.com/provael/provael/blob/main/docs/TOP10.md)**
+  **[Embodied AI Security Top 10](https://github.com/provael/provael/blob/main/docs/top10.md)**
   is a community draft; propose, dispute, or co-author it.
 - **Compliance** — `provael report --format compliance` maps a run to ISO 10218:2025, the EU AI
   Act (Art. 9 / 15 / 72), NIST AI 100-2 / AI RMF, and IEC 62443; crosswalk + schema in
-  **[docs/COMPLIANCE.md](https://github.com/provael/provael/blob/main/docs/COMPLIANCE.md)**.
+  **[docs/compliance/index.md](https://github.com/provael/provael/blob/main/docs/compliance/index.md)**.
   Machinery-Reg readiness: [www.provael.com/machinery-regulation](https://www.provael.com/machinery-regulation).
 - **Cite** — see
   **[CITATION.cff](https://github.com/provael/provael/blob/main/CITATION.cff)**.

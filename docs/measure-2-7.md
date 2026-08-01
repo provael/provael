@@ -24,7 +24,7 @@ provael report --in runs/measure --format oscal --out report.oscal.json   # GRC-
 
 Tag findings with **MITRE ATLAS** technique ids and the **NIST AI 100-2e2025** adversarial-ML
 classes (evasion / poisoning / privacy) for cross-framework traceability — see
-[COMPLIANCE.md](COMPLIANCE.md) and the OSCAL export (observations carry the EAI id; map those to
+[compliance](compliance/index.md) and the OSCAL export (observations carry the EAI id; map those to
 ATLAS in your GRC tool).
 
 > Evidence, not certification. `n = 10` per attack is a screen — read the CIs, run more seeds for a

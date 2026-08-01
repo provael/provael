@@ -37,5 +37,5 @@ and flagged *(proposed)* where ATLAS's thin embodied coverage has no on-point te
 
 The Provael run emits an AVID record (`provael export --format avid`) and OSCAL
 assessment-results; ATLAS case-study fields (summary, target, procedure, references) are drawn from
-those plus [docs/TOP10.md](../TOP10.md). RoboPAIR (arXiv:2410.13691) and BadRobot
+those plus [docs/top10.md](../top10.md). RoboPAIR (arXiv:2410.13691) and BadRobot
 (arXiv:2407.20242) are the canonical robot-jailbreak references to align to.

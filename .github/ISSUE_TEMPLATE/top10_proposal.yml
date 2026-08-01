@@ -6,8 +6,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Propose a **new risk** for [The Embodied AI Security Top 10](../blob/main/docs/TOP10.md).
-        The full process is in the [RFC (v0.2 → v0.3)](../blob/main/docs/TOP10_RFC.md). To *dispute
+        Propose a **new risk** for [The Embodied AI Security Top 10](../blob/main/docs/top10.md).
+        The full process is in the [RFC (v0.2 → v0.3)](../blob/main/docs/top10-rfc.md). To *dispute
         a ranking* or *fix a framework mapping* instead, use the
         **"Top 10: propose / dispute / fix a mapping"** template. The bar: a concrete,
         **adversarially-reachable** threat with at least one referenceable source.

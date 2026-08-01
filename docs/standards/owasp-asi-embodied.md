@@ -25,4 +25,4 @@ Physical action introduces risks the text-world Top-10 doesn't model: irreversib
 un-grasp), sensor-channel attacks (adversarial patches), and action-space integrity (freeze /
 trajectory hijack). The annex proposes these as embodied extensions, with Provael as the
 open measurement methodology and EAI01–10 as the reference taxonomy
-([docs/TOP10.md](../TOP10.md)).
+([docs/top10.md](../top10.md)).

@@ -82,7 +82,7 @@ _GOLDEN_CONFIG = {
 
 
 def test_registry_ships_exactly_two_measured_defenses() -> None:
-    """Four of the six docs/DEFENSES.md rows are unproven and must NOT be registered.
+    """Four of the six docs/defenses.md rows are unproven and must NOT be registered.
 
     A placeholder entry would make `provael list-defenses` imply coverage that has never been
     measured — the failure mode this project's methodology exists to prevent.
@@ -296,7 +296,7 @@ def _build(defended: RunReport, undefended: RunReport):  # noqa: ANN202
 
 
 def test_credit_rule_rejects_overlapping_intervals() -> None:
-    """docs/DEFENSES.md credits a defense ONLY where the intervals are separated.
+    """docs/defenses.md credits a defense ONLY where the intervals are separated.
 
     10/20 -> 6/20 is a 20-point drop and looks like a win, but [30-70%] and [12-54%] overlap, so
     the data is consistent with no effect. Not credited, however good the point estimate looks.

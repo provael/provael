@@ -13,7 +13,7 @@ WHY THIS FILE WAS REWRITTEN (0.28.0)
 ------------------------------------
 It used to wrap the policy in an ad-hoc clamp, print ``base - firewalled`` as a percentage, and end
 with ``assert fw_s < base_s``. That is a bare point-estimate comparison — precisely the reasoning
-``docs/DEFENSES.md`` and :mod:`provael.defenses.measure` exist to forbid: no confidence interval, no
+``docs/defenses.md`` and :mod:`provael.defenses.measure` exist to forbid: no confidence interval, no
 credit rule, no benign false-positive control, no acceptance gate. It was the project's "show
 defense" demo the whole time, arguing for a defense in the one style the project tells everyone else
 not to use.

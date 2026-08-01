@@ -4,7 +4,7 @@
 
 Maintained by [Provael](https://github.com/provael/provael) · **v0.2 draft** · 27 Jun 2026 · License: **CC-BY-SA 4.0** · PRs welcome.
 
-**Contributing to this list?** See the [RFC process (v0.2 → v0.3)](TOP10_RFC.md) — how to propose a
+**Contributing to this list?** See the [RFC process (v0.2 → v0.3)](top10-rfc.md) — how to propose a
 new risk, dispute an existing one, and how a change is reviewed and versioned.
 
 > **Independent community project. Not affiliated with or endorsed by the OWASP® Foundation or MITRE®.**
@@ -422,7 +422,7 @@ This is **v0.2, made to be argued with.** Wrong rank, wrong category, wrong mapp
 tell us. **No code required:**
 
 - **Issue form** — [Top 10: propose / dispute / fix a mapping](https://github.com/provael/provael/issues/new?template=top10-feedback.yml).
-- **Or a PR** editing this file (`docs/TOP10.md`) directly.
+- **Or a PR** editing this file (`docs/top10.md`) directly.
 - **Full guide** — [Contributing to the Embodied AI Security Top 10](https://github.com/provael/provael/blob/main/CONTRIBUTING.md#contributing-to-the-embodied-ai-security-top-10).
 
 Contributors and the researchers behind each cited attack are credited (see
@@ -450,7 +450,7 @@ others credited in [Prior art](#prior-art-this-list-synthesizes-it-does-not-inve
 Plain text:
 
 > Provael. *The Embodied AI Security Top 10 (v0.2).* 2026-06-27. Licensed CC-BY-SA 4.0.
-> <https://github.com/provael/provael/blob/main/docs/TOP10.md>
+> <https://github.com/provael/provael/blob/main/docs/top10.md>
 
 BibTeX:
 
@@ -462,7 +462,7 @@ BibTeX:
   month        = jun,
   note         = {Community draft, version 0.2. Licensed CC-BY-SA 4.0.
                   Independent — not affiliated with OWASP or MITRE.},
-  howpublished = {\url{https://github.com/provael/provael/blob/main/docs/TOP10.md}}
+  howpublished = {\url{https://github.com/provael/provael/blob/main/docs/top10.md}}
 }
 ```
 

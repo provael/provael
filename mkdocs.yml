@@ -31,22 +31,23 @@ nav:
   - Quickstart: quickstart.md
   - Examples gallery: examples.md
   - Attack catalog: attacks.md
-  - Defenses: DEFENSES.md
+  - Defenses: defenses.md
   - Leaderboard: leaderboard.md
   - Embodied AI Top 10:
-      - The list: TOP10.md
-      - RFC process (v0.2 → v0.3): TOP10_RFC.md
+      - The list: top10.md
+      - RFC process (v0.2 → v0.3): top10-rfc.md
   - Compliance:
-      - Crosswalk: COMPLIANCE.md
-      - Signed attestation: ATTESTATION.md
+      - Crosswalk: compliance/index.md
+      - Signed attestation: attestation.md
       - Checkpoint integrity (supply chain): checkpoint-integrity.md
       - Machinery Regulation 2027: compliance/machinery-reg-2027.md
       - Machinery Annex I Part A dossier: compliance/machinery-annex-i-part-a.md
       - Per-persona cards: crosswalk/README.md
       - Halos / ANAB integrator card: crosswalk/halos-integrator.md
-      - NIST MEASURE 2.7: MEASURE-2-7.md
-      - Sim predicts real: SIM_PREDICTS_REAL.md
+      - NIST MEASURE 2.7: measure-2-7.md
+      - Sim predicts real: sim-predicts-real.md
   - Standards (drafts):
+      - Overview: standards/index.md
       - MITRE ATLAS case study: standards/atlas-case-study.md
       - OWASP Agentic embodied annex: standards/owasp-asi-embodied.md
       - RoboJailBench crosswalk: crosswalk/robojailbench.md
@@ -60,19 +61,31 @@ nav:
   - Handbook (outline): handbook.md
   - Accelerators & TPU: accelerators.md
   - Findings:
+      - Overview: findings/index.md
       - Instruction transfer — SmolVLA×LIBERO (2026): findings/2026-instruction-transfer.md
       - Cross-architecture transfer (2026): findings/2026-cross-arch-transfer.md
       - EAI04 action-space transfer: studies/eai04-action-space-transfer.md
       - Instruction canonicalization (defense, measured): studies/instruction-canonicalization.md
       - Action envelope (defense, measured): studies/action-envelope.md
   - Studies (pre-registered):
+      - Overview: studies/index.md
       - π0 / openpi transfer: studies/pi0-openpi-transfer.md
       - Meta-World transfer: studies/metaworld-transfer.md
       - Sim-to-real (SO-ARM101): studies/sim-to-real-so101.md
       - Humanoid locomotion (GR00T-N1): studies/humanoid-locomotion-transfer.md
   - Community:
-      - Adopters: ADOPTERS.md
-      - Community & discussions: COMMUNITY.md
+      - Adopters: adopters.md
+      - Community & discussions: community.md
+  # Both runbooks were already publicly served but absent from the nav — reachable only by guessing
+  # the URL. Listing them is the honest resolution rather than hiding them: neither holds a secret,
+  # and hosted-production-requirements.md exists precisely so nobody mistakes the experimental
+  # reference surface for a production signing service. A document written to prevent a
+  # misunderstanding has to be findable to do its job.
+  - Maintainers:
+      - GitHub security settings: maintainers/github-security-settings.md
+      - Hosted production requirements: maintainers/hosted-production-requirements.md
+  - Changelog: changelog.md
+  - Errata: errata.md
   - FAQ: faq.md
   - Open-core promise: open-core-promise.md
   - Roadmap: roadmap.md
@@ -89,3 +102,22 @@ markdown_extensions:
 
 plugins:
   - search
+  # The docs URLs were uppercase (/TOP10/, /DEFENSES/, /COMPLIANCE/…) and therefore
+  # case-sensitive traps: a reader who typed or guessed the lowercase form got a 404, and so did
+  # anything that lowercased a URL in transit. Renaming to lowercase fixes that but retires the
+  # URLs that are already published, cited and linked — including from the marketing site and from
+  # the BibTeX entry in the Top 10 itself. These 301s are what keep the rename from trading one
+  # broken-link class for another. Do not delete them: an old URL stays old forever.
+  - redirects:
+      redirect_maps:
+        'TOP10.md': 'top10.md'
+        'TOP10_RFC.md': 'top10-rfc.md'
+        'DEFENSES.md': 'defenses.md'
+        'COMPLIANCE.md': 'compliance/index.md'
+        'ATTESTATION.md': 'attestation.md'
+        'SIM_PREDICTS_REAL.md': 'sim-predicts-real.md'
+        'ADOPTERS.md': 'adopters.md'
+        'COMMUNITY.md': 'community.md'
+        'MEASURE-2-7.md': 'measure-2-7.md'
+        'maintainers/HOSTED_PRODUCTION_REQUIREMENTS.md': 'maintainers/hosted-production-requirements.md'
+        'maintainers/GITHUB_SECURITY_SETTINGS.md': 'maintainers/github-security-settings.md'

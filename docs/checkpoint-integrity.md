@@ -6,7 +6,7 @@ that is safe to load?**
 !!! warning "This is not an attack-success rate, and it does not reduce one"
     Checkpoint integrity is a **supply-chain control**. It produces a **verdict**, not a rate. A
     checkpoint that passes every check on this page can still be driven off-task by a reworded
-    instruction at exactly the rate the [ASR](MEASURE-2-7.md) reports. The two travel in the same
+    instruction at exactly the rate the [ASR](measure-2-7.md) reports. The two travel in the same
     evidence pack because an assessor needs both — they are **not the same claim and must never be
     added together**. Nothing here may be reported as, aggregated into, or described as moving an
     ASR.

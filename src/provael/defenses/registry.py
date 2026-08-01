@@ -4,7 +4,7 @@ Shaped deliberately like :mod:`provael.attacks.registry` — same dict-of-factor
 ``available_* / make_* / resolve_*`` trio, same error phrasing — so the two read the same at a
 glance and neither needs its own mental model.
 
-**Exactly two entries ship today.** ``docs/DEFENSES.md`` lists six mitigation rows; the remaining
+**Exactly two entries ship today.** ``docs/defenses.md`` lists six mitigation rows; the remaining
 four are each "a **specified, unproven** mitigation — the honest status for every row in the
 taxonomy
 above", and they are absent here on purpose.

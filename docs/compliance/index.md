@@ -20,12 +20,13 @@ framework asks for, and specs the report Provael generates from them.
 > health-and-safety expectations — including **robustness against manipulation** — reach robots
 > through **delegated acts to the Machinery Regulation** (the Machinery Regulation applies from
 > **2027-01-20**; AI-specific delegated acts expected by **2028-08-02**), alongside the new
-> **cybersecurity risk assessment** in **ISO 10218:2025**. The Omnibus *would* also shift the
-> high-risk AI Act deadlines — stand-alone Annex III to **2027-12-02**, embedded Annex I to
-> **2028-08-02** — but that deferral is **not yet formally adopted or published in the OJ**, so
-> **2027-08-02** remains the legal baseline for embedded Annex I; treat 2027 as binding until the
-> deferral is adopted. (This mirrors `attest.REGULATORY_CLOCK`, which is embedded in the payload of
-> every signed attestation — plan against the clock, not against the proposed dates.) The EU AI Act
+> **cybersecurity risk assessment** in **ISO 10218:2025**. The Omnibus also shifts the high-risk
+> AI Act deadlines — stand-alone Annex III to **2027-12-02**, embedded Annex I to **2028-08-02**.
+> That deferral is **no longer proposed**: Regulation (EU) 2026/1744 was published in the OJ on
+> **2026-07-24** and entered into force on **2026-07-27**, so **2028-08-02** is the operative date
+> for embedded Annex I and **2027-08-02** is the superseded statutory baseline. (This mirrors
+> `attest.REGULATORY_CLOCK`, which is embedded in the payload of every signed attestation — plan
+> against the clock, and re-read it rather than trusting a restatement of it.) The EU AI Act
 > **Article 15** robustness/cybersecurity language remains the substantive *measurement* anchor
 > (and still applies directly to non-machinery high-risk AI systems); for a robot, treat the
 > Machinery Regulation + ISO 10218:2025 cyber-risk assessment as the *operative route* and Art. 15
@@ -43,7 +44,7 @@ A calibrated Provael run (`provael calibrate` + `provael attack --calib`) yields
   predicate, plus the held-out benign false-positive rate the calibration was tuned to
   (`<= target-fpr`).
 - **Per-risk tagging** — each attack carries its `EAIxx` id (see
-  [The Embodied AI Security Top 10](TOP10.md)).
+  [The Embodied AI Security Top 10](../top10.md)).
 - **Provenance** — per-task calibration artifact (predicate, target/achieved FPR, `n`, seed
   split) and a deterministic, reproducible config.
 - **Machine-readable outputs** — `report.json`, **SARIF 2.1.0** (GitHub code scanning), and the
@@ -70,7 +71,7 @@ certified bounds. See [Honest scope](#honest-scope--what-this-does-not-cover).
 EU AI Act **Article 15** ("Accuracy, robustness and cybersecurity") explicitly names resilience
 to *data poisoning, model poisoning, adversarial examples (model evasion), and confidentiality
 attacks* — which is the EAI taxonomy in regulatory language. The OWASP / MITRE columns of the
-same mapping live in [TOP10.md → Cross-framework crosswalk](TOP10.md#cross-framework-crosswalk-corrected-verbatim-source-items).
+same mapping live in [top10 → Cross-framework crosswalk](../top10.md#cross-framework-crosswalk-corrected-verbatim-source-items).
 
 ### Functional safety — an input, never a determination
 
@@ -87,7 +88,7 @@ Provael carries rows for them. **What the rows are is as important as that they 
 A Performance Level is determined from architecture, MTTFd, diagnostic coverage and CCF by the
 designer and confirmed by validation. **An attack-success rate is none of those inputs and must
 never be presented as one.** These rows exist because an integrator's file already names these
-standards — see the [Halos / ANAB integrator card](crosswalk/halos-integrator.md) — not because
+standards — see the [Halos / ANAB integrator card](../crosswalk/halos-integrator.md) — not because
 Provael has an opinion about the determination.
 
 ---
@@ -110,7 +111,7 @@ Provael has an opinion about the determination.
 
 - **Adversarial security only.** Functional/mechanical safety (ISO 10218 safety clauses, ISO
   13482, ISO/TS 15066) and non-adversarial reliability are **out of scope** — see the
-  [TOP10 scope box](TOP10.md#scope-read-this--its-deliberate).
+  [TOP10 scope box](../top10.md#scope-read-this--its-deliberate).
 - **Evidence, not conformity.** EU AI Act conformity also requires a quality-management system,
   technical documentation, human oversight, logging, and more. Provael covers the **Art. 15
   robustness/cybersecurity *testing-evidence* slice**, not the whole obligation.
@@ -193,7 +194,7 @@ Verified anchors (read the full text for clause-level audit use):
   Working Draft; not published.** Publication is expected 2026–2027; the row is anticipatory and
   cites no clause, because there is no stable clause to cite.
 
-See also [TOP10.md](TOP10.md) (the risk taxonomy + OWASP/MITRE crosswalk) and
+See also [top10](../top10.md) (the risk taxonomy + OWASP/MITRE crosswalk) and
 [SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md) (responsible-use scope).
 
 ---

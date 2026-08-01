@@ -30,4 +30,4 @@ which is the whole reason Provael exists.
 
 > Honest framing: Provael's attacks are templated/auditable screens, not gradient-optimised
 > worst-case attacks; it's sim-only and evidence-not-certification. See the
-> [FAQ](faq.md) and [scope](SIM_PREDICTS_REAL.md).
+> [FAQ](faq.md) and [scope](sim-predicts-real.md).

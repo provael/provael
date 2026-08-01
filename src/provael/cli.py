@@ -286,7 +286,7 @@ def _defense_from_manifest(run_dir: Path) -> str | None:
 def _write_defense_log(rows: list[dict[str, str]], out_dir: Path) -> Path:
     """Write the defense's raw -> canonical audit trail as a JSONL sidecar.
 
-    A SIDECAR, deliberately. docs/DEFENSES.md requires the canonical form to be "logged next to the
+    A SIDECAR, deliberately. docs/defenses.md requires the canonical form to be "logged next to the
     raw instruction", and the obvious place — a field on AttackResult — is exactly the place it must
     not go: AttackResult is nested in RunReport.results, so a field there moves the canonical JSON
     the attestation is signed over. JSONL so it stays greppable and diffable at any run size.
@@ -573,7 +573,7 @@ def list_reproductions() -> None:
 
 @app.command("list-defenses")
 def list_defenses() -> None:
-    """List registered defenses (mitigations measured under the docs/DEFENSES.md protocol)."""
+    """List registered defenses (mitigations measured under the docs/defenses.md protocol)."""
     table = Table(title="Defenses")
     table.add_column("defense", style="cyan", no_wrap=True)
     table.add_column("kind", style="magenta")
@@ -584,7 +584,7 @@ def list_defenses() -> None:
     table.add_column("status")
     for name in available_defenses():
         d = make_defense(name)
-        # "measured" ONLY where a study exists — docs/DEFENSES.md keeps every other taxonomy row at
+        # "measured" ONLY where a study exists — docs/defenses.md keeps every other taxonomy row at
         # "specified, unproven" and this column must not quietly upgrade one.
         #
         # Read from the class attribute, NOT from the filesystem. Probing for
@@ -594,7 +594,7 @@ def list_defenses() -> None:
         table.add_row(name, d.kind, d.position, ", ".join(d.eai_ids) or "—", status)
     _out.print(table)
     _out.print(
-        "Four of the six docs/DEFENSES.md taxonomy rows ship no implementation and are "
+        "Four of the six docs/defenses.md taxonomy rows ship no implementation and are "
         "deliberately absent: an unmeasured mitigation is not a registered one."
     )
     _out.print(
@@ -1906,7 +1906,7 @@ def mitigation(
                      "execution manifest when omitted."),
     ] = None,
 ) -> None:
-    """Measure a defense: pre/post ASR per family under the docs/DEFENSES.md protocol.
+    """Measure a defense: pre/post ASR per family under the docs/defenses.md protocol.
 
     Exits non-zero on `rejected-benign-cost` so it is usable as a CI gate — a defense that lowers
     ASR by breaking the benign task must fail a pipeline, not be reported and ignored.

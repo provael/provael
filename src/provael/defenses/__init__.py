@@ -1,6 +1,6 @@
 """Defenses — measured mitigations, held to the same evidential bar as attacks.
 
-``docs/DEFENSES.md`` is the taxonomy and the spec. Its rule is the one this package exists to
+``docs/defenses.md`` is the taxonomy and the spec. Its rule is the one this package exists to
 implement: a mitigation "earns a row in a results table only after a study measures its pre/post
 ASR under the controls below" — pre/post ASR per family with 95% Wilson intervals, a benign-FPR
 control, and a benign-task-success acceptance gate.
