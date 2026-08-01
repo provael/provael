@@ -64,7 +64,8 @@ body.
 The target for **v0.3** is a genuinely community-owned document: **15 named contributors from 8 or
 more organizations.**
 
-**Current count: 1 contributor (the maintainer), from 1 organization.**
+**Current count: 2 contributors (the maintainer, plus one co-author at the University of
+Pennsylvania), from 2 organizations.**
 
 That gap is the invitation. If you work on embodied-AI or VLA security — in a lab, a company, or on
 your own — propose a risk, dispute one, or co-author an entry. The list gets better by being argued
