@@ -1853,19 +1853,24 @@
 <p>Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.</p>
 <h2 id="shipped">Shipped</h2>
 <ul>
-<li><strong>Attacks:</strong> 14 adversarial families + a <code>none</code> benign control, mapped
+<li><strong>Attacks:</strong> 15 adversarial families + a <code>none</code> benign control, mapped
   to the <a href="../TOP10/">Embodied AI Security Top 10</a>.</li>
 <li><strong>Policies:</strong> <code>stub</code> (CPU); <code>smolvla</code>, <code>pi0</code>, <code>pi05</code>, <code>pi0fast</code>, <code>groot</code> (LeRobot); <code>openvla</code>
-  (HF transformers). Bring-your-own via the <code>PolicyAdapter</code> ABC.</li>
-<li><strong>Suites:</strong> <code>stub</code> (scalar, CPU), <code>reach</code> (spatial, CPU), <code>libero</code> + <code>metaworld</code> (gated).</li>
+  (HF transformers); <code>openpi</code> (websocket client to a π0 policy <em>server</em>). Bring-your-own via the
+  <code>PolicyAdapter</code> ABC. <strong><code>groot</code>, <code>openvla</code> and <code>openpi</code> are registered scaffolding</strong> — no
+  checkpoint has been loaded through any of them here, and <code>provael list-policies</code> says so per
+  backend. Only <code>smolvla</code> has produced a committed real-model result.</li>
+<li><strong>Suites:</strong> <code>stub</code> (scalar, CPU), <code>reach</code> (spatial, CPU), <code>humanoid</code> (whole-body, CPU),
+  <code>libero</code> + <code>metaworld</code> (real simulators, gated). <code>provael list-suites</code> marks which is which.</li>
 <li><strong>Evidence:</strong> SARIF, compliance crosswalk, pre-deployment scorecard, OSCAL export, AVID export.</li>
 <li><strong>Reproductions:</strong> FreezeVLA, OpenVLA-patch, BadVLA, RoboPAIR.</li>
 <li><strong>Integrations:</strong> promptfoo provider; garak/PyRIT reference plugins; multi-CI (GitHub/GitLab/
   Azure) SARIF; pre-commit; MLflow/W&amp;B logging; HF eval-results; Modal GPU-CI; Docker/devcontainer;
   supply-chain: <strong>checkpoint-integrity verification shipped in 0.27.0</strong> (pinned-digest + pickle
   refusal, fail-closed, in the reusable Action — see
-  <a href="../checkpoint-integrity/">checkpoint-integrity</a>); model-<em>signing</em> (Sigstore) and ML-BOM remain
-  planned. The public leaderboard is Ed25519-signed as of 0.27.0.</li>
+  <a href="../checkpoint-integrity/">checkpoint-integrity</a>); the CycloneDX <strong>ML-BOM ships</strong> (<code>provael report
+  --format mlbom</code>), while model-<em>signing</em> (Sigstore) remains planned. The public leaderboard is
+  Ed25519-signed as of 0.27.0.</li>
 <li><strong>Defenses — what is measured and what is not.</strong> Two of the six <code>docs/DEFENSES.md</code> taxonomy rows
   are measured under the protocol, both <code>stub-validated-scaffolding</code> on CPU fixtures:
   <code>instruction_canonicalization</code> (input side) and <code>action_envelope</code> (action side). The action-envelope

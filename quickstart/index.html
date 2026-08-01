@@ -1917,7 +1917,8 @@ predicate: default (uncalibrated) · benign baseline FPR 0.0%
 </code></pre></div>
 <h2 id="commands">Commands</h2>
 <div class="highlight"><pre><span></span><code>provael<span class="w"> </span>list-policies<span class="w">         </span><span class="c1"># 8 policies (stub is CPU; the other 7 need a GPU extra)</span>
-provael<span class="w"> </span>list-attacks<span class="w">          </span><span class="c1"># 28 attacks across 15 families (14 adversarial + the benign baseline)</span>
+provael<span class="w"> </span>list-attacks<span class="w">          </span><span class="c1"># 29 attacks across 16 families (15 adversarial + the benign baseline)</span>
+provael<span class="w"> </span>list-suites<span class="w">           </span><span class="c1"># 5 suites — 3 CPU fixtures, 2 real simulators (gated)</span>
 provael<span class="w"> </span>list-recipes<span class="w">          </span><span class="c1"># named presets: quick / instruction-only / core-sweep / full-sweep / ci-gate</span>
 provael<span class="w"> </span>list-reproductions<span class="w">    </span><span class="c1"># FreezeVLA / OpenVLA-patch / BadVLA / RoboPAIR</span>
 provael<span class="w"> </span>reproduce<span class="w"> </span>freezevla<span class="w">   </span><span class="c1"># reproduce a published attack on the CPU stub</span>
@@ -1949,7 +1950,7 @@ the tolerance <strong>and</strong> the two 95% Wilson CIs are disjoint, so small
 <span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
 <span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provael/provael@v0.28.0</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provael/provael@v0.29.1</span>
 <span class="w">        </span><span class="nt">with</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">attacks</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instruction,visual,injection</span>
 <span class="w">          </span><span class="nt">episodes</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10&quot;</span>

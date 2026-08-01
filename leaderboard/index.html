@@ -479,6 +479,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-the-published-board-does-not-cover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the published board does not cover
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#provenance-and-reproducibility" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1876,6 +1887,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-the-published-board-does-not-cover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the published board does not cover
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#provenance-and-reproducibility" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1963,6 +1985,25 @@ more robust.</p>
 (roleplay 100%, goal_substitution 60%, paraphrase 10%); <strong>visual and injection attacks are 0%</strong> on
 the real model, against a 0% benign control. That honesty is the point: the board shows what does
 and does not transfer, with intervals, rather than a single headline number.</p>
+<h2 id="what-the-published-board-does-not-cover">What the published board does <em>not</em> cover</h2>
+<p>The board is one run, and it is old. Stated plainly, because the rendered page now states it too:</p>
+<ul>
+<li><strong>Measured with <code>provael 0.1.0</code>.</strong> Every row on the published board came from that release. The
+  build stamp is current; the measurement is not. See <a href="#what-a-re-stamp-does-and-does-not-change">re-stamps</a>.</li>
+<li><strong>1 policy, 1 suite.</strong> <code>smolvla</code> × <code>libero_object/0</code>. Seven of the eight registered policy
+  backends have never produced a board row, and three of those (<code>groot</code>, <code>openvla</code>, <code>openpi</code>) have
+  never loaded a checkpoint at all — <code>provael list-policies</code> marks them <code>scaffolding</code>.</li>
+<li><strong>3 of 15 adversarial families measured</strong> (<code>instruction</code>, <code>injection</code>, <code>visual</code>). <strong>The other
+  twelve have no real-model measurement whatsoever.</strong> They are <em>absent</em> from the board, which is
+  not the same as scoring 0% — an absent family is <code>N/A</code>, and reading it as a pass is the single
+  most likely way to misuse this page.</li>
+<li><strong>No clean-task-success control.</strong> The underlying run predates <code>clean_task_success_rate</code>, so the
+  board shows no measured evidence that the policy completes its benign task unattacked. The
+  benign false-positive control <em>is</em> present and is 0%. The competence control is not, and is not
+  back-filled — see the run's own
+  <a href="https://github.com/provael/provael/blob/main/results/smolvla_libero_object/README.md">provenance note</a>.</li>
+</ul>
+<p>Closing these needs GPU time, not a rebuild: a re-stamp cannot add a family it never ran.</p>
 <h2 id="provenance-and-reproducibility">Provenance and reproducibility</h2>
 <p>A real board is stamped with a <strong>UTC build date</strong>, the <strong>source commit</strong>, and a <strong>SHA-256 digest of
 the aggregated input reports</strong> (the same digest approach as <a href="../ATTESTATION/">attestation</a>, so a board
@@ -1983,8 +2024,14 @@ carries the measurement it always did</strong>, possibly made by a much older re
 <p>That is a trap: a board carrying only <code>generated_at</code> reads as a fresh measurement. Schema v3 adds
 <strong><code>measured_with</code></strong> — the sorted <code>tool_version</code> values of the aggregated reports, i.e. the versions
 the <em>numbers</em> came from — and <code>Leaderboard.is_restamp()</code> answers the question directly. The
-published board reports <code>measured_with: ["0.1.0"]</code> against a build commit from 0.26.x: the
-provenance envelope is current, the measurement is the SmolVLA × LIBERO run it has always been.</p>
+published board reports <code>measured_with: ["0.1.0"]</code> against a build commit from the current release
+line: the provenance envelope is current, the measurement is the SmolVLA × LIBERO run it has
+always been.</p>
+<p>Recording that in the JSON was only half the fix. Until 0.29.1 the <em>rendered</em> Space showed a fresh
+build date and an Ed25519 signature above rows measured many releases earlier, with nothing on the
+page saying so — and a signature over stale data is worse than no signature, because it reads as
+currency. The Space now derives a staleness-and-coverage banner from <code>measured_with</code> and the rows
+themselves, above the tables rather than below them.</p>
 <h2 id="signing-and-offline-verification">Signing and offline verification</h2>
 <p>The published board is <strong>Ed25519-signed</strong> (via the <code>provael[attest]</code> extra). The
 signature covers the whole board except the signature field, and verifies offline with no network.</p>
