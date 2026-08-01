@@ -43,12 +43,15 @@ nav:
       - Machinery Regulation 2027: compliance/machinery-reg-2027.md
       - Machinery Annex I Part A dossier: compliance/machinery-annex-i-part-a.md
       - Per-persona cards: crosswalk/README.md
+      - Halos / ANAB integrator card: crosswalk/halos-integrator.md
       - NIST MEASURE 2.7: MEASURE-2-7.md
       - Sim predicts real: SIM_PREDICTS_REAL.md
   - Standards (drafts):
       - MITRE ATLAS case study: standards/atlas-case-study.md
       - OWASP Agentic embodied annex: standards/owasp-asi-embodied.md
       - RoboJailBench crosswalk: crosswalk/robojailbench.md
+      - ForesightSafety-VLA crosswalk: crosswalk/foresight-safety-vla.md
+      - Published ASR baselines: standards/published-asr-baselines.md
       - Listings & PRs: standards/listings.md
   - Python API: python-api.md
   - Glossary: glossary.md

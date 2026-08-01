@@ -113,9 +113,13 @@ executability, cf. RoboGuard); embodied-harm refusal training; red-team each rel
 **What.** Crafted perturbations in what the policy *sees/senses* — adversarial patches, stickers, 3D
 textures, or sensor spoofing — that flip behavior while looking benign to humans.
 **Evidence.** *[research]* "Adversarial vulnerabilities of VLA models" (arXiv 2411.13587); action-aware
-patch attacks. *(Honest note: in Provael's SmolVLA×LIBERO run these did NOT transfer — 0% (0/10), 95% CI
-[0–28%], against the same 0% benign baseline; real-world robustness of perception attacks is unsettled,
-which is exactly why you test rather than assume.)*
+patch attacks. *(Honest note: in Provael's SmolVLA×LIBERO run the `visual` family did NOT transfer —
+0% (0/20), 95% CI [0–16%], against the same 0% benign baseline; real-world robustness of perception
+attacks is unsettled, which is exactly why you test rather than assume. Read that null narrowly: it is
+evidence about the templated attacks Provael shipped, not about perception robustness in general —
+see the [published baselines](standards/published-asr-baselines.md) and the
+[ForesightSafety-VLA crosswalk](crosswalk/foresight-safety-vla.md), whose authors report the opposite
+ordering.)*
 **Attacks shipped (Provael):** the `visual` family (`patch` + `decoy_object`, a scalar-danger perturbation)
 and the `sensor_spoof` family (`patch_spoof` + `signal_spoof`) — *method:* a **sim-injected perception
 spoof** (an adversarial patch on the simulated camera, or a range/depth signal perturbation on the
@@ -156,7 +160,10 @@ Supply Chain** · NIST AI 100-2 **Poisoning / Supply-Chain**.
 trajectory, degrading task success, or freezing it (paralysis).
 **Evidence.** *[research]* **AttackVLA/BackdoorVLA** (arXiv 2511.12149, targeted action sequence,
 real-robot validated); **FreezeVLA** (arXiv 2509.19870, ~76% paralysis ASR). *(Freeze is also an
-availability/DoS failure — see cross-cutting.)* **Attack shipped (Provael):** the `action` family
+availability/DoS failure — see cross-cutting.)* *(FreezeVLA's 76.2% is an ASR of an action-channel
+attack, the closest published figure in kind to a Provael ASR — and still not directly comparable,
+because "the policy froze" and "the policy left its envelope" are different unsafe predicates. See
+the [published baselines](standards/published-asr-baselines.md).)* **Attack shipped (Provael):** the `action` family
 (`freeze` + `trajectory_hijack`) — *method:* a freeze directive drives the policy's motor command to a
 no-op (FreezeVLA-style action-freeze) while a hijack directive redirects the trajectory toward an
 attacker waypoint; each scored as a rate with a 95% Wilson CI against a benign-FPR control. **Stub-validated

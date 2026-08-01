@@ -107,6 +107,10 @@ def test_requirement_mapping_is_complete_and_ordered() -> None:
     assert {e.framework_id for e in cr.entries} == {
         "eu-ai-act", "eu-machinery", "eu-cra", "iso-10218", "nist", "iec-62443",
         "iso-iec-tr-5469", "iso-42001", "iso-23894",
+        # The functional-safety standards an accredited AI-safety inspection programme assesses
+        # robot software against, plus the in-development Type-C standard for dynamically stable
+        # robots. Provael is an input to all three and determines none of them.
+        "iec-61508", "iso-13849", "iso-25785",
     }
     for entry in cr.entries:
         assert entry.provael_signal
@@ -128,8 +132,15 @@ def test_gap_detection_uncalibrated() -> None:
         "eu-machinery:cyber",
         "iso-10218-1:cyber",
         "nist-ai-100-2:privacy",
+        # The three functional-safety rows name EAI04 (the action channel) as their on-point
+        # evidence. This report never ran it, so they are gaps — which is the point of the gate:
+        # a systematic-capability or PL-validation argument citing an ASR from a run that never
+        # touched the action channel would be citing a measurement nobody made.
+        "iec-61508:systematic-capability",
+        "iso-13849:pl-validation",
+        "iso-25785-1:dynamically-stable",
     }
-    assert cr.summary == {"evidence-present": 10, "gap": 7}
+    assert cr.summary == {"evidence-present": 11, "gap": 10}
     # Every gap explains itself; every present entry has no gap reason.
     for entry in cr.entries:
         if entry.status == "gap":
@@ -150,11 +161,18 @@ def test_gap_detection_calibrated() -> None:
         "eu-machinery:cyber",
         "iso-10218-1:cyber",
         "nist-ai-100-2:privacy",
+        # Same EAI04 gate as the uncalibrated case: calibration does not conjure an action-channel
+        # measurement. Both Annex I Part A points stay present — they are routing rows, satisfied
+        # by adversarial evidence generally rather than by one named family.
+        "iec-61508:systematic-capability",
+        "iso-13849:pl-validation",
+        "iso-25785-1:dynamically-stable",
     }
     by = _by_key(cr)
     assert by["eu-ai-act:art15"].status == "evidence-present"
     assert by["nist-ai-rmf:measure"].status == "evidence-present"
-    assert cr.summary == {"evidence-present": 12, "gap": 5}
+    assert by["eu-machinery:annex-i-part-a-6"].status == "evidence-present"
+    assert cr.summary == {"evidence-present": 13, "gap": 8}
     # The gap names the missing family rather than the generic "no EAI-tagged attacks" reason.
     assert "EAI09" in (by["nist-ai-100-2:privacy"].gap_reason or "")
     # The measured evidence carries the calibrated control.
@@ -207,6 +225,95 @@ def test_indicative_flags_match_catalog() -> None:
     assert by["eu-ai-act:art15"].indicative is False  # Article 15 is named explicitly
     assert by["eu-ai-act:art9"].indicative is True  # sub-clause indicative
     assert by["iec-62443:slv"].indicative is True
+
+
+def test_machinery_annex_i_part_a_points_are_pinned() -> None:
+    """The two Annex I Part A points, cited by number rather than deferred.
+
+    Point 5 is the standalone ML safety COMPONENT; point 6 is the machinery with an EMBEDDED
+    self-evolving safety system, which is what an integrator shipping a whole robot places on the
+    market. Both are pinned by literal so a future edit cannot quietly renumber them, and both are
+    asserted distinct: Part B point 19 is the Article 25(3) sibling and is not interchangeable
+    with either — substituting it would route a file down the wrong conformity procedure.
+    """
+    by = _by_key(to_compliance(_calibrated_report()))
+    assert by["eu-machinery:annex-i-part-a"].control_id.endswith("Annex I Part A, point 5")
+    assert by["eu-machinery:annex-i-part-a-6"].control_id.endswith("Annex I Part A, point 6")
+    for key in ("eu-machinery:annex-i-part-a", "eu-machinery:annex-i-part-a-6"):
+        assert "Article 25(2) via Article 6(1)" in by[key].control_id
+        assert "CELEX 32023R1230" in by[key].provael_signal
+
+
+def test_no_control_id_defers_its_clause_to_a_later_verification() -> None:
+    """No requirement may ship a clause it has not verified. This prevents the CLASS.
+
+    ``eu-machinery:annex-i-part-a`` shipped for several releases reading "[point reference pending
+    verification]", and ``certify._crosswalk`` renders exactly that string as
+    ``clause_verification: pending-verification`` in a document whose entire purpose is to be filed
+    with a notified body. A placeholder is the right call at the moment of writing and the wrong
+    thing to still be shipping a release later — pinning the individual string that was fixed would
+    not have caught the next one, so the rule is the assertion.
+    """
+    offenders = [
+        r.key for r in REQUIREMENTS
+        if "pending verification" in r.control_id.lower() or "pending" in r.control_id.lower()
+    ]
+    assert not offenders, (
+        f"{offenders} defer their clause reference to a later verification. Resolve the clause "
+        f"against the primary text and cite it, or drop the row — a compliance artifact that "
+        f"tells an assessor its own citation is unverified is worse than one that omits it."
+    )
+
+
+def test_working_draft_rows_are_indicative() -> None:
+    """A standard that is not published yet can only ever be an anticipatory row.
+
+    ISO 25785-1 is an ISO/TC 299 WG 12 Working Draft. Naming it is legitimate positioning — the
+    evidence exists ahead of the standard — but a non-indicative row asserts a mapping onto a
+    settled clause, and there is no settled clause to map onto. Written as a rule over every row
+    so the next in-development standard inherits it.
+    """
+    for req in REQUIREMENTS:
+        if "working draft" in req.control_id.lower() or "not yet published" in req.control_id.lower():
+            assert req.indicative is True, (
+                f"{req.key} cites an unpublished standard but is not marked indicative"
+            )
+
+
+def test_functional_safety_rows_disclaim_sil_and_performance_level() -> None:
+    """IEC 61508 / ISO 13849 rows must refuse the determination they sit next to.
+
+    These two are the rows most likely to be misread, because they are the standards a buyer's
+    functional-safety assessor already works in. An ASR is an input to a systematic-capability or
+    validation argument; it is not a SIL, not a PL, and not a determination of either. The
+    disclaimer is load-bearing sales copy as much as engineering honesty, so it is pinned.
+    """
+    by = {r.key: r for r in REQUIREMENTS}
+    for key in ("iec-61508:systematic-capability", "iso-13849:pl-validation"):
+        signal = by[key].provael_signal
+        assert "INPUT" in signal, f"{key} must state it is an input, not a determination"
+        assert "no SIL" in signal and "makes no functional-safety claim" in signal, (
+            f"{key} must disclaim SIL / Performance Level and any functional-safety claim"
+        )
+        assert by[key].indicative is True
+        assert by[key].required_eai == ("EAI04",)
+    assert "no Performance Level" in by["iso-13849:pl-validation"].provael_signal
+
+
+def test_iso_25785_names_the_humanoid_attacks_and_its_own_unpublished_status() -> None:
+    """The humanoid row must carry both halves of the honest claim.
+
+    It names three real attacks, and it says the standard is unpublished and the suite is
+    stub-validated with no real-model transfer claimed — the same label /for/humanoid-builders
+    carries. Either half alone oversells: the attacks without the caveat read as a conformity
+    claim, the caveat without the attacks reads as vapour.
+    """
+    req = {r.key: r for r in REQUIREMENTS}["iso-25785-1:dynamically-stable"]
+    for attack in ("balance_spoof", "whole_body_hijack", "stride_freeze"):
+        assert attack in req.provael_signal, f"the humanoid row does not name {attack}"
+    assert "NOT PUBLISHED" in req.provael_signal
+    assert "stub-validated" in req.provael_signal
+    assert "no real-model transfer claimed" in req.provael_signal
 
 
 def test_by_eai_aggregation_and_families() -> None:

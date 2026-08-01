@@ -6,6 +6,13 @@ plainly **how we differ** — what is novel here (a small, reproducible, model-a
 ASR harness) and what is not (the attack ideas themselves, which come from the papers
 below).
 
+> **Looking for the numbers?** This file credits the work qualitatively. For the published
+> figures side by side — and, more importantly, for **which of them a Provael ASR can honestly be
+> compared against** — see
+> [docs/standards/published-asr-baselines.md](docs/standards/published-asr-baselines.md). Most
+> published VLA attack results measure *task-success degradation*; a Provael ASR measures
+> *envelope breach*. They are not one column.
+
 ## The works we build on
 
 ### RoboPAIR — *Jailbreaking LLM-Controlled Robots*

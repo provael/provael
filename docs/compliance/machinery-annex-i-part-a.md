@@ -27,6 +27,22 @@ approaches that ensure safety functions are listed in **Annex I Part A**, and An
 categories are subject to the **third-party conformity-assessment procedure of Article 25(2)** (via
 **Article 6(1)**) — i.e. a notified body is involved, rather than manufacturer self-assessment.
 
+**Which point you are filing under.** Annex I Part A names the machine-learning safety cases at two
+adjacent points, verified verbatim against CELEX 32023R1230 on 2026-08-01:
+
+| Point | Verbatim scope | Who this is |
+| --- | --- | --- |
+| **Part A, point 5** | "Safety components with fully or partially self-evolving behaviour using machine learning approaches ensuring safety functions" | You place the **ML safety component itself** on the market — a policy, a perception-driven safety function, sold as a component. |
+| **Part A, point 6** | Machinery having **embedded systems** with fully or partially self-evolving behaviour using machine learning approaches ensuring safety functions | You place the **whole machine** on the market with the ML safety system inside it — a humanoid, an AMR, a cell. This is the integrator's row. |
+
+Both route to the same Article 25(2) third-party procedure via Article 6(1), and `provael certify`
+emits both rows so the operator makes the determination rather than inheriting ours.
+
+> **Part B point 19 is not a substitute for either.** It is the **Article 25(3)** sibling, a
+> different procedure. Citing it in place of a Part A point routes the file down the wrong
+> conformity path, which is the kind of error that surfaces late and expensively. The requirement
+> catalogue says so in terms, and `tests/test_compliance.py` pins both point numbers by literal.
+
 The dossier is a dated, digest-bound record of how a policy behaved under red-team, assembled the
 way that assessment consumes it.
 
@@ -50,12 +66,25 @@ Each item is separately addressable in `dossier.json` (and rendered in `dossier.
    [SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md), families and suites not run
    this run, and embodiments not covered.
 5. **Standards crosswalk** — each evidence item mapped to its clause: Machinery Regulation **Annex I
-   Part A** (Article 6(1) → Article 25(2)) and **Annex III** essential health & safety requirements;
-   **ISO 10218-1/-2:2025** cyber (which defers detailed cyber requirements to **IEC 62443**); and
-   the **NIST AI 100-2e2025** adversarial-ML taxonomy. Article and annex numbers are cited from
-   CELEX 32023R1230 where verified; any clause that could not be verified against the primary annex
-   text is marked **`[clause reference pending verification]`** rather than guessed — a wrong clause
-   citation in a compliance document is worse than a missing one.
+   Part A points 5 and 6** (Article 6(1) → Article 25(2)) and **Annex III** essential health & safety
+   requirements; **ISO 10218-1/-2:2025** cyber (which defers detailed cyber requirements to
+   **IEC 62443**); the functional-safety standards an accredited AI-safety inspection programme
+   assesses robot software against — **IEC 61508**, **ISO 13849-1/-2**, **ISO/IEC TR 5469:2024** (see
+   the [Halos / ANAB integrator card](../crosswalk/halos-integrator.md)); the in-development
+   **ISO 25785-1** for dynamically stable robots, carried as an anticipatory row because the
+   standard is an unpublished Working Draft; and the **NIST AI 100-2e2025** adversarial-ML taxonomy.
+
+   Article and annex numbers are cited from CELEX 32023R1230, verified against the primary text. A
+   clause that cannot be verified is **not shipped as a placeholder**: `tests/test_compliance.py`
+   fails the build if any requirement's clause defers itself to a later verification, because a
+   compliance document that tells an assessor its own citation is unverified is worse than one that
+   omits the row. Rows whose *sub-clause* precision depends on the full standard text stay marked
+   *(indicative)* — that is a different and honest state.
+
+   **Provael determines no SIL and no Performance Level.** The IEC 61508 and ISO 13849 rows are
+   inputs to a systematic-capability or validation argument. A PL comes from architecture, MTTFd,
+   diagnostic coverage and CCF; an attack-success rate is none of those and must never be presented
+   as one.
 6. **Referenced artifacts** — the CycloneDX **ML-BOM** and the PEP 740 **attestation** are
    *referenced* by filename and bound by the run's SHA-256 digest, not duplicated.
 

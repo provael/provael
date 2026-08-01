@@ -72,6 +72,24 @@ to *data poisoning, model poisoning, adversarial examples (model evasion), and c
 attacks* — which is the EAI taxonomy in regulatory language. The OWASP / MITRE columns of the
 same mapping live in [TOP10.md → Cross-framework crosswalk](TOP10.md#cross-framework-crosswalk-corrected-verbatim-source-items).
 
+### Functional safety — an input, never a determination
+
+A robot's ML safety argument is assessed inside the classical functional-safety standards, so
+Provael carries rows for them. **What the rows are is as important as that they exist:**
+
+| Standard | What Provael supplies | What Provael does **not** supply |
+|---|---|---|
+| **IEC 61508** (E/E/PE functional safety) | EAI04 action-channel ASR + 95% Wilson CI + benign-FPR control + the mitigation report — evidence of behaviour under adversarial input, as an **input** to the systematic-capability argument | **No SIL.** No determination, estimate, or implication of one |
+| **ISO 13849-1/-2** (safety-related parts of control systems) | The same evidence, filed as fault cases a Part 2 validation plan can cite | **No Performance Level.** No PL, PLr, MTTFd, diagnostic coverage, or CCF |
+| **ISO/IEC TR 5469:2024** (AI & functional safety) | ASR + benign-FPR control as one input to the AI-safety lifecycle | No AI-safety lifecycle conclusion |
+| **ISO 25785-1** (dynamically stable robots) | The humanoid family — `balance_spoof`, `whole_body_hijack`, `stride_freeze` — on the whole-body suite | **Nothing conformity-shaped: the standard is an ISO/TC 299 WG 12 Working Draft and is not published.** The row is anticipatory positioning, and the suite is stub-validated with no real-model transfer claimed |
+
+A Performance Level is determined from architecture, MTTFd, diagnostic coverage and CCF by the
+designer and confirmed by validation. **An attack-success rate is none of those inputs and must
+never be presented as one.** These rows exist because an integrator's file already names these
+standards — see the [Halos / ANAB integrator card](crosswalk/halos-integrator.md) — not because
+Provael has an opinion about the determination.
+
 ---
 
 ## Evidence map — requirement → what to attach
@@ -167,6 +185,13 @@ Verified anchors (read the full text for clause-level audit use):
 - **NIST AI 100-2e2025** (Adversarial ML taxonomy) and the **NIST AI Risk Management Framework**
   (AI 100-1; GOVERN / MAP / MEASURE / MANAGE).
 - **IEC 62443** — industrial automation & control systems security.
+- **IEC 61508** — functional safety of E/E/PE safety-related systems. Provael is an input to the
+  systematic-capability argument and determines **no SIL**.
+- **ISO 13849-1/-2** — safety-related parts of control systems (design; validation). Provael
+  determines **no Performance Level**.
+- **ISO 25785-1** — industrial mobile robots, dynamically stable robots. **ISO/TC 299 WG 12
+  Working Draft; not published.** Publication is expected 2026–2027; the row is anticipatory and
+  cites no clause, because there is no stable clause to cite.
 
 See also [TOP10.md](TOP10.md) (the risk taxonomy + OWASP/MITRE crosswalk) and
 [SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md) (responsible-use scope).

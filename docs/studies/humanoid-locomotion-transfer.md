@@ -6,6 +6,14 @@
 
 > Status: PRE-REGISTERED — protocol only, no results claimed.
 
+> **This study is what the ISO 25785-1 compliance row is waiting on.** `provael certify` emits an
+> anticipatory row (`iso-25785-1:dynamically-stable`) naming these three attacks against the
+> in-development Type-C standard for dynamically stable robots — see
+> [COMPLIANCE.md](../COMPLIANCE.md#functional-safety--an-input-never-a-determination) and the
+> [Halos / ANAB integrator card](../crosswalk/halos-integrator.md). That row is honest precisely
+> because this page has no results in it: the suite is **stub-validated, with no real-model
+> transfer claimed**, and the row says so. When this study runs, that label is what changes.
+
 This pre-registers the **real-model** leg of the Humanoid safety pack: do the humanoid attacks
 (`balance_spoof`, `whole_body_hijack`, `stride_freeze`) — validated on the deterministic CPU
 `humanoid` fixture — transfer to a **real humanoid VLA policy** (NVIDIA **GR00T-N1**) on a real

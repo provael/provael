@@ -5,7 +5,15 @@ run's measured signals (calibrated redirection rate + 95% Wilson CI, the benign-
 EAI risks exercised, the per-task calibration metadata) onto the framework requirements in
 ``docs/COMPLIANCE.md`` — **EU AI Act** (Reg. (EU) 2024/1689), the **EU Machinery Regulation**
 (Reg. (EU) 2023/1230 — the operative route for AI-enabled robots after the 2026 Digital Omnibus),
-**ISO 10218-1/-2:2025** (cyber), **NIST AI 100-2 / AI RMF**, and **IEC 62443**.
+**ISO 10218-1/-2:2025** (cyber), **NIST AI 100-2 / AI RMF**, and **IEC 62443** — plus the
+functional-safety standards an accredited AI-safety inspection programme assesses robot software
+against (**IEC 61508**, **ISO 13849-1/-2**, **ISO/IEC TR 5469:2024**) and the in-development
+Type-C standard for dynamically stable robots (**ISO 25785-1**).
+
+A boundary that holds across all of those: Provael supplies adversarial-robustness evidence as an
+**input** to a functional-safety argument. It computes **no SIL, no Performance Level, and makes no
+functional-safety claim** — those are determined from architecture, MTTFd, diagnostic coverage and
+CCF by the designer and confirmed by an assessor. An attack-success rate is not one of those inputs.
 
 This is the generator the ``docs/COMPLIANCE.md`` pre-spec described. It is **evidence, not
 certification**: each requirement entry carries a ``status`` of ``evidence-present`` or ``gap``
@@ -112,6 +120,14 @@ _IEC = "IEC 62443"
 _ISO_TR_5469 = "ISO/IEC TR 5469:2024"
 _ISO_42001 = "ISO/IEC 42001:2023"
 _ISO_23894 = "ISO/IEC 23894:2023"
+#: The two classical functional-safety standards an accredited AI-safety inspection programme
+#: assesses robot software against alongside ISO/IEC TR 5469. Provael is an INPUT to those
+#: arguments and computes neither a SIL nor a Performance Level — see the rows' provael_signal.
+_IEC_61508 = "IEC 61508"
+_ISO_13849 = "ISO 13849"
+#: The first Type-C standard for dynamically stable (legged / humanoid) robots — ISO/TC 299 WG 12,
+#: still a Working Draft. Named here as anticipatory positioning, never as a conformity claim.
+_ISO_25785 = "ISO 25785-1 (under development)"
 
 #: Ordered so the artifact (and tests) are deterministic.
 REQUIREMENTS: tuple[Requirement, ...] = (
@@ -162,8 +178,7 @@ REQUIREMENTS: tuple[Requirement, ...] = (
     Requirement(
         key="eu-machinery:annex-i-part-a",
         framework=_MACHINERY, framework_id="eu-machinery",
-        control_id="Article 25(2) via Article 6(1); Annex I Part A "
-        "[point reference pending verification]",
+        control_id="Article 25(2) via Article 6(1); Annex I Part A, point 5",
         control_title="Annex I Part A — third-party conformity assessment of ML self-evolving-"
         "behaviour safety components",
         provael_signal=(
@@ -171,9 +186,33 @@ REQUIREMENTS: tuple[Requirement, ...] = (
             "control + Succ-But-Unsafe + BH-FDR across families) with the honest per-family "
             "real-policy transfer statement — the adversarial-robustness input a notified body "
             "reviews for an ML safety component routed to a third-party conformity assessment "
-            "under Article 25(2). Article/annex numbers verified against CELEX 32023R1230; the "
-            "granular Annex I Part A point number is marked pending until confirmed against the "
-            "primary annex text"
+            "under Article 25(2). Annex I Part A point 5 verified verbatim against CELEX "
+            "32023R1230 (2026-08-01): 'Safety components with fully or partially self-evolving "
+            "behaviour using machine learning approaches ensuring safety functions'; point 6 "
+            "covers the embedded-system variant, and Part B point 19 is the Article 25(3) sibling "
+            "— do not substitute it"
+        ),
+        evidence_refs=(
+            "dossier.json", "dossier.oscal.json", "report.json#/by_attack", "attestation.json",
+        ),
+        indicative=True,
+    ),
+    Requirement(
+        key="eu-machinery:annex-i-part-a-6",
+        framework=_MACHINERY, framework_id="eu-machinery",
+        control_id="Article 25(2) via Article 6(1); Annex I Part A, point 6",
+        control_title="Annex I Part A — third-party conformity assessment of machinery with an "
+        "embedded ML self-evolving-behaviour safety system",
+        provael_signal=(
+            "The same per-family adversarial evidence as point 5, filed for the EMBEDDED case. "
+            "Point 5 lists the safety component placed on the market on its own; point 6 verbatim "
+            "against CELEX 32023R1230 (2026-08-01) covers 'Machinery having embedded systems with "
+            "fully or partially self-evolving behaviour using machine learning approaches ensuring "
+            "safety functions'. An integrator shipping a whole robot — a humanoid, an AMR — is "
+            "placing machinery with an embedded ML safety system on the market, not a standalone "
+            "component, so this is the point its file is routed under. Both land on the Article "
+            "25(2) third-party route via Article 6(1); Part B point 19 is the Article 25(3) "
+            "sibling and is NOT interchangeable with either"
         ),
         evidence_refs=(
             "dossier.json", "dossier.oscal.json", "report.json#/by_attack", "attestation.json",
@@ -272,6 +311,78 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         ),
         evidence_refs=("report.json#/by_attack", "docs/COMPLIANCE.md"),
         indicative=True,
+    ),
+    Requirement(
+        key="iec-61508:systematic-capability",
+        framework=_IEC_61508, framework_id="iec-61508",
+        control_id="IEC 61508 (E/E/PE functional safety)",
+        control_title="Functional safety of electrical / electronic / programmable electronic "
+        "safety-related systems — systematic-capability argument",
+        provael_signal=(
+            "Adversarial-robustness evidence for the action channel (EAI04: keep-out hijack / "
+            "critical-step freeze of the commanded motion) with its ASR, 95% Wilson CI and "
+            "benign-FPR control, plus the mitigation report where a defence was applied. This is "
+            "an INPUT to the systematic-capability argument for an ML element used in or alongside "
+            "a safety function — a record of how the element behaved under adversarial input, "
+            "which the argument must account for. **Provael computes no SIL, no Performance Level, "
+            "and makes no functional-safety claim.** Determining systematic capability, and "
+            "everything in the IEC 61508 lifecycle around it, is the assessor's work, not this "
+            "tool's. Named here because an accredited AI-safety inspection programme assesses "
+            "robot software against IEC 61508 alongside ISO/IEC TR 5469 (see "
+            "docs/crosswalk/halos-integrator.md)"
+        ),
+        evidence_refs=(
+            "report.json#/by_attack", "report.mitigation.json", "attestation.json",
+        ),
+        indicative=True,
+        required_eai=("EAI04",),
+    ),
+    Requirement(
+        key="iso-13849:pl-validation",
+        framework=_ISO_13849, framework_id="iso-13849",
+        control_id="ISO 13849-1/-2 (safety-related parts of control systems)",
+        control_title="Safety-related parts of control systems — design (Part 1) and validation "
+        "(Part 2)",
+        provael_signal=(
+            "The same EAI04 action-channel evidence, filed against the Part 2 validation activity: "
+            "adversarial episodes are fault cases the validation plan can cite for the "
+            "safety-related control function, each with its ASR, 95% Wilson CI and benign-FPR "
+            "control. This is an INPUT to the validation argument. **Provael computes no "
+            "Performance Level (PL), no PLr, no SIL, no MTTFd, no diagnostic coverage, and makes "
+            "no functional-safety claim.** A PL is determined from architecture, MTTFd, DC and CCF "
+            "by the designer and confirmed by validation; an attack-success rate is none of those "
+            "inputs and must never be presented as one"
+        ),
+        evidence_refs=(
+            "report.json#/by_attack", "report.json#/benign_fpr",
+            "dossier.json#/adversarial_evidence/per_family",
+        ),
+        indicative=True,
+        required_eai=("EAI04",),
+    ),
+    Requirement(
+        key="iso-25785-1:dynamically-stable",
+        framework=_ISO_25785, framework_id="iso-25785",
+        control_id="ISO 25785-1 (Working Draft — not yet published)",
+        control_title="Industrial mobile robots — dynamically stable robots",
+        provael_signal=(
+            "The humanoid family — `balance_spoof` (EAI02), `whole_body_hijack` (EAI04) and "
+            "`stride_freeze` (EAI04) — measured on the whole-body / locomotion suite, whose unsafe "
+            "predicate is a fall, a centre-of-mass excursion outside the support polygon, a "
+            "self-collision, or a footstep keep-out breach: the balance-and-fall hazards a "
+            "dynamically stable robot has and a statically stable one does not. **ISO 25785-1 is "
+            "an ISO/TC 299 WG 12 Working Draft and is NOT PUBLISHED**, so this row is anticipatory "
+            "positioning — a statement that the evidence exists ahead of the standard — and is "
+            "explicitly NOT a conformity claim against a text that does not yet exist; no clause "
+            "is cited because there is no stable clause to cite. The humanoid suite is "
+            "**stub-validated, with no real-model transfer claimed**: the GR00T-N1 study is "
+            "pre-registered and unrun (docs/studies/humanoid-locomotion-transfer.md)"
+        ),
+        evidence_refs=(
+            "dossier.json#/adversarial_evidence/per_family", "dossier.json",
+        ),
+        indicative=True,
+        required_eai=("EAI04",),
     ),
     Requirement(
         key="eu-cra:cyber",

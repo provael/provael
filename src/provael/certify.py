@@ -97,10 +97,19 @@ SEEDS_PRELIMINARY_THRESHOLD = 5
 #: The machinery-relevant crosswalk rows (keys into :data:`provael.compliance.REQUIREMENTS`).
 MACHINERY_CROSSWALK_KEYS: tuple[str, ...] = (
     "eu-machinery:annex-i-part-a",
+    # Point 6 is the EMBEDDED variant of point 5, and it is the row an integrator shipping a whole
+    # robot is routed under. Both travel in the dossier because which one applies is the operator's
+    # determination, not ours — emitting only the component row would quietly answer it for them.
+    "eu-machinery:annex-i-part-a-6",
     "eu-machinery:cyber",
     "iso-10218-1:cyber",
     "iso-10218-2:cyber",
     "iec-62443:slv",
+    # The functional-safety argument the machinery file sits inside. Provael is an input to these,
+    # never a determination — see each row's provael_signal, which says so in terms.
+    "iec-61508:systematic-capability",
+    "iso-13849:pl-validation",
+    "iso-25785-1:dynamically-stable",
     "nist-ai-100-2:taxonomy",
 )
 

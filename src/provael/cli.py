@@ -73,12 +73,18 @@ from provael.compliance import (
 )
 from provael.config import RunConfig
 from provael.crosswalk import (
+    ATLAS_JSON,
     ATLAS_TARGET,
+    CROSSWALK_JSON,
     CROSSWALK_TARGET,
+    FORESIGHT_JSON,
+    FORESIGHT_TARGET,
     to_atlas_json,
     to_atlas_markdown,
     to_crosswalk_json,
     to_crosswalk_markdown,
+    to_foresight_json,
+    to_foresight_markdown,
 )
 from provael.defenses.measure import (
     MitigationReport,
@@ -163,6 +169,7 @@ class CrosswalkTarget(StrEnum):
 
     robojailbench = CROSSWALK_TARGET
     atlas = ATLAS_TARGET
+    foresight = FORESIGHT_TARGET
 
 
 class CrosswalkFormat(StrEnum):
@@ -378,8 +385,21 @@ def crosswalk_cmd(
     fmt: Annotated[
         CrosswalkFormat, typer.Option("--format", help="Output format.")
     ] = CrosswalkFormat.json,
+    in_dir: Annotated[
+        Path | None,
+        typer.Option(
+            "--in",
+            help="Run directory containing report.json. Only `--target foresight` reads it, to "
+            "add this run's CC / RET / USR. Omit for the pure taxonomy mapping.",
+        ),
+    ] = None,
     out: Annotated[
-        Path | None, typer.Option(help="Write the crosswalk JSON here instead of stdout.")
+        Path | None,
+        typer.Option(
+            help="Where to write the crosswalk. An EXISTING DIRECTORY receives the target's "
+            "canonical filename (e.g. crosswalk.foresight.json); any other path is written as a "
+            "file. Omit for stdout."
+        ),
     ] = None,
 ) -> None:
     """Emit an Embodied AI Security Top 10 taxonomy crosswalk (deterministic).
@@ -391,15 +411,35 @@ def crosswalk_cmd(
     ``--target atlas`` maps all ten EAI risks to MITRE ATLAS tactic → technique phrasing, each with
     its coverage state. Proposed mapping, not endorsed by MITRE, and deliberately free of
     ``AML.TXXXX`` ids.
+
+    ``--target foresight`` maps ForesightSafety-VLA's 13 diagnostic categories (arXiv:2606.27079),
+    quoted verbatim, and states plainly where that benchmark's headline finding DISAGREES with
+    provael's one real measurement. With ``--in`` it also reports this run's cumulative cost, risk
+    exposure time and unsafe success rate — in their vocabulary, in provael's units, with the
+    incomparability warning attached.
     """
+    report = load_report(in_dir) if in_dir is not None else None
     if target is CrosswalkTarget.atlas:
         payload = to_atlas_markdown() if fmt is CrosswalkFormat.md else to_atlas_json()
+        basename = ATLAS_JSON
+    elif target is CrosswalkTarget.foresight:
+        payload = (
+            to_foresight_markdown(report) if fmt is CrosswalkFormat.md
+            else to_foresight_json(report)
+        )
+        basename = FORESIGHT_JSON
     else:
         payload = to_crosswalk_markdown() if fmt is CrosswalkFormat.md else to_crosswalk_json()
+        basename = CROSSWALK_JSON
     if out is not None:
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(payload + "\n", encoding="utf-8")
-        _out.print(f"[green]Wrote[/green] {escape(str(out))}")
+        # `--out <dir>` is the shape every other run-producing command uses, and the shape a caller
+        # naturally reaches for when `--in` and `--out` are the same run directory. Writing a file
+        # NAMED like the directory would be the surprising outcome, so an existing directory gets
+        # the target's canonical filename instead. Any other path stays a plain file path.
+        target_path = out / basename if out.is_dir() else out
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        target_path.write_text(payload + "\n", encoding="utf-8")
+        _out.print(f"[green]Wrote[/green] {escape(str(target_path))}")
     else:
         print(payload)
 

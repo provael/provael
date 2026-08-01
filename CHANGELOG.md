@@ -6,7 +6,84 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.30.0] — 2026-08-01
+
+Standards coverage the certification path actually names, and ownership of the one published result
+that disagrees with ours.
+
+Two threads. The first is that a buyer's conformity file already names standards Provael had no row
+for. The EU Machinery Regulation's Annex I Part A point number had been shipping as
+`[point reference pending verification]` — a placeholder that `certify` faithfully rendered into a
+document meant for a notified body. It is now pinned to **point 5**, verified verbatim against CELEX
+32023R1230, and joined by **point 6**, the embedded-system variant, which is the row an integrator
+shipping a whole robot is actually routed under. Alongside them: **IEC 61508**, **ISO 13849-1/-2**
+and the in-development **ISO 25785-1**. Every one of those rows says, in terms, that Provael computes
+**no SIL and no Performance Level and makes no functional-safety claim** — they are inputs to an
+argument an assessor makes, and a row that let itself be read otherwise would be worth less than no
+row at all.
+
+The second thread is harder to write and more useful. **ForesightSafety-VLA** (arXiv:2606.27079)
+reports that structure and visual variation degrade safety substantially more than language
+variation. Provael's one real measurement found the opposite ordering: the instruction family
+transferred at 17/30 while visual measured 0/20 and injection 0/10. Both cannot be a general law.
+The disagreement now ships **as data** in every emitted crosswalk artifact, unresolved and labelled
+unresolved, with the reason it cannot be settled without a run nobody has done — and with the
+correction that matters most to us: Provael's visual null is evidence about the templated attacks it
+shipped, **not** evidence that perception attacks are weak. Anyone quoting that 0/20 as the latter is
+misusing it.
+
+### Added
+
+- **`eu-machinery:annex-i-part-a-6`** — the embedded-system conformity row. Point 5 is the safety
+  component sold on its own; point 6 is machinery with the ML safety system inside it. Both route to
+  Article 25(2) via Article 6(1), both travel in the dossier, and Part B point 19 is flagged
+  everywhere as the Article 25(3) sibling that must not be substituted for either.
+- **`iec-61508:systematic-capability`** and **`iso-13849:pl-validation`** — the functional-safety
+  standards an ANAB-accredited AI-safety inspection programme assesses robot software against.
+  Both `indicative`, both gated on EAI04 actually having run, both disclaiming SIL and Performance
+  Level in the row text itself.
+- **`iso-25785-1:dynamically-stable`** — an anticipatory row for the first Type-C standard for
+  dynamically stable robots (ISO/TC 299 WG 12). It names `balance_spoof`, `whole_body_hijack` and
+  `stride_freeze`, and states that the standard is an unpublished Working Draft and the humanoid
+  suite is stub-validated with no real-model transfer claimed. It cites no clause, because there is
+  no stable clause to cite.
+- **`provael crosswalk --target foresight`** — the 13 ForesightSafety-VLA categories, names and
+  *unsafe when* definitions quoted verbatim from Table I, mapped to EAI ids and Provael families.
+  Honest tally: **4 covered · 3 partial · 6 not covered**. Six uncovered rows is the useful half —
+  Provael models no force, no second arm, no task preconditions, no illumination, no camera pose.
+- **`provael.scoring.safety_cost`** — risk exposure time (RET), cumulative cost (CC), unsafe success
+  rate (USR) and the SSR/USR/SFR/UFR quadrant. Every function returns `None`, never `0.0`, when the
+  signal it needs is absent: an episode with no decision log has *unmeasured* exposure, and a metric
+  reporting 0.0 for "we did not look" is indistinguishable in a table from one reporting 0.0 for "we
+  looked and found nothing". The quadrant carries a fifth `task_success_unmeasured` bucket so its
+  counts always close.
+- **`docs/standards/published-asr-baselines.md`** — the published record beside Provael's number,
+  with a **comparability column** that is the entire point. Most published VLA attack figures measure
+  *task-success degradation*; a Provael ASR measures *envelope breach*. One row is deliberately
+  **withheld**: four per-suite figures could not be located in the paper they were attributed to, and
+  printing unresolvable numbers on a page about checkability would refute the page.
+- **`docs/crosswalk/halos-integrator.md`** and **`docs/crosswalk/foresight-safety-vla.md`** — the
+  integrator and benchmark cards behind the rows above.
+
+### Fixed
+
+- **`eu-machinery:annex-i-part-a` no longer defers its own clause.** `tests/test_compliance.py` now
+  fails the build if *any* requirement's `control_id` contains a pending-verification placeholder.
+  Pinning the one string that was wrong would not have caught the next one, so the rule is the
+  assertion — the same move as `test_counted_claims.py` in 0.29.1.
+- **EAI02's honest null was quoted at half its sample.** `docs/TOP10.md` reported the perception
+  null as `0% (0/10), 95% CI [0–28%]`; the `visual` family ran `patch` **and** `decoy_object` for
+  **0/20, CI [0–16%]**. The page understated its own denominator and published an interval twelve
+  points wider than the run earned.
+- **`crosswalk --out <dir>`** now writes the target's canonical filename into an existing directory
+  instead of creating a file named like the directory — the shape a caller reaches for when `--in`
+  and `--out` are the same run directory.
+- `report.md` gained a process-level safety-cost section that names the benchmark its vocabulary
+  comes from and states plainly that Provael's suites are **not RoboTwin**.
+
 ### Citations a reader can resolve
+
+*(Folded in from the unreleased citation-integrity work — PR #78.)*
 
 An independent audit fact-checked this repo's citation corpus in July 2026 and came back clean on
 almost all of it — roughly fifteen papers and four CVEs, real and correctly attributed, zero
@@ -46,7 +123,8 @@ documentation: a defence is a number you can re-derive, not a press release.
   credentials to 267+ connected robots) and links the OWASP LLM Top 10 behind `ASI03`/`LLM06`.
 - **EAI06** now carries BadRobot's arXiv ID (2407.20242) — cited at EAI01 but not here.
 
-No attack, scorer, evidence format or measured number changed.
+No attack, scorer or measured number changed in this release. Two evidence artifacts gained fields:
+`dossier.json` carries four new `standards_crosswalk` rows, and `crosswalk.foresight.json` is new.
 
 ## [0.29.1] — 2026-07-31
 
