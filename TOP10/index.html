@@ -1083,6 +1083,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../crosswalk/halos-integrator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Halos / ANAB integrator card
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../MEASURE-2-7/" class="md-nav__link">
         
   
@@ -1262,6 +1290,62 @@
     
   
     RoboJailBench crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crosswalk/foresight-safety-vla/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ForesightSafety-VLA crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../standards/published-asr-baselines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Published ASR baselines
   
 
     
@@ -2516,9 +2600,13 @@ executability, cf. RoboGuard); embodied-harm refusal training; red-team each rel
 <p><strong>What.</strong> Crafted perturbations in what the policy <em>sees/senses</em> — adversarial patches, stickers, 3D
 textures, or sensor spoofing — that flip behavior while looking benign to humans.
 <strong>Evidence.</strong> <em>[research]</em> "Adversarial vulnerabilities of VLA models" (arXiv 2411.13587); action-aware
-patch attacks. <em>(Honest note: in Provael's SmolVLA×LIBERO run these did NOT transfer — 0% (0/10), 95% CI
-[0–28%], against the same 0% benign baseline; real-world robustness of perception attacks is unsettled,
-which is exactly why you test rather than assume.)</em>
+patch attacks. <em>(Honest note: in Provael's SmolVLA×LIBERO run the <code>visual</code> family did NOT transfer —
+0% (0/20), 95% CI [0–16%], against the same 0% benign baseline; real-world robustness of perception
+attacks is unsettled, which is exactly why you test rather than assume. Read that null narrowly: it is
+evidence about the templated attacks Provael shipped, not about perception robustness in general —
+see the <a href="../standards/published-asr-baselines/">published baselines</a> and the
+<a href="../crosswalk/foresight-safety-vla/">ForesightSafety-VLA crosswalk</a>, whose authors report the opposite
+ordering.)</em>
 <strong>Attacks shipped (Provael):</strong> the <code>visual</code> family (<code>patch</code> + <code>decoy_object</code>, a scalar-danger perturbation)
 and the <code>sensor_spoof</code> family (<code>patch_spoof</code> + <code>signal_spoof</code>) — <em>method:</em> a <strong>sim-injected perception
 spoof</strong> (an adversarial patch on the simulated camera, or a range/depth signal perturbation on the
@@ -2557,7 +2645,10 @@ Supply Chain</strong> · NIST AI 100-2 <strong>Poisoning / Supply-Chain</strong>
 trajectory, degrading task success, or freezing it (paralysis).
 <strong>Evidence.</strong> <em>[research]</em> <strong>AttackVLA/BackdoorVLA</strong> (arXiv 2511.12149, targeted action sequence,
 real-robot validated); <strong>FreezeVLA</strong> (arXiv 2509.19870, ~76% paralysis ASR). <em>(Freeze is also an
-availability/DoS failure — see cross-cutting.)</em> <strong>Attack shipped (Provael):</strong> the <code>action</code> family
+availability/DoS failure — see cross-cutting.)</em> <em>(FreezeVLA's 76.2% is an ASR of an action-channel
+attack, the closest published figure in kind to a Provael ASR — and still not directly comparable,
+because "the policy froze" and "the policy left its envelope" are different unsafe predicates. See
+the <a href="../standards/published-asr-baselines/">published baselines</a>.)</em> <strong>Attack shipped (Provael):</strong> the <code>action</code> family
 (<code>freeze</code> + <code>trajectory_hijack</code>) — <em>method:</em> a freeze directive drives the policy's motor command to a
 no-op (FreezeVLA-style action-freeze) while a hijack directive redirects the trajectory toward an
 attacker waypoint; each scored as a rate with a 95% Wilson CI against a benign-FPR control. <strong>Stub-validated

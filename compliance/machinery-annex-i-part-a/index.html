@@ -874,6 +874,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../crosswalk/halos-integrator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Halos / ANAB integrator card
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../MEASURE-2-7/" class="md-nav__link">
         
   
@@ -1053,6 +1081,62 @@
     
   
     RoboJailBench crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../crosswalk/foresight-safety-vla/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ForesightSafety-VLA crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/published-asr-baselines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Published ASR baselines
   
 
     
@@ -1966,6 +2050,37 @@ and safety components with fully or partially <strong>self-evolving behaviour</s
 approaches that ensure safety functions are listed in <strong>Annex I Part A</strong>, and Annex I Part A
 categories are subject to the <strong>third-party conformity-assessment procedure of Article 25(2)</strong> (via
 <strong>Article 6(1)</strong>) — i.e. a notified body is involved, rather than manufacturer self-assessment.</p>
+<p><strong>Which point you are filing under.</strong> Annex I Part A names the machine-learning safety cases at two
+adjacent points, verified verbatim against CELEX 32023R1230 on 2026-08-01:</p>
+<table>
+<thead>
+<tr>
+<th>Point</th>
+<th>Verbatim scope</th>
+<th>Who this is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Part A, point 5</strong></td>
+<td>"Safety components with fully or partially self-evolving behaviour using machine learning approaches ensuring safety functions"</td>
+<td>You place the <strong>ML safety component itself</strong> on the market — a policy, a perception-driven safety function, sold as a component.</td>
+</tr>
+<tr>
+<td><strong>Part A, point 6</strong></td>
+<td>Machinery having <strong>embedded systems</strong> with fully or partially self-evolving behaviour using machine learning approaches ensuring safety functions</td>
+<td>You place the <strong>whole machine</strong> on the market with the ML safety system inside it — a humanoid, an AMR, a cell. This is the integrator's row.</td>
+</tr>
+</tbody>
+</table>
+<p>Both route to the same Article 25(2) third-party procedure via Article 6(1), and <code>provael certify</code>
+emits both rows so the operator makes the determination rather than inheriting ours.</p>
+<blockquote>
+<p><strong>Part B point 19 is not a substitute for either.</strong> It is the <strong>Article 25(3)</strong> sibling, a
+different procedure. Citing it in place of a Part A point routes the file down the wrong
+conformity path, which is the kind of error that surfaces late and expensively. The requirement
+catalogue says so in terms, and <code>tests/test_compliance.py</code> pins both point numbers by literal.</p>
+</blockquote>
 <p>The dossier is a dated, digest-bound record of how a policy behaved under red-team, assembled the
 way that assessment consumes it.</p>
 <h2 id="what-the-dossier-contains">What the dossier contains</h2>
@@ -1987,15 +2102,26 @@ way that assessment consumes it.</p>
    <a href="https://github.com/provael/provael/blob/main/SAFETY.md">SAFETY.md</a>, families and suites not run
    this run, and embodiments not covered.</li>
 <li><strong>Standards crosswalk</strong> — each evidence item mapped to its clause: Machinery Regulation <strong>Annex I
-   Part A</strong> (Article 6(1) → Article 25(2)) and <strong>Annex III</strong> essential health &amp; safety requirements;
-   <strong>ISO 10218-1/-2:2025</strong> cyber (which defers detailed cyber requirements to <strong>IEC 62443</strong>); and
-   the <strong>NIST AI 100-2e2025</strong> adversarial-ML taxonomy. Article and annex numbers are cited from
-   CELEX 32023R1230 where verified; any clause that could not be verified against the primary annex
-   text is marked <strong><code>[clause reference pending verification]</code></strong> rather than guessed — a wrong clause
-   citation in a compliance document is worse than a missing one.</li>
-<li><strong>Referenced artifacts</strong> — the CycloneDX <strong>ML-BOM</strong> and the PEP 740 <strong>attestation</strong> are
-   <em>referenced</em> by filename and bound by the run's SHA-256 digest, not duplicated.</li>
+   Part A points 5 and 6</strong> (Article 6(1) → Article 25(2)) and <strong>Annex III</strong> essential health &amp; safety
+   requirements; <strong>ISO 10218-1/-2:2025</strong> cyber (which defers detailed cyber requirements to
+   <strong>IEC 62443</strong>); the functional-safety standards an accredited AI-safety inspection programme
+   assesses robot software against — <strong>IEC 61508</strong>, <strong>ISO 13849-1/-2</strong>, <strong>ISO/IEC TR 5469:2024</strong> (see
+   the <a href="../../crosswalk/halos-integrator/">Halos / ANAB integrator card</a>); the in-development
+   <strong>ISO 25785-1</strong> for dynamically stable robots, carried as an anticipatory row because the
+   standard is an unpublished Working Draft; and the <strong>NIST AI 100-2e2025</strong> adversarial-ML taxonomy.</li>
 </ol>
+<p>Article and annex numbers are cited from CELEX 32023R1230, verified against the primary text. A
+   clause that cannot be verified is <strong>not shipped as a placeholder</strong>: <code>tests/test_compliance.py</code>
+   fails the build if any requirement's clause defers itself to a later verification, because a
+   compliance document that tells an assessor its own citation is unverified is worse than one that
+   omits the row. Rows whose <em>sub-clause</em> precision depends on the full standard text stay marked
+   <em>(indicative)</em> — that is a different and honest state.</p>
+<p><strong>Provael determines no SIL and no Performance Level.</strong> The IEC 61508 and ISO 13849 rows are
+   inputs to a systematic-capability or validation argument. A PL comes from architecture, MTTFd,
+   diagnostic coverage and CCF; an attack-success rate is none of those and must never be presented
+   as one.
+6. <strong>Referenced artifacts</strong> — the CycloneDX <strong>ML-BOM</strong> and the PEP 740 <strong>attestation</strong> are
+   <em>referenced</em> by filename and bound by the run's SHA-256 digest, not duplicated.</p>
 <p>The command <strong>reuses</strong> every statistic from <code>provael.scoring.asr</code> and <code>provael.calibration</code> — no
 scoring is reimplemented — and re-runs nothing: it consumes a <code>report.json</code>, exactly like the
 compliance export and <code>attest</code>.</p>

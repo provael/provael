@@ -109,6 +109,14 @@
          <lastmod>2026-08-01</lastmod>
     </url>
     <url>
+         <loc>https://docs.provael.com/crosswalk/foresight-safety-vla/</loc>
+         <lastmod>2026-08-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.provael.com/crosswalk/halos-integrator/</loc>
+         <lastmod>2026-08-01</lastmod>
+    </url>
+    <url>
          <loc>https://docs.provael.com/crosswalk/robojailbench/</loc>
          <lastmod>2026-08-01</lastmod>
     </url>
@@ -138,6 +146,10 @@
     </url>
     <url>
          <loc>https://docs.provael.com/standards/owasp-asi-embodied/</loc>
+         <lastmod>2026-08-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.provael.com/standards/published-asr-baselines/</loc>
          <lastmod>2026-08-01</lastmod>
     </url>
     <url>

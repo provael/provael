@@ -672,6 +672,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Crosswalk — Provael evidence → frameworks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#functional-safety-an-input-never-a-determination" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functional safety — an input, never a determination
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -874,6 +891,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../crosswalk/halos-integrator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Halos / ANAB integrator card
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../MEASURE-2-7/" class="md-nav__link">
         
   
@@ -1053,6 +1098,62 @@
     
   
     RoboJailBench crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crosswalk/foresight-safety-vla/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ForesightSafety-VLA crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../standards/published-asr-baselines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Published ASR baselines
   
 
     
@@ -1875,6 +1976,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Crosswalk — Provael evidence → frameworks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#functional-safety-an-input-never-a-determination" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functional safety — an input, never a determination
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2067,6 +2185,45 @@ certified bounds. See <a href="#honest-scope--what-this-does-not-cover">Honest s
 to <em>data poisoning, model poisoning, adversarial examples (model evasion), and confidentiality
 attacks</em> — which is the EAI taxonomy in regulatory language. The OWASP / MITRE columns of the
 same mapping live in <a href="../TOP10/#cross-framework-crosswalk-corrected-verbatim-source-items">TOP10.md → Cross-framework crosswalk</a>.</p>
+<h3 id="functional-safety-an-input-never-a-determination">Functional safety — an input, never a determination</h3>
+<p>A robot's ML safety argument is assessed inside the classical functional-safety standards, so
+Provael carries rows for them. <strong>What the rows are is as important as that they exist:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Standard</th>
+<th>What Provael supplies</th>
+<th>What Provael does <strong>not</strong> supply</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>IEC 61508</strong> (E/E/PE functional safety)</td>
+<td>EAI04 action-channel ASR + 95% Wilson CI + benign-FPR control + the mitigation report — evidence of behaviour under adversarial input, as an <strong>input</strong> to the systematic-capability argument</td>
+<td><strong>No SIL.</strong> No determination, estimate, or implication of one</td>
+</tr>
+<tr>
+<td><strong>ISO 13849-1/-2</strong> (safety-related parts of control systems)</td>
+<td>The same evidence, filed as fault cases a Part 2 validation plan can cite</td>
+<td><strong>No Performance Level.</strong> No PL, PLr, MTTFd, diagnostic coverage, or CCF</td>
+</tr>
+<tr>
+<td><strong>ISO/IEC TR 5469:2024</strong> (AI &amp; functional safety)</td>
+<td>ASR + benign-FPR control as one input to the AI-safety lifecycle</td>
+<td>No AI-safety lifecycle conclusion</td>
+</tr>
+<tr>
+<td><strong>ISO 25785-1</strong> (dynamically stable robots)</td>
+<td>The humanoid family — <code>balance_spoof</code>, <code>whole_body_hijack</code>, <code>stride_freeze</code> — on the whole-body suite</td>
+<td><strong>Nothing conformity-shaped: the standard is an ISO/TC 299 WG 12 Working Draft and is not published.</strong> The row is anticipatory positioning, and the suite is stub-validated with no real-model transfer claimed</td>
+</tr>
+</tbody>
+</table>
+<p>A Performance Level is determined from architecture, MTTFd, diagnostic coverage and CCF by the
+designer and confirmed by validation. <strong>An attack-success rate is none of those inputs and must
+never be presented as one.</strong> These rows exist because an integrator's file already names these
+standards — see the <a href="../crosswalk/halos-integrator/">Halos / ANAB integrator card</a> — not because
+Provael has an opinion about the determination.</p>
 <hr />
 <h2 id="evidence-map-requirement-what-to-attach">Evidence map — requirement → what to attach</h2>
 <table>
@@ -2177,6 +2334,13 @@ assertion of legal compliance.</p>
 <li><strong>NIST AI 100-2e2025</strong> (Adversarial ML taxonomy) and the <strong>NIST AI Risk Management Framework</strong>
   (AI 100-1; GOVERN / MAP / MEASURE / MANAGE).</li>
 <li><strong>IEC 62443</strong> — industrial automation &amp; control systems security.</li>
+<li><strong>IEC 61508</strong> — functional safety of E/E/PE safety-related systems. Provael is an input to the
+  systematic-capability argument and determines <strong>no SIL</strong>.</li>
+<li><strong>ISO 13849-1/-2</strong> — safety-related parts of control systems (design; validation). Provael
+  determines <strong>no Performance Level</strong>.</li>
+<li><strong>ISO 25785-1</strong> — industrial mobile robots, dynamically stable robots. <strong>ISO/TC 299 WG 12
+  Working Draft; not published.</strong> Publication is expected 2026–2027; the row is anticipatory and
+  cites no clause, because there is no stable clause to cite.</li>
 </ul>
 <p>See also <a href="../TOP10/">TOP10.md</a> (the risk taxonomy + OWASP/MITRE crosswalk) and
 <a href="https://github.com/provael/provael/blob/main/SAFETY.md">SAFETY.md</a> (responsible-use scope).</p>
