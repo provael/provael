@@ -110,7 +110,7 @@ def test_requirement_mapping_is_complete_and_ordered() -> None:
         # The functional-safety standards an accredited AI-safety inspection programme assesses
         # robot software against, plus the in-development Type-C standard for dynamically stable
         # robots. Provael is an input to all three and determines none of them.
-        "iec-61508", "iso-13849",
+        "iec-61508", "iso-13849", "iso-25785",
     }
     for entry in cr.entries:
         assert entry.provael_signal
@@ -138,8 +138,9 @@ def test_gap_detection_uncalibrated() -> None:
         # touched the action channel would be citing a measurement nobody made.
         "iec-61508:systematic-capability",
         "iso-13849:pl-validation",
+        "iso-25785-1:dynamically-stable",
     }
-    assert cr.summary == {"evidence-present": 11, "gap": 9}
+    assert cr.summary == {"evidence-present": 11, "gap": 10}
     # Every gap explains itself; every present entry has no gap reason.
     for entry in cr.entries:
         if entry.status == "gap":
@@ -165,12 +166,13 @@ def test_gap_detection_calibrated() -> None:
         # by adversarial evidence generally rather than by one named family.
         "iec-61508:systematic-capability",
         "iso-13849:pl-validation",
+        "iso-25785-1:dynamically-stable",
     }
     by = _by_key(cr)
     assert by["eu-ai-act:art15"].status == "evidence-present"
     assert by["nist-ai-rmf:measure"].status == "evidence-present"
     assert by["eu-machinery:annex-i-part-a-6"].status == "evidence-present"
-    assert cr.summary == {"evidence-present": 13, "gap": 7}
+    assert cr.summary == {"evidence-present": 13, "gap": 8}
     # The gap names the missing family rather than the generic "no EAI-tagged attacks" reason.
     assert "EAI09" in (by["nist-ai-100-2:privacy"].gap_reason or "")
     # The measured evidence carries the calibrated control.
@@ -263,6 +265,21 @@ def test_no_control_id_defers_its_clause_to_a_later_verification() -> None:
     )
 
 
+def test_working_draft_rows_are_indicative() -> None:
+    """A standard that is not published yet can only ever be an anticipatory row.
+
+    ISO 25785-1 is an ISO/TC 299 WG 12 Working Draft. Naming it is legitimate positioning — the
+    evidence exists ahead of the standard — but a non-indicative row asserts a mapping onto a
+    settled clause, and there is no settled clause to map onto. Written as a rule over every row
+    so the next in-development standard inherits it.
+    """
+    for req in REQUIREMENTS:
+        if "working draft" in req.control_id.lower() or "not yet published" in req.control_id.lower():
+            assert req.indicative is True, (
+                f"{req.key} cites an unpublished standard but is not marked indicative"
+            )
+
+
 def test_functional_safety_rows_disclaim_sil_and_performance_level() -> None:
     """IEC 61508 / ISO 13849 rows must refuse the determination they sit next to.
 
@@ -281,6 +298,22 @@ def test_functional_safety_rows_disclaim_sil_and_performance_level() -> None:
         assert by[key].indicative is True
         assert by[key].required_eai == ("EAI04",)
     assert "no Performance Level" in by["iso-13849:pl-validation"].provael_signal
+
+
+def test_iso_25785_names_the_humanoid_attacks_and_its_own_unpublished_status() -> None:
+    """The humanoid row must carry both halves of the honest claim.
+
+    It names three real attacks, and it says the standard is unpublished and the suite is
+    stub-validated with no real-model transfer claimed — the same label /for/humanoid-builders
+    carries. Either half alone oversells: the attacks without the caveat read as a conformity
+    claim, the caveat without the attacks reads as vapour.
+    """
+    req = {r.key: r for r in REQUIREMENTS}["iso-25785-1:dynamically-stable"]
+    for attack in ("balance_spoof", "whole_body_hijack", "stride_freeze"):
+        assert attack in req.provael_signal, f"the humanoid row does not name {attack}"
+    assert "NOT PUBLISHED" in req.provael_signal
+    assert "stub-validated" in req.provael_signal
+    assert "no real-model transfer claimed" in req.provael_signal
 
 
 def test_by_eai_aggregation_and_families() -> None:

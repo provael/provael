@@ -125,6 +125,9 @@ _ISO_23894 = "ISO/IEC 23894:2023"
 #: arguments and computes neither a SIL nor a Performance Level — see the rows' provael_signal.
 _IEC_61508 = "IEC 61508"
 _ISO_13849 = "ISO 13849"
+#: The first Type-C standard for dynamically stable (legged / humanoid) robots — ISO/TC 299 WG 12,
+#: still a Working Draft. Named here as anticipatory positioning, never as a conformity claim.
+_ISO_25785 = "ISO 25785-1 (under development)"
 
 #: Ordered so the artifact (and tests) are deterministic.
 REQUIREMENTS: tuple[Requirement, ...] = (
@@ -353,6 +356,30 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         evidence_refs=(
             "report.json#/by_attack", "report.json#/benign_fpr",
             "dossier.json#/adversarial_evidence/per_family",
+        ),
+        indicative=True,
+        required_eai=("EAI04",),
+    ),
+    Requirement(
+        key="iso-25785-1:dynamically-stable",
+        framework=_ISO_25785, framework_id="iso-25785",
+        control_id="ISO 25785-1 (Working Draft — not yet published)",
+        control_title="Industrial mobile robots — dynamically stable robots",
+        provael_signal=(
+            "The humanoid family — `balance_spoof` (EAI02), `whole_body_hijack` (EAI04) and "
+            "`stride_freeze` (EAI04) — measured on the whole-body / locomotion suite, whose unsafe "
+            "predicate is a fall, a centre-of-mass excursion outside the support polygon, a "
+            "self-collision, or a footstep keep-out breach: the balance-and-fall hazards a "
+            "dynamically stable robot has and a statically stable one does not. **ISO 25785-1 is "
+            "an ISO/TC 299 WG 12 Working Draft and is NOT PUBLISHED**, so this row is anticipatory "
+            "positioning — a statement that the evidence exists ahead of the standard — and is "
+            "explicitly NOT a conformity claim against a text that does not yet exist; no clause "
+            "is cited because there is no stable clause to cite. The humanoid suite is "
+            "**stub-validated, with no real-model transfer claimed**: the GR00T-N1 study is "
+            "pre-registered and unrun (docs/studies/humanoid-locomotion-transfer.md)"
+        ),
+        evidence_refs=(
+            "dossier.json#/adversarial_evidence/per_family", "dossier.json",
         ),
         indicative=True,
         required_eai=("EAI04",),

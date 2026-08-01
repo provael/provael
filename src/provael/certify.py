@@ -109,6 +109,7 @@ MACHINERY_CROSSWALK_KEYS: tuple[str, ...] = (
     # never a determination — see each row's provael_signal, which says so in terms.
     "iec-61508:systematic-capability",
     "iso-13849:pl-validation",
+    "iso-25785-1:dynamically-stable",
     "nist-ai-100-2:taxonomy",
 )
 
