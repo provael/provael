@@ -6,6 +6,21 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- **BadVLA's ASR is 96.7%, and 0.30.0 was wrong to withhold it.** That release cited the figure at
+  the abstract's "near-100%" and recorded that 96.7% "appears in neither the abstract nor this
+  repo's committed reproduction record". Both halves of that check were true and the conclusion was
+  still wrong: the paper states *"BadVLA achieves near 96.7% attack success with negligible
+  clean-task degradation"* in its contributions section. Checking an abstract is not checking a
+  paper. Corrected in `docs/standards/published-asr-baselines.md`.
+- **The withheld per-suite row now names every source checked.** The four proposed figures
+  (Spatial 97.5 / Object 93.8 / Goal 96.5 / LIBERO-10 77.3) appear as a set in none of
+  arXiv:2605.25889, arXiv:2505.16640, or arXiv:2509.19870 — two of the values occur only as
+  isolated cells of unrelated tables, two do not occur at all. The row stays withheld, but a
+  withholding that names three checked papers is a finding; one that names a single paper is an
+  assumption wearing a finding's clothes.
+
 ## [0.30.0] — 2026-08-01
 
 Standards coverage the certification path actually names, and ownership of the one published result
