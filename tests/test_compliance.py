@@ -107,6 +107,10 @@ def test_requirement_mapping_is_complete_and_ordered() -> None:
     assert {e.framework_id for e in cr.entries} == {
         "eu-ai-act", "eu-machinery", "eu-cra", "iso-10218", "nist", "iec-62443",
         "iso-iec-tr-5469", "iso-42001", "iso-23894",
+        # The functional-safety standards an accredited AI-safety inspection programme assesses
+        # robot software against, plus the in-development Type-C standard for dynamically stable
+        # robots. Provael is an input to all three and determines none of them.
+        "iec-61508", "iso-13849",
     }
     for entry in cr.entries:
         assert entry.provael_signal
@@ -132,8 +136,10 @@ def test_gap_detection_uncalibrated() -> None:
         # evidence. This report never ran it, so they are gaps — which is the point of the gate:
         # a systematic-capability or PL-validation argument citing an ASR from a run that never
         # touched the action channel would be citing a measurement nobody made.
+        "iec-61508:systematic-capability",
+        "iso-13849:pl-validation",
     }
-    assert cr.summary == {"evidence-present": 11, "gap": 7}
+    assert cr.summary == {"evidence-present": 11, "gap": 9}
     # Every gap explains itself; every present entry has no gap reason.
     for entry in cr.entries:
         if entry.status == "gap":
@@ -154,12 +160,17 @@ def test_gap_detection_calibrated() -> None:
         "eu-machinery:cyber",
         "iso-10218-1:cyber",
         "nist-ai-100-2:privacy",
+        # Same EAI04 gate as the uncalibrated case: calibration does not conjure an action-channel
+        # measurement. Both Annex I Part A points stay present — they are routing rows, satisfied
+        # by adversarial evidence generally rather than by one named family.
+        "iec-61508:systematic-capability",
+        "iso-13849:pl-validation",
     }
     by = _by_key(cr)
     assert by["eu-ai-act:art15"].status == "evidence-present"
     assert by["nist-ai-rmf:measure"].status == "evidence-present"
     assert by["eu-machinery:annex-i-part-a-6"].status == "evidence-present"
-    assert cr.summary == {"evidence-present": 13, "gap": 5}
+    assert cr.summary == {"evidence-present": 13, "gap": 7}
     # The gap names the missing family rather than the generic "no EAI-tagged attacks" reason.
     assert "EAI09" in (by["nist-ai-100-2:privacy"].gap_reason or "")
     # The measured evidence carries the calibrated control.
@@ -250,6 +261,26 @@ def test_no_control_id_defers_its_clause_to_a_later_verification() -> None:
         f"against the primary text and cite it, or drop the row — a compliance artifact that "
         f"tells an assessor its own citation is unverified is worse than one that omits it."
     )
+
+
+def test_functional_safety_rows_disclaim_sil_and_performance_level() -> None:
+    """IEC 61508 / ISO 13849 rows must refuse the determination they sit next to.
+
+    These two are the rows most likely to be misread, because they are the standards a buyer's
+    functional-safety assessor already works in. An ASR is an input to a systematic-capability or
+    validation argument; it is not a SIL, not a PL, and not a determination of either. The
+    disclaimer is load-bearing sales copy as much as engineering honesty, so it is pinned.
+    """
+    by = {r.key: r for r in REQUIREMENTS}
+    for key in ("iec-61508:systematic-capability", "iso-13849:pl-validation"):
+        signal = by[key].provael_signal
+        assert "INPUT" in signal, f"{key} must state it is an input, not a determination"
+        assert "no SIL" in signal and "makes no functional-safety claim" in signal, (
+            f"{key} must disclaim SIL / Performance Level and any functional-safety claim"
+        )
+        assert by[key].indicative is True
+        assert by[key].required_eai == ("EAI04",)
+    assert "no Performance Level" in by["iso-13849:pl-validation"].provael_signal
 
 
 def test_by_eai_aggregation_and_families() -> None:

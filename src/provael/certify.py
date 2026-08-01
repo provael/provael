@@ -105,6 +105,10 @@ MACHINERY_CROSSWALK_KEYS: tuple[str, ...] = (
     "iso-10218-1:cyber",
     "iso-10218-2:cyber",
     "iec-62443:slv",
+    # The functional-safety argument the machinery file sits inside. Provael is an input to these,
+    # never a determination — see each row's provael_signal, which says so in terms.
+    "iec-61508:systematic-capability",
+    "iso-13849:pl-validation",
     "nist-ai-100-2:taxonomy",
 )
 
