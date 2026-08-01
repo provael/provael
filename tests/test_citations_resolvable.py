@@ -49,7 +49,14 @@ from pathlib import Path
 
 import pytest
 
-_TOP10 = Path(__file__).resolve().parents[1] / "docs" / "TOP10.md"
+_DOCS = Path(__file__).resolve().parents[1] / "docs"
+_TOP10 = _DOCS / "TOP10.md"
+
+# The published-baselines table cites OTHER PEOPLE'S numbers, which makes the invariant sharper
+# there than in the Top 10: a reader who cannot resolve a competitor's figure does not conclude the
+# citation is weak, they conclude the comparison was constructed to flatter. Every data row must
+# therefore carry a resolvable identifier in the same row as the number it reports.
+_BASELINES = _DOCS / "standards" / "published-asr-baselines.md"
 
 # `## EAI01 — Policy & instruction jailbreak (direct command channel)`
 _RISK_HEADING = re.compile(r"^## (EAI\d\d) — .*$", re.M)
@@ -132,6 +139,74 @@ def test_the_parser_sees_every_risk() -> None:
         f"parsed only {len(segments)} evidence segments for {len(headings)} risks — the `*[tag]*` "
         "convention was probably reworded, which would make the citation check vacuous."
     )
+
+
+def _baseline_rows() -> list[str]:
+    """Every data row of the published-baselines table (header and separator excluded).
+
+    A row is a Markdown table line with at least the table's six columns. The header (`| Attack |`)
+    and the `| --- |` separator are dropped; everything else is a claim about somebody's result.
+    """
+    rows: list[str] = []
+    for line in _BASELINES.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|") or stripped.startswith("| ---"):
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if len(cells) >= 6 and cells[0].lower() not in {"attack", "**attack**"}:
+            rows.append(stripped)
+    return rows
+
+
+def test_every_published_baseline_row_carries_a_resolvable_identifier() -> None:
+    """Same invariant as the Top 10, applied where it matters more: other people's numbers.
+
+    This page exists to argue that a 95%-to-5% task-success collapse is not the same event as a
+    100% envelope-breach ASR. That argument only lands if a reader can open each cited paper and
+    check what it actually measured. A row whose source is a bare paper title invites the reader to
+    assume the comparison was arranged rather than found — which costs more than the row is worth.
+    """
+    unresolvable = [
+        row for row in _baseline_rows()
+        if not any(pattern.search(row) for pattern in _RESOLVABLE)
+    ]
+    if unresolvable:
+        detail = "\n".join(f"  {row[:170]}" for row in unresolvable)
+        pytest.fail(
+            f"{len(unresolvable)} row(s) in docs/standards/published-asr-baselines.md report a "
+            f"result with no arXiv ID, CVE number, or URL:\n{detail}\n\n"
+            f"Add the identifier, or withhold the row and say so — the page already has a worked "
+            f"example of withholding a row whose figures could not be resolved. Do not print a "
+            f"number you cannot source on a page whose entire argument is that numbers should be "
+            f"checkable."
+        )
+
+
+def test_the_baselines_parser_is_not_vacuous() -> None:
+    """Guard the guard. A table parser that matches nothing passes every assertion above it."""
+    rows = _baseline_rows()
+    assert _BASELINES.is_file(), "docs/standards/published-asr-baselines.md is missing"
+    assert len(rows) >= 5, (
+        f"parsed only {len(rows)} baseline rows; the table was probably restructured, which would "
+        f"make the citation check vacuous. Re-point the parser rather than deleting it."
+    )
+
+
+def test_the_baselines_page_keeps_its_comparability_column() -> None:
+    """The last column IS the page. Without it this is a table that flatters the competition.
+
+    The failure mode is not someone deleting the page — it is someone tidying the table down to
+    "attack | value | source" because the prose column reads as clutter. That edit silently turns a
+    document arguing *these numbers are not comparable* into one implying they are.
+    """
+    doc = _BASELINES.read_text(encoding="utf-8")
+    assert "Comparable to a Provael ASR?" in doc, (
+        "the comparability column header is gone from published-asr-baselines.md — that column is "
+        "the argument, not decoration"
+    )
+    assert "not directly comparable" in doc.lower()
+    # The reference definition the whole column is measured against.
+    assert "benign safe envelope" in doc or "envelope" in doc
 
 
 def test_the_two_citations_an_external_audit_could_not_verify_stay_pinned() -> None:
