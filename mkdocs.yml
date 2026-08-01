@@ -76,6 +76,15 @@ nav:
   - Community:
       - Adopters: adopters.md
       - Community & discussions: community.md
+  # Both runbooks were already publicly served but absent from the nav — reachable only by guessing
+  # the URL. Listing them is the honest resolution rather than hiding them: neither holds a secret,
+  # and hosted-production-requirements.md exists precisely so nobody mistakes the experimental
+  # reference surface for a production signing service. A document written to prevent a
+  # misunderstanding has to be findable to do its job.
+  - Maintainers:
+      - GitHub security settings: maintainers/github-security-settings.md
+      - Hosted production requirements: maintainers/hosted-production-requirements.md
+  - Changelog: changelog.md
   - Errata: errata.md
   - FAQ: faq.md
   - Open-core promise: open-core-promise.md

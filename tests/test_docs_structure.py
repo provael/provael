@@ -32,10 +32,11 @@ import yaml
 REPO = Path(__file__).resolve().parent.parent
 DOCS = REPO / "docs"
 
-#: Directories allowed to have no landing page. ``assets`` holds images, not pages.
-#: ``maintainers`` holds internal runbooks that are deliberately absent from the nav — note they
-#: are still PUBLICLY SERVED, which is a separate decision worth revisiting, not a bug this guards.
-_NO_HUB_REQUIRED = frozenset({"assets", "maintainers"})
+#: Directories allowed to have no landing page. ``assets`` holds images, not pages — it is the only
+#: entry, and the intent is that it stays that way. ``maintainers`` was listed here while its
+#: runbooks were publicly served but absent from the nav; they are now in the nav with a hub, so the
+#: exemption is gone rather than left behind quietly suppressing a real check.
+_NO_HUB_REQUIRED = frozenset({"assets"})
 
 #: Case collisions recorded rather than hidden. **Empty, and that is the goal.**
 #:
@@ -151,6 +152,26 @@ def test_retired_uppercase_urls_still_redirect() -> None:
     ):
         assert f"'{old}': '{new}'" in cfg, f"no redirect from the retired URL {old} -> {new}"
         assert (DOCS / new).is_file(), f"redirect target {new} does not exist"
+
+
+def test_the_docs_reach_the_commercial_offer() -> None:
+    """The docs had zero routes to the operated work — a dead end for a convinced reader.
+
+    Of ~50 docs files, none linked to /assessment, /pricing or the sample pack. A reader who got
+    through the technical corpus, decided the tooling was right and wanted someone to run it had
+    nowhere to go. This asserts at least one route exists; it deliberately does not demand many,
+    because the docs are documentation and a link farm would be worse than the dead end.
+    """
+    routes = ("provael.com/pricing", "provael.com/assessment", "provael.com/sample-evidence-pack")
+    linking = [
+        p.relative_to(DOCS).as_posix()
+        for p in DOCS.rglob("*.md")
+        if any(r in p.read_text(encoding="utf-8") for r in routes)
+    ]
+    assert linking, (
+        "no docs page links to the commercial offer — a reader convinced by the docs has no route "
+        f"to the operated work. Expected at least one of {routes}."
+    )
 
 
 def test_the_scan_actually_finds_sections() -> None:
