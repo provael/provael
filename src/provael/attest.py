@@ -82,8 +82,15 @@ class MissingAttestExtraError(RuntimeError):
 
 # --------------------------------------------------------------------------------------------
 # Regulatory clock — factual application dates the attestation is measured against. Dates only;
-# no claim of conformity. The EU AI Act line states BOTH the statutory and the (not-yet-adopted)
-# proposed date, on purpose.
+# no claim of conformity. The EU AI Act line states BOTH the original statutory date and the
+# operative one, on purpose.
+#
+# These dates are SIGNED. An attestation carrying a superseded date does not merely misinform —
+# it cryptographically guarantees the integrity of a wrong fact, which is worse than carrying no
+# date at all. The AI Act entry was last checked 2026-07-23 and the Digital Omnibus was published
+# in the OJ on 2026-07-24: the fact was verified one day before it changed, and nothing re-read it.
+# `last_verified` is the field that makes that visible; keep it honest, and prefer re-checking a
+# date over trusting this comment.
 # --------------------------------------------------------------------------------------------
 
 class RegulatoryClock(BaseModel):
@@ -110,13 +117,16 @@ REGULATORY_CLOCK: tuple[RegulatoryClock, ...] = (
     RegulatoryClock(
         framework_id="eu-ai-act",
         instrument="Regulation (EU) 2024/1689 (AI Act), Annex I machinery",
-        applies_from="2027-08-02",
-        note="High-risk obligations statutory from 2 Aug 2027. The Digital Omnibus reached a "
-        "PROVISIONAL agreement (7 May 2026) to defer Annex I embedded high-risk obligations to "
-        "2 Aug 2028, but it is not yet formally adopted or published in the OJ, so 2027-08-02 "
-        "remains the legal baseline. Treat 2027 as binding until the deferral is adopted.",
-        last_verified="2026-07-23",
-        source="http://data.europa.eu/eli/reg/2024/1689/oj",
+        applies_from="2028-08-02",
+        note="Statutory date for Annex I embedded high-risk under Reg (EU) 2024/1689 was "
+        "2 Aug 2027. That deferral is no longer provisional: Regulation (EU) 2026/1744 (Digital "
+        "Omnibus on AI) was published in the OJ on 24 Jul 2026 and entered into force on "
+        "27 Jul 2026, moving product-embedded high-risk application to 2 Aug 2028 (stand-alone "
+        "Annex III moves to 2 Dec 2027). 2028-08-02 is the operative date; 2027-08-02 is retained "
+        "here only as the superseded statutory baseline.",
+        last_verified="2026-08-01",
+        source="http://data.europa.eu/eli/reg/2024/1689/oj (as amended by "
+        "http://data.europa.eu/eli/reg/2026/1744/oj)",
     ),
     RegulatoryClock(
         framework_id="eu-cra",
