@@ -14,6 +14,12 @@ All notable changes to this project are documented here. The format is based on
   still wrong: the paper states *"BadVLA achieves near 96.7% attack success with negligible
   clean-task degradation"* in its contributions section. Checking an abstract is not checking a
   paper. Corrected in `docs/standards/published-asr-baselines.md`.
+- **The truncated standard in the Halos quote is resolved: ISO/IEC TR 5469.** The quote reached
+  this repo cut off at `"ISO/IEC TR…"` and shipped with its ellipsis intact, which was the right
+  call at the time — completing a standard number from context is the unresolvable-citation failure
+  `tests/test_citations_resolvable.py` exists to prevent. Reading the NVIDIA newsroom release itself
+  (2026-08-01) settled it. The rule that produced the ellipsis is the rule that removed it: quote
+  the source, then go read the source.
 - **The withheld per-suite row now names every source checked.** The four proposed figures
   (Spatial 97.5 / Object 93.8 / Goal 96.5 / LIBERO-10 77.3) appear as a set in none of
   arXiv:2605.25889, arXiv:2505.16640, or arXiv:2509.19870 — two of the values occur only as
