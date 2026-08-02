@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **The sim-to-real pre-registration now names its public statement.** `docs/studies/sim-to-real-so101.md`
+  links [provael.com/sim-to-real](https://www.provael.com/sim-to-real/), which publishes the same
+  protocol, the null hypothesis and a dated "trials not yet run as of" line. The link exists because
+  a pre-registration nobody can find does not do the job a pre-registration exists to do: the point
+  is that a reader who later sees a result can confirm the design was fixed beforehand, and that
+  requires the protocol to be reachable from where the result will be read. Precedence is stated in
+  the file — if the two disagree, this repo wins, because it is the registered artifact and the
+  website copies from it.
+
 ## [0.31.0] — 2026-08-02
 
 The disagreement stops being prose and becomes a measurement.
