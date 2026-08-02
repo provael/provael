@@ -73,12 +73,14 @@ def _as_int(token: str) -> int:
 
 
 def _registry_counts() -> dict[str, int]:
-    """The three numbers the documentation restates, computed from `ATTACKS` itself."""
+    """The numbers the documentation restates, computed from `ATTACKS` itself."""
     families = {ctor().family for ctor in ATTACKS.values()}
+    adversarial = [n for n, ctor in ATTACKS.items() if ctor().family != BASELINE_FAMILY]
     return {
         "adversarial families": len(families - {BASELINE_FAMILY}),
         "total families": len(families),
         "total attacks": len(ATTACKS),
+        "adversarial attacks": len(adversarial),
     }
 
 
@@ -103,6 +105,12 @@ _CLAIMS: tuple[_Claim, ...] = (
     _Claim("docs/quickstart.md", r"# (\w+) attacks across", "total attacks"),
     _Claim("docs/quickstart.md", r"attacks across (\w+) families", "total families"),
     _Claim("docs/quickstart.md", r"families \((\w+) adversarial", "adversarial families"),
+    # README's `list-attacks` comment. It said "28 attacks" for two releases while
+    # `docs/quickstart.md` — the same claim, one directory away — was corrected in 0.29.1,
+    # because the enumerated list below only ever named quickstart. This pair is the fix for
+    # that specific miss; the sweep is the fix for the class of it.
+    _Claim("README.md", r"# (\w+) attacks across", "total attacks"),
+    _Claim("README.md", r"attacks across (\w+) families", "total families"),
     # The leaderboard Space renders a coverage line but installs no `provael` (see its
     # requirements.txt), so it cannot import the registry and must hardcode the denominator.
     # That makes it exactly the kind of claim this guard exists for.
@@ -219,3 +227,101 @@ def test_no_stale_family_count_anywhere() -> None:
 
     assert scanned, "the family-count sweep matched nothing at all; the phrasing must have changed"
     assert not stale, "stale family counts:\n  " + "\n  ".join(stale)
+
+
+# --------------------------------------------------------------------------- #
+# the `list-attacks` sweep — the shape that got past both checks above
+# --------------------------------------------------------------------------- #
+
+#: WHY A SECOND SWEEP. `README.md` said "28 attacks across …" for two releases while
+#: `docs/quickstart.md` — the identical claim one directory away — was corrected in 0.29.1. Neither
+#: check above could see it. The enumerated list named only quickstart, and
+#: :data:`_SWEEP` keys on the noun phrase "adversarial families", which that README line never
+#: used: it wrote the count against an *enumerated family list* inside a shell comment in a fenced
+#: code block. Nothing about being in a code fence hid it — the sweep reads whole files — the
+#: phrasing simply fell outside the only pattern being looked for.
+#:
+#: WHY THIS ANCHOR AND NOT A BROADER ONE. Sweeping every "N attacks" or "N families" in the tree
+#: is the obvious generalisation and it is wrong: most such phrases are true statements about a
+#: *subset*, not restatements of the registry. `attacks/action.py` says "Two attacks" of its own
+#: family, `recipes.py` says "nine attacks across four families" of the `quick` preset, and the
+#: crosswalk says "three families" of a mapping. A guard that failed on those would be reverted
+#: within a week, which is worse than no guard.
+#:
+#: `provael list-attacks` is the anchor that carries the meaning, because
+#: :func:`provael.cli.list_attacks` iterates :data:`~provael.attacks.registry.ATTACKS` and prints
+#: every family — so a count offered as *what that command shows* is a claim about the whole
+#: registry, always, with no subset reading available. That is exactly the claim that was wrong in
+#: `README.md`, and it was wrong a second time in `notebooks/01_provael_in_5_minutes.ipynb`, which
+#: annotated `list-attacks` with the `quick` recipe's nine-attacks-four-families figure.
+_LIST_ATTACKS_COUNT = re.compile(
+    r"list-attacks\b[^\n]{0,120}?\b(\d+|" + "|".join(_WORDS) + r")\s+attacks"
+    r"(?:[^\n]{0,40}?\b(\d+|" + "|".join(_WORDS) + r")\s+families)?",
+    re.IGNORECASE,
+)
+
+
+def test_list_attacks_counts_describe_the_whole_registry() -> None:
+    """Any count offered as the output of `list-attacks` must be the registry's own."""
+    attacks = _registry_counts()["total attacks"]
+    families = _registry_counts()["total families"]
+    wrong: list[str] = []
+    matched = 0
+    for path in _tracked_text_files():
+        rel = path.relative_to(REPO).as_posix()
+        if rel in _HISTORICAL or rel.startswith("tests/"):
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        for got_attacks, got_families in _LIST_ATTACKS_COUNT.findall(text):
+            matched += 1
+            if _as_int(got_attacks) != attacks:
+                wrong.append(
+                    f"{rel}: annotates `list-attacks` with {got_attacks!r} attacks, "
+                    f"registry has {attacks}"
+                )
+            if got_families and _as_int(got_families) != families:
+                wrong.append(
+                    f"{rel}: annotates `list-attacks` with {got_families!r} families, "
+                    f"registry has {families}"
+                )
+
+    assert matched, (
+        "no document annotates `list-attacks` with a count any more. Either the phrasing changed "
+        "— update the pattern — or the claims were deleted. A sweep that matches nothing passes "
+        "vacuously, which is how the README line survived two releases."
+    )
+    assert not wrong, (
+        "`list-attacks` prints the whole registry, so a count attached to it is a claim about the "
+        "whole registry — not about a recipe's subset:\n  " + "\n  ".join(wrong)
+    )
+
+
+def test_the_list_attacks_sweep_catches_a_fenced_shell_comment() -> None:
+    """Mutation guard: pin the exact shape that escaped, so a pattern edit cannot silently drop it.
+
+    The regression was a shell comment inside a fenced code block. Asserting the pattern against a
+    synthetic copy of that shape costs nothing and means a future rewrite of
+    :data:`_LIST_ATTACKS_COUNT` has to keep working on the case it was written for, rather than
+    merely on whatever the tree happens to contain that day.
+    """
+    stale_fence = (
+        "```bash\n"
+        "uv run provael list-attacks             # 28 attacks across 15 families: instruction/visual\n"
+        "```\n"
+    )
+    found = _LIST_ATTACKS_COUNT.findall(stale_fence)
+    assert found, "the sweep no longer matches a count in a fenced shell comment"
+    got_attacks, got_families = found[0]
+    assert _as_int(got_attacks) == 28 and _as_int(got_families) == 15, (
+        "the sweep matched but captured the wrong tokens; it would report a misleading number"
+    )
+    # …and the same shape carrying today's registry counts must be accepted.
+    live = stale_fence.replace("28 attacks", f"{_registry_counts()['total attacks']} attacks").replace(
+        "15 families", f"{_registry_counts()['total families']} families"
+    )
+    got_attacks, got_families = _LIST_ATTACKS_COUNT.findall(live)[0]
+    assert _as_int(got_attacks) == _registry_counts()["total attacks"]
+    assert _as_int(got_families) == _registry_counts()["total families"]

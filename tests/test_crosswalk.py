@@ -266,3 +266,91 @@ def test_atlas_markdown_names_the_uncovered_risks_and_the_mapping_status() -> No
     assert "no on-point ATLAS technique" in md
     # The mapping is ours, not MITRE's, and the artifact has to say so wherever it is pasted.
     assert "not reviewed or endorsed by MITRE" in md
+
+
+# --------------------------------------------------------------------------- #
+# foresight — the target that carries a published disagreement
+# --------------------------------------------------------------------------- #
+
+
+def _committed_foresight() -> dict:  # noqa: ANN401 - test helper
+    p = Path(__file__).resolve().parent.parent / "results" / "crosswalk" / cw_mod.FORESIGHT_JSON
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
+def test_foresight_artifact_carries_the_disagreement_record() -> None:
+    """The disagreement is the reason this target exists; an artifact without it is decorative."""
+    dis = _committed_foresight()["disagreement"]
+    for key in ("their_finding", "our_measurement", "status", "why_unresolved",
+                "what_would_resolve_it"):
+        assert dis.get(key), f"the committed foresight crosswalk lost `disagreement.{key}`"
+    assert "2606.27079" in dis["their_finding"], "the disagreement no longer cites its source"
+
+
+def test_foresight_emits_cc_and_ret_per_mapped_category() -> None:
+    """Their metrics are process-level; a coverage tally alone cannot carry the comparison.
+
+    Asserted on a fresh stub run rather than the committed one **on purpose**: the committed
+    real-policy report predates the per-step decision log, so its CC and RET are legitimately
+    ``None`` everywhere. Testing field *population* against it would therefore pin the wrong thing —
+    it would pass forever while measuring nothing, which is the vacuous-guard failure this repo has
+    been bitten by before. A stub run carries decisions, so it can prove the wiring actually works.
+    """
+    rows = cw_mod.foresight_category_metrics(_report())
+    assert rows, "no ForesightSafety category maps onto a provael family any more"
+    required = {
+        "id", "category", "coverage", "families_mapped", "families_in_this_run",
+        "attempts", "successes", "asr", "asr_wilson_ci95",
+        "cumulative_cost_unsafe_steps_per_episode",
+        "risk_exposure_time_total_unsafe_steps", "risk_exposure_time_episodes_measured",
+        "unmeasured_reason",
+    }
+    for row in rows:
+        assert required <= set(row), f"{row['id']} is missing {required - set(row)}"
+
+    exercised = [r for r in rows if r["attempts"]]
+    assert exercised, "the stub run exercised no mapped category; the helper's attacks changed"
+    assert any(r["cumulative_cost_unsafe_steps_per_episode"] is not None for r in exercised), (
+        "no exercised category reported a CC. Either the decision log stopped being written or "
+        "the metric stopped being read — both make this crosswalk's whole point unmeasurable."
+    )
+    assert any(r["risk_exposure_time_total_unsafe_steps"] is not None for r in exercised), (
+        "no exercised category reported a RET"
+    )
+
+
+def test_foresight_unexercised_category_is_null_never_zero() -> None:
+    """`None` and `0.0` mean opposite things here, and only one of them is a clean bill of health."""
+    rows = cw_mod.foresight_category_metrics(_report())
+    empty = [r for r in rows if not r["attempts"]]
+    assert empty, "the stub run now exercises every mapped category; pick a narrower helper"
+    for row in empty:
+        for field in ("asr", "cumulative_cost_unsafe_steps_per_episode",
+                      "risk_exposure_time_total_unsafe_steps"):
+            assert row[field] is None, (
+                f"{row['id']}.{field} is {row[field]!r} for a category this run never exercised. "
+                f"Unmeasured is None — 0.0 would assert a measurement nobody made."
+            )
+        assert row["unmeasured_reason"], f"{row['id']} is empty and does not say why"
+
+
+def test_foresight_is_deterministic_and_matches_the_committed_artifact() -> None:
+    """Same input, byte-identical output — and the committed file is that output.
+
+    Unlike the atlas artifact, this one is generated *with* the committed reference run, so the
+    fixture is that report rather than nothing. That is the point: the measured columns are what
+    make the disagreement inspectable instead of merely stated.
+    """
+    from provael.types import RunReport
+
+    root = Path(__file__).resolve().parent.parent
+    report = RunReport.model_validate_json(
+        (root / "results" / "smolvla_libero_object" / "report.json").read_text(encoding="utf-8")
+    )
+    assert cw_mod.to_foresight_json(report) == cw_mod.to_foresight_json(report)  # no clock/random
+    committed = root / "results" / "crosswalk" / cw_mod.FORESIGHT_JSON
+    assert committed.read_text(encoding="utf-8").rstrip("\n") == cw_mod.to_foresight_json(report), (
+        "results/crosswalk/crosswalk.foresight.json is stale. Regenerate it with:\n"
+        "  provael crosswalk --target foresight --in results/smolvla_libero_object "
+        "--out results/crosswalk"
+    )
