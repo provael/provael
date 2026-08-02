@@ -10,6 +10,15 @@
 
 > Status: PRE-REGISTERED — protocol only, no results claimed.
 
+> **Published publicly at [provael.com/sim-to-real](https://www.provael.com/sim-to-real/).** This
+> file is the pre-registration; that page is its public statement, and the two are meant to be
+> checked against each other. A pre-registration nobody can find does not do the job a
+> pre-registration exists to do — the point is that a reader who later sees a result can confirm
+> the design was fixed beforehand, and that requires the protocol to be reachable from where the
+> result will be read. The website page carries this protocol, the null hypothesis, and a dated
+> "trials not yet run as of" line; if the two ever disagree, **this file wins** — it is the
+> registered artifact and the website copies from it.
+
 This pre-registers a **sim-to-real correlation** check: does the sim-measured redirection of SmolVLA
 predict its behaviour on a real table-top arm, or is the sim result a simulator artefact?
 
