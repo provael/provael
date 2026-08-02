@@ -286,7 +286,7 @@ Other commands:
 
 ```bash
 uv run provael list-policies            # stub (CPU); smolvla (needs the [lerobot] extra)
-uv run provael list-attacks             # 28 attacks across instruction/visual/sensor_spoof/injection/action/action_space/backdoor/authorization/confidentiality/misalignment/humanoid/optimized/optimized_patch/optimized_instruction
+uv run provael list-attacks             # 29 attacks across 16 families: baseline/instruction/visual/sensor_spoof/injection/action/action_space/backdoor/authorization/confidentiality/misalignment/humanoid/optimized/optimized_patch/universal_patch/optimized_instruction
 uv run provael list-recipes             # named presets: quick / instruction-only / core-sweep / full-sweep / ci-gate
 uv run provael attack --recipe quick    # a recipe is the base config; explicit flags override it
 uv run provael report --in runs/stub/
@@ -358,7 +358,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.30.0
+      - uses: provael/provael@v0.31.0
         with:
           # `none` is the benign control: without it an ASR has no false-positive baseline,
           # and the release gate cannot reach `pass`. It never moves the adversarial ASR.

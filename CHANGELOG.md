@@ -4,10 +4,85 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.31.0] — 2026-08-02
+
+The disagreement stops being prose and becomes a measurement.
+
+0.30.0 shipped the ForesightSafety-VLA disagreement as data, which was the right first move and an
+incomplete one: the artifact stated *that* the two projects disagree and carried a single run-level
+CC/RET aggregate — summed over the very axis the disagreement lives on. A reader could not see
+whether Provael's language result was large, its visual result small, or both. The foresight
+crosswalk now emits **`measured_by_category`**: for every ForesightSafety category Provael maps
+onto, that run's ASR with a 95% Wilson interval beside its CC and RET. On the committed real-policy
+run the shape is now legible in the file itself — `fs06 Unsafe Instruction` at 0.567 [0.392–0.726]
+against `fs12 Occlusion & Visibility` and `fs13 Adversarial Patch` at 0.000. Same inversion,
+inspectable instead of asserted. `crosswalk.foresight.json` is now committed alongside the atlas and
+robojailbench artifacts, so all three are readable without running anything.
+
+Alongside it, a hypothesis that might dissolve the whole disagreement — written down **as a
+hypothesis**, because an untested explanation a reader can check beats a shrug. Their Safe-Lang
+family may evaluate *ordinary* paraphrase where Provael's instruction family evaluates
+*adversarially selected* perturbation. If that is the whole difference, both results are true and
+their conclusion narrows to "benign linguistic variation is not the dominant risk", which is
+compatible with adversarial language being one. The question that settles it — are the Safe-Lang
+perturbations benign-only? — is asked of the authors and deliberately not answered here. It is cheap
+for them to answer and expensive for us to infer.
+
+### Added
+
+- **`measured_by_category` in the foresight crosswalk** (`crosswalk --target foresight --in <run>`).
+  Per-category attempts, successes, ASR, 95% Wilson interval, CC and RET, plus which mapped families
+  a run actually exercised. A category the run never touched reports `null` **with a stated reason**,
+  never `0.0` — the distinction between "not run" and "run and found nothing" is the whole value of
+  the artifact, and it would be worth negative amounts if collapsed.
+- **`results/crosswalk/crosswalk.foresight.json` is committed**, generated against the committed
+  reference run, and pinned by a determinism test the way the atlas artifact already was. Its CC and
+  RET columns are `null` throughout, and correctly so: the one real-policy run Provael owns predates
+  the per-step decision log, so those episodes have *unmeasured* exposure rather than zero. The
+  fields populate on any run that carries decisions. Stated here because a null column in a safety
+  artifact invites exactly the wrong reading.
+- **The reconciliation hypothesis and the open question**, in `docs/crosswalk/foresight-safety-vla.md`.
+- **Two prior-art entries that should have been there already** — `PRIOR_ART.md`:
+  - **RoboGCG** (arXiv:[2506.03350](https://arxiv.org/abs/2506.03350)), the successor to RoboPAIR
+    from an overlapping group and the closest published work to this project's threat model. Its
+    finding that a textual attack applied *once* at the start of a rollout achieves full action-space
+    reachability and persists over a horizon is the reason our instruction attacks are applied once
+    and scored across the episode. Its harm-decoupling observation — "attacks in the real world do
+    not have to be semantically linked to notions of harm" — is the premise the `misalignment` family
+    exists to test, and we had no citation for it until now.
+  - **Mostly Harmless VLA Steering** (arXiv:[2606.12299](https://arxiv.org/abs/2606.12299)), the
+    benign twin: they search language space to *improve* behaviour, we search it to break it. Their
+    conformal guarantee is calibrated on perturbations that "paraphrase the verb, noun, and a mix of
+    both" — sampled, not optimised — which raises a genuine open question about what a harmlessness
+    guarantee covers under adversarially optimised perturbation. Recorded as an open question
+    addressed to the authors, with no claim about the answer.
+- **First tests for `--target foresight` at all.** The target shipped in 0.30.0 with no coverage:
+  four tests now pin the disagreement record, the CC/RET fields, the null-never-zero rule, and
+  byte-identity with the committed artifact.
 
 ### Fixed
 
+- **`README.md` said "28 attacks" for two releases while `docs/quickstart.md`, one directory away,
+  was corrected in 0.29.1.** The registry holds 29 across 16 families, and the README's inline family
+  list was also missing `universal_patch`, which shipped in 0.29.0. The guard added in 0.29.1 could
+  not see it twice over: the enumerated claim list named only quickstart, and the sweep keys on the
+  phrase "adversarial families", which that line never used — it wrote the count against an
+  enumerated family list inside a shell comment. Being in a code fence hid nothing; the phrasing
+  simply fell outside the only pattern anyone was looking for.
+- **The same class of error, twice more, in `notebooks/01_provael_in_5_minutes.ipynb`** — found by
+  reconciling every count in the tree rather than the one that was reported. It annotated
+  `list-attacks` with the `quick` recipe's "nine attacks across four families", and described
+  `--recipe full-sweep` as running "all four attack families", which is `CORE_FAMILIES` — what
+  `ci-gate` runs — not `full-sweep`'s fifteen.
+- **`tests/test_counted_claims.py` now anchors on the command instead of the noun.** A count offered
+  as the output of `list-attacks` is a claim about the whole registry, always, because
+  `cli.list_attacks` iterates `ATTACKS` and prints every family — there is no subset reading
+  available. That anchor is what makes the sweep safe: the obvious generalisation, flagging every
+  "N attacks" in the tree, would fail on `attacks/action.py`'s "Two attacks", on `recipes.py`'s
+  description of `quick`, and on the crosswalk's "three families" — all true statements about
+  subsets. A guard that fails on correct prose gets reverted, which is worse than no guard. The
+  fenced shell-comment shape is pinned by its own regression test so a future pattern edit cannot
+  quietly drop the case it was written for.
 - **BadVLA's ASR is 96.7%, and 0.30.0 was wrong to withhold it.** That release cited the figure at
   the abstract's "near-100%" and recorded that 96.7% "appears in neither the abstract nor this
   repo's committed reproduction record". Both halves of that check were true and the conclusion was
