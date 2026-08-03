@@ -99,9 +99,12 @@ docs = [
     "mkdocs-material",
     "mkdocs-jupyter",
     "mike",
-    # Serves 301s for the uppercase docs URLs retired in the lowercase migration. Without it those
-    # URLs 404 outright, which trades a case-sensitivity trap for a dead-link one — worse, because
-    # the uppercase URLs are the ones already published and linked to.
+    # Serves redirect stubs (meta-refresh HTML pages, HTTP 200 — GitHub Pages cannot emit a real
+    # 3xx for a renamed path) for the uppercase docs URLs retired in the lowercase migration.
+    # Without it those URLs 404 outright, which trades a case-sensitivity trap for a dead-link one
+    # — worse, because the uppercase URLs are the ones already published and linked to. A true 301
+    # would need docs.provael.com fronted by a proxy; until then the docs smoke check asserts the
+    # stub's body names its lowercase target.
     "mkdocs-redirects",
 ]
 

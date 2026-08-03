@@ -80,8 +80,20 @@ always been.
 Recording that in the JSON was only half the fix. Until 0.29.1 the *rendered* Space showed a fresh
 build date and an Ed25519 signature above rows measured many releases earlier, with nothing on the
 page saying so — and a signature over stale data is worse than no signature, because it reads as
-currency. The Space now derives a staleness-and-coverage banner from `measured_with` and the rows
-themselves, above the tables rather than below them.
+currency. The app in this repo (`leaderboard/app.py`) derives a staleness-and-coverage banner from
+`measured_with` and the rows themselves, and places it above the tables rather than below them.
+
+The [published Space](https://huggingface.co/spaces/Sattyam/provael-leaderboard) is a **mirror of
+this repo's `leaderboard/` directory with its own deploy state**, and for a month it was the
+untreated version of the paragraph above: last deployed 30 June 2026, it served a schema-v1 board
+with `signature: null` and no `measured_with` — and no banner, because the app that renders the
+banner had never reached it. Space deployment is now driven from this repo whenever `leaderboard/`
+changes (see `.github/workflows/leaderboard-submission.yml`); this paragraph reverts to a plain
+"the Space renders the banner" claim once the re-deployed Space has been verified live, and not
+before. Two practical notes: **the canonical, signed board is the one committed in this repo** —
+verify that one, not a rendering of it — and the Space runs on the free tier, so it sleeps when
+idle and the first visitor after a quiet period waits through a cold start rather than getting an
+instant page.
 
 ## Signing and offline verification
 
@@ -95,18 +107,21 @@ pip install "provael[attest]"
 curl -fsSLO https://raw.githubusercontent.com/provael/provael/main/leaderboard/results/leaderboard.json
 curl -fsSLO https://raw.githubusercontent.com/provael/provael/main/leaderboard/results/leaderboard.pub
 provael leaderboard verify --in leaderboard.json --pubkey leaderboard.pub
-# -> leaderboard OK  keyid 5b9a65790d93d0bc
+# -> leaderboard OK  keyid 8d62aa33ed5162f3
 ```
 
 A non-zero exit and `leaderboard signature INVALID` is the answer you should get if anything in the
 board was altered — including a single success count. That is the point: the numbers are covered by
 the signature, not merely published alongside it.
 
-The public key lives at **`leaderboard/results/leaderboard.pub`** (keyid `5b9a65790d93d0bc`) and is
-the only key the published board is signed with. CI enforces three things so this cannot rot: the
-board is signed, the signature verifies **against that published key**, and the build commit is no
-more than **3 released tags** behind — re-stamping is a GPU-free one-command operation, so the cost
-of staying current is low.
+The public key lives at **`leaderboard/results/leaderboard.pub`** (keyid `8d62aa33ed5162f3`) and is
+the only key the published board is signed with. The keyid shown above is not typed into this page
+— `scripts/render_keyid.py` derives it from that key file, and a repo-wide test fails the build on
+any keyid the key does not derive to (the id printed here was wrong for four days after the #74 key
+rotation; see the [errata register](errata.md)). CI enforces four things so this cannot rot: the
+board is signed, the signature verifies **against that published key**, every documented keyid is
+derived from the key file, and the board's stamp lags the newest released tag by at most **14
+days** — re-stamping is a GPU-free one-command operation, so the cost of staying current is low.
 
 Rebuild and re-sign:
 
@@ -121,7 +136,7 @@ public half next to the board.
 
 ## Open-core
 
-The CLI builds and verifies boards for anyone, free and Apache-2.0. The **hosted board, signed with a published project key** — the
-board** — signed with Provael's key and backed by real-VLA (GPU) runs rather than the stub — is the
-paid surface. Submitting a result is a pull request; see
+The CLI builds and verifies boards for anyone, free and Apache-2.0. The **hosted board** — signed
+with Provael's published project key and backed by real-VLA (GPU) runs rather than the stub — is
+the paid surface. Submitting a result is a pull request; see
 [CONTRIBUTING-leaderboard.md](https://github.com/provael/provael/blob/main/CONTRIBUTING-leaderboard.md).

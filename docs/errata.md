@@ -84,3 +84,53 @@ The more useful lesson is the one that made this possible in the first place: th
 been *asserting* the superseded framing — it required the note to state the deferral was still
 pending — so from 24 July onward, a correct fix would have failed CI. A guard that pins a fact must
 be revised with the fact, or it stops protecting the fact and starts protecting the error.
+
+---
+
+## E-2026-02 — The documented verify command printed a pre-rotation signing keyid
+
+**Status:** corrected · the published board and its signature were correct throughout
+**Date raised:** 3 August 2026
+**Window:** 30 July 2026 (key rotation, #74) to 3 August 2026 (this correction)
+
+### What was wrong
+
+The project signing key was rotated on 30 July 2026 (#74; the old private key was
+unrecoverable). The published board was re-signed with the new key the same day, and verifying it
+per the documented steps succeeded — printing the new key's id, `8d62aa33ed5162f3`.
+
+The documentation did not move with the key. `README.md` and `docs/leaderboard.md` kept showing
+the pre-rotation id, `5b9a65790d93d0bc`, as the verify command's expected output, and
+`docs/leaderboard.md` additionally stated that the pre-rotation id belonged to *the only key the
+published board is signed with*. So for four days, anyone who ran the documented verification got
+a result the documentation called impossible. The natural reading of that contradiction — that the
+signature is fraudulent — was wrong in the worst direction available to this project: the check
+was working and the prose about the check was not.
+
+### What is correct
+
+The keyid is not an independent fact; it is **derived** — the first 16 hex characters of SHA-256
+over `leaderboard/results/leaderboard.pub`. Compute it yourself rather than trusting either this
+page or the README:
+
+```bash
+python -c "import hashlib; print(hashlib.sha256(open('leaderboard/results/leaderboard.pub','rb').read()).hexdigest()[:16])"
+```
+
+That value, the id in `leaderboard.json`'s signature block, and the id `provael leaderboard
+verify` prints must all agree — today they read `8d62aa33ed5162f3`.
+
+### What this does and does not affect
+
+**Every signature verdict issued during the window was correct.** `verify` checks the signature
+against the key you hand it; the stale prose changed what a reader *expected*, never what the tool
+*computed*. No board, signature or measured number was wrong.
+
+### What was changed to prevent recurrence
+
+The keyid is no longer typed into documentation. `scripts/render_keyid.py` derives it from the
+published key and rewrites both surfaces, and `tests/test_docs_keyid_matches_pubkey.py` sweeps
+every tracked file and fails the build on any 16-hex value following the token `keyid` that the
+published key does not derive to — the same single-source discipline the family counts and
+version pins already have. A future rotation that forgets the docs now fails CI instead of
+waiting for a reader to find the contradiction.

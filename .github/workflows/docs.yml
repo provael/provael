@@ -1,8 +1,17 @@
-# Build the MkDocs site; deploy to GitHub Pages only on a manual dispatch (deploy is gated).
+# Build the MkDocs site; deploy to GitHub Pages on every push to main (and on a gated manual
+# dispatch), then smoke-check the live origin.
 #
 # `build` runs on untrusted PR code — `mkdocs build` executes the `docs` dependency group and any
 # plugin hooks the PR adds — so it holds a read-only token and drops the checkout credentials.
 # Write scope lives only in `deploy`, which no pull_request event can reach.
+#
+# WHY DEPLOY-ON-PUSH. Deploy used to be reachable ONLY via `workflow_dispatch` with
+# `deploy=true`, so publishing docs.provael.com was a manual step nobody was reminded to take.
+# The result: the lowercase URL migration (plus the errata register, the changelog page, the
+# maintainer runbooks, and the findings/studies/standards hubs) merged to main and the live site
+# kept serving the pre-rename tree for days — /errata/ 404'd, which is the one page that tells an
+# artifact holder to check it before relying on a regulatory date. A green repo says nothing
+# about the origin; the fix is that main IS the published tree, plus the smoke job below.
 name: Docs
 
 on:
@@ -37,7 +46,11 @@ jobs:
 
   deploy:
     needs: build
-    if: github.event_name == 'workflow_dispatch' && inputs.deploy
+    # Push events are already limited to main by `on.push.branches`; the ref check restates it as
+    # defense in depth. The dispatch path stays gated behind `inputs.deploy` for ad-hoc republishes.
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -64,3 +77,52 @@ jobs:
           python-version: "3.12"
       - name: Deploy to gh-pages
         run: uv run --group docs mkdocs gh-deploy --force
+
+  # A docs deploy that silently publishes a broken tree is exactly how /errata/ spent days
+  # unreachable while every build stayed green: the repo checks cannot see the origin. This job
+  # asks the origin. It polls (Pages builds + CDN propagation take a minute or two) and fails the
+  # workflow on any page that never turns up.
+  #
+  # On the redirects: the uppercase URLs retired in the lowercase migration are served by
+  # mkdocs-redirects as meta-refresh stub pages, which answer HTTP 200 — GitHub Pages cannot emit
+  # a real 301/302 for a renamed path, so a status-code assertion is not available from this repo.
+  # The stub's BODY must point at the lowercase target, and that is what is asserted. If
+  # docs.provael.com is ever fronted by a proxy that can 301 (the marketing site's Cloudflare
+  # zone can), tighten this to expect 3xx and delete this paragraph.
+  smoke:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions: {}  # pure outside-in probe; no repo access needed
+    steps:
+      - name: Smoke-check the live origin
+        run: |
+          set -u
+          ORIGIN="https://docs.provael.com"
+          BUST="smoke=${GITHUB_RUN_ID}"
+
+          # Pages that must answer 200. /errata/ and /top10/ are here by name because they are
+          # the two this check exists for: the corrections register and the most-cited page.
+          PAGES="/ /errata/ /top10/ /changelog/ /leaderboard/ /findings/ /studies/ /standards/ /compliance/ /maintainers/github-security-settings/"
+
+          # Retired uppercase paths -> the lowercase target their redirect stub must name.
+          REDIRECTS="/TOP10/=/top10/ /TOP10_RFC/=/top10-rfc/ /DEFENSES/=/defenses/ /COMPLIANCE/=/compliance/ /ATTESTATION/=/attestation/ /SIM_PREDICTS_REAL/=/sim-predicts-real/ /ADOPTERS/=/adopters/ /COMMUNITY/=/community/ /MEASURE-2-7/=/measure-2-7/"
+
+          fail=0
+          probe() {  # $1 = path; $2 = required body substring ("" = none). 12 tries x 15s.
+            for i in $(seq 1 12); do
+              body="$(curl -fsS --max-time 20 "${ORIGIN}$1?${BUST}-${i}" 2>/dev/null)" || body=""
+              if [ -n "$body" ] && { [ -z "$2" ] || printf '%s' "$body" | grep -qF "$2"; }; then
+                echo "ok   $1"
+                return 0
+              fi
+              sleep 15
+            done
+            echo "FAIL $1 (never served${2:+ a page naming $2})"
+            return 1
+          }
+
+          for p in $PAGES; do probe "$p" "" || fail=1; done
+          for pair in $REDIRECTS; do
+            probe "${pair%%=*}" "${pair##*=}" || fail=1
+          done
+          exit $fail
