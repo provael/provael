@@ -620,8 +620,9 @@ PROVAEL_ENABLE_EXPERIMENTAL_HOSTED=1 provael serve   # experimental reference se
 The experimental endpoint is behind a **local feature flag** (`PROVAEL_HOSTED_LICENSE`) that is
 **not** authentication and lives **only** on the reference server — it never touches the free core.
 The assurance-report draft maps a `provael attest` bundle to the **EU Machinery Regulation
-2023/1230** (applies **2027-01-20**), the **AI Act** Annex-I machinery route (statutory
-**2027-08-02**; a provisional **2028-08-02** deferral is *not yet adopted*), and **ISO 10218:2025** —
+2023/1230** (applies **2027-01-20**), the **AI Act** Annex-I machinery route (applies
+**2028-08-02**, deferred from a statutory **2027-08-02** by Regulation (EU) 2026/1744, the Digital
+Omnibus, in force 27 Jul 2026), and **ISO 10218:2025** —
 see
 [docs/compliance/machinery-reg-2027.md](https://github.com/provael/provael/blob/main/docs/compliance/machinery-reg-2027.md).
 **Evidence, not certification.**
