@@ -1,18 +1,28 @@
 name: Leaderboard submission
 
-# Validates external leaderboard submissions on PRs that add/change results/**.
-# CPU-only — never installs lerobot. Confirms each report.json is a valid, internally
-# consistent RunReport and that the leaderboard still builds from results/*.
+# Two jobs, two directions:
+#   validate    — external leaderboard submissions, on PRs that add/change results/**.
+#                 CPU-only — never installs lerobot. Confirms each report.json is a valid,
+#                 internally consistent RunReport and that the leaderboard still builds.
+#   sync-space  — pushes leaderboard/ to the Hugging Face Space whenever it changes on main,
+#                 so the deployed Space cannot silently diverge from the repo again. It did:
+#                 the Space sat on a 30 June deploy serving an unsigned schema-v1 board for a
+#                 month while this repo's board was schema-v3, signed, and banner-rendering.
 
 on:
   pull_request:
     paths: ["results/**"]
+  push:
+    branches: [main]
+    paths: ["leaderboard/**"]
+  workflow_dispatch: {}  # manual re-sync (e.g. first deploy after adding the token)
 
 permissions: {}  # read-only; least privilege
 
 jobs:
   validate:
     name: Validate submission + rebuild leaderboard
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -28,3 +38,46 @@ jobs:
         run: uv run python scripts/validate_submission.py 'results/*'
       - name: Leaderboard builds cleanly
         run: uv run provael leaderboard build --runs 'results/*' --out "${RUNNER_TEMP}/lb"
+
+  sync-space:
+    name: Deploy leaderboard/ to the Hugging Face Space
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Install uv (Python 3.12)
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      # The token is required, and its absence fails LOUDLY on purpose: a sync job that skips
+      # when unconfigured is how the Space drifted a month behind while every check stayed green.
+      # Setup: create a fine-grained Hugging Face token with write access to
+      # spaces/Sattyam/provael-leaderboard and add it as the repository Actions secret HF_TOKEN.
+      - name: Push leaderboard/ to spaces/Sattyam/provael-leaderboard
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "${HF_TOKEN}" ]; then
+            echo "::error::secrets.HF_TOKEN is not set. Create a Hugging Face token with write" \
+                 "access to spaces/Sattyam/provael-leaderboard and add it as an Actions secret" \
+                 "named HF_TOKEN — the deployed Space is stale until this job can run."
+            exit 1
+          fi
+          uv run --no-project --with "huggingface_hub>=0.36" python - <<'EOF'
+          import os
+          from huggingface_hub import HfApi
+
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          api.upload_folder(
+              folder_path="leaderboard",
+              repo_id="Sattyam/provael-leaderboard",
+              repo_type="space",
+              commit_message=f"sync from provael/provael@{os.environ['GITHUB_SHA'][:7]}",
+              # Mirror semantics: files deleted from leaderboard/ disappear from the Space too.
+              delete_patterns=["**"],
+              ignore_patterns=["__pycache__/**", "*.pyc"],
+          )
+          print("synced leaderboard/ ->", api.space_info("Sattyam/provael-leaderboard").id)
+          EOF

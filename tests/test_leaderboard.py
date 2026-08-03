@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import os
 import subprocess
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -242,15 +243,30 @@ def test_cli_leaderboard_build_real_rejects_stub(tmp_path: Path) -> None:
 # false in the one place a buyer checks. These two guards are what stop it drifting again.
 # --------------------------------------------------------------------------- #
 
-#: How many released tags the committed board may fall behind before CI fails.
+#: How far, in DAYS, the committed board's stamp may lag the newest released tag before CI fails.
 #:
-#: THREE, chosen deliberately. Re-stamping is cheap and GPU-free — the board is rebuilt from
-#: committed report.json files, so `leaderboard build --real … --sign` is a one-command operation
-#: that does not re-measure anything. Against that, failing on EVERY release would be noise: a
-#: board whose inputs have not changed is not wrong, merely re-datable. Three tolerates a normal
-#: patch cadence (a release, a hotfix, one more) without nagging, and would have caught the actual
-#: 22-release drift on the very next release after it appeared.
-MAX_RELEASES_BEHIND = 3
+#: THE DECISION (2026-08-03), because this guard was one release from failing and the tempting
+#: fix was to raise a constant. This IS a real freshness policy — but for the provenance
+#: envelope, not the measurement. Measurement staleness is carried honestly by `measured_with`
+#: and `is_restamp()` (guarded below) and cannot be fixed by any re-stamp; what THIS guard
+#: protects is the envelope: a reader who installs the newest release should find a board whose
+#: stamp was maintained recently enough to show somebody is still tending it.
+#:
+#: The previous constant, MAX_RELEASES_BEHIND = 3, measured that in released tags. A release
+#: count stopped being a unit of time when the cadence went daily: v0.29.1, v0.30.0 and v0.31.0
+#: landed on consecutive days, so "three releases behind" silently became "three days behind",
+#: and the board sat at `behind == 3` — passing by zero margin — days after a fresh re-stamp.
+#: A policy whose strictness is an accident of release tempo is not a policy.
+#:
+#: So the limit is re-derived from time, computed from two COMMITTED facts — the newest tag's
+#: creation date and the board's own `generated_at` — never from the wall clock, so the guard
+#: stays deterministic given repo state and can only go red when a new tag appears, not while
+#: the repo sleeps. Fourteen days, because: (a) the one real incident (a board stamped 4 July,
+#: found 30 July) would have been caught by 18 July, earlier than any plausible count-based
+#: limit; (b) a re-stamp is a GPU-free one-command operation, so a fortnightly ceiling costs
+#: minutes; (c) at any cadence — daily or monthly — the guarantee reads the same: the stamp on
+#: the public artifact is never more than two weeks older than the release line it ships with.
+MAX_STAMP_LAG_DAYS = 14
 
 _BOARD = Path(__file__).resolve().parent.parent / "leaderboard" / "results" / "leaderboard.json"
 _BOARD_PUB = _BOARD.with_suffix(".pub")
@@ -289,8 +305,13 @@ def test_committed_leaderboard_signature_actually_verifies() -> None:
     )
 
 
-def test_committed_leaderboard_is_not_too_many_releases_behind() -> None:
-    """Fail when the board's build commit falls more than MAX_RELEASES_BEHIND tags back."""
+def test_committed_leaderboard_stamp_is_not_too_far_behind_the_release_line() -> None:
+    """Fail when the board's stamp lags the newest released tag by more than MAX_STAMP_LAG_DAYS.
+
+    Both operands are committed facts (the tag's creation date, the board's `generated_at`), so
+    this is deterministic for a given repo state: it can only turn red when a new tag is created,
+    never by the passage of wall-clock time alone.
+    """
     tags = _tags_newest_first()
     if not tags:
         # Same posture as the version guard: never pass quietly where it matters.
@@ -302,21 +323,24 @@ def test_committed_leaderboard_is_not_too_many_releases_behind() -> None:
 
     board = load_leaderboard(_BOARD)
     assert board.commit, "the committed board carries no source commit"
+    assert board.generated_at, "the committed board carries no stamp"
 
     repo = _BOARD.parent.parent.parent
-    containing = subprocess.run(
-        ["git", "tag", "--contains", board.commit, "--sort=-v:refname"],
-        cwd=repo, capture_output=True, text=True, check=False,
-    ).stdout.split()
-    # No containing tag means the board was built from a commit newer than every release — that is
-    # the freshest possible state, not staleness.
-    if not containing:
-        return
-    behind = tags.index(containing[-1])
-    assert behind <= MAX_RELEASES_BEHIND, (
-        f"the committed leaderboard was built at {board.commit} (first released in "
-        f"{containing[-1]}), which is {behind} releases behind {tags[0]}. Rebuild and re-sign it — "
-        f"it is a GPU-free re-stamp from the committed run reports."
+    tag_date = subprocess.run(
+        ["git", "for-each-ref", "--format=%(creatordate:iso8601-strict)", f"refs/tags/{tags[0]}"],
+        cwd=repo, capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    newest_release = datetime.fromisoformat(tag_date)
+    stamped = datetime.fromisoformat(board.generated_at.replace("Z", "+00:00"))
+
+    lag = newest_release - stamped
+    assert lag <= timedelta(days=MAX_STAMP_LAG_DAYS), (
+        f"the committed leaderboard was stamped {board.generated_at} (commit {board.commit}), "
+        f"{lag.days} days before the newest release {tags[0]} ({tag_date}) — over the "
+        f"{MAX_STAMP_LAG_DAYS}-day envelope policy. Rebuild and re-sign it: a GPU-free "
+        f"re-stamp from the committed run reports, `provael leaderboard build --real "
+        f"results/smolvla_libero_object --sign --key <PROVAEL_SIGNING_KEY> --out "
+        f"leaderboard/results`."
     )
 
 

@@ -308,7 +308,7 @@ inputs** — rebuild it and check the digest matches to reproduce. Add `--sign` 
 
 ```bash
 uv run provael leaderboard verify --in leaderboard/results/leaderboard.json \
-  --pubkey leaderboard/results/leaderboard.pub   # -> leaderboard OK  keyid 5b9a65790d93d0bc
+  --pubkey leaderboard/results/leaderboard.pub   # -> leaderboard OK  keyid 8d62aa33ed5162f3
 ```
 
 On the real **SmolVLA × LIBERO** policy only the **instruction** family transfers today
@@ -358,7 +358,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.31.0
+      - uses: provael/provael@v0.31.1
         with:
           # `none` is the benign control: without it an ASR has no false-positive baseline,
           # and the release gate cannot reach `pass`. It never moves the adversarial ASR.

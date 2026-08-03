@@ -6,8 +6,32 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- **The documented verify command printed a keyid the docs called impossible.** The
+  signing key was rotated in #74 and two files kept printing the old
+  `5b9a65790d93d0bc`, with `docs/leaderboard.md` stating it was the only key the board
+  is signed with. The board is signed with `8d62aa33ed5162f3`. Both surfaces now derive
+  the keyid from `leaderboard.pub` at build time, and a test fails the build if any file
+  carries a keyid that does not match. Logged in the errata register with the window
+  during which the docs were wrong. If you verified a board between 2026-07-30 and today
+  and got a keyid mismatch, that was this.
+- **The docs site had not published since before the URL rename.** `docs.provael.com` was
+  serving the pre-0abe0d7 uppercase tree, the lowercase URLs 404'd, and the redirects
+  that commit promised were never live. `/errata/` was among the pages you could not
+  reach, which is the one page that tells you to check it before relying on a regulatory
+  date in an artifact you hold. The deploy is fixed, the redirects are in, and a
+  post-deploy smoke check now fails the job on a 404.
+- **The published leaderboard Space was a month behind and served an unsigned board.**
+  It was still on schema v1 with `signature: null` while the docs said it rendered a
+  staleness banner from `measured_with`. It now deploys from the repo on every board
+  change.
+
 ### Changed
 
+- Re-stamped the published board so the freshness guard is not one release from failing.
+  `measured_with` still reads `0.1.0`, because that is the release that produced the
+  numbers.
 - **The sim-to-real pre-registration now names its public statement.** `docs/studies/sim-to-real-so101.md`
   links [provael.com/sim-to-real](https://www.provael.com/sim-to-real/), which publishes the same
   protocol, the null hypothesis and a dated "trials not yet run as of" line. The link exists because
