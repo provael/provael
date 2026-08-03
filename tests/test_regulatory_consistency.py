@@ -48,6 +48,7 @@ AI_ACT_APPLIES_FROM = "2028-08-02"
 _SUPERSEDED_FRAMING: tuple[tuple[str, str], ...] = (
     (r"not yet formally adopted", "says the Omnibus deferral is unadopted"),
     (r"provisional agreement", "calls the Omnibus deferral provisional"),
+    (r"provisional \*{0,2}2028-08-02", "calls the adopted 2028 date provisional"),
     (r"proposed 2028-08-02", "calls the 2028 date proposed"),
     (r"treat 2027 as binding", "instructs the reader to plan against the superseded date"),
 )
