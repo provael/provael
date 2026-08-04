@@ -14,6 +14,7 @@ from provael.suites.keepout_zones import (
     KeepOutZone,
     benign_envelope,
     hazard_zone_beside,
+    zone_margin,
     zones_for,
 )
 
@@ -74,3 +75,53 @@ def test_zones_for_returns_calibrated_entry(monkeypatch: pytest.MonkeyPatch) -> 
     custom = KeepOutZone(name="calibrated:libero_object/0", x=(0.5, 0.6), y=(-0.9, -0.7), z=(0.0, 0.2))
     monkeypatch.setitem(kz.CALIBRATED_ZONES, "libero_object/0", [custom])
     assert zones_for("libero_object/0") == [custom]
+
+
+# --------------------------------------------------------------------------------------------- #
+# zone_margin: the spatial predicate made continuous, for use as a SEARCH objective
+#
+# `contains` is the right thing to SCORE and useless to SEARCH — flat everywhere, so a greedy
+# hill-climb has nothing to climb until it lands inside by luck. The margin is the same predicate
+# with a gradient. The correspondence below is what makes it safe to substitute: if the two ever
+# disagreed, an optimized attack would be steered toward a boundary the run does not score.
+# --------------------------------------------------------------------------------------------- #
+
+def test_margin_sign_agrees_with_contains_over_a_grid_including_faces() -> None:
+    """`margin >= 0` iff `contains` — checked ON the faces, where a search converges."""
+    zone = KeepOutZone(name="g", x=(0.0, 1.0), y=(0.0, 1.0), z=(0.0, 1.0))
+    steps = [-0.5, -0.001, 0.0, 0.25, 0.5, 1.0, 1.001, 1.5]  # includes both faces exactly
+    checked = 0
+    for px in steps:
+        for py in steps:
+            for pz in steps:
+                point = [px, py, pz]
+                assert (zone_margin(point, [zone]) >= 0.0) is zone.contains(point), point
+                checked += 1
+    assert checked == len(steps) ** 3  # guard the guard: the loop actually ran
+
+
+def test_margin_is_monotone_approaching_the_zone() -> None:
+    """Strictly increasing as the point closes on the zone — the property the search relies on."""
+    zone = KeepOutZone(name="m", x=(1.0, 2.0), y=(-1.0, 1.0), z=(-1.0, 1.0))
+    approach = [zone_margin([x, 0.0, 0.0], [zone]) for x in (0.0, 0.25, 0.5, 0.75, 1.0)]
+    assert approach == sorted(approach)
+    assert approach[-1] >= 0.0 > approach[0]  # ends inside, starts outside
+
+
+def test_margin_takes_the_nearest_of_several_zones() -> None:
+    near = KeepOutZone(name="near", x=(1.0, 2.0), y=(-1.0, 1.0), z=(-1.0, 1.0))
+    far = KeepOutZone(name="far", x=(9.0, 10.0), y=(-1.0, 1.0), z=(-1.0, 1.0))
+    assert zone_margin([0.0, 0.0, 0.0], [near, far]) == zone_margin([0.0, 0.0, 0.0], [near])
+
+
+def test_margin_reports_no_signal_rather_than_a_tie_at_zero() -> None:
+    """A missing pose or no zones must rank BELOW every real candidate, not tie with the boundary.
+
+    Returning 0.0 here would read as 'exactly on the zone face' — the best possible non-violating
+    score — so a search with no spatial signal at all would look like a search on the brink of
+    success, and would prefer a candidate it knows nothing about over one it measured as far away.
+    """
+    zone = KeepOutZone(name="z", x=(0.0, 1.0), y=(0.0, 1.0), z=(0.0, 1.0))
+    assert zone_margin(None, [zone]) == float("-inf")
+    assert zone_margin([0.5, 0.5], [zone]) == float("-inf")  # short vector
+    assert zone_margin([0.5, 0.5, 0.5], []) == float("-inf")

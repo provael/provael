@@ -41,14 +41,16 @@ TOTAL_ADVERSARIAL_FAMILIES = 15
 #: The release this Space was published from — the "you are here" against which `measured_with`
 #: reads as stale. Checked against `provael.__version__` by `tests/test_counted_claims.py` for the
 #: same reason as above: an unguarded version string in an uninstalled Space rots invisibly.
-CURRENT_RELEASE = "0.31.1"
+CURRENT_RELEASE = "0.32.0"
 
 #: Policies considered open-source (weights available) — drives the RoboArena-style split.
 OPEN_SOURCE_POLICIES = frozenset(
     {"stub", "smolvla", "pi0", "pi05", "pi0fast", "groot", "openvla"}
 )
 
-ROW_HEADERS = ["rank", "policy", "suite", "family", "ASR (95% CI)", "benign", "n", "transfer"]
+ROW_HEADERS = [
+    "rank", "policy", "suite", "family", "ASR (95% CI)", "benign", "n", "transfer", "submitted by"
+]
 EXAMPLE_HEADERS = ["family", "attack", "example adversarial payload"]
 
 
@@ -121,8 +123,43 @@ def _coverage_banner(rows: list[dict], provenance: list[dict]) -> str:
         "competence control, so `clean_task_success_rate` is unrecorded: these rates are read "
         "against a 0% benign false-positive control, but not against a measured demonstration "
         "that the policy completes its benign task unattacked. Not back-filled.",
+        "",
+        _independence_line(rows),
     ]
     return "\n".join(lines)
+
+
+def _independence_line(rows: list[dict]) -> str:
+    """Who produced these numbers — the question a column of repeated names answers too quietly.
+
+    A board of four rows from one maintainer run and a board of four rows from four independent
+    labs are identical in every other field on this page. Stating the count means the page cannot
+    imply external validation it does not have, and it makes a real third-party submission
+    visible the day it lands.
+    """
+    submitters = sorted({str(r["submitted_by"]) for r in rows if r.get("submitted_by")})
+    independent = sorted(
+        {
+            str(r["submitted_by"])
+            for r in rows
+            if r.get("submitted_by") and r.get("provenance") == "third-party-submission"
+        }
+    )
+    if not submitters:
+        return (
+            "> **Independence.** No submitter is recorded on these rows — they predate submitter "
+            "attribution. Read them as unattributed, not as independently reproduced."
+        )
+    if not independent:
+        return (
+            f"> ⚠️ **Independence: none.** All {len(rows)} rows were submitted by "
+            f"**{', '.join(str(s) for s in submitters)}** (the maintainer). Nobody outside the "
+            "project has yet reproduced or submitted a result. Submit one with `provael submit`."
+        )
+    return (
+        f"> **Independence.** {len(submitters)} submitter(s); **{len(independent)} independent** "
+        f"({', '.join(str(s) for s in independent)}) — rows submitted from outside the project."
+    )
 
 
 def _ci(row: dict) -> str:
@@ -143,6 +180,7 @@ def _row_table(rows: list[dict]) -> list[list[str]]:
             f"{100.0 * r['asr']:.1f}%{_ci(r)}", _pct(r.get("benign_fpr")),
             f"{r['successes']}/{r['attempts']}",
             "real" if r.get("transfer_status") == "real-transfer" else "stub",
+            r.get("submitted_by") or "unattributed",
         ]
         for rank, r in enumerate(rows, start=1)
     ]

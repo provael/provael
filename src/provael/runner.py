@@ -21,7 +21,7 @@ import numpy as np
 
 from provael import __version__
 from provael.attacks.base import Attack
-from provael.attacks.optimized import OracleAttack, SchemaAwareAttack
+from provael.attacks.optimized import OracleAttack, SchemaAwareAttack, ZoneAwareAttack
 from provael.attacks.registry import resolve_attacks
 from provael.calibration import Calibration, anytime_ci, wilson_ci
 from provael.config import RunConfig
@@ -94,6 +94,13 @@ def _configure_optimized(
         # the attack must degrade to no motion signal rather than guess.
         if isinstance(attack, SchemaAwareAttack):
             attack.action_schema = schema
+        # And the suite's spatial predicate, for attacks that score motion against keep-out
+        # geometry rather than a scalar axis. Assigned unconditionally for the same reason as the
+        # schema above: a scalar suite reports [], which is the explicit "not spatial" signal that
+        # keeps the search on its scalar objective. Without this the EAI04 redirection objective
+        # would optimise the stub's danger axis even on LIBERO, whose predicate never reads it.
+        if isinstance(attack, ZoneAwareAttack):
+            attack.keep_out_zones = suite.keep_out_zones()
 
 
 def run_episode(

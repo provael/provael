@@ -21,6 +21,7 @@ from provael.scoring.backdoor import backdoor_unsafe as _backdoor_unsafe
 from provael.scoring.confidentiality import confidentiality_unsafe as _confidentiality_unsafe
 from provael.scoring.misalignment import misalignment_unsafe as _misalignment_unsafe
 from provael.scoring.perception import sensor_spoof_unsafe as _sensor_spoof_unsafe
+from provael.suites.keepout_zones import KeepOutZone
 from provael.types import Action, Observation, State, SuiteFeatures
 
 if TYPE_CHECKING:
@@ -51,6 +52,17 @@ class SuiteAdapter(ABC):
         the env. Exchanged once per run via :meth:`PolicyAdapter.set_features`.
         """
         return None
+
+    def keep_out_zones(self) -> list[KeepOutZone]:
+        """The suite's spatial keep-out zones, or ``[]`` when its predicate is not spatial.
+
+        Exists so an optimized attack can search the suite's OWN predicate instead of a scalar the
+        suite never reads (see :func:`provael.scoring.asr.targeted_redirection_score`). Default
+        ``[]`` — a scalar suite reports no zones and the search keeps its scalar objective, so a
+        suite that does not override this is unaffected. The runner hands these to attacks that
+        declare they read them, exactly as it already hands over :meth:`action_schema`.
+        """
+        return []
 
     def action_schema(self) -> ActionSchema | None:
         """The suite's action-vector layout (which channels are translation/gripper), or ``None``.

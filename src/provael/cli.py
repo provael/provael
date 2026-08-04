@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import shutil
 import subprocess
 import time
 from datetime import UTC, datetime
@@ -96,9 +97,14 @@ from provael.defenses.registry import available_defenses, make_defense
 from provael.integrity import INTEGRITY_JSON, IntegrityVerdict, verify_checkpoint
 from provael.leaderboard import (
     LEADERBOARD_JSON,
+    MAINTAINER_RUN,
+    THIRD_PARTY_SUBMISSION,
+    UNATTRIBUTED,
     Leaderboard,
     build_leaderboard,
+    find_reports,
     load_leaderboard,
+    validate_report,
     verify_leaderboard,
 )
 from provael.manifest import to_evidence_manifest_json
@@ -145,6 +151,13 @@ from provael.studies.cross_arch import (
 )
 from provael.suites import KIND_FIXTURE, available_suites, suite_is_ready, suite_kind
 from provael.types import ComponentProfile, RunReport, TransferTest
+from provael.watch import (
+    STALE_DAYS,
+    age_days,
+    append_measurement,
+    latest_measurement,
+    write_badge,
+)
 
 
 class OutputFormat(StrEnum):
@@ -1712,9 +1725,13 @@ def _render_leaderboard(leaderboard: Leaderboard) -> None:
     table.add_column("ASR (95% CI)", justify="right", style="bold red")
     table.add_column("n", justify="right")
     table.add_column("transfer")
+    table.add_column("submitted by")
     for rank, row in enumerate(leaderboard.rows, start=1):
         ci = "" if row.ci95 is None else f" [{100.0 * row.ci95[0]:.0f}-{100.0 * row.ci95[1]:.0f}%]"
         transfer = "[green]real[/green]" if row.transfer_status == "real-transfer" else "stub"
+        by = row.submitted_by or "[dim]unattributed[/dim]"
+        if row.provenance == THIRD_PARTY_SUBMISSION:
+            by = f"[green]{by}[/green]"
         table.add_row(
             str(rank),
             row.policy,
@@ -1723,8 +1740,25 @@ def _render_leaderboard(leaderboard: Leaderboard) -> None:
             f"{100.0 * row.asr:.1f}%{ci}",
             f"{row.successes}/{row.attempts}",
             transfer,
+            by,
         )
     _out.print(table)
+    # The independence line. A board of four rows from one run and a board of four rows from four
+    # labs are identical in every other field, so state the difference rather than leaving a reader
+    # to infer it from a column of repeated names.
+    submitters, independent = leaderboard.submitters(), leaderboard.independent_submitters()
+    if not submitters:
+        _out.print(
+            "[dim]submitters:[/dim] none recorded — every row predates submitter attribution "
+            "or was built without it."
+        )
+    else:
+        detail = (
+            f"{len(independent)} independent ({', '.join(independent)})"
+            if independent
+            else "[yellow]0 independent[/yellow] — every row is a maintainer run"
+        )
+        _out.print(f"[dim]submitters:[/dim] {len(submitters)} ({', '.join(submitters)}) · {detail}")
 
 
 @leaderboard_app.command("build")
@@ -1751,8 +1785,33 @@ def leaderboard_build(
     out: Annotated[Path, typer.Option(help="Output directory for leaderboard.json.")] = Path(
         "leaderboard/results"
     ),
+    submitted_by: Annotated[
+        str | None,
+        typer.Option(
+            "--submitted-by",
+            help="Attribute every produced row to this submitter (a GitHub handle or org). "
+            "Omit to leave rows unattributed.",
+        ),
+    ] = None,
+    provenance: Annotated[
+        str,
+        typer.Option(
+            "--provenance",
+            help=f"How these rows reached the board: {MAINTAINER_RUN} | "
+            f"{THIRD_PARTY_SUBMISSION} | {UNATTRIBUTED}.",
+        ),
+    ] = UNATTRIBUTED,
 ) -> None:
     """Aggregate report.json files into a ranked leaderboard.json (deterministic; real + signed)."""
+    if provenance not in {MAINTAINER_RUN, THIRD_PARTY_SUBMISSION, UNATTRIBUTED}:
+        _fail(
+            f"unknown --provenance {provenance!r}; expected one of {MAINTAINER_RUN}, "
+            f"{THIRD_PARTY_SUBMISSION}, {UNATTRIBUTED}"
+        )
+        return
+    if submitted_by is None and provenance != UNATTRIBUTED:
+        _fail(f"--provenance {provenance} needs --submitted-by (who is being attributed?)")
+        return
     source = [str(real)] if real is not None else (runs or ["runs"])
     generated_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ") if real is not None else None
     commit = (_git_commit() or f"v{__version__}") if real is not None else None
@@ -1771,6 +1830,7 @@ def leaderboard_build(
         out_path, leaderboard = build_leaderboard(
             source, out, generated_at=generated_at, commit=commit,
             sign_key=sign_key, require_real=real is not None,
+            submitted_by=submitted_by, provenance=provenance,
         )
     except FileNotFoundError as exc:
         _fail(str(exc))
@@ -1819,6 +1879,213 @@ def leaderboard_verify(
         _out.print(f"[green]leaderboard OK[/green]  keyid {loaded.signature.keyid}")
     else:
         _fail("leaderboard signature INVALID", code=1)
+
+
+@app.command("watch")
+def watch_cmd(
+    run_dir: Annotated[
+        Path | None,
+        typer.Option(
+            "--record",
+            help="Record this run directory's report.json as a measurement (append to the ledger). "
+            "Omit to only refresh the badge from what is already recorded.",
+        ),
+    ] = None,
+    watch_dir: Annotated[
+        Path, typer.Option("--dir", help="Where the ledger and badge live.")
+    ] = Path("watch"),
+    commit: Annotated[
+        str | None, typer.Option("--commit", help="Source commit to record with the measurement.")
+    ] = None,
+) -> None:
+    """Record a measurement and refresh the freshness badge (the continuous-assurance signal).
+
+    Two modes, and the second is the one that matters: `--record` appends a completed run to the
+    trial ledger and the run-level watch log; with no arguments it only RECOMPUTES the badge from
+    what is already recorded. That second mode is why the badge can go red on its own — a cheap
+    CPU cron refreshes the age even when no measurement happened, so measurements stopping is
+    visible instead of freezing the badge on its last green.
+    """
+    if run_dir is not None:
+        try:
+            report = load_report(run_dir)
+        except (FileNotFoundError, ValidationError) as exc:
+            _fail(f"{run_dir} holds no readable report.json: {exc}")
+            return
+        record = append_measurement(
+            watch_dir, report, commit=commit or _git_commit() or f"v{__version__}"
+        )
+        _out.print(
+            f"[green]recorded[/green] {record.policy} × {record.suite} "
+            f"({record.successes}/{record.attempts}) measured with provael {record.tool_version}"
+        )
+
+    path, payload = write_badge(watch_dir)
+    latest = latest_measurement(watch_dir)
+    age = age_days(latest)
+    _out.print(f"badge: [cyan]{path}[/cyan]  {payload['label']}: {payload['message']}")
+    if age is None:
+        _err.print(
+            "[yellow]no measurement recorded yet[/yellow] — the badge reads 'never' and is an "
+            "error state on purpose: a freshness badge with nothing behind it must not read green."
+        )
+    elif payload.get("isError"):
+        _err.print(
+            f"[red]stale[/red]: the newest measurement is {int(age)} days old (over "
+            f"{STALE_DAYS}). The README's continuous-verification claim is not currently true."
+        )
+
+
+#: Where a leaderboard submission lands. The submission is a PR to this repo adding
+#: ``results/<name>/`` — the flow CONTRIBUTING-leaderboard.md documents, which the
+#: `Leaderboard submission` workflow already validates on arrival.
+SUBMISSION_REPO = "provael/provael"
+
+
+@app.command("submit")
+def submit_cmd(
+    run_dir: Annotated[
+        Path,
+        typer.Argument(
+            help="A run directory containing report.json (from `provael attack --out`)."
+        ),
+    ],
+    submitted_by: Annotated[
+        str,
+        typer.Option("--submitted-by", help="Your GitHub handle or org — attributed on every row."),
+    ],
+    key: Annotated[
+        Path | None,
+        typer.Option("--key", help="Ed25519 private-key PEM to sign with. Omit for ephemeral."),
+    ] = None,
+    name: Annotated[
+        str | None,
+        typer.Option("--name", help="Submission directory name (default: --submitted-by)."),
+    ] = None,
+    open_pr: Annotated[
+        bool,
+        typer.Option("--open-pr/--no-open-pr", help="Open the PR with `gh` (needs gh, authed)."),
+    ] = True,
+) -> None:
+    """Validate, sign and submit a run to the public leaderboard — the whole path, one command.
+
+    Three steps that were three documents: validate the report against the submission schema,
+    Ed25519-sign it so the numbers are tamper-evident in transit, and open the PR. The submission
+    machinery has existed since the board did and has never been exercised by an outsider, which
+    is the kind of thing a five-step README causes.
+
+    Nothing here is privileged: it runs against a fork the same way it runs for the maintainer, and
+    every step prints the command it ran so a submitter can do it by hand instead. If `gh` is
+    missing or unauthenticated the command still validates and signs, then prints the exact
+    remaining steps rather than failing at the end with the work thrown away.
+    """
+    report_paths = find_reports([str(run_dir)])
+    if not report_paths:
+        _fail(f"no report.json under {run_dir} — run `provael attack --out {run_dir}` first")
+        return
+    if len(report_paths) > 1:
+        _fail(
+            f"{run_dir} holds {len(report_paths)} report.json files; submit one run at a time so "
+            "a reviewer can attribute each number to its own protocol"
+        )
+        return
+
+    try:
+        report = load_report(report_paths[0].parent)
+    except (FileNotFoundError, ValidationError) as exc:
+        _fail(f"{report_paths[0]} is not a readable report.json: {exc}")
+        return
+
+    # 1. Validate — the same check the CI workflow runs on arrival, so a submitter sees the
+    #    failure here rather than after opening a PR.
+    problems = validate_report(report)
+    if problems:
+        _err.print("[red]submission is not valid:[/red]")
+        for problem in problems:
+            _err.print(f"  - {problem}")
+        raise typer.Exit(2)
+    _out.print(f"[green]✓[/green] report validates ({report.policy} × {report.suite})")
+
+    # 2. Sign — tamper-evidence in transit. A reviewer verifies the bundle offline against the
+    #    published public half before trusting a single number in the PR.
+    issued_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    stamp = _git_commit() or f"v{__version__}"
+    try:
+        bundle, pub_pem = to_bundle(
+            report, issued_at=issued_at, commit=stamp,
+            private_key_pem=key.read_bytes() if key is not None else None, sign=True,
+        )
+    except MissingAttestExtraError as exc:
+        _fail(f"{exc}  (install with: pip install 'provael[attest]')")
+        return
+
+    slug = (name or submitted_by).strip().replace("/", "__")
+    dest = Path("results") / slug
+    dest.mkdir(parents=True, exist_ok=True)
+    write_report(report, dest)
+    bundle_path = write_bundle(bundle, dest / ATTESTATION_JSON)
+    if pub_pem is not None and key is None:
+        (dest / ATTESTATION_PUB).write_bytes(pub_pem)
+        _err.print(
+            "[yellow]note:[/yellow] signed with an ephemeral key (integrity, not identity). "
+            "Pass --key to sign as yourself; the public half is published beside the bundle."
+        )
+    keyid = bundle.signatures[0].keyid if bundle.signatures else "unsigned"
+    _out.print(f"[green]✓[/green] signed  keyid {keyid} → [cyan]{bundle_path}[/cyan]")
+
+    # 3. Open the PR. Every step is printed so the manual path is always available.
+    branch = f"leaderboard/{slug}"
+    title = f"leaderboard: {report.policy} × {report.suite} from {submitted_by}"
+    body = (
+        f"Leaderboard submission from **{submitted_by}**.\n\n"
+        f"- policy × suite: `{report.policy}` × `{report.suite}`\n"
+        f"- measured with: `provael {report.tool_version}`\n"
+        f"- attempts: {report.attempts} · successes: {report.successes}\n"
+        f"- signed: ed25519 keyid `{keyid}`\n\n"
+        f"Validated locally with `provael submit`. The Leaderboard submission workflow "
+        f"re-validates on arrival; verify the bundle offline with `provael verify "
+        f"{dest / ATTESTATION_JSON}`.\n"
+    )
+    steps = [
+        f"git checkout -b {branch}",
+        f"git add {dest}",
+        f"git commit -m {title!r}",
+        f"git push -u origin {branch}",
+        f"gh pr create --repo {SUBMISSION_REPO} --title {title!r} --body <the summary above>",
+    ]
+    if not open_pr:
+        _out.print("\n[bold]Submission staged.[/bold] To open the PR:")
+        for step in steps:
+            _out.print(f"  {step}")
+        return
+    if shutil.which("gh") is None:
+        _err.print(
+            "\n[yellow]gh is not installed[/yellow] — the submission is validated, signed and "
+            f"staged in {dest}. Finish it with:"
+        )
+        for step in steps:
+            _err.print(f"  {step}")
+        return
+    _out.print(f"\nOpening the PR against {SUBMISSION_REPO}…")
+    for cmd in (
+        ["git", "checkout", "-b", branch],
+        ["git", "add", str(dest)],
+        ["git", "commit", "-m", title],
+        ["git", "push", "-u", "origin", branch],
+        ["gh", "pr", "create", "--repo", SUBMISSION_REPO, "--title", title, "--body", body],
+    ):
+        _out.print(f"  [dim]$ {' '.join(cmd)}[/dim]")
+        completed = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        if completed.returncode != 0:
+            _err.print(f"[red]step failed:[/red] {completed.stderr.strip() or completed.stdout}")
+            _err.print(
+                f"The submission is validated and signed in {dest} — finish the remaining steps "
+                "by hand (listed above) rather than re-running, so the work is not repeated."
+            )
+            raise typer.Exit(1)
+        if completed.stdout.strip():
+            _out.print(f"  {completed.stdout.strip().splitlines()[-1]}")
+    _out.print("\n[green]Submitted.[/green] The Leaderboard submission workflow validates it next.")
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -276,3 +276,79 @@ def test_targeted_redirect_transfer_smolvla_libero() -> None:  # pragma: no cove
     stat = by_family(report.results)["optimized_instruction"]
     assert stat.attempts == 10  # a real command-preserving redirection rate (record it + CI in results/)
     assert report.benign_fpr is not None  # the benign control must be present
+
+
+# --------------------------------------------------------------------------------------------- #
+# The EAI04 objective is the SUITE's predicate, not a fixed scalar
+#
+# `targeted_redirect` operationalizes EAI04 (targeted trajectory redirection) on the instruction
+# channel, and its search used to maximise the stub's channel-0 danger axis unconditionally. On a
+# SPATIAL suite (reach on CPU; LIBERO and Meta-World on a GPU box) nothing scores that axis — the
+# run is scored by a keep-out zone on the end-effector. So the search was climbing one quantity
+# while the run scored another, and it still reported a rate, which is the invisible kind of wrong.
+#
+# These run on CPU via `reach`, whose end-effector position is a pure function of the emitted
+# action — so the projection the objective makes is EXACT there, and the GPU lane adds a real
+# simulator rather than the first execution of this code path.
+# --------------------------------------------------------------------------------------------- #
+
+from provael.attacks.optimized import SchemaAwareAttack, ZoneAwareAttack  # noqa: E402
+from provael.runner import _configure_optimized  # noqa: E402
+from provael.suites.keepout_zones import zone_margin  # noqa: E402
+from provael.suites.reach import KEEP_OUT_ZONE, ReachSuite  # noqa: E402
+
+
+def test_the_runner_hands_over_the_suites_zones_not_an_assumed_predicate() -> None:
+    """Structural wiring: reach reports its hazard box, the scalar stub reports none."""
+    attack = TargetedRedirect()
+    assert isinstance(attack, ZoneAwareAttack) and isinstance(attack, SchemaAwareAttack)
+
+    _configure_optimized([attack], StubPolicy(), ReachSuite(), None)
+    assert [z.name for z in attack.keep_out_zones] == [KEEP_OUT_ZONE.name]
+
+    _configure_optimized([attack], StubPolicy(), StubSuite(), None)
+    assert attack.keep_out_zones == []  # scalar suite => explicit "not spatial", not a stale zone
+
+
+def test_objective_follows_the_suite_scalar_axis_vs_spatial_margin() -> None:
+    """Same action, two suites, two objectives — each the one its suite actually scores."""
+    action = np.zeros(10, dtype=np.float32)
+    action[0] = 0.9  # the stub's danger axis
+    action[1] = 0.8  # translation x (channels 1-3 per the fixture layout)
+
+    scalar = TargetedRedirect()
+    _configure_optimized([scalar], StubPolicy(), StubSuite(), None)
+    assert scalar._objective(action) == pytest.approx(0.9)  # unchanged legacy behaviour
+
+    spatial = TargetedRedirect()
+    _configure_optimized([spatial], StubPolicy(), ReachSuite(), None)
+    # Projected from the origin by the translation delta, scored against the hazard box.
+    assert spatial._objective(action) == pytest.approx(zone_margin([0.8, 0.0, 0.0], [KEEP_OUT_ZONE]))
+    assert spatial._objective(action) != pytest.approx(0.9)
+
+
+def test_spatial_objective_ranks_a_deeper_reach_higher() -> None:
+    """The property the greedy search needs: more redirection toward the zone scores higher."""
+    attack = TargetedRedirect()
+    _configure_optimized([attack], StubPolicy(), ReachSuite(), None)
+
+    def act(translation_x: float):
+        a = np.zeros(10, dtype=np.float32)
+        a[1] = translation_x
+        return a
+
+    scores = [attack._objective(act(x)) for x in (0.0, 0.4, 0.8, 1.2)]
+    assert scores == sorted(scores)
+    assert scores[-1] >= 0.0 > scores[0]  # ends inside the keep-out box, starts well outside
+
+
+def test_spatial_objective_declines_to_guess_without_a_verified_layout() -> None:
+    """No declared action layout => no honest pose projection => rank below every real candidate.
+
+    Guessing a slice here would be the same failure the runner's schema comment warns about: a
+    search hill-climbing the wrong axis still reports a rate, so nothing surfaces the mistake.
+    """
+    attack = TargetedRedirect()
+    attack.keep_out_zones = ReachSuite().keep_out_zones()
+    attack.action_schema = None
+    assert attack._objective(np.array([0.9, 0.8, 0.0, 0.0], dtype=np.float32)) == float("-inf")

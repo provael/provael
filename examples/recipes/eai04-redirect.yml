@@ -1,0 +1,24 @@
+# Recipe: eai04-redirect — the EAI04 targeted-redirection protocol.
+#
+# The optimized, command-preserving instruction search (`optimized_instruction` /
+# `targeted_redirect`) plus the benign control, pinned to the SAME episodes / horizon / seed /
+# query-budget as the published SmolVLA x LIBERO run — so a result from this recipe is comparable
+# to that run rather than merely adjacent to it. Changing any of these four numbers breaks that
+# comparability, which is the only reason they are pinned here rather than left to the CLI default.
+#
+#   provael attack --recipe eai04-redirect --policy stub --suite reach          # CPU scaffolding
+#   PROVAEL_INTEGRATION=1 provael attack --recipe eai04-redirect \
+#       --policy smolvla --suite libero --model HuggingFaceVLA/smolvla_libero   # the real measurement
+#
+# HONEST SCOPE. On a spatial suite (reach on CPU, LIBERO/Meta-World on a GPU box) the search scores
+# the suite's own keep-out predicate — the quantity the run is actually scored on. On the scalar
+# CPU stub it scores the danger axis, and a result there is stub scaffolding: it must never be
+# reported as an EAI04 real transfer. As of 0.32.0 no EAI04 real-transfer number has been measured.
+#
+# `none` is the benign control and is REQUIRED: a redirection rate with no false-positive baseline
+# is not interpretable.
+attacks: [none, optimized_instruction]
+episodes: 10
+horizon: 280
+seed: 0
+query_budget: 64

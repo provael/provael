@@ -356,3 +356,71 @@ def test_board_records_what_measured_it_not_just_when_it_was_stamped() -> None:
     assert board.schema_version >= 3
     # This board's rows were measured long before the version assembling it — say so.
     assert board.is_restamp() is True
+
+
+# --------------------------------------------------------------------------------------------- #
+# Submitter attribution: independence made legible in the artifact
+#
+# `transfer_status` answers "is this a real measurement?"; it cannot answer "whose?". A board of
+# four rows from one maintainer run and a board of four rows from four labs were byte-identical in
+# every field, so the rendered board could not distinguish them and neither could a reader deciding
+# how much independence a number carries. These pin the distinction, including the part that is
+# easy to get wrong: the maintainer submitting their own run is attribution, NOT independence.
+# --------------------------------------------------------------------------------------------- #
+
+from provael.leaderboard import (  # noqa: E402
+    MAINTAINER_RUN,
+    THIRD_PARTY_SUBMISSION,
+    UNATTRIBUTED,
+)
+
+
+def test_rows_are_unattributed_unless_a_submitter_is_given() -> None:
+    """Default stays honest: a plain build invents no provenance."""
+    board = aggregate([_real_report()])
+    assert all(r.submitted_by is None for r in board.rows)
+    assert all(r.provenance == UNATTRIBUTED for r in board.rows)
+    assert board.submitters() == [] and board.independent_submitters() == []
+
+
+def test_maintainer_run_is_attributed_but_not_independent() -> None:
+    board = aggregate([_real_report()], submitted_by="provael", provenance=MAINTAINER_RUN)
+    assert board.submitters() == ["provael"]
+    assert board.independent_submitters() == []  # the point: attribution != independence
+
+
+def test_third_party_submission_counts_as_independent() -> None:
+    board = aggregate([_real_report()], submitted_by="acme-robotics",
+                      provenance=THIRD_PARTY_SUBMISSION)
+    assert board.independent_submitters() == ["acme-robotics"]
+
+
+@_needs_crypto
+def test_attribution_is_covered_by_the_signature() -> None:
+    """Provenance must be INSIDE the signed payload, or a row's attribution could be forged.
+
+    Editing `submitted_by` on a signed board has to break verification exactly the way editing a
+    success count does — otherwise the board's own signature would vouch for numbers while leaving
+    "who produced them" freely rewritable, which is the more attractive lie of the two.
+    """
+    board = stamp_provenance(
+        aggregate([_real_report()], submitted_by="acme", provenance=THIRD_PARTY_SUBMISSION),
+        generated_at="2026-08-04T00:00:00Z", commit="abc1234",
+    )
+    priv = generate_private_key_pem()
+    signed = sign_leaderboard(board, priv)
+    assert verify_leaderboard(signed, public_key_pem(priv)) is True
+
+    forged = signed.model_copy(deep=True)
+    forged.rows[0].submitted_by = "someone-else"
+    assert verify_leaderboard(forged, public_key_pem(priv)) is False
+
+
+def test_the_committed_board_states_its_own_independence() -> None:
+    """The published board must not imply external validation it does not have."""
+    board = load_leaderboard(_BOARD)
+    assert board.schema_version >= 4
+    assert board.submitters(), "the committed board records no submitter at all"
+    # Zero independent submitters is the TRUE state today. When a real third-party row lands this
+    # assertion is what forces the claim on the website/docs to be revisited in the same change.
+    assert board.independent_submitters() == []

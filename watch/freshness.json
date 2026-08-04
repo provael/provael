@@ -1,0 +1,7 @@
+{
+  "color": "red",
+  "isError": true,
+  "label": "last measured",
+  "message": "never",
+  "schemaVersion": 1
+}

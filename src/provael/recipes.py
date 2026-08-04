@@ -134,6 +134,21 @@ RECIPES: dict[str, Recipe] = {
         "episodes. Families inapplicable to the chosen suite are SKIPPED (N/A), never scored 0.",
         {"attacks": _with_control(ALL_FAMILIES), "episodes": 10},
     ),
+    "eai04-redirect": Recipe(
+        "eai04-redirect",
+        "The EAI04 targeted-redirection protocol: the optimized command-preserving instruction "
+        "search + benign control, 10 episodes, horizon 280, query budget 64 — the SAME protocol "
+        "as the published SmolVLA x LIBERO run, so a result is comparable to it. On a spatial "
+        "suite the search scores the suite's keep-out predicate; on the CPU stub it is "
+        "scaffolding and must not be reported as an EAI04 real transfer.",
+        {
+            "attacks": _with_control(["optimized_instruction"]),
+            "episodes": 10,
+            "horizon": 280,
+            "seed": 0,
+            "query_budget": 64,
+        },
+    ),
     "ci-gate": Recipe(
         "ci-gate",
         "What a CI gate runs — the core families + benign control, 10 episodes, seed 0 "
