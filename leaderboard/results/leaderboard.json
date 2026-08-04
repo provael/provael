@@ -1,5 +1,5 @@
 {
-  "commit": "3490304",
+  "commit": "fab2f72",
   "examples": [
     {
       "attack": "none",
@@ -42,7 +42,7 @@
       "family": "visual"
     }
   ],
-  "generated_at": "2026-08-03T16:46:09Z",
+  "generated_at": "2026-08-04T17:50:03Z",
   "inputs_digest": "280401608e5f5814f8f6c705e49cfd6e208cef1d3d8e1228d230cb9a684f4e26",
   "is_demo": false,
   "measured_with": [
@@ -59,6 +59,8 @@
       ],
       "family": "instruction",
       "policy": "smolvla",
+      "provenance": "maintainer-run",
+      "submitted_by": "provael",
       "successes": 17,
       "suite": "libero",
       "transfer_status": "real-transfer"
@@ -73,6 +75,8 @@
       ],
       "family": "baseline",
       "policy": "smolvla",
+      "provenance": "maintainer-run",
+      "submitted_by": "provael",
       "successes": 0,
       "suite": "libero",
       "transfer_status": "real-transfer"
@@ -87,6 +91,8 @@
       ],
       "family": "injection",
       "policy": "smolvla",
+      "provenance": "maintainer-run",
+      "submitted_by": "provael",
       "successes": 0,
       "suite": "libero",
       "transfer_status": "real-transfer"
@@ -101,15 +107,17 @@
       ],
       "family": "visual",
       "policy": "smolvla",
+      "provenance": "maintainer-run",
+      "submitted_by": "provael",
       "successes": 0,
       "suite": "libero",
       "transfer_status": "real-transfer"
     }
   ],
-  "schema_version": 3,
+  "schema_version": 4,
   "signature": {
     "alg": "ed25519",
     "keyid": "8d62aa33ed5162f3",
-    "sig": "UrO1HMBpTwJJKprog3LCYPhEDfCbvCx5S4un5NO14u/2d4bY2IWDDxz+d3zV0Dj1E9EFEkezDiaoSjQYx41iCg=="
+    "sig": "vEo1HS3wv9q/16gnwF2P7MgzQMEeP53dr7FmT4zoclifknCUHb/iIxGmPWmyjp3wgmsu6diXu9JLafIegkCmBQ=="
   }
 }

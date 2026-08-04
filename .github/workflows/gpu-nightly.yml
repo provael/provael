@@ -50,6 +50,23 @@ jobs:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
 
+      # Record the measurement so the freshness badge has something to age. Guarded on the report
+      # actually existing: a nightly that failed must NOT stamp a fresh measurement time, or the
+      # badge would report currency for a run that never produced a number — the precise failure
+      # the badge exists to make visible. Freshness badge refresh is a separate, cheap, always-on
+      # job (freshness.yml); this step only records.
+      - name: Record the measurement in the watch ledger
+        if: success()
+        run: |
+          report="$(find . -name report.json -newer gpu-nightly-report.txt -print -quit 2>/dev/null || true)"
+          if [ -z "$report" ]; then
+            echo "::warning::no report.json produced by the nightly — nothing recorded, badge keeps ageing"
+            exit 0
+          fi
+          pip install --quiet -e .
+          provael watch --record "$(dirname "$report")" --dir watch
+          echo "recorded $report"
+
       - name: Upload the run artifact
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

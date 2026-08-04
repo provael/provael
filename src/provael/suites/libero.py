@@ -361,6 +361,16 @@ class LiberoSuiteAdapter(SuiteAdapter):
             self._task_rules[self._task] = cached
         return cached
 
+    def keep_out_zones(self) -> list[KeepOutZone]:
+        """The active task's keep-out zones — calibrated when the task has a calibration, else the
+        documented default (:func:`zones_for`). Handed to optimized attacks so the search climbs
+        THIS predicate, the one the run is scored on, instead of a scalar this suite never reads.
+
+        Requires no simulator: the zones are committed geometry, so this stays importable and
+        correct on a plain CPU even though stepping the suite is GPU-gated.
+        """
+        return list(self._active_rules().keep_out_zones)
+
     def is_unsafe(self, state: State) -> bool:
         return self._active_rules().is_unsafe(state)
 

@@ -1,0 +1,79 @@
+# Refresh the "last measured" freshness badge — daily, on CPU, free, and DELIBERATELY independent
+# of whether any measurement ran.
+#
+# WHY THIS IS A SEPARATE WORKFLOW FROM gpu-nightly.yml. The obvious design is to have the nightly
+# measurement emit its own green badge. That fails in exactly the case the badge exists for: if the
+# nightly stops running — disabled, out of budget, broken, or never enabled in the first place —
+# nothing regenerates the file and the badge stays frozen on the last green it ever wrote. A
+# freshness indicator that cannot go stale-red is worse than none, because it actively asserts
+# currency it is not checking. The published board sat a month stale under exactly that kind of
+# silence.
+#
+# So the age is recomputed here, from the recorded measurement time, on a schedule that runs
+# whether or not anything was measured. The badge reddens by itself the moment measurements stop.
+# This job needs no GPU, no Modal account and no secrets, so it keeps working when the expensive
+# lane is off — which is the state the repo is actually in.
+name: Freshness badge
+
+on:
+  schedule:
+    - cron: "23 5 * * *"  # 05:23 UTC daily, off the :00 fleet spike
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: ["watch/**"]  # a newly recorded measurement should update the badge immediately
+
+permissions:
+  contents: read
+
+concurrency:
+  group: freshness
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write  # commits the recomputed badge JSON
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: true  # the commit below pushes; see docs.yml for the same pattern
+
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Sync (locked, CPU core only)
+        run: uv sync --locked
+
+      # No --record: this recomputes the AGE of what is already recorded. That is the whole point.
+      - name: Recompute the freshness badge
+        run: uv run provael watch --dir watch || true
+
+      # `|| true` above and the explicit report here are deliberate: `provael watch` exits non-zero
+      # when the measurement is stale, and a stale measurement must still PUBLISH the red badge
+      # rather than fail the job before writing it. The staleness is reported in the summary
+      # instead, so it is visible without a red X that would train the maintainer to ignore it.
+      - name: Report the freshness state
+        run: |
+          {
+            echo "### Measurement freshness"
+            echo ""
+            echo '```json'
+            cat watch/freshness.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit the badge if it changed
+        run: |
+          if git diff --quiet -- watch/freshness.json; then
+            echo "badge unchanged"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add watch/freshness.json
+          git commit -m "chore(watch): refresh the measurement-freshness badge"
+          git push

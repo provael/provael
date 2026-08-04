@@ -72,7 +72,7 @@ openpi = ["openpi-client>=0.1.2"]
 # Cryptographic signing/verification for `provael attest`. Kept OUT of the default install so the
 # free core stays 6 light deps; `attest` prints a clear install hint when it is missing. The dev
 # group also pulls it so CI exercises the real Ed25519 sign/verify path (pure CPU, deterministic).
-attest = ["cryptography>=42"]
+attest = ["cryptography>=50"]
 # The reference hosted attestation server (`provael serve`). Open-core: the server code is
 # Apache-2.0 and self-hostable; the operated, project-key-signed instance is the paid tier. Kept OUT
 # of the default install so the free CLI/attacks/ASR/SARIF core stays lean and CPU-only.
@@ -80,7 +80,7 @@ attest = ["cryptography>=42"]
 # attest.to_bundle(sign=True) and therefore needs Ed25519. Without it here, `pip install
 # 'provael[hosted]'` yields a server whose signing endpoint fails at request time rather than at
 # install time. Keep the bound in step with the `attest` extra above.
-hosted = ["fastapi>=0.110", "uvicorn>=0.27", "cryptography>=42"]
+hosted = ["fastapi>=0.110", "uvicorn>=0.27", "cryptography>=50"]
 
 [dependency-groups]
 dev = [
@@ -91,7 +91,7 @@ dev = [
     "types-PyYAML",
     # Pulled into dev/CI so the real Ed25519 sign/verify path in `provael attest` is exercised
     # (CPU, deterministic). End users get it via the `attest` optional extra, not the base install.
-    "cryptography>=42",
+    "cryptography>=50",
 ]
 # Docs site tooling — NOT installed by the default `uv sync` / CPU CI. Build with
 # `uv run --group docs mkdocs build --strict`.

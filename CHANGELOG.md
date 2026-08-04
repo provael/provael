@@ -6,6 +6,71 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- **`provael submit` — the whole leaderboard-submission path in one command.** Validate a run
+  against the submission schema, Ed25519-sign it so the numbers are tamper-evident in transit, and
+  open the PR. The machinery for outside submissions has existed since the board did and has never
+  been exercised by anyone outside the project, which is what a five-step README buys you. Every
+  step prints the command it ran, and a missing or unauthenticated `gh` degrades to "validated,
+  signed, staged — here are the remaining steps" rather than failing with the work thrown away.
+- **Leaderboard rows carry `submitted_by` and `provenance` (schema v3 → v4).** `transfer_status`
+  answers "is this a real measurement?" and could never answer "whose?" — so a board of four rows
+  from one maintainer run and a board of four rows from four independent labs were identical in
+  every field. The CLI table and the Space now render the submitter and state the independence
+  count outright. The committed board says what is currently true: **1 submitter, 0 independent.**
+  Attribution is inside the signed payload, so forging a row's origin breaks verification exactly
+  the way editing a success count does.
+- **`provael watch` — a freshness signal that decays on its own.** Records a completed run into the
+  existing trial ledger plus a run-level log, and emits a shields.io endpoint badge for
+  "last measured: N days ago" (green ≤ 2 days, amber ≤ 7, red after). The age is recomputed on
+  every refresh by a cheap CPU cron (`freshness.yml`) that runs whether or not anything was
+  measured — a badge emitted *by* the measurement job would freeze on its last green exactly when
+  measurements stop, which is the one event it exists to surface. The published board sat a month
+  stale under precisely that silence.
+- **A `eai04-redirect` recipe**, pinning the EAI04 targeted-redirection protocol to the same
+  episodes/horizon/query-budget as the published SmolVLA × LIBERO run, so a result from it is
+  comparable to that run rather than merely adjacent to it.
+
+### Changed
+
+- **The EAI04 redirection objective now searches the suite's own predicate.** `targeted_redirect`
+  operationalizes EAI04 (targeted trajectory redirection) and its search maximised the *stub's*
+  scalar danger axis unconditionally — including on a spatial suite, where nothing reads that axis
+  and the run is scored by a keep-out zone on the end-effector. The search was climbing one
+  quantity while the run scored another, and it still reported a rate, which is the invisible kind
+  of wrong. The objective now dispatches on the suite's declared predicate:
+  :func:`~provael.suites.keepout_zones.zone_margin` makes the keep-out predicate continuous (flat
+  booleans are unsearchable), and the runner hands each attack the suite's zones the same way it
+  already hands over the action layout. Without a verified action layout the spatial path declines
+  to guess and ranks below every scored candidate rather than optimising a slice that may not be
+  translation. Exercised on CPU via the `reach` suite, whose end-effector position is a pure
+  function of the emitted action — so the LIBERO lane adds a real simulator rather than this code
+  path's first execution. **No EAI04 real-transfer number is claimed:** see below.
+
+### Not in this release, deliberately
+
+- **No measured EAI04 real transfer.** The wiring above is what the measurement needs; the
+  measurement itself requires the `[lerobot]` extra and a GPU, and it belongs on the Modal nightly
+  rather than on a maintainer laptop. Running it needs `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` and
+  `ENABLE_GPU_NIGHTLY=true`, none of which are set on the repo today. Until it runs, EAI04 stays
+  exactly what it was — a stub-scaffolding result with an honest cross-reference — and no number
+  here changes.
+- **No Meta-World rows.** `docs/studies/metaworld-transfer.md` pre-registers SmolVLA *via LeRobot*
+  on Meta-World and gates itself on `PROVAEL_INTEGRATION=1` + a GPU. Meta-World renders on CPU; the
+  policy under test does not, so the study is blocked by the same missing stack, and its `n`,
+  seeds and horizon are still `_TBD_`. Fixing those is a pre-registration amendment, not a run.
+- **The GPU nightly stays off.** Setting `ENABLE_GPU_NIGHTLY=true` without the Modal secrets would
+  turn a silent no-op into a nightly failure that still measures nothing, so the switch waits on
+  the credentials rather than leading them.
+
+## [0.31.1] — 2026-08-03
+
+Recorded retroactively: 0.31.1 was tagged and published to PyPI on 3 August 2026, and this section
+was never written — so the changelog spent a release claiming its newest version was unreleased,
+which is the same class of defect as the stale keyid it documents. The entries below are the work
+that actually shipped in that tag.
+
 ### Fixed
 
 - **The documented verify command printed a keyid the docs called impossible.** The

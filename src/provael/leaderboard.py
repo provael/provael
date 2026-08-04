@@ -40,6 +40,21 @@ LEADERBOARD_PAYLOAD_TYPE = "application/vnd.provael.leaderboard+json"
 REAL_TRANSFER = "real-transfer"
 STUB_SCAFFOLDING = "stub-scaffolding"
 
+# ── Row provenance: who produced the number, which is a different question from how strong it is ──
+# `transfer_status` answers "is this a real-model measurement?"; these answer "whose measurement is
+# it?". A board whose every row is the maintainer's own single run is a different artifact from one
+# carrying five independent submitters, and until now the JSON could not tell those apart — so the
+# rendered board could not either, and neither could a reader deciding how much independence the
+# number carries.
+#: The maintainer's own run, submitted from this repo.
+MAINTAINER_RUN = "maintainer-run"
+#: An outside submission, validated and signed through `provael submit`.
+THIRD_PARTY_SUBMISSION = "third-party-submission"
+#: Provenance was never recorded — every row predating this field. NOT a synonym for maintainer-run:
+#: claiming attribution these rows never carried would be inventing provenance, so they stay
+#: honestly unattributed until someone re-stamps them with a real one.
+UNATTRIBUTED = "unattributed"
+
 
 def transfer_status(policy: str, suite: str) -> str:
     """Honest label for a row: real-model transfer vs deterministic-stub scaffolding.
@@ -65,6 +80,15 @@ class LeaderboardRow(BaseModel):
     )
     transfer_status: str = Field(
         STUB_SCAFFOLDING, description="'real-transfer' or 'stub-scaffolding' (see transfer_status)."
+    )
+    submitted_by: str | None = Field(
+        None,
+        description="Who submitted this row (a GitHub handle or org), or None when unattributed.",
+    )
+    provenance: str = Field(
+        UNATTRIBUTED,
+        description="How this row reached the board: maintainer-run, third-party-submission, or "
+        "unattributed (see the module constants).",
     )
 
 
@@ -92,8 +116,10 @@ class Leaderboard(BaseModel):
     real-run build path, so a plain ``build_leaderboard`` stays deterministic.
     """
 
-    #: 2 -> 3: added ``measured_with``. See that field for why.
-    schema_version: int = 3
+    #: 2 -> 3: added ``measured_with``. 3 -> 4: added per-row ``submitted_by`` / ``provenance``,
+    #: so independence is legible in the artifact and not only in a maintainer's head. Both bumps
+    #: are additive with defaults, so an older board still loads.
+    schema_version: int = 4
     is_demo: bool = Field(..., description="True when every aggregated run used the stub policy.")
     rows: list[LeaderboardRow] = Field(default_factory=list)
     examples: list[AttackExample] = Field(default_factory=list)
@@ -127,6 +153,29 @@ class Leaderboard(BaseModel):
         from provael import __version__
 
         return bool(self.measured_with) and __version__ not in self.measured_with
+
+    def submitters(self) -> list[str]:
+        """Distinct attributed submitters, sorted. Empty when every row is unattributed.
+
+        The one-number answer to "how independent is this board?". A board of four rows from one
+        run and a board of four rows from four labs look identical in every other field.
+        """
+        return sorted({r.submitted_by for r in self.rows if r.submitted_by})
+
+    def independent_submitters(self) -> list[str]:
+        """Submitters whose rows arrived as third-party submissions (excludes maintainer runs).
+
+        Kept separate from :meth:`submitters` because the maintainer submitting their own run is
+        attribution, not independence, and conflating the two would let the board advertise
+        external validation it does not have.
+        """
+        return sorted(
+            {
+                r.submitted_by
+                for r in self.rows
+                if r.submitted_by and r.provenance == THIRD_PARTY_SUBMISSION
+            }
+        )
 
 
 def find_reports(paths: list[str]) -> list[Path]:
@@ -197,8 +246,20 @@ def _inputs_digest(reports: list[RunReport]) -> str:
     return sha256_hex(b"\n".join(canon))
 
 
-def aggregate(reports: list[RunReport]) -> Leaderboard:
-    """Aggregate run reports into a ranked :class:`Leaderboard` (pure, deterministic)."""
+def aggregate(
+    reports: list[RunReport],
+    *,
+    submitted_by: str | None = None,
+    provenance: str = UNATTRIBUTED,
+) -> Leaderboard:
+    """Aggregate run reports into a ranked :class:`Leaderboard` (pure, deterministic).
+
+    ``submitted_by`` / ``provenance`` attribute every produced row. They are properties of the
+    SUBMISSION, not of the run — a report records what was measured, never who forwarded it — so
+    they are passed in by the caller (``provael submit`` sets them; a bare ``build_leaderboard``
+    leaves rows honestly unattributed) rather than read out of the report, which would be
+    inventing provenance the artifact never carried.
+    """
     buckets: dict[tuple[str, str, str], list[int]] = {}
     attack_names: set[str] = set()
     for report in reports:
@@ -228,6 +289,8 @@ def aggregate(reports: list[RunReport]) -> Leaderboard:
             ci95=wilson_ci(successes, attempts) if attempts else None,
             benign_fpr=baseline_fpr.get((policy, suite)),
             transfer_status=transfer_status(policy, suite),
+            submitted_by=submitted_by,
+            provenance=provenance,
         )
         for (policy, suite, family), (attempts, successes) in buckets.items()
     ]
@@ -327,6 +390,8 @@ def build_leaderboard(
     commit: str | None = None,
     sign_key: bytes | None = None,
     require_real: bool = False,
+    submitted_by: str | None = None,
+    provenance: str = UNATTRIBUTED,
 ) -> tuple[Path, Leaderboard]:
     """Find reports under ``run_paths``, aggregate, and write ``<out_dir>/leaderboard.json``.
 
@@ -342,7 +407,7 @@ def build_leaderboard(
     if not report_paths:
         raise FileNotFoundError(f"no {REPORT_JSON} files found under: {', '.join(run_paths)}")
     reports = [load_report(p) for p in report_paths]
-    board = aggregate(reports)
+    board = aggregate(reports, submitted_by=submitted_by, provenance=provenance)
     if require_real and board.is_demo:
         raise ValueError(
             "no real (non-stub) runs found — the public board needs a real-model run; "
@@ -363,6 +428,9 @@ __all__ = [
     "LEADERBOARD_PAYLOAD_TYPE",
     "REAL_TRANSFER",
     "STUB_SCAFFOLDING",
+    "MAINTAINER_RUN",
+    "THIRD_PARTY_SUBMISSION",
+    "UNATTRIBUTED",
     "transfer_status",
     "LeaderboardRow",
     "AttackExample",

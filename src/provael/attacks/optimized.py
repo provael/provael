@@ -49,6 +49,7 @@ from provael.scoring.action import (
     build_hijack_cue,
 )
 from provael.scoring.action_schema import STUB_ACTION_SCHEMA, ActionSchema
+from provael.suites.keepout_zones import KeepOutZone
 from provael.types import Action, Observation
 
 FAMILY = "optimized"
@@ -101,6 +102,23 @@ class SchemaAwareAttack(Protocol):
     # `| None` is the explicit "suite declares no layout" signal the runner sets; see
     # _motion_of, which degrades to zero motion rather than guessing the fixture layout.
     action_schema: ActionSchema | None
+
+
+@runtime_checkable
+class ZoneAwareAttack(Protocol):
+    """Structural type for attacks whose search objective is the suite's SPATIAL predicate.
+
+    The mirror of :class:`SchemaAwareAttack`, one layer up: that one says "I read motion
+    channels", this one says "I score those channels against the suite's keep-out geometry". The
+    runner assigns the suite's :meth:`~provael.suites.base.SuiteAdapter.keep_out_zones` without
+    importing any concrete attack, exactly as it does for the action layout.
+
+    An empty list is the explicit "this suite's predicate is not spatial" signal, and it is what a
+    scalar suite (the stub) reports — so a matching attack keeps its scalar objective rather than
+    optimising geometry that nothing will score.
+    """
+
+    keep_out_zones: list[KeepOutZone]
 
 
 def _clip_magnitude(vec: Sequence[float], cap: float) -> tuple[float, float, float]:

@@ -33,6 +33,7 @@ provael attack --policy stub --suite stub --attacks instruction,visual,injection
 [![PyPI](https://img.shields.io/pypi/v/provael.svg)](https://pypi.org/project/provael/)
 [![Downloads](https://img.shields.io/pypi/dm/provael.svg)](https://pypi.org/project/provael/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/provael/provael/blob/main/LICENSE)
+[![last measured](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprovael%2Fprovael%2Fmain%2Fwatch%2Ffreshness.json)](https://github.com/provael/provael/blob/main/watch/freshness.json)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb)
 [![Assessment](https://img.shields.io/badge/assessment-design%20partners-blue.svg)](https://www.provael.com/assessment)
@@ -358,7 +359,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.31.1
+      - uses: provael/provael@v0.32.0
         with:
           # `none` is the benign control: without it an ASR has no false-positive baseline,
           # and the release gate cannot reach `pass`. It never moves the adversarial ASR.

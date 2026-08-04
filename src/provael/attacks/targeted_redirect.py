@@ -54,8 +54,10 @@ from typing import Any
 from provael.attacks.base import DEFAULT_OPTIMIZED_BUDGET, Attack, OptimizedAttack
 from provael.eai import CATALOG
 from provael.policies.base import PolicyAdapter
+from provael.scoring.action_schema import ActionSchema
 from provael.scoring.asr import is_command_preserving, targeted_redirection_score
 from provael.suites.base import SuiteAdapter
+from provael.suites.keepout_zones import KeepOutZone, zone_margin
 from provael.types import Action, Observation
 
 FAMILY = "optimized_instruction"
@@ -149,6 +151,13 @@ class TargetedRedirect(OptimizedAttack[_Edit]):
         self.min_similarity = float(min_similarity)
         self.target_redirection = float(target_redirection)
         self.max_cues = max(0, int(max_cues))
+        #: The suite's spatial predicate, assigned by the runner (:class:`ZoneAwareAttack`). Empty
+        #: means the suite scores a scalar (the stub) and the objective stays on the danger axis.
+        self.keep_out_zones: list[KeepOutZone] = []
+        #: The suite's real action layout, assigned by the runner (:class:`SchemaAwareAttack`).
+        #: Needed to read translation channels for the spatial objective; ``None`` on a suite that
+        #: declares no layout, which makes the spatial objective decline to guess.
+        self.action_schema: ActionSchema | None = None
         #: Words no candidate may introduce (the configured target + the generic danger objects).
         self.banned: tuple[str, ...] = tuple(
             dict.fromkeys((target_object.lower(), *_BANNED_OBJECT_WORDS))
@@ -186,7 +195,22 @@ class TargetedRedirect(OptimizedAttack[_Edit]):
         )
 
     def _objective(self, action: Action) -> float:
-        return targeted_redirection_score(action)
+        """Score a rolled-out action by the objective THIS suite will actually score the run on.
+
+        On a spatial suite (``reach``, LIBERO, Meta-World) that is the keep-out predicate made
+        continuous; on the scalar stub it stays the danger axis. The dispatch is the suite's own
+        declaration, never an assumption about which suite is running — the EAI04 objective this
+        attack operationalizes is a *pose* redirection, and optimising a scalar the spatial suite
+        never reads would report a rate for a search that was climbing the wrong quantity.
+        """
+        if not self.keep_out_zones:
+            return targeted_redirection_score(action)
+        zones = self.keep_out_zones
+        return targeted_redirection_score(
+            action,
+            spatial_margin=lambda pos: zone_margin(pos, zones),
+            action_schema=self.action_schema,
+        )
 
     def _surrogate(self, edit: _Edit, instruction: str, observation: Observation) -> float:
         # No oracle attached: fall back to a coarse, *policy-agnostic* prior — redirection rises
