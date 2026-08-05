@@ -226,6 +226,93 @@ degrade gracefully, or the coverage statement may simply not apply outside its c
 distribution. **We have not tested this and make no claim about the answer** — we raise it
 because it is the question our harness is shaped to ask and theirs is shaped to answer.
 
+### DRIFT — *Derailing Denoising Trajectories of Flow-Matching VLAs with Adversarial Patch Attack*
+Tae, Lee (2026). arXiv:[2608.03207](https://arxiv.org/abs/2608.03207) · submitted 4 August 2026
+
+The paper this project should be pointing at rather than competing with. Flow-matching VLAs such as
+π0 had been reported to resist perturbations that fool autoregressive VLAs, and the authors state
+plainly what that reputation was made of: **"We show that this robustness is largely illusory: it
+stems from prior attacks ignoring the multi-step denoising ODE."** DRIFT is a test-time universal
+adversarial patch, placed on the robot's gripper, that attacks the denoising *velocity field* of an
+off-the-shelf policy. Its central result is the one that matters for a taxonomy: **"attacking only
+the first denoising step is both stronger and cheaper than attacking a wider window of steps"** —
+which the authors attribute to a gradient conflict specific to input-space optimization, and note is
+"exactly opposite to the training-time backdoor regime". On π0 and π0.5 across four LIBERO suites
+they report that DRIFT "breaks essentially all originally-solvable tasks with a small single patch,
+far exceeding action- and embedding-space attack baselines".
+
+**How we differ:** the threat model is adjacent to our `universal_patch` family — one frozen patch,
+placed physically, carried to episodes it never queried — and the method is not comparable at all.
+DRIFT is **white-box**: it optimises in input space against gradients of the velocity field. Ours is
+an inference-time **black-box query** search over placements, with no gradients and no access to
+model internals. A black-box search cannot find what DRIFT found, because the structure it exploits
+(which step of the ODE to hit) is invisible without the derivative.
+
+**The gap this exposes, stated rather than hedged:** **Provael has never measured a flow-matching
+policy.** The `pi0`, `pi05` and `pi0fast` adapters are registered and `provael list-policies` marks
+them scaffolding — they have never loaded a checkpoint. So DRIFT's finding is not a result we can
+confirm, contradict or contextualise with a number of our own, and until we can, the honest position
+is that this is a capability of theirs sitting on a class of policy we do not cover. The taxonomy
+implication is separately argued in [docs/top10-rfc.md](docs/top10-rfc.md); it is a proposal, not a
+change.
+
+### SARF and AGSD — *Structure-Aware Robust Fine-Tuning: Defending Vision-Language-Action Robots Against Physical Attention Hijacking*
+Zhang, Yin, Yang, Yan, Tian, Yu (2026). arXiv:[2608.03231](https://arxiv.org/abs/2608.03231) · submitted 4 August 2026
+
+Both halves of the loop in one paper. The attack, **AGSD** (Attention-Guided Semantic Disruption),
+is an Expectation-over-Transformation-optimised printable patch that "jointly (i) concentrates
+action-to-vision attention on the patch and (ii) disrupts vision-language semantic alignment", which
+the authors frame as triggering "policy-critical action-to-vision attention hijacking". The defense,
+**SARF**, is "a zero-inference-overhead defense that fine-tunes only the visual encoder using
+feature anchoring, policy-critical attention correction, and language-guided geometric consistency
+restricted to semantically relevant regions". Their headline: **"On LIBERO, SARF reduces OpenVLA's
+failure rate under AGSD from 100% to 14.2%-56.8% (28.6% average) across suites while preserving
+clean performance, and on a real PiPER manipulator it improves average success under AGSD from 23.0%
+to 65.0%."**
+
+**How we differ, and where we are simply behind:** our two shipped defenses
+(`instruction_canonicalization`, `action_envelope`) are measured on a deterministic CPU fixture and
+are labelled stub-validated scaffolding, with no real-model transfer claimed for either. SARF is
+measured on a real model *and on real hardware*. **That comparison should not be softened: they have
+a physical-robot defense number and we have none, on any hardware, for any family.** The
+`/sim-to-real` protocol is pre-registered and its trials have not been run. Reporting a
+mitigation is in our free tool because a mitigation you cannot measure is a marketing claim; that
+principle does not earn us a result we have not produced.
+
+**What we take from them:** AGSD's mechanism claim — that the patch works by *diverting
+action-conditioned attention*, not merely by corrupting pixels — is a sharper account of what a
+patch family is actually attacking than we had a citation for. It also bears on the RFC: attention
+hijacking and first-step denoising redirection are two different mechanisms behind the same visual
+delivery channel, which is the argument for naming mechanisms rather than channels.
+
+### FLARE and ChromaGuard — *Lights, Camera, Malfunction: When Illumination Robustness Leaves VLA Models Blind to Color*
+Watanabe, Sato, Yoshioka (2026). arXiv:[2607.14698](https://arxiv.org/abs/2607.14698) · submitted 16 July 2026
+
+A physical attack with no printed artifact at all. **FLARE** is "an optimized physical spotlight
+attack framework that exploits these vulnerabilities via targeted illuminations, dropping baseline
+task success rates to zero without any access to model internals" — so it is **black-box**, and its
+delivery channel is light rather than a sticker. The more useful half of the paper is a defensive
+trap: the authors "identify a critical and previously underestimated defensive pitfall: naive data
+augmentations incorrectly condition VLA models to discard color as noise, collapsing their visual
+perception into a purely shape-biased processor", exposed by a diagnostic grayscale evaluation in
+which the defended model holds up on grayscale while "its success rate on benign, color-dependent
+real-world tasks drops to at most 47.5%, well below the undefended baseline". Their **ChromaGuard**
+chroma-preserving adversarial training reports "97.5% and 92.5% success rates in benign and attacked
+color-dependent tasks" on a physical 6-DoF platform.
+
+**How we differ:** we model no illumination channel. Every `visual`-family attack we ship perturbs
+the observation tensor a policy receives, which is a printed-patch-shaped assumption; a spotlight is
+a different physical primitive and we do not represent it. We also cannot run their diagnostic:
+grayscale-vs-colour benign evaluation needs a real policy on real colour-dependent tasks, and our
+benign control is a deterministic fixture.
+
+**What we take from them, and it is uncomfortable:** their pitfall is a direct warning about the
+shape of our own defense evidence. A defense that improves an attacked number while quietly
+degrading benign capability is exactly what our `action_envelope` study calls a coverage question,
+and their grayscale diagnostic is a cleaner instrument for catching it than the
+benign-task-success acceptance gate we currently apply. We have not implemented an equivalent
+diagnostic and do not claim one.
+
 ## What is actually novel here
 
 Not the attacks. **And — since AttackVLA (arXiv:2511.12149) — not simply "a unified harness with a

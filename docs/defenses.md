@@ -92,3 +92,33 @@ them is registered in `provael list-defenses`: an unmeasured mitigation is not a
 those four act on the policy's output and became *expressible* only with `Defense.filter_action` in
 0.28.0 — they are now writable and still unwritten, which is a different and more honest status than
 the one they had before.
+
+## Published defenses this project has not matched
+
+The bar this page sets — a measured pre/post ASR with an interval, a benign-FPR control and a
+benign-task-success gate — is met by both rows above on a **CPU fixture**. Two defenses published in
+the last month are measured on a real model, and one of them on real hardware. Recording that here
+rather than in a footnote, because a defenses page that lists only its own results reads as a survey
+of the field and is not one.
+
+| Published defense | What it does | Measured on | Provael's comparable result |
+| --- | --- | --- | --- |
+| **SARF** ([arXiv:2608.03231](https://arxiv.org/abs/2608.03231)) | Structure-aware robust fine-tuning of the visual encoder only, zero inference overhead, against attention-hijacking patches | OpenVLA on LIBERO **and a real PiPER manipulator** | **None.** No Provael defense has been measured against a real model, on any hardware |
+| **ChromaGuard** ([arXiv:2607.14698](https://arxiv.org/abs/2607.14698)) | Chroma-preserving adversarial training against an optimised physical spotlight attack | A physical 6-DoF robotic platform | **None.** Provael models no illumination channel at all |
+
+SARF's reported figure is **"On LIBERO, SARF reduces OpenVLA's failure rate under AGSD from 100% to
+14.2%-56.8% (28.6% average) across suites while preserving clean performance, and on a real PiPER
+manipulator it improves average success under AGSD from 23.0% to 65.0%."** Provael's two measured
+defenses are `stub-validated-scaffolding` with no real-model transfer claimed for either, and the
+instruction-canonicalization study says in its own text that its headline number is close to
+tautological on the fixture it was measured on. The comparison is not close and is not presented as
+though it were. See [PRIOR_ART.md](https://github.com/provael/provael/blob/main/PRIOR_ART.md) for
+the full citations and [the studies index](studies/index.md) for the gap with a date against it.
+
+The useful thing to take from ChromaGuard is a warning rather than a benchmark: its authors report
+that naive augmentation defenses "incorrectly condition VLA models to discard color as noise",
+producing a defended model that scores well on a diagnostic and worse than the undefended baseline
+on benign colour-dependent tasks. That failure mode — a defense that improves the attacked number
+while degrading the benign capability — is exactly what the benign-task-success acceptance gate on
+this page exists to catch, and their grayscale diagnostic is a sharper instrument for catching it
+than the gate currently is.
