@@ -479,6 +479,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#published-defenses-this-project-has-not-matched" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Published defenses this project has not matched
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2224,6 +2235,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#published-defenses-this-project-has-not-matched" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Published defenses this project has not matched
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2362,6 +2384,51 @@ them is registered in <code>provael list-defenses</code>: an unmeasured mitigati
 those four act on the policy's output and became <em>expressible</em> only with <code>Defense.filter_action</code> in
 0.28.0 — they are now writable and still unwritten, which is a different and more honest status than
 the one they had before.</p>
+<h2 id="published-defenses-this-project-has-not-matched">Published defenses this project has not matched</h2>
+<p>The bar this page sets — a measured pre/post ASR with an interval, a benign-FPR control and a
+benign-task-success gate — is met by both rows above on a <strong>CPU fixture</strong>. Two defenses published in
+the last month are measured on a real model, and one of them on real hardware. Recording that here
+rather than in a footnote, because a defenses page that lists only its own results reads as a survey
+of the field and is not one.</p>
+<table>
+<thead>
+<tr>
+<th>Published defense</th>
+<th>What it does</th>
+<th>Measured on</th>
+<th>Provael's comparable result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SARF</strong> (<a href="https://arxiv.org/abs/2608.03231">arXiv:2608.03231</a>)</td>
+<td>Structure-aware robust fine-tuning of the visual encoder only, zero inference overhead, against attention-hijacking patches</td>
+<td>OpenVLA on LIBERO <strong>and a real PiPER manipulator</strong></td>
+<td><strong>None.</strong> No Provael defense has been measured against a real model, on any hardware</td>
+</tr>
+<tr>
+<td><strong>ChromaGuard</strong> (<a href="https://arxiv.org/abs/2607.14698">arXiv:2607.14698</a>)</td>
+<td>Chroma-preserving adversarial training against an optimised physical spotlight attack</td>
+<td>A physical 6-DoF robotic platform</td>
+<td><strong>None.</strong> Provael models no illumination channel at all</td>
+</tr>
+</tbody>
+</table>
+<p>SARF's reported figure is <strong>"On LIBERO, SARF reduces OpenVLA's failure rate under AGSD from 100% to
+14.2%-56.8% (28.6% average) across suites while preserving clean performance, and on a real PiPER
+manipulator it improves average success under AGSD from 23.0% to 65.0%."</strong> Provael's two measured
+defenses are <code>stub-validated-scaffolding</code> with no real-model transfer claimed for either, and the
+instruction-canonicalization study says in its own text that its headline number is close to
+tautological on the fixture it was measured on. The comparison is not close and is not presented as
+though it were. See <a href="https://github.com/provael/provael/blob/main/PRIOR_ART.md">PRIOR_ART.md</a> for
+the full citations and <a href="../studies/">the studies index</a> for the gap with a date against it.</p>
+<p>The useful thing to take from ChromaGuard is a warning rather than a benchmark: its authors report
+that naive augmentation defenses "incorrectly condition VLA models to discard color as noise",
+producing a defended model that scores well on a diagnostic and worse than the undefended baseline
+on benign colour-dependent tasks. That failure mode — a defense that improves the attacked number
+while degrading the benign capability — is exactly what the benign-task-success acceptance gate on
+this page exists to catch, and their grayscale diagnostic is a sharper instrument for catching it
+than the gate currently is.</p>
 
 
 

@@ -1629,6 +1629,67 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#where-this-project-is-behind-as-of-6-august-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where this project is behind, as of 6 August 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Where this project is behind, as of 6 August 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-zero-real-robot-results-others-are-publishing-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Zero real-robot results. Others are publishing them.
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-zero-results-against-any-flow-matching-policy-drift-just-published-several" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Zero results against any flow-matching policy. DRIFT just published several.
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-zero-third-party-submissions-and-zero-forks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Zero third-party submissions and zero forks.
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-this-section-exists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why this section exists
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2170,6 +2231,67 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#where-this-project-is-behind-as-of-6-august-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where this project is behind, as of 6 August 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Where this project is behind, as of 6 August 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-zero-real-robot-results-others-are-publishing-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Zero real-robot results. Others are publishing them.
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-zero-results-against-any-flow-matching-policy-drift-just-published-several" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Zero results against any flow-matching policy. DRIFT just published several.
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-zero-third-party-submissions-and-zero-forks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Zero third-party submissions and zero forks.
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-this-section-exists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why this section exists
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2250,6 +2372,59 @@ with no numbers in it has not been run yet. That is the intended state, not an o
 <p>Most of these need a GPU box and a checkpoint that is not yet wired up end-to-end. The
 <a href="../roadmap/">roadmap</a> says which, and the <a href="../findings/">findings</a> index says what has
 actually been measured so far.</p>
+<h2 id="where-this-project-is-behind-as-of-6-august-2026">Where this project is behind, as of 6 August 2026</h2>
+<p>Three gaps, stated as gaps. Each is a zero, each has a named action, and each action has a date by
+which an outcome is published — the number if it exists, and the reason if it does not. A date with
+no outcome attached is an aspiration, and this page does not carry those.</p>
+<h3 id="1-zero-real-robot-results-others-are-publishing-them">1. Zero real-robot results. Others are publishing them.</h3>
+<p>Provael has <strong>never run on hardware</strong>. Every number this project has published is simulation, and
+<code>results/</code> contains no hardware directory because there is no hardware run to put in one. The
+sim-to-real protocol at <a href="sim-to-real-so101/">sim-to-real (SO-ARM101)</a> is pre-registered, which
+means the design is fixed and the trials have not been run.</p>
+<p>This is not a nuance, and this week made that concrete.
+<a href="https://arxiv.org/abs/2608.03231">SARF</a> (submitted 4 August 2026) reports a defense evaluated <strong>on
+a real PiPER manipulator</strong>, improving average success under their AGSD attack "from 23.0% to 65.0%".
+<a href="https://arxiv.org/abs/2607.14698">FLARE</a> reports attack and defense numbers on a physical 6-DoF
+platform. Those are real-hardware numbers of a kind Provael has not produced for any family, attack
+or defense.</p>
+<p><strong>Action, with a date:</strong> the SO-ARM101 protocol is fixed and needs an arm, a GPU host and operator
+time, not a design decision. <strong>By 31 October 2026 this page states one of two things: the completed
+trial count with its measured sim-to-real correlation, or the specific blocker and its cost.</strong>
+Whichever it is, it is written here on that date rather than left to be inferred from silence.</p>
+<h3 id="2-zero-results-against-any-flow-matching-policy-drift-just-published-several">2. Zero results against any flow-matching policy. DRIFT just published several.</h3>
+<p>Provael has produced <strong>no measurement against a flow-matching policy of any kind</strong>. The <code>pi0</code>,
+<code>pi05</code> and <code>pi0fast</code> adapters are registered and <code>provael list-policies</code> marks them scaffolding:
+none has loaded a checkpoint. The cross-architecture protocol at
+<a href="pi0-openpi-transfer/">π0 (openpi) transfer</a> is pre-registered and unrun.</p>
+<p><a href="https://arxiv.org/abs/2608.03207">DRIFT</a> (submitted 4 August 2026) reports a universal patch
+against <strong>π0 and π0.5 across four LIBERO suites</strong>, and argues the robustness those policies were
+credited with "is largely illusory". Provael cannot confirm, contradict or contextualise that,
+because it has never measured the class of policy the claim is about. The taxonomy question it
+raises is filed as a proposal in the <a href="../top10-rfc/">Top-10 RFC</a>; the measurement question is this
+gap.</p>
+<p><strong>Action, with a date:</strong> this is the cheapest of the three — the openpi adapter is a CPU client
+against a GPU policy server, so it needs a served checkpoint rather than new code.
+<strong>By 30 September 2026 this page carries either the first Provael instruction-family rate against
+π0 with its Wilson interval and benign control, or the reason the served path did not come up.</strong></p>
+<h3 id="3-zero-third-party-submissions-and-zero-forks">3. Zero third-party submissions and zero forks.</h3>
+<p>The published board carries four rows. All four are the maintainer's own single run, all
+<code>submitted_by: provael</code>, and the board itself reports <strong>1 submitter, 0 independent</strong>. The repository
+has <strong>0 forks</strong>. Nobody outside this project has reproduced a published result, and
+<a href="https://www.provael.com/verification/">the register that would record it</a> is empty.</p>
+<p>The submission path stopped being the excuse: <code>provael submit</code> validates a run, signs it and opens
+the pull request in one command, and it is merged on <code>main</code>. It is <strong>not yet in a published
+release</strong>, so today it requires installing from git — which is a real barrier for exactly the
+person most likely to try.</p>
+<p><strong>Action, with a date:</strong> <strong>by 31 August 2026 the release containing <code>provael submit</code> is published to
+PyPI</strong>, so reproducing a result and submitting it needs <code>pip install provael</code> and one command. If
+that date passes without the release, the reason is recorded here. Whether anyone then submits is
+not something this project can put a date on, and no date is claimed for it.</p>
+<h3 id="why-this-section-exists">Why this section exists</h3>
+<p>A project whose argument is that its numbers are checkable does not get to report only the numbers
+that flatter it. Each item above is a zero that a reader would otherwise have to infer from
+absence — and absence is exactly what this project criticises elsewhere. Every one of these three
+changes the day it is no longer true, and the changed date is what makes it a record rather than a
+posture.</p>
 
 
 
