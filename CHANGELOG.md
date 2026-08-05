@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- PRIOR_ART.md now cites DRIFT (arXiv:2608.03207), SARF and AGSD (arXiv:2608.03231) and
+  FLARE (arXiv:2607.14698). DRIFT reports that flow-matching robustness came from
+  measuring it wrong, which is a result provael should be pointing at, not competing with.
+- An RFC amendment proposing first-step denoising redirection as a named sub-class. It is
+  a proposal. The taxonomy does not move until people who work on this have replied.
 - **`provael submit` — the whole leaderboard-submission path in one command.** Validate a run
   against the submission schema, Ed25519-sign it so the numbers are tamper-evident in transit, and
   open the PR. The machinery for outside submissions has existed since the board did and has never
@@ -48,8 +53,10 @@ All notable changes to this project are documented here. The format is based on
   function of the emitted action — so the LIBERO lane adds a real simulator rather than this code
   path's first execution. **No EAI04 real-transfer number is claimed:** see below.
 
-### Not in this release, deliberately
+### Not in this release
 
+- Still 0 real-robot results. Still 0 results against a flow-matching policy. SARF
+  published a real PiPER number this week and provael has not published one at all.
 - **No measured EAI04 real transfer.** The wiring above is what the measurement needs; the
   measurement itself requires the `[lerobot]` extra and a GPU, and it belongs on the Modal nightly
   rather than on a maintainer laptop. Running it needs `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` and
