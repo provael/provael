@@ -93,7 +93,14 @@ successes routing through a decoupled flag ([study](docs/studies/action-envelope
 cannot support are skipped and reported N/A, never scored 0%. Every family carries its transfer-test (rate + 95% Wilson CI + benign-FPR
 control); run `provael transfer-test` to print it. The `action`, `action_space`, `sensor_spoof`,
 `backdoor`, `authorization`, `misalignment`, `confidentiality`, and `humanoid` families are
-**stub-validated only** (no real-model transfer claimed). It red-teams **8 policies** — the CPU `stub`
+**stub-validated only** (no real-model transfer claimed). `provael coverage` prints the whole
+picture as one machine-readable line rather than leaving it to prose — and prints it as three
+numbers on purpose, because *registered is not validated*: **15 adversarial families registered,
+3 exercised against a real policy** (`instruction`, `visual`, `injection` — and two of those three
+returned measured nulls, which is a result), **12 stub-validated only**. Note also that the
+registry holds **28 adversarial attacks**, which is not the same number as 15 families; reading
+the registry dict's length as a family count overstates coverage by 14. It red-teams **8
+policies** — the CPU `stub`
 plus real **SmolVLA / π0 / π0.5 / π0-FAST** (via the `[lerobot]` extra), **OpenVLA**
 (via `[openvla]`), and **π0 served by openpi** — Physical Intelligence's own stack, via the CPU-only
 `[openpi]` websocket client to a GPU policy server. **Three of those eight are registered scaffolding**: `groot` (needs `lerobot[groot]`, which `provael[lerobot]` does not provision), `openvla` and `openpi` have each been structurally tested but have **never had a checkpoint loaded here**. Only `smolvla` has produced a committed real-model result. `provael list-policies` gives each backend a `status` of `measured` / `scaffolding` / `no run committed here`, so the difference is visible before you point `--policy` at one. Suites: **5** (`stub` + `reach` +

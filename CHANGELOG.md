@@ -8,6 +8,40 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- **`provael coverage` — one place computes the coverage counts, and it refuses to print a bare
+  total.** The counts are restated in the README, the docs, the Space and on provael.com, and a
+  restated number drifts. This prints them as one machine-readable line so every surface can
+  render rather than retype. It carries the validation breakdown in the same output because
+  registered is not validated: 15 adversarial families are registered, **3 have been exercised
+  against a real policy** (and two of those three returned measured nulls, which is a result),
+  12 are stub-validated only. The real-policy set is derived from the committed run reports, so
+  it rises on its own when a family is measured and cannot be inflated by editing a constant.
+- **`provael submit --dry-run`** — validate, sign and print exactly what would be submitted,
+  touching no network and writing nothing into the repository. It works outside a clone, which is
+  the state a stranger is actually in when they first look.
+
+### Fixed
+
+- **A coverage-count correction that runs the other way to the usual one.** An external report
+  read the attack registry's dict length, 29, as a family count and concluded the website
+  understated coverage by 14 families. It does not: 29 is 29 registered *attacks* — 28 adversarial
+  plus one benign control — grouping into **15 adversarial families**, which is what the site
+  already publishes and already derives from the registry. Publishing 29 would have overstated
+  coverage, on the surface whose entire argument is that its numbers are checkable. The two
+  numbers are now both printed, each labelled, and a test asserts the README never calls an attack
+  count a family count.
+- **`provael submit` staged files outside a repository and then printed git commands that could
+  not work there.** Run from any directory that is not a clone — which is where a stranger starts
+  — it wrote `results/<name>/` into that directory and told the reader to `git add` it. It now
+  checks for a repository first, before validating or signing, and says what to do instead: fork,
+  clone, or use `--dry-run` to preview without any of it.
+- **`provael submit` referred to a PR body it had never printed.** On the no-`gh` path the last
+  instruction was `--body <the summary above>`, and no summary appeared above it. It now prints
+  the body.
+- **`provael coverage` output was wrapped by the terminal renderer**, splitting the one
+  machine-readable line across two and corrupting the JSON mid-string. Machine output no longer
+  goes through the human-facing console.
+
 - PRIOR_ART.md now cites DRIFT (arXiv:2608.03207), SARF and AGSD (arXiv:2608.03231) and
   FLARE (arXiv:2607.14698). DRIFT reports that flow-matching robustness came from
   measuring it wrong, which is a result provael should be pointing at, not competing with.

@@ -22,6 +22,7 @@ import os
 import platform
 import shutil
 import subprocess
+import tempfile
 import time
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -73,6 +74,7 @@ from provael.compliance import (
     write_compliance_markdown,
 )
 from provael.config import RunConfig
+from provael.coverage import coverage_json, coverage_line
 from provael.crosswalk import (
     ATLAS_JSON,
     ATLAS_TARGET,
@@ -1881,6 +1883,29 @@ def leaderboard_verify(
         _fail("leaderboard signature INVALID", code=1)
 
 
+@app.command("coverage")
+def coverage_cmd(
+    as_json: Annotated[
+        bool, typer.Option("--json", help="Emit JSON instead of the one-line form.")
+    ] = False,
+) -> None:
+    """Print the coverage counts, straight from the registries and the committed runs.
+
+    One place computes these so every other surface can render rather than retype — the README,
+    the docs, the Space and the website all restate them, and a restated number drifts.
+
+    It never prints a bare total. `families=15` alone reads as fifteen MEASURED families; the
+    `real_policy` / `stub_only` pair is what stops that, and it travels in the same output so a
+    consumer cannot pick up only the flattering half. Note also that `attacks` and `families` are
+    different numbers: 28 adversarial attacks group into 15 adversarial families, and reading the
+    registry dict's length as a family count overstates coverage by 14.
+    """
+    # Plain print, NOT the rich console: rich soft-wraps to the terminal width, which split the
+    # "one machine-readable line" across two lines and corrupted the JSON mid-string. Machine
+    # output must not be laid out for a human reader. A test asserts the JSON parses.
+    print(coverage_json() if as_json else coverage_line())
+
+
 @app.command("watch")
 def watch_cmd(
     run_dir: Annotated[
@@ -1966,6 +1991,14 @@ def submit_cmd(
         bool,
         typer.Option("--open-pr/--no-open-pr", help="Open the PR with `gh` (needs gh, authed)."),
     ] = True,
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--dry-run",
+            help="Validate and sign and print the payload, touching no network and writing "
+            "nothing. Works outside a clone.",
+        ),
+    ] = False,
 ) -> None:
     """Validate, sign and submit a run to the public leaderboard — the whole path, one command.
 
@@ -1979,6 +2012,23 @@ def submit_cmd(
     missing or unauthenticated the command still validates and signs, then prints the exact
     remaining steps rather than failing at the end with the work thrown away.
     """
+    # Checked first, before validating or signing: an outsider running this from any directory
+    # that is not a clone got their files written into that directory and then a list of git
+    # commands that could not work there. Failing here costs nothing; failing after the signature
+    # wastes the one expensive step.
+    in_repo = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False
+    )
+    if not dry_run and in_repo.returncode != 0:
+        _fail(
+            "not inside a git repository, so there is nowhere to stage a submission.\n"
+            "  A submission is a pull request, so it needs a clone of your fork:\n"
+            "    gh repo fork provael/provael --clone   (or fork on the web, then git clone it)\n"
+            "    cd provael && provael submit <your-run-dir> --submitted-by <your-handle>\n"
+            "  To see what you WOULD submit without any of that, add --dry-run."
+        )
+        return
+
     report_paths = find_reports([str(run_dir)])
     if not report_paths:
         _fail(f"no report.json under {run_dir} — run `provael attack --out {run_dir}` first")
@@ -2020,7 +2070,13 @@ def submit_cmd(
         return
 
     slug = (name or submitted_by).strip().replace("/", "__")
-    dest = Path("results") / slug
+    # Under --dry-run the artifacts go to a temp directory, never into results/: a preview that
+    # leaves files in someone's tree is not a preview.
+    dest = (
+        Path(tempfile.mkdtemp(prefix="provael-submit-dry-")) / slug
+        if dry_run
+        else Path("results") / slug
+    )
     dest.mkdir(parents=True, exist_ok=True)
     write_report(report, dest)
     bundle_path = write_bundle(bundle, dest / ATTESTATION_JSON)
@@ -2053,6 +2109,18 @@ def submit_cmd(
         f"git push -u origin {branch}",
         f"gh pr create --repo {SUBMISSION_REPO} --title {title!r} --body <the summary above>",
     ]
+    if dry_run:
+        _out.print("\n[bold]Dry run — nothing was written to this repository and no network "
+                   "call was made.[/bold]")
+        _out.print(f"Preview artifacts: [cyan]{dest}[/cyan]")
+        _out.print("\n[dim]This is exactly what a real submission would contain:[/dim]\n")
+        print(json.dumps(json.loads((dest / "report.json").read_text(encoding="utf-8")),
+                         indent=2, sort_keys=True)[:1200] + "\n  … (full report at the path above)")
+        _out.print("\n[dim]And the PR body it would open with:[/dim]\n")
+        print(body)
+        _out.print("\nRe-run without --dry-run, from a clone of your fork, to submit.")
+        return
+
     if not open_pr:
         _out.print("\n[bold]Submission staged.[/bold] To open the PR:")
         for step in steps:
@@ -2061,10 +2129,15 @@ def submit_cmd(
     if shutil.which("gh") is None:
         _err.print(
             "\n[yellow]gh is not installed[/yellow] — the submission is validated, signed and "
-            f"staged in {dest}. Finish it with:"
+            f"written to {dest}. Finish it with:"
         )
         for step in steps:
             _err.print(f"  {step}")
+        # Print the body rather than referring to it. The previous wording said "<the summary
+        # above>" on a path where no summary had been printed, so the one instruction a reader
+        # could not follow was the last one.
+        _err.print("\n[dim]PR body (copy from here):[/dim]\n")
+        print(body)
         return
     _out.print(f"\nOpening the PR against {SUBMISSION_REPO}…")
     for cmd in (
