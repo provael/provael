@@ -24,6 +24,7 @@ These carry a protocol and no results. Do not cite them as evidence of anything 
 | [π0 (openpi) cross-architecture instruction transfer](pi0-openpi-transfer.md) | π0 via openpi |
 | [Meta-World second-suite instruction transfer](metaworld-transfer.md) | Meta-World |
 | [Sim-to-real correlation (SO-ARM101 + SmolVLA)](sim-to-real-so101.md) | Physical arm |
+| [Offline real-observation (recorded SO-101 frames)](offline-real-observation.md) | Real recorded frames, **open-loop** |
 | [Humanoid whole-body / locomotion transfer (GR00T-N1)](humanoid-locomotion-transfer.md) | GR00T-N1 |
 
 Most of these need a GPU box and a checkpoint that is not yet wired up end-to-end. The
