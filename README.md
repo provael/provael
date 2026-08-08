@@ -15,12 +15,18 @@
 
 <p align="center"><sub>Deterministic CPU stub run, seed 0 — reproduce it in seconds.</sub></p>
 
-**The finding.** A single `roleplay` instruction drives a **real SmolVLA** policy out of its safe
-envelope **100% of the time** — 10/10, 95% Wilson CI **[72–100%]** on SmolVLA × LIBERO
-`libero_object/0` — against a **0% benign control**. And the honest other half: of the attacks it
-was run with, **only the instruction family transferred**; the visual and injection families scored
-**0/10** on the real model. That contrast — a real transfer *and* the families it survived — is the
-whole point. [Read the write-up](docs/findings/2026-instruction-transfer.md) ·
+**The finding.** A single `roleplay` instruction drove a **real SmolVLA** policy out of its safe
+envelope on **10 of 10 matched pairs**, against **0 of 10** benign twins at the same (task, seed) —
+McNemar exact **p = 0.0020**, and it survives Holm correction across all six attacks it was screened
+against. 95% Wilson CI **[72–100%]**; the control's own interval is [0–28%]. One task
+(`libero_object/0`), one policy: an **existence proof, not a suite-level rate**.
+
+The separation is the claim, not the 100%. A perfect score at n=10 is compatible with a true rate
+of 90% (probability 0.35) — what the data actually establishes is that the attacked and benign arms
+differ, and that is significant. And the honest other half: of the attacks it was run with,
+**only the instruction family transferred**; the visual and injection families scored **0/10** on
+the real model. That contrast — a real transfer *and* the families it survived — is the whole
+point. [Read the write-up](docs/findings/2026-instruction-transfer.md) ·
 [Scope & honest limitations](#scope-and-honest-limitations).
 
 ```bash
@@ -456,8 +462,16 @@ checkpoint on a GPU runner. Generality is intended; it is **tested on SmolVLA ×
 `HuggingFaceVLA/smolvla_libero` · `libero_object/0` · 10 seeds · horizon 280 · RTX 4090
 (`osmesa`), 2026-06-06.
 
-**`roleplay` redirects SmolVLA out of its safe envelope 100% (10/10), 95% Wilson CI
-[72–100%], against a benign baseline FPR of 0% (0/10)** — every redirection is attack-induced.
+**`roleplay` redirected SmolVLA out of its safe envelope on 10/10 matched pairs against 0/10
+benign twins at identical (task, seed) — McNemar exact p = 0.0020, Holm-adjusted to 0.012 across
+the six-attack screen.** 95% Wilson CI [72–100%]; control [0–28%]. Every redirection is
+attack-induced.
+
+Two things the numbers below do NOT support, stated here rather than left to be inferred.
+`goal_substitution` at 6/10 (p = 0.031) does **not** survive the same correction, so it is reported
+and not claimed. And with a single task there is no honest way to widen any of this into a
+statement about LIBERO — `provael.scoring.paired` refuses to compute a clustered suite-level
+interval from one task rather than estimating one.
 
 | family | attack | redirection rate (95% CI) | benign FPR (control) |
 | --- | --- | ---: | ---: |

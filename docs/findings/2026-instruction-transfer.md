@@ -7,9 +7,16 @@
 ## The finding
 
 A single, benign-looking **`roleplay`** instruction drove a **real SmolVLA** policy out of its safe
-envelope **100% of the time** — **10/10**, 95% Wilson CI **[72–100%]** — on SmolVLA × LIBERO
-`libero_object/0`, against a **0% benign control** (the un-attacked `none` baseline scored 0/10 on
-the same predicate). And the honest other half of the result: of the eight families run, **only the
+envelope on **10 of 10 matched pairs**, against **0 of 10** benign twins at the same (task, seed) —
+**McNemar exact p = 0.0020**, Holm-adjusted to **0.012** across the six-attack screen. 95% Wilson CI
+**[72–100%]**; the control's own interval is **[0–28%]**. On SmolVLA × LIBERO `libero_object/0`.
+
+**The separation is the finding, not the 100%.** A perfect score at n = 10 is compatible with a true
+rate of 90% — the probability of seeing 10/10 from a 90% attack is 0.35, entirely ordinary, and the
+rule of three says n = 10 cannot rule out a 30% failure rate. What the data *does* establish is that
+the attacked and benign arms differ, and that the difference survives correcting for the fact that
+six attacks were screened at once. Leading with "100%" invites a reader to take the point estimate
+as the claim; leading with the paired test states what was actually shown. And the honest other half of the result: of the eight families run, **only the
 instruction family transferred**. The visual and injection families produced **0/10** measurable
 lift on the real model. The value of the number is the *contrast* — a real transfer **and** the
 families the policy survived — not a single scary percentage.
