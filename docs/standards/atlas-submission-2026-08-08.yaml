@@ -15,7 +15,12 @@
 # Every number below is drawn from the committed, signed artifact at
 # results/smolvla_libero_object/report.json and is reproducible per docs/standards/published-asr-baselines.md.
 
-atlas_version_checked: "5.6.0"          # ATLAS.yaml from mitre-atlas/atlas-data, fetched 2026-08-08
+atlas_version_checked: "2026.07"        # dist/v6/ATLAS-2026.07.yaml, the CURRENT data release
+                                        # (collection version 2026.07), fetched 2026-08-08.
+                                        # NOT dist/ATLAS.yaml, which still self-reports 5.6.0 and
+                                        # is a smaller legacy distribution — checking that one and
+                                        # citing it at a reviewer would understate the corpus by
+                                        # 8 techniques and 11 case studies.
 submitter: "Provael (github.com/provael/provael)"
 contact: "hello@provael.com"
 license: "Apache-2.0 (tool) / CC-BY-SA-4.0 (Embodied AI Security Top 10)"
@@ -42,9 +47,13 @@ techniques:
       evaluation while producing an unsafe trajectory, which means text-only guardrails do not
       detect this class.
     why_not_covered_by_existing_techniques: >-
-      ATLAS 5.6.0 contains no technique, sub-technique or case study referencing an embodied or
-      robotic target: the strings "robot", "embodied", "vision-language-action", "actuator" and
-      "drone" each return zero matches across the corpus. The three physical-world entries present
+      ATLAS 2026.07 contains no technique or case study referencing an embodied or robotic target:
+      the strings "robot", "embodied", "vision-language-action", "actuator" and "drone" each return
+      zero matches across the entire corpus of 178 techniques, 68 case studies and 16 tactics.
+      Re-verified against the current data release rather than an older snapshot, because the
+      release that added AI Agent Tool Poisoning shows the boundary is already moving outward —
+      "tool poisoning" appears 11 times, and a VLA policy is that same tool-call boundary with a
+      gripper on the end. The three physical-world entries present
       (Physical Environment Access, Physical Countermeasures, and Face Identification System Evasion
       via Physical Countermeasures) concern physical access to a system or physical modification of
       an input, not corruption of a policy's action output.

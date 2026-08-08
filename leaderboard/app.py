@@ -26,7 +26,23 @@ except ImportError:  # pragma: no cover - environment dependent
 RESULTS_DIR = Path(__file__).parent / "results"
 
 #: The requests dataset a submission opens a PR against (Open-LLM-Leaderboard pattern).
+#:
+#: THIS REPO DOES NOT EXIST YET, and the code below now says so instead of crashing. Verified
+#: 2026-08-08: `huggingface.co/provael-submissions` returns 404, the datasets API returns 401, and
+#: `?author=provael-submissions` returns `[]`. Nobody has ever created it.
+#:
+#: That went unnoticed because the leaderboard has had ZERO third-party submissions, ever — so the
+#: one path a stranger would take to contribute has never been walked by a stranger. The previous
+#: code called `upload_file` straight at this repo with no error handling, so the first outsider to
+#: try would have been handed a raw Gradio traceback on the project's only external-contribution
+#: funnel. See GUARANTEED_ROUTE for what they are told instead.
 REQUESTS_REPO = "provael-submissions/requests"
+
+#: Where a submitter is sent when the queue is unavailable. A GitHub issue on the product repo needs
+#: no HF org, no token and no dataset to exist — it is the route that cannot break. Same discipline
+#: as the website's lead-sink chain: never report a capture that did not happen, and always leave a
+#: working path rather than an apology.
+GUARANTEED_ROUTE = "https://github.com/provael/provael/issues/new"
 
 #: Adversarial families in the `provael` registry (excluding the benign `baseline` control) — the
 #: denominator of the coverage line below.
@@ -205,14 +221,36 @@ def submit_result(model_id: str, results_file: str | None) -> str:
             f"to `{REQUESTS_REPO}` for a maintainer to validate and promote."
         )
     api = HfApi(token=token)  # pragma: no cover - requires a live token
-    api.upload_file(
-        path_or_fileobj=results_file,
-        path_in_repo=f"requests/{model_id.replace('/', '__')}.json",
-        repo_id=REQUESTS_REPO,
-        repo_type="dataset",
-        create_pr=True,
-    )
-    return f"Submitted — a PR was opened on `{REQUESTS_REPO}` for review."
+    # "Submitted" is only ever returned when the API call actually succeeded AND handed back a PR
+    # URL to prove it. The previous version returned that string unconditionally after an unguarded
+    # upload_file into a repo that does not exist — so the outcome was either a raw traceback or, if
+    # the call had ever silently succeeded, a false success on the project's only external-
+    # contribution funnel. A submitter told "Submitted" when nothing was captured is the exact
+    # failure the website's lead-sink chain was rebuilt twice to eliminate.
+    try:
+        info = api.upload_file(
+            path_or_fileobj=results_file,
+            path_in_repo=f"requests/{model_id.replace('/', '__')}.json",
+            repo_id=REQUESTS_REPO,
+            repo_type="dataset",
+            create_pr=True,
+        )
+    except Exception as exc:  # noqa: BLE001 - any failure here must reach the submitter, not a log
+        return (
+            f"**Not submitted.** The queue at `{REQUESTS_REPO}` did not accept it: `{exc}`.\n\n"
+            "Nothing was captured — this is not a display problem, your result is not queued.\n\n"
+            f"Working route, no account or token needed: [open an issue]({GUARANTEED_ROUTE}) and "
+            "attach the same JSON. A maintainer validates and promotes it exactly as the queue "
+            "would have."
+        )
+    pr = getattr(info, "pr_url", None)
+    if not pr:
+        return (
+            "**Uncertain.** The upload returned no pull-request URL, so there is nothing to point "
+            "you at and no way to confirm it queued.\n\n"
+            f"Treat it as not submitted and [open an issue]({GUARANTEED_ROUTE}) with the JSON."
+        )
+    return f"Submitted — [PR opened]({pr}) on `{REQUESTS_REPO}` for review."
 
 
 _DEMO_BANNER = (
@@ -283,7 +321,10 @@ def build_demo() -> gr.Blocks:
             with gr.Tab("Submit a result"):
                 gr.Markdown(
                     "Submit a `provael leaderboard build` results JSON. It opens a PR to "
-                    f"`{REQUESTS_REPO}`; a maintainer validates and promotes it."
+                    f"`{REQUESTS_REPO}`; a maintainer validates and promotes it.\n\n"
+                    "If the queue is unavailable you are told so plainly and sent to "
+                    f"[a GitHub issue]({GUARANTEED_ROUTE}) — which always works. You will never be "
+                    "shown a success message for a result that was not captured."
                 )
                 model_in = gr.Textbox(label="Model id (e.g. org/my-vla)")
                 file_in = gr.File(label="results JSON", type="filepath")
