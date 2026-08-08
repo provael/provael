@@ -19,7 +19,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
+import numpy as np
 import pytest
 
 from provael.datasets.lerobot_frames import (
@@ -199,3 +201,76 @@ def test_every_artifact_carries_the_claim_limits_inline() -> None:
 def test_hardware_runs_is_structurally_zero() -> None:
     """An open-loop study executes nothing, so it can never contribute a physical result."""
     assert _report().hardware_runs == 0
+
+
+# --- The measurement loop -------------------------------------------------------------------------
+#
+# The guard below exists because running the dry run found it. The stub emitted an identical benign
+# action on every frame, the envelope collapsed to zero width, and the study reported 100% envelope
+# violations against a 0% control — a total success by construction rather than by measurement. On
+# real teleop data the joints move and it does not fire, which is exactly why it must be checked
+# rather than assumed.
+
+
+class _ConstantPolicy:
+    """Returns the same action regardless of instruction. Simulates a policy ignoring its input."""
+
+    def __init__(self, value: float = 0.0, dim: int = 6) -> None:
+        self._action = np.full(dim, value, dtype=np.float32)
+
+    def load(self) -> None: ...
+
+    def act(self, observation: dict[str, object], instruction: str) -> Any:
+        return self._action
+
+
+def test_a_zero_width_envelope_is_refused_not_reported_as_100_percent() -> None:
+    from provael.studies.offline_runner import calibrate_envelope
+
+    # Identical poses on every frame: the benign action never varies AND the state never varies.
+    steps = [([0.0] * 6, [0.1] * 6) for _ in range(10)]
+    with pytest.raises(ValueError, match="zero width|do not vary"):
+        calibrate_envelope(steps)
+
+
+def test_a_single_benign_frame_cannot_calibrate_an_envelope() -> None:
+    from provael.studies.offline_runner import calibrate_envelope
+
+    with pytest.raises(ValueError, match="at least 2"):
+        calibrate_envelope([([0.0] * 6, [0.1] * 6)])
+
+
+def test_the_envelope_is_fitted_before_the_attacked_pass_runs() -> None:
+    """A policy that ignores the instruction must score ~0, not something.
+
+    This is the end-to-end sanity check: if the attack changes nothing about the policy's output,
+    the divergence is zero and no frame can be outside an envelope fitted from that same output.
+    A non-zero rate here would mean the envelope had been influenced by the attacked pass.
+    """
+    from provael.studies.offline_runner import run_offline_study
+
+    frames = [({"state": [0.01 * i] * 6}, [0.0] * 6, [0.01 * i] * 6) for i in range(12)]
+    report = run_offline_study(
+        _ConstantPolicy(),  # type: ignore[arg-type]  - structural stand-in, only .act is used
+        frames,
+        benign_instruction="pick up the cube",
+        attack_name="roleplay",
+        tool_version="0.0.0",
+        dataset="synthetic",
+        robot_type="so101_follower",
+        policy_name="constant",
+    )
+    assert report.divergence_median == 0.0, "an instruction-ignoring policy diverged"
+    assert report.envelope_violation_rate == 0.0, "the envelope was influenced by the attacked pass"
+
+
+def test_an_unknown_attack_is_refused_by_name() -> None:
+    from provael.studies.offline_runner import run_offline_study
+
+    with pytest.raises(KeyError, match="unknown attack"):
+        run_offline_study(
+            _ConstantPolicy(),  # type: ignore[arg-type]
+            [({"state": [0.0] * 6}, [0.0] * 6, [0.0] * 6)],
+            benign_instruction="x", attack_name="not_a_real_attack", tool_version="0.0.0",
+            dataset="d", robot_type="so101_follower", policy_name="constant",
+        )
