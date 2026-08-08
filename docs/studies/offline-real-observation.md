@@ -55,6 +55,26 @@ consistent than its own benign behaviour, which occasionally wanders past 3σ. *
 is not the same as making it unsafe**, and this is the first data in this project that separates the
 two.
 
+### The caveat that most weakens this result
+
+**`lerobot/smolvla_base` was never fine-tuned on an SO-101, or on this dataset.** It is a base
+checkpoint being asked to act on an embodiment and a task it has not seen, with its normalizer built
+from the dataset's own statistics rather than from training.
+
+So "the attack did not push it outside the envelope" partly means **"it was not behaving coherently
+to begin with."** An incoherent policy is hard to make *more* incoherent, and a null measured on one
+is weaker evidence than a null measured on a policy that was demonstrably doing the task.
+
+This was not caught before the run and is recorded here rather than quietly left out. It does not
+invalidate the pipeline or the numbers — the states are real, the forward passes are real, the
+labelling is correct — but it does mean the honest reading is closer to *"we have not yet shown this
+attack does anything to a competent SO-101 policy"* than to *"this attack is safe on SO-101."*
+
+**What would fix it:** run against a checkpoint actually fine-tuned for this embodiment, and report
+a task-competence control — whether the policy completes the benign task at all — alongside the
+envelope rate. Without that control, a null here cannot be distinguished from a policy that was
+never on task.
+
 ### How to read it, and how not to
 
 - It does **not** contradict the SmolVLA × LIBERO 10/10. Different checkpoint, different embodiment,
