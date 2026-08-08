@@ -62,6 +62,17 @@ provael = "provael.cli:app"
 # smolvla -> the policy (transformers); libero -> the simulator (Part 2 above). Both ride this one
 # GPU extra so a single `pip install 'provael[lerobot]'` gives the full real SmolVLA x LIBERO path.
 lerobot = ["lerobot[smolvla,libero]==0.5.1"]
+# SO-ARM101 (SO-101) hardware, for the pre-registered sim-to-real study. DELIBERATELY SEPARATE from
+# [lerobot] rather than folded into it: `feetech` is the STS3215 servo-bus driver, and the sim path
+# must never pull motor drivers it has no use for — someone installing provael to red-team a policy
+# in simulation should not end up with a package that can address a motor bus.
+#
+# THIS EXTRA ADDS NO ROBOT-CONTROL CODE TO PROVAEL, and provael ships none. provael scores; it does
+# not actuate. The extra exists so that on the day an arm arrives, `pip install 'provael[hardware]'`
+# gives the operator LeRobot's own SO-101 teleop/record tooling on the same interpreter and the same
+# pinned version as the policy — instead of a second environment resolved under time pressure with a
+# robot on the bench. See results/hardware/README.md and SAFETY.md.
+hardware = ["lerobot[smolvla,libero,feetech]==0.5.1"]
 # OpenVLA / OpenVLA-OFT via Hugging Face transformers (the non-LeRobot, model-agnostic path).
 # GPU-only; pulled in explicitly by the user, never by the default install or CPU CI.
 openvla = ["transformers>=4.40", "torch", "timm", "accelerate", "pillow>=12.3"]
@@ -116,6 +127,10 @@ docs = [
 [tool.uv]
 conflicts = [
     [{ extra = "lerobot" }, { extra = "openpi" }],
+    # [hardware] is [lerobot] plus a servo driver, so it inherits the same numpy>=2.0 pin and the
+    # same collision with openpi-client's numpy<2.0. Declared explicitly rather than left to be
+    # rediscovered: without this row `uv lock` fails outright on the universal resolve.
+    [{ extra = "hardware" }, { extra = "openpi" }],
 ]
 
 [tool.hatch.version]

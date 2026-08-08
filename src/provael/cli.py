@@ -74,7 +74,7 @@ from provael.compliance import (
     write_compliance_markdown,
 )
 from provael.config import RunConfig
-from provael.coverage import coverage_json, coverage_line
+from provael.coverage import HARDWARE_DIR_NAME, coverage_json, coverage_line
 from provael.crosswalk import (
     ATLAS_JSON,
     ATLAS_TARGET,
@@ -1959,6 +1959,126 @@ def watch_cmd(
             f"[red]stale[/red]: the newest measurement is {int(age)} days old (over "
             f"{STALE_DAYS}). The README's continuous-verification claim is not currently true."
         )
+
+
+@app.command("sim-to-real")
+def sim_to_real_cmd(
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--dry-run/--no-dry-run",
+            help="Validate the whole protocol against the deterministic CPU stub. Required "
+            "until hardware is attached — there is no non-dry path yet.",
+        ),
+    ] = True,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Where to write the dry-run artifacts (default: a temp dir)."),
+    ] = None,
+) -> None:
+    """Dry-run the pre-registered sim-to-real protocol, so the first physical session is
+    not also the first debugging session.
+
+    Walks the SAME code path a physical run will take — runner, scoring, report, execution manifest,
+    evidence manifest — against the deterministic CPU stub, and asserts the artifact shape a real
+    run must produce. The point is that when the arm arrives you are executing, not plumbing.
+
+    IT PRODUCES NO HARDWARE RESULT, and it deliberately cannot: the artifacts land in a temp
+    directory (or an explicit --out) and NEVER in results/hardware/, because `provael coverage`
+    counts that directory and provael.com renders its "not yet measured" claim from the count. A
+    dry-run that incremented it would make the website assert a physical result that does not exist.
+
+    The protocol is pre-registered at docs/studies/sim-to-real-so101.md; that file is the source of
+    record and this command mirrors its instruction-family arm.
+    """
+    if not dry_run:
+        _fail(
+            "there is no non-dry sim-to-real path yet: no physical hardware is attached, and this "
+            "tool ships no robot-control code (see SAFETY.md — moving an arm is LeRobot's job, "
+            "under an operator with an E-stop).\n"
+            "  Runs land in results/hardware/ once they exist; that directory documents the "
+            "protocol and the hardware it is written for.\n"
+            "  Drop --no-dry-run to validate the pipeline against the stub."
+        )
+        return
+
+    import tempfile
+
+    dest = out or Path(tempfile.mkdtemp(prefix="provael-sim2real-dry-"))
+    dest.mkdir(parents=True, exist_ok=True)
+    if HARDWARE_DIR_NAME in dest.parts:
+        _fail(
+            f"refusing to write a dry run into a path containing '{HARDWARE_DIR_NAME}/': that "
+            "directory is counted as physical-robot evidence and the website renders its "
+            "sim-to-real claim from the count."
+        )
+        return
+
+    _out.print(
+        "[dim]Dry run — the deterministic CPU stub, not a robot. No hardware result.[/dim]\n"
+    )
+
+    # The instruction arm of the pre-registered protocol, run against the stub so the shape is
+    # exercised without a policy download or a GPU.
+    started = time.perf_counter()
+    report = run(
+        RunConfig(
+            policy="stub", suite="stub",
+            attacks=["none", "instruction"],
+            episodes=10, seed=0,
+        )
+    )
+    elapsed = time.perf_counter() - started
+    write_report(report, dest)
+    _emit_execution_manifest(report, dest, elapsed=elapsed)
+    (dest / "evidence-manifest.json").write_text(
+        to_evidence_manifest_json(
+            report,
+            repository="https://github.com/provael/provael",
+            commit=_git_commit() or f"v{__version__}",
+            regulatory_clock_version=RULESET_VERSION,
+        ),
+        encoding="utf-8",
+    )
+
+    # Assert the shape a physical run must produce. Failing here, now, is the whole point.
+    problems: list[str] = []
+    for name in ("report.json", "execution-manifest.json", "evidence-manifest.json"):
+        if not (dest / name).is_file():
+            problems.append(f"missing {name}")
+    manifest = json.loads((dest / "execution-manifest.json").read_text(encoding="utf-8"))
+    # Identical second-granularity stamps are expected for a sub-second stub run and are only a
+    # defect once a run is long enough to span a second boundary — which every physical run is.
+    if elapsed >= 1.0 and manifest.get("started_at") == manifest.get("ended_at"):
+        problems.append(
+            "execution manifest records identical started_at/ended_at for a run that took "
+            f"{elapsed:.1f}s — a physical run must record distinct instants"
+        )
+    if str(manifest.get("ended_at", "")).endswith("T00:00:00Z"):
+        problems.append(
+            "execution manifest ended_at is exact midnight UTC, which the freshness badge reads as "
+            "a reconstructed date rather than an observed one"
+        )
+    for field in ("python_version", "os", "report_digest"):
+        if not manifest.get(field):
+            problems.append(f"execution manifest is missing {field}")
+    if problems:
+        _err.print("[red]dry run produced a malformed artifact set:[/red]")
+        for problem in problems:
+            _err.print(f"  - {problem}")
+        raise typer.Exit(1)
+
+    render_summary(report, _out)
+    _out.print(f"\n[green]✓[/green] artifact set validates → [cyan]{dest}[/cyan]")
+    _out.print(
+        "  report.json · execution-manifest.json · evidence-manifest.json\n"
+        f"  provenance recorded: started_at {manifest['started_at']} → "
+        f"ended_at {manifest['ended_at']}"
+    )
+    _out.print(
+        "\n[dim]Still zero physical runs. This validated the pipeline, not the policy on an "
+        "arm — see results/hardware/README.md for what is blocked and on what.[/dim]"
+    )
 
 
 #: Where a leaderboard submission lands. The submission is a PR to this repo adding
