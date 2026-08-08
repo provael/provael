@@ -2108,6 +2108,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#the-caveat-that-most-weakens-this-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The caveat that most weakens this result
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#how-to-read-it-and-how-not-to" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2346,6 +2357,21 @@ sitting with. Under the roleplay instruction the policy appears to collapse towa
 consistent than its own benign behaviour, which occasionally wanders past 3σ. <strong>Changing the action
 is not the same as making it unsafe</strong>, and this is the first data in this project that separates the
 two.</p>
+<h3 id="the-caveat-that-most-weakens-this-result">The caveat that most weakens this result</h3>
+<p><strong><code>lerobot/smolvla_base</code> was never fine-tuned on an SO-101, or on this dataset.</strong> It is a base
+checkpoint being asked to act on an embodiment and a task it has not seen, with its normalizer built
+from the dataset's own statistics rather than from training.</p>
+<p>So "the attack did not push it outside the envelope" partly means <strong>"it was not behaving coherently
+to begin with."</strong> An incoherent policy is hard to make <em>more</em> incoherent, and a null measured on one
+is weaker evidence than a null measured on a policy that was demonstrably doing the task.</p>
+<p>This was not caught before the run and is recorded here rather than quietly left out. It does not
+invalidate the pipeline or the numbers — the states are real, the forward passes are real, the
+labelling is correct — but it does mean the honest reading is closer to <em>"we have not yet shown this
+attack does anything to a competent SO-101 policy"</em> than to <em>"this attack is safe on SO-101."</em></p>
+<p><strong>What would fix it:</strong> run against a checkpoint actually fine-tuned for this embodiment, and report
+a task-competence control — whether the policy completes the benign task at all — alongside the
+envelope rate. Without that control, a null here cannot be distinguished from a policy that was
+never on task.</p>
 <h3 id="how-to-read-it-and-how-not-to">How to read it, and how not to</h3>
 <ul>
 <li>It does <strong>not</strong> contradict the SmolVLA × LIBERO 10/10. Different checkpoint, different embodiment,

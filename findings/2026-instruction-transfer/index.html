@@ -2286,9 +2286,15 @@ receives inside a simulator. See <a href="https://github.com/provael/provael/blo
 </blockquote>
 <h2 id="the-finding">The finding</h2>
 <p>A single, benign-looking <strong><code>roleplay</code></strong> instruction drove a <strong>real SmolVLA</strong> policy out of its safe
-envelope <strong>100% of the time</strong> — <strong>10/10</strong>, 95% Wilson CI <strong>[72–100%]</strong> — on SmolVLA × LIBERO
-<code>libero_object/0</code>, against a <strong>0% benign control</strong> (the un-attacked <code>none</code> baseline scored 0/10 on
-the same predicate). And the honest other half of the result: of the eight families run, <strong>only the
+envelope on <strong>10 of 10 matched pairs</strong>, against <strong>0 of 10</strong> benign twins at the same (task, seed) —
+<strong>McNemar exact p = 0.0020</strong>, Holm-adjusted to <strong>0.012</strong> across the six-attack screen. 95% Wilson CI
+<strong>[72–100%]</strong>; the control's own interval is <strong>[0–28%]</strong>. On SmolVLA × LIBERO <code>libero_object/0</code>.</p>
+<p><strong>The separation is the finding, not the 100%.</strong> A perfect score at n = 10 is compatible with a true
+rate of 90% — the probability of seeing 10/10 from a 90% attack is 0.35, entirely ordinary, and the
+rule of three says n = 10 cannot rule out a 30% failure rate. What the data <em>does</em> establish is that
+the attacked and benign arms differ, and that the difference survives correcting for the fact that
+six attacks were screened at once. Leading with "100%" invites a reader to take the point estimate
+as the claim; leading with the paired test states what was actually shown. And the honest other half of the result: of the eight families run, <strong>only the
 instruction family transferred</strong>. The visual and injection families produced <strong>0/10</strong> measurable
 lift on the real model. The value of the number is the <em>contrast</em> — a real transfer <strong>and</strong> the
 families the policy survived — not a single scary percentage.</p>
