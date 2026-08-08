@@ -2187,6 +2187,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Running it">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-guard-worth-knowing-about-before-you-read-a-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One guard worth knowing about before you read a result
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -2370,11 +2387,24 @@ filled in before the first run, not after.</strong></p>
   weaker evidence than the simulation result it is testing.</li>
 </ul>
 <h2 id="running-it">Running it</h2>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;provael[lerobot]&#39;</span><span class="w">          </span><span class="c1"># GPU; the policy must actually load</span>
-provael<span class="w"> </span>offline-study<span class="w"> </span>--dry-run<span class="w">         </span><span class="c1"># CPU stub, no download — validates the pipeline</span>
+<div class="highlight"><pre><span></span><code>provael<span class="w"> </span>offline-study<span class="w"> </span>--dry-run<span class="w">                    </span><span class="c1"># no install, no download, no policy</span>
+pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;provael[lerobot]&#39;</span><span class="w">                     </span><span class="c1"># ~2 GB of torch; CPU build is enough</span>
+provael<span class="w"> </span>offline-study<span class="w"> </span>--no-dry-run<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--dataset<span class="w"> </span>Guanli001/so101-vials-auto-dr-final100<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--frames<span class="w"> </span><span class="m">200</span><span class="w"> </span>--attack<span class="w"> </span>roleplay<span class="w"> </span>--device<span class="w"> </span>cpu<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out<span class="w"> </span>results/offline/so101-roleplay
 </code></pre></div>
-<p>The dry run exercises the whole path against the deterministic stub so the first real run is not
-also the first debugging run.</p>
+<p><strong>No GPU is required, and that is worth stating because the other studies here do need one.</strong> They
+render and step a simulator; this only does forward passes. <code>--device cpu</code> is the default.</p>
+<p>The dry run walks the <strong>same loop</strong> against the deterministic stub, so what it proves is the
+pipeline rather than a mock of it. It deliberately withholds its rates: on a fixture those numbers
+are properties of the stub, and a "100% envelope violations" line is one screenshot away from being
+quoted as a finding.</p>
+<h3 id="one-guard-worth-knowing-about-before-you-read-a-result">One guard worth knowing about before you read a result</h3>
+<p>If the benign actions do not vary on some joint, that joint's envelope has <strong>zero width</strong> and every
+adversarial action scores as a violation regardless of what it does — 100% by construction. The
+calibration refuses rather than reporting it. This was found by running the dry run, not by
+reasoning about it.</p>
 
 
 
