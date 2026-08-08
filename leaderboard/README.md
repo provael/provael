@@ -35,6 +35,17 @@ Vision-Language-Action (VLA) robot policies in simulation, built with
   a PR to the `provael-submissions/requests` dataset (Open-LLM-Leaderboard pattern) for a maintainer
   to validate and promote. Needs `HF_TOKEN` set on the Space.
 
+  > **The `provael-submissions` org does not exist yet** (verified 2026-08-08: org page 404, datasets
+  > API 401, `?author=provael-submissions` returns `[]`). Until a maintainer creates it, the submit
+  > button fails — and now says so plainly and routes the submitter to a GitHub issue instead, rather
+  > than handing them a traceback or, worse, a success message for a result nobody received. That it
+  > went unnoticed is itself the finding: the leaderboard has had zero third-party submissions ever,
+  > so this path had never been walked by a stranger. `tests/test_leaderboard_submit_path.py` pins
+  > the behaviour so it cannot rot again while nobody is looking.
+  >
+  > **To open the queue for real:** create the `provael-submissions` HF org, add a `requests`
+  > dataset, and set `HF_TOKEN` on the Space with write access to it.
+
 ## Run it
 
 Locally:

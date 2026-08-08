@@ -28,10 +28,16 @@ The exact file submitted is committed at
 [`atlas-submission-2026-08-08.yaml`](atlas-submission-2026-08-08.yaml) so the submission is
 reproducible and its date is on the record rather than in someone's sent folder.
 
-The argument, verified against `ATLAS.yaml` version **5.6.0** (`mitre-atlas/atlas-data`, fetched
-8 August 2026): the strings `robot`, `embodied`, `vision-language-action`, `actuator` and `drone`
-each return **zero** matches across the entire corpus — 170 techniques and sub-techniques, 57 case
-studies. The three physical-world entries that do exist concern physical *access* to a system or
+The argument, verified against **`dist/v6/ATLAS-2026.07.yaml`** — the current data release
+(collection version **2026.07**), `mitre-atlas/atlas-data`, fetched 8 August 2026: the strings
+`robot`, `embodied`, `vision-language-action`, `actuator` and `drone` each return **zero** matches
+across the entire corpus — **178 techniques, 68 case studies, 16 tactics**.
+
+The file matters, and this was checked against the wrong one first. `dist/ATLAS.yaml` still
+self-reports version `5.6.0` and holds 170 techniques and 57 case studies; it is a smaller legacy
+distribution, not the current release. Citing it at a reviewer would have understated their own
+corpus by 8 techniques and 11 case studies — the fastest way to have a submission dismissed is to
+be visibly working from a stale snapshot of the thing you are proposing to extend. The three physical-world entries that do exist concern physical *access* to a system or
 physical modification of an *input*, not corruption of a policy's *action output*. Meanwhile the
 corpus already carries AI-agent tool-poisoning material, and a VLA policy is the same tool-call
 boundary with a gripper on the end.
