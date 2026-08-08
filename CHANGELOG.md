@@ -6,7 +6,25 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+Nothing pending — everything currently written is released. New entries go here.
+
+## [0.32.0] — 2026-08-08
+
 ### Added
+
+- **`results/hardware/` exists now, empty, with the protocol in it.** A directory that appears only
+  once results exist is a directory nothing can count. `provael coverage` derives a
+  `hardware_results` count from it, so the sim-to-real claim on provael.com moves the day the first
+  physical run lands instead of waiting on a docs edit.
+- **`provael sim-to-real --dry-run`** — walks the same code path a physical run takes (runner,
+  scoring, report, execution manifest, evidence manifest) against the deterministic CPU stub and
+  asserts the artifact shape a real run must produce, so the first physical session is not also the
+  first debugging session. It refuses to write into `results/hardware/`, because that directory is
+  counted as physical evidence and a dry run must not inflate it. There is no non-dry path, and
+  `--no-dry-run` says so with a reason rather than doing something ambiguous.
+- **The ATLAS submission YAML is committed** at `docs/standards/atlas-submission-2026-08-08.yaml` —
+  one proposed technique and one case study, typed *exercise* rather than *incident*. Committing the
+  exact file makes the submission reproducible and puts its date on the record.
 
 - **`provael coverage` — one place computes the coverage counts, and it refuses to print a bare
   total.** The counts are restated in the README, the docs, the Space and on provael.com, and a
@@ -21,6 +39,22 @@ All notable changes to this project are documented here. The format is based on
   the state a stranger is actually in when they first look.
 
 ### Fixed
+
+- **The last-measured badge read "never", in red, on a project whose whole argument is that it
+  measures things.** It was reading only the nightly's own log, and the nightly has never run — so
+  an empty log was reported as "nothing was ever measured", which contradicts a published 10/10
+  real-policy result. It now reads the end timestamp of the most recent run that actually executed
+  attacks against a policy, which is a different thing from the generator run and a different thing
+  again from the commit date. `docs/standards/last-measured.md` writes the definition down.
+- **The badge now says when a date is approximate rather than implying it is exact.** The one
+  committed real-policy run reconstructs its own provenance after the fact — identical start and end
+  at exact midnight, a synthetic commit label, `legacy-unverified` with six missing fields — so the
+  badge reports the date *and* marks it, and a reconstructed timestamp can never read green. Green
+  would assert a precision the artifact does not have.
+- **A provenance tell that would have misclassified every fast run.** Identical start/end was
+  initially treated as evidence of reconstruction; manifests are stamped at second granularity, so
+  every sub-second CPU run would have been marked untrustworthy. Caught by the new sim-to-real
+  dry-run asserting its own artifact shape, which is what that assertion is for.
 
 - **A coverage-count correction that runs the other way to the usual one.** An external report
   read the attack registry's dict length, 29, as a family count and concluded the website
@@ -89,8 +123,16 @@ All notable changes to this project are documented here. The format is based on
 
 ### Not in this release
 
-- Still 0 real-robot results. Still 0 results against a flow-matching policy. SARF
-  published a real PiPER number this week and provael has not published one at all.
+- **Still 0 real-robot results**, and this release is the one most likely to be misread as
+  changing that. `results/hardware/` now exists, the protocol is in it, the `[hardware]` extra
+  resolves and the dry-run passes end to end. All of that is the software half. The arm is not in
+  hand, the count is 0, and being one `pip install` from a physical run is not evidence of one.
+- Still 0 results against a flow-matching policy. SARF published a real PiPER number and provael
+  has not published one at all. Still 0 third-party leaderboard submissions, forks or external
+  contributors.
+- **The ATLAS submission is prepared, not accepted.** The YAML is committed and dated; MITRE has not
+  reviewed it. Submitted-and-pending is a state a reader can check — it is not a standards
+  reference, and it will be updated here including if the answer is no.
 - **No measured EAI04 real transfer.** The wiring above is what the measurement needs; the
   measurement itself requires the `[lerobot]` extra and a GPU, and it belongs on the Modal nightly
   rather than on a maintainer laptop. Running it needs `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` and

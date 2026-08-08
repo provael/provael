@@ -74,7 +74,7 @@ from provael.compliance import (
     write_compliance_markdown,
 )
 from provael.config import RunConfig
-from provael.coverage import HARDWARE_DIR_NAME, coverage_json, coverage_line
+from provael.coverage import HARDWARE_DIR_NAME, coverage, coverage_json, coverage_line
 from provael.crosswalk import (
     ATLAS_JSON,
     ATLAS_TARGET,
@@ -1899,11 +1899,26 @@ def coverage_cmd(
     consumer cannot pick up only the flattering half. Note also that `attacks` and `families` are
     different numbers: 28 adversarial attacks group into 15 adversarial families, and reading the
     registry dict's length as a family count overstates coverage by 14.
+
+    From a pip-installed wheel the evidence fields read `unscanned` rather than `0`. A wheel does
+    not package `results/`, so there is nothing to derive them from — and `real_policy=0` would
+    read as "no family has ever been measured", contradicting a published claim rather than
+    reporting a local fact. Registry counts are properties of the package, correct either way.
     """
     # Plain print, NOT the rich console: rich soft-wraps to the terminal width, which split the
     # "one machine-readable line" across two lines and corrupted the JSON mid-string. Machine
     # output must not be laid out for a human reader. A test asserts the JSON parses.
     print(coverage_json() if as_json else coverage_line())
+    cov = coverage()
+    if not cov.evidence_scanned:
+        # stderr, so the machine-readable line on stdout stays exactly one line and pipes clean.
+        _err.print(
+            "note: no results/ directory here, so real_policy / stub_only / hardware read "
+            "'unscanned' rather than 0 — this is an installed package, not a checkout. The "
+            "published counts are derived in the repo: "
+            "https://github.com/provael/provael#coverage",
+            style="dim",
+        )
 
 
 @app.command("watch")
