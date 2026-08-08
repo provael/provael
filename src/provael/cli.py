@@ -2007,8 +2007,23 @@ def offline_study_cmd(
         str, typer.Option("--attack", help="Registered attack name, e.g. roleplay.")
     ] = "roleplay",
     model_id: Annotated[
-        str, typer.Option("--model", help="Policy checkpoint.")
-    ] = "HuggingFaceVLA/smolvla_libero",
+        str,
+        typer.Option(
+            "--model",
+            help="Policy checkpoint. Defaults to smolvla_base, whose 6-dim state matches an "
+            "SO-101. The LIBERO-finetuned checkpoint behind the published simulation result "
+            "expects an 8-dim state and CANNOT consume SO-101 observations.",
+        ),
+    ] = "lerobot/smolvla_base",
+    rename_map: Annotated[
+        str | None,
+        typer.Option(
+            "--rename-map",
+            help='JSON mapping dataset observation keys to the checkpoint\'s, e.g. '
+            '\'{"observation.images.ego": "observation.images.camera1"}\'. Required when the '
+            "dataset's camera names differ from the checkpoint's, which is the normal case.",
+        ),
+    ] = None,
     device: Annotated[
         str,
         typer.Option("--device", help="Torch device. CPU is the default and is enough: this study "
@@ -2053,7 +2068,24 @@ def offline_study_cmd(
         # CPU by default, unlike the simulation studies. Those need a GPU because they render and
         # step a simulator; this only does forward passes. Defaulting to cuda would make the
         # cheapest honest study in the project look like it needed hardware it does not.
-        adapter = LeRobotAdapter(model_id=model_id, device=device)
+        mapping: dict[str, str] | None = None
+        if rename_map:
+            try:
+                mapping = json.loads(rename_map)
+            except json.JSONDecodeError as exc:
+                _fail(f"--rename-map is not valid JSON: {exc}")
+
+        # A checkpoint whose state dimension does not match the dataset's cannot consume it, and
+        # the failure downstream is an opaque shape error rather than a statement of the problem.
+        # Checked here so the message names the actual mismatch. This is not pedantry: the
+        # LIBERO-finetuned SmolVLA behind the published 10/10 has an 8-dim state and an SO-101 has
+        # 6, so the obvious choice of checkpoint is the wrong one and fails confusingly.
+        adapter = LeRobotAdapter(
+            model_id=model_id,
+            device=device,
+            dataset_repo_id=str(dataset),
+            rename_map=mapping,
+        )
         adapter.load()
         frame_iter = iter_frames(str(dataset), limit=frames)
         report = run_offline_study(

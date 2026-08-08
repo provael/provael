@@ -150,7 +150,9 @@ def iter_frames(
         ) from exc
 
     load_info(repo_id)  # validate before downloading gigabytes of video
-    dataset = LeRobotDataset(repo_id)
+    # Same reasoning as the adapter: we validated the format ourselves above, so the tag
+    # lookup is redundant and rejects valid data.
+    dataset = LeRobotDataset(repo_id, revision="main")
     for i, frame in enumerate(dataset):
         if limit is not None and i >= limit:
             return

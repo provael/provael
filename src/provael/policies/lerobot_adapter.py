@@ -125,11 +125,22 @@ class LeRobotAdapter(PolicyAdapter):
         name: str = "smolvla",
         device: str = "cuda",
         rename_map: dict[str, str] | None = None,
+        dataset_repo_id: str | None = None,
     ) -> None:
         self.model_id = model_id
         self.name = name
         self.device = device
         self.rename_map = rename_map
+        #: Shape the policy from a RECORDED DATASET instead of a live env.
+        #:
+        #: lerobot's make_policy needs one or the other — it reads the observation and action
+        #: features from whichever it is given, and refuses with "Either one of a dataset metadata
+        #: or a sim env must be provided" when handed neither. This adapter was written for the
+        #: simulation path, so it only ever passed an env config, which made it unusable for any
+        #: study that replays recordings and never simulates.
+        #:
+        #: Set this and the policy is built from LeRobotDatasetMetadata(dataset_repo_id).
+        self.dataset_repo_id = dataset_repo_id
         self._features: SuiteFeatures | None = None
         self._policy: Any = None
         self._preprocess: Any = None
@@ -181,8 +192,33 @@ class LeRobotAdapter(PolicyAdapter):
         policy_cfg.pretrained_path = self.model_id
         policy_cfg.device = str(device)
 
+        # A recorded dataset can shape the policy exactly as an env does — same features, read from
+        # the recording instead of the simulator. Without this branch an offline study is impossible
+        # by construction, because it has no env to hand over and make_policy refuses on neither.
+        ds_meta = None
+        if self.dataset_repo_id is not None:
+            from lerobot.datasets.dataset_metadata import LeRobotDatasetMetadata
+
+            # revision="main" skips lerobot's get_safe_version, which demands a GIT TAG naming the
+            # codebase version (e.g. "v3.0") and refuses a dataset that lacks one. Most published
+            # SO-101 datasets have no such tag — of the two verified v3.0 candidates for the offline
+            # study, neither carries it — so the check rejects perfectly valid data on a
+            # housekeeping detail its uploader never knew about.
+            #
+            # Skipping it is safe HERE and only here: provael.datasets.lerobot_frames has already
+            # read meta/info.json and asserted codebase_version, robot_type and dimensionality
+            # before this point. We are not trusting the dataset, we are trusting our own check
+            # instead of a tag.
+            #
+            # It also sidesteps a second failure: in lerobot 0.5.1 with huggingface_hub 1.x, the
+            # raise inside get_safe_version is itself broken (HfHubHTTPError now requires
+            # `response`), so the refusal surfaces as an unrelated TypeError.
+            ds_meta = LeRobotDatasetMetadata(self.dataset_repo_id, revision="main")
+
         try:
-            policy = make_policy(cfg=policy_cfg, env_cfg=env_cfg, rename_map=self.rename_map)
+            policy = make_policy(
+                cfg=policy_cfg, ds_meta=ds_meta, env_cfg=env_cfg, rename_map=self.rename_map
+            )
         except ValueError as exc:
             raise IncompatiblePolicyError(
                 _CHECKPOINT_HINT.format(model=self.model_id, error=exc)
@@ -227,10 +263,49 @@ class LeRobotAdapter(PolicyAdapter):
         batched = np.asarray(image)[None, ...]  # (H, W, 3) -> (1, H, W, 3)
         return {**raw, "pixels": {**raw["pixels"], pixels_key: batched}}
 
+    def _act_offline(self, observation: Observation, instruction: str) -> Action:
+        """One forward pass on a RECORDED frame. No env, no stepping, nothing executed.
+
+        The frame arrives as lerobot tensors without a batch dimension (a dataset yields single
+        samples); the policy expects a batch, so one is added here and stripped from the result.
+        """
+        torch = self._torch
+        batch: dict[str, Any] = {}
+        for key, value in observation.items():
+            if not key.startswith("observation"):
+                continue
+            tensor = value if hasattr(value, "dim") else torch.as_tensor(np.asarray(value))
+            batch[key] = tensor.unsqueeze(0) if tensor.dim() in (1, 3) else tensor
+        # OUR instruction, benign or adversarial, is what the policy is being asked about. This is
+        # the entire experiment: same pixels, same recorded state, one word changed.
+        batch["task"] = [instruction]
+
+        obs_t = self._preprocess(batch)
+        with torch.inference_mode():
+            action = self._policy.select_action(obs_t)
+        action = self._postprocess(action)
+        array = action.detach().to("cpu").numpy()
+        if array.ndim > 1:
+            array = array[0]
+        return clamp_action(array, array.shape[-1])
+
     def act(self, observation: Observation, instruction: str) -> Action:
         """Run one verified rollout step on a real LIBERO observation; return a (7,) action."""
         if not self._loaded:
             raise RuntimeError("LeRobotAdapter.act called before load(); call load() first.")
+
+        # OFFLINE PATH: a recorded dataset frame, not a gym observation.
+        #
+        # Everything below this branch is env-shaped — `preprocess_observation` converts a gym env's
+        # observation dict, and the env pre/post processors come from the LIBERO env config. A frame
+        # read from a LeRobotDataset is ALREADY in lerobot's own format and needs none of that; it
+        # needs only the policy's own processors, which `load()` built either way.
+        #
+        # Without this branch the adapter can only ever be driven by a simulator, which is why the
+        # offline study could load a policy and still not ask it anything.
+        if self.dataset_repo_id is not None:
+            return self._act_offline(observation, instruction)
+
         if self._env_preprocess is None:
             raise RuntimeError(
                 "LeRobotAdapter needs a suite that provides env features (use "
