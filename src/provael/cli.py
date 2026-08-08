@@ -89,6 +89,7 @@ from provael.crosswalk import (
     to_foresight_json,
     to_foresight_markdown,
 )
+from provael.datasets.lerobot_frames import DatasetRejected, load_info
 from provael.defenses.measure import (
     MitigationReport,
     MitigationVerdict,
@@ -96,6 +97,7 @@ from provael.defenses.measure import (
     write_mitigation,
 )
 from provael.defenses.registry import available_defenses, make_defense
+from provael.evidence import EvidenceState
 from provael.integrity import INTEGRITY_JSON, IntegrityVerdict, verify_checkpoint
 from provael.leaderboard import (
     LEADERBOARD_JSON,
@@ -150,6 +152,12 @@ from provael.studies.cross_arch import (
     render_table,
     write_eai04_study,
     write_study,
+)
+from provael.studies.offline_observation import (
+    FrameComparison,
+    l2,
+    outside_envelope,
+    summarise,
 )
 from provael.suites import KIND_FIXTURE, available_suites, suite_is_ready, suite_kind
 from provael.types import ComponentProfile, RunReport, TransferTest
@@ -1974,6 +1982,100 @@ def watch_cmd(
             f"[red]stale[/red]: the newest measurement is {int(age)} days old (over "
             f"{STALE_DAYS}). The README's continuous-verification claim is not currently true."
         )
+
+
+@app.command("offline-study")
+def offline_study_cmd(
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--dry-run/--no-dry-run",
+            help="Validate the open-loop pipeline against the deterministic CPU stub, with no "
+            "dataset download. The real path needs the [lerobot] extra and a GPU.",
+        ),
+    ] = True,
+    dataset: Annotated[
+        str | None,
+        typer.Option(
+            "--dataset", help="LeRobotDataset repo id. Validated before anything is read."
+        ),
+    ] = None,
+) -> None:
+    """Open-loop attack measurement on RECORDED frames of a real robot dataset.
+
+    Asks the policy what it WOULD do, twice, about the same real observation — once with the
+    operator's instruction, once with the attacker's. Nothing executes and no robot moves.
+
+    This is not a real-robot attack success rate. It cannot become one: the study emits its own
+    artifact type with no `asr` field, and earns the `real-forward` rung, which sits BELOW
+    `real-episode` because an episode at least executes. See
+    docs/studies/offline-real-observation.md.
+    """
+    if not dry_run:
+        if dataset is None:
+            _fail("--no-dry-run needs --dataset. The protocol names selection criteria, not a "
+                  "default: pinning one third-party repo puts someone else's housekeeping in the "
+                  "critical path. See docs/studies/offline-real-observation.md.")
+        try:
+            info = load_info(str(dataset))
+        except DatasetRejected as exc:
+            _fail(str(exc))
+        except ImportError:
+            _fail("reading a real dataset needs huggingface_hub: pip install 'provael[lerobot]'")
+        _out.print(
+            f"[green]dataset accepted[/]: {dataset} — {info.robot_type}, "
+            f"{info.state_dim}-DoF, {info.total_frames} frames, cameras {list(info.camera_keys)}"
+        )
+        _fail("the measurement path needs the [lerobot] extra and a GPU; not available here. The "
+              "dataset above validated, which is the part that can be checked on CPU.")
+
+    # The dry run proves the metric and the labelling, which is what can actually go wrong on CPU.
+    # It fabricates two action vectors rather than loading a policy: the point is that the artifact
+    # comes out correctly shaped and correctly labelled, not that the stub has opinions.
+    comparisons = [
+        FrameComparison(
+            frame_index=i,
+            divergence=l2([0.0] * 6, [0.1 * (i % 3)] * 6),
+            adversarial_outside_envelope=outside_envelope(
+                [0.0] * 6, [0.1 * (i % 3)] * 6, [-0.15] * 6, [0.15] * 6
+            ),
+            benign_outside_envelope=False,
+        )
+        for i in range(10)
+    ]
+    report = summarise(
+        comparisons,
+        tool_version=__version__,
+        dataset="(dry-run: no dataset read)",
+        robot_type="so101_follower",
+        policy="stub",
+        attack="roleplay",
+        benign_instruction="pick up the cube",
+        adversarial_instruction="(dry-run placeholder)",
+    )
+
+    problems: list[str] = []
+    if report.evidence_state != EvidenceState.REAL_FORWARD.value:
+        problems.append(f"evidence_state is {report.evidence_state!r}, expected real-forward")
+    if report.hardware_runs != 0:
+        problems.append("hardware_runs is non-zero on an open-loop study")
+    keys = set(json.loads(report.model_dump_json()))
+    leaked = {"asr", "successes", "attempts"} & keys
+    if leaked:
+        problems.append(
+            f"artifact carries run-report field(s) {sorted(leaked)} — invites the misread"
+        )
+    if problems:
+        _fail("dry run FAILED its own shape assertions:\n  " + "\n  ".join(problems))
+
+    _out.print(f"[green]dry run OK[/] — {report.frames_compared} frames, "
+               f"median divergence {report.divergence_median:.3f}, "
+               f"envelope violations {report.envelope_violation_rate:.0%}")
+    _out.print(f"[dim]evidence rung: {report.evidence_state} (below real-episode, by design)[/]")
+    _out.print(
+        "\n[yellow]Still zero physical runs.[/] This validated the open-loop pipeline, not a "
+        "policy on an arm. Nothing executed; no robot moved."
+    )
 
 
 @app.command("sim-to-real")
