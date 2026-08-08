@@ -388,3 +388,14 @@ status.
 - Not a backdoor / training-time method.
 - Not a defense.
 - Not a real-world exploitation tool (see [SAFETY.md](SAFETY.md)).
+- **Not the first anything.** Provael has never claimed to be first, and this file is the reason —
+  every entry above is prior work that got there earlier. The claim is stated here explicitly
+  because a third party is publishing the opposite: an automated trend-scraper
+  (`THTHDGCS/agents-radar`) has 29 bot-generated issues describing Provael as *"a first-of-its-kind
+  open-source red-teaming framework for VLA robot policies"*. Those issues are public and indexable,
+  nobody here wrote them, and an LLM summary is not a citation.
+
+  If you found that phrasing and came here to check it: it is wrong, we disown it, and the honest
+  version is in [What is actually novel here](#what-is-actually-novel-here) — which is narrower than
+  "first" and got narrower again after AttackVLA (arXiv:2511.12149) shipped a unified VLA attack
+  framework with a comparable ASR.
