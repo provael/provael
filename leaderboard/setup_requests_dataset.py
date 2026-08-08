@@ -8,7 +8,7 @@ prose and prose does not fail. A script fails, says what it did, and can be re-r
 It is idempotent: run it again and it reports the dataset already exists rather than erroring, so it
 doubles as the check for "is the queue actually open?".
 
-    export HF_TOKEN=hf_...          # needs WRITE scope on the account that owns REQUESTS_REPO
+    export HF_TOKEN=hf_...          # needs WRITE scope on the account that owns repo
     python leaderboard/setup_requests_dataset.py
 
 The same token then goes on the Space (Settings -> Variables and secrets -> New secret, name
@@ -18,12 +18,28 @@ HF_TOKEN). Without it the submit button reports the queue as disabled, which is 
 from __future__ import annotations
 
 import os
+import re
 import sys
 from pathlib import Path
 
-# Read the target from app.py rather than restating it. Two copies of a repo id is how the first one
-# went stale, and this script exists because of that exact class of drift.
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+APP = Path(__file__).resolve().parent / "app.py"
+
+
+def requests_repo() -> str:
+    """Read repo out of app.py as TEXT, not by importing it.
+
+    `from app import repo` was the obvious version and it crashed: app.py imports gradio at
+    module scope, and gradio is a Space dependency that a maintainer running a one-off setup script
+    has no reason to have installed. The script whose whole job is "make the queue work" failed on
+    its own first line, which is the failure it exists to prevent.
+
+    Parsing keeps the single-source-of-truth property — there is still exactly one place the repo id
+    is written — without dragging in a UI framework to read one string.
+    """
+    m = re.search(r'^REQUESTS_REPO\s*=\s*["\']([^"\']+)["\']', APP.read_text(), re.M)
+    if not m:
+        raise SystemExit(f"could not find REQUESTS_REPO in {APP}")
+    return m.group(1)
 
 DATASET_CARD = """\
 ---
@@ -92,29 +108,43 @@ def main() -> int:
         print("pip install huggingface_hub", file=sys.stderr)
         return 2
 
-    from app import REQUESTS_REPO  # noqa: PLC0415 - read the single source of truth
-
+    repo = requests_repo()
     api = HfApi(token=token)
-    who = api.whoami()["name"]
-    owner = REQUESTS_REPO.split("/")[0]
-    if who != owner and owner not in {o["name"] for o in api.whoami().get("orgs", [])}:
+
+    # Wrapped, because an expired or mistyped token is the most likely thing to go wrong here and
+    # the unwrapped version dumped a raw HfHubHTTPError traceback. That is the same defect this
+    # whole change set fixed in the Space's submit button; shipping it in the setup script would be
+    # a poor joke.
+    try:
+        me = api.whoami()
+    except Exception as exc:  # noqa: BLE001 - the message must reach the operator, not a log
         print(
-            f"Token belongs to '{who}', which cannot write to '{REQUESTS_REPO}'.\n"
+            f"HF_TOKEN was rejected: {exc}\n\n"
+            "Check it is a WRITE token and not read-only, and that it has not expired:\n"
+            "  https://huggingface.co/settings/tokens",
+            file=sys.stderr,
+        )
+        return 1
+    who = me["name"]
+    owner = repo.split("/")[0]
+    if who != owner and owner not in {o.get("name") for o in me.get("orgs", [])}:
+        print(
+            f"Token belongs to '{who}', which cannot write to '{repo}'.\n"
             f"Use a token for '{owner}', or change REQUESTS_REPO in leaderboard/app.py.",
             file=sys.stderr,
         )
         return 1
 
-    existed = api.repo_exists(repo_id=REQUESTS_REPO, repo_type="dataset")
-    api.create_repo(repo_id=REQUESTS_REPO, repo_type="dataset", exist_ok=True, private=False)
+    existed = api.repo_exists(repo_id=repo, repo_type="dataset")
+    api.create_repo(repo_id=repo, repo_type="dataset", exist_ok=True, private=False)
     api.upload_file(
         path_or_fileobj=DATASET_CARD.encode(),
         path_in_repo="README.md",
-        repo_id=REQUESTS_REPO,
+        repo_id=repo,
         repo_type="dataset",
     )
 
-    url = f"https://huggingface.co/datasets/{REQUESTS_REPO}"
+    url = f"https://huggingface.co/datasets/{repo}"
     print(f"{'Verified (already existed)' if existed else 'Created'}: {url}")
     print(
         "\nThe queue is open once the SAME token is set on the Space:\n"
