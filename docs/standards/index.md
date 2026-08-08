@@ -14,13 +14,13 @@ withholding is documented where the row would have gone.
 | Page | Status |
 | --- | --- |
 | [MITRE ATLAS case study](atlas-case-study.md) | Draft (the human-readable version) |
-| [MITRE ATLAS submission YAML](atlas-submission-2026-08-08.yaml) | **Prepared 8 August 2026** — one technique + one case study, emailed to atlas@mitre.org. Pending review. |
+| [MITRE ATLAS submission YAML](atlas-submission-2026-08-08.yaml) | **SENT 8 August 2026** to atlas@mitre.org — one technique + one case study. Awaiting a response. |
 | [OWASP Agentic Top-10 — embodied annex](owasp-asi-embodied.md) | Draft |
 | [Directory listings & awesome-list PRs](listings.md) | Prepared |
 
 ### What was submitted to MITRE ATLAS, and when
 
-**Prepared 8 August 2026**, for email to `atlas@mitre.org`: one proposed technique (*Embodied Action
+**Sent 8 August 2026** to `atlas@mitre.org`: one proposed technique (*Embodied Action
 Redirection via Instruction Reframing*) and one case study, typed **exercise** rather than incident —
 ATLAS scope admits a red-team exercise, and no fielded system was attacked and no robot moved.
 
@@ -45,8 +45,15 @@ boundary with a gripper on the end.
 No proposed `AML.T` identifier is included. Assigning one is MITRE's to do, and inventing an id in a
 submission undermines the rest of the file.
 
-Status is **submitted-and-pending**, which is a state a reader can check. It will be updated here
-when ATLAS responds, including if the answer is no.
+Status is **sent, awaiting a response** — a state a reader can check, and distinct from the two
+states either side of it. It is not a standards reference, and it is no longer merely drafted.
+
+This line said "emailed" for several hours before the email was actually sent. That was written ahead
+of the fact and is corrected here rather than quietly left to become true. The distinction the whole
+page turns on is between what has happened and what is planned, and the page has to hold itself to
+it first.
+
+It will be updated again when ATLAS responds, **including if the answer is no**.
 
 ## Comparison against the published record
 
