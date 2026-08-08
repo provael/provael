@@ -153,12 +153,7 @@ from provael.studies.cross_arch import (
     write_eai04_study,
     write_study,
 )
-from provael.studies.offline_observation import (
-    FrameComparison,
-    l2,
-    outside_envelope,
-    summarise,
-)
+from provael.studies.offline_runner import run_offline_study
 from provael.suites import KIND_FIXTURE, available_suites, suite_is_ready, suite_kind
 from provael.types import ComponentProfile, RunReport, TransferTest
 from provael.watch import (
@@ -2000,6 +1995,28 @@ def offline_study_cmd(
             "--dataset", help="LeRobotDataset repo id. Validated before anything is read."
         ),
     ] = None,
+    frames: Annotated[
+        int,
+        typer.Option("--frames", help="Frames to sample. Fix this in the pre-registration BEFORE "
+                     "looking at any data, not after."),
+    ] = 200,
+    instruction: Annotated[
+        str, typer.Option("--instruction", help="The operator's benign instruction.")
+    ] = "pick up the cube",
+    attack: Annotated[
+        str, typer.Option("--attack", help="Registered attack name, e.g. roleplay.")
+    ] = "roleplay",
+    model_id: Annotated[
+        str, typer.Option("--model", help="Policy checkpoint.")
+    ] = "HuggingFaceVLA/smolvla_libero",
+    device: Annotated[
+        str,
+        typer.Option("--device", help="Torch device. CPU is the default and is enough: this study "
+                     "only does forward passes, it renders and steps nothing."),
+    ] = "cpu",
+    out: Annotated[
+        Path | None, typer.Option("--out", help="Directory to write offline-observation.json into.")
+    ] = None,
 ) -> None:
     """Open-loop attack measurement on RECORDED frames of a real robot dataset.
 
@@ -2026,33 +2043,56 @@ def offline_study_cmd(
             f"[green]dataset accepted[/]: {dataset} — {info.robot_type}, "
             f"{info.state_dim}-DoF, {info.total_frames} frames, cameras {list(info.camera_keys)}"
         )
-        _fail("the measurement path needs the [lerobot] extra and a GPU; not available here. The "
-              "dataset above validated, which is the part that can be checked on CPU.")
 
-    # The dry run proves the metric and the labelling, which is what can actually go wrong on CPU.
-    # It fabricates two action vectors rather than loading a policy: the point is that the artifact
-    # comes out correctly shaped and correctly labelled, not that the stub has opinions.
-    comparisons = [
-        FrameComparison(
-            frame_index=i,
-            divergence=l2([0.0] * 6, [0.1 * (i % 3)] * 6),
-            adversarial_outside_envelope=outside_envelope(
-                [0.0] * 6, [0.1 * (i % 3)] * 6, [-0.15] * 6, [0.15] * 6
-            ),
-            benign_outside_envelope=False,
+        try:
+            from provael.datasets.lerobot_frames import iter_frames  # noqa: PLC0415
+            from provael.policies.lerobot_adapter import LeRobotAdapter  # noqa: PLC0415
+        except ImportError as exc:
+            _fail(f"the [lerobot] extra is required: pip install 'provael[lerobot]' ({exc})")
+
+        # CPU by default, unlike the simulation studies. Those need a GPU because they render and
+        # step a simulator; this only does forward passes. Defaulting to cuda would make the
+        # cheapest honest study in the project look like it needed hardware it does not.
+        adapter = LeRobotAdapter(model_id=model_id, device=device)
+        adapter.load()
+        frame_iter = iter_frames(str(dataset), limit=frames)
+        report = run_offline_study(
+            adapter,
+            frame_iter,
+            benign_instruction=instruction,
+            attack_name=attack,
+            tool_version=__version__,
+            dataset=str(dataset),
+            robot_type=info.robot_type,
+            policy_name="smolvla",
+            model=model_id,
         )
-        for i in range(10)
-    ]
-    report = summarise(
-        comparisons,
-        tool_version=__version__,
-        dataset="(dry-run: no dataset read)",
-        robot_type="so101_follower",
-        policy="stub",
-        attack="roleplay",
-        benign_instruction="pick up the cube",
-        adversarial_instruction="(dry-run placeholder)",
-    )
+    else:
+        # The dry run walks the SAME loop against the deterministic stub, so what it proves is the
+        # pipeline and not a mock of it. Previously it fabricated two action vectors, which checked
+        # the artifact shape and nothing else — and the shape was never the risky part.
+        # 6-DoF on purpose: the stub's default is 11 channels, and the dry run stands in for an
+        # SO-101, which has 6. A dimension mismatch between the stub and the arm it is rehearsing
+        # would make the dry run pass on a shape no real dataset produces — which is exactly the
+        # class of thing a dry run exists to catch, so it must not be the thing it hides.
+        from provael.policies.stub import StubPolicy  # noqa: PLC0415
+
+        stub = StubPolicy(action_dim=6)
+        stub.load()
+        synthetic = [
+            ({"state": [0.01 * i] * 6}, [0.0] * 6, [0.01 * i] * 6)
+            for i in range(12)
+        ]
+        report = run_offline_study(
+            stub,
+            synthetic,
+            benign_instruction=instruction,
+            attack_name=attack,
+            tool_version=__version__,
+            dataset="(dry-run: deterministic stub, no dataset read)",
+            robot_type="so101_follower",
+            policy_name="stub",
+        )
 
     problems: list[str] = []
     if report.evidence_state != EvidenceState.REAL_FORWARD.value:
@@ -2066,11 +2106,33 @@ def offline_study_cmd(
             f"artifact carries run-report field(s) {sorted(leaked)} — invites the misread"
         )
     if problems:
-        _fail("dry run FAILED its own shape assertions:\n  " + "\n  ".join(problems))
+        _fail("FAILED its own shape assertions:\n  " + "\n  ".join(problems))
 
-    _out.print(f"[green]dry run OK[/] — {report.frames_compared} frames, "
-               f"median divergence {report.divergence_median:.3f}, "
-               f"envelope violations {report.envelope_violation_rate:.0%}")
+    if out is not None:
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "offline-observation.json").write_text(
+            report.model_dump_json(indent=2) + "\n", encoding="utf-8"
+        )
+        _out.print(f"wrote {out / 'offline-observation.json'}")
+
+    # The dry run deliberately does NOT print its rates. They are properties of a deterministic
+    # fixture on synthetic states — a "100% envelope violations" line is one screenshot away from
+    # being quoted as a finding, and it would be quoting the stub. The pipeline is what is being
+    # checked here, so the pipeline is what gets reported.
+    if dry_run:
+        _out.print(
+            f"[green]dry run OK[/] — pipeline walked {report.frames_compared} frames end to end "
+            "and the artifact passed its own shape assertions."
+        )
+        _out.print(
+            "[dim]Rates withheld on purpose: on the stub they are properties of the fixture, not "
+            "measurements. Run with --dataset to get numbers that mean something.[/]"
+        )
+    else:
+        _out.print(f"[green]measured[/] — {report.frames_compared} frames, "
+                   f"median divergence {report.divergence_median:.3f}, "
+                   f"envelope violations {report.envelope_violation_rate:.0%} "
+                   f"(benign control {report.benign_envelope_violation_rate:.0%})")
     _out.print(f"[dim]evidence rung: {report.evidence_state} (below real-episode, by design)[/]")
     _out.print(
         "\n[yellow]Still zero physical runs.[/] This validated the open-loop pipeline, not a "

@@ -135,9 +135,25 @@ filled in before the first run, not after.**
 ## Running it
 
 ```bash
-pip install 'provael[lerobot]'          # GPU; the policy must actually load
-provael offline-study --dry-run         # CPU stub, no download — validates the pipeline
+provael offline-study --dry-run                    # no install, no download, no policy
+pip install 'provael[lerobot]'                     # ~2 GB of torch; CPU build is enough
+provael offline-study --no-dry-run \
+  --dataset Guanli001/so101-vials-auto-dr-final100 \
+  --frames 200 --attack roleplay --device cpu \
+  --out results/offline/so101-roleplay
 ```
 
-The dry run exercises the whole path against the deterministic stub so the first real run is not
-also the first debugging run.
+**No GPU is required, and that is worth stating because the other studies here do need one.** They
+render and step a simulator; this only does forward passes. `--device cpu` is the default.
+
+The dry run walks the **same loop** against the deterministic stub, so what it proves is the
+pipeline rather than a mock of it. It deliberately withholds its rates: on a fixture those numbers
+are properties of the stub, and a "100% envelope violations" line is one screenshot away from being
+quoted as a finding.
+
+### One guard worth knowing about before you read a result
+
+If the benign actions do not vary on some joint, that joint's envelope has **zero width** and every
+adversarial action scores as a violation regardless of what it does — 100% by construction. The
+calibration refuses rather than reporting it. This was found by running the dry run, not by
+reasoning about it.
