@@ -35,16 +35,31 @@ Vision-Language-Action (VLA) robot policies in simulation, built with
   a PR to the `provael-submissions/requests` dataset (Open-LLM-Leaderboard pattern) for a maintainer
   to validate and promote. Needs `HF_TOKEN` set on the Space.
 
-  > **The `provael-submissions` org does not exist yet** (verified 2026-08-08: org page 404, datasets
-  > API 401, `?author=provael-submissions` returns `[]`). Until a maintainer creates it, the submit
-  > button fails — and now says so plainly and routes the submitter to a GitHub issue instead, rather
-  > than handing them a traceback or, worse, a success message for a result nobody received. That it
-  > went unnoticed is itself the finding: the leaderboard has had zero third-party submissions ever,
-  > so this path had never been walked by a stranger. `tests/test_leaderboard_submit_path.py` pins
-  > the behaviour so it cannot rot again while nobody is looking.
+  > **This pointed at `provael-submissions/requests` — an org that was never created** (verified
+  > 2026-08-08: org page 404, datasets API 401, `?author=provael-submissions` returns `[]`). The
+  > submit button had been aimed at nothing since it shipped. That it went unnoticed is itself the
+  > finding: the leaderboard has had zero third-party submissions ever, so this path had never been
+  > walked by a stranger.
   >
-  > **To open the queue for real:** create the `provael-submissions` HF org, add a `requests`
-  > dataset, and set `HF_TOKEN` on the Space with write access to it.
+  > It now points under the same account that owns the Space, so no org administration stands
+  > between a stranger and a contribution. If the dataset still does not exist, the button says so
+  > plainly and routes the submitter to a GitHub issue rather than handing them a traceback — or,
+  > worse, a success message for a result nobody received.
+  > `tests/test_leaderboard_submit_path.py` pins that behaviour so it cannot rot again unobserved.
+
+### Opening the queue (one command, once)
+
+```bash
+export HF_TOKEN=hf_...                            # write scope
+python leaderboard/setup_requests_dataset.py      # creates the dataset + its card, idempotent
+```
+
+Then set the **same** token as a secret named `HF_TOKEN` on the Space
+(Settings → Variables and secrets). The script prints both steps and re-running it verifies rather
+than errors, so it doubles as the "is the queue actually open?" check.
+
+It is a script and not a README step on purpose: "create the dataset" lived only in prose for two
+months, and prose does not fail.
 
 ## Run it
 
