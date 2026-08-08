@@ -321,14 +321,31 @@ def run(
     results: list[AttackResult] = []
     for task in tasks:
         for attack in attacks:
-            for episode in range(config.episodes):
-                seed = config.seed + episode
-                results.append(
-                    run_episode(
-                        policy, suite, attack, task, seed, config.horizon,
-                        defense=defense, audit_sink=audit_sink,
-                    )
+            # Two nested loops, not one. `episodes` is the TOTAL per (task, attack) and
+            # `episodes_per_seed` splits it into distinct seeds x repeats at each seed, so a report
+            # can separate initial-state variation from policy stochasticity. At the default
+            # episodes_per_seed=1 this is byte-identical to the previous single loop: seeds ==
+            # episodes and seed = base + i, which is what every committed run so far used.
+            #
+            # A remainder is refused rather than silently dropped or padded. An unbalanced design
+            # makes the per-seed cells unequal, and unequal cells quietly bias any variance estimate
+            # computed from them — which is the exact quantity this split exists to make computable.
+            seeds, remainder = divmod(config.episodes, config.episodes_per_seed)
+            if remainder:
+                raise ValueError(
+                    f"episodes={config.episodes} is not divisible by "
+                    f"episodes_per_seed={config.episodes_per_seed}; an unbalanced design biases "
+                    "the per-seed variance this split exists to measure"
                 )
+            for seed_index in range(seeds):
+                seed = config.seed + seed_index
+                for _repeat in range(config.episodes_per_seed):
+                    results.append(
+                        run_episode(
+                            policy, suite, attack, task, seed, config.horizon,
+                            defense=defense, audit_sink=audit_sink,
+                        )
+                    )
 
     overall = overall_stat(results)
     adversarial = adversarial_asr(results)  # headline ASR: benign control excluded by role

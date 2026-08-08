@@ -628,10 +628,19 @@ def attack(
     attacks: Annotated[
         str, typer.Option(help="Comma-separated attack or family names.")
     ] = "instruction",
-    episodes: Annotated[int, typer.Option(min=1, help="Episodes per (task, attack) pair.")] = 10,
+    episodes: Annotated[
+        int, typer.Option(min=1, help="Total episodes per (task, attack) pair.")
+    ] = 10,
     seeds: Annotated[
-        int | None, typer.Option(min=1, help="Number of seeds (alias for --episodes).")
+        int | None,
+        typer.Option(min=1, help="Number of DISTINCT seeds. With --episodes-per-seed, total "
+                     "episodes = seeds x episodes-per-seed."),
     ] = None,
+    episodes_per_seed: Annotated[
+        int,
+        typer.Option(min=1, help="Repeats at the SAME seed. >1 separates policy stochasticity "
+                     "from initial-state variation; 1 (default) is the historical behaviour."),
+    ] = 1,
     seed: Annotated[int, typer.Option(min=0, help="Base random seed.")] = 0,
     horizon: Annotated[int, typer.Option(min=1, help="Max timesteps per episode.")] = 8,
     tasks: Annotated[
@@ -723,11 +732,18 @@ def attack(
         source = ctx.get_parameter_source(name)
         return source is not None and source.name == "COMMANDLINE"
 
-    # `--seeds` and `--episodes` write the same config key, so passing both resolves by source
-    # order and the reported `n` is not the one the caller asked for. Aliases must be exclusive.
+    # `--seeds` and `--episodes` both determine the total, so passing both resolves by source order
+    # and the reported `n` is not the one the caller asked for. They stay mutually exclusive.
     if _explicit("episodes") and _explicit("seeds"):
-        _fail("--seeds and --episodes are aliases for the same value; pass only one")
+        _fail("--seeds and --episodes both set the total; pass only one")
         return
+
+    # --seeds now means what its name says: the number of DISTINCT seeds. It used to be a pure alias
+    # for --episodes, which was accurate only while an episode was a seed. Now that repeats exist,
+    # an alias would make `--seeds 10 --episodes-per-seed 3` quietly mean "3 seeds", the opposite of
+    # what it reads as. The total is derived instead.
+    if _explicit("seeds") and seeds is not None:
+        episodes = seeds * episodes_per_seed
 
     overrides: dict[str, object] = {}
     if _explicit("policy"):
@@ -744,10 +760,12 @@ def attack(
         overrides["attacks"] = selected
     if _explicit("tasks"):
         overrides["tasks"] = _split_csv(tasks)
-    if _explicit("episodes"):
+    if _explicit("episodes") or _explicit("seeds"):
         overrides["episodes"] = episodes
-    if _explicit("seeds") and seeds is not None:
-        overrides["episodes"] = seeds
+    if _explicit("episodes_per_seed"):
+        overrides["episodes_per_seed"] = episodes_per_seed
+    # (--seeds no longer writes `episodes` directly; the total is derived above so that
+    # episodes-per-seed is accounted for. Overwriting it here was silently discarding the repeats.)
     if _explicit("seed"):
         overrides["seed"] = seed
     if _explicit("horizon"):

@@ -43,7 +43,29 @@ class RunConfig(BaseModel):
         "attempts=0 — a run that measured nothing reads as one that measured nothing unsafe.",
     )
     episodes: int = Field(
-        10, ge=1, description="Episodes per (task, attack) pair. Episode i uses seed + i."
+        10,
+        ge=1,
+        description="Total episodes per (task, attack) pair. With the default "
+        "episodes_per_seed=1 this is also the number of distinct seeds, which is the historical "
+        "behaviour and why the CLI treats --seeds and --episodes as aliases.",
+    )
+    episodes_per_seed: int = Field(
+        1,
+        ge=1,
+        description="Repeats at the SAME seed, i.e. the same initial state. Default 1 preserves "
+        "the original behaviour exactly.\n\n"
+        "WHY THIS EXISTS. Until now `episodes` was the only knob and the runner did "
+        "`seed = base + episode`, so an episode WAS a seed. That makes the per-(attack, seed) "
+        "success rate 0 or 1 by construction, which means the seed-to-seed variance of a single "
+        "attack is not computable from a report — the one quantity the robot-learning literature "
+        "says matters most. OpenVLA publishes LIBERO-Object at 88.4% +/- 0.8% and two independent "
+        "parties reproduced ~68% (openvla/openvla#282, #335, the latter still open): the quoted "
+        "uncertainty was ~25x smaller than the reproduction gap because it described the wrong "
+        "variance component.\n\n"
+        "Repeats at a fixed seed isolate POLICY stochasticity; varying the seed isolates "
+        "INITIAL-STATE variation. You need both to say which one your error bar describes. On a "
+        "deterministic policy the repeats are identical by design and add nothing, which is the "
+        "correct behaviour rather than a defect.",
     )
     seed: int = Field(0, ge=0, description="Base random seed for reproducibility.")
     horizon: int = Field(8, ge=1, description="Maximum timesteps per episode.")
