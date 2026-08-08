@@ -313,6 +313,46 @@ and their grayscale diagnostic is a cleaner instrument for catching it than the
 benign-task-success acceptance gate we currently apply. We have not implemented an equivalent
 diagnostic and do not claim one.
 
+### World-Model Security Survey — *Security of World-Model-Based Embodied AI: A Lifecycle of Threats, Defenses, and Evaluation*
+Liu, Chen, Tan, Meng, Chen, Zhu (2026). arXiv:[2607.28226](https://arxiv.org/abs/2607.28226) · submitted 30 July 2026
+
+**A different indexing axis, and that is the whole value.** Every taxonomy in this file — including
+our own Embodied AI Security Top 10 — indexes by **attack channel**: what the adversary touches, be
+it the instruction, the pixels, the sensor stream, the action head. This survey indexes by **which
+world-model property gets corrupted**. It takes the seven familiar families (poisoning, backdoors,
+adversarial examples, sensor spoofing, prompt injection, trajectory manipulation, supply-chain) and
+argues they "take on distinct meanings when they corrupt world states, learned dynamics, affordance
+estimates, or safety costs".
+
+Those two axes cross; they do not merge. A prompt injection and a sensor spoof are different
+channels that can corrupt the same learned dynamics, and one channel can corrupt several properties.
+Collapsing either axis into the other loses the thing that made it worth drawing.
+
+**The claim with no counterpart in EAI01–EAI10.** Their duality: world models "can serve as runtime
+safety shields, yet when compromised or over-trusted they generate predictive safety illusions". Our
+Top 10 has no entry for *the safety mechanism itself becoming the attack surface by being believed*.
+That is a real gap on our side, not a difference in scope, and it is the single most useful thing to
+take from this paper.
+
+**mapping_status: `not-crosswalked`.** Deliberately, and the reason is measurable rather than
+editorial. Verified against the full 18-page PDF this run: **zero** occurrences of `github.com`,
+`https://`, "code is available" or "we release" — there is no runnable harness to point at — and
+**no reported denominator anywhere**: no `n = N`, no `x/y trials`, no benign control arm. There is
+nothing yet that a number of ours could be compared against, so a crosswalk would be prose mapped
+onto prose, which is the kind of table that reads as coverage without carrying any.
+
+**Their proposed metric is sharper than "they have no ASR", though, and we should say so.** The
+phrase "attack success rate" appears exactly once in the paper, and it appears in order to argue
+past it: "The primary metric is not only attack success rate, but the rate of predicted-safe but
+actually unsafe executions, together with monitor confidence and intervention recall." That is a
+better-specified quantity than the one we report — it measures the safety monitor's failure, not
+just the attack's success — and we do not measure it. It is outlined, not operationalized; if they
+build that side out, it is the row we should map to first.
+
+**How we differ:** we are a runnable harness with a denominator and no lifecycle theory; this is a
+lifecycle theory with no denominator. That is a complementarity, not a competition, and it is the
+argument for crossing the two axes once rather than five times.
+
 ## What is actually novel here
 
 Not the attacks. **And — since AttackVLA (arXiv:2511.12149) — not simply "a unified harness with a
