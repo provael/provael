@@ -13,9 +13,34 @@ withholding is documented where the row would have gone.
 
 | Page | Status |
 | --- | --- |
-| [MITRE ATLAS case study](atlas-case-study.md) | Draft |
+| [MITRE ATLAS case study](atlas-case-study.md) | Draft (the human-readable version) |
+| [MITRE ATLAS submission YAML](atlas-submission-2026-08-08.yaml) | **Prepared 8 August 2026** — one technique + one case study, emailed to atlas@mitre.org. Pending review. |
 | [OWASP Agentic Top-10 — embodied annex](owasp-asi-embodied.md) | Draft |
 | [Directory listings & awesome-list PRs](listings.md) | Prepared |
+
+### What was submitted to MITRE ATLAS, and when
+
+**Prepared 8 August 2026**, for email to `atlas@mitre.org`: one proposed technique (*Embodied Action
+Redirection via Instruction Reframing*) and one case study, typed **exercise** rather than incident —
+ATLAS scope admits a red-team exercise, and no fielded system was attacked and no robot moved.
+
+The exact file submitted is committed at
+[`atlas-submission-2026-08-08.yaml`](atlas-submission-2026-08-08.yaml) so the submission is
+reproducible and its date is on the record rather than in someone's sent folder.
+
+The argument, verified against `ATLAS.yaml` version **5.6.0** (`mitre-atlas/atlas-data`, fetched
+8 August 2026): the strings `robot`, `embodied`, `vision-language-action`, `actuator` and `drone`
+each return **zero** matches across the entire corpus — 170 techniques and sub-techniques, 57 case
+studies. The three physical-world entries that do exist concern physical *access* to a system or
+physical modification of an *input*, not corruption of a policy's *action output*. Meanwhile the
+corpus already carries AI-agent tool-poisoning material, and a VLA policy is the same tool-call
+boundary with a gripper on the end.
+
+No proposed `AML.T` identifier is included. Assigning one is MITRE's to do, and inventing an id in a
+submission undermines the rest of the file.
+
+Status is **submitted-and-pending**, which is a state a reader can check. It will be updated here
+when ATLAS responds, including if the answer is no.
 
 ## Comparison against the published record
 

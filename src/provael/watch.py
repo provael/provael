@@ -32,6 +32,14 @@ from pydantic import BaseModel, Field
 from provael.ledger import append_results
 from provael.types import RunReport
 
+#: Committed run directories scanned for a real measurement timestamp. See
+#: docs/standards/last-measured.md for the definition this implements.
+RESULTS_DIR = Path(__file__).resolve().parent.parent.parent / "results"
+
+#: An execution manifest declaring this evidence state had its provenance reconstructed after the
+#: fact rather than recorded by the run. Its timestamps are day-granularity at best.
+LEGACY_STATE = "legacy-unverified"
+
 #: Shields.io endpoint-schema version (the only value shields accepts).
 SHIELDS_SCHEMA_VERSION = 1
 
@@ -49,6 +57,10 @@ class MeasurementRecord(BaseModel):
     """One completed measurement — the run-level unit the ledger's trial records roll up into."""
 
     measured_at: str = Field(..., description="UTC ISO-8601 (…Z) when the run was measured.")
+    #: False when the manifest's timestamp was reconstructed rather than recorded by the run —
+    #: identical start/end, exact midnight, or a `legacy-unverified` evidence state. A
+    #: reconstructed timestamp can never earn a green badge; see docs/standards/last-measured.md.
+    recorded: bool = True
     policy: str
     suite: str
     tool_version: str
@@ -104,9 +116,89 @@ def read_measurements(watch_dir: Path) -> list[MeasurementRecord]:
     return records
 
 
-def latest_measurement(watch_dir: Path) -> MeasurementRecord | None:
-    """The newest measurement by ``measured_at`` (not by file order — appends can interleave)."""
-    records = read_measurements(watch_dir)
+def _is_recorded(manifest: dict[str, object]) -> bool:
+    """Whether a manifest's timestamp was RECORDED by the run rather than reconstructed later.
+
+    Two tells, either of which means the value is a day-granularity reconstruction and must not be
+    presented as a measurement instant (see docs/standards/last-measured.md):
+
+    * ``evidence_state`` is ``legacy-unverified`` — the manifest says so itself.
+    * ``ended_at`` lands on exact midnight UTC — a date that was typed, not observed.
+
+    ``started_at == ended_at`` is deliberately NOT a tell, though it looks like one. Manifests are
+    stamped at second granularity, so any run finishing in under a second — every CPU stub run —
+    legitimately records identical instants. Treating that as reconstruction would misclassify the
+    fastest and most reproducible runs in the project as the least trustworthy. Caught by the
+    sim-to-real dry-run asserting its own artifact shape, which is what that assertion is for.
+    """
+    if manifest.get("evidence_state") == LEGACY_STATE:
+        return False
+    ended = manifest.get("ended_at")
+    if not isinstance(ended, str) or not ended:
+        return False
+    return not ended.endswith("T00:00:00Z")
+
+
+def measurements_from_results(results_dir: Path = RESULTS_DIR) -> list[MeasurementRecord]:
+    """Measurements read from committed execution manifests.
+
+    The execution manifest is the ONLY artifact that can answer this. ``report.json`` deliberately
+    carries no timestamp — the determinism contract makes a report a pure function of its config, so
+    the same seed yields byte-identical bytes — which is the right trade and also means a report can
+    never source this badge. The manifest exists precisely to hold runtime provenance.
+
+    Each record carries ``recorded``, so a caller cannot accidentally treat a reconstructed date as
+    a measured instant.
+    """
+    out: list[MeasurementRecord] = []
+    if not results_dir.is_dir():
+        return out
+    for path in sorted(results_dir.rglob("execution-manifest.json")):
+        try:
+            m = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):  # pragma: no cover - malformed committed artifact
+            continue
+        ended = m.get("ended_at")
+        if not isinstance(ended, str) or not ended:
+            continue  # a manifest with no end time measures nothing this badge can report
+        report = path.parent / "report.json"
+        attempts = successes = 0
+        asr = 0.0
+        if report.is_file():
+            try:
+                r = json.loads(report.read_text(encoding="utf-8"))
+                attempts, successes = int(r.get("attempts", 0)), int(r.get("successes", 0))
+                asr = float(r.get("asr", 0.0))
+            except (OSError, json.JSONDecodeError, TypeError, ValueError):  # pragma: no cover
+                pass
+        out.append(
+            MeasurementRecord(
+                measured_at=ended,
+                recorded=_is_recorded(m),
+                policy=str(m.get("policy", "unknown")),
+                suite=str(m.get("suite", "unknown")),
+                tool_version=str(m.get("package_version", "unknown")),
+                attempts=attempts,
+                successes=successes,
+                asr=asr,
+                commit=m.get("commit") if isinstance(m.get("commit"), str) else None,
+            )
+        )
+    return out
+
+
+def latest_measurement(
+    watch_dir: Path, *, results_dir: Path = RESULTS_DIR
+) -> MeasurementRecord | None:
+    """The newest measurement by ``measured_at``, across the watch log AND committed runs.
+
+    Both sources, because they answer the same question at different times. The watch log is what a
+    nightly appends going forward; the committed manifests are the measurements that already
+    happened. Reading only the log is why this badge shipped saying "never" on a project with a
+    published 10/10 result — the log was empty because the nightly has never run, and the badge
+    reported that as "nothing was ever measured", which is false.
+    """
+    records = [*read_measurements(watch_dir), *measurements_from_results(results_dir)]
     return max(records, key=lambda r: r.measured_at) if records else None
 
 
@@ -125,11 +217,24 @@ def badge(record: MeasurementRecord | None, *, now: datetime | None = None) -> d
 
         https://img.shields.io/endpoint?url=<raw url to freshness.json>
 
-    ``isError`` is set past :data:`STALE_DAYS` so the badge reads as a failure, not a fact: at that
-    point the README's implicit claim ("this is continuously verified") has stopped being true.
+    THREE STATES, AND THE MIDDLE ONE IS THE POINT. See docs/standards/last-measured.md for the
+    definition; the colour rules follow from it:
+
+    * **No measurement anywhere** — "never", red, ``isError``. Reserved for the genuine case. This
+      badge shipped in that state on a project with a published 10/10 real-policy result, because it
+      read only the nightly's log and the nightly has never run. "Never" contradicting the flagship
+      claim is a worse error than an imprecise date.
+    * **Reconstructed timestamp** — the date, marked, and **never green**. Green would assert a
+      precision the artifact does not have: the one committed real-policy manifest reconstructs its
+      provenance after the fact (identical start/end at exact midnight, ``legacy-unverified``).
+      Amber while fresh, red once genuinely stale.
+    * **Recorded timestamp** — the ordinary age ladder, green when fresh.
+
+    ``isError`` past :data:`STALE_DAYS` makes the badge read as a failure rather than a fact:
+    at that point the README's implicit "continuously verified" has stopped being true.
     """
     age = age_days(record, now=now)
-    if age is None:
+    if age is None or record is None:
         return {
             "schemaVersion": SHIELDS_SCHEMA_VERSION,
             "label": "last measured",
@@ -138,8 +243,15 @@ def badge(record: MeasurementRecord | None, *, now: datetime | None = None) -> d
             "isError": True,
         }
     days = int(age)
-    message = "today" if days == 0 else ("1 day ago" if days == 1 else f"{days} days ago")
-    color = "brightgreen" if age <= FRESH_DAYS else ("orange" if age <= STALE_DAYS else "red")
+    when = "today" if days == 0 else ("1 day ago" if days == 1 else f"{days} days ago")
+    if record.recorded:
+        message = when
+        color = "brightgreen" if age <= FRESH_DAYS else ("orange" if age <= STALE_DAYS else "red")
+    else:
+        # The date is a reconstruction, so it is reported with its provenance and capped at amber.
+        # A reader who sees a green badge is entitled to assume the timestamp was observed.
+        message = f"{when} (date reconstructed)"
+        color = "orange" if age <= STALE_DAYS else "red"
     return {
         "schemaVersion": SHIELDS_SCHEMA_VERSION,
         "label": "last measured",
@@ -165,7 +277,10 @@ __all__ = [
     "FRESH_DAYS",
     "STALE_DAYS",
     "WATCH_LOG",
+    "LEGACY_STATE",
     "MeasurementRecord",
+    "RESULTS_DIR",
+    "measurements_from_results",
     "append_measurement",
     "read_measurements",
     "latest_measurement",

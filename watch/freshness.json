@@ -1,7 +1,8 @@
 {
+  "cacheSeconds": 3600,
   "color": "red",
   "isError": true,
   "label": "last measured",
-  "message": "never",
+  "message": "63 days ago (date reconstructed)",
   "schemaVersion": 1
 }

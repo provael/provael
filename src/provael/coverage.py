@@ -52,6 +52,10 @@ FIXTURE_POLICIES = frozenset({"stub"})
 #: policy on a fixture suite is not a real-policy measurement.
 FIXTURE_SUITES = frozenset({"stub", "reach", "humanoid"})
 
+#: Where physical-robot runs land. Counted rather than declared, so provael.com's sim-to-real claim
+#: moves the day a run appears instead of waiting on a docs edit. See results/hardware/README.md.
+HARDWARE_DIR_NAME = "hardware"
+
 
 @dataclass(frozen=True)
 class Coverage:
@@ -67,6 +71,28 @@ class Coverage:
     real_policy_families: tuple[str, ...] = ()
     #: Registered adversarial families never run against a real policy, sorted.
     stub_only_families: tuple[str, ...] = field(default_factory=tuple)
+    #: Committed runs executed on physical hardware. Zero today; the website renders from it.
+    hardware_results: int = 0
+    #: False when no results directory was found at all — a pip-installed wheel, which does not
+    #: package `results/`. Then the evidence counts are NOT "looked and found none"; nothing was
+    #: looked at, and saying zero would contradict a published claim. See `evidence_scanned`.
+    results_dir_present: bool = True
+
+    @property
+    def evidence_scanned(self) -> bool:
+        """Whether the run-derived counts mean anything in this context.
+
+        The registry counts (policies, suites, families, attacks) are properties of the installed
+        package and are always true. The evidence counts (``real_policy``, ``hardware``) are derived
+        by scanning committed runs, which only exist in a source checkout.
+
+        Reported rather than papered over, because the failure is a false contradiction and not a
+        crash: an outsider who installs provael to check the README's "3 families with a real-model
+        result" and runs `provael coverage` in a wheel gets `real_policy=0` and concludes the README
+        overstates. The number is right for their machine and wrong as an answer to their question.
+        Found by smoke-testing the 0.32.0 wheel in a clean venv, which is what that step is for.
+        """
+        return self.results_dir_present
 
     @property
     def real_policy_tested(self) -> int:
@@ -101,6 +127,19 @@ def _real_policy_families(results_dir: Path = RESULTS_DIR) -> set[str]:
     return found
 
 
+def _hardware_runs(results_dir: Path = RESULTS_DIR) -> int:
+    """Count committed runs under ``results/hardware/``.
+
+    A run counts when it carries a ``report.json`` — the README in that directory is not a run. The
+    count is derived rather than declared precisely so nobody has to remember to update a number
+    when the first physical result lands.
+    """
+    hardware = results_dir / HARDWARE_DIR_NAME
+    if not hardware.is_dir():
+        return 0
+    return sum(1 for _ in hardware.rglob("report.json"))
+
+
 def coverage(results_dir: Path = RESULTS_DIR) -> Coverage:
     """Compute every published coverage count from the registries and the committed runs."""
     families = {ctor().family for ctor in ATTACKS.values()}
@@ -117,6 +156,8 @@ def coverage(results_dir: Path = RESULTS_DIR) -> Coverage:
         suites=len(SUITES),
         real_policy_families=tuple(sorted(real)),
         stub_only_families=tuple(sorted(adversarial_families - real)),
+        hardware_results=_hardware_runs(results_dir),
+        results_dir_present=results_dir.is_dir(),
     )
 
 
@@ -128,10 +169,17 @@ def coverage_line(cov: Coverage | None = None) -> str:
     consumer cannot pick up the flattering half.
     """
     c = cov or coverage()
+    # An unscanned context reports the evidence fields as `unscanned`, never as 0. A consumer that
+    # expects an integer breaks loudly here instead of quietly publishing "no family has ever been
+    # measured" — which is the contradiction this token exists to prevent.
+    real = str(c.real_policy_tested) if c.evidence_scanned else "unscanned"
+    stub = str(c.stub_validated_only) if c.evidence_scanned else "unscanned"
+    hardware = str(c.hardware_results) if c.evidence_scanned else "unscanned"
     return (
         f"policies={c.policies} suites={c.suites} "
         f"families={c.adversarial_families} attacks={c.adversarial_attacks} "
-        f"real_policy={c.real_policy_tested} stub_only={c.stub_validated_only} "
+        f"real_policy={real} stub_only={stub} "
+        f"hardware={hardware} "
         f"families_incl_baseline={c.families_total} attacks_incl_baseline={c.attacks_total}"
     )
 
@@ -151,6 +199,10 @@ def coverage_json(cov: Coverage | None = None) -> str:
             "realPolicyFamilies": list(c.real_policy_families),
             "stubValidatedOnly": c.stub_validated_only,
             "stubOnlyFamilies": list(c.stub_only_families),
+            "hardwareResults": c.hardware_results,
+            # The one field a consumer must branch on. False => the three evidence counts above
+            # were never scanned and must not be rendered; a wheel does not package `results/`.
+            "evidenceScanned": c.evidence_scanned,
             "meaning": (
                 "families/attacks count what is REGISTERED. realPolicyTested counts families "
                 "exercised against a real policy in a real simulator (a measured 0% counts — this "
@@ -168,6 +220,7 @@ __all__ = [
     "FIXTURE_POLICIES",
     "FIXTURE_SUITES",
     "RESULTS_DIR",
+    "HARDWARE_DIR_NAME",
     "coverage",
     "coverage_json",
     "coverage_line",

@@ -174,3 +174,56 @@ def test_readme_never_calls_the_attack_total_a_family_count() -> None:
         f"{c.adversarial_attacks} adversarial families",
     ):
         assert wrong not in text, f"README calls an ATTACK count a FAMILY count: {wrong!r}"
+
+
+# --- The counts mean different things in a checkout and in a wheel ---------------------------------
+#
+# Found by smoke-testing the 0.32.0 wheel in a clean venv: `provael coverage` printed
+# `real_policy=0 stub_only=15` where the repo prints `real_policy=3 stub_only=12`. A wheel does not
+# package `results/`, so there was nothing to derive the evidence counts from — and zero is the one
+# answer that reads as a finding rather than an absence.
+#
+# The damage is specific. An outsider installs provael to check the README's "3 families with a
+# real-model result", runs the command the README points at, sees 0, and concludes the project
+# overstates its evidence. The number was right about their machine and wrong about their question.
+# Registry counts (policies, suites, families, attacks) are properties of the package and stay
+# correct either way; only the run-derived fields are affected.
+
+
+def test_a_wheel_reports_unscanned_rather_than_zero(tmp_path: Path) -> None:
+    absent = tmp_path / "no-such-results"
+    cov = coverage(results_dir=absent)
+    assert not cov.evidence_scanned
+    line = coverage_line(cov)
+    assert "real_policy=unscanned" in line, line
+    assert "stub_only=unscanned" in line, line
+    assert "hardware=unscanned" in line, line
+    assert "real_policy=0" not in line, (
+        "a context that never looked is reporting zero — the exact false contradiction this guards"
+    )
+
+
+def test_a_wheel_still_reports_the_registry_counts(tmp_path: Path) -> None:
+    """Only the evidence fields go unscanned. The registry is in the package, so it is knowable."""
+    cov = coverage(results_dir=tmp_path / "absent")
+    line = coverage_line(cov)
+    assert f"families={cov.adversarial_families}" in line
+    assert f"policies={cov.policies}" in line
+    assert cov.adversarial_families > 0 and cov.policies > 0
+
+
+def test_a_checkout_scans_and_reports_integers() -> None:
+    """The repo has results/, so the same fields must be numbers — not the unscanned token."""
+    cov = coverage()
+    assert cov.evidence_scanned, "the repo's results/ directory is missing"
+    line = coverage_line(cov)
+    assert "unscanned" not in line, line
+    assert f"real_policy={cov.real_policy_tested}" in line
+
+
+def test_the_json_carries_the_flag_a_consumer_must_branch_on(tmp_path: Path) -> None:
+    """Website/Space builds parse the JSON; they need one boolean, not a heuristic on the counts."""
+    scanned = json.loads(coverage_json(coverage()))
+    unscanned = json.loads(coverage_json(coverage(results_dir=tmp_path / "absent")))
+    assert scanned["evidenceScanned"] is True
+    assert unscanned["evidenceScanned"] is False

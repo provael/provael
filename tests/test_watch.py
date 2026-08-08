@@ -17,10 +17,12 @@ from provael.runner import run
 from provael.watch import (
     FRESH_DAYS,
     STALE_DAYS,
+    MeasurementRecord,
     age_days,
     append_measurement,
     badge,
     latest_measurement,
+    measurements_from_results,
     read_measurements,
     write_badge,
 )
@@ -100,3 +102,88 @@ def test_the_committed_badge_is_a_valid_payload() -> None:
     assert payload["schemaVersion"] == 1
     assert payload["label"] == "last measured"
     assert payload["color"] in {"brightgreen", "orange", "red"}
+
+
+# --------------------------------------------------------------------------------------------- #
+# The badge must never make a FALSE claim. That is a different requirement from "must never be red".
+#
+# This badge shipped reading "never", in red, on a project with a published 10/10 real-policy
+# result — because it read only the nightly's log and the nightly has never run. "Never" is the
+# defect: it contradicts the flagship claim.
+#
+# The fix is NOT to forbid the red state. A freshness indicator that cannot report staleness is
+# worse than none — it asserts currency it is not checking, which is the argument in this module's
+# own docstring. The newest measurement really is over two months old, so red is the truthful
+# reading and the README carries it. What is forbidden is the badge saying "never" while an
+# artifact exists, or claiming a precision the artifact does not have.
+# --------------------------------------------------------------------------------------------- #
+
+COMMITTED_BADGE = Path(__file__).resolve().parent.parent / "watch" / "freshness.json"
+
+
+def test_committed_badge_never_says_never_while_a_measurement_exists() -> None:
+    """The exact false state this badge shipped in. A measurement happened; say so."""
+    import json as _json
+
+    payload = _json.loads(COMMITTED_BADGE.read_text(encoding="utf-8"))
+    have_measurement = bool(measurements_from_results())
+    assert have_measurement, "no committed run manifest carries an end time — fixture assumption broke"
+    assert payload["message"] != "never", (
+        "the badge says 'never' while results/ carries a measured run. Regenerate it: "
+        "`provael watch --dir watch`."
+    )
+
+
+def test_committed_badge_matches_a_freshly_computed_one() -> None:
+    """The committed file must be what the current code computes, modulo the age wording.
+
+    Guards the drift where the badge is edited by hand or left behind after the logic changes.
+    """
+    import json as _json
+
+    payload = _json.loads(COMMITTED_BADGE.read_text(encoding="utf-8"))
+    fresh = badge(latest_measurement(Path(__file__).resolve().parent.parent / "watch"))
+    assert payload["label"] == fresh["label"]
+    assert payload["color"] == fresh["color"]
+    # The day count moves with the wall clock, so compare the provenance marker rather than the age.
+    assert ("date reconstructed" in str(payload["message"])) == (
+        "date reconstructed" in str(fresh["message"])
+    )
+
+
+def test_a_reconstructed_timestamp_can_never_read_green() -> None:
+    """Green asserts an observed instant. The only committed manifest reconstructs its date."""
+    from datetime import timedelta
+
+    measured = datetime(2026, 8, 8, tzinfo=UTC)
+    rec = MeasurementRecord(
+        measured_at="2026-08-08T00:00:00Z", recorded=False, policy="smolvla", suite="libero",
+        tool_version="0.1.0", attempts=70, successes=17, asr=0.24,
+    )
+    # Same day — a RECORDED measurement here would be brightgreen.
+    assert badge(rec, now=measured)["color"] == "orange"
+    recorded = rec.model_copy(update={"recorded": True})
+    assert badge(recorded, now=measured)["color"] == "brightgreen"
+    # And it still goes red once genuinely stale, rather than being pinned amber forever.
+    assert badge(rec, now=measured + timedelta(days=STALE_DAYS + 1))["color"] == "red"
+
+
+def test_reconstructed_is_detected_from_the_manifests_own_tells() -> None:
+    """Identical start/end, exact midnight, or legacy-unverified — any one is enough."""
+    from provael.watch import _is_recorded
+
+    assert _is_recorded({"started_at": "2026-08-08T10:00:00Z", "ended_at": "2026-08-08T11:30:00Z"})
+    assert not _is_recorded({"evidence_state": "legacy-unverified",
+                             "started_at": "2026-08-08T10:00:00Z", "ended_at": "2026-08-08T11:30:00Z"})
+    assert not _is_recorded({"started_at": "2026-06-06T00:00:00Z", "ended_at": "2026-06-06T00:00:00Z"})
+    assert not _is_recorded({"started_at": "2026-06-05T23:00:00Z", "ended_at": "2026-06-06T00:00:00Z"})
+    assert not _is_recorded({"started_at": "x"})  # no end time at all
+
+
+def test_the_committed_run_is_read_as_reconstructed() -> None:
+    """Pins today's honest state: the one real-policy manifest is not a recorded timestamp."""
+    records = measurements_from_results()
+    assert records, "results/ carries no execution manifest with an end time"
+    newest = max(records, key=lambda r: r.measured_at)
+    assert newest.recorded is False
+    assert newest.policy == "smolvla"
