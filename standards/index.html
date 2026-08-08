@@ -2288,10 +2288,15 @@ ATLAS scope admits a red-team exercise, and no fielded system was attacked and n
 <p>The exact file submitted is committed at
 <a href="atlas-submission-2026-08-08.yaml"><code>atlas-submission-2026-08-08.yaml</code></a> so the submission is
 reproducible and its date is on the record rather than in someone's sent folder.</p>
-<p>The argument, verified against <code>ATLAS.yaml</code> version <strong>5.6.0</strong> (<code>mitre-atlas/atlas-data</code>, fetched
-8 August 2026): the strings <code>robot</code>, <code>embodied</code>, <code>vision-language-action</code>, <code>actuator</code> and <code>drone</code>
-each return <strong>zero</strong> matches across the entire corpus — 170 techniques and sub-techniques, 57 case
-studies. The three physical-world entries that do exist concern physical <em>access</em> to a system or
+<p>The argument, verified against <strong><code>dist/v6/ATLAS-2026.07.yaml</code></strong> — the current data release
+(collection version <strong>2026.07</strong>), <code>mitre-atlas/atlas-data</code>, fetched 8 August 2026: the strings
+<code>robot</code>, <code>embodied</code>, <code>vision-language-action</code>, <code>actuator</code> and <code>drone</code> each return <strong>zero</strong> matches
+across the entire corpus — <strong>178 techniques, 68 case studies, 16 tactics</strong>.</p>
+<p>The file matters, and this was checked against the wrong one first. <code>dist/ATLAS.yaml</code> still
+self-reports version <code>5.6.0</code> and holds 170 techniques and 57 case studies; it is a smaller legacy
+distribution, not the current release. Citing it at a reviewer would have understated their own
+corpus by 8 techniques and 11 case studies — the fastest way to have a submission dismissed is to
+be visibly working from a stale snapshot of the thing you are proposing to extend. The three physical-world entries that do exist concern physical <em>access</em> to a system or
 physical modification of an <em>input</em>, not corruption of a policy's <em>action output</em>. Meanwhile the
 corpus already carries AI-agent tool-poisoning material, and a VLA policy is the same tool-call
 boundary with a gripper on the end.</p>
