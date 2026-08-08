@@ -27,16 +27,19 @@ RESULTS_DIR = Path(__file__).parent / "results"
 
 #: The requests dataset a submission opens a PR against (Open-LLM-Leaderboard pattern).
 #:
-#: THIS REPO DOES NOT EXIST YET, and the code below now says so instead of crashing. Verified
-#: 2026-08-08: `huggingface.co/provael-submissions` returns 404, the datasets API returns 401, and
-#: `?author=provael-submissions` returns `[]`. Nobody has ever created it.
+#: This used to point at `provael-submissions/requests`, an ORG THAT WAS NEVER CREATED — verified
+#: 2026-08-08: org page 404, datasets API 401, `?author=provael-submissions` returns `[]`. The
+#: submit button had been aimed at nothing since it shipped.
 #:
-#: That went unnoticed because the leaderboard has had ZERO third-party submissions, ever — so the
-#: one path a stranger would take to contribute has never been walked by a stranger. The previous
-#: code called `upload_file` straight at this repo with no error handling, so the first outsider to
-#: try would have been handed a raw Gradio traceback on the project's only external-contribution
-#: funnel. See GUARANTEED_ROUTE for what they are told instead.
-REQUESTS_REPO = "provael-submissions/requests"
+#: It now points under the same account that owns the Space, so the token the Space already needs
+#: covers it and there is no org to administer. A separate org is the Open-LLM-Leaderboard shape and
+#: is worth revisiting if submissions ever reach a volume that justifies it; at zero third-party
+#: submissions in the leaderboard's lifetime, an org was infrastructure standing between a stranger
+#: and a contribution.
+#:
+#: It still may not exist — `scripts/setup_requests_dataset.py` creates it — and the code below
+#: treats that as a state to report rather than a crash. See GUARANTEED_ROUTE.
+REQUESTS_REPO = "Sattyam/provael-leaderboard-requests"
 
 #: Where a submitter is sent when the queue is unavailable. A GitHub issue on the product repo needs
 #: no HF org, no token and no dataset to exist — it is the route that cannot break. Same discipline
