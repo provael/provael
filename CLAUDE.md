@@ -68,7 +68,7 @@ src/provael/
 ├── scoring/          per-family scorers, asr.py (ASR + Wilson CI), safety_cost.py
 │                     (risk-exposure time, cumulative cost, safe·unsafe × success·failure)
 ├── hosted/           FastAPI reference attestation server (open-core paid tier)
-├── studies/          pre-registered studies (e.g. cross-architecture transfer)
+├── studies/          pre-registered studies (e.g. cross-architecture transfer, sim-to-real SO-101)
 ├── evidence.py       evidence-state ladder — how far a result has actually been verified
 ├── verdict.py        typed release verdict — deliberately not a binary pass/fail
 ├── endpoints.py      independent semantic endpoints — the distinct questions a run answers
@@ -84,9 +84,10 @@ src/provael/
 
 - Attacks, defenses, policies, and suites self-register into registries; the runner resolves them by string key.
 - `attacks/base.py` carries threat-model metadata per attack: `eai_id`/`eai_name` (Embodied-AI Top-10 mapping), `attacker_access`, `action_head_class` — results are self-describing.
+- `attacks/controls.py` is the one deliberate exception to self-registration: benign-variation control arms (benign_reword, nonsense_text — LIBERO-PRO-style distribution-shift and encoder-degradation probes) ship as tested classes but stay unregistered until scoring grows a third "harmless-variation" role, because a control must be excluded from BOTH the adversarial ASR and the benign FPR. Do not register them to make them runnable; wire the scoring role first — the module documents this.
 - A result is not just a number: `evidence.py` records how far it was verified, `endpoints.py` separates the questions a run can answer, and `verdict.py` refuses to collapse them into one boolean. Preserve that separation — flattening it back into pass/fail is the failure mode these modules exist to prevent.
 - `tests/` mirrors modules 1:1 (`test_<module>.py`) with golden/drift-guard tests pinning the registry, manifest, and assurance schema.
-- `docs/` is the MkDocs-Material site (docs.provael.com); `examples/` holds runnable scenario dirs. Besides the CLI, three adopter surfaces ship from this repo: `action.yml` (GitHub Action), `.pre-commit-hooks.yaml` (pre-commit hook), and `leaderboard/` (public submissions).
+- `docs/` is the MkDocs-Material site (docs.provael.com); doc URLs are lowercase, and a retired URL gets a redirect, never a 404. `examples/` holds runnable scenario dirs. Besides the CLI, three adopter surfaces ship from this repo: `action.yml` (GitHub Action), `.pre-commit-hooks.yaml` (pre-commit hook), and `leaderboard/` (public submissions).
 - `docs/standards/` and `docs/crosswalk/` map provael onto outside benchmarks and standards. `tests/test_citations_resolvable.py` requires every row there to carry a globally resolvable identifier — an arXiv ID, a CVE, or a URL.
 
 <!-- END AUTO-MANAGED -->
@@ -118,7 +119,7 @@ src/provael/
 - Signed evidence: Ed25519 attestation (`provael attest`, per-checkpoint regression attestations in CI) with the cryptography dep kept out of the default install but exercised by the dev group.
 - Claims are typed by strength, not asserted flatly — the evidence ladder, semantic endpoints, and a non-binary verdict all exist so an unverified result cannot be read as a verified one. Symmetrically, defenses are measured or explicitly labelled unproven.
 - Provenance is bound to results by digest (`ExecutionManifest`) rather than recorded alongside them, so a report cannot be paired with the wrong run.
-- Crosswalks translate provael into an external frame — a benchmark's metrics (ForesightSafety-VLA) or a standard's clauses (IEC 61508, ISO 13849, ISO 25785-1, ISO/IEC TR 5469) — and state comparability as a field rather than letting adjacency imply it.
+- Crosswalks translate provael into an external frame — a benchmark's metrics (ForesightSafety-VLA, RoboJailBench) or a standard's clauses (IEC 61508, ISO 13849, ISO 25785-1, ISO/IEC TR 5469) — and state comparability as a field rather than letting adjacency imply it. Where the frames disagree, the crosswalk computes per-category CC/RET so the disagreement is measurable rather than asserted.
 - Guards invert the allow-list where the thing being guarded is "whatever nobody remembered." `tests/test_version_consistency.py` scans every tracked file and keeps a short exemption list, because the pins that drift are exactly the ones missing from an enumerated list.
 
 <!-- END AUTO-MANAGED -->
@@ -128,7 +129,7 @@ src/provael/
 
 - Work lands via PR branches (`feat/…`, `docs/…`) merged to `main`; commits use conventional prefixes (`feat:`, `fix:`, `docs:`, `test:`, `chore:`) with scopes like `(policies)`, `(ci)`, `(attacks)`, `(defenses)`, `(compliance)`, `(crosswalk)`, `(standards)`, `(leaderboard)`.
 - Recent direction: standards coverage and external crosswalks — safety-cost metrics borrowed in vocabulary (not units) from ForesightSafety-VLA, functional-safety rows for the integrator certification path, and a published-ASR-baselines table whose comparability column is the point of the table — layered on the earlier measured-defenses and checkpoint-integrity work.
-- **A large share of `fix:`/`docs:` commits are self-corrections of the project's own claims** — a family count that was wrong, backends silently shown as run, a leaderboard signed/unsigned statement that contradicted its data, unresolvable Top-10 citations, a baseline figure taken from an abstract instead of the paper, a standard's name left truncated inside a quote. The pattern to copy: correct the claim *and* land the guard that makes the error impossible to repeat.
+- **A large share of `fix:`/`docs:` commits are self-corrections of the project's own claims** — a family count that was wrong, backends silently shown as run, a leaderboard signed/unsigned statement that contradicted its data, unresolvable Top-10 citations, a baseline figure taken from an abstract instead of the paper, a standard's name left truncated inside a quote, a superseded EU AI Act application date (now pattern-guarded by the regulatory-consistency test). The pattern to copy: correct the claim *and* land the guard that makes the error impossible to repeat.
 - A release moves more than the package version. `provael.__version__` is the source of truth (hatch reads it), but roughly a dozen adopter-facing files restate it — `CITATION.cff`, `action.yml`, `.pre-commit-hooks.yaml`, `README.md`, `docs/quickstart.md`, `examples/ci/*`, `leaderboard/app.py`, the reference security-gate workflow. `tests/test_version_consistency.py` fails on both a stale pin and a pin naming a tag that never existed, so a release is a search-and-replace the suite then confirms. Goldens and the manifest refresh in the same PR; the website's public-evidence manifest is re-pinned afterwards.
 - The project reports honest nulls (attack families that did NOT transfer) alongside positive findings — preserve that framing in README and docs edits.
 
