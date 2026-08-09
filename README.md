@@ -250,34 +250,29 @@ next to the academic state of the art.
 
 ## Install (CPU core — no GPU, no network)
 
-<!-- DOCKER IS BUILT AND PUBLISHED BUT NOT YET PUBLIC, so the line below stays commented.
-     ghcr.io/provael/provael:latest exists and the image works — verified locally end to end —
-     but the package is Private, so an anonymous `docker pull` gets 403. Advertising it now would
-     put a failing command at the top of the install section for every visitor.
+Nothing to install — Docker (amd64 + arm64):
 
-     The blocker is ORG POLICY, not the package. In the package's own visibility dialog, both
-     Public and Internal read "Setting is disabled by organization administrators", so it cannot be
-     changed there. Fix the policy first:
+```bash
+docker run --rm ghcr.io/provael/provael:latest attack --recipe quick
 
-       1. github.com/organizations/provael/settings/packages -> permit public packages
-       2. github.com/orgs/provael/packages/container/provael/settings -> Danger Zone ->
-          Change visibility -> Public (type `provael` exactly, to confirm)
-       3. verify from a logged-out daemon:
-          docker run --rm ghcr.io/provael/provael:latest attack --recipe quick
+# keep the report after --rm
+docker run --rm -v "$PWD/runs:/home/provael/runs" \
+  ghcr.io/provael/provael:latest attack --recipe quick
+```
 
-     Then uncomment:
-
-     docker run --rm ghcr.io/provael/provael:latest attack --recipe quick
-
-     # keep the report after --rm
-     docker run --rm -v "$PWD/runs:/home/provael/runs" \
-       ghcr.io/provael/provael:latest attack --recipe quick
-
-     Two other things this line depends on, both of which HAVE broken and are now covered by a
-     CI build + entrypoint smoke on every PR:
-       - ENTRYPOINT ["provael"], so trailing words are provael's own arguments, not a shell command
-       - a WRITABLE cwd. WORKDIR was /app (root-owned) under USER provael, so this exact command
-         died on `PermissionError: 'runs'` while `--version` passed happily. -->
+<!-- VERIFIED from a logged-out daemon with no cached image, on arm64. Four things this line
+     depends on, every one of which has broken at least once:
+       1. the package is PUBLIC on GHCR. Org policy blocked it initially: the package's own
+          visibility dialog showed Public as "disabled by organization administrators", so the
+          org-level packages policy had to permit public packages first.
+       2. BOTH architectures are published. The first build was amd64-only, because that is what
+          the GitHub runner is, and an Apple Silicon pull died on "no matching manifest for
+          linux/arm64/v8". CI cannot catch this — its smoke test runs on the same x86_64 runner.
+       3. ENTRYPOINT ["provael"], so trailing words are provael's own arguments and not a shell
+          command replacing it.
+       4. a WRITABLE cwd. WORKDIR was /app (root-owned) under USER provael, so this exact command
+          died on `PermissionError: 'runs'` while `--version` passed happily.
+     ci.yml builds the image and smokes the entrypoint on every PR, covering 3 and 4. -->
 
 With [uv](https://docs.astral.sh/uv/) (recommended):
 
