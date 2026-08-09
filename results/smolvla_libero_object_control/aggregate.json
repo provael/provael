@@ -1,0 +1,50 @@
+{
+  "episodes": 200,
+  "kind": "cross-shard-aggregate",
+  "mcnemar": {
+    "benign_reword": {
+      "attack_only": 1,
+      "benign_only": 3,
+      "concordant": 46,
+      "p_value": 0.625
+    },
+    "nonsense_text": {
+      "attack_only": 0,
+      "benign_only": 3,
+      "concordant": 47,
+      "p_value": 0.25
+    },
+    "roleplay": {
+      "attack_only": 41,
+      "benign_only": 0,
+      "concordant": 9,
+      "p_value": 9.094947017729282e-13
+    }
+  },
+  "not_a_report": "Each shard's report.json is the attestable artifact; this is an analysis.",
+  "shards": [
+    "libero_object_0/report.json",
+    "libero_object_1/report.json",
+    "libero_object_2/report.json",
+    "libero_object_3/report.json",
+    "libero_object_4/report.json",
+    "libero_object_5/report.json",
+    "libero_object_6/report.json",
+    "libero_object_7/report.json",
+    "libero_object_8/report.json",
+    "libero_object_9/report.json"
+  ],
+  "stage": "control",
+  "tasks": [
+    "libero_object/0",
+    "libero_object/1",
+    "libero_object/2",
+    "libero_object/3",
+    "libero_object/4",
+    "libero_object/5",
+    "libero_object/6",
+    "libero_object/7",
+    "libero_object/8",
+    "libero_object/9"
+  ]
+}
