@@ -66,6 +66,13 @@ jobs:
       - name: Type-check (mypy, strict)
         run: uv run mypy src
 
+      # Case-exact relative-link check. It has to run HERE, on Linux, and not as a local pre-commit:
+      # macOS and Windows are case-insensitive, so a link to docs/TOP10.md resolves fine on the
+      # author's machine and 404s for every visitor on github.com. The author cannot see the bug
+      # they just shipped. This runner is case-sensitive, which is the point.
+      - name: Link check (relative markdown links, case-exact)
+        run: uv run python scripts/check_links.py
+
       - name: Test (pytest, CPU only)
         run: uv run pytest -q
 

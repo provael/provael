@@ -1,0 +1,57 @@
+name: docker-publish
+
+# Tags only, plus a manual button. NOT on every push to main: a `:latest` that moves with every
+# commit is a worse promise than no image, because the README tells strangers to run it and they
+# would each get a different build.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: build and push ghcr.io/provael/provael
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
+        with:
+          images: ghcr.io/provael/provael
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+
+      - uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # The first push creates the package PRIVATE. A private package makes the README's
+      # `docker run` line fail with an auth error for every stranger, which is worse than shipping
+      # no image at all — the README would be advertising something broken. This step cannot flip
+      # visibility (GITHUB_TOKEN lacks the scope), so it says so loudly instead of pretending.
+      - name: Remind that the package must be made public once
+        run: |
+          echo "::notice title=One-time manual step::If this is the FIRST publish, set the package"\
+          " to public: github.com/orgs/provael/packages/container/provael/settings ->"\
+          " Danger Zone -> Change visibility -> Public. Until then 'docker run"\
+          " ghcr.io/provael/provael:latest' fails for everyone who is not logged in."
