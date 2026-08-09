@@ -17,7 +17,8 @@ FIVE STAGES, IN COST ORDER, AND THE ORDER IS THE POINT.
     pilot      2  x  4  x  2  x 1   =     16     0.5       ~$0.41  31 min   (RUN)
     suite     10  x  2  x  5  x 1   =    100     3.2       ~$2.55  ~20 min sharded
     probe     10  x  8  x  3  x 1   =    240     7.6       ~$6.11  ~45 min sharded
-    full      10  x  8  x  5  x 2   =    800    25.4      ~$20.35   ~2.5 h sharded
+    full      10  x  8  x  6  x 1   =    480    15.3      ~$12.21   ~1.5 h sharded
+                                                    hard ceiling ~$20 (10 x 2.5 h timeout)
 
 STAGES WITH >1 TASK ARE SHARDED ONE TASK PER CONTAINER, which is why wall clock is a tenth of
 GPU-hours at identical cost. That is a survivability decision, not a speed one.
@@ -55,17 +56,16 @@ shutdown, AFTER report.json is written, and does not affect results. It is upstr
 1.4.0 and not worth patching around. Likewise `torch_dtype is deprecated` comes from transformers
 via lerobot.
 
-`full`'s shape is chosen, not arbitrary. 5 seeds x 2 repeats separates INITIAL-STATE variation from
-POLICY stochasticity, which `--episodes-per-seed` made computable for the first time, and puts 10
-episodes in every (task, arm) cell and 100 behind every arm — enough for Holm across seven
-adversarial arms and for a task-clustered interval. It was 10 x 3 = 2400 episodes at ~$61, which is
-a better design nobody is going to pay for; 5 x 2 keeps the property that mattered.
+COST IS BOUNDED BY THE TIMEOUT, NOT BY THE EPISODE COUNT. Containers that hang bill until their
+timeout whatever they were asked to do, so `full`'s 2.5 h timeout x 10 containers is the real
+ceiling (~$20) and the episode count is sized to fit inside it even if every episode runs the full
+280-step horizon. Modal also enforces a workspace spend limit in the dashboard; set one.
 
     modal run examples/gpu-ci/modal_libero_suite.py                       # timing, the default
     PROVAEL_STAGE=pilot modal run examples/gpu-ci/modal_libero_suite.py   # the slope
     PROVAEL_STAGE=suite modal run examples/gpu-ci/modal_libero_suite.py   # 10 tasks, roleplay
     PROVAEL_STAGE=probe modal run examples/gpu-ci/modal_libero_suite.py   # all 8 arms
-    PROVAEL_STAGE=full  modal run examples/gpu-ci/modal_libero_suite.py   # 800 episodes, ~$20
+    PROVAEL_STAGE=full  modal run examples/gpu-ci/modal_libero_suite.py   # 480 ep, ~$12
 
 Results and the HF/LIBERO caches live on two Volumes, so a killed container loses neither. Retrieve
 a run with `modal volume get provael-libero-runs libero_object_suite`.
@@ -164,17 +164,30 @@ STAGES: dict[str, dict[str, str]] = {
         "tasks": ALL_TASKS, "attacks": ATTACKS,
         "seeds": "3", "episodes_per_seed": "1", "timeout": "10800",
     },
-    # THE REAL RUN, resized to a real budget. 10 tasks x 8 arms x 5 seeds x 2 repeats = 800
-    # episodes, ~$16 at the measured rate — sharded one task per container, so ~2.5 h wall clock
-    # and 80 episodes per container.
+    # THE REAL RUN, sized so the WORST CASE is capped, not the expected case.
     #
-    # It was 10 seeds x 3 repeats = 2400 episodes, which is $61: not a budget question so much as a
-    # different project. 5 x 2 keeps the property that motivated `--episodes-per-seed` — repeats at
-    # the SAME seed separate policy stochasticity from initial-state variation — while putting 10
-    # episodes in every (task, arm) cell and 100 behind every arm.
+    # THE TIMEOUT IS THE REAL COST CEILING. Ten containers that all hang until their timeout cost
+    # 10 x timeout x rate regardless of what they were asked to do — at the previous 6h timeout that
+    # was ~$48, over twice the intended spend. So the timeout is chosen first, from the budget:
+    #
+    #     10 containers x 2.5 h x ~$0.80/h = ~$20 hard ceiling
+    #
+    # and the episode count is then sized to fit inside it even if EVERY episode runs the full
+    # 280-step horizon (which happens when the attack works, since LIBERO only ends early on
+    # SUCCESS). 48 episodes x 280 steps x 0.612 s = 2.28 h < 2.5 h. Expected is 1.53 h -> ~$12.
+    #
+    # SIX SEEDS, ONE EPISODE EACH — not 5 seeds x 2 repeats, which costs the same and measures less.
+    # `paired_by_attack` reduces a (task, seed) cell to "was this cell ever flagged" because repeats
+    # at one seed are the same initial state and not independent pairs. So repeats add ZERO McNemar
+    # pairs and zero power to the headline statistic; seeds add one pair each. Repeats are only
+    # worth buying once something actually decomposes seed variance from policy stochasticity, and
+    # nothing does yet.
+    #
+    # 6 pairs per (task, arm), 60 episodes per arm, 10 tasks — enough for Holm across seven
+    # adversarial arms and for cluster_bootstrap_ci to return an interval instead of None.
     "full": {
         "tasks": ALL_TASKS, "attacks": ATTACKS,
-        "seeds": "5", "episodes_per_seed": "2", "timeout": "21600",
+        "seeds": "6", "episodes_per_seed": "1", "timeout": "9000",
     },
 }
 
