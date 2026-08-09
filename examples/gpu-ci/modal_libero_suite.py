@@ -17,7 +17,7 @@ FIVE STAGES, IN COST ORDER, AND THE ORDER IS THE POINT.
     pilot      2  x  4  x  2  x 1   =     16     0.5       ~$0.41  31 min   (RUN)
     suite     10  x  2  x  5  x 1   =    100     3.2       ~$2.55  ~20 min sharded
     probe     10  x  8  x  3  x 1   =    240     7.6       ~$6.11  ~45 min sharded
-    full      10  x  8  x  6  x 1   =    480    15.3      ~$12.21   ~1.5 h sharded
+    full      10  x  8  x  5  x 1   =    400    12.7      ~$10.17   ~1.3 h sharded
                                                     hard ceiling ~$20 (10 x 2.5 h timeout)
 
 STAGES WITH >1 TASK ARE SHARDED ONE TASK PER CONTAINER, which is why wall clock is a tenth of
@@ -65,7 +65,7 @@ ceiling (~$20) and the episode count is sized to fit inside it even if every epi
     PROVAEL_STAGE=pilot modal run examples/gpu-ci/modal_libero_suite.py   # the slope
     PROVAEL_STAGE=suite modal run examples/gpu-ci/modal_libero_suite.py   # 10 tasks, roleplay
     PROVAEL_STAGE=probe modal run examples/gpu-ci/modal_libero_suite.py   # all 8 arms
-    PROVAEL_STAGE=full  modal run examples/gpu-ci/modal_libero_suite.py   # 480 ep, ~$12
+    PROVAEL_STAGE=full  modal run examples/gpu-ci/modal_libero_suite.py   # 400 ep, ~$10
 
 Results and the HF/LIBERO caches live on two Volumes, so a killed container loses neither. Retrieve
 a run with `modal volume get provael-libero-runs libero_object_suite`.
@@ -185,11 +185,19 @@ STAGES: dict[str, dict[str, str]] = {
     # worth buying once something actually decomposes seed variance from policy stochasticity, and
     # nothing does yet.
     #
-    # 6 pairs per (task, arm), 60 episodes per arm, 10 tasks — enough for Holm across seven
-    # adversarial arms and for cluster_bootstrap_ci to return an interval instead of None.
+    # FIVE seeds, not six, and the constraint is the timeout rather than the budget. The pilot
+    # shards measured 0.694 and 0.649 s/step, so 48 episodes at the full 280-step horizon is 2.59 h
+    # — past the 2.5 h timeout. A truncated shard writes NO report.json (provael writes it once, at
+    # the end), so overrunning does not cost a slow shard, it costs the whole shard. 40 episodes is
+    # 2.16 h worst case, inside the timeout with headroom.
+    #
+    # 5 pairs per (task, arm) and 50 pooled per arm across 10 tasks. Pooled is what carries the
+    # claim: McNemar needs >=9 discordant pairs before Holm across seven arms can clear 0.05 at
+    # all (2*(1/2)^9 = 0.0039, x7 = 0.027), so 50 has room and 5 per task deliberately does not —
+    # per-task variation is what cluster_bootstrap_ci is for, not per-task p-values.
     "full": {
         "tasks": ALL_TASKS, "attacks": ATTACKS,
-        "seeds": "6", "episodes_per_seed": "1", "timeout": "9000",
+        "seeds": "5", "episodes_per_seed": "1", "timeout": "9000",
     },
 }
 
