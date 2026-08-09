@@ -100,8 +100,20 @@ image = (
     # lerobot already declares `cmake>=3.29` as a pip dependency, and that does NOT help: pip
     # resolves and BUILDS every wheel before installing any of them, so the cmake wheel's binary is
     # not on PATH while egl_probe is building. It has to come from apt, before pip runs at all.
+    #
+    # The glib/X set is for cv2, and the reason is a real conflict in the dependency tree rather
+    # than a missing nicety. lerobot depends on opencv-python-HEADLESS, which needs none of this;
+    # hf-libero depends on the FULL opencv-python. Both install, both provide the `cv2` module, the
+    # full one wins, and `import cv2` then demands the GUI stack headless exists to avoid:
+    #
+    #     ImportError: libgthread-2.0.so.0: cannot open shared object file
+    #
+    # robosuite imports cv2 at package import time (utils/opencv_renderer.py), so this kills the run
+    # before the first episode. Installing the libs is better than fighting the resolver: hf-libero
+    # genuinely declares full opencv, and force-removing it would break an upstream contract.
     .apt_install(
-        "libegl1-mesa-dev", "libgl1-mesa-glx", "libosmesa6-dev", "git", "cmake", "build-essential"
+        "libegl1-mesa-dev", "libgl1-mesa-glx", "libosmesa6-dev", "git", "cmake", "build-essential",
+        "libglib2.0-0", "libsm6", "libxrender1", "libfontconfig1",
     )
     .pip_install(f"provael[lerobot] @ {PROVAEL}", "lerobot[libero]==0.5.1")
     .env({"MUJOCO_GL": "egl", "PYOPENGL_PLATFORM": "egl", "PROVAEL_INTEGRATION": "1"})
