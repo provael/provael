@@ -280,7 +280,11 @@ def _emit_execution_manifest(
         ended_at=end.strftime(fmt),
         env=dict(os.environ),
     )
-    (out_dir / "execution-manifest.json").write_text(
+    # Name from provael.watch, not a literal: the freshness badge reads this exact file, and a
+    # drift between the two halves makes every future measurement invisible to it.
+    from provael.watch import EXECUTION_MANIFEST
+
+    (out_dir / EXECUTION_MANIFEST).write_text(
         to_execution_manifest_json(manifest), encoding="utf-8"
     )
 

@@ -44,14 +44,19 @@ def test_appends_rather_than_overwrites(tmp_path: Path) -> None:
     append_measurement(tmp_path, _report(), measured_at="2026-08-01T00:00:00Z")
     append_measurement(tmp_path, _report(), measured_at="2026-08-02T00:00:00Z")
     assert len(read_measurements(tmp_path)) == 2
-    assert latest_measurement(tmp_path).measured_at == "2026-08-02T00:00:00Z"
+    # results_dir is pinned to an empty directory ON PURPOSE. `latest_measurement` merges the watch
+    # log with the committed manifests under results/, so without this the assertion depends on
+    # whether the repo currently holds a measurement newer than these fixtures. It did not, until a
+    # real run landed and this test started failing for a reason that had nothing to do with it.
+    assert latest_measurement(tmp_path, results_dir=tmp_path).measured_at == "2026-08-02T00:00:00Z"
 
 
 def test_latest_is_by_time_not_by_file_order(tmp_path: Path) -> None:
     """Appends can arrive out of order (a re-run of an older commit); newest MEASURED wins."""
     append_measurement(tmp_path, _report(), measured_at="2026-08-05T00:00:00Z")
     append_measurement(tmp_path, _report(), measured_at="2026-08-03T00:00:00Z")
-    assert latest_measurement(tmp_path).measured_at == "2026-08-05T00:00:00Z"
+    # Isolated from results/ for the same reason as the test above.
+    assert latest_measurement(tmp_path, results_dir=tmp_path).measured_at == "2026-08-05T00:00:00Z"
 
 
 def test_badge_reddens_on_its_own_as_time_passes(tmp_path: Path) -> None:
@@ -180,10 +185,30 @@ def test_reconstructed_is_detected_from_the_manifests_own_tells() -> None:
     assert not _is_recorded({"started_at": "x"})  # no end time at all
 
 
-def test_the_committed_run_is_read_as_reconstructed() -> None:
-    """Pins today's honest state: the one real-policy manifest is not a recorded timestamp."""
+def test_the_newest_committed_run_is_a_recorded_measurement() -> None:
+    """The newest real-policy manifest must be RECORDED, not reconstructed.
+
+    This test used to assert the opposite, and its docstring said it was pinning "today's honest
+    state": the only real-policy manifest in the tree had a typed midnight timestamp, so the badge
+    could never go green. That stopped being true when the 10-task suite run landed its manifests.
+
+    Inverting it is the point. The repo now contains a measurement whose start and end were observed
+    rather than reconstructed, and the badge is entitled to say so.
+    """
     records = measurements_from_results()
     assert records, "results/ carries no execution manifest with an end time"
     newest = max(records, key=lambda r: r.measured_at)
-    assert newest.recorded is False
+    assert newest.recorded is True, f"newest manifest is reconstructed: {newest.measured_at}"
     assert newest.policy == "smolvla"
+
+
+def test_the_legacy_reconstructed_manifest_is_still_read_as_reconstructed() -> None:
+    """The old manifest has not been quietly relabelled — it is still honest about itself.
+
+    Fixing the badge must not work by upgrading the legacy artifact's provenance. It still reports
+    `recorded=False`; it is simply no longer the newest thing in the tree.
+    """
+    records = measurements_from_results()
+    legacy = [r for r in records if r.measured_at.endswith("T00:00:00Z")]
+    assert legacy, "the legacy midnight-stamped manifest disappeared"
+    assert all(not r.recorded for r in legacy)

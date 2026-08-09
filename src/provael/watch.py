@@ -52,6 +52,18 @@ STALE_DAYS = 7
 WATCH_LOG = "watch.jsonl"
 BADGE_JSON = "freshness.json"
 
+#: The two artifact names a completed run writes, named ONCE so the reader here and the writer in
+#: :func:`provael.cli._emit_execution_manifest` cannot drift apart.
+#:
+#: They were previously string literals in both halves. Both were correct and the badge still went
+#: stale for two months, because agreeing on a NAME does not guarantee both files are present: a
+#: suite result was committed with ten ``report.json`` files and zero manifests, and since the
+#: report is deterministic and deliberately carries no timestamp, those measurements were invisible
+#: to this module. ``tests/test_watch_artifact_binding.py`` asserts every committed report ships its
+#: manifest, and that the count this module sees matches the count on disk.
+REPORT = "report.json"
+EXECUTION_MANIFEST = "execution-manifest.json"
+
 
 class MeasurementRecord(BaseModel):
     """One completed measurement — the run-level unit the ledger's trial records roll up into."""
@@ -153,7 +165,7 @@ def measurements_from_results(results_dir: Path = RESULTS_DIR) -> list[Measureme
     out: list[MeasurementRecord] = []
     if not results_dir.is_dir():
         return out
-    for path in sorted(results_dir.rglob("execution-manifest.json")):
+    for path in sorted(results_dir.rglob(EXECUTION_MANIFEST)):
         try:
             m = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):  # pragma: no cover - malformed committed artifact
@@ -161,7 +173,7 @@ def measurements_from_results(results_dir: Path = RESULTS_DIR) -> list[Measureme
         ended = m.get("ended_at")
         if not isinstance(ended, str) or not ended:
             continue  # a manifest with no end time measures nothing this badge can report
-        report = path.parent / "report.json"
+        report = path.parent / REPORT
         attempts = successes = 0
         asr = 0.0
         if report.is_file():
