@@ -76,6 +76,18 @@ jobs:
       - name: Test (pytest, CPU only)
         run: uv run pytest -q
 
+      # Build the image on every PR, push nothing. The Dockerfile pinned uv 0.5.11 against a
+      # `revision = 3` lockfile that version cannot parse, so `uv sync --locked` failed — and it had
+      # been failing for a while, invisibly, because nothing ever built it. A Dockerfile that ships
+      # in the repo and is never exercised is a promise nobody checks.
+      #
+      # Smoke-run the entrypoint too: a green build only proves it compiled, not that
+      # `docker run <image> attack ...` reaches the CLI, which is what the README will tell people.
+      - name: Build the Docker image (no push) and smoke the entrypoint
+        run: |
+          docker build -t provael:ci .
+          docker run --rm provael:ci --version
+
   build:
     name: package build + metadata check
     runs-on: ubuntu-latest

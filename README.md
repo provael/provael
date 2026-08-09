@@ -250,25 +250,24 @@ next to the academic state of the art.
 
 ## Install (CPU core — no GPU, no network)
 
-<!-- DELIBERATELY NOT ADVERTISED YET. The docker line below is correct and must stay commented out
-     until `ghcr.io/provael/provael` exists AND has been made public by hand. Publishing it earlier
-     is worse than shipping no image: the README would tell every visitor to run a command that
-     fails with an auth or not-found error, and a broken instruction in the install section is the
-     first thing a new reader hits.
+Nothing to install — Docker:
 
-     Uncomment when, and only when, all three are true:
-       1. .github/workflows/docker-publish.yml has run (tag push, or manual dispatch once it is on
-          the default branch)
-       2. the package visibility is Public — GITHUB_TOKEN cannot set this, it is a one-time manual
-          step at github.com/orgs/provael/packages/container/provael/settings
-       3. `docker run --rm ghcr.io/provael/provael:latest attack --recipe quick` returns a real
-          result from a logged-out daemon on a machine that has never seen this repo
+```bash
+docker run --rm ghcr.io/provael/provael:latest attack --recipe quick
 
-     docker run --rm ghcr.io/provael/provael:latest attack --recipe quick
+# keep the report after --rm
+docker run --rm -v "$PWD/runs:/home/provael/runs" \
+  ghcr.io/provael/provael:latest attack --recipe quick
+```
 
-     The image sets ENTRYPOINT ["provael"], so the words after the image name are provael's own
-     arguments. If that ENTRYPOINT ever becomes a bare CMD, the line silently turns into a shell
-     command that replaces it and the flags go nowhere. Change this example with it. -->
+<!-- Three things this line depends on, all of which have broken at least once:
+     1. ENTRYPOINT ["provael"] — the words after the image name are provael's own arguments. If it
+        ever becomes a bare CMD they silently become a shell command instead.
+     2. A WRITABLE cwd. WORKDIR was /app (root-owned) under USER provael, so this exact command
+        died on `PermissionError: 'runs'` while `--version` passed happily.
+     3. The package being PUBLIC on GHCR. Private is the default on first publish and makes this
+        fail for everyone who is not logged in.
+     ci.yml builds the image and smokes the entrypoint on every PR, which covers 1 and 2. -->
 
 With [uv](https://docs.astral.sh/uv/) (recommended):
 
