@@ -6,6 +6,37 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- **The benign-reword arm, which is the strongest objection to our own headline.** `benign_reword`
+  and `nonsense_text` were written, tested and deliberately left UNREGISTERED, because
+  `attacks/controls.py` could not be enabled until scoring grew a third role. It has one now.
+
+  `provael.scoring.asr` gains `CONTROL_FAMILY`, `is_harmless_variation`, a `harmless-variation`
+  semantic role and `harmless_variation_rate`. A control is excluded from BOTH populations: from the
+  adversarial results (folding it in would inflate the ASR with episodes no adversary caused) and
+  from the benign-FPR baseline (mis-classing it there would corrupt the false-positive rate the ASR
+  is read against). Both failures are silent, and both make the headline mean something other than
+  what it says.
+
+  `full-sweep` now runs both control arms. A sweep of every attack with no reword control cannot
+  separate "the attacker chose where the policy went" from "the policy is brittle to being asked
+  differently", which is exactly the limitation provael.com states in its own words.
+
+  **If the reword arm fires as hard as the attack, that is the result and it will be published.**
+  `test_a_reword_that_fires_as_hard_as_the_attack_is_visible` asserts the scoring surfaces that case
+  rather than averaging it away. No real-policy reword measurement exists yet — the arm is available,
+  not yet run.
+
+### Fixed
+
+- **`control` was being counted as an adversarial family.** Subtracting only `BASELINE_FAMILY` was
+  the same bug `recipes.ALL_FAMILIES` warns about in its own comment, one level up: registering a
+  control silently grew a sixteenth "attack family" that is not an attack. `coverage.py` gains
+  `NON_ADVERSARIAL_FAMILIES` and every count derives from it, so the documented "15 adversarial
+  families" stays true. Totals move 16 -> 17 families and 29 -> 31 attacks, updated in README,
+  docs/quickstart.md and the notebook.
+
 ### Changed
 
 - **The headline result is now a ten-task suite rate, not a single-task existence proof.**

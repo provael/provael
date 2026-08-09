@@ -205,13 +205,13 @@
   ],
   "policy": "smolvla",
   "registry": {
-    "attacks_adversarial": 28,
+    "attacks_adversarial": 30,
     "attacks_baseline": 1,
-    "attacks_total": 29,
+    "attacks_total": 31,
     "defenses_measured": 2,
     "defenses_total": 2,
-    "families_adversarial": 15,
-    "families_total": 16
+    "families_adversarial": 16,
+    "families_total": 17
   },
   "regulatory_clock_version": "provael-attest-ruleset/4",
   "release_verdict": "incomplete",

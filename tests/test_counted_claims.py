@@ -41,6 +41,7 @@ import pytest
 
 from provael.attacks.baseline import FAMILY as BASELINE_FAMILY
 from provael.attacks.registry import ATTACKS
+from provael.coverage import NON_ADVERSARIAL_FAMILIES
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -77,7 +78,7 @@ def _registry_counts() -> dict[str, int]:
     families = {ctor().family for ctor in ATTACKS.values()}
     adversarial = [n for n, ctor in ATTACKS.items() if ctor().family != BASELINE_FAMILY]
     return {
-        "adversarial families": len(families - {BASELINE_FAMILY}),
+        "adversarial families": len(families - NON_ADVERSARIAL_FAMILIES),
         "total families": len(families),
         "total attacks": len(ATTACKS),
         "adversarial attacks": len(adversarial),

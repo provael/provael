@@ -37,9 +37,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from provael.attacks.baseline import FAMILY as BASELINE_FAMILY
+from provael.attacks.controls import CONTROL_FAMILY
 from provael.attacks.registry import ATTACKS
 from provael.policies.registry import POLICIES
 from provael.suites import SUITES
+
+#: Families that are registered and runnable but are NOT attacks: the benign FPR baseline and the
+#: harmless-variation controls. Both must be subtracted before counting "adversarial families",
+#: because a control counted as an attack overstates the surface this tool claims to cover — and
+#: that count is quoted in the README, SAFETY.md, the docs and the leaderboard.
+NON_ADVERSARIAL_FAMILIES = frozenset({BASELINE_FAMILY, CONTROL_FAMILY})
 
 #: Committed run reports scanned for real-policy evidence. A directory, not a list of files, so a
 #: new committed run is picked up by existing here rather than by being added to a constant.
@@ -122,7 +129,7 @@ def _real_policy_families(results_dir: Path = RESULTS_DIR) -> set[str]:
             continue
         for result in data.get("results", []):
             family = result.get("family")
-            if family and family != BASELINE_FAMILY:
+            if family and family not in NON_ADVERSARIAL_FAMILIES:
                 found.add(family)
     return found
 
@@ -143,8 +150,10 @@ def _hardware_runs(results_dir: Path = RESULTS_DIR) -> int:
 def coverage(results_dir: Path = RESULTS_DIR) -> Coverage:
     """Compute every published coverage count from the registries and the committed runs."""
     families = {ctor().family for ctor in ATTACKS.values()}
-    adversarial_families = families - {BASELINE_FAMILY}
-    adversarial_attacks = [n for n, ctor in ATTACKS.items() if ctor().family != BASELINE_FAMILY]
+    adversarial_families = families - NON_ADVERSARIAL_FAMILIES
+    adversarial_attacks = [
+        n for n, ctor in ATTACKS.items() if ctor().family not in NON_ADVERSARIAL_FAMILIES
+    ]
 
     real = _real_policy_families(results_dir) & adversarial_families
     return Coverage(
