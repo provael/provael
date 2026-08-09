@@ -250,24 +250,34 @@ next to the academic state of the art.
 
 ## Install (CPU core — no GPU, no network)
 
-Nothing to install — Docker:
+<!-- DOCKER IS BUILT AND PUBLISHED BUT NOT YET PUBLIC, so the line below stays commented.
+     ghcr.io/provael/provael:latest exists and the image works — verified locally end to end —
+     but the package is Private, so an anonymous `docker pull` gets 403. Advertising it now would
+     put a failing command at the top of the install section for every visitor.
 
-```bash
-docker run --rm ghcr.io/provael/provael:latest attack --recipe quick
+     The blocker is ORG POLICY, not the package. In the package's own visibility dialog, both
+     Public and Internal read "Setting is disabled by organization administrators", so it cannot be
+     changed there. Fix the policy first:
 
-# keep the report after --rm
-docker run --rm -v "$PWD/runs:/home/provael/runs" \
-  ghcr.io/provael/provael:latest attack --recipe quick
-```
+       1. github.com/organizations/provael/settings/packages -> permit public packages
+       2. github.com/orgs/provael/packages/container/provael/settings -> Danger Zone ->
+          Change visibility -> Public (type `provael` exactly, to confirm)
+       3. verify from a logged-out daemon:
+          docker run --rm ghcr.io/provael/provael:latest attack --recipe quick
 
-<!-- Three things this line depends on, all of which have broken at least once:
-     1. ENTRYPOINT ["provael"] — the words after the image name are provael's own arguments. If it
-        ever becomes a bare CMD they silently become a shell command instead.
-     2. A WRITABLE cwd. WORKDIR was /app (root-owned) under USER provael, so this exact command
-        died on `PermissionError: 'runs'` while `--version` passed happily.
-     3. The package being PUBLIC on GHCR. Private is the default on first publish and makes this
-        fail for everyone who is not logged in.
-     ci.yml builds the image and smokes the entrypoint on every PR, which covers 1 and 2. -->
+     Then uncomment:
+
+     docker run --rm ghcr.io/provael/provael:latest attack --recipe quick
+
+     # keep the report after --rm
+     docker run --rm -v "$PWD/runs:/home/provael/runs" \
+       ghcr.io/provael/provael:latest attack --recipe quick
+
+     Two other things this line depends on, both of which HAVE broken and are now covered by a
+     CI build + entrypoint smoke on every PR:
+       - ENTRYPOINT ["provael"], so trailing words are provael's own arguments, not a shell command
+       - a WRITABLE cwd. WORKDIR was /app (root-owned) under USER provael, so this exact command
+         died on `PermissionError: 'runs'` while `--version` passed happily. -->
 
 With [uv](https://docs.astral.sh/uv/) (recommended):
 
