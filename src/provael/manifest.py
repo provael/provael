@@ -101,8 +101,16 @@ def build_evidence_manifest(
     repository: str,
     commit: str,
     regulatory_clock_version: str,
+    source_reports: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     """Build the deterministic public evidence manifest. ``commit`` must be a pinned ref.
+
+    ``source_reports`` is for a SHARDED run: a ten-task suite executed one task per container has
+    ten independent ``report.json`` files and no single artifact to digest. Pass the per-shard
+    ``{path, sha256}`` list and the manifest records all of them, so a consumer can re-fetch and
+    verify each shard independently. ``source_report_sha256`` then digests the COMBINED view, which
+    is reproducible from those shards but is not itself a committed file — see
+    :mod:`provael.combine` for why no merged ``report.json`` is ever written.
 
     Raises ``ValueError`` if ``commit`` is empty — a manifest must pin its source, never a moving
     branch.
@@ -121,6 +129,11 @@ def build_evidence_manifest(
         "repository": repository,
         "commit": commit,
         "source_report_sha256": _report_digest(report),
+        # Present ONLY for a sharded run, and its presence is the signal that this manifest
+        # describes several artifacts rather than one. A consumer that ignores it still gets a
+        # correct digest of the combined view; a consumer that reads it can verify every shard.
+        **({"source_reports": source_reports} if source_reports else {}),
+        **({"shards": len(source_reports)} if source_reports else {}),
         "policy": report.policy,
         "suite": report.suite,
         "evidence_state": evidence_state_of(report).value,
@@ -162,12 +175,18 @@ def build_evidence_manifest(
 
 
 def to_evidence_manifest_json(
-    report: RunReport, *, repository: str, commit: str, regulatory_clock_version: str
+    report: RunReport,
+    *,
+    repository: str,
+    commit: str,
+    regulatory_clock_version: str,
+    source_reports: list[dict[str, str]] | None = None,
 ) -> str:
     """Serialise the manifest to stable, indented JSON (keys sorted; trailing newline)."""
     manifest = build_evidence_manifest(
         report, repository=repository, commit=commit,
         regulatory_clock_version=regulatory_clock_version,
+        source_reports=source_reports,
     )
     return json.dumps(manifest, indent=2, sort_keys=True) + "\n"
 

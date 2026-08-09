@@ -1433,14 +1433,42 @@ def evidence_manifest(
     evidence-ladder state, the release verdict, and the limitations. It pins its source commit and
     carries no wall-clock, so the same report + commit yields byte-identical output.
     """
-    try:
-        report = load_report(in_dir)
-    except (FileNotFoundError, ValidationError):
-        _fail(f"{in_dir} does not contain a valid report.json")
-        return
+    # A SHARDED run has no report.json of its own — a ten-task suite executed one task per
+    # container writes ten of them, and there is deliberately no merged file (see provael.combine:
+    # a file named report.json is treated as attestable everywhere in this project, and a combined
+    # view has no single execution to attest). So detect the shape and record every shard's digest
+    # rather than one.
+    from provael.combine import (
+        ShardMismatchError,
+        combine_reports,
+        is_sharded,
+        load_shards,
+        shard_digests,
+    )
+
+    source_reports: list[dict[str, str]] | None = None
+    if is_sharded(in_dir):
+        shards = load_shards(in_dir)
+        try:
+            report = combine_reports([r for _, r in shards])
+        except ShardMismatchError as exc:
+            _fail(str(exc))
+            return
+        source_reports = shard_digests(shards, root=in_dir)
+        _out.print(
+            f"[cyan]sharded run[/cyan]: combining {len(shards)} report(s) across "
+            f"{len(report.tasks)} task(s); every shard digest is recorded"
+        )
+    else:
+        try:
+            report = load_report(in_dir)
+        except (FileNotFoundError, ValidationError):
+            _fail(f"{in_dir} contains neither a report.json nor */report.json shards")
+            return
     try:
         text = to_evidence_manifest_json(
-            report, repository=repo, commit=commit, regulatory_clock_version=RULESET_VERSION
+            report, repository=repo, commit=commit, regulatory_clock_version=RULESET_VERSION,
+            source_reports=source_reports,
         )
     except ValueError as exc:
         _fail(str(exc))
