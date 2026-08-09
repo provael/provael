@@ -12,7 +12,8 @@ rented Linux GPU is the cheapest path, not a luxury.
 
 FOUR STAGES, IN COST ORDER, AND THE ORDER IS THE POINT.
 
-    timing   1 task  x 1 arm  x 1 seed  =    1 episode   MEASURED: 174s total
+    timing   1 task  x 1 arm  x 1 seed  =    1 episode   MEASURED twice: 174s/134 steps,
+                                                          206s/159 steps
     pilot    2 tasks x 2 arms x 2 seeds =    8 episodes
     probe   10 tasks x 4 arms x 3 seeds =  120 episodes
     full    10 tasks x 4 arms x 30 ep   = 1200 episodes
@@ -123,8 +124,7 @@ STAGES: dict[str, dict[str, str]] = {
 STAGE = os.environ.get("PROVAEL_STAGE", "timing")
 if STAGE not in STAGES:
     raise SystemExit(f"PROVAEL_STAGE={STAGE!r} is not one of {sorted(STAGES)}")
-CFG = STAGES[STAGE]
-OUT = f"/runs/libero_object_{STAGE}"
+CFG = STAGES[STAGE]  # local only: fixes the decorator's timeout. The CONTAINER gets `stage`.
 
 #: Results live on a Volume, NOT in the container filesystem. A container killed by its timeout
 #: takes its filesystem with it — which is how an hour of work produced no report.json and no log.
@@ -169,21 +169,38 @@ app = modal.App(f"provael-libero-{STAGE}", image=image)
 
 
 @app.function(gpu="L4", timeout=int(CFG["timeout"]), volumes={"/runs": volume})
-def redteam() -> str:
-    """Run the screen and STREAM its output, so a timeout still leaves a diagnosable trail."""
+def redteam(stage: str) -> str:
+    """Run the screen and STREAM its output, so a timeout still leaves a diagnosable trail.
+
+    ``stage`` is a PARAMETER and must stay one. The container re-imports this module with its own
+    environment, where PROVAEL_STAGE is unset — so reading the stage from os.environ inside the
+    function silently fell back to the default. ``PROVAEL_STAGE=pilot`` therefore configured the
+    local process (and correctly picked pilot's timeout at decoration time) while the container ran
+    `timing` and wrote to timing's output directory. The run looked successful and answered the
+    wrong question, which is the worst way for a configuration bug to behave.
+    """
+    cfg = STAGES[stage]
+    out = f"/runs/libero_object_{stage}"
     cmd = [
         "provael", "attack",
         "--policy", "smolvla",
         "--suite", "libero",
         "--model", CKPT,
-        "--tasks", CFG["tasks"],
-        "--attacks", CFG["attacks"],
-        "--seeds", CFG["seeds"],
-        "--episodes-per-seed", CFG["episodes_per_seed"],
+        "--tasks", cfg["tasks"],
+        "--attacks", cfg["attacks"],
+        "--seeds", cfg["seeds"],
+        "--episodes-per-seed", cfg["episodes_per_seed"],
         "--horizon", "280",
         "--seed", "0",
-        "--out", OUT,
+        "--out", out,
     ]
+    # Say which stage the CONTAINER thinks it is running. The bug above was invisible precisely
+    # because nothing in the output named the stage, so a wrong-stage run read as a right one.
+    planned = (
+        len(cfg["tasks"].split(",")) * len(cfg["attacks"].split(","))
+        * int(cfg["seeds"]) * int(cfg["episodes_per_seed"])
+    )
+    print(f"[container] stage={stage} planned_episodes={planned} out={out}", flush=True)
     print(f"$ {' '.join(cmd)}", flush=True)
     started = time.monotonic()
 
@@ -202,9 +219,10 @@ def redteam() -> str:
     # write is not durable.
     volume.commit()
 
-    episodes = int(CFG["seeds"]) * int(CFG["episodes_per_seed"]) * len(CFG["tasks"].split(","))
-    episodes *= len(CFG["attacks"].split(","))
-    lines = [f"exit={done.returncode}", f"elapsed={elapsed:.0f}s over {episodes} planned episodes"]
+    lines = [
+        f"exit={done.returncode}",
+        f"stage={stage}  elapsed={elapsed:.0f}s over {planned} planned episodes",
+    ]
 
     # SECONDS PER STEP is the invariant worth reporting, not seconds per episode. LIBERO ends an
     # episode early when the task succeeds — the timing run's episode ran 134 of 280 steps — so a
@@ -212,7 +230,7 @@ def redteam() -> str:
     # with the success rate we are trying to measure. Per-step does not, so a projection built on
     # it needs only an assumption about episode LENGTH, which the horizon bounds.
     try:
-        with open(f"{OUT}/report.json", encoding="utf-8") as fh:
+        with open(f"{out}/report.json", encoding="utf-8") as fh:
             payload = fh.read()
         report = json.loads(payload)
         results = report.get("results", [])
@@ -231,10 +249,10 @@ def redteam() -> str:
             {k: v for k, v in report.items() if k != "results"}, indent=2, sort_keys=True
         )]
     except (OSError, ValueError) as exc:
-        lines.append(f"(no readable report.json at {OUT}: {exc} — the Volume keeps what exists)")
+        lines.append(f"(no readable report.json at {out}: {exc} — the Volume keeps what exists)")
     return "\n".join(lines)
 
 
 @app.local_entrypoint()
 def main() -> None:
-    print(redteam.remote())
+    print(redteam.remote(STAGE))
