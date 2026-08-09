@@ -250,15 +250,25 @@ next to the academic state of the art.
 
 ## Install (CPU core — no GPU, no network)
 
-Nothing to install — Docker:
+<!-- DELIBERATELY NOT ADVERTISED YET. The docker line below is correct and must stay commented out
+     until `ghcr.io/provael/provael` exists AND has been made public by hand. Publishing it earlier
+     is worse than shipping no image: the README would tell every visitor to run a command that
+     fails with an auth or not-found error, and a broken instruction in the install section is the
+     first thing a new reader hits.
 
-```bash
-docker run --rm ghcr.io/provael/provael:latest attack --recipe quick
-```
+     Uncomment when, and only when, all three are true:
+       1. .github/workflows/docker-publish.yml has run (tag push, or manual dispatch once it is on
+          the default branch)
+       2. the package visibility is Public — GITHUB_TOKEN cannot set this, it is a one-time manual
+          step at github.com/orgs/provael/packages/container/provael/settings
+       3. `docker run --rm ghcr.io/provael/provael:latest attack --recipe quick` returns a real
+          result from a logged-out daemon on a machine that has never seen this repo
 
-<!-- The image sets ENTRYPOINT ["provael"], so the words after the image name are provael's own
-     arguments. If that ENTRYPOINT is ever changed to a bare CMD, this line silently becomes a
-     shell command that replaces it and the flags go nowhere — change this example with it. -->
+     docker run --rm ghcr.io/provael/provael:latest attack --recipe quick
+
+     The image sets ENTRYPOINT ["provael"], so the words after the image name are provael's own
+     arguments. If that ENTRYPOINT ever becomes a bare CMD, the line silently turns into a shell
+     command that replaces it and the flags go nowhere. Change this example with it. -->
 
 With [uv](https://docs.astral.sh/uv/) (recommended):
 
