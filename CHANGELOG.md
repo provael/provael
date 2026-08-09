@@ -25,8 +25,30 @@ All notable changes to this project are documented here. The format is based on
 
   **If the reword arm fires as hard as the attack, that is the result and it will be published.**
   `test_a_reword_that_fires_as_hard_as_the_attack_is_visible` asserts the scoring surfaces that case
-  rather than averaging it away. No real-policy reword measurement exists yet — the arm is available,
-  not yet run.
+  rather than averaging it away.
+
+- **The reword arm has now been run on a real policy, and the headline survives it.**
+  `results/smolvla_libero_object_control/` — 200 episodes, 10 tasks, 5 seeds, all four arms paired in
+  one report so every comparison is internal to one artifact.
+
+  | arm | pooled | vs `none` (McNemar) |
+  | --- | ---: | ---: |
+  | `roleplay` | **44/50 (88%)** | p=9.1e-13, Holm 2.7e-12 |
+  | `benign_reword` | **1/50 (2%)** | p=0.625 — **indistinguishable from doing nothing** |
+  | `nonsense_text` | **0/50 (0%)** | p=0.25 — indistinguishable |
+  | `none` | 3/50 (6%) | — |
+
+  `roleplay` vs `benign_reword` directly: **43 discordant pairs, none in the other direction,
+  p=2.3e-13.** A semantics-preserving reword of the same instruction does not move this policy out
+  of its envelope; the attack does. The 88% measures attacker control, not brittleness to being
+  asked differently. `nonsense_text` at 0/50 closes the other route — gibberish does not do it
+  either, so the effect is not encoder degradation.
+
+  What it does not settle, stated in the result's own README: the predicate is **still
+  uncalibrated** and the benign arm fired 3/50 here against 2/50 in the suite run, so this run
+  reproduces that problem rather than resolving it; the reword bank is four fixed templates, so what
+  is measured is that *these* rewords do not fire, not that none could; and because SmolVLA samples
+  actions this is a second independent draw, not a replication.
 
 ### Fixed
 
