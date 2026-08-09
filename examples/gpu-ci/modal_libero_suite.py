@@ -25,18 +25,32 @@ from POLICY stochasticity, which `--episodes-per-seed` made computable for the f
 cell puts an attack down to ~30% ASR above the detection floor once Holm correction is applied
 across the screen.
 
-    modal run examples/gpu-ci/modal_libero_suite.py                   # stage 1, the probe
+    modal run examples/gpu-ci/modal_libero_suite.py                      # stage 1, the probe
     PROVAEL_STAGE=full modal run examples/gpu-ci/modal_libero_suite.py   # stage 2, the real run
 
-The stage is an environment variable rather than a `--stage` flag because `modal run` resolves the
-app at import time, before any entrypoint argument is parsed — the image, the GPU and the timeout
-all have to be decided before Modal will accept the module.
+EVERYTHING HERE IS AT MODULE SCOPE, and that is a hard Modal requirement rather than a style choice.
+`@app.function` rejects a function defined inside another function unless `serialized=True`. The
+first version of this file wrapped the app in a `build_app()` factory — copying the pattern the
+sibling `modal_provael_gpu.py` uses — and `modal run` refused it outright:
+
+    InvalidError: The `@app.function` decorator must apply to functions in global scope
+
+Do not reintroduce the factory. (The sibling script has the same defect and has therefore almost
+certainly never been executed, which is worth knowing before trusting it.) The cost of module scope
+is that `import modal` runs on import, so this file is only readable where modal is installed. That
+is true of every Modal entrypoint.
+
+The stage is an environment variable rather than a `--stage` flag for a related reason: `modal run`
+resolves the app at import time, before any entrypoint argument is parsed, so the image, the GPU and
+the timeout must all be fixed before Modal will accept the module.
 """
 
 from __future__ import annotations
 
 import os
-from typing import Any
+import subprocess
+
+import modal
 
 #: The LIBERO-finetuned checkpoint. NOT lerobot/smolvla_base: a base checkpoint carries no LIBERO
 #: action statistics and cannot emit correctly-scaled LIBERO actions, so evaluating it here would
@@ -52,8 +66,8 @@ TASKS = ",".join(f"libero_object/{i}" for i in range(10))
 #: McNemar comparison is made against, and without it an ASR has nothing to be read against.
 ATTACKS = "none,instruction,visual,injection"
 
-#: provael is installed from git, not PyPI. `--episodes-per-seed` landed after the 0.32.0 tag, so
-#: the released wheel cannot express stage 2's design at all.
+#: provael installs from git, not PyPI. `--episodes-per-seed` landed after the 0.32.0 tag, so the
+#: released wheel cannot express stage 2's design at all.
 PROVAEL = "git+https://github.com/provael/provael@main"
 
 STAGES: dict[str, dict[str, str]] = {
@@ -64,71 +78,59 @@ STAGES: dict[str, dict[str, str]] = {
     "full": {"seeds": "10", "episodes_per_seed": "3", "timeout": "28800"},
 }
 
-
-#: Chosen at import time. `modal run` resolves the app before parsing entrypoint arguments, so the
-#: stage cannot be a flag: the image, GPU and timeout must all be fixed before Modal accepts the
-#: module. Defaults to the cheap probe so a mistyped variable costs 30 cents, not 4 hours.
+#: Defaults to the cheap probe so a mistyped variable costs 30 cents, not 4 hours.
 STAGE = os.environ.get("PROVAEL_STAGE", "probe")
 if STAGE not in STAGES:
     raise SystemExit(f"PROVAEL_STAGE={STAGE!r} is not one of {sorted(STAGES)}")
+CFG = STAGES[STAGE]
+OUT = f"runs/libero_object_{STAGE}"
+
+image = (
+    modal.Image.debian_slim(python_version="3.12")
+    # MuJoCo needs a GL stack even to render offscreen. egl is the GPU path; osmesa is the software
+    # fallback and is installed too so a failure to find EGL degrades rather than dies.
+    .apt_install("libegl1-mesa-dev", "libgl1-mesa-glx", "libosmesa6-dev", "git")
+    .pip_install(f"provael[lerobot] @ {PROVAEL}", "lerobot[libero]==0.5.1")
+    .env({"MUJOCO_GL": "egl", "PYOPENGL_PLATFORM": "egl", "PROVAEL_INTEGRATION": "1"})
+)
+
+app = modal.App(f"provael-libero-{STAGE}", image=image)
 
 
-def build_app(stage: str = STAGE) -> Any:
-    """Construct the Modal app. Imports modal lazily so the module reads without it installed."""
-    import modal
-
-    cfg = STAGES[stage]
-    image = (
-        modal.Image.debian_slim(python_version="3.12")
-        # MuJoCo needs a GL stack even to render offscreen. egl is the GPU path; osmesa is the
-        # software fallback and is installed too so a failure to find EGL degrades rather than dies.
-        .apt_install("libegl1-mesa-dev", "libgl1-mesa-glx", "libosmesa6-dev", "git")
-        .pip_install(f"provael[lerobot] @ {PROVAEL}", "lerobot[libero]==0.5.1")
-        .env({"MUJOCO_GL": "egl", "PYOPENGL_PLATFORM": "egl", "PROVAEL_INTEGRATION": "1"})
-    )
-    app = modal.App(f"provael-libero-{stage}", image=image)
-
-    @app.function(gpu="L4", timeout=int(cfg["timeout"]))
-    def redteam() -> str:
-        import subprocess
-
-        cmd = [
-            "provael", "attack",
-            "--policy", "smolvla",
-            "--suite", "libero",
-            "--model", CKPT,
-            "--tasks", TASKS,
-            "--attacks", ATTACKS,
-            "--seeds", cfg["seeds"],
-            "--episodes-per-seed", cfg["episodes_per_seed"],
-            "--horizon", "280",
-            "--seed", "0",
-            "--out", f"runs/libero_object_{stage}",
-        ]
-        # check=False: a partial result is worth reading. On a multi-hour run a crash in task 9
-        # should not throw away tasks 0-8, and the stdout carries enough to see how far it got.
-        done = subprocess.run(cmd, check=False, capture_output=True, text=True)
-        report = f"runs/libero_object_{stage}/report.json"
-        try:
-            with open(report, encoding="utf-8") as fh:
-                payload = fh.read()
-        except OSError:
-            payload = ""
-        return "\n".join([
-            f"exit={done.returncode}",
-            done.stdout[-4000:],
-            done.stderr[-4000:] if done.returncode else "",
-            "=== report.json ===",
-            payload,
-        ])
-
-    @app.local_entrypoint()
-    def main() -> None:
-        print(redteam.remote())
-
-    return app
+@app.function(gpu="L4", timeout=int(CFG["timeout"]))
+def redteam() -> str:
+    """Run the screen across all ten tasks and return the report plus enough log to debug it."""
+    cmd = [
+        "provael", "attack",
+        "--policy", "smolvla",
+        "--suite", "libero",
+        "--model", CKPT,
+        "--tasks", TASKS,
+        "--attacks", ATTACKS,
+        "--seeds", CFG["seeds"],
+        "--episodes-per-seed", CFG["episodes_per_seed"],
+        "--horizon", "280",
+        "--seed", "0",
+        "--out", OUT,
+    ]
+    # check=False: a partial result is worth reading. On a multi-hour run a crash in task 9 should
+    # not throw away tasks 0-8, and the captured output carries enough to see how far it got.
+    done = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    try:
+        with open(f"{OUT}/report.json", encoding="utf-8") as fh:
+            payload = fh.read()
+    except OSError:
+        payload = "(no report.json — the run did not finish a single task)"
+    return "\n".join([
+        f"$ {' '.join(cmd)}",
+        f"exit={done.returncode}",
+        done.stdout[-4000:],
+        done.stderr[-6000:] if done.returncode else "",
+        "=== report.json ===",
+        payload,
+    ])
 
 
-#: Module level so `modal run <this file>` finds it. Building the app is cheap — it declares an
-#: image and a function, it does not start a container.
-app = build_app()
+@app.local_entrypoint()
+def main() -> None:
+    print(redteam.remote())
