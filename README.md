@@ -250,6 +250,16 @@ next to the academic state of the art.
 
 ## Install (CPU core — no GPU, no network)
 
+Nothing to install — Docker:
+
+```bash
+docker run --rm ghcr.io/provael/provael:latest attack --recipe quick
+```
+
+<!-- The image sets ENTRYPOINT ["provael"], so the words after the image name are provael's own
+     arguments. If that ENTRYPOINT is ever changed to a bare CMD, this line silently becomes a
+     shell command that replaces it and the flags go nowhere — change this example with it. -->
+
 With [uv](https://docs.astral.sh/uv/) (recommended):
 
 ```bash

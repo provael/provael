@@ -353,6 +353,35 @@ build that side out, it is the row we should map to first.
 lifecycle theory with no denominator. That is a complementarity, not a competition, and it is the
 argument for crossing the two axes once rather than five times.
 
+### Embodied AI Safety Survey — *Safety in Embodied AI: A Survey of Risks, Attacks, and Defenses*
+Li, Zheng, Gao, Xia, Wang, Wang et al. arXiv:[2605.02900](https://arxiv.org/abs/2605.02900) ·
+companion list [x-zheng16/Awesome-Embodied-AI-Safety](https://github.com/x-zheng16/Awesome-Embodied-AI-Safety)
+
+**The most complete map of this field we know of, and it is maintained rather than published-once.**
+The companion list organises the literature into five taxonomy layers with a daily LLM-screened
+arXiv feed behind it, split into an explicitly-marked auto-screened tier and a human-reviewed
+Editor's Audit before anything is promoted into the curated survey. That two-tier design is the
+same distinction this project draws between `stub-validated` and measured, applied to a reading
+list, and it is unusual enough to be worth naming.
+
+**mapping_status: `cited, not crosswalked`.** We have not mapped the Embodied AI Security Top 10
+category-by-category onto this survey's taxonomy, and until that exists we claim no coverage parity
+with it. Saying so is cheaper than a table that implies the mapping was done.
+
+**Their Open Challenges name the gap this tool was built for**, verified in the list README this
+run: "Benchmark Standardization: Lack of unified safety benchmarks across the full embodied AI
+pipeline hinders reproducible evaluation." A catalogue of several hundred papers containing, as far
+as we can tell, no runnable harness is itself evidence for that sentence.
+
+**Verified this run, because two details are easy to get wrong.** The licence on the companion list
+is **CC BY-NC-SA 4.0** — NonCommercial, not the plain CC BY it is sometimes described as, which
+matters to anyone planning to reuse it. And **Xiang Zheng, who maintains the list, is the second
+author of the survey**; the first is Xiao Li. Cite it as Li, Zheng et al., not Zheng et al.
+
+We did not verify a total paper count. Per-layer headings in the list README show Perception at 199
+and Action and Interaction at 112 across five layers; our own crude count of markdown entries is
+~570. Any single headline number for this list should be taken from the list, not from us.
+
 ## What is actually novel here
 
 Not the attacks. **And — since AttackVLA (arXiv:2511.12149) — not simply "a unified harness with a
