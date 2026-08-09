@@ -89,7 +89,20 @@ image = (
     modal.Image.debian_slim(python_version="3.12")
     # MuJoCo needs a GL stack even to render offscreen. egl is the GPU path; osmesa is the software
     # fallback and is installed too so a failure to find EGL degrades rather than dies.
-    .apt_install("libegl1-mesa-dev", "libgl1-mesa-glx", "libosmesa6-dev", "git")
+    #
+    # cmake and build-essential are NOT optional and NOT obvious. Two packages deep in the LIBERO
+    # chain — `egl_probe` (via robomimic) and `hf-egl-probe` (via hf-libero) — compile a small C++
+    # EGL probe in their setup.py and shell out to `cmake`, which debian_slim does not carry:
+    #
+    #     FileNotFoundError: [Errno 2] No such file or directory: 'cmake'
+    #     RuntimeError: CMake must be installed.
+    #
+    # lerobot already declares `cmake>=3.29` as a pip dependency, and that does NOT help: pip
+    # resolves and BUILDS every wheel before installing any of them, so the cmake wheel's binary is
+    # not on PATH while egl_probe is building. It has to come from apt, before pip runs at all.
+    .apt_install(
+        "libegl1-mesa-dev", "libgl1-mesa-glx", "libosmesa6-dev", "git", "cmake", "build-essential"
+    )
     .pip_install(f"provael[lerobot] @ {PROVAEL}", "lerobot[libero]==0.5.1")
     .env({"MUJOCO_GL": "egl", "PYOPENGL_PLATFORM": "egl", "PROVAEL_INTEGRATION": "1"})
 )
