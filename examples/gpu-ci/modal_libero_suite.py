@@ -22,9 +22,9 @@ FIVE STAGES, IN COST ORDER, AND THE ORDER IS THE POINT.
 
 STAGES WITH >1 TASK ARE SHARDED ONE TASK PER CONTAINER, which is why wall clock is a tenth of
 GPU-hours at identical cost. That is a survivability decision, not a speed one.
-:mod:`provael.ledger` is an append-only resumable trial ledger whose docstring says it exists so "a
-budget-capped GPU
-run spread across preemptible spot instances" can resume — but it is NOT wired into the runner, so
+:mod:`provael.ledger` is an append-only resumable trial ledger whose docstring says it exists so a
+"budget-capped GPU run spread across preemptible spot instances" can resume — but it is NOT wired
+into the runner, so
 `provael attack` cannot resume, and a 25-hour single container that dies at hour 19 loses nineteen
 hours. Ten containers lose one task.
 
@@ -89,9 +89,11 @@ the timeout must all be fixed before Modal will accept the module.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import time
 
@@ -203,9 +205,16 @@ CFG = STAGES[STAGE]  # local only: fixes the decorator's timeout. The CONTAINER 
 #: On a Volume, a partial run is still on disk afterwards and `modal volume get` retrieves it.
 volume = modal.Volume.from_name("provael-libero-runs", create_if_missing=True)
 
-#: Mounted at /root/.cache, which is where BOTH heavy downloads land: huggingface_hub's model cache
-#: and LIBERO's 586-file asset bundle. Without it every run re-fetched them — the asset download
-#: alone took 12s, 26s and 48s across three runs, paid at GPU rates for zero information.
+#: Mounted at /cache, NOT at /root/.cache. Modal refuses to mount over a directory that already has
+#: content, and pip's build leaves files there:
+#:
+#:     cannot mount volume on non-empty path: "/root/.cache"
+#:
+#: So the volume gets its own empty path and the two heavy downloads are redirected into it:
+#: huggingface_hub via HF_HOME (which it honours), and LIBERO's 586-file asset bundle via a runtime
+#: symlink, because hf_libero resolves that path itself rather than reading an env var. Without this
+#: every run re-fetched both — the asset download alone took 12s, 26s and 48s across three runs,
+#: paid at GPU rates for zero information.
 cache = modal.Volume.from_name("provael-libero-cache", create_if_missing=True)
 
 image = (
@@ -245,7 +254,13 @@ image = (
     .run_commands(
         "python /usr/local/lib/python3.12/site-packages/robosuite/scripts/setup_macros.py || true"
     )
-    .env({"MUJOCO_GL": "egl", "PYOPENGL_PLATFORM": "egl", "PROVAEL_INTEGRATION": "1"})
+    .env({
+        "MUJOCO_GL": "egl",
+        "PYOPENGL_PLATFORM": "egl",
+        "PROVAEL_INTEGRATION": "1",
+        # Sends the SmolVLA checkpoint to the cache Volume instead of the container's disk.
+        "HF_HOME": "/cache/hf",
+    })
 )
 
 app = modal.App(f"provael-libero-{STAGE}", image=image)
@@ -254,7 +269,7 @@ app = modal.App(f"provael-libero-{STAGE}", image=image)
 @app.function(
     gpu="L4",
     timeout=int(CFG["timeout"]),
-    volumes={"/runs": volume, "/root/.cache": cache},
+    volumes={"/runs": volume, "/cache": cache},
 )
 def redteam(stage: str, task: str | None = None) -> str:
     """Run the screen for ONE task (or all of them) and STREAM output, so a kill leaves a trail.
@@ -273,6 +288,20 @@ def redteam(stage: str, task: str | None = None) -> str:
     owning one task cost the same GPU-seconds, finish in a tenth the wall clock, and lose one
     task's data rather than the run when something goes wrong.
     """
+    # LIBERO writes its 586-file asset bundle to ~/.cache/libero, resolved internally rather than
+    # from an env var, so HF_HOME cannot redirect it. Point that one path at the cache Volume with a
+    # symlink. Idempotent: the second container to start finds the link already there.
+    # FileExistsError is caught rather than avoided: ten containers start at once and each checks
+    # then links, so the check-then-act is a real race. Losing it is harmless — the winner made
+    # exactly the link this one wanted.
+    os.makedirs("/cache/libero", exist_ok=True)
+    link = "/root/.cache/libero"
+    if not os.path.islink(link):
+        shutil.rmtree(link, ignore_errors=True)
+        os.makedirs("/root/.cache", exist_ok=True)
+        with contextlib.suppress(FileExistsError):
+            os.symlink("/cache/libero", link)
+
     cfg = STAGES[stage]
     tasks_arg = task or cfg["tasks"]
     shard = "" if task is None else f"/{task.replace('/', '_')}"
