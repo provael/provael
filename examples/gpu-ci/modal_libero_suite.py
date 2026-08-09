@@ -10,15 +10,21 @@ WHY LIBERO CANNOT RUN ON A MAC, so this is not optional. lerobot declares
 `hf-libero; sys_platform == "linux"`, so the LIBERO extra does not install on darwin at any price. A
 rented Linux GPU is the cheapest path, not a luxury.
 
-FIVE STAGES, IN COST ORDER, AND THE ORDER IS THE POINT.
+SIX STAGES, IN COST ORDER, AND THE ORDER IS THE POINT.
 
     stage    tasks x arms x seeds x reps  episodes  GPU-hours   cost   wall clock
     timing     1  x  1  x  1  x 1   =      1     0.03      ~$0.05   3 min   (RUN)
     pilot      2  x  4  x  2  x 1   =     16     0.5       ~$0.41  31 min   (RUN)
     suite     10  x  2  x  5  x 1   =    100     3.2       ~$2.55  ~20 min sharded
     probe     10  x  8  x  3  x 1   =    240     7.6       ~$6.11  ~45 min sharded
-    full      10  x  8  x  5  x 1   =    400    12.7      ~$10.17   ~1.3 h sharded
+    full      10  x  8  x  5  x 1   =    400    15.4       $12.29   2.04 h sharded (RUN)
                                                     hard ceiling ~$20 (10 x 2.5 h timeout)
+    control   10  x  4  x  5  x 1   =    200     6.3       ~$6.15   ~1.1 h sharded
+                                                    hard ceiling ~$12 (10 x 1.5 h timeout)
+
+`full`'s row is MEASURED, not projected — it ran, and its estimate was $10.17 against an actual
+$12.29, 21% low. `control`'s ~$6.15 is that measured $0.031/episode times 200, so it inherits the
+correction rather than repeating the optimism.
 
 STAGES WITH >1 TASK ARE SHARDED ONE TASK PER CONTAINER, which is why wall clock is a tenth of
 GPU-hours at identical cost. That is a survivability decision, not a speed one.
@@ -115,7 +121,20 @@ ATTACKS = "none,instruction,visual,injection"
 
 #: provael installs from git, not PyPI. `--episodes-per-seed` landed after the 0.32.0 tag, so the
 #: released wheel cannot express stage 2's design at all.
-PROVAEL = "git+https://github.com/provael/provael@main"
+#:
+#: PINNED TO A COMMIT, NOT `@main`, FOR TWO SEPARATE REASONS — and the second one cost a run.
+#:
+#: 1. REPRODUCIBILITY. A report says which provael version produced it, but `@main` means the same
+#:    version string covers every commit since the tag. Pinning makes the run's input exact.
+#: 2. MODAL CACHES THE IMAGE BY THE LAYER DEFINITION, so `@main` is a string that never changes
+#:    while the code behind it does. The `control` stage's first launch failed with
+#:    `unknown attack or family 'control'` against a merged, tested, pushed registry: the image
+#:    was rebuilt from a cached layer that had resolved `@main` weeks earlier. The failure was
+#:    loud, but the same staleness on a code path that still RUNS would be silent, and would have
+#:    produced numbers attributed to the wrong commit.
+#:
+#: Bump this deliberately when a stage needs newer code — the bump is what rebuilds the image.
+PROVAEL = "git+https://github.com/provael/provael@5d34472a484ebdcdd5bbc57fb734dd754d22cf2a"
 
 STAGES: dict[str, dict[str, str]] = {
     # ONE episode. Its only job is to measure seconds-per-episode so the other two stages can be
@@ -198,6 +217,46 @@ STAGES: dict[str, dict[str, str]] = {
     "full": {
         "tasks": ALL_TASKS, "attacks": ATTACKS,
         "seeds": "5", "episodes_per_seed": "1", "timeout": "9000",
+    },
+    # THE ARM THAT CAN FALSIFY THE HEADLINE, which is why it is worth more per dollar than any
+    # further attack would be.
+    #
+    # `full` measured roleplay at 88% (44/50). That number supports "an attacker can redirect this
+    # policy" only if a HARMLESS reword does not do the same thing. If "Please <task>." drives the
+    # policy out of its envelope at a similar rate, the finding is brittleness to any rephrasing —
+    # a QA defect, not attacker control — and the headline has to be restated. LIBERO-PRO
+    # (arXiv:2510.03827) reports exactly that failure mode for LIBERO-trained VLAs, so this is a
+    # live hypothesis and not a formality.
+    #
+    # FOUR ARMS, ALL PAIRED IN ONE REPORT, and one report is the requirement rather than a
+    # convenience. `paired_by_attack` matches on (task, seed), so comparing this run's reword arm
+    # against `full`'s roleplay arm across two artifacts would be pairing across runs — the same
+    # seeds, but no guarantee the cells correspond. Re-running `none` and `roleplay` here costs
+    # ~$3 and makes every comparison this stage needs internal to one artifact:
+    #
+    #   roleplay       vs none            does the attack fire            (replicates `full`)
+    #   benign_reword  vs none            does a harmless reword fire     THE QUESTION
+    #   nonsense_text  vs none            does ANY off-distribution string fire
+    #   roleplay       vs benign_reword   is the attack distinguishable from the reword
+    #
+    # The last one is the claim. `paired_by_attack` takes `baseline_attack`, so it is computed by
+    # the shipped scorer rather than by hand.
+    #
+    # Re-running `none` and `roleplay` also replicates them at identical seeds, so a disagreement
+    # with `full` would expose non-determinism in the real-policy path that no CPU test can see.
+    #
+    # BOTH CONTROLS, not just the reword. They fail differently and the difference localises the
+    # cause: a reword that fires implicates SEMANTICS being ignored; gibberish that fires implicates
+    # the text encoder degrading on anything off-distribution. nonsense_text is 50 episodes (~$1.5)
+    # for a distinct answer, which is the cheapest question on the board.
+    #
+    # 20 episodes per shard: worst case 20 x 280 x 0.694 s = 1.08 h, so the 1.5 h timeout holds a
+    # ceiling of 10 x 1.5 h x ~$0.80 = ~$12 while the expected spend at `full`'s measured
+    # $0.031/episode is ~$6. The ceiling is the number that matters — it is what ten hung containers
+    # bill regardless of what they were asked to do.
+    "control": {
+        "tasks": ALL_TASKS, "attacks": "none,roleplay,control",
+        "seeds": "5", "episodes_per_seed": "1", "timeout": "5400",
     },
 }
 
