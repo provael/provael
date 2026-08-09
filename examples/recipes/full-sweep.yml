@@ -1,9 +1,25 @@
-# Recipe: full-sweep — EVERY adversarial family in the registry, 10 episodes.
+# Recipe: full-sweep — EVERY adversarial family in the registry plus BOTH control
+#   arms (benign-FPR baseline and harmless-variation reword), 10 episodes.
 # Families the chosen suite cannot support are SKIPPED (reported N/A), never scored 0%.
 #   provael attack --recipe full-sweep
 # `none` is the benign control and is REQUIRED: the release gate cannot pass without it,
 # and an ASR with no false-positive baseline is not interpretable.
-attacks: [none, instruction, visual, sensor_spoof, injection, action, action_space,
-  backdoor, authorization, confidentiality, misalignment, humanoid, optimized, optimized_patch,
-  universal_patch, optimized_instruction]
+attacks:
+- none
+- instruction
+- visual
+- sensor_spoof
+- injection
+- action
+- action_space
+- backdoor
+- authorization
+- confidentiality
+- misalignment
+- humanoid
+- optimized
+- optimized_patch
+- universal_patch
+- optimized_instruction
+- control
 episodes: 10

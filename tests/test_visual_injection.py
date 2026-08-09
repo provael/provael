@@ -150,6 +150,10 @@ def test_all_families_combined_preserves_instruction() -> None:
 def test_registry_includes_new_families() -> None:
     assert set(available_attacks()) == {
         "none",
+        # Harmless-variation controls: registered arms that are NOT attacks. They are in this set
+        # because it pins the whole registry, and excluded from every adversarial count by role.
+        "benign_reword",
+        "nonsense_text",
         "roleplay",
         "goal_substitution",
         "paraphrase",
@@ -181,9 +185,14 @@ def test_registry_includes_new_families() -> None:
     }
     assert available_families() == [
         "action", "action_space", "authorization", "backdoor", "baseline", "confidentiality",
+        # "control" is the harmless-variation family (benign_reword, nonsense_text). It is a
+        # registered, runnable family and NOT an adversarial one — every ASR/coverage count
+        # subtracts it alongside "baseline".
+        "control",
         "humanoid", "injection", "instruction", "misalignment", "optimized",
         "optimized_instruction", "optimized_patch", "sensor_spoof", "universal_patch", "visual",
     ]
+    assert [a.name for a in resolve_attacks(["control"])] == ["benign_reword", "nonsense_text"]
     assert [a.name for a in resolve_attacks(["baseline"])] == ["none"]
     assert [a.name for a in resolve_attacks(["visual"])] == ["patch", "decoy_object"]
     assert [a.name for a in resolve_attacks(["injection"])] == ["scene_text", "mcp_tool_desc"]

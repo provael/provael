@@ -9,10 +9,11 @@ import pytest
 import yaml
 from typer.testing import CliRunner
 
-from provael.attacks.baseline import FAMILY as BASELINE_FAMILY
+from provael.attacks.controls import CONTROL_FAMILY
 from provael.attacks.registry import FAMILIES
 from provael.cli import app
 from provael.config import RunConfig
+from provael.coverage import NON_ADVERSARIAL_FAMILIES
 from provael.recipes import (
     ALL_FAMILIES,
     BENIGN_CONTROL,
@@ -39,7 +40,14 @@ def test_builtin_recipes_are_valid_runconfigs() -> None:
 
 def test_known_recipe_shapes() -> None:
     assert load_recipe("quick") == {"attacks": ["none", "instruction"], "episodes": 5}
-    assert load_recipe("full-sweep") == {"attacks": ["none", *ALL_FAMILIES], "episodes": 10}
+    # BOTH controls bracket the attack families: the benign-FPR baseline leads, the
+    # harmless-variation reword trails. full-sweep is the one recipe that carries the reword arm,
+    # because a complete sweep without it cannot separate attacker choice from brittleness to
+    # rephrasing.
+    assert load_recipe("full-sweep") == {
+        "attacks": ["none", *ALL_FAMILIES, CONTROL_FAMILY],
+        "episodes": 10,
+    }
     assert load_recipe("ci-gate")["seed"] == 0
     assert set(available_recipes()) == set(RECIPES)
 
@@ -127,16 +135,26 @@ def test_full_sweep_covers_every_registry_family() -> None:
     Deriving the list from the registry is the fix; this asserts the derivation, so registering a
     new family without it appearing in full-sweep is a test failure rather than a silent gap.
     """
-    registry_adversarial = {f for f in FAMILIES if f != BASELINE_FAMILY}
-    swept = set(load_recipe("full-sweep")["attacks"]) - {BENIGN_CONTROL}
+    registry_adversarial = set(FAMILIES) - NON_ADVERSARIAL_FAMILIES
+    swept_all = set(load_recipe("full-sweep")["attacks"])
+    swept = swept_all - NON_ADVERSARIAL_FAMILIES - {BENIGN_CONTROL}
     assert swept == registry_adversarial
-    assert len(swept) == 15
+
+    # full-sweep must also carry BOTH controls. A sweep of every attack with no reword control
+    # cannot separate attacker choice from brittleness to rephrasing, which is the strongest
+    # objection to this project's own headline result.
+    assert BENIGN_CONTROL in swept_all, "full-sweep lost the benign-FPR control"
+    assert CONTROL_FAMILY in swept_all, "full-sweep lost the harmless-variation control"
+    assert len(swept) == 15  # adversarial families only; the two control families are not attacks
 
 
 def test_every_family_is_swept_or_declared_conditional_with_a_reason() -> None:
     """Every registry family is either in full-sweep or explicitly declared skippable, with why."""
     for family in FAMILIES:
-        if family == BASELINE_FAMILY:
+        # Both control families are exempt: ALL_FAMILIES is "the ATTACK families", and neither the
+        # benign-FPR baseline nor the harmless-variation reword is an attack. full-sweep runs both
+        # of them via _with_both_controls, which test_known_recipe_shapes asserts separately.
+        if family in NON_ADVERSARIAL_FAMILIES:
             continue
         assert family in ALL_FAMILIES, f"{family} is in no sweep and is not declared conditional"
     for family, reason in CONDITIONAL_FAMILIES.items():

@@ -21,8 +21,9 @@ from typing import Any
 
 import yaml
 
-from provael.attacks.baseline import FAMILY as BASELINE_FAMILY
+from provael.attacks.controls import CONTROL_FAMILY
 from provael.attacks.registry import FAMILIES
+from provael.coverage import NON_ADVERSARIAL_FAMILIES
 
 #: **Every** adversarial family in the registry, in registry order — derived at import, never
 #: hand-listed. This was a literal `["instruction", "visual", "injection", "action"]` sitting next
@@ -30,10 +31,16 @@ from provael.attacks.registry import FAMILIES
 #: them and reported it as a full sweep. A hardcoded list beside a growing registry is the bug; a
 #: newly-registered family now joins `full-sweep` automatically.
 #:
-#: Adversarial families only — the benign ``baseline`` is a CONTROL, not an attack family, and must
-#: not be folded in here (``adversarial_asr`` excludes it by role, and callers reading this list as
-#: "the attack families" would then over-count).
-ALL_FAMILIES: list[str] = [f for f in FAMILIES if f != BASELINE_FAMILY]
+#: Adversarial families only. TWO families are controls rather than attacks and must not be folded
+#: in here: the benign ``baseline`` (the false-positive control) and ``control`` (the
+#: harmless-variation arm — a semantics-preserving reword). ``adversarial_asr`` excludes both by
+#: role, and a caller reading this list as "the attack families" would otherwise over-count the
+#: surface the tool claims to cover.
+#:
+#: Subtracting only ``baseline`` was the bug this very comment warns about, one level up: when the
+#: control family was registered, ``full-sweep`` silently grew a sixteenth "attack family" that is
+#: not an attack.
+ALL_FAMILIES: list[str] = [f for f in FAMILIES if f not in NON_ADVERSARIAL_FAMILIES]
 
 #: The original four (EAI01/02/04/05) — every one applicable on the default CPU ``stub`` suite.
 #: Kept as a deliberately smaller recipe, but no longer under the name ``full-sweep``.
@@ -101,6 +108,19 @@ def _with_control(attacks: list[str]) -> list[str]:
     return attacks if BENIGN_CONTROL in attacks else [BENIGN_CONTROL, *attacks]
 
 
+def _with_both_controls(attacks: list[str]) -> list[str]:
+    """``attacks`` with BOTH control arms: the benign-FPR baseline and the harmless variation.
+
+    Only ``full-sweep`` uses this. A sweep that runs every attack and no reword control cannot
+    distinguish "the attacker chose where the policy went" from "the policy is brittle to being
+    asked differently" — which is the strongest objection to this project's own headline, and the
+    reason the reword arm exists. The smaller recipes stay on the benign control alone so a quick
+    scan is still quick.
+    """
+    out = _with_control(attacks)
+    return out if CONTROL_FAMILY in out else [*out, CONTROL_FAMILY]
+
+
 @dataclass(frozen=True)
 class Recipe:
     """A named preset: a human description plus a partial RunConfig override mapping."""
@@ -130,9 +150,10 @@ RECIPES: dict[str, Recipe] = {
     ),
     "full-sweep": Recipe(
         "full-sweep",
-        f"Every one of the {len(ALL_FAMILIES)} adversarial families + benign control, 10 "
+        f"Every one of the {len(ALL_FAMILIES)} adversarial families + BOTH controls (benign "
+        "baseline and harmless-variation reword), 10 "
         "episodes. Families inapplicable to the chosen suite are SKIPPED (N/A), never scored 0.",
-        {"attacks": _with_control(ALL_FAMILIES), "episodes": 10},
+        {"attacks": _with_both_controls(ALL_FAMILIES), "episodes": 10},
     ),
     "eai04-redirect": Recipe(
         "eai04-redirect",

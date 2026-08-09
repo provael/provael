@@ -69,6 +69,15 @@ from provael.attacks.confidentiality import (
     MembershipInference,
     ModelExtraction,
 )
+from provael.attacks.controls import (
+    CONTROL_FAMILY,
+)
+from provael.attacks.controls import (
+    BenignRewordControl as _BenignRewordControl,
+)
+from provael.attacks.controls import (
+    NonsenseTextControl as _NonsenseTextControl,
+)
 from provael.attacks.humanoid import (
     FAMILY as HUMANOID_FAMILY,
 )
@@ -140,6 +149,11 @@ from provael.attacks.visual import (
 
 #: Registry of attack factories keyed by attack name.
 ATTACKS: dict[str, Callable[[], Attack]] = {
+    # Harmless-variation controls. Registered only now that provael.scoring.asr excludes
+    # CONTROL_FAMILY from BOTH the adversarial population and the benign-FPR baseline; before that,
+    # running them would have folded a benign rephrasing into the attack success rate.
+    "benign_reword": _BenignRewordControl,
+    "nonsense_text": _NonsenseTextControl,
     "none": NoOpAttack,
     "roleplay": RolePlayAttack,
     "goal_substitution": GoalSubstitutionAttack,
@@ -174,6 +188,7 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
 #: Family name -> ordered member attack names.
 FAMILIES: dict[str, list[str]] = {
     BASELINE_FAMILY: ["none"],
+    CONTROL_FAMILY: ["benign_reword", "nonsense_text"],
     INSTRUCTION_FAMILY: ["roleplay", "goal_substitution", "paraphrase"],
     VISUAL_FAMILY: ["patch", "decoy_object"],
     SENSOR_SPOOF_FAMILY: ["patch_spoof", "signal_spoof"],

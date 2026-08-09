@@ -20,10 +20,15 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from provael.attacks.baseline import FAMILY as BASELINE_FAMILY
 from provael.attacks.registry import ATTACKS
 from provael.cli import app
-from provael.coverage import Coverage, coverage, coverage_json, coverage_line
+from provael.coverage import (
+    NON_ADVERSARIAL_FAMILIES,
+    Coverage,
+    coverage,
+    coverage_json,
+    coverage_line,
+)
 
 runner = CliRunner()
 
@@ -33,9 +38,9 @@ def test_counts_match_the_registries_exactly() -> None:
     families = {ctor().family for ctor in ATTACKS.values()}
     assert c.attacks_total == len(ATTACKS)
     assert c.families_total == len(families)
-    assert c.adversarial_families == len(families - {BASELINE_FAMILY})
+    assert c.adversarial_families == len(families - NON_ADVERSARIAL_FAMILIES)
     assert c.adversarial_attacks == len(
-        [n for n, ctor in ATTACKS.items() if ctor().family != BASELINE_FAMILY]
+        [n for n, ctor in ATTACKS.items() if ctor().family not in NON_ADVERSARIAL_FAMILIES]
     )
 
 
@@ -47,8 +52,12 @@ def test_attacks_and_families_are_not_the_same_number() -> None:
     """
     c = coverage()
     assert c.adversarial_attacks > c.adversarial_families
-    assert c.attacks_total == c.adversarial_attacks + 1  # exactly one benign control
-    assert c.families_total == c.adversarial_families + 1
+    # THREE non-adversarial attacks now, not one: the benign `none` baseline plus the two
+    # harmless-variation controls (`benign_reword`, `nonsense_text`). Two non-adversarial FAMILIES,
+    # `baseline` and `control`. Hardcoding +1 was correct while `none` was the only control arm and
+    # became wrong the moment a second kind of control existed.
+    assert c.attacks_total == c.adversarial_attacks + 3
+    assert c.families_total == c.adversarial_families + len(NON_ADVERSARIAL_FAMILIES)
 
 
 def test_registered_is_partitioned_into_real_policy_and_stub_only() -> None:
