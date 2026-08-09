@@ -10,23 +10,34 @@ WHY LIBERO CANNOT RUN ON A MAC, so this is not optional. lerobot declares
 `hf-libero; sys_platform == "linux"`, so the LIBERO extra does not install on darwin at any price. A
 rented Linux GPU is the cheapest path, not a luxury.
 
-TWO STAGES, AND THE ORDER IS THE POINT.
+FOUR STAGES, IN COST ORDER, AND THE ORDER IS THE POINT.
 
-    stage 1  probe    10 tasks x 3 seeds x 1 episode   ~210 episodes   ~20 min   ~$0.30
-    stage 2  full     10 tasks x 10 seeds x 3 repeats  ~2100 episodes  ~4 h      ~$3
+    timing   1 task  x 1 arm  x 1 seed  =    1 episode   MEASURED: 174s total
+    pilot    2 tasks x 2 arms x 2 seeds =    8 episodes
+    probe   10 tasks x 4 arms x 3 seeds =  120 episodes
+    full    10 tasks x 4 arms x 30 ep   = 1200 episodes
 
-Stage 1 exists because the answer might change what stage 2 should be. If the attack fires on 2 of
-10 tasks rather than 10 of 10, the headline is a task-specific finding and not a suite rate — and
-that is worth learning in twenty minutes for thirty cents, not in four hours after committing to a
-protocol. Running stage 2 first is the mistake of buying precision before checking direction.
+THE ESTIMATES IN THIS DOCSTRING USED TO BE GUESSES AND THE GUESSES WERE WRONG. It claimed the probe
+was "~210 episodes, ~20 min, ~$0.30". The episode count was wrong (120, not 210) and the duration
+was wrong by enough that the probe hit its own 3600s timeout having produced nothing. Do not restore
+a projected cost here that was not measured by the stage below it.
 
-Stage 2's shape is chosen, not arbitrary. 10 seeds x 3 repeats separates INITIAL-STATE variation
-from POLICY stochasticity, which `--episodes-per-seed` made computable for the first time; n=30 per
-cell puts an attack down to ~30% ASR above the detection floor once Holm correction is applied
-across the screen.
+What IS measured, from the `timing` run: setup plus one benign episode on task 0 = 174s, and that
+episode ran 134 of 280 steps because it SUCCEEDED (LIBERO ends an episode on success). Two
+consequences the later stages depend on: setup is bundled into that 174s and cannot be separated
+from it by a single datum, and a failed episode runs the full horizon so it costs roughly twice a
+successful one. Cost therefore depends on the ASR being measured, which is why `pilot` exists —
+eight episodes give the slope that one episode cannot.
 
-    modal run examples/gpu-ci/modal_libero_suite.py                      # stage 1, the probe
-    PROVAEL_STAGE=full modal run examples/gpu-ci/modal_libero_suite.py   # stage 2, the real run
+`full`'s shape is chosen, not arbitrary. 10 seeds x 3 repeats separates INITIAL-STATE variation from
+POLICY stochasticity, which `--episodes-per-seed` made computable for the first time; n=30 per cell
+puts an attack down to ~30% ASR above the detection floor once Holm correction is applied across the
+screen. Whether it is affordable is a separate question from whether it is well-designed.
+
+    modal run examples/gpu-ci/modal_libero_suite.py                       # timing, the default
+    PROVAEL_STAGE=pilot modal run examples/gpu-ci/modal_libero_suite.py   # the slope
+    PROVAEL_STAGE=probe modal run examples/gpu-ci/modal_libero_suite.py   # direction, 10 tasks
+    PROVAEL_STAGE=full  modal run examples/gpu-ci/modal_libero_suite.py   # the real run
 
 EVERYTHING HERE IS AT MODULE SCOPE, and that is a hard Modal requirement rather than a style choice.
 `@app.function` rejects a function defined inside another function unless `serialized=True`. The
@@ -47,6 +58,7 @@ the timeout must all be fixed before Modal will accept the module.
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import time
@@ -80,6 +92,18 @@ STAGES: dict[str, dict[str, str]] = {
     "timing": {
         "tasks": "libero_object/0", "attacks": "none",
         "seeds": "1", "episodes_per_seed": "1", "timeout": "1800",
+    },
+    # Eight episodes, chosen so one run answers four questions at once:
+    #   1. the SLOPE. `timing` measured setup+1episode=174s and could not separate them, so its
+    #      projections were overestimates of unknown size. Eight episodes against that one datum
+    #      gives marginal seconds-per-episode, which is what the budget actually depends on.
+    #   2. does the instruction attack fire on real LIBERO at all, or only in the committed run.
+    #   3. does a SECOND task's environment build (task 1 exercises the strict `_build_env` path).
+    #   4. clean-task-success on both tasks — the competence control, which the timing run showed
+    #      is already reported and already 100% on task 0.
+    "pilot": {
+        "tasks": "libero_object/0,libero_object/1", "attacks": "none,instruction",
+        "seeds": "2", "episodes_per_seed": "1", "timeout": "5400",
     },
     # Direction check across all ten tasks. 1 episode per seed, so seeds and episodes coincide
     # exactly as in every historical run — deliberately comparable to the existing headline.
@@ -180,19 +204,34 @@ def redteam() -> str:
 
     episodes = int(CFG["seeds"]) * int(CFG["episodes_per_seed"]) * len(CFG["tasks"].split(","))
     episodes *= len(CFG["attacks"].split(","))
-    per_episode = elapsed / episodes if episodes else float("nan")
-    lines = [
-        f"exit={done.returncode}",
-        f"elapsed={elapsed:.0f}s over {episodes} episodes -> {per_episode:.1f}s/episode",
-        # The number the next stage is sized from. 280 horizon steps per episode.
-        f"projected probe (10 tasks x 3 seeds x 4 arms = 120 ep): {120 * per_episode / 60:.0f} min",
-        f"projected full  (10 tasks x 30 ep x 4 arms = 1200 ep): {1200 * per_episode / 3600:.1f} h",
-    ]
+    lines = [f"exit={done.returncode}", f"elapsed={elapsed:.0f}s over {episodes} planned episodes"]
+
+    # SECONDS PER STEP is the invariant worth reporting, not seconds per episode. LIBERO ends an
+    # episode early when the task succeeds — the timing run's episode ran 134 of 280 steps — so a
+    # successful episode costs about half a failed one, and per-episode averages therefore move
+    # with the success rate we are trying to measure. Per-step does not, so a projection built on
+    # it needs only an assumption about episode LENGTH, which the horizon bounds.
     try:
         with open(f"{OUT}/report.json", encoding="utf-8") as fh:
-            lines += ["=== report.json ===", fh.read()]
-    except OSError:
-        lines.append(f"(no report.json at {OUT} — unfinished; the Volume keeps whatever exists)")
+            payload = fh.read()
+        report = json.loads(payload)
+        results = report.get("results", [])
+        steps = sum(int(r.get("steps") or 0) for r in results)
+        wins = sum(1 for r in results if r.get("task_success"))
+        if steps:
+            per_step = elapsed / steps
+            lines += [
+                f"steps={steps} over {len(results)} episodes -> {per_step:.3f}s/step "
+                f"(includes one-off setup, so this OVERSTATES the marginal rate)",
+                f"clean-task-success {wins}/{len(results)} — the competence control",
+                # Worst case: every episode runs the full horizon because the attack made it fail.
+                f"upper bound, 1200 ep x 280 steps: {1200 * 280 * per_step / 3600:.1f} h",
+            ]
+        lines += ["=== report.json (results[] trimmed) ===", json.dumps(
+            {k: v for k, v in report.items() if k != "results"}, indent=2, sort_keys=True
+        )]
+    except (OSError, ValueError) as exc:
+        lines.append(f"(no readable report.json at {OUT}: {exc} — the Volume keeps what exists)")
     return "\n".join(lines)
 
 
