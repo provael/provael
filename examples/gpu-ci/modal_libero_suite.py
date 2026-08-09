@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import time
 
 import modal
 
@@ -60,7 +61,7 @@ CKPT = "HuggingFaceVLA/smolvla_libero"
 #: All ten libero_object tasks. The suite constructor defaults to task_ids=(0,), and `--tasks`
 #: overrides it — `_build_env` builds a config for the REQUESTED id and raises if absent rather than
 #: silently rolling out task 0 under another task's label, which it used to do.
-TASKS = ",".join(f"libero_object/{i}" for i in range(10))
+ALL_TASKS = ",".join(f"libero_object/{i}" for i in range(10))
 
 #: The screen. `none` is the benign control and is not optional: it is the matched twin every
 #: McNemar comparison is made against, and without it an ASR has nothing to be read against.
@@ -71,19 +72,40 @@ ATTACKS = "none,instruction,visual,injection"
 PROVAEL = "git+https://github.com/provael/provael@main"
 
 STAGES: dict[str, dict[str, str]] = {
-    # Cheap direction check. 1 episode per seed, so seeds and episodes coincide exactly as in every
-    # historical run — deliberately comparable to the existing headline.
-    "probe": {"seeds": "3", "episodes_per_seed": "1", "timeout": "3600"},
+    # ONE episode. Its only job is to measure seconds-per-episode so the other two stages can be
+    # sized by arithmetic instead of by guess. This stage exists because the guess was wrong: the
+    # probe below was estimated at "210 episodes, ~20 min" and was killed by its own 3600s timeout
+    # without finishing. 210 x 280 steps is ~59k policy forward passes and ~59k MuJoCo steps, which
+    # was never going to be 20 minutes on an L4. Measure the constant, then multiply.
+    "timing": {
+        "tasks": "libero_object/0", "attacks": "none",
+        "seeds": "1", "episodes_per_seed": "1", "timeout": "1800",
+    },
+    # Direction check across all ten tasks. 1 episode per seed, so seeds and episodes coincide
+    # exactly as in every historical run — deliberately comparable to the existing headline.
+    "probe": {
+        "tasks": ALL_TASKS, "attacks": ATTACKS,
+        "seeds": "3", "episodes_per_seed": "1", "timeout": "10800",
+    },
     # The real thing.
-    "full": {"seeds": "10", "episodes_per_seed": "3", "timeout": "28800"},
+    "full": {
+        "tasks": ALL_TASKS, "attacks": ATTACKS,
+        "seeds": "10", "episodes_per_seed": "3", "timeout": "86400",
+    },
 }
 
-#: Defaults to the cheap probe so a mistyped variable costs 30 cents, not 4 hours.
-STAGE = os.environ.get("PROVAEL_STAGE", "probe")
+#: Defaults to the ONE-episode timing stage. The previous default was the 210-episode probe, and a
+#: default that can burn an hour of GPU before saying anything is the wrong default.
+STAGE = os.environ.get("PROVAEL_STAGE", "timing")
 if STAGE not in STAGES:
     raise SystemExit(f"PROVAEL_STAGE={STAGE!r} is not one of {sorted(STAGES)}")
 CFG = STAGES[STAGE]
-OUT = f"runs/libero_object_{STAGE}"
+OUT = f"/runs/libero_object_{STAGE}"
+
+#: Results live on a Volume, NOT in the container filesystem. A container killed by its timeout
+#: takes its filesystem with it — which is how an hour of work produced no report.json and no log.
+#: On a Volume, a partial run is still on disk afterwards and `modal volume get` retrieves it.
+volume = modal.Volume.from_name("provael-libero-runs", create_if_missing=True)
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -122,38 +144,56 @@ image = (
 app = modal.App(f"provael-libero-{STAGE}", image=image)
 
 
-@app.function(gpu="L4", timeout=int(CFG["timeout"]))
+@app.function(gpu="L4", timeout=int(CFG["timeout"]), volumes={"/runs": volume})
 def redteam() -> str:
-    """Run the screen across all ten tasks and return the report plus enough log to debug it."""
+    """Run the screen and STREAM its output, so a timeout still leaves a diagnosable trail."""
     cmd = [
         "provael", "attack",
         "--policy", "smolvla",
         "--suite", "libero",
         "--model", CKPT,
-        "--tasks", TASKS,
-        "--attacks", ATTACKS,
+        "--tasks", CFG["tasks"],
+        "--attacks", CFG["attacks"],
         "--seeds", CFG["seeds"],
         "--episodes-per-seed", CFG["episodes_per_seed"],
         "--horizon", "280",
         "--seed", "0",
         "--out", OUT,
     ]
-    # check=False: a partial result is worth reading. On a multi-hour run a crash in task 9 should
-    # not throw away tasks 0-8, and the captured output carries enough to see how far it got.
-    done = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    print(f"$ {' '.join(cmd)}", flush=True)
+    started = time.monotonic()
+
+    # NO capture_output, and that is the whole point of this line. Buffering the child's output
+    # means a container killed by its timeout takes the buffer with it: the first attempt at the
+    # probe ran a full hour and returned NOTHING, so "slow but working" and "hung on the first
+    # environment" were indistinguishable. Inheriting stdout lets Modal stream it live instead, so
+    # progress is visible as it happens and a timeout still leaves everything printed up to the
+    # moment of the kill.
+    #
+    # check=False: a partial result is worth reading. A crash in task 9 should not discard 0-8.
+    done = subprocess.run(cmd, check=False)
+    elapsed = time.monotonic() - started
+
+    # Commit before returning: on the `full` stage this is hours of work, and an uncommitted Volume
+    # write is not durable.
+    volume.commit()
+
+    episodes = int(CFG["seeds"]) * int(CFG["episodes_per_seed"]) * len(CFG["tasks"].split(","))
+    episodes *= len(CFG["attacks"].split(","))
+    per_episode = elapsed / episodes if episodes else float("nan")
+    lines = [
+        f"exit={done.returncode}",
+        f"elapsed={elapsed:.0f}s over {episodes} episodes -> {per_episode:.1f}s/episode",
+        # The number the next stage is sized from. 280 horizon steps per episode.
+        f"projected probe (10 tasks x 3 seeds x 4 arms = 120 ep): {120 * per_episode / 60:.0f} min",
+        f"projected full  (10 tasks x 30 ep x 4 arms = 1200 ep): {1200 * per_episode / 3600:.1f} h",
+    ]
     try:
         with open(f"{OUT}/report.json", encoding="utf-8") as fh:
-            payload = fh.read()
+            lines += ["=== report.json ===", fh.read()]
     except OSError:
-        payload = "(no report.json — the run did not finish a single task)"
-    return "\n".join([
-        f"$ {' '.join(cmd)}",
-        f"exit={done.returncode}",
-        done.stdout[-4000:],
-        done.stderr[-6000:] if done.returncode else "",
-        "=== report.json ===",
-        payload,
-    ])
+        lines.append(f"(no report.json at {OUT} — unfinished; the Volume keeps whatever exists)")
+    return "\n".join(lines)
 
 
 @app.local_entrypoint()
