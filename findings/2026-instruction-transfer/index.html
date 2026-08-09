@@ -2286,12 +2286,16 @@ receives inside a simulator. See <a href="https://github.com/provael/provael/blo
 </blockquote>
 <h2 id="the-finding">The finding</h2>
 <p>A single, benign-looking <strong><code>roleplay</code></strong> instruction drove a <strong>real SmolVLA</strong> policy out of its safe
-envelope on <strong>10 of 10 matched pairs</strong>, against <strong>0 of 10</strong> benign twins at the same (task, seed) —
-<strong>McNemar exact p = 0.0020</strong>, Holm-adjusted to <strong>0.012</strong> across the six-attack screen. 95% Wilson CI
-<strong>[72–100%]</strong>; the control's own interval is <strong>[0–28%]</strong>. On SmolVLA × LIBERO <code>libero_object/0</code>.</p>
-<p><strong>The separation is the finding, not the 100%.</strong> A perfect score at n = 10 is compatible with a true
-rate of 90% — the probability of seeing 10/10 from a 90% attack is 0.35, entirely ordinary, and the
-rule of three says n = 10 cannot rule out a 30% failure rate. What the data <em>does</em> establish is that
+envelope on <strong>44 of 50 matched pairs across all ten <code>libero_object</code> tasks</strong>, against <strong>0</strong> benign
+twins at the same (task, seed) — <strong>McNemar exact p = 4.6e-13</strong>, Holm-adjusted to <strong>2.7e-12</strong> across
+the six-arm screen. <strong>Task-clustered 95% CI [72%, 100%]</strong>.</p>
+<p><strong>SUPERSEDED, 2026-08-09.</strong> This page originally reported 10/10 on <code>libero_object/0</code> alone at
+p = 0.0020, and argued at length that the separation rather than the 100% was the finding, because
+n = 10 could not rule out a 30% failure rate. That argument was right and is no longer the binding
+constraint: the suite run puts 50 matched pairs behind the number across ten tasks. The interval
+that matters is now <strong>clustered over tasks</strong>, which the single-task run could not produce at all —
+<code>cluster_bootstrap_ci</code> returns <code>None</code> below two tasks by design.</p>
+<p><strong>The separation is still the finding, not the 88%.</strong> What the data <em>does</em> establish is that
 the attacked and benign arms differ, and that the difference survives correcting for the fact that
 six attacks were screened at once. Leading with "100%" invites a reader to take the point estimate
 as the claim; leading with the paired test states what was actually shown. And the honest other half of the result: of the eight families run, <strong>only the
