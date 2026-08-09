@@ -79,7 +79,11 @@ jobs:
       - name: Lint (ruff)
         run: uv run ruff check .
       - name: Type-check (mypy, strict)
-        run: uv run mypy src
+        # `scripts/action` is included deliberately: those five scripts decide whether a release
+        # passes, and they spent their whole life inside action.yml as shell heredocs where no
+        # linter or type-checker could see them. Extracting them only pays off if the checks
+        # actually run on them.
+        run: uv run mypy src scripts/action
       - name: Test (pytest, CPU only)
         run: uv run pytest -q
       - name: Tag matches the packaged version

@@ -18,20 +18,26 @@ The motivation is empirical: LIBERO-PRO (Zhou et al., 2025, arXiv:2510.03827) sh
 LIBERO-trained VLAs are largely insensitive to instruction semantics and driven by trajectory
 recall, while also brittle to paraphrasing — the exact confound these two controls isolate.
 
-WIRING (deliberately not enabled here — this is a measurement-model decision):
-  These carry ``family = CONTROL_FAMILY`` ("control"), a *third* role distinct from both the
-  adversarial families and the benign false-positive baseline (the ``none`` attack). To enable
-  them so ``--attacks benign_reword,nonsense_text`` runs:
-    1. register both in ``provael.attacks.registry`` (add to ``ATTACKS`` and a
-       ``FAMILIES["control"]`` entry);
-    2. extend ``provael.scoring.asr`` so a control is excluded from BOTH populations — from
-       ``adversarial_results`` (it is not an attack) AND from ``benign_unsafe_rate`` / the
-       benign-FPR baseline (it is not the ``none`` false-positive control). ``is_baseline``
-       today keys on ``family == "baseline"``, and ``benign_unsafe_rate`` feeds the manifest;
-       ``semantic_role`` already anticipates exactly this "harmless-variation" role.
-  Enabling before step 2 would fold these controls into the adversarial ASR (wrong) and, if
-  mis-classed as ``baseline``, would corrupt the reported benign FPR — hence they ship as
-  importable, tested classes, enabled on a deliberate step rather than by default.
+WIRING — both steps are now done, and the ORDER was the point. These carry
+``family = CONTROL_FAMILY`` ("control"), a *third* role distinct from both the adversarial families
+and the benign false-positive baseline (the ``none`` attack). Enabling them required, in order:
+
+  1. :mod:`provael.scoring.asr` growing that third role, so a control is excluded from BOTH
+     populations — from :func:`~provael.scoring.asr.adversarial_results` (it is not an attack) AND
+     from :func:`~provael.scoring.asr.benign_unsafe_rate` (it is not the false-positive control);
+  2. registration in :mod:`provael.attacks.registry` under ``FAMILIES["control"]``.
+
+Registering FIRST would have folded these into the adversarial ASR, and mis-classing them as
+``baseline`` would have corrupted the benign FPR that the ASR is read against. Both failures are
+silent and both change what the headline number means, which is why they shipped as importable,
+tested-but-unregistered classes until the scoring could hold them.
+:mod:`tests.test_harmless_variation_arm` is the standing guard on that separation.
+
+RUNNABLE, AND SEPARATELY, MEASURED. ``--attacks control`` resolves to both arms; the ``control``
+stage of ``examples/gpu-ci/modal_libero_suite.py`` runs them against SmolVLA x LIBERO paired with
+``none`` and ``roleplay`` in one report. Until that has run on a given policy,
+:func:`~provael.scoring.asr.harmless_variation_rate` returns ``None`` rather than ``0.0``: an
+unrun control has not shown the reword is safe.
 """
 
 from __future__ import annotations

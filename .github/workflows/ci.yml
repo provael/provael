@@ -64,7 +64,11 @@ jobs:
         run: uv run ruff check .
 
       - name: Type-check (mypy, strict)
-        run: uv run mypy src
+        # `scripts/action` is included deliberately: those five scripts decide whether a release
+        # passes, and they spent their whole life inside action.yml as shell heredocs where no
+        # linter or type-checker could see them. Extracting them only pays off if the checks
+        # actually run on them.
+        run: uv run mypy src scripts/action
 
       # Case-exact relative-link check. It has to run HERE, on Linux, and not as a local pre-commit:
       # macOS and Windows are case-insensitive, so a link to docs/TOP10.md resolves fine on the
