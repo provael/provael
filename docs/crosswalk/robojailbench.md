@@ -108,7 +108,7 @@ other family is **not demonstrated on a real policy** — stub-validated scaffol
 
 | Provael family | Measured (sim) | n | 95% Wilson CI | benign-FPR | Transfer status |
 | --- | --- | --- | --- | --- | --- |
-| `instruction` (EAI01) | 70.0% | 30 | [52%, 83%] | 0% | **measured on a real policy** — `roleplay` diverted real SmolVLA×LIBERO **100% (10/10), 95% CI [72–100%]**, `goal_substitution` 60% (sim-only, one task, n=10; `results/cross_arch_transfer`) |
+| `instruction` (EAI01) | 70.0% | 30 | [52%, 83%] | 0% | **measured on a real policy** — `roleplay` diverted real SmolVLA×LIBERO **88% (44/50)**, task-clustered 95% CI **[72%, 100%]**, McNemar p=4.6e-13 (Holm 2.7e-12), across all ten `libero_object` tasks, `goal_substitution` 30% (15/50) (sim-only, ten tasks; `results/smolvla_libero_object_suite`) |
 | `action` (EAI04) | 100.0% | 20 | [84%, 100%] | 0% | **not demonstrated on a real policy** (stub-validated only) |
 | `action_space` (EAI04) | 100.0% | 20 | [84%, 100%] | 0% | **not demonstrated on a real policy** (stub-validated only) |
 | `sensor_spoof` (EAI02) | 100.0% | 20 | [84%, 100%] | 0% | **not demonstrated on a real policy** (stub-validated only) |
