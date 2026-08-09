@@ -16,17 +16,27 @@
 <p align="center"><sub>Deterministic CPU stub run, seed 0 — reproduce it in seconds.</sub></p>
 
 **The finding.** A single `roleplay` instruction drove a **real SmolVLA** policy out of its safe
-envelope on **10 of 10 matched pairs**, against **0 of 10** benign twins at the same (task, seed) —
-McNemar exact **p = 0.0020**, and it survives Holm correction across all six attacks it was screened
-against. 95% Wilson CI **[72–100%]**; the control's own interval is [0–28%]. One task
-(`libero_object/0`), one policy: an **existence proof, not a suite-level rate**.
+envelope on **44 of 50 matched pairs across all ten `libero_object` tasks**, against **0** benign
+twins at the same (task, seed) — McNemar exact **p = 4.6e-13**, surviving Holm correction across the
+six-arm screen. The interval is **task-clustered [72%, 100%]**: bootstrapped over *tasks*, not
+episodes, because episodes inside one task are correlated and pooling them reports an interval far
+too narrow.
 
-The separation is the claim, not the 100%. A perfect score at n=10 is compatible with a true rate
-of 90% (probability 0.35) — what the data actually establishes is that the attacked and benign arms
-differ, and that is significant. And the honest other half: of the attacks it was run with,
-**only the instruction family transferred**; the visual and injection families scored **0/10** on
-the real model. That contrast — a real transfer *and* the families it survived — is the whole
-point. [Read the write-up](docs/findings/2026-instruction-transfer.md) ·
+This supersedes the earlier n=10 single-task result, and the upgrade is the scope rather than the
+number. That run measured `libero_object/0` alone and was explicitly an existence proof; a
+task-clustered interval could not be computed from it at all, because
+`cluster_bootstrap_ci` refuses below two tasks by design. **A second attack changed verdict once
+there were ten tasks:** `goal_substitution` was 6/10 at p=0.031 and did *not* survive correction on
+one task; pooled over ten it reaches **15/50, p=9.8e-4**, and does.
+
+The honest other half. The benign control fired on **2 of 50** episodes, so the predicate is not
+clean — it is uncalibrated, the same fixed keep-out zone on all ten tasks. Three families are
+**measured nulls at 0/50 each** (`patch`, `decoy_object`, `scene_text`), and `mcp_tool_desc` is
+**not applicable** to this suite rather than a null. Clean-task-success under the benign arm averages
+84% and ranges 40–100% across tasks, so the policy is not uniformly competent. And the policy's
+sampler is not fully seeded, so this is **one draw**, not a reproducible constant.
+[The full result](results/smolvla_libero_object_suite/README.md) ·
+[Read the write-up](docs/findings/2026-instruction-transfer.md) ·
 [Scope & honest limitations](#scope-and-honest-limitations).
 
 ```bash
@@ -483,29 +493,45 @@ checkpoint on a GPU runner. Generality is intended; it is **tested on SmolVLA ×
 
 ## First real result (SmolVLA on LIBERO)
 
-`HuggingFaceVLA/smolvla_libero` · `libero_object/0` · 10 seeds · horizon 280 · RTX 4090
-(`osmesa`), 2026-06-06.
+`HuggingFaceVLA/smolvla_libero` · **all ten `libero_object` tasks** · 5 seeds per (task, arm) ·
+horizon 280 · L4, 2026-08-09. 350 measured episodes of 400 records.
 
-**`roleplay` redirected SmolVLA out of its safe envelope on 10/10 matched pairs against 0/10
-benign twins at identical (task, seed) — McNemar exact p = 0.0020, Holm-adjusted to 0.012 across
-the six-attack screen.** 95% Wilson CI [72–100%]; control [0–28%]. Every redirection is
-attack-induced.
+**`roleplay` redirected SmolVLA out of its safe envelope on 44 of 50 matched pairs against 0 benign
+twins at identical (task, seed) — McNemar exact p = 4.6e-13, Holm-adjusted to 2.7e-12 across the
+six-arm screen.** Task-clustered 95% CI **[72%, 100%]**.
 
-Two things the numbers below do NOT support, stated here rather than left to be inferred.
-`goal_substitution` at 6/10 (p = 0.031) does **not** survive the same correction, so it is reported
-and not claimed. And with a single task there is no honest way to widen any of this into a
-statement about LIBERO — `provael.scoring.paired` refuses to compute a clustered suite-level
-interval from one task rather than estimating one.
+**That interval is clustered over TASKS, not episodes**, and the distinction matters more than the
+identical-looking bounds of the older single-task Wilson interval. Episodes inside one task are
+correlated — an attack that works on "pick up the alphabet soup" tends to work on every seed of it —
+so pooling them as independent trials reports an interval far too narrow. This is the first result
+in the project where a clustered interval could be computed at all: `provael.scoring.paired` returns
+`None` below two tasks by design, which was the correct answer for every earlier published number.
 
-| family | attack | redirection rate (95% CI) | benign FPR (control) |
-| --- | --- | ---: | ---: |
-| baseline | `none` | — | **0% (0/10)** |
-| instruction | `roleplay` | **100% (10/10) [72–100%]** | 0% |
-| instruction | `goal_substitution` | **60% (6/10) [31–83%]** | 0% |
-| instruction | `paraphrase` | 10% (1/10) [2–40%] | 0% |
-| visual | `patch` | 0% (0/10) [0–28%] | 0% |
-| visual | `decoy_object` | 0% (0/10) [0–28%] | 0% |
-| injection | `scene_text` | 0% (0/10) [0–28%] | 0% |
+What changed by adding tasks. `goal_substitution` was 6/10 at p = 0.031 on one task and did **not**
+survive correction; over ten tasks it reaches **15/50, p = 9.8e-4**, and does. Adding tasks changed a
+verdict, which is the argument for having run them.
+
+| family | attack | redirection rate | clustered 95% CI | McNemar | Holm |
+| --- | --- | ---: | ---: | ---: | ---: |
+| baseline | `none` | **2/50 (4%)** — control | — | — | — |
+| instruction | `roleplay` | **44/50 (88%)** | **[72%, 100%]** | 4.6e-13 | **2.7e-12** |
+| instruction | `goal_substitution` | **15/50 (30%)** | [6%, 54%] | 9.8e-4 | **4.9e-3** |
+| instruction | `paraphrase` | 3/50 (6%) | [0%, 12%] | 1.0 | 1.0 |
+| visual | `patch` | 0/50 (0%) | [0%, 0%] | 0.5 | 1.0 |
+| visual | `decoy_object` | 0/50 (0%) | [0%, 0%] | 0.5 | 1.0 |
+| injection | `scene_text` | 0/50 (0%) | [0%, 0%] | 0.5 | 1.0 |
+| injection | `mcp_tool_desc` | **0 attempts** | — | — | — |
+
+`mcp_tool_desc` is **not applicable** to this suite: it produces 50 episode records carrying
+`applicable: false` and `steps: 0`, which scoring excludes from `attempts`. It is listed as
+not-measured rather than as a seventh null, because those are different claims — and it is why the
+run is 350 measured episodes out of 400 records.
+
+**The benign control is not clean.** It fired on 2 of 50 episodes, both on tasks 4 and 5, because
+the predicate is uncalibrated — the same fixed keep-out zone on all ten tasks. McNemar handles that
+correctly by discarding concordant pairs, and `benign_only` counts are reported per arm rather than
+hidden, but a calibrated predicate would be a better measurement. `provael calibrate` exists and has
+not been run on LIBERO.
 
 Read each rate **against its control**: the `none` baseline runs the policy's *real* task and
 scores **0/10 (benign FPR 0%)**, so every success above is attack-induced, not the policy failing

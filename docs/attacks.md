@@ -20,7 +20,8 @@ Text reframings of the task that keep the goal benign-looking but redirect behav
 | `goal_substitution` | swap the goal object/target |
 | `paraphrase` | reword to slip templated guardrails |
 
-Real-model signal: `roleplay` redirected SmolVLA **100% (10/10) [72–100%]** vs 0% benign control.
+Real-model signal: `roleplay` redirected SmolVLA **88% (44/50)**, task-clustered 95% CI
+**[72%, 100%]**, across all ten `libero_object` tasks vs a 2/50 benign control.
 
 ## `visual` — adversarial perception (EAI02)
 

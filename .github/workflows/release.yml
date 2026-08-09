@@ -32,8 +32,28 @@ jobs:
   # A tag can be pushed at any commit, so passing CI on `main` does not imply this tree is green.
   # Publishing to PyPI is irreversible (a version number can never be reused), so the same gate CI
   # runs must pass here before anything is built or uploaded.
+  changelog-gate:
+    name: CHANGELOG documents this tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      # No uv, no install: a stdlib script, so the cheapest job in the workflow runs first and
+      # a missing changelog section costs seconds rather than a full test matrix.
+      #
+      # This gates the WHOLE workflow rather than warning at release-notes time, because publishing
+      # is irreversible: PyPI will not let a version number be reused, so by the time the old
+      # fallback wrote "Release v0.31.1" as the body the artifact was already out.
+      - name: Refuse to release a version CHANGELOG.md does not document
+        run: python3 scripts/check_changelog.py "${GITHUB_REF_NAME}"
+
   check:
     name: ruff + mypy + pytest (CPU, no lerobot)
+    needs: changelog-gate
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -138,7 +158,16 @@ jobs:
             flag && /^## \[/ {exit}
             flag {print}
           ' CHANGELOG.md > release-notes.md
-          if [ ! -s release-notes.md ]; then echo "Release ${GITHUB_REF_NAME}" > release-notes.md; fi
+          # NO FALLBACK. This used to write "Release ${GITHUB_REF_NAME}" when the extract came back
+          # empty, which is how 0.31.1 shipped with no notes and had to be back-filled afterwards.
+          # changelog-gate has already proven the section exists, so an empty extract here means the
+          # awk range broke, not that the changelog is missing — and silently substituting a
+          # placeholder would hide a real regression in the extractor.
+          if [ ! -s release-notes.md ]; then
+            echo "::error::changelog-gate passed for ${GITHUB_REF_NAME} but the awk extract is empty."
+            echo "::error::The heading exists and the range extraction is broken. Not substituting a placeholder."
+            exit 1
+          fi
       - name: Install uv (Python 3.12)
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:

@@ -12,7 +12,8 @@ trajectory. That layer **becomes** the fielded attack surface as robots gain lan
 autonomy, and a text-only jailbreak tool structurally can't reach it — a prompt that a language
 filter passes as "safe" can still drive the *arm* into an unsafe trajectory (the embodiment gap).
 Our real-model finding is exactly this: a single benign-looking `roleplay` instruction drove a real
-SmolVLA policy out of its safe envelope 100% of the time (10/10, 95% CI [72–100%]) against a 0%
+SmolVLA policy out of its safe envelope 88% of the time (44/50, task-clustered 95% CI [72%, 100%],
+all ten `libero_object` tasks) against a 4% (2/50)
 benign control — a policy-layer failure no firmware patch addresses. Full write-up:
 [The instruction-transfer finding](findings/2026-instruction-transfer.md); the layer split is the
 [Embodied AI Security Top 10](top10.md).
