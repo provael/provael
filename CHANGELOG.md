@@ -6,6 +6,34 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+
+- **The headline result is now a ten-task suite rate, not a single-task existence proof.**
+  `roleplay` on real SmolVLA × LIBERO: **44/50 matched pairs (88%) across all ten `libero_object`
+  tasks**, McNemar exact **p = 4.6e-13**, Holm-adjusted **2.7e-12**, **task-clustered 95% CI
+  [72%, 100%]**. Supersedes 10/10 on `libero_object/0` at p = 0.0020.
+
+  The clustered interval is the upgrade, not the point estimate. It is bootstrapped over TASKS
+  rather than episodes, because episodes inside a task are correlated and pooling them reports an
+  interval far too narrow — and it could not be computed at all before, since
+  `cluster_bootstrap_ci` returns `None` below two tasks by design. Its bounds coincidentally match
+  the old single-task Wilson interval; the construction and the claim are different.
+
+  Adding tasks changed a verdict: `goal_substitution` was 6/10 at p = 0.031 and did NOT survive
+  correction on one task; over ten it reaches 15/50, p = 9.8e-4, and does.
+
+  Disclosed with it: the benign control fires on 2/50 (the predicate is uncalibrated, the same
+  fixed keep-out zone on all ten tasks); `patch`, `decoy_object` and `scene_text` are measured
+  nulls at 0/50 each; `mcp_tool_desc` is NOT APPLICABLE to this suite rather than a null, which is
+  why the run is 350 measured episodes of 400 records; clean-task-success averages 84% and ranges
+  40–100%, so the policy is not uniformly competent; and the sampler is not fully seeded, so this
+  is one draw rather than a reproducible constant.
+
+  Updated: README (headline and result table), `docs/findings/2026-instruction-transfer.md`,
+  `docs/standards/published-asr-baselines.md`, `docs/attacks.md`, `docs/faq.md`, `docs/top10.md`,
+  `docs/crosswalk/robojailbench.md`, `docs/findings/2026-cross-arch-transfer.md`.
+
+
 Nothing pending — everything currently written is released. New entries go here.
 
 ## [0.32.0] — 2026-08-08

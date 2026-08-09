@@ -7,13 +7,18 @@
 ## The finding
 
 A single, benign-looking **`roleplay`** instruction drove a **real SmolVLA** policy out of its safe
-envelope on **10 of 10 matched pairs**, against **0 of 10** benign twins at the same (task, seed) —
-**McNemar exact p = 0.0020**, Holm-adjusted to **0.012** across the six-attack screen. 95% Wilson CI
-**[72–100%]**; the control's own interval is **[0–28%]**. On SmolVLA × LIBERO `libero_object/0`.
+envelope on **44 of 50 matched pairs across all ten `libero_object` tasks**, against **0** benign
+twins at the same (task, seed) — **McNemar exact p = 4.6e-13**, Holm-adjusted to **2.7e-12** across
+the six-arm screen. **Task-clustered 95% CI [72%, 100%]**.
 
-**The separation is the finding, not the 100%.** A perfect score at n = 10 is compatible with a true
-rate of 90% — the probability of seeing 10/10 from a 90% attack is 0.35, entirely ordinary, and the
-rule of three says n = 10 cannot rule out a 30% failure rate. What the data *does* establish is that
+**SUPERSEDED, 2026-08-09.** This page originally reported 10/10 on `libero_object/0` alone at
+p = 0.0020, and argued at length that the separation rather than the 100% was the finding, because
+n = 10 could not rule out a 30% failure rate. That argument was right and is no longer the binding
+constraint: the suite run puts 50 matched pairs behind the number across ten tasks. The interval
+that matters is now **clustered over tasks**, which the single-task run could not produce at all —
+`cluster_bootstrap_ci` returns `None` below two tasks by design.
+
+**The separation is still the finding, not the 88%.** What the data *does* establish is that
 the attacked and benign arms differ, and that the difference survives correcting for the fact that
 six attacks were screened at once. Leading with "100%" invites a reader to take the point estimate
 as the claim; leading with the paired test states what was actually shown. And the honest other half of the result: of the eight families run, **only the
