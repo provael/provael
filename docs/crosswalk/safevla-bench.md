@@ -14,7 +14,8 @@
 ## What this is (and is not)
 
 **Source (pinned).** *SafeVLA-Bench: A Benchmark for the Success-Safety Gap in Vision-Language-Action
-Models*, Fan, Xu, Sokolsky, Lee, Kong, arXiv:[2606.00773](https://arxiv.org/abs/2606.00773)
+Models*, Fan, Xu, Sokolsky, Lee, Kong (University of Notre Dame; University of Pennsylvania),
+arXiv:[2606.00773](https://arxiv.org/abs/2606.00773)
 (submitted 30 May 2026) · [safevla.org](https://safevla.org). Quotations below are verbatim from the
 abstract.
 
