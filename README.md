@@ -310,6 +310,17 @@ uv run provael attack --policy stub --suite stub \
     --attacks instruction,visual,injection --episodes 10 --seed 0 --out runs/stub/
 ```
 
+The same scan with **no local Python at all** — no `uv`, no virtualenv, no `pip`:
+
+```bash
+docker run --rm ghcr.io/provael/provael:latest \
+    attack --policy stub --suite stub \
+    --attacks instruction,visual,injection --episodes 10 --seed 0
+```
+
+Multi-arch (amd64 + arm64) and public, so this works logged out. Add
+`-v "$PWD/runs:/home/provael/runs" ... --out runs/stub/` to keep the report after `--rm`.
+
 ```
                        Provael — ASR by attack
 ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━┓
@@ -406,7 +417,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.32.0
+      - uses: provael/provael@v0.33.0
         with:
           # `none` is the benign control: without it an ASR has no false-positive baseline,
           # and the release gate cannot reach `pass`. It never moves the adversarial ASR.

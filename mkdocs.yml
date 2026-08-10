@@ -52,6 +52,7 @@ nav:
       - OWASP Agentic embodied annex: standards/owasp-asi-embodied.md
       - RoboJailBench crosswalk: crosswalk/robojailbench.md
       - ForesightSafety-VLA crosswalk: crosswalk/foresight-safety-vla.md
+      - SafeVLA-Bench crosswalk (aspirational): crosswalk/safevla-bench.md
       - Published ASR baselines: standards/published-asr-baselines.md
       - Listings & PRs: standards/listings.md
   - Python API: python-api.md

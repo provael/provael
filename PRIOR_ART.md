@@ -353,6 +353,61 @@ build that side out, it is the row we should map to first.
 lifecycle theory with no denominator. That is a complementarity, not a competition, and it is the
 argument for crossing the two axes once rather than five times.
 
+### SafeVLA-Bench — *A Benchmark for the Success-Safety Gap in Vision-Language-Action Models*
+Fan, Xu, Sokolsky, Lee, Kong (2026). arXiv:[2606.00773](https://arxiv.org/abs/2606.00773) · submitted 30 May 2026 · [safevla.org](https://safevla.org)
+
+**Not the SafeVLA entry above.** Two different works, two years apart, with near-identical names:
+[SafeVLA](https://arxiv.org/abs/2503.03480) (2025) is a *defense* that aligns policies via
+constrained learning; SafeVLA-**Bench** (2026) is an *evaluation framework* that scores existing
+rollouts. Cited separately because conflating them would attribute a benchmark's metrics to an
+alignment method.
+
+**We already use their vocabulary, which is the reason this entry is overdue.**
+`provael.scoring.asr.succ_but_unsafe` implements a Succ-But-Unsafe rate and names SafeVLA-Bench in
+its own docstring; `RunReport.succ_but_unsafe` carries it into every report. Borrowing a metric name
+without citing its source in prior art is exactly the omission this file exists to prevent.
+
+**The relationship, precisely: different failures on the same policies.** They formalize "task-aware
+safety requirements as Signal Temporal Logic (STL) specifications and report native success with two
+unsafe-success metrics: Succ-But-Unsafe (SBU) ... and Violation Severity Index (VSI)". Both metrics
+are **post-hoc and non-adversarial** — they score rollouts a policy produced *on its own*, under the
+benchmark's ordinary instructions, and ask whether success concealed a violation. Provael's ASR is
+**pre-hoc and adversarial** — it perturbs the input first and asks whether an attacker can *cause* a
+violation.
+
+So the questions do not overlap even where the machinery looks similar:
+
+| | SafeVLA-Bench | `provael` |
+| --- | --- | --- |
+| When it acts | after the rollout (post-hoc scoring) | before it (input perturbation) |
+| Who causes the failure | nobody — the policy's own behaviour | an adversary, by construction |
+| Safety definition | STL specifications over the trajectory | a keep-out predicate, currently **uncalibrated** |
+| Denominator | rollouts of the native benchmark task | matched (task, seed) pairs against a benign twin |
+
+**Both instantiate on LIBERO**, which is what makes a future crosswalk tractable rather than
+hypothetical: they evaluate nine policy-benchmark entries across LIBERO and RoboCasa-365, and our
+one measured real-policy result is SmolVLA × `libero_object`. That is a shared substrate, not a
+shared metric.
+
+**Their finding is the one that should worry a reader of our numbers most**, and it is independent
+of anything we measured: "high-SR tabletop baselines still leave 13 to 15 percent unsafe-episode
+rates, and 36 to 56 percent of successful RoboCasa-365 rollouts violate at least one active safety
+clause." A policy can be *unattacked* and still unsafe at those rates. Our ASR says nothing about
+that floor — it measures lift over a benign control, so a policy that is already unsafe 15% of the
+time without any adversary is invisible to us by construction.
+
+**mapping_status: `aspirational`.** We have not implemented this crosswalk and are not claiming one.
+Our `succ_but_unsafe` shares their *name* and their per-episode quadrant logic, but not their units:
+theirs is an STL-violation judgement over a trajectory, ours is a boolean from an uncalibrated
+keep-out predicate. Placing the two in one column would repeat the mistake the ForesightSafety-VLA
+crosswalk exists to avoid — borrowing vocabulary is not borrowing units. Calibrating our predicate
+is the prerequisite, and it is not done.
+
+**How we differ (complementary):** they measure whether success hides a violation; we measure
+whether an adversary can induce one. A policy that scores well on SBU can still have a high ASR, and
+a policy with a low ASR can still be routinely unsafe on its own. Neither number substitutes for the
+other, and a safety case that cites only one is answering half the question.
+
 ### Embodied AI Safety Survey — *Safety in Embodied AI: A Survey of Risks, Attacks, and Defenses*
 Li, Zheng, Gao, Xia, Wang, Wang et al. arXiv:[2605.02900](https://arxiv.org/abs/2605.02900) ·
 companion list [x-zheng16/Awesome-Embodied-AI-Safety](https://github.com/x-zheng16/Awesome-Embodied-AI-Safety)

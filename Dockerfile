@@ -2,7 +2,20 @@
 #   docker build -t provael .
 #   docker run --rm provael attack --recipe full-sweep
 #
-# Pin the uv image by digest in your own fork for full reproducibility.
+# BOTH BASES ARE PINNED BY DIGEST, not by tag. A tag is a moving pointer: `python:3.12-slim-bookworm`
+# is rebuilt on every CVE patch, so the same Dockerfile builds a different image next week and the
+# published `provael/provael:0.33.0` stops being reproducible from its own source. For a security
+# tool that ships evidence artifacts, "which base did this run on" has to have one answer.
+#
+# Each digest is the MULTI-ARCH INDEX (application/vnd.oci.image.index.v1+json), never a per-arch
+# manifest. Pinning one architecture's manifest would silently drop arm64 from the published image —
+# which already happened once here, in the other direction, and was invisible to CI because the
+# runner is x86_64. Verify before changing:
+#
+#   docker buildx imagetools inspect python@sha256:4766d8... | head -3   # must say "Index"
+#
+# To refresh, resolve the tag and confirm the media type is an index:
+#   crane digest python:3.12-slim-bookworm
 #
 # THIS PIN MUST TRACK THE LOCKFILE FORMAT, not just "some uv". uv.lock is `revision = 3`, a field
 # uv 0.5.11 predates entirely, so the old pin failed at `uv sync --locked` with:
@@ -12,7 +25,8 @@
 # It had been broken for a while and nobody saw it, because nothing built this image — the
 # Dockerfile shipped in the repo and was never exercised by CI. ci.yml now builds it on every PR
 # (build only, no push) so the next drift fails in review instead of on the first publish attempt.
-FROM ghcr.io/astral-sh/uv:0.9.18-python3.12-bookworm-slim AS build
+# uv 0.9.18 — the pin must track the lockfile format (see above), so bump it deliberately.
+FROM ghcr.io/astral-sh/uv@sha256:0b074d1ae15f5c3f1861354917d356e5afbd5a4c53c1190e81ad2f2add46e45b AS build
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -32,7 +46,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --no-editable
 
 # --- runtime: copy only the venv, no build tooling ---
-FROM python:3.12-slim-bookworm AS runtime
+# python:3.12-slim-bookworm, resolved 2026-08-10.
+FROM python@sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2 AS runtime
 WORKDIR /app
 COPY --from=build /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
