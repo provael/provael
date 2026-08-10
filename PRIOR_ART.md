@@ -354,7 +354,8 @@ lifecycle theory with no denominator. That is a complementarity, not a competiti
 argument for crossing the two axes once rather than five times.
 
 ### SafeVLA-Bench — *A Benchmark for the Success-Safety Gap in Vision-Language-Action Models*
-Fan, Xu, Sokolsky, Lee, Kong (2026). arXiv:[2606.00773](https://arxiv.org/abs/2606.00773) · submitted 30 May 2026 · [safevla.org](https://safevla.org)
+Fan, Xu, Sokolsky, Lee, Kong (2026) — University of Notre Dame and University of Pennsylvania.
+arXiv:[2606.00773](https://arxiv.org/abs/2606.00773) · submitted 30 May 2026 · [safevla.org](https://safevla.org)
 
 **Not the SafeVLA entry above.** Two different works, two years apart, with near-identical names:
 [SafeVLA](https://arxiv.org/abs/2503.03480) (2025) is a *defense* that aligns policies via
