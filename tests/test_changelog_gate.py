@@ -105,3 +105,62 @@ def test_a_version_that_is_a_prefix_of_another_is_not_confused() -> None:
     """`0.3` must not match the `0.32.0` heading — the version is escaped, not treated as a pattern."""
     found, _ = _gate_module().find_entry("0.3", CHANGELOG.read_text(encoding="utf-8"))  # type: ignore[attr-defined]
     assert not found
+
+
+# --------------------------------------------------------------------------------------------
+# [Unreleased] must not contradict itself
+#
+# The gate shipped checking only the RELEASED heading, so it watched [Unreleased] accumulate
+# twelve commits of entries while still ending "Nothing pending — everything currently written is
+# released." Both were in the file at once and the gate passed every time. These pin the three
+# states apart, because two of them are legitimate and only the pair is a defect.
+# --------------------------------------------------------------------------------------------
+
+_RELEASED_TAIL = "## [0.32.0] — 2026-08-08\n\n- something\n"
+
+
+def test_placeholder_with_entries_is_rejected() -> None:
+    """The exact state that shipped: a section claiming nothing is pending, listing pending things."""
+    text = (
+        "## [Unreleased]\n\n### Added\n\n- A real pending entry.\n\n"
+        "Nothing pending — everything currently written is released.\n\n" + _RELEASED_TAIL
+    )
+    problem = _gate_module().unreleased_contradiction(text)  # type: ignore[attr-defined]
+    assert problem is not None
+    assert "Both cannot be true" in problem
+    assert "A real pending entry" in problem, "the message must show WHICH lines contradict it"
+
+
+def test_an_empty_unreleased_with_the_placeholder_is_fine() -> None:
+    """The placeholder is the CORRECT content of an empty section, not a defect in itself.
+
+    Deleting it unconditionally would leave the next contributor a bare heading, wondering whether
+    entries had been lost.
+    """
+    text = "## [Unreleased]\n\nNothing pending — everything currently written is released.\n\n" + _RELEASED_TAIL
+    assert _gate_module().unreleased_contradiction(text) is None  # type: ignore[attr-defined]
+
+
+def test_a_populated_unreleased_without_the_placeholder_is_fine() -> None:
+    """The other legitimate state — this is what [Unreleased] looks like for most of a cycle."""
+    text = "## [Unreleased]\n\n### Added\n\n- Something pending.\n\n" + _RELEASED_TAIL
+    assert _gate_module().unreleased_contradiction(text) is None  # type: ignore[attr-defined]
+
+
+def test_an_empty_subheading_under_the_placeholder_still_counts() -> None:
+    """How the contradiction usually STARTS: someone adds `### Added` before writing under it.
+
+    Catching it at that point is the cheap moment; catching it twelve commits later is not.
+    """
+    text = (
+        "## [Unreleased]\n\n### Added\n\nNothing pending — everything currently written is released.\n\n"
+        + _RELEASED_TAIL
+    )
+    assert _gate_module().unreleased_contradiction(text) is not None  # type: ignore[attr-defined]
+
+
+def test_the_committed_changelog_is_self_consistent() -> None:
+    """The guard on the real file, so the state that shipped cannot come back unnoticed."""
+    assert _gate_module().unreleased_contradiction(  # type: ignore[attr-defined]
+        CHANGELOG.read_text(encoding="utf-8")
+    ) is None

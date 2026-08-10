@@ -24,6 +24,19 @@ but the date must be a real ISO date — "2026-13-45" parses as a string and is 
 
     python scripts/check_changelog.py 0.32.0
     python scripts/check_changelog.py v0.32.0     # a leading v is stripped
+
+IT ALSO CHECKS [Unreleased] IS NOT SELF-CONTRADICTORY, and that is a second gap found the hard way.
+This gate shipped checking only the RELEASED heading, so it watched [Unreleased] accumulate twelve
+commits of entries while still ending with the line "Nothing pending — everything currently written
+is released." Both statements were in the file at once and the gate passed every time.
+
+The placeholder is not itself a defect — it is the correct content of a genuinely empty section, and
+deleting it outright would just mean the next contributor finds a bare heading and wonders whether
+entries were lost. What cannot be true is BOTH at once, so that specific pair is what fails.
+
+A reviewer notices this before they notice the science, which is the real cost: it makes the whole
+document look unmaintained at the exact moment someone is deciding whether to trust the numbers in
+it.
 """
 
 from __future__ import annotations
@@ -44,6 +57,51 @@ def find_entry(version: str, text: str) -> tuple[bool, str | None]:
     """Return (heading found, the date string it carries)."""
     match = re.search(HEADING.format(version=re.escape(version)), text, re.MULTILINE)
     return (match is not None, match.group(1) if match else None)
+
+
+#: The sentence a genuinely empty [Unreleased] carries. Matched on the distinctive opening clause
+#: rather than the whole sentence, so re-wrapping the line does not silently disable the check.
+PLACEHOLDER = "Nothing pending"
+
+#: `## [Unreleased]` up to the next `## [` heading. Non-greedy, so it stops at the first release.
+UNRELEASED = re.compile(
+    r"^##[ \t]+\[Unreleased\][ \t]*$\n(?P<body>.*?)(?=^##[ \t]+\[)", re.MULTILINE | re.DOTALL
+)
+
+
+def unreleased_contradiction(text: str) -> str | None:
+    """Error message when [Unreleased] says nothing is pending *and* lists pending things.
+
+    Returns ``None`` when the section is consistent — which includes both legitimate states: empty
+    with the placeholder, and populated without it.
+    """
+    match = UNRELEASED.search(text)
+    if match is None:
+        return None  # no [Unreleased] section at all is a style choice, not a contradiction
+
+    body = match.group("body")
+    if PLACEHOLDER not in body:
+        return None
+
+    # Everything that is not the placeholder line and not blank. A `###` subheading counts as
+    # content: an empty "### Added" under the placeholder is still a claim that something is
+    # pending, and it is how the contradiction usually starts.
+    other = [
+        line for line in body.splitlines()
+        if line.strip() and PLACEHOLDER not in line
+    ]
+    if not other:
+        return None
+
+    preview = "\n".join(f"    {line}" for line in other[:4])
+    return (
+        f"error: CHANGELOG.md [Unreleased] says {PLACEHOLDER!r} and then lists "
+        f"{len(other)} line(s) of pending entries. Both cannot be true.\n\n"
+        f"{preview}\n"
+        f"{'    ...' if len(other) > 4 else ''}\n\n"
+        f"  Either delete the placeholder (entries are pending) or delete the entries "
+        f"(they were released — promote them into a version heading first)."
+    )
 
 
 def main(argv: list[str]) -> int:
@@ -82,6 +140,10 @@ def main(argv: list[str]) -> int:
             f"  A heading that parses as text but not as a date defeats the point of dating it.",
             file=sys.stderr,
         )
+        return 1
+
+    if (problem := unreleased_contradiction(text)) is not None:
+        print(problem, file=sys.stderr)
         return 1
 
     print(f"changelog gate: CHANGELOG.md documents {version} ({date})")

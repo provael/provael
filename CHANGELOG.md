@@ -6,7 +6,55 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+Nothing pending — everything currently written is released. New entries go here.
+
+## [0.33.0] — 2026-08-10
+
 ### Added
+
+- **Both Docker base images pinned by digest, and the publish wired for Docker Hub.** A tag is a
+  moving pointer — `python:3.12-slim-bookworm` is rebuilt on every CVE patch, so the same Dockerfile
+  built a different image each week and a published `provael/provael:0.33.0` was not reproducible
+  from its own source. Each pin is the **multi-arch index** digest, never a per-arch manifest:
+  pinning one architecture would silently drop arm64, which has already broken here once in the
+  other direction and is invisible to CI because the runner is x86_64.
+
+  `docker-publish.yml` now fans one build across `ghcr.io` and `docker.io` from a single
+  `metadata-action` image list, so the two registries cannot drift to different bits under the same
+  version. Docker Hub **fails soft**: unconfigured, the job still publishes GHCR and emits a warning
+  naming the missing secrets, because one unconfigured registry is not a reason to withhold the
+  other — and a silent skip would leave the README advertising an image that does not exist.
+
+  **Docker Hub is not published yet.** `hub.docker.com/v2/repositories/provael/` returns
+  `{"count":0}` and no org access token has been configured, so `DOCKERHUB_USERNAME` /
+  `DOCKERHUB_TOKEN` are unset and the workflow will skip that half on this tag. The README's docker
+  quickstart therefore points at **`ghcr.io/provael/provael`**, which is public, multi-arch and
+  verified logged-out. It will not name Docker Hub until Docker Hub answers.
+
+- **A docker quickstart in the README**: the stub scan with no local Python, no `uv`, no virtualenv.
+
+- **SafeVLA-Bench (arXiv:2606.00773) added to PRIOR_ART, with an `aspirational` mapping_status.**
+  Overdue rather than new: `scoring/asr.py` has named SafeVLA-Bench in `succ_but_unsafe`'s docstring
+  since that field was added, so the project borrowed their metric's name without ever citing them
+  in prior art.
+
+  The entry is explicit that this is **not** the existing `SafeVLA` entry — two different works two
+  years apart with near-identical names, one a constrained-learning *defense*, one an *evaluation
+  framework*. Conflating them would attribute a benchmark's metrics to an alignment method.
+
+  The relationship is stated as different failures on the same policies: their SBU and VSI are
+  **post-hoc and non-adversarial** (did the policy's own successful rollout conceal a violation),
+  our ASR is **pre-hoc and adversarial** (can an attacker cause one). `docs/crosswalk/safevla-bench.md`
+  carries `mapping_status: aspirational` and says why the honest blocker is ours: our
+  `succ_but_unsafe` shares their name but not their units — theirs is an STL judgement over a
+  trajectory, ours a boolean from an **uncalibrated** predicate whose benign control fired 2/50.
+  Calibrating it is the prerequisite and it is not done, so no crosswalk is claimed and no
+  `--target safevla` exists.
+
+  Their finding that most concerns a reader of our numbers is recorded rather than buried: high-SR
+  baselines still leave 13–15% unsafe-episode rates unattacked. Our ASR measures lift over a benign
+  control, so a policy already unsafe 15% of the time with no adversary present is **invisible to our
+  headline by construction**.
 
 - **The benign-reword arm, which is the strongest objection to our own headline.** `benign_reword`
   and `nonsense_text` were written, tested and deliberately left UNREGISTERED, because
@@ -52,6 +100,22 @@ All notable changes to this project are documented here. The format is based on
 
 ### Fixed
 
+- **[Unreleased] claimed nothing was pending while holding twelve commits of entries.** The section
+  ended "Nothing pending — everything currently written is released" directly beneath a full
+  Added/Fixed/Changed block. Both statements were in the file at once, and the release gate added in
+  #112 passed every time — it only ever checked that the *released* heading existed with a real
+  date, and never looked at `[Unreleased]` at all.
+
+  `scripts/check_changelog.py` now fails when `[Unreleased]` contains the placeholder **and** any
+  other content. Deliberately that pair and not the placeholder alone: the placeholder is the correct
+  content of a genuinely empty section, and deleting it unconditionally would leave the next
+  contributor a bare heading wondering whether entries were lost. An empty `### Added` under the
+  placeholder counts as content, because that is how the contradiction usually starts — catching it
+  at that point is cheap, catching it twelve commits later is not.
+
+  This is the detail a reviewer notices before they notice the science: it makes the document look
+  unmaintained at the exact moment someone is deciding whether to trust the numbers in it.
+
 - **`control` was being counted as an adversarial family.** Subtracting only `BASELINE_FAMILY` was
   the same bug `recipes.ALL_FAMILIES` warns about in its own comment, one level up: registering a
   control silently grew a sixteenth "attack family" that is not an attack. `coverage.py` gains
@@ -85,9 +149,6 @@ All notable changes to this project are documented here. The format is based on
   Updated: README (headline and result table), `docs/findings/2026-instruction-transfer.md`,
   `docs/standards/published-asr-baselines.md`, `docs/attacks.md`, `docs/faq.md`, `docs/top10.md`,
   `docs/crosswalk/robojailbench.md`, `docs/findings/2026-cross-arch-transfer.md`.
-
-
-Nothing pending — everything currently written is released. New entries go here.
 
 ## [0.32.0] — 2026-08-08
 
