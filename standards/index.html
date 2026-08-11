@@ -986,6 +986,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#validated-against-the-v6-object-model-12-august-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validated against the v6 object model, 12 August 2026
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-gap-verified-rather-than-asserted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The gap, verified rather than asserted
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2227,6 +2249,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#validated-against-the-v6-object-model-12-august-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validated against the v6 object model, 12 August 2026
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-gap-verified-rather-than-asserted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The gap, verified rather than asserted
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2328,6 +2372,41 @@ be visibly working from a stale snapshot of the thing you are proposing to exten
 physical modification of an <em>input</em>, not corruption of a policy's <em>action output</em>. Meanwhile the
 corpus already carries AI-agent tool-poisoning material, and a VLA policy is the same tool-call
 boundary with a gripper on the end.</p>
+<h3 id="validated-against-the-v6-object-model-12-august-2026">Validated against the v6 object model, 12 August 2026</h3>
+<p>Four days after sending, with no response yet, the artifact was validated rather than left to sit.
+Fetched <code>dist/v6/ATLAS-2026.07.yaml</code> from <code>mitre-atlas/atlas-data</code>: <strong>178 techniques</strong> (77 carrying the
+<code>AML.T####.###</code> sub-technique form), <strong>68 case studies</strong>, <strong>16 tactics</strong>, 37 mitigations and 284
+relationship records.</p>
+<p><strong>The object model is not the shape of our file, and that is a route decision rather than a defect.</strong>
+In v6, a technique carries only <code>name</code>, <code>description</code>, <code>references</code>, <code>created-date</code>, <code>modified-date</code>,
+<code>platforms</code>, <code>id</code>, <code>maturity</code>, <code>uuid</code> and <code>object-type</code> — tactic membership and sub-technique parentage
+live in the separate <code>relationships</code> table as <code>achieves</code> / <code>specializes</code> / <code>mitigates</code> / <code>employs</code>
+edges, not as fields on the object. Our file carries submission-memo fields instead
+(<code>why_not_covered_by_existing_techniques</code>, <code>honest_scope_limits</code>, <code>detection</code>), which is right for an
+<strong>email</strong> to <code>atlas@mitre.org</code> and wrong for a <strong>pull request</strong> against <code>atlas-data</code>.</p>
+<p>If the route becomes a PR, the conversion is mechanical and known: split the memo into a technique
+object plus an <code>achieves</code> edge to the Impact tactic, move the argument prose into <code>description</code>, drop
+the fields the schema does not carry, and sign off with the DCO (<code>git commit -s</code>, Signed-off-by
+matching the commit author) which that repository requires on every contribution.</p>
+<p><a href="https://github.com/provael/provael/blob/main/tests/test_atlas_submission.py"><code>tests/test_atlas_submission.py</code></a>
+now pins the properties that matter: the collection version is named, no <code>AML.T</code> id is invented, the
+case study stays typed <code>exercise</code> rather than <code>incident</code>, its scope limits stay present, and this page
+keeps recording the disposition. The committed file is what was emailed; the tests exist so a later
+edit cannot quietly make that untrue.</p>
+<h3 id="the-gap-verified-rather-than-asserted">The gap, verified rather than asserted</h3>
+<p>The Impact tactic (<code>AML.TA0011</code>) in collection 2026.07 has <strong>19 techniques and sub-techniques</strong>:
+Evade AI Model, Denial of AI Service, Erode AI Model Integrity, Cost Harvesting (+ Excessive Queries,
+Resource-Intensive Queries, Agentic Resource Consumption), Spamming AI System with Chaff Data,
+External Harms (+ Financial, Reputational, Societal, User Harm, AI Intellectual Property Theft),
+Erode Dataset Integrity, Data Destruction via AI Agent Tool Invocation, and Machine Compromise
+(+ Local AI Agent, AI Artifacts).</p>
+<p><strong>Every one of them lands on an informational or economic surface.</strong> <code>User Harm</code> is defined in their
+own words as harms "including financial and reputational"; <code>Societal Harm</code> as outcomes reaching "the
+general public"; <code>Machine Compromise</code> as code execution, credential theft and exfiltration. <strong>None
+names an actuator, a trajectory, or physical motion as the impact surface.</strong></p>
+<p>That is the argument for the proposed technique, and it is now a checked claim rather than a
+recollection: a policy can pass every text-level evaluation in the corpus and still emit a trajectory
+that leaves its safe envelope, because no Impact technique describes the emitted action itself.</p>
 <p>No proposed <code>AML.T</code> identifier is included. Assigning one is MITRE's to do, and inventing an id in a
 submission undermines the rest of the file.</p>
 <p>Status is <strong>sent, awaiting a response</strong> — a state a reader can check, and distinct from the two

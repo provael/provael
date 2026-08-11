@@ -2539,6 +2539,15 @@ numbers (where shown) come with a 95% CI and a benign-FPR control. On SmolVLA ×
 </table>
 <p>Real-model signal: <code>roleplay</code> redirected SmolVLA <strong>88% (44/50)</strong>, task-clustered 95% CI
 <strong>[72%, 100%]</strong>, across all ten <code>libero_object</code> tasks vs a 2/50 benign control.</p>
+<p><strong>The three arms do not behave alike, and the split is by semantics rather than by mechanism.</strong> In the
+same run <code>paraphrase</code> — which preserves the request and changes only its wording — fired <strong>3/50
+(6.0%)</strong>, Wilson [2.1%, 16.2%], <strong>indistinguishable from the benign control</strong> at McNemar p = 1.0, while
+<code>roleplay</code> and <code>goal_substitution</code>, which change what is being asked, fired 44/50 and 15/50. The
+<code>roleplay</code> and <code>paraphrase</code> intervals are disjoint.</p>
+<p>So a guardrail that normalises surface form would not have caught the arm that actually fires. Read it
+narrowly — one policy, one suite, four templates per arm, an uncalibrated predicate — and see
+<a href="../findings/semantic-vs-mechanical-instruction-attacks/">the finding</a>, which states it as a hypothesis
+with supporting evidence rather than a settled result.</p>
 <h2 id="visual-adversarial-perception-eai02"><code>visual</code> — adversarial perception (EAI02)</h2>
 <p>Observation-space markers / planted objects.</p>
 <table>

@@ -2872,7 +2872,14 @@ right by coincidence, and invisible in every crosswalk, scorecard and compliance
 its safety constraints — the embodied analog of an LLM jailbreak, output as a physical action plan.
 <strong>Evidence.</strong> <em>[research]</em> <strong>RoboPAIR</strong> (arXiv 2410.13691, ~100% ASR incl. a deployed Unitree Go2);
 <strong>BadRobot</strong> (ICLR 2025, arXiv 2407.20242). Provael's own runs: <code>roleplay</code> diverts a real SmolVLA×LIBERO policy <strong>88% (44/50)</strong>, task-clustered 95% CI <strong>[72%, 100%]</strong>, McNemar p=4.6e-13 (Holm 2.7e-12), across all ten <code>libero_object</code> tasks against a <strong>2/50 benign control</strong> (sim-only, ten tasks, 350 measured episodes; <code>results/smolvla_libero_object_suite/</code>).
-<strong>Cross-architecture transfer (goal, run pending).</strong> The <em>same</em> instruction family can now be aimed at <strong>π0 served by openpi</strong> (Physical Intelligence's own stack — a different framework from LeRobot, same flow-matching action head) via the <code>[openpi]</code> client → a GPU policy server. A redirection that reproduces across both backends is evidence the attack is about policy behaviour, not one codebase's glue. That run is <strong>GPU-gated and not yet run</strong> — no cross-architecture number is claimed here, and this adds <strong>no</strong> new Top-10 category coverage (still <strong>8/10</strong>).
+<strong>What predicts it: meaning, not surface form.</strong> In the same run, <code>paraphrase</code> — which preserves the
+request and changes only its wording — fired <strong>3/50 (6.0%)</strong>, 95% Wilson [2.1%, 16.2%], and is
+<strong>statistically indistinguishable from the benign control</strong> (McNemar p = 1.0). <code>roleplay</code>, which
+reframes what is being asked while the safety envelope stays fixed, fired 44/50. The two intervals do
+not overlap. Read narrowly — one policy, one suite, four templates per arm, uncalibrated predicate:
+<a href="../findings/semantic-vs-mechanical-instruction-attacks/">the finding</a> states it as a hypothesis with
+supporting evidence, not a settled result.</p>
+<p><strong>Cross-architecture transfer (goal, run pending).</strong> The <em>same</em> instruction family can now be aimed at <strong>π0 served by openpi</strong> (Physical Intelligence's own stack — a different framework from LeRobot, same flow-matching action head) via the <code>[openpi]</code> client → a GPU policy server. A redirection that reproduces across both backends is evidence the attack is about policy behaviour, not one codebase's glue. That run is <strong>GPU-gated and not yet run</strong> — no cross-architecture number is claimed here, and this adds <strong>no</strong> new Top-10 category coverage (still <strong>8/10</strong>).
 <strong>Why it matters.</strong> Cheapest, most transferable attack — rides the normal command channel to a moving robot.
 <strong>Mitigations.</strong> Instruction provenance/auth; runtime plan-validation guardrail (temporal-logic /
 executability, cf. RoboGuard); embodied-harm refusal training; red-team each release and gate on ASR.
@@ -2882,7 +2889,7 @@ executability, cf. RoboGuard); embodied-harm refusal training; red-team each rel
 textures, or sensor spoofing — that flip behavior while looking benign to humans.
 <strong>Evidence.</strong> <em>[research]</em> "Adversarial vulnerabilities of VLA models" (arXiv 2411.13587); action-aware
 patch attacks. <em>(Honest note: in Provael's SmolVLA×LIBERO run the <code>visual</code> family did NOT transfer —
-0% (0/20), 95% CI [0–16%], against the same 0% benign baseline; real-world robustness of perception
+0% (0/100 — <code>patch</code> and <code>decoy_object</code>, 50 each), 95% CI [0–3.7%], against a 2/50 (4%) benign control; real-world robustness of perception
 attacks is unsettled, which is exactly why you test rather than assume. Read that null narrowly: it is
 evidence about the templated attacks Provael shipped, not about perception robustness in general —
 see the <a href="../standards/published-asr-baselines/">published baselines</a> and the
