@@ -6,7 +6,59 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-Nothing pending — everything currently written is released. New entries go here.
+### Added
+
+- **Six prior-art entries, five new and one enriched from a stub.** Trajectory-Level Redirection
+  (arXiv:2606.12978), RoboJailBench (2605.19328), CoT vulnerabilities (2603.12717), Q-DIG
+  (2603.12510), the NUS VLA safety survey (2604.23775) and !Imperio/smolVLA data poisoning
+  (2607.04146). Every figure was verified against the paper before printing — the 7-of-9 >90% ASR
+  count and the 3.4-character edit average were read out of the source table, not the abstract.
+
+  Each entry states where **provael is weaker**, because that is the part a reader cannot get
+  elsewhere: nine architectures against our one measured policy; SO-100 and SO-101 hardware against
+  our zero; on-policy prompt search and quality-diversity generation against our fixed four-template
+  banks; a public benchmark with external submissions against our zero third-party rows; and a living
+  field index that does not list us.
+
+- **The semantic-versus-mechanical instruction finding**
+  (`docs/findings/semantic-vs-mechanical-instruction-attacks.md`), stated as a hypothesis with
+  supporting evidence and labelled as such in its first paragraph.
+
+  In one run at matched (task, seed) cells: `roleplay` 44/50 (88.0%) [76.2%, 94.4%] against
+  `paraphrase` 3/50 (6.0%) [2.1%, 16.2%], intervals disjoint, with `paraphrase` **indistinguishable
+  from the benign control** at McNemar p = 1.0 while `roleplay` separates at p = 4.6e-13.
+
+  One policy, one suite, simulation only, maintainer-run, uncalibrated predicate, four templates per
+  arm. The page states what would falsify it and computes what settling the open half would cost:
+  ~197 discordant pairs, ~1,960 episodes per arm, to test whether `paraphrase` differs from doing
+  nothing at all. Mirrored into EAI01 and the instruction-family docs.
+
+- **`tests/test_atlas_submission.py`** — the ATLAS submission artifact is now validated rather than
+  merely committed: collection version named, no `AML.T` id invented, case study typed `exercise`
+  rather than `incident`, scope limits present, disposition recorded.
+
+- **A `provenance` column on the leaderboard**, per row. The field was always recorded and never
+  displayed, so a reader could not tell a self-reported row from an external one.
+
+### Fixed
+
+- **The EAI02 visual null was stale in `docs/top10.md`**: it read 0/20 against a 0% benign baseline.
+  The ten-task suite measured the visual family at 0/100 with a 2/50 (4%) benign control.
+
+### Changed
+
+- **The leaderboard says out loud that third-party submissions are 0**, in the same spirit as
+  `results/hardware/README.md` reading 0. The documented submission path was then run end to end
+  against a dummy and the dummy deleted — including confirming that promoting a stub run to the real
+  board is **refused**, which is the guard working.
+
+- **`docs/standards/index.md` records the ATLAS validation.** The submission was sent 8 August and is
+  still awaiting a response; it was validated against the v6 object model on 12 August. Our file is a
+  submission memo, not an atlas-data object — right for an email, wrong for a pull request, and the
+  conversion is written down. The gap argument is now verified rather than asserted: the Impact tactic
+  AML.TA0011 has 19 techniques and every one lands on an informational or economic surface; none names
+  an actuator, a trajectory, or physical motion.
+
 
 ## [0.33.0] — 2026-08-10
 

@@ -15,6 +15,7 @@ back, including when nothing did.
 | --- | --- |
 | [A benign instruction transfers to a real VLA policy — SmolVLA×LIBERO](2026-instruction-transfer.md) | The flagship instruction-family transfer result |
 | [Cross-architecture transfer of templated attacks](2026-cross-arch-transfer.md) | Whether an attack templated against one architecture carries to another |
+| [Semantic reframing, not mechanical rewording](semantic-vs-mechanical-instruction-attacks.md) | Whether an instruction attack fires because the *meaning* changed or the *surface form* did — `roleplay` 44/50 against `paraphrase` 3/50, disjoint intervals. **Hypothesis, not settled.** |
 
 ## Measured defenses
 

@@ -47,6 +47,34 @@ The board is one run, and it is old. Stated plainly, because the rendered page n
 
 Closing these needs GPU time, not a rebuild: a re-stamp cannot add a family it never ran.
 
+## Third-party submissions: 0
+
+**Every row on this board was produced by the maintainer.** All four carry
+`provenance: maintainer-run` and `submitted_by: provael`. Nobody outside the project has reproduced
+or submitted a result.
+
+This is stated the same way [`results/hardware/README.md`](https://github.com/provael/provael/tree/main/results/hardware)
+states **0** hardware runs, and for the same reason: a board that does not distinguish self-reported
+rows from external ones is a changelog of our own runs wearing the word "leaderboard". Four rows from
+one maintainer and four rows from four independent labs are identical in every other column.
+
+The count renders on the board itself — an `Independence` line above the table, and a **`provenance`
+column per row** so a single external entry is visible in place rather than only in an aggregate. The
+day a third-party row lands, both change without anyone editing this page.
+
+**The submission path is exercised, not just documented.** Verified end to end on 12 August 2026
+against a dummy submission, which was then deleted:
+
+| step | command | result |
+| --- | --- | --- |
+| 1. run | `provael attack --policy stub --suite stub …` | `report.json` written |
+| 2. validate | `python scripts/validate_submission.py <dir>` | `all submissions valid (1 report(s) checked)` |
+| 3. build | `provael leaderboard build --runs … --submitted-by dummy-tester --provenance third-party-submission` | rows carry both fields |
+| 4. promote | `provael leaderboard build --real <stub dir>` | **correctly refused** — "no real (non-stub) runs found" |
+
+Step 4 failing is the guard working: a stub run cannot reach the public real board. A submission
+process nobody has executed is a process that does not work, so this was run rather than assumed.
+
 ## Provenance and reproducibility
 
 A real board is stamped with a **UTC build date**, the **source commit**, and a **SHA-256 digest of

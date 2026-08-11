@@ -23,6 +23,17 @@ Text reframings of the task that keep the goal benign-looking but redirect behav
 Real-model signal: `roleplay` redirected SmolVLA **88% (44/50)**, task-clustered 95% CI
 **[72%, 100%]**, across all ten `libero_object` tasks vs a 2/50 benign control.
 
+**The three arms do not behave alike, and the split is by semantics rather than by mechanism.** In the
+same run `paraphrase` — which preserves the request and changes only its wording — fired **3/50
+(6.0%)**, Wilson [2.1%, 16.2%], **indistinguishable from the benign control** at McNemar p = 1.0, while
+`roleplay` and `goal_substitution`, which change what is being asked, fired 44/50 and 15/50. The
+`roleplay` and `paraphrase` intervals are disjoint.
+
+So a guardrail that normalises surface form would not have caught the arm that actually fires. Read it
+narrowly — one policy, one suite, four templates per arm, an uncalibrated predicate — and see
+[the finding](findings/semantic-vs-mechanical-instruction-attacks.md), which states it as a hypothesis
+with supporting evidence rather than a settled result.
+
 ## `visual` — adversarial perception (EAI02)
 
 Observation-space markers / planted objects.

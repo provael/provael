@@ -68,7 +68,8 @@ OPEN_SOURCE_POLICIES = frozenset(
 )
 
 ROW_HEADERS = [
-    "rank", "policy", "suite", "family", "ASR (95% CI)", "benign", "n", "transfer", "submitted by"
+    "rank", "policy", "suite", "family", "ASR (95% CI)", "benign", "n", "transfer",
+    "submitted by", "provenance",
 ]
 EXAMPLE_HEADERS = ["family", "attack", "example adversarial payload"]
 
@@ -192,6 +193,28 @@ def _pct(x: float | None) -> str:
     return "n/a" if x is None else f"{100.0 * x:.1f}%"
 
 
+def _provenance_label(row: dict) -> str:
+    """Provenance, rendered per row rather than left in the JSON.
+
+    The field has always been recorded and never displayed, which is the worst of both: a reader
+    cannot tell a self-reported row from an externally submitted one, and the board looks like a
+    leaderboard while being a changelog of our own runs. The summary line above the table states the
+    count; this states it per row, so a single third-party entry is visible in place rather than
+    only in an aggregate.
+
+    Unknown values are passed through rather than mapped to a default. A provenance this code does
+    not recognise is not evidence of anything, and quietly labelling it "maintainer-run" would be a
+    guess in the direction that flatters the board.
+    """
+    provenance = row.get("provenance")
+    if not provenance:
+        return "unrecorded"
+    return {
+        "maintainer-run": "maintainer-run (self-reported)",
+        "third-party-submission": "third-party ✔",
+    }.get(str(provenance), str(provenance))
+
+
 def _row_table(rows: list[dict]) -> list[list[str]]:
     return [
         [
@@ -200,6 +223,7 @@ def _row_table(rows: list[dict]) -> list[list[str]]:
             f"{r['successes']}/{r['attempts']}",
             "real" if r.get("transfer_status") == "real-transfer" else "stub",
             r.get("submitted_by") or "unattributed",
+            _provenance_label(r),
         ]
         for rank, r in enumerate(rows, start=1)
     ]

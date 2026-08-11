@@ -95,7 +95,8 @@ are noted as GPU/P1 follow-ups (see ROADMAP P0.3b). Like our other families, the
 GPU-gated and unclaimed until the `PROVAEL_INTEGRATION=1` path is run.
 
 ### Trajectory-Level Redirection — *Trajectory-Level Redirection Attacks on Vision-Language-Action Models*
-(2026). arXiv:[2606.12978](https://arxiv.org/abs/2606.12978) · [project page](https://vla-redirection-attack.github.io/)
+Puthumanaillam, Dongre, Thangeda, Nayyeri, Hakkani-Tür et al. (2026) — UIUC.
+arXiv:[2606.12978](https://arxiv.org/abs/2606.12978)v2 · [project page](https://vla-redirection-attack.github.io/)
 
 Formalizes **command-preserving trajectory redirection**: a prompt-only threat model in which the
 attacker picks one prompt before the episode (all policy/environment components fixed), and the prompt
@@ -103,6 +104,31 @@ must stay close to the benign instruction *while omitting target words and corre
 introduces an **on-policy prompt search** that uses rollouts to discover perturbations whose
 closed-loop behaviour tracks an attacker target under those command-preserving constraints, shown in
 simulation and on hardware.
+
+**This is the closest work to ours in this file, and it beats us on nearly every axis.** Same threat
+class, overlapping models (SmolVLA, π₀.₅), same suite (LIBERO). Verified from their Table 1:
+**7 of 9 architectures exceed 90% ASR** — OpenVLA 91.8%, SmolVLA 94.7%, π₀.₅ 97.5%, GR00T-N1 96.8%;
+the two below are Octo (88.6%) and VLA-0 (82.8%) — and averaging the edit column gives **≈3.4 character
+edits per successful attack**.
+
+The constraint is the contribution. An unconstrained prompt reading "go to the other bin" is not an
+attack, it is an instruction. Theirs has to still look like the original task.
+
+**Where provael is weaker, which is most of the comparison:**
+
+- **Breadth** — nine architectures against our one measured policy; our other seven backends are
+  stub-validated with no real-model transfer claimed.
+- **Hardware** — they run SO-100 hardware. `results/hardware/` reads **0**.
+- **Threat-model rigour** — our `roleplay` carries no near-benign constraint and no edit budget. Their
+  3.4-character figure bounds how far the attacker had to move; we do not measure distance from the
+  benign instruction at all, so we cannot make a claim of that shape.
+- **Search** — they search on-policy with rollouts; our instruction family is a fixed hand-written bank.
+
+What we carry that they do not is a matched benign control at the same `(task, seed)` with a reported
+false-positive rate, so our number is a lift over a baseline rather than a bare success count. That is
+an engineering property, not a scientific one, and it does not offset the above.
+
+**mapping_status: `cited, not crosswalked`.**
 
 ### SABER — *A Stealthy Agentic Black-Box Attack Framework for Vision-Language-Action Models*
 Wu, Shi, Wang, Li, Bedi, Manocha (2026). arXiv:[2603.24935](https://arxiv.org/abs/2603.24935) · [code](https://github.com/wuxiyang1996/SABER)
@@ -437,6 +463,142 @@ author of the survey**; the first is Xiao Li. Cite it as Li, Zheng et al., not Z
 We did not verify a total paper count. Per-layer headings in the list README show Perception at 199
 and Action and Interaction at 112 across five layers; our own crude count of markdown entries is
 ~570. Any single headline number for this list should be taken from the list, not from us.
+
+### RoboJailBench — *Benchmarking Adversarial Attacks and Defenses in Embodied Robotic Agents*
+Yeke, Zhou, Lin, Cai, Bianchi, Celik (2026) — Purdue PurSec.
+arXiv:[2605.19328](https://arxiv.org/abs/2605.19328)v1 · [leaderboard](https://purseclab.github.io/benchmark-for-robotics-security/)
+
+**Already crosswalked in depth — see [`docs/crosswalk/robojailbench.md`](https://github.com/provael/provael/blob/main/docs/crosswalk/robojailbench.md)**,
+which quotes all 18 security-violation consequence categories verbatim from their Table 2 and maps them
+against the Embodied AI Security Top 10. This entry does not repeat that. It records the one thing the
+crosswalk does not say.
+
+**Their motivating gap is the problem our benign control solves, and they reached it independently.**
+They fault prior work for relying on "ad-hoc datasets, limited metrics" and for emphasising "attack
+success while neglecting the trade-off between security and the ability to follow benign commands",
+answering it with an intent-contrast dataset pipeline that pairs adversarial and benign goals. That is
+**convergent, not derivative** — their pairing and our benign-FPR arm were designed separately and land
+on the same conclusion: an attack-success rate without a benign twin is uninterpretable.
+
+Verified: conceptual deception reaches **94–100% ASR** across RoboVQA, RH20T, NVIDIA PhysicalAI-AV and
+RJB-Instructions in the no-defense setting.
+
+**The honest difference in what is under test.** They evaluate **VLM planners** — models that read a
+scene and emit a plan. Provael evaluates **closed-loop low-level policies** emitting motor commands
+every step. A jailbroken planner has produced a bad sentence; a redirected policy has already moved.
+Neither number transfers to the other, and a reader comparing the two ASRs is comparing different
+quantities.
+
+**Where provael is weaker:** they ship an evolving public repository with standardised metrics, four
+integrated attacks, two defenses and an external leaderboard. Ours has **zero third-party
+submissions**.
+
+**mapping_status: `crosswalked`** — [robojailbench.md](https://github.com/provael/provael/blob/main/docs/crosswalk/robojailbench.md).
+
+### Altered Thoughts, Altered Actions — *Probing Chain-of-Thought Vulnerabilities in VLA Manipulation*
+Trinh, Akhtar, Azam (2026) — University of Melbourne.
+arXiv:[2603.12717](https://arxiv.org/abs/2603.12717)v1
+
+**They attack a channel provael cannot reach.** A reasoning VLA emits a natural-language plan before
+decoding motor commands; they corrupt that intermediate trace with all inputs left intact. Provael
+perturbs the instruction and never touches the reasoning trace, so our harness has no attack for this
+vector at all.
+
+Verified from the abstract: substituting **object names** in the reasoning trace costs **8.3 pp**
+overall, reaching **−19.3 pp** on goal-conditioned tasks and **−45 pp** on individual tasks — while
+sentence reordering, spatial-direction reversal, token noise, and a 70B-parameter LLM crafting
+plausible-but-wrong plans all land **within ±4 pp**.
+
+Their conclusion: "the action decoder depends on entity-reference integrity rather than reasoning
+quality or sequential structure", and "a sophisticated LLM-based attacker underperforms simple
+mechanical object-name substitution, because preserving plausibility inadvertently retains the
+entity-grounding structure the decoder needs."
+
+**Where provael is weaker:** 40 LIBERO tasks against our 10, a cross-architecture control against a
+non-reasoning VLA, and seven corruptions across three attacker tiers. We have one instruction family
+and no reasoning-trace attack. Their result also implies an entire attack surface — the internal text
+channel — that our threat model does not enumerate.
+
+Their result has the same shape as
+[our semantic-versus-mechanical finding](https://github.com/provael/provael/blob/main/docs/findings/semantic-vs-mechanical-instruction-attacks.md)
+seen from the other side: what matters is *which entity is referred to*, not how the sentence is built.
+Ours is the adversarial framing of the same contrast — a fixed safety envelope with a benign control,
+so the quantity is an envelope-exit rate rather than a task-success delta.
+
+**mapping_status: `cited, not crosswalked`.**
+
+### Q-DIG — *Red-Teaming Vision-Language-Action Models via Quality Diversity Prompt Generation*
+Srikanth, Liang, Hsu, Bhatt, Zhao … Nikolaidis (2026) — USC ICAROS.
+arXiv:[2603.12510](https://arxiv.org/abs/2603.12510)v3 · [qdigvla.github.io](https://qdigvla.github.io)
+
+**They generate the adversarial instructions; we hand-write ours.** Q-DIG applies quality-diversity
+optimisation with a VLM in the loop to find diverse, natural, task-relevant instructions that induce
+failures. Verified from their tables: the base VLA succeeds on **37.0%** of unseen adversarial
+instructions against **97.4%** on the original phrasing (OpenVLA-OFT in SimplerEnv); fine-tuning on
+generated instructions lifts that to 52.2–60.5%.
+
+**This is the sharpest methodological criticism of provael in this file.** Our instruction attacks are
+a fixed bank — `benign_reword` holds **four** templates, chosen by a maintainer. A fixed bank measures
+the templates it contains and generalises no further. Q-DIG searches the space and reports coverage of
+it, and a user study judged its prompts more natural than baselines. When our reword arm returns
+near-zero, Q-DIG is the reason that must be read as *"these four rewrites do not fire"* rather than
+*"rewording is safe"*.
+
+**Where provael is weaker:** search versus enumeration; a prompt-naturalness user study we have not
+run; multiple simulation benchmarks against our one; and real-world evaluation consistent with sim.
+They also close the loop — fine-tuning on found prompts improves robustness — where provael measures
+and never mitigates.
+
+**mapping_status: `cited, not crosswalked`.**
+
+### VLA Safety Survey — *Vision-Language-Action Safety: Threats, Challenges, Evaluations, and Mechanisms*
+Li, Yin, Huang, Liu, Zou, Yu, Ye et al. (2026) — NUS.
+arXiv:[2604.23775](https://arxiv.org/abs/2604.23775)v1 · living index:
+[github.com/LiQiiiii/Awesome-VLA-Safety](https://github.com/LiQiiiii/Awesome-VLA-Safety)
+
+Organised along two timing axes — attack timing and defense timing, training-time versus inference-time
+— which is a cleaner cut than our channel-based Top 10 for one specific purpose: it encodes *at which
+stage a threat can be mitigated*, which our taxonomy does not record at all.
+
+**Their fifth open problem is standardised evaluation**, listed with certified robustness for embodied
+trajectories, physically realizable defenses, safety-aware training, and unified runtime safety
+architectures. That is the problem provael exists to address, which makes this the clearest external
+statement of why the tool should exist — and equally the clearest measure of how far one maintainer-run
+result falls short of it.
+
+**Where provael is weaker:** it is a survey, so comparing measurement counts is meaningless. The real
+gap is elsewhere — they maintain a **living index of the field and provael is not in it**. A tool
+arguing for standardised evaluation that is absent from the field's own index has an adoption problem,
+not a taxonomy problem.
+
+**mapping_status: `cited, not crosswalked`.**
+
+### !Imperio, smolVLA — *The Implications of Data Poisoning on Open Source Robotics*
+Bühler, Schutera (2026) — DHBW.
+arXiv:[2607.04146](https://arxiv.org/abs/2607.04146)v1
+
+**Orthogonal rather than competing, and on our exact stack.** A training-time attack: poison a handful
+of demonstration episodes with a trigger word and the model carries a backdoor. Provael is an
+inference-time harness with no training-time attack, so nothing here overlaps our measurements.
+
+Verified from the abstract: **three poisoned episodes in 320 clean episodes** suffice for complete
+denial of service — success drops to **0.0 ± 0.0%** across all trigger-word conditions while the robot
+locks into a fixed joint configuration — and **clean-prompt behaviour holds at ≈50%**, so the attack is
+stealthy under normal operation. A **single** poisoned episode already drops success to 6.7 ± 6.7%.
+
+Same policy as our one measured result (SmolVLA) and the same ecosystem (LeRobot), which makes it
+directly relevant rather than adjacent. **An integrator running provael against a poisoned checkpoint
+would see a clean benign control and an unremarkable ASR**, because the backdoor only fires on the
+trigger. Our harness cannot detect this class: `provael verify-checkpoint` addresses supply-chain
+integrity of the *artifact*, not semantic integrity of its *training data*.
+
+**Where provael is weaker:** they run real hardware — an SO-101 arm from the
+[SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) project — and we run none. That is the same
+platform our own SO-101 sim-to-real study is **pre-registered against and has not executed**, so they
+hold working hardware evidence on the platform we have only planned for.
+
+**mapping_status: `cited, not crosswalked`.** No crosswalk is possible: a training-time backdoor rate
+and an inference-time ASR share no denominator.
 
 ## What is actually novel here
 
