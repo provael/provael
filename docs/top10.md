@@ -103,6 +103,14 @@ is called out honestly in each entry.
 its safety constraints — the embodied analog of an LLM jailbreak, output as a physical action plan.
 **Evidence.** *[research]* **RoboPAIR** (arXiv 2410.13691, ~100% ASR incl. a deployed Unitree Go2);
 **BadRobot** (ICLR 2025, arXiv 2407.20242). Provael's own runs: `roleplay` diverts a real SmolVLA×LIBERO policy **88% (44/50)**, task-clustered 95% CI **[72%, 100%]**, McNemar p=4.6e-13 (Holm 2.7e-12), across all ten `libero_object` tasks against a **2/50 benign control** (sim-only, ten tasks, 350 measured episodes; `results/smolvla_libero_object_suite/`).
+**What predicts it: meaning, not surface form.** In the same run, `paraphrase` — which preserves the
+request and changes only its wording — fired **3/50 (6.0%)**, 95% Wilson [2.1%, 16.2%], and is
+**statistically indistinguishable from the benign control** (McNemar p = 1.0). `roleplay`, which
+reframes what is being asked while the safety envelope stays fixed, fired 44/50. The two intervals do
+not overlap. Read narrowly — one policy, one suite, four templates per arm, uncalibrated predicate:
+[the finding](findings/semantic-vs-mechanical-instruction-attacks.md) states it as a hypothesis with
+supporting evidence, not a settled result.
+
 **Cross-architecture transfer (goal, run pending).** The *same* instruction family can now be aimed at **π0 served by openpi** (Physical Intelligence's own stack — a different framework from LeRobot, same flow-matching action head) via the `[openpi]` client → a GPU policy server. A redirection that reproduces across both backends is evidence the attack is about policy behaviour, not one codebase's glue. That run is **GPU-gated and not yet run** — no cross-architecture number is claimed here, and this adds **no** new Top-10 category coverage (still **8/10**).
 **Why it matters.** Cheapest, most transferable attack — rides the normal command channel to a moving robot.
 **Mitigations.** Instruction provenance/auth; runtime plan-validation guardrail (temporal-logic /
@@ -114,7 +122,7 @@ executability, cf. RoboGuard); embodied-harm refusal training; red-team each rel
 textures, or sensor spoofing — that flip behavior while looking benign to humans.
 **Evidence.** *[research]* "Adversarial vulnerabilities of VLA models" (arXiv 2411.13587); action-aware
 patch attacks. *(Honest note: in Provael's SmolVLA×LIBERO run the `visual` family did NOT transfer —
-0% (0/20), 95% CI [0–16%], against the same 0% benign baseline; real-world robustness of perception
+0% (0/100 — `patch` and `decoy_object`, 50 each), 95% CI [0–3.7%], against a 2/50 (4%) benign control; real-world robustness of perception
 attacks is unsettled, which is exactly why you test rather than assume. Read that null narrowly: it is
 evidence about the templated attacks Provael shipped, not about perception robustness in general —
 see the [published baselines](standards/published-asr-baselines.md) and the
