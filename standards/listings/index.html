@@ -1192,6 +1192,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#joss-submission-assessment-2026-08-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JOSS submission assessment — 2026-08-13
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2220,6 +2231,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#joss-submission-assessment-2026-08-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JOSS submission assessment — 2026-08-13
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2350,6 +2372,76 @@ control, CI-native SARIF, and a public leaderboard. Apache-2.0.</p>
 </ol>
 <p><strong>All four require explicit approval before sending.</strong> This file is the ready-to-paste source; it is
 not a trigger to submit.</p>
+<h2 id="joss-submission-assessment-2026-08-13">JOSS submission assessment — 2026-08-13</h2>
+<p>The Journal of Open Source Software is the only route found that converts this artifact directly
+into a <strong>DOI and a citable, indexed paper</strong>, which is the metric that currently reads zero. So the
+question is not whether to submit but when, and this records the answer with a named trigger rather
+than leaving it as an intention.</p>
+<p><strong>Mechanical bars — all met</strong>, verified this run:</p>
+<table>
+<thead>
+<tr>
+<th>requirement</th>
+<th>status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Public package</td>
+<td>PyPI <code>provael</code> <strong>0.33.0</strong></td>
+</tr>
+<tr>
+<td>OSI licence</td>
+<td>Apache-2.0</td>
+</tr>
+<tr>
+<td>Test suite</td>
+<td>85 test modules, 986 passing</td>
+</tr>
+<tr>
+<td>CI</td>
+<td>ruff · mypy strict · pytest, on every PR</td>
+</tr>
+<tr>
+<td><code>CITATION.cff</code></td>
+<td>present, version-guarded by a test</td>
+</tr>
+<tr>
+<td><code>CONTRIBUTING.md</code></td>
+<td>present</td>
+</tr>
+<tr>
+<td>Development history</td>
+<td>public since <strong>2026-06-02</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>The bar genuinely at risk: "substantial scholarly effort", and not a "minor utility".</strong></p>
+<p>JOSS rejects packages that are thin wrappers or short scripts. Provael is neither, but the case is
+weaker than the registry counts suggest, and the honest reading is what matters here:</p>
+<ul>
+<li><strong>8 policy backends and 5 suites are registered, but only one backend has a real-model
+  measurement.</strong> <code>provael coverage</code> reports <code>real_policy=3 stub_only=12</code> across attack families —
+  the rest is stub-validated scaffolding, and the project says so everywhere. A reviewer counting
+  registered backends sees breadth; a reviewer reading the evidence ladder sees one measured
+  policy on one suite.</li>
+<li><strong><code>hardware=0</code>.</strong> No physical result of any kind.</li>
+<li><strong>5 stars, 0 forks.</strong> Four contributors on paper — two of them are the maintainer's own accounts
+  and two are bots (<code>dependabot</code>, <code>github-actions</code>), so <strong>zero external contributors</strong> is the true
+  figure.</li>
+</ul>
+<p>None of that is disqualifying on its own. Together they make a "minor utility" desk rejection a real
+risk, and a desk rejection <strong>spends the option</strong> — JOSS resubmission after rejection is materially
+harder than a first submission.</p>
+<p><strong>Decision: hold.</strong> Submit when either of these lands, whichever is first:</p>
+<ol>
+<li><strong>A second policy backend with a real-model measurement</strong> — turning "one measured policy" into a
+   cross-architecture claim, which is the substance the paper would actually argue.</li>
+<li><strong>The SO-101 hardware result</strong> — turning <code>hardware=0</code> into a sim-to-real correlation, which is
+   the single most-asked question about this work.</li>
+</ol>
+<p>Re-check this assessment when either ships. Waiting costs a few weeks; submitting early and being
+desk-rejected costs the route.</p>
 
 
 
