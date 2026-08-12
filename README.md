@@ -321,6 +321,24 @@ docker run --rm ghcr.io/provael/provael:latest \
 Multi-arch (amd64 + arm64) and public, so this works logged out. Add
 `-v "$PWD/runs:/home/provael/runs" ... --out runs/stub/` to keep the report after `--rm`.
 
+Or in CI, gating the build on the measured rate — SARIF goes to code scanning, and the job fails when
+the adversarial ASR exceeds your threshold or regresses past tolerance against a baseline:
+
+```yaml
+- uses: provael/provael@v0.33.0
+  with: { policy: stub, suite: stub, asr-threshold: "0.5" }
+```
+
+<!-- NO MARKETPLACE BADGE HERE YET, DELIBERATELY. github.com/marketplace/actions/provael returns 404:
+the Action has never been published, and publishing requires accepting the Marketplace Developer
+Agreement and drafting a release through the GitHub web UI — there is no API for it, so it cannot be
+done from here. A badge linking to a 404 is the same error as advertising a Docker Hub image that does
+not exist, and this README already declines to do that.
+
+The snippet above works TODAY without the Marketplace, because `uses:` resolves from the repository
+and tag directly; the Marketplace is discovery, not a dependency. Add the badge in the same commit
+that publishes the listing. -->
+
 ```
                        Provael — ASR by attack
 ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━┓
@@ -813,7 +831,39 @@ uv run pytest -q         # tests (CPU only; LeRobot tests skip unless gated)
   **[docs/compliance/index.md](https://github.com/provael/provael/blob/main/docs/compliance/index.md)**.
   Machinery-Reg readiness: [www.provael.com/machinery-regulation](https://www.provael.com/machinery-regulation).
 - **Cite** — see
-  **[CITATION.cff](https://github.com/provael/provael/blob/main/CITATION.cff)**.
+  **[CITATION.cff](https://github.com/provael/provael/blob/main/CITATION.cff)**, or the
+  ready-to-paste BibTeX below.
+
+## How to cite
+
+GitHub renders [`CITATION.cff`](https://github.com/provael/provael/blob/main/CITATION.cff) into a
+"Cite this repository" button, which is the path most people will use. The BibTeX below is the
+same metadata, for pasting straight into a `.bib` file:
+
+```bibtex
+@software{jain_provael_2026,
+  author  = {Jain, Sattyam},
+  title   = {Provael: red-teaming Vision-Language-Action robot policies in simulation},
+  version = {0.33.0},
+  year    = {2026},
+  url     = {https://github.com/provael/provael},
+  license = {Apache-2.0}
+}
+```
+
+<!-- NO DOI FIELD, DELIBERATELY. Zenodo currently returns zero records for provael, so there is no
+archived version to point at and no concept DOI to mint one from. A `doi = {...}` line here would be
+the single most damaging thing this README could carry: a citation is copied once and lives in
+someone else's bibliography forever, and a DOI that does not resolve fails in a reviewer's reference
+check rather than in ours.
+
+When the Zenodo GitHub integration is enabled and a release archives, add the CONCEPT doi (the one
+that always resolves to the latest version, not the version-specific one) in three places, together:
+this block, `CITATION.cff` as an `identifiers:` entry, and `docs/index.md`. -->
+
+If you cite the **Embodied AI Security Top 10** specifically, cite it as its own artifact — it is
+CC BY-SA 4.0 and versioned separately from the tool; see
+[`docs/top10.md`](https://github.com/provael/provael/blob/main/docs/top10.md).
 
 ## License
 

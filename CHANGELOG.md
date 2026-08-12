@@ -40,6 +40,35 @@ All notable changes to this project are documented here. The format is based on
 - **A `provenance` column on the leaderboard**, per row. The field was always recorded and never
   displayed, so a reader could not tell a self-reported row from an external one.
 
+- **DURA (arXiv:2608.10393) added to PRIOR_ART, and it makes our own visual null look worse.**
+  Every figure read from their Table 1 rather than the abstract, and from DURA's own `Ours` rows: 100%
+  ASR white-box target-only on all four LIBERO suites in BOTH simulated and physical patch settings,
+  86.0% / 79.3% black-box, 77% ASR from a patch covering 2% of the image and 99% at 5%, against benign
+  and clean-patch baselines of 23.5% and 39.5%. A label-supervised baseline in the same table (UADA)
+  also reads 100.0; attributing that row to DURA is the obvious misreading and the entry names it.
+
+  **The useful part is the contrast.** Provael's `visual` family is two attacks and neither is an
+  image: `patch` appends the string `adv_patch::{object}::now` to a simulated `visual_tokens` list,
+  `decoy_object` appends `salient-decoy-first`. Symbolic stand-ins, in a simulator that renders no
+  adversarial pixel. DURA optimises real pixels along a diffusion latent trajectory, prints them, and
+  holds them in a Franka arm's camera view.
+
+  So our 0/100 visual null does **not** mean perception attacks failed to transfer — it means our
+  markers did not fire. `docs/top10.md` EAI02 now says so where the null sits, and calls it a coverage
+  gap in this harness rather than a robustness finding about the policy.
+
+- **A "How to cite" section with BibTeX** in the README, which is what a PI copies.
+
+- **`leaderboard` tags on the Space README** (`leaderboard`, `submission:manual`, `test:public`,
+  `modality:text`, `eval:safety`, `language:English`), following DontPlanToEnd/UGI-Leaderboard's
+  vocabulary. The Space ran with no `tags:` at all, so Hugging Face derived only
+  `["gradio", "region:us"]` and it never appeared under the `leaderboard` filter — the one place
+  someone browsing for a leaderboard would look. `modality:image` is deliberately absent: the visual
+  family is symbolic and measured 0/100, so claiming it would advertise coverage the board lacks.
+
+- **A CI usage snippet beside the docker quickstart**, showing the Action gating a build on the
+  measured rate. It works today without the Marketplace — `uses:` resolves from the repo and tag.
+
 ### Fixed
 
 - **The EAI02 visual null was stale in `docs/top10.md`**: it read 0/20 against a 0% benign baseline.
@@ -59,6 +88,29 @@ All notable changes to this project are documented here. The format is based on
   AML.TA0011 has 19 techniques and every one lands on an informational or economic surface; none names
   an actuator, a trajectory, or physical motion.
 
+
+### Not done, and why
+
+- **No DOI.** Zenodo returns zero records for provael, and minting one requires enabling the Zenodo
+  GitHub integration through their web UI — an OAuth action that cannot be performed from here. The
+  README carries BibTeX **without** a `doi` field, plus a comment naming the three places the concept
+  DOI goes when it exists. A non-resolving DOI in a citation block is the worst error available here:
+  a citation is copied once and lives in someone else's bibliography, failing in a reviewer's
+  reference check rather than in ours.
+
+- **No Marketplace listing.** `github.com/marketplace/actions/provael` still 404s. Publishing needs
+  the Marketplace Developer Agreement accepted and a release drafted through the GitHub web UI; there
+  is no API for it. Prepared instead: the second category is evidenced rather than guessed —
+  comparable SARIF-uploading Actions pair **Security** with a domain category (anchore
+  `Container CI`, gitleaks `Code search`, checkov `Code quality`), and none uses
+  `code-scanning-ready`, which appears to be a browse facet rather than an author-selectable
+  category. **Security + Testing** matches what this Action does: run an adversarial suite and gate
+  the build. No badge was added — a badge pointing at a 404 is the same error as advertising an image
+  that does not exist.
+
+- **No hardware order date.** `results/hardware/` still reads 0 with no clock, because ordering an
+  SO-ARM101 is a purchase decision and any date written before the order exists would be fabricated.
+  The two dated lines land the day it is placed.
 
 ## [0.33.0] — 2026-08-10
 

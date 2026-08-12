@@ -142,6 +142,19 @@ end-effector into a keep-out zone) is GPU-gated and **not yet run** — no cross
 perception-embedding anomaly detection; physical red-team with printed artifacts.
 **Maps to.** NIST AI 100-2 **Evasion (integrity)** · MITRE ATLAS **Defense Evasion / craft adversarial data**.
 
+**Read our null narrowly for a second reason: our visual attacks are not images.** `patch` appends the
+string `adv_patch::{object}::now` to a simulated `visual_tokens` list and `decoy_object` appends
+`salient-decoy-first` — symbolic stand-ins for a perception attack, in a simulator that renders no
+adversarial pixel. **DURA** (arXiv:[2608.10393](https://arxiv.org/abs/2608.10393), 11 Aug 2026)
+optimises real pixels along a diffusion latent trajectory and reports **100% ASR white-box on all four
+LIBERO suites in both simulated and physical patch settings**, 86.0%/79.3% black-box, and 77% ASR from
+a patch covering just 2% of the image — demonstrated with a **printed patch held in a real Franka
+arm's camera view**, against benign and clean-patch baselines of 23.5% and 39.5%.
+
+So the 0/100 here is evidence that *our markers* did not fire, **not** that this policy resists
+perception attacks. Treat it as a coverage gap in this harness. Closing it needs a real optimised-patch
+attack and, for the physical half, hardware we do not have — `results/hardware/` reads 0.
+
 ## EAI03 — Model & pipeline poisoning, backdoors & supply chain
 **What.** Hidden triggers planted at training/fine-tuning time, or via a poisoned open-weights checkpoint,
 dataset, teleop data, or RAG corpus — normal behavior until the trigger fires attacker-chosen actions.
