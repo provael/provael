@@ -15,8 +15,8 @@ authors:
 # 0.25.0 named a date three days before the artifact existed. `version` is guarded by
 # tests/test_version_consistency.py; the date is not machine-checkable against a tag, so it is on
 # the release author.
-version: "0.33.0"
-date-released: "2026-08-10"
+version: "0.33.1"
+date-released: "2026-08-13"
 license: Apache-2.0
 repository-code: "https://github.com/provael/provael"
 url: "https://github.com/provael/provael"

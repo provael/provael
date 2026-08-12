@@ -6,6 +6,45 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+Nothing pending — everything currently written is released. New entries go here.
+
+## [0.33.1] — 2026-08-13
+
+An **archival and listing release**. No functional change to the harness: no attack, scorer, policy
+adapter or emitter behaves differently from 0.33.0, and no published number moves.
+
+It exists because two external surfaces need a tag they can point at, and both read `action.yml`
+from the **tag** rather than from `main`:
+
+### Fixed
+
+- **The Action description exceeded the GitHub Marketplace limit.** The publish validator rejected
+  the listing with "Description must be less than 125 characters"; ours was **266**. Now **114**.
+  The detail it carried — the attack matrix, the EAI-tagged SARIF, the threshold-and-regression
+  gating semantics — moved into a comment directly above the field, which is where a maintainer
+  reads it anyway. A listing description is a listing description.
+
+### Changed
+
+- **`PROVAEL_VERSION` floor moved to `>=0.33.1,<0.34.0`**, per the rule stated at its own
+  definition: the floor tracks the newest patch so a fix is not optional for anyone pinning a
+  published action tag.
+
+- Adopter-facing pins bumped across the eight files `tests/test_version_consistency.py` enumerates,
+  plus `CITATION.cff`'s `version` and `date-released`. That test inverts the allow-list on purpose —
+  the pins that drift are exactly the ones nobody remembers to list.
+
+### Why a release at all
+
+Two things are blocked on a tag and neither is code:
+
+1. **The GitHub Marketplace listing**, which reads `action.yml` from the release tag. `v0.33.0`
+   still carries the 266-character description, so re-publishing from it fails the same way.
+2. **The Zenodo archive and its concept DOI.** Zenodo only archives releases created *after* its
+   GitHub integration is enabled, so the first archived release has to be a new one.
+
+Neither is a reason to change behaviour, and nothing here does.
+
 ### Added
 
 - **Six prior-art entries, five new and one enriched from a stub.** Trajectory-Level Redirection
