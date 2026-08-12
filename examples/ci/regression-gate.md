@@ -40,7 +40,7 @@ fails on either the absolute threshold or a regression. A complete consumer work
 [regression-gate.yml](regression-gate.yml):
 
 ```yaml
-- uses: provael/provael@v0.33.0
+- uses: provael/provael@v0.33.1
   with:
     baseline: .provael/baseline.report.json   # the last known-good report.json
     regression-tolerance: "0.05"
