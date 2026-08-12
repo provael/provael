@@ -8,7 +8,28 @@ sdk_version: 6.16.0
 app_file: app.py
 pinned: false
 license: apache-2.0
+short_description: Attack-success rates for VLA robot policies, with benign controls
+tags:
+- leaderboard
+- submission:manual
+- test:public
+- modality:text
+- eval:safety
+- language:English
 ---
+
+<!-- WHY THESE TAGS AND NOT MORE. The Space ran with no `tags:` at all, so Hugging Face derived only
+["gradio", "region:us"] and it never appeared under the `leaderboard` filter — the one place a person
+browsing for a leaderboard would look. The vocabulary here follows DontPlanToEnd/UGI-Leaderboard,
+which is the richest published example; mteb/leaderboard uses `leaderboard` alone.
+
+`modality:image` is deliberately ABSENT even though the policies under test are vision-language-action.
+Provael's visual family is two symbolic markers appended to a simulated `visual_tokens` list, not
+rendered pixels, and it measured 0/100 on the ten-task suite. Claiming an image modality would
+advertise coverage this board does not have. See docs/top10.md, EAI02.
+
+`submission:manual` because the path is a reviewed pull request plus a maintainer rebuild.
+`test:public` because every attack, suite and recipe is open source and reproducible. -->
 
 # Provael — VLA Red-Team ASR Leaderboard
 

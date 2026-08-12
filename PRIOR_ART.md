@@ -600,6 +600,58 @@ hold working hardware evidence on the platform we have only planned for.
 **mapping_status: `cited, not crosswalked`.** No crosswalk is possible: a training-time backdoor rate
 and an inference-time ASR share no denominator.
 
+### DURA — *Hidden in Plain Sight: Diffusion-Based Unrestricted Robotic Attacks on VLA Models*
+Han, Yao, Wang, Cao, Zhang, Shan, Deng, Wang, Hu (2026).
+arXiv:[2608.10393](https://arxiv.org/abs/2608.10393) · submitted 11 August 2026
+
+**The strongest published attack on the channel where provael measures a null**, and the entry that
+should change how that null is read.
+
+DURA generates visually natural adversarial patches by optimising along the latent trajectory of a
+pretrained diffusion model, in both white-box and black-box settings — the black-box variant needing
+only the victim's *predicted actions*. Verified from their Table 1 (OpenVLA-7B, four LIBERO suites),
+reading DURA's own `Ours` rows rather than a neighbouring baseline's:
+
+| setting | simulated patch | physical patch |
+| --- | ---: | ---: |
+| White-box, target-only | **100.0%** on all four suites | **100.0%** on all four suites |
+| Black-box, target-only | **86.0%** avg | **79.3%** avg |
+| Benign (no patch) | 23.5% | 23.5% |
+| Clean patch (non-adversarial) | 39.5% | 39.5% |
+
+The white-box 100% sits in the **target-only** group — no ground-truth action tokens — which is the
+harder supervision setting, not the easier one. A label-supervised baseline (UADA) also reads 100.0
+across that table; attributing it to DURA would be the obvious misreading and is worth naming.
+
+Their patch-area ablation: ASR "rises sharply to 77% at only 2% area", reaches "99%" at 5%, and
+saturates at 100% beyond. Demonstrated on a real Franka arm, with a **printed patch inserted into the
+camera view** — inserting it drives the arm to the target action, removing it lets the arm resume.
+
+**How we differ, and where we are weaker — this is the useful part of the entry.**
+
+Provael's `visual` family is **two attacks**, and neither is an image. `patch` appends the literal
+string `adv_patch::{object}::now` to a list called `visual_tokens` in a simulated observation dict;
+`decoy_object` appends `salient-decoy-first` alongside a planted object name. They are **symbolic
+stand-ins for a perception attack**, evaluated in a simulator that never renders an adversarial
+pixel. DURA optimises actual pixels, prints them, and holds them in front of a real camera.
+
+That gap changes what our own null means. The ten-task suite measured the visual family at
+**0/100**, and it is tempting to read that as "perception attacks did not transfer to SmolVLA". It
+does not support that reading. It supports a narrower one: *our symbolic markers did not fire*. DURA
+is the standing evidence that a real optimised patch on the same class of policy reaches 100% —
+so the honest gloss on our 0/100 is a **coverage gap in our harness**, not a robustness finding
+about the policy.
+
+We also have **zero physical results of any kind**: `results/hardware/` reads 0 and the SO-101
+protocol is pre-registered and unrun. DURA's physical column is not a number we can currently
+produce at any n.
+
+What we carry that they do not is a matched benign control at the same `(task, seed)` and a reported
+false-positive rate. Their table does carry benign and clean-patch baselines (23.5% and 39.5%), which
+is the same instinct and more than most of this file's entries manage.
+
+**mapping_status: `cited, not crosswalked`.**
+
 ## What is actually novel here
 
 Not the attacks. **And — since AttackVLA (arXiv:2511.12149) — not simply "a unified harness with a
