@@ -2908,6 +2908,17 @@ end-effector into a keep-out zone) is GPU-gated and <strong>not yet run</strong>
 <strong>Mitigations.</strong> Input smoothing/randomization; multi-view &amp; multi-sensor agreement; adversarial training;
 perception-embedding anomaly detection; physical red-team with printed artifacts.
 <strong>Maps to.</strong> NIST AI 100-2 <strong>Evasion (integrity)</strong> · MITRE ATLAS <strong>Defense Evasion / craft adversarial data</strong>.</p>
+<p><strong>Read our null narrowly for a second reason: our visual attacks are not images.</strong> <code>patch</code> appends the
+string <code>adv_patch::{object}::now</code> to a simulated <code>visual_tokens</code> list and <code>decoy_object</code> appends
+<code>salient-decoy-first</code> — symbolic stand-ins for a perception attack, in a simulator that renders no
+adversarial pixel. <strong>DURA</strong> (arXiv:<a href="https://arxiv.org/abs/2608.10393">2608.10393</a>, 11 Aug 2026)
+optimises real pixels along a diffusion latent trajectory and reports <strong>100% ASR white-box on all four
+LIBERO suites in both simulated and physical patch settings</strong>, 86.0%/79.3% black-box, and 77% ASR from
+a patch covering just 2% of the image — demonstrated with a <strong>printed patch held in a real Franka
+arm's camera view</strong>, against benign and clean-patch baselines of 23.5% and 39.5%.</p>
+<p>So the 0/100 here is evidence that <em>our markers</em> did not fire, <strong>not</strong> that this policy resists
+perception attacks. Treat it as a coverage gap in this harness. Closing it needs a real optimised-patch
+attack and, for the physical half, hardware we do not have — <code>results/hardware/</code> reads 0.</p>
 <h2 id="eai03-model-pipeline-poisoning-backdoors-supply-chain">EAI03 — Model &amp; pipeline poisoning, backdoors &amp; supply chain</h2>
 <p><strong>What.</strong> Hidden triggers planted at training/fine-tuning time, or via a poisoned open-weights checkpoint,
 dataset, teleop data, or RAG corpus — normal behavior until the trigger fires attacker-chosen actions.
