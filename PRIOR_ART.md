@@ -652,6 +652,41 @@ is the same instinct and more than most of this file's entries manage.
 
 **mapping_status: `cited, not crosswalked`.**
 
+### Towards Safe and Trustworthy Embodied AI — *Foundations, Status, and Prospects*
+Tan, Liu, Bao, Tian, Gao, Wu, Luo, Wang, Zhang, Wang, Lu, Zhou (2026) — AI45Lab: Shanghai Artificial
+Intelligence Laboratory, East China Normal University, Tsinghua University.
+[OpenReview](https://openreview.net/forum?id=Eu6Yt21Alv) · companion index:
+[AI45Lab/Awesome-Trustworthy-Embodied-AI](https://github.com/AI45Lab/Awesome-Trustworthy-Embodied-AI)
+
+**What it is.** A survey organising embodied-AI trustworthiness across four **operational stages** —
+Instruction Understanding, Environment Perception, Physical Interaction, Action Planning — each with
+its own *Attack Resistance* subsection alongside Accuracy, Reliability, Controllability, Privacy
+Protection, Abuse Prevention and Value Alignment.
+
+**How we differ, and it is unflattering in both directions.** The survey is a taxonomy over the
+literature; provael is one runnable tool that produces a number.
+
+Their four-stage decomposition is **cleaner than our ten-item list** at one specific thing our
+taxonomy does badly: separating *where in the loop* a failure originates. The Embodied AI Security
+Top 10 indexes by attack channel, which cuts across their stages rather than nesting inside them, and
+we have not attempted a crosswalk to it. That is a real gap on our side, not a difference of scope.
+
+Against that, their index carries **183 reference links — 116 to arXiv, 69 unique arXiv IDs — and
+zero links to anything a reader can execute** (verified: no GitHub links outside their own repo). A
+practitioner leaves it knowing the shape of the field and holding nothing they can run.
+
+**Where we are weaker, specifically.** Their Attack Resistance coverage spans all four stages. Ours
+has a real-model measurement on exactly **one** — instruction understanding, where `roleplay` reaches
+44/50 — and measured nulls or no attack at all on the rest. **Physical Interaction is the stage we
+cannot speak to at all**, because `results/hardware/` reads 0 and the SO-101 protocol is
+pre-registered and unrun.
+
+**mapping_status: `cited, not crosswalked`.** Crosswalking a channel-indexed list onto a
+stage-indexed one is a real piece of work — the two axes cross rather than merge, the same problem
+the [World-Model Security Survey](#world-model-security-survey--security-of-world-model-based-embodied-ai-a-lifecycle-of-threats-defenses-and-evaluation)
+entry describes — and claiming one before doing it would be the kind of table that reads as coverage
+without carrying any.
+
 ## What is actually novel here
 
 Not the attacks. **And — since AttackVLA (arXiv:2511.12149) — not simply "a unified harness with a

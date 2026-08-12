@@ -73,3 +73,51 @@ overview: <https://oecd.ai/en/catalogue/contribute>.
 
 **All four require explicit approval before sending.** This file is the ready-to-paste source; it is
 not a trigger to submit.
+
+## JOSS submission assessment — 2026-08-13
+
+The Journal of Open Source Software is the only route found that converts this artifact directly
+into a **DOI and a citable, indexed paper**, which is the metric that currently reads zero. So the
+question is not whether to submit but when, and this records the answer with a named trigger rather
+than leaving it as an intention.
+
+**Mechanical bars — all met**, verified this run:
+
+| requirement | status |
+| --- | --- |
+| Public package | PyPI `provael` **0.33.0** |
+| OSI licence | Apache-2.0 |
+| Test suite | 85 test modules, 986 passing |
+| CI | ruff · mypy strict · pytest, on every PR |
+| `CITATION.cff` | present, version-guarded by a test |
+| `CONTRIBUTING.md` | present |
+| Development history | public since **2026-06-02** |
+
+**The bar genuinely at risk: "substantial scholarly effort", and not a "minor utility".**
+
+JOSS rejects packages that are thin wrappers or short scripts. Provael is neither, but the case is
+weaker than the registry counts suggest, and the honest reading is what matters here:
+
+- **8 policy backends and 5 suites are registered, but only one backend has a real-model
+  measurement.** `provael coverage` reports `real_policy=3 stub_only=12` across attack families —
+  the rest is stub-validated scaffolding, and the project says so everywhere. A reviewer counting
+  registered backends sees breadth; a reviewer reading the evidence ladder sees one measured
+  policy on one suite.
+- **`hardware=0`.** No physical result of any kind.
+- **5 stars, 0 forks.** Four contributors on paper — two of them are the maintainer's own accounts
+  and two are bots (`dependabot`, `github-actions`), so **zero external contributors** is the true
+  figure.
+
+None of that is disqualifying on its own. Together they make a "minor utility" desk rejection a real
+risk, and a desk rejection **spends the option** — JOSS resubmission after rejection is materially
+harder than a first submission.
+
+**Decision: hold.** Submit when either of these lands, whichever is first:
+
+1. **A second policy backend with a real-model measurement** — turning "one measured policy" into a
+   cross-architecture claim, which is the substance the paper would actually argue.
+2. **The SO-101 hardware result** — turning `hardware=0` into a sim-to-real correlation, which is
+   the single most-asked question about this work.
+
+Re-check this assessment when either ships. Waiting costs a few weeks; submitting early and being
+desk-rejected costs the route.
