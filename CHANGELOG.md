@@ -69,6 +69,26 @@ All notable changes to this project are documented here. The format is based on
 - **A CI usage snippet beside the docker quickstart**, showing the Action gating a build on the
   measured rate. It works today without the Marketplace — `uses:` resolves from the repo and tag.
 
+- **The AI45Lab trustworthy-embodied-AI survey cited in PRIOR_ART** (OpenReview `Eu6Yt21Alv`,
+  companion index `AI45Lab/Awesome-Trustworthy-Embodied-AI`). Their four-stage decomposition —
+  instruction understanding, environment perception, physical interaction, action planning — is
+  **cleaner than our ten-item list** at separating where in the loop a failure originates, and we
+  have not attempted a crosswalk to it.
+
+  Counts verified rather than repeated: the index carries **183 reference links, 116 to arXiv, 69
+  unique arXiv IDs, and zero links to anything executable** (no GitHub links outside their own
+  repo). Where we are weaker is stated plainly — their Attack Resistance spans all four stages;
+  ours has a real-model measurement on exactly one, and **physical interaction is the stage we
+  cannot speak to at all** because `results/hardware/` reads 0.
+
+- **A written JOSS submission assessment** in `docs/standards/listings.md`, with a decision and a
+  named trigger rather than an intention. Every mechanical bar is met; the bar genuinely at risk is
+  "substantial scholarly effort", because 8 registered policy backends resolve to **one measured**
+  one, `hardware=0`, and the four GitHub contributors are two maintainer accounts plus two bots —
+  so **zero external contributors** is the true figure. Decision: hold until either a second
+  real-model backend or the SO-101 hardware result lands. A desk rejection spends the route;
+  waiting costs weeks.
+
 ### Fixed
 
 - **The EAI02 visual null was stale in `docs/top10.md`**: it read 0/20 against a 0% benign baseline.
