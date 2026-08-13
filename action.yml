@@ -306,7 +306,7 @@ runs:
         python "$GITHUB_ACTION_PATH/scripts/action/mitigation_gate.py"
 
     - name: Upload SARIF to code scanning
-      uses: github/codeql-action/upload-sarif@d1ba80a13dd99fba24a470575428917156a28b43 # v4.37.5
+      uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
       with:
         sarif_file: ${{ inputs.sarif-output }}
         category: provael
@@ -341,7 +341,7 @@ runs:
 
     - name: Upload regression SARIF to code scanning
       if: inputs.baseline != '' && hashFiles('provael-regression.sarif') != ''
-      uses: github/codeql-action/upload-sarif@d1ba80a13dd99fba24a470575428917156a28b43 # v4.37.5
+      uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
       with:
         sarif_file: "provael-regression.sarif"
         category: provael-regression
