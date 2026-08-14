@@ -61,7 +61,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - id: meta
-        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           # BOTH REGISTRIES FROM ONE BUILD. metadata-action fans the same tag set across every image
           # listed here, and build-push-action pushes one manifest to each — so ghcr and Docker Hub
