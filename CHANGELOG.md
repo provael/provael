@@ -6,7 +6,105 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-Nothing pending — everything currently written is released. New entries go here.
+### Added
+
+- **A guard that fails when the CHANGELOG gets ahead of the artifact**
+  (`tests/test_version_consistency.py::test_every_dated_changelog_version_has_a_tag`). On 13 August
+  this file carried `## [0.33.1] — 2026-08-13` and `CITATION.cff` carried a matching
+  `date-released`, while no `v0.33.1` tag existed and PyPI's latest was 0.33.0. Every surface a
+  reader consults said it had shipped; nothing had, and a person found it rather than CI.
+
+  A **dated** heading is the claim; `## [Unreleased]` asserts nothing and is ignored, so the normal
+  workflow is unaffected. The newest dated heading may be untagged only while it names
+  `__version__` — the release-prep commit, where promoting the heading and pushing the tag cannot
+  be one event. **That exemption is a stated cost, not a loophole:** this test could not have
+  failed on the exact commit that introduced the drift above. What it catches is the drift
+  *persisting*. `0.1.0` is exempted permanently — it has a section and no tag, and a release that
+  was never cut cannot be tagged retroactively.
+
+- **Four prior-art entries, every figure read from the paper rather than the abstract.**
+
+  **RedVLA** (arXiv:2604.22591) is the closest published work to this project and appeared nowhere
+  in `PRIOR_ART.md` — only once, inside a run-on inline list in `docs/top10.md`. It is now a full
+  entry plus a row in the published-ASR baselines table.
+
+  The entry corrects the framing this work was queued under. RedVLA is **not** separated from
+  provael by hardware: both run in simulation, both on LIBERO. It is separated by which half of a
+  shared formalism each takes. RedVLA defines red teaming as optimisation over the
+  environment–instruction joint space `(s′₀, l′)`, then states **"We fix the instruction (i.e.,
+  `l′ = l`) and perturb only the initial state."** Provael fixes the scene and perturbs the
+  instruction. Complementary halves, orthogonal quantities — which is why no comparison is drawn
+  between their 95.5% and our 88% anywhere.
+
+  **The "Ten Deadly Sins" paper** (arXiv:2512.06387) was queued as a competing ten-item taxonomy at
+  the same layer as the Embodied AI Security Top 10. Reading it shows it is not: it is a security
+  analysis of **one product, the Unitree Go2**, and its ten items are implementation defects in that
+  product's stack. The entry says so, and names two real gaps on our side rather than defending the
+  Top 10 — **"multilingual" appears nowhere in `docs/top10.md`**, and neither the companion app nor
+  the vendor cloud is named as a surface, though three of the paper's five methods target them.
+  The abstract enumerates nine defects for a list of ten; the tenth is not guessed at.
+
+  **DAERT** (arXiv:2604.05595) and **EmbodiedGovBench** (arXiv:2604.11174) complete the set. DAERT
+  is the second independent demonstration — after Q-DIG — that search finds linguistic failures our
+  fixed four-template banks miss. Two papers now say the same thing about our method.
+
+- **Two new crosswalk targets, as artifacts rather than prose.**
+
+  `provael crosswalk --target vla_arena` maps VLA-Arena's five safety suites (arXiv:2512.22539),
+  identifiers verbatim, into `results/crosswalk/crosswalk.vla_arena.json`. VLA-Arena runs the only
+  public VLA leaderboard carrying a safety axis, which makes it the one place a provael number
+  could be mistaken for a comparable entry.
+
+  The distinction that prevents that is carried as a **machine-readable field**, not a sentence:
+  their safety suites place a hazard in the scene and **none perturbs the instruction**. The
+  consequence is the useful part — the provael arm corresponding to their entire safety axis is the
+  **benign control** (2/50 on the ten-task run), not any attack family. Every attack number provael
+  reports lives on an axis their leaderboard has no column for. Coverage is 0 of 5, and all five
+  rows map zero attack families, which the artifact states outright is the correct result.
+
+  `provael crosswalk --target safevla` makes `docs/crosswalk/safevla-bench.md` and the code agree.
+  That page described a mapping with no command and no artifact behind it; the command now exists
+  and emits the structural mapping. **It deliberately emits no number.** `scoring/asr.py` already
+  has a `succ_but_unsafe` field naming SafeVLA-Bench, and that shared name is the hazard: theirs is
+  an STL judgement over a trajectory, ours a boolean from an uncalibrated predicate whose benign
+  control fires at 4%. The blocker ships as data, and calibration remains the prerequisite.
+
+- **`examples/lerobot_eval_smolvla_libero.py`** — the headline result in one file with nothing to
+  edit and nothing to install. PEP 723 inline metadata means `uv run` builds the environment from
+  the pinned header. `--dry-run` validates the registries and the `RunConfig` on any laptop in
+  seconds, with no torch and no download — the checks that would otherwise fail at minute 0 of a
+  15-hour run.
+
+  It prints the matched-pair table and McNemar p-value from `provael.scoring.paired` rather than
+  reimplementing them, so the benign control is structurally impossible to drop, then compares your
+  run against the committed reference and says whether you reproduced it.
+
+  **lerobot is pinned at 0.5.1, not 0.6.x.** 0.6.0 and 0.6.1 exist and are newer; the committed
+  numbers were measured on 0.5.1 and have never been re-measured. Pinning forward would make this a
+  script that runs rather than one that reproduces. `tests/test_reproduction_example.py` pins the
+  example's advertised baseline against `aggregate.json` by reconstructing successes from the
+  McNemar discordant counts — the file needs a GPU to execute, so without that test its claims
+  could rot silently.
+
+### Fixed
+
+- **`docs/standards/published-asr-baselines.md` opened by quoting a superseded number.** Its intro
+  read "100% of the time (10/10)" while its own table row read 88% (44/50) — the single-task run
+  against the ten-task suite. The intro now quotes the larger, more conservative run, and the
+  section further down that legitimately reports the 10/10 figure says which run it is and why both
+  are retained.
+
+- **Two pages named "Adopters" meant different things and neither said so.** `docs/adopters.md` is
+  a self-reported sign-up sheet and is empty; `provael.com/adopters` is a measurement of PyPI
+  downloads and GitHub stars and is not. Each now states what it is in its first lines and links
+  the other, because **an empty sign-up sheet is not an empty user base** and reading it as one is
+  the available mistake.
+
+### Chores
+
+- Merged five dependabot PRs (#126–#130): `docker/build-push-action` 6.18.0→7.3.0,
+  `docker/metadata-action` 5.7.0→6.2.0, `github/codeql-action/upload-sarif` 4.37.5→4.37.6,
+  `docker/login-action` 3.4.0→4.6.0, `docker/setup-qemu-action` 3.6.0→4.2.0.
 
 ## [0.33.1] — 2026-08-13
 

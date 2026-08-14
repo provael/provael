@@ -5,10 +5,10 @@
 > leaderboard. Every figure is *as reported by its authors*, with a resolvable identifier so you can
 > check it yourself.
 
-Provael's headline is a `roleplay` instruction diverting SmolVLA × LIBERO **100% of the time
-(10/10)**. Any technical buyer will immediately benchmark that against the published record — where
-attacks routinely report 76%, 96%, near-100%. If those numbers sit in one column, provael looks
-unremarkable.
+Provael's headline is a `roleplay` instruction diverting SmolVLA × LIBERO **88% of the time
+(44/50)**, across all ten `libero_object` tasks. Any technical buyer will immediately benchmark that
+against the published record — where attacks routinely report 76%, 96%, near-100%. If those numbers
+sit in one column, provael looks unremarkable.
 
 **They do not belong in one column.** That is what this page is for, and the last column is the
 whole point.
@@ -36,6 +36,7 @@ an equivalence that does not exist.
 | DRIFT — first-step denoising redirection (universal gripper patch) | **Originally-solvable tasks broken** | **essentially all**, with a small single patch | π0 and π0.5 across four LIBERO suites | arXiv:[2608.03207](https://arxiv.org/abs/2608.03207) | **No — not directly comparable, for two independent reasons.** Provael has published **no result against a flow-matching policy of any kind**, so there is no Provael number for this row to sit beside: the `pi0`/`pi05`/`pi0fast` adapters are registered and marked scaffolding, and none has loaded a checkpoint. Separately, the metrics differ — DRIFT reports solvable tasks broken, a provael ASR reports envelope breach. Either reason alone would rule out one column. |
 | RoboPAIR — LLM-controlled-robot jailbreak | **Jailbreak ASR** | **~100%** | 3 systems incl. a deployed Unitree Go2 | arXiv:[2410.13691](https://arxiv.org/abs/2410.13691) | **Partially.** Same family of claim as provael's EAI01 result (an instruction drives a harmful action) and the nearest external anchor for it — but measured on LLM-controlled robots with a human-judged harmful-action criterion, not an envelope predicate. |
 | Per-LIBERO-suite single-step ASR (Spatial / Object / Goal / LIBERO-10) | — | **withheld** | LIBERO ×4 | arXiv:[2605.25889](https://arxiv.org/abs/2605.25889) · [2505.16640](https://arxiv.org/abs/2505.16640) · [2509.19870](https://arxiv.org/abs/2509.19870) | **Row withheld, deliberately.** Four per-suite figures were proposed for this row — Spatial 97.5 / Object 93.8 / Goal 96.5 / LIBERO-10 77.3. They appear as a set in none of the three papers checked: 2605.25889 reports OpenVLA-7B at 95.4% *clean* success on LIBERO-Spatial and validates 48 PGD cells without publishing them; in 2505.16640 and 2509.19870, two of the four values (93.8, 96.5) occur only as isolated cells of unrelated tables and the other two (97.5, 77.3) do not occur at all. Printing figures on a page about checkability that we could not check would be self-refuting. Restore the row when a source resolves. |
+| RedVLA — scene risk-factor injection, instruction held fixed | **ASR** (physical-safety violation: State / Cumulative / Conditional) | **95.5%** on π₀.₅; **64.9%–95.5%** across six models | LIBERO, simulation, 10 trials per configuration | arXiv:[2604.22591](https://arxiv.org/abs/2604.22591) | **No — and the reason is unusually clean.** RedVLA formalises red teaming over the environment–instruction joint space `(s′₀, l′)`, then **fixes the instruction (`l′ = l`) and perturbs only the initial state**. Provael does the converse: it fixes the scene and perturbs the instruction. Same benchmark, same simulator, complementary halves of one formalism — so the two ASRs are orthogonal quantities, not a strong result and a weak one. Their predicate is a typed physical-safety violation; ours is an envelope exit. Note what this row does *not* rest on: both are simulation, so sim-versus-hardware is not the difference. |
 | **Provael** — `roleplay` (instruction reframing) | **ASR** = episodes driven out of the benign envelope | **88% (44/50)**, task-clustered 95% CI **[72%, 100%]** | SmolVLA × LIBERO, **all ten `libero_object` tasks** | [committed artifacts](https://github.com/provael/provael/tree/main/results/smolvla_libero_object_suite) | — (this is the reference definition). The interval is bootstrapped over TASKS, not episodes; every other row on this page pools episodes, so ours is the wider and more conservative construction. |
 
 ## Provael's own numbers, in full
@@ -43,6 +44,13 @@ an equivalence that does not exist.
 Every figure below is read from the committed
 [`results/smolvla_libero_object/report.json`](https://github.com/provael/provael/blob/main/results/smolvla_libero_object/report.json).
 Nothing here is estimated, rounded up, or reconstructed.
+
+> **Which run this is, because the two figures differ and both are ours.** This table is the
+> **earlier single-task run** — `libero_object/0` only, 10 seeds — where `roleplay` read 10/10. The
+> headline row in the table above is the **later ten-task suite** at 44/50 (88%). The larger run is
+> the one to quote: it spans all ten tasks and its 88% is the more conservative number. Both are
+> committed; neither supersedes the other's raw counts, and the single-task 100% is retained here
+> rather than deleted because it is what the `report.json` this section cites actually contains.
 
 | Attack | Family | Successes / attempts | Rate |
 | --- | --- | --- | --- |

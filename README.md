@@ -146,7 +146,10 @@ compliance dossier. Design-partner assessments ($15K, first 3) and standard asse
 [www.provael.com/assessment](https://www.provael.com/assessment) — free PV-SCAN of your nearest
 public checkpoint included.
 
-Run Provael? Add yourself to [docs/adopters.md](docs/adopters.md) via PR.
+Run Provael? Add yourself to [docs/adopters.md](docs/adopters.md) via PR — the self-reported
+sign-up sheet, which is empty. The measured distribution figures are a separate page at
+[provael.com/adopters](https://provael.com/adopters); an empty sign-up sheet is not an empty user
+base.
 
 ## The Embodied AI Security Top 10
 

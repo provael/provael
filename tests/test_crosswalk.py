@@ -354,3 +354,139 @@ def test_foresight_is_deterministic_and_matches_the_committed_artifact() -> None
         "  provael crosswalk --target foresight --in results/smolvla_libero_object "
         "--out results/crosswalk"
     )
+
+
+# --------------------------------------------------------------------------- #
+# fourth target: VLA-Arena — the non-adversarial posture contrast
+# --------------------------------------------------------------------------- #
+
+
+def test_vla_arena_records_the_non_adversarial_posture_as_data_not_prose() -> None:
+    """The whole reason this target exists, and it must survive a rewrite of the prose.
+
+    VLA-Arena runs the only public VLA leaderboard carrying a safety axis, so it is the one place a
+    provael ASR could be mistaken for a comparable entry. What prevents that is not units and not
+    embodiment — it is POSTURE. Their safety suites place a hazard in the scene and score whether
+    the policy avoids one it was never pushed toward; nothing perturbs the instruction. A prose
+    sentence saying so can be lost in an edit; a field cannot be lost without a test going red.
+    """
+    payload = json.loads(cw_mod.to_vla_arena_json())
+    assert payload["target"] == cw_mod.VLA_ARENA_TARGET
+    contrast = payload["posture_contrast"]
+    assert contrast["their_posture"] == "non-adversarial"
+    assert contrast["our_posture"] == "adversarial"
+    assert contrast["instruction_perturbed_by_their_safety_suites"] is False
+    # Every suite carries it too, so a consumer reading one row cannot miss it.
+    assert {s["posture"] for s in payload["safety_suites"]} == {"non-adversarial"}
+
+
+def test_vla_arena_maps_no_attack_family_to_any_safety_suite() -> None:
+    """Zero families across all five rows is the CORRECT result, so it is asserted, not tolerated.
+
+    Provael's families all perturb an input; none of these suites has an input to perturb. If a
+    future edit maps `instruction` onto a scene-hazard suite to make the table look fuller, this
+    fails — which is the point. The corresponding provael arm is the benign control, and the
+    artifact has to keep saying so.
+    """
+    payload = json.loads(cw_mod.to_vla_arena_json())
+    assert all(s["families"] == [] for s in payload["safety_suites"])
+    assert "benign control" in str(payload["posture_contrast"]["provael_arm_that_corresponds"])
+    assert payload["no_provael_attack_family_maps"]
+
+
+def test_vla_arena_emits_no_provael_score_anywhere() -> None:
+    """No measured block, on purpose — see `why_no_score_comparison`.
+
+    The foresight target DOES emit measured columns because the two projects disagree about a
+    question both measure. Here they do not measure the same question at all, so a number would be
+    an answer to something nobody asked. The `--in` flag has no effect on this target.
+    """
+    payload = json.loads(cw_mod.to_vla_arena_json())
+    assert "measured" not in payload
+    assert "measured_by_category" not in payload
+    assert payload["posture_contrast"]["why_no_score_comparison"]
+    # The shared-name trap is named explicitly: their CC and ours are not shown to be one metric.
+    assert "cumulative_cost" in payload["posture_contrast"]["shared_metric_name_warning"]
+
+
+def test_vla_arena_suite_names_are_verbatim_and_complete() -> None:
+    """Five safety suites, identifiers exactly as published — a paraphrase breaks the crosswalk."""
+    payload = json.loads(cw_mod.to_vla_arena_json())
+    assert [s["suite"] for s in payload["safety_suites"]] == [
+        "safety_static_obstacles",
+        "safety_cautious_grasp",
+        "safety_hazard_avoidance",
+        "safety_state_preservation",
+        "safety_dynamic_obstacles",
+    ]
+    assert sum(s["tasks"] for s in payload["safety_suites"]) == 75
+
+
+def test_vla_arena_coverage_is_honest_not_all_green() -> None:
+    """Provael models an envelope breach, not a scene constraint; 5/5 covered would be a lie."""
+    counts = cw_mod.va_coverage_counts()
+    assert counts["covered"] == 0, "no VLA-Arena safety suite is fully covered by provael"
+    assert counts["not covered"] >= 3
+
+
+def test_vla_arena_is_deterministic_and_matches_the_committed_artifact() -> None:
+    assert cw_mod.to_vla_arena_json() == cw_mod.to_vla_arena_json()  # no clock, no randomness
+    root = Path(__file__).resolve().parent.parent
+    committed = root / "results" / "crosswalk" / cw_mod.VLA_ARENA_JSON
+    assert committed.read_text(encoding="utf-8").rstrip("\n") == cw_mod.to_vla_arena_json(), (
+        "results/crosswalk/crosswalk.vla_arena.json is stale. Regenerate it with:\n"
+        "  provael crosswalk --target vla_arena --out results/crosswalk"
+    )
+
+
+# --------------------------------------------------------------------------- #
+# fifth target: SafeVLA-Bench — the blocker carried as data
+# --------------------------------------------------------------------------- #
+
+
+def test_safevla_artifact_carries_the_blocker_and_emits_no_sbu() -> None:
+    """`succ_but_unsafe` already exists in provael and names SafeVLA-Bench in its docstring.
+
+    That shared name is exactly the hazard: theirs is an STL judgement over a trajectory, ours is a
+    boolean from an UNCALIBRATED keep-out predicate whose benign control fired on 2/50 episodes.
+    The artifact must therefore ship the mapping and withhold the number, with the reason attached
+    rather than left to a reader's good faith.
+    """
+    payload = json.loads(cw_mod.to_safevla_json())
+    assert payload["target"] == cw_mod.SAFEVLA_TARGET
+    blocker = payload["blocker"]
+    assert blocker["blocked"] is True
+    assert "calibrat" in blocker["prerequisite"].lower()
+    assert "measured" not in payload
+    # A blocker that only says "no" teaches people to delete it; it must say what IS shippable.
+    assert blocker["what_is_not_blocked"]
+
+
+def test_safevla_distinguishes_itself_from_the_similarly_named_defense() -> None:
+    """SafeVLA-Bench (2606.00773) is not SafeVLA (2503.03480). One benchmark, one defense."""
+    payload = json.loads(cw_mod.to_safevla_json())
+    assert payload["source"]["arxiv"] == "2606.00773"
+    assert "2503.03480" in payload["source"]["not_to_be_confused_with"]
+
+
+def test_safevla_axes_state_the_same_posture_split_independently() -> None:
+    """The pre-hoc/post-hoc split is the SafeVLA-Bench form of the VLA-Arena posture contrast.
+
+    Two crosswalks reaching it independently is worth pinning: it means the distinction is a
+    property of what provael measures, not a rhetorical device invented for one comparison.
+    """
+    payload = json.loads(cw_mod.to_safevla_json())
+    axes = {a["axis"]: a for a in payload["axes"]}
+    assert "post-hoc" in axes["when it acts"]["safevla_bench"]
+    assert "pre-hoc" in axes["when it acts"]["provael"]
+    assert "adversary" in axes["who causes the failure"]["provael"]
+
+
+def test_safevla_is_deterministic_and_matches_the_committed_artifact() -> None:
+    assert cw_mod.to_safevla_json() == cw_mod.to_safevla_json()
+    root = Path(__file__).resolve().parent.parent
+    committed = root / "results" / "crosswalk" / cw_mod.SAFEVLA_JSON
+    assert committed.read_text(encoding="utf-8").rstrip("\n") == cw_mod.to_safevla_json(), (
+        "results/crosswalk/crosswalk.safevla.json is stale. Regenerate it with:\n"
+        "  provael crosswalk --target safevla --out results/crosswalk"
+    )

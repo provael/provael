@@ -54,6 +54,18 @@ ATLAS_JSON = "crosswalk.atlas.json"
 FORESIGHT_TARGET = "foresight"
 FORESIGHT_JSON = "crosswalk.foresight.json"
 
+#: Fourth target: VLA-Arena. The only public VLA benchmark running a leaderboard with a safety axis,
+#: which makes it the one place a provael number could plausibly be mistaken for a comparable entry.
+#: The distinction that prevents that is carried as data, not prose — see :data:`VLA_ARENA_POSTURE`.
+VLA_ARENA_TARGET = "vla_arena"
+VLA_ARENA_JSON = "crosswalk.vla_arena.json"
+
+#: Fifth target: SafeVLA-Bench. ``docs/crosswalk/safevla-bench.md`` documented a mapping with no
+#: command and no artifact behind it; this makes the doc and the code agree. What it deliberately
+#: does NOT do is emit an SBU beside theirs — see :data:`SAFEVLA_BLOCKER`.
+SAFEVLA_TARGET = "safevla"
+SAFEVLA_JSON = "crosswalk.safevla.json"
+
 #: Pinned provenance of the ATLAS taxonomy, mirroring ROBOJAILBENCH_SOURCE below.
 ATLAS_SOURCE: dict[str, object] = {
     "name": "MITRE ATLAS",
@@ -150,6 +162,21 @@ FORESIGHT_DISAGREEMENT: dict[str, object] = {
         "is a statement about the attacks it shipped, not about perception robustness."
     ),
 }
+
+
+class Posture(StrEnum):
+    """Whether a safety measurement pushes the policy, or merely watches it.
+
+    This is the axis that separates a *benchmark* from a *red team*, and it is the single most
+    load-bearing field in the VLA-Arena crosswalk. A suite that places a hazard in the scene and
+    scores whether the policy avoids it is asking "is this policy safe by default?". A suite that
+    perturbs the input and scores whether the policy leaves its envelope is asking "can this policy
+    be made unsafe?". Both are safety numbers. Neither answers the other's question, and a
+    leaderboard carrying only the one invites the reader to assume the other.
+    """
+
+    adversarial = "adversarial"
+    non_adversarial = "non-adversarial"
 
 
 class Coverage(StrEnum):
@@ -917,6 +944,410 @@ _REAL_TRANSFER_NOTE: dict[str, str] = {
 _NOT_DEMONSTRATED = "not demonstrated on a real policy (stub-validated only)"
 
 
+# --------------------------------------------------------------------------------------------
+# Fourth target: VLA-Arena (arXiv:2512.22539). Suite names quoted verbatim from the task registry.
+# --------------------------------------------------------------------------------------------
+
+#: Pinned provenance of VLA-Arena, mirroring the three sources above.
+VLA_ARENA_SOURCE: dict[str, object] = {
+    "name": "VLA-Arena",
+    "title": "VLA-Arena: An Open-Source Framework for Benchmarking Vision-Language-Action Models",
+    "arxiv": "2512.22539",
+    "arxiv_date": "2025-12-27",
+    "arxiv_latest_revision": "2026-08-07",
+    "url": "https://arxiv.org/abs/2512.22539",
+    "project_url": "https://vla-arena.github.io/",
+    "authors_note": "Zhang, Li, Shen, Zhang, Cai, Liu, Ji, Chen, Dai, Ji, Yang",
+    "taxonomy_kind": "capability + safety benchmark suite for VLA policies (11 suites, 170 tasks)",
+    "taxonomy_location": "5 safety suites of 11 (75 tasks of 170); names verbatim from the "
+    "published task registry",
+    "task_specification": "Constrained Behavior Domain Definition Language (CBDDL) — declarative "
+    "task and safety-constraint definition",
+    "their_metrics": "Cumulative Cost (CC) and Success Rate (SR)",
+    "mapping_status": "proposed — authored by Provael, not reviewed or endorsed by the VLA-Arena "
+    "authors",
+    "phrasing_rule": (
+        "Suite identifiers are quoted VERBATIM. No VLA-Arena harness is run here, no leaderboard "
+        "submission is made, and no provael score is placed beside a VLA-Arena score — see "
+        "`posture_contrast`, which is the reason."
+    ),
+}
+
+#: **The field this whole crosswalk exists to carry.** VLA-Arena runs the only public VLA
+#: leaderboard with a safety axis, so it is the one place a provael ASR could be mistaken for a
+#: comparable entry. It is not comparable, and the reason is not units or benchmark or embodiment —
+#: it is *posture*. Their five safety suites place a hazard in the scene and score whether the
+#: policy avoids it. **None perturbs the instruction. None perturbs anything.** The policy is never
+#: pushed.
+#:
+#: The consequence is worth stating precisely, because it is more interesting than "we are
+#: different": the provael arm corresponding to their entire safety axis is the **benign control**
+#: (``--attacks none``), not any attack family. On the ten-task LIBERO run that control fired on
+#: 2/50 episodes — a non-adversarial unsafe rate, which is the quantity their suites report. Every
+#: provael attack number lives on an axis their leaderboard has no column for.
+VLA_ARENA_POSTURE: dict[str, object] = {
+    "their_posture": Posture.non_adversarial.value,
+    "our_posture": Posture.adversarial.value,
+    "their_question": (
+        "is this policy safe by default? — a hazard is placed in the scene and the policy scored "
+        "on whether it avoids one it was never pushed toward"
+    ),
+    "our_question": (
+        "can this policy be made unsafe? — the instruction is perturbed and the policy scored on "
+        "whether it leaves a safety envelope that did not move"
+    ),
+    "instruction_perturbed_by_their_safety_suites": False,
+    "provael_arm_that_corresponds": (
+        "the benign control arm (`--attacks none`), NOT any attack family. A non-adversarial "
+        "unsafe rate is what their safety suites measure, and the control is the only provael arm "
+        "that reports one."
+    ),
+    "provael_control_reference_value": (
+        "2/50 episodes on SmolVLA x LIBERO libero_object, all ten tasks — provael's own "
+        "non-adversarial unsafe rate, and an UNCALIBRATED one, so it carries a false-positive "
+        "floor their scene-constraint judgement does not."
+    ),
+    "why_no_score_comparison": (
+        "Placing a provael ASR beside a VLA-Arena CC would assert that a policy pushed by an "
+        "adversary and a policy left alone are on one scale. They are not, and the direction of "
+        "the error flatters provael: our number is larger because we push."
+    ),
+    "shared_metric_name_warning": (
+        "provael's `scoring.safety_cost.cumulative_cost` and VLA-Arena's Cumulative Cost share a "
+        "NAME and have not been shown to share a definition. Ours is the mean number of unsafe "
+        "steps per episode derived from a per-step boolean. Do not place them in one table."
+    ),
+}
+
+
+@dataclass(frozen=True)
+class VaSuite:
+    """One VLA-Arena safety suite (identifier verbatim) mapped into the EAI Top 10 + provael."""
+
+    id: str
+    suite: str  # verbatim VLA-Arena suite identifier
+    tasks: int
+    hazard: str  # what the suite places in the scene
+    posture: Posture
+    eai: tuple[str, ...]
+    families: tuple[str, ...]  # provael attack families that exercise it (empty if none)
+    coverage: Coverage
+    note: str
+
+
+#: The five safety suites, identifiers verbatim. Coverage is provael's honest state against each,
+#: and it is low on purpose: provael models an envelope breach, not a scene constraint, so most of
+#: these have no counterpart at all. A crosswalk that showed 5/5 covered would not be credible.
+VA_SUITES: tuple[VaSuite, ...] = (
+    VaSuite(
+        "va01", "safety_static_obstacles", 15,
+        "static collision obstacles placed in the workspace",
+        Posture.non_adversarial,
+        ("EAI04",), (),
+        Coverage.partial,
+        "geometrically the nearest match provael has: the keep-out predicate IS a spatial breach. "
+        "But provael's breach is caused by a perturbed instruction, theirs by the policy's own "
+        "path around an obstacle nobody added adversarially. Same geometry, different cause.",
+    ),
+    VaSuite(
+        "va02", "safety_cautious_grasp", 15,
+        "objects requiring careful handling during grasp",
+        Posture.non_adversarial,
+        ("EAI04",), (),
+        Coverage.not_covered,
+        "no grasp force, contact model or handling quality is represented in any provael suite, so "
+        "there is nothing to be cautious with.",
+    ),
+    VaSuite(
+        "va03", "safety_hazard_avoidance", 15,
+        "designated hazard zones the policy must not enter",
+        Posture.non_adversarial,
+        ("EAI04", "EAI06"), (),
+        Coverage.partial,
+        "the most literal correspondence in the set — a designated no-go region, which is exactly "
+        "what provael's `keepout_zones` suite encodes. Still `partial`, and only because the "
+        "predicate is UNCALIBRATED: `provael calibrate` has never run on LIBERO, so provael's "
+        "zone boundary is not a defensible threshold the way a declared CBDDL constraint is.",
+    ),
+    VaSuite(
+        "va04", "safety_state_preservation", 15,
+        "object state that must survive the episode intact",
+        Posture.non_adversarial,
+        ("EAI04",), (),
+        Coverage.not_covered,
+        "provael scores a keep-out breach, not the condition of objects afterwards. Nothing in the "
+        "report records whether anything was damaged.",
+    ),
+    VaSuite(
+        "va05", "safety_dynamic_obstacles", 15,
+        "moving obstacles entering the workspace during the episode",
+        Posture.non_adversarial,
+        ("EAI04",), (),
+        Coverage.not_covered,
+        "every provael suite is static for the duration of an episode; no obstacle moves, so there "
+        "is no dynamic avoidance to measure.",
+    ),
+)
+
+
+def va_coverage_counts() -> dict[str, int]:
+    """How many VLA-Arena safety suites fall in each coverage state."""
+    counts = {state.value: 0 for state in Coverage}
+    for suite in VA_SUITES:
+        counts[suite.coverage.value] += 1
+    return counts
+
+
+def _vla_arena_mapping_dict() -> dict[str, object]:
+    """The VLA-Arena mapping. Deliberately carries NO measured block — see the posture contrast."""
+    return {
+        "format": CROSSWALK_FORMAT,
+        "target": VLA_ARENA_TARGET,
+        "source": VLA_ARENA_SOURCE,
+        "mapping_status": VLA_ARENA_SOURCE["mapping_status"],
+        # Hoisted to the top level because it is the reason this file exists and the one thing a
+        # consumer must not miss. A posture buried inside a row gets read as a footnote.
+        "posture_contrast": VLA_ARENA_POSTURE,
+        "coverage_counts": va_coverage_counts(),
+        "safety_suites": [
+            {
+                "id": s.id, "suite": s.suite, "tasks": s.tasks, "hazard": s.hazard,
+                "posture": s.posture.value,
+                "eai": list(s.eai), "families": list(s.families),
+                "coverage": s.coverage.value, "note": s.note,
+            }
+            for s in VA_SUITES
+        ],
+        # Stated as a field rather than left to inference: a reader counting `families: []` across
+        # five rows should be told outright that this is the expected result, not a gap in the file.
+        "no_provael_attack_family_maps": (
+            "Every row lists zero provael attack families, and that is correct rather than "
+            "incomplete. Provael's families all perturb an input; none of these suites has an "
+            "input to perturb. The corresponding provael arm is the benign control."
+        ),
+        "scope": (
+            "Taxonomy comparability only. No VLA-Arena harness is run, no leaderboard submission "
+            "is made, and no provael score is emitted here — the posture contrast is why."
+        ),
+    }
+
+
+def to_vla_arena_json() -> str:
+    """Deterministic JSON of the EAI <-> VLA-Arena safety-suite mapping."""
+    return json.dumps(_vla_arena_mapping_dict(), indent=2, sort_keys=True)
+
+
+def to_vla_arena_markdown() -> str:
+    """Deterministic Markdown: the five safety suites, the tally, and the posture contrast."""
+    src = VLA_ARENA_SOURCE
+    counts = va_coverage_counts()
+    posture = VLA_ARENA_POSTURE
+    lines: list[str] = [
+        f"<!-- generated by `provael crosswalk --target {VLA_ARENA_TARGET}` — do not edit -->",
+        "",
+        f"Mapped against **{src['name']}** (arXiv:{src['arxiv']}, {src['arxiv_date']}) — "
+        f"{src['taxonomy_kind']}. Suite identifiers are quoted verbatim; tasks are defined in "
+        f"their {src['task_specification']}.",
+        "",
+        f"**Status:** {src['mapping_status']}.",
+        "",
+        f"**Coverage tally:** {counts['covered']} covered · {counts['partial']} partial · "
+        f"{counts['not covered']} not covered (of 5 safety suites).",
+        "",
+        "### The distinction that governs this crosswalk",
+        "",
+        f"**Their posture: `{posture['their_posture']}`.** {posture['their_question']}",
+        "",
+        f"**Our posture: `{posture['our_posture']}`.** {posture['our_question']}",
+        "",
+        f"**So the corresponding provael arm is not an attack.** "
+        f"{posture['provael_arm_that_corresponds']} "
+        f"Reference value: {posture['provael_control_reference_value']}",
+        "",
+        f"**Why no score comparison appears anywhere here.** {posture['why_no_score_comparison']}",
+        "",
+        f"!!! warning \"Same name, unproven equivalence\"\n\n"
+        f"    {posture['shared_metric_name_warning']}",
+        "",
+        "### VLA-Arena safety suites → Embodied AI Security Top 10",
+        "",
+        "| # | Suite | Tasks | Hazard placed in scene | Posture | EAI id(s) | Provael family | "
+        "Coverage | Note |",
+        "| --- | --- | ---: | --- | --- | --- | --- | --- | --- |",
+    ]
+    for s in VA_SUITES:
+        eai = ", ".join(s.eai) or "—"
+        fam = ", ".join(f"`{f}`" for f in s.families) or "—"
+        lines.append(
+            f"| {s.id[2:]} | `{s.suite}` | {s.tasks} | {s.hazard} | {s.posture.value} | {eai} | "
+            f"{fam} | {_cov_symbol(s.coverage.value)} {s.coverage.value} | {s.note} |"
+        )
+    lines += ["", f"> {_vla_arena_mapping_dict()['no_provael_attack_family_maps']}", ""]
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------------------------
+# Fifth target: SafeVLA-Bench (arXiv:2606.00773). Axis names verbatim from the abstract.
+# --------------------------------------------------------------------------------------------
+
+#: Pinned provenance of SafeVLA-Bench. NOT SafeVLA (arXiv:2503.03480), which is an alignment
+#: defense with a near-identical name — two different works, and the confusion is easy to make.
+SAFEVLA_SOURCE: dict[str, object] = {
+    "name": "SafeVLA-Bench",
+    "title": "SafeVLA-Bench: A Benchmark for the Success-Safety Gap in Vision-Language-Action "
+    "Models",
+    "arxiv": "2606.00773",
+    "arxiv_date": "2026-05-30",
+    "url": "https://arxiv.org/abs/2606.00773",
+    "project_url": "https://safevla.org",
+    "authors_note": "Fan, Xu, Sokolsky, Lee, Kong — University of Notre Dame; University of "
+    "Pennsylvania",
+    "taxonomy_kind": "post-hoc success-safety gap measurement over rollouts, with safety "
+    "requirements as Signal Temporal Logic (STL) specifications",
+    "their_metrics": "Succ-But-Unsafe (SBU) and Violation Severity Index (VSI)",
+    "not_to_be_confused_with": "SafeVLA (arXiv:2503.03480), an alignment defense — a different "
+    "work with a near-identical name",
+    "mapping_status": "proposed — taxonomy comparability only; NO metric comparison is emitted, "
+    "and the blocker that prevents one is recorded in this artifact",
+    "phrasing_rule": (
+        "Metric names are quoted verbatim from the abstract. No SafeVLA-Bench harness is run. "
+        "Provael's `succ_but_unsafe` is NEVER placed beside their SBU — see `blocker`."
+    ),
+}
+
+#: **Why this artifact emits no numbers.** ``scoring/asr.py`` already has a field called
+#: ``succ_but_unsafe`` whose docstring names SafeVLA-Bench, and it computes the same per-episode
+#: quadrant. That shared name is exactly what makes a premature numeric crosswalk dangerous: theirs
+#: is an STL-violation judgement over a trajectory, ours is a boolean from an UNCALIBRATED keep-out
+#: predicate whose benign control fired on 2/50 episodes. Same word, different quantity.
+SAFEVLA_BLOCKER: dict[str, object] = {
+    "blocked": True,
+    "what_is_blocked": "emitting a provael SBU beside a SafeVLA-Bench SBU",
+    "why": (
+        "The two share a name and have not been shown to share units. SafeVLA-Bench judges an STL "
+        "specification over a trajectory; provael returns a boolean from an uncalibrated keep-out "
+        "predicate carrying a measured false-positive floor (benign control 2/50 on the ten-task "
+        "LIBERO run). Publishing them adjacently would mislead in the direction that flatters us."
+    ),
+    "prerequisite": (
+        "Calibrate the keep-out predicate on LIBERO so `unsafe` has a defensible threshold. "
+        "`provael calibrate` has never been run on LIBERO."
+    ),
+    "what_is_not_blocked": (
+        "The taxonomy mapping itself, which is what this artifact contains. Comparing what the two "
+        "projects MEASURE does not require their numbers to be commensurable — and stating the "
+        "incommensurability is more useful than withholding the mapping."
+    ),
+}
+
+
+@dataclass(frozen=True)
+class SvAxis:
+    """One axis on which SafeVLA-Bench and provael compare *structurally*, not numerically."""
+
+    id: str
+    axis: str
+    theirs: str
+    ours: str
+    note: str
+
+
+#: The structural comparison, lifted out of `docs/crosswalk/safevla-bench.md` so the doc and the
+#: emitted artifact cannot drift. The doc renders prose; this is the machine-readable original.
+SV_AXES: tuple[SvAxis, ...] = (
+    SvAxis(
+        "sv01", "when it acts",
+        "post-hoc — scores rollouts already produced",
+        "pre-hoc — perturbs the input first",
+        "the ordering difference from which every other difference follows.",
+    ),
+    SvAxis(
+        "sv02", "who causes the failure",
+        "nobody; the policy's own behaviour under ordinary instructions",
+        "an adversary, by construction",
+        "the same posture split the VLA-Arena crosswalk carries, arrived at independently.",
+    ),
+    SvAxis(
+        "sv03", "safety definition",
+        "Signal Temporal Logic (STL) specifications over the trajectory",
+        "a keep-out predicate, currently UNCALIBRATED",
+        "a declared specification versus an uncalibrated threshold — the blocker in one line.",
+    ),
+    SvAxis(
+        "sv04", "denominator",
+        "rollouts of the native benchmark task",
+        "matched (task, seed) pairs against a benign twin",
+        "provael's denominator is paired; theirs is not, so even the counts are not like-for-like.",
+    ),
+    SvAxis(
+        "sv05", "headline metric",
+        "Succ-But-Unsafe (SBU), Violation Severity Index (VSI)",
+        "ASR with a 95% Wilson interval and a benign-FPR control",
+        "provael reports an interval and a control; SBU as published carries neither.",
+    ),
+)
+
+
+def _safevla_mapping_dict() -> dict[str, object]:
+    """The SafeVLA-Bench mapping. Carries the blocker as data; emits no comparable metric."""
+    return {
+        "format": CROSSWALK_FORMAT,
+        "target": SAFEVLA_TARGET,
+        "source": SAFEVLA_SOURCE,
+        "mapping_status": SAFEVLA_SOURCE["mapping_status"],
+        "blocker": SAFEVLA_BLOCKER,
+        "axes": [
+            {"id": a.id, "axis": a.axis, "safevla_bench": a.theirs, "provael": a.ours,
+             "note": a.note}
+            for a in SV_AXES
+        ],
+        "complementarity": (
+            "Neither substitutes for the other. A policy can score well on SBU and still have a "
+            "high ASR; a policy with a low ASR can be routinely unsafe on its own. A safety case "
+            "citing only one is answering half the question."
+        ),
+        "scope": (
+            "Taxonomy comparability only. No SafeVLA-Bench harness is run and no comparative score "
+            "is produced — deliberately, and `blocker` says why."
+        ),
+    }
+
+
+def to_safevla_json() -> str:
+    """Deterministic JSON of the EAI <-> SafeVLA-Bench structural mapping."""
+    return json.dumps(_safevla_mapping_dict(), indent=2, sort_keys=True)
+
+
+def to_safevla_markdown() -> str:
+    """Deterministic Markdown: the structural axes and the stated blocker."""
+    src = SAFEVLA_SOURCE
+    blocker = SAFEVLA_BLOCKER
+    lines: list[str] = [
+        f"<!-- generated by `provael crosswalk --target {SAFEVLA_TARGET}` — do not edit -->",
+        "",
+        f"Mapped against **{src['name']}** (arXiv:{src['arxiv']}, {src['arxiv_date']}) — "
+        f"{src['taxonomy_kind']}.",
+        "",
+        f"**Not to be confused with:** {src['not_to_be_confused_with']}.",
+        "",
+        f"**Status:** {src['mapping_status']}.",
+        "",
+        f"!!! danger \"Blocked: {blocker['what_is_blocked']}\"\n\n"
+        f"    {blocker['why']}\n\n"
+        f"    **Prerequisite:** {blocker['prerequisite']}\n\n"
+        f"    **Not blocked:** {blocker['what_is_not_blocked']}",
+        "",
+        "### The two measure different failures",
+        "",
+        "| Axis | SafeVLA-Bench | Provael | Note |",
+        "| --- | --- | --- | --- |",
+    ]
+    for a in SV_AXES:
+        lines.append(f"| {a.axis} | {a.theirs} | {a.ours} | {a.note} |")
+    lines += ["", f"> {_safevla_mapping_dict()['complementarity']}", ""]
+    return "\n".join(lines)
+
+
 def measured_families() -> list[str]:
     """The provael families that appear in a covered/partial RJB mapping (sorted, unique)."""
     fams: set[str] = set()
@@ -1022,6 +1453,24 @@ __all__ = [
     "foresight_metrics",
     "to_foresight_json",
     "to_foresight_markdown",
+    "VLA_ARENA_TARGET",
+    "VLA_ARENA_JSON",
+    "VLA_ARENA_SOURCE",
+    "VLA_ARENA_POSTURE",
+    "VaSuite",
+    "VA_SUITES",
+    "va_coverage_counts",
+    "to_vla_arena_json",
+    "to_vla_arena_markdown",
+    "SAFEVLA_TARGET",
+    "SAFEVLA_JSON",
+    "SAFEVLA_SOURCE",
+    "SAFEVLA_BLOCKER",
+    "SvAxis",
+    "SV_AXES",
+    "to_safevla_json",
+    "to_safevla_markdown",
+    "Posture",
     "CROSSWALK_JSON",
     "CROSSWALK_FORMAT",
     "ROBOJAILBENCH_SOURCE",

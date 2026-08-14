@@ -687,6 +687,179 @@ the [World-Model Security Survey](#world-model-security-survey--security-of-worl
 entry describes — and claiming one before doing it would be the kind of table that reads as coverage
 without carrying any.
 
+### RedVLA — *Physical Red Teaming for Vision-Language-Action Models*
+Zhang, Zhang, Fan, Shen, Cai, Yang, Ji (2026).
+arXiv:[2604.22591](https://arxiv.org/abs/2604.22591) · submitted 24 April 2026
+
+**The closest published work to this project, and the complement to it rather than the competitor.**
+It belongs at the top of this file and was missing from it entirely — it appeared once, inside a
+run-on inline list in `docs/top10.md`, and nowhere in the ASR-baselines table that exists to hold
+exactly this.
+
+RedVLA red-teams **physical** safety in two stages: *Risk Scenario Synthesis* identifies critical
+interaction regions from benign trajectories and places a risk object inside them, so the hazard
+entangles with the policy's execution flow; *Risk Amplification* then refines that object's state by
+gradient-free optimisation guided by trajectory features. Violations are typed across three safety
+cost types — **State, Cumulative, Conditional**. They also ship a defense, **SimpleVLA-Guard**, built
+from RedVLA-generated data, reporting a 59.5% reduction in online ASR.
+
+**Why the denominators are not comparable, stated from their own formalism rather than ours.**
+RedVLA defines VLA red teaming as a constrained optimisation over the **environment–instruction
+joint space** — find a perturbed configuration `(s′₀, l′)` maximising elicited risk cost subject to
+the task staying feasible. Having defined that joint space, §4 takes one half of it:
+
+> "We fix the instruction (i.e., `l′ = l`) and perturb only the initial state."
+
+Provael takes the other half. Its instruction family fixes the scene and perturbs `l`; the envelope
+the run is scored against does not move. Two projects, one shared formalism, orthogonal axes — which
+is a far more precise statement of the relationship than "different attack surface", and it is
+theirs, not a gloss we invented.
+
+**Both run on LIBERO, and both run in simulation.** That matters because it removes the explanation
+one would reach for otherwise: this is *not* a sim-versus-hardware difference. Provael's zero
+real-robot results are a real weakness (see below), but they are not why these numbers cannot share a
+column. Even on identical hardware the quantities would differ — RedVLA measures a scene-induced
+physical-safety violation under a fixed instruction, provael measures an envelope exit under a fixed
+scene.
+
+**Their numbers, as their Key Findings state them.** ASR up to **95.5% on π₀.₅**, and an average ASR
+of **92.7%** across the five models with stronger baseline performance than OpenVLA, within 10
+optimisation iterations. Across all six models the range runs **64.9%–95.5%**, OpenVLA lowest and
+π₀.₅ highest. Each configuration is repeated over **10 trials** with different random seeds and
+metrics averaged. **No comparison is drawn here between their 95.5% and provael's 88%** — see
+[the baselines table](docs/standards/published-asr-baselines.md) for why that column would be a
+category error.
+
+**The finding of theirs that provael should be tested against.** OpenVLA-OFT improves benign success
+over OpenVLA by 20.6 pp (97.1% vs 76.5%) *and* increases ASR by 25.6 pp (90.5% vs 64.9%), leading
+them to suggest that stronger instruction-following ability may raise the likelihood of triggering
+unsafe behaviour. Note carefully what that does and does not mean for us: their mechanism is a policy
+following an *unmodified* instruction into a hazard, not a policy following a *reframed* one. It is
+therefore a prediction worth testing against
+[the semantic-versus-mechanical finding](docs/findings/semantic-vs-mechanical-instruction-attacks.md),
+not evidence for it. If instruction-following competence drives susceptibility on their axis, a
+policy that attends more to language should be more divertible on ours — and that is a run nobody has
+done.
+
+**Where we are weaker.** Six policies against our one measured. An optimisation loop that searches
+the risk-factor state against our fixed four-template banks. A shipped, evaluated defense against our
+two measured mitigations. And a physical-safety taxonomy with three cost types grounded in risk
+predicates, against an envelope predicate that is **uncalibrated** — `provael calibrate` has never
+run on LIBERO. What we carry that their reported setup does not surface is a matched benign control
+at the same `(task, seed)` cell with a reported false-positive rate.
+
+**mapping_status: `cited, not crosswalked`.** Their attack acts on the scene with the instruction
+held fixed; ours acts on the instruction with the scene held fixed. The two occupy complementary
+halves of the joint space *they* define, so a coverage table mapping one onto the other would imply a
+shared denominator that does not exist. A crosswalk becomes claimable if provael ever measures a
+scene-perturbation family on LIBERO — which is scoped and unrun.
+
+### Ten Sins of Embodied AI Security — *Beyond Model Jailbreak: Systematic Dissection of the "Ten Deadly Sins" in Embodied Intelligence*
+Huang, Li, Ma, Dai, Xu, Xu, Zhang, Wang, Cheng (2025).
+arXiv:[2512.06387](https://arxiv.org/abs/2512.06387) · submitted 6 December 2025
+
+**Read the paper before reusing the name.** "Ten Deadly Sins" reads like a competing ten-item
+taxonomy sitting at the same layer as the Embodied AI Security Top 10. It is not one. It is a
+holistic security analysis of **a single product — the Unitree Go2** — and its ten items are
+implementation defects found in that product's stack, not attack-mechanism categories that generalise
+to other systems. Treating it as a rival taxonomy would misrepresent it in the flattering direction
+for us and the wrong direction for them.
+
+**What they did.** BLE sniffing, traffic interception, APK reverse engineering, cloud API testing and
+hardware probing across three architectural layers — **wireless provisioning, core modules, external
+interfaces**. The abstract enumerates: hard-coded keys, predictable handshake tokens, WiFi credential
+leakage, missing TLS validation, static SSH password, multilingual safety bypass behaviour, insecure
+local relay channels, weak binding logic, and unrestricted firmware access. That is **nine named
+defects for a list of ten**; the tenth is not identifiable from the abstract and is not guessed at
+here.
+
+**Where the two agree.** Most of their list lands inside **EAI07** (CPS, firmware, comms &
+teleoperation compromise), whose strongest evidence is already UniPwn (CVE-2025-60250 / -60251) and
+the Go1 backdoor (CVE-2025-2894) on this same vendor — so the Top 10 already points at this platform,
+via different work. Weak binding logic is **EAI08** (identity, access & excessive autonomy).
+
+**Where they diverge, and it is structural.** The Top 10 indexes by *attack mechanism against a
+policy*; theirs indexes by *defect in one shipped product*. Nine of their ten never touch the model
+at all. A taxonomy of the second kind cannot be crosswalked onto one of the first without inventing
+correspondences.
+
+**Two real gaps on our side, named rather than defended.**
+
+1. **Multilingual safety bypass is absent from the Top 10.** The string "multilingual" does not
+   appear in `docs/top10.md` anywhere. EAI01 covers instruction jailbreak through the direct channel,
+   but the *language-selection* axis — the same request in another language clearing a guardrail it
+   would not clear in English — is not named as a mechanism, and it is among the cheapest bypasses
+   available against a shipped product. Provael ships no multilingual attack and measures nothing
+   here.
+2. **The companion app and vendor cloud are not named as surfaces.** EAI07's phrasing is "CPS,
+   firmware, comms & teleoperation". The phone app that provisions the robot and the cloud API behind
+   it are where APK reverse-engineering, weak binding logic and cloud API testing land — three of
+   their five methods — and neither appears in the Top 10's layer vocabulary. EAI08 covers identity
+   and authorisation abstractly without naming where they are administered.
+
+Neither gap is closed by this entry. Both are recorded because the next revision of the Top 10 should
+answer them.
+
+**mapping_status: `cited, not crosswalked`.** Different layer, different unit of analysis; a mapping
+table would manufacture correspondence.
+
+### DAERT — *Uncovering Linguistic Fragility in Vision-Language-Action Models via Diversity-Aware Red Teaming*
+Tong, He, Pan, Liu, Lin (2026).
+arXiv:[2604.05595](https://arxiv.org/abs/2604.05595) · submitted 7 April 2026
+
+**The nearest published work to provael's own headline channel, on policies provael has never
+measured.** DAERT attacks *linguistic* variation — the same axis as the instruction family — and
+reports task success falling from **93.33% to 5.85%** on **π₀ and OpenVLA**.
+
+Their contribution is methodological and it is a direct criticism of how provael generates
+instructions. Standard RL-based red-teaming adversaries suffer **mode collapse**: reward maximisation
+converges on a narrow set of repetitive failure patterns, so the search reports a high number while
+exploring a small region. DAERT adds a diversity objective to keep coverage broad while staying
+effective.
+
+**Where we are weaker, and it is the same weakness Q-DIG named.** Provael's `paraphrase` and
+`roleplay` arms are **fixed four-template banks**, not a search of any kind — so a null from them
+bounds the bank and nothing wider, which is stated as a falsification condition on
+[the semantic-versus-mechanical finding](docs/findings/semantic-vs-mechanical-instruction-attacks.md).
+DAERT is the second independent demonstration (after Q-DIG, arXiv:2603.12510) that search finds
+linguistic failures a hand-written set misses. Two papers now say the same thing about our method.
+
+**What it does not settle for us.** DAERT reports **task-success collapse**; provael reports
+**envelope exit**. A policy that stops working scores near-total on their metric and zero on ours, so
+93.33%→5.85% cannot be read as an ASR in provael's sense — the standard comparability rule on
+[the baselines page](docs/standards/published-asr-baselines.md) applies unchanged. It is also not a
+test of the semantic-versus-mechanical distinction: they do not separate meaning-preserving from
+meaning-reframing prompts, which is the whole content of that finding.
+
+**mapping_status: `cited, not crosswalked`.**
+
+### EmbodiedGovBench — *A Benchmark for Governance, Recovery, and Upgrade Safety in Embodied Agent Systems*
+Qin, Luan, See, Yang, Li (2026).
+arXiv:[2604.11174](https://arxiv.org/abs/2604.11174) · submitted 13 April 2026
+
+**The one entry in this file that overlaps EAI10 rather than an attack channel.** EmbodiedGovBench
+argues that task-success metrics leave a gap — they do not measure whether a system is *governable* —
+and evaluates seven dimensions: **unauthorized capability invocation, runtime drift robustness,
+recovery success, policy portability, version upgrade safety, human override responsiveness, audit
+completeness**, across single-robot and fleet settings.
+
+**Why it belongs here.** EAI10 (insufficient evaluation, observability & incident response) is the
+Top 10 item provael marks `process-control-not-attackable` — there is no attack family for it because
+it is not an attack surface. EmbodiedGovBench is the closest thing to a measurement instrument for
+that item, and three of its dimensions map onto surfaces provael already emits rather than attacks:
+audit completeness onto the evidence bundle and append-only ledger, version upgrade safety onto the
+per-checkpoint regression gate, unauthorized capability invocation onto the `authorization` family
+and EAI08.
+
+**Where we are weaker.** Fleet settings, human override responsiveness and recovery success are
+dimensions provael does not model at all — every run is single-policy, open-loop against a simulator,
+with no operator in the loop and no recovery path to measure. Provael emits governance *evidence*; it
+does not test whether governance *works*.
+
+**mapping_status: `cited, not crosswalked`.** Their unit is a deployed agent system under operational
+perturbation; ours is a policy under adversarial input. The overlap is in what gets reported, not in
+what gets measured.
+
 ## What is actually novel here
 
 Not the attacks. **And — since AttackVLA (arXiv:2511.12149) — not simply "a unified harness with a

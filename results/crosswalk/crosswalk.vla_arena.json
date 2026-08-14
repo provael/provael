@@ -1,0 +1,108 @@
+{
+  "coverage_counts": {
+    "covered": 0,
+    "not covered": 3,
+    "out of scope by design": 0,
+    "partial": 2
+  },
+  "format": "provael-crosswalk/v1",
+  "mapping_status": "proposed \u2014 authored by Provael, not reviewed or endorsed by the VLA-Arena authors",
+  "no_provael_attack_family_maps": "Every row lists zero provael attack families, and that is correct rather than incomplete. Provael's families all perturb an input; none of these suites has an input to perturb. The corresponding provael arm is the benign control.",
+  "posture_contrast": {
+    "instruction_perturbed_by_their_safety_suites": false,
+    "our_posture": "adversarial",
+    "our_question": "can this policy be made unsafe? \u2014 the instruction is perturbed and the policy scored on whether it leaves a safety envelope that did not move",
+    "provael_arm_that_corresponds": "the benign control arm (`--attacks none`), NOT any attack family. A non-adversarial unsafe rate is what their safety suites measure, and the control is the only provael arm that reports one.",
+    "provael_control_reference_value": "2/50 episodes on SmolVLA x LIBERO libero_object, all ten tasks \u2014 provael's own non-adversarial unsafe rate, and an UNCALIBRATED one, so it carries a false-positive floor their scene-constraint judgement does not.",
+    "shared_metric_name_warning": "provael's `scoring.safety_cost.cumulative_cost` and VLA-Arena's Cumulative Cost share a NAME and have not been shown to share a definition. Ours is the mean number of unsafe steps per episode derived from a per-step boolean. Do not place them in one table.",
+    "their_posture": "non-adversarial",
+    "their_question": "is this policy safe by default? \u2014 a hazard is placed in the scene and the policy scored on whether it avoids one it was never pushed toward",
+    "why_no_score_comparison": "Placing a provael ASR beside a VLA-Arena CC would assert that a policy pushed by an adversary and a policy left alone are on one scale. They are not, and the direction of the error flatters provael: our number is larger because we push."
+  },
+  "safety_suites": [
+    {
+      "coverage": "partial",
+      "eai": [
+        "EAI04"
+      ],
+      "families": [],
+      "hazard": "static collision obstacles placed in the workspace",
+      "id": "va01",
+      "note": "geometrically the nearest match provael has: the keep-out predicate IS a spatial breach. But provael's breach is caused by a perturbed instruction, theirs by the policy's own path around an obstacle nobody added adversarially. Same geometry, different cause.",
+      "posture": "non-adversarial",
+      "suite": "safety_static_obstacles",
+      "tasks": 15
+    },
+    {
+      "coverage": "not covered",
+      "eai": [
+        "EAI04"
+      ],
+      "families": [],
+      "hazard": "objects requiring careful handling during grasp",
+      "id": "va02",
+      "note": "no grasp force, contact model or handling quality is represented in any provael suite, so there is nothing to be cautious with.",
+      "posture": "non-adversarial",
+      "suite": "safety_cautious_grasp",
+      "tasks": 15
+    },
+    {
+      "coverage": "partial",
+      "eai": [
+        "EAI04",
+        "EAI06"
+      ],
+      "families": [],
+      "hazard": "designated hazard zones the policy must not enter",
+      "id": "va03",
+      "note": "the most literal correspondence in the set \u2014 a designated no-go region, which is exactly what provael's `keepout_zones` suite encodes. Still `partial`, and only because the predicate is UNCALIBRATED: `provael calibrate` has never run on LIBERO, so provael's zone boundary is not a defensible threshold the way a declared CBDDL constraint is.",
+      "posture": "non-adversarial",
+      "suite": "safety_hazard_avoidance",
+      "tasks": 15
+    },
+    {
+      "coverage": "not covered",
+      "eai": [
+        "EAI04"
+      ],
+      "families": [],
+      "hazard": "object state that must survive the episode intact",
+      "id": "va04",
+      "note": "provael scores a keep-out breach, not the condition of objects afterwards. Nothing in the report records whether anything was damaged.",
+      "posture": "non-adversarial",
+      "suite": "safety_state_preservation",
+      "tasks": 15
+    },
+    {
+      "coverage": "not covered",
+      "eai": [
+        "EAI04"
+      ],
+      "families": [],
+      "hazard": "moving obstacles entering the workspace during the episode",
+      "id": "va05",
+      "note": "every provael suite is static for the duration of an episode; no obstacle moves, so there is no dynamic avoidance to measure.",
+      "posture": "non-adversarial",
+      "suite": "safety_dynamic_obstacles",
+      "tasks": 15
+    }
+  ],
+  "scope": "Taxonomy comparability only. No VLA-Arena harness is run, no leaderboard submission is made, and no provael score is emitted here \u2014 the posture contrast is why.",
+  "source": {
+    "arxiv": "2512.22539",
+    "arxiv_date": "2025-12-27",
+    "arxiv_latest_revision": "2026-08-07",
+    "authors_note": "Zhang, Li, Shen, Zhang, Cai, Liu, Ji, Chen, Dai, Ji, Yang",
+    "mapping_status": "proposed \u2014 authored by Provael, not reviewed or endorsed by the VLA-Arena authors",
+    "name": "VLA-Arena",
+    "phrasing_rule": "Suite identifiers are quoted VERBATIM. No VLA-Arena harness is run here, no leaderboard submission is made, and no provael score is placed beside a VLA-Arena score \u2014 see `posture_contrast`, which is the reason.",
+    "project_url": "https://vla-arena.github.io/",
+    "task_specification": "Constrained Behavior Domain Definition Language (CBDDL) \u2014 declarative task and safety-constraint definition",
+    "taxonomy_kind": "capability + safety benchmark suite for VLA policies (11 suites, 170 tasks)",
+    "taxonomy_location": "5 safety suites of 11 (75 tasks of 170); names verbatim from the published task registry",
+    "their_metrics": "Cumulative Cost (CC) and Success Rate (SR)",
+    "title": "VLA-Arena: An Open-Source Framework for Benchmarking Vision-Language-Action Models",
+    "url": "https://arxiv.org/abs/2512.22539"
+  },
+  "target": "vla_arena"
+}
