@@ -1044,6 +1044,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../crosswalk/vla-arena/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VLA-Arena crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../crosswalk/safevla-bench/" class="md-nav__link">
         
   
@@ -1051,7 +1079,7 @@
   <span class="md-ellipsis">
     
   
-    SafeVLA-Bench crosswalk (aspirational)
+    SafeVLA-Bench crosswalk
   
 
     
@@ -2269,10 +2297,10 @@ them. Provael runs no harness from any paper below and publishes no score agains
 leaderboard. Every figure is <em>as reported by its authors</em>, with a resolvable identifier so you can
 check it yourself.</p>
 </blockquote>
-<p>Provael's headline is a <code>roleplay</code> instruction diverting SmolVLA × LIBERO <strong>100% of the time
-(10/10)</strong>. Any technical buyer will immediately benchmark that against the published record — where
-attacks routinely report 76%, 96%, near-100%. If those numbers sit in one column, provael looks
-unremarkable.</p>
+<p>Provael's headline is a <code>roleplay</code> instruction diverting SmolVLA × LIBERO <strong>88% of the time
+(44/50)</strong>, across all ten <code>libero_object</code> tasks. Any technical buyer will immediately benchmark that
+against the published record — where attacks routinely report 76%, 96%, near-100%. If those numbers
+sit in one column, provael looks unremarkable.</p>
 <p><strong>They do not belong in one column.</strong> That is what this page is for, and the last column is the
 whole point.</p>
 <h2 id="the-comparability-rule">The comparability rule</h2>
@@ -2354,6 +2382,14 @@ an equivalence that does not exist.</p>
 <td><strong>Row withheld, deliberately.</strong> Four per-suite figures were proposed for this row — Spatial 97.5 / Object 93.8 / Goal 96.5 / LIBERO-10 77.3. They appear as a set in none of the three papers checked: 2605.25889 reports OpenVLA-7B at 95.4% <em>clean</em> success on LIBERO-Spatial and validates 48 PGD cells without publishing them; in 2505.16640 and 2509.19870, two of the four values (93.8, 96.5) occur only as isolated cells of unrelated tables and the other two (97.5, 77.3) do not occur at all. Printing figures on a page about checkability that we could not check would be self-refuting. Restore the row when a source resolves.</td>
 </tr>
 <tr>
+<td>RedVLA — scene risk-factor injection, instruction held fixed</td>
+<td><strong>ASR</strong> (physical-safety violation: State / Cumulative / Conditional)</td>
+<td><strong>95.5%</strong> on π₀.₅; <strong>64.9%–95.5%</strong> across six models</td>
+<td>LIBERO, simulation, 10 trials per configuration</td>
+<td>arXiv:<a href="https://arxiv.org/abs/2604.22591">2604.22591</a></td>
+<td><strong>No — and the reason is unusually clean.</strong> RedVLA formalises red teaming over the environment–instruction joint space <code>(s′₀, l′)</code>, then <strong>fixes the instruction (<code>l′ = l</code>) and perturbs only the initial state</strong>. Provael does the converse: it fixes the scene and perturbs the instruction. Same benchmark, same simulator, complementary halves of one formalism — so the two ASRs are orthogonal quantities, not a strong result and a weak one. Their predicate is a typed physical-safety violation; ours is an envelope exit. Note what this row does <em>not</em> rest on: both are simulation, so sim-versus-hardware is not the difference.</td>
+</tr>
+<tr>
 <td><strong>Provael</strong> — <code>roleplay</code> (instruction reframing)</td>
 <td><strong>ASR</strong> = episodes driven out of the benign envelope</td>
 <td><strong>88% (44/50)</strong>, task-clustered 95% CI <strong>[72%, 100%]</strong></td>
@@ -2367,6 +2403,14 @@ an equivalence that does not exist.</p>
 <p>Every figure below is read from the committed
 <a href="https://github.com/provael/provael/blob/main/results/smolvla_libero_object/report.json"><code>results/smolvla_libero_object/report.json</code></a>.
 Nothing here is estimated, rounded up, or reconstructed.</p>
+<blockquote>
+<p><strong>Which run this is, because the two figures differ and both are ours.</strong> This table is the
+<strong>earlier single-task run</strong> — <code>libero_object/0</code> only, 10 seeds — where <code>roleplay</code> read 10/10. The
+headline row in the table above is the <strong>later ten-task suite</strong> at 44/50 (88%). The larger run is
+the one to quote: it spans all ten tasks and its 88% is the more conservative number. Both are
+committed; neither supersedes the other's raw counts, and the single-task 100% is retained here
+rather than deleted because it is what the <code>report.json</code> this section cites actually contains.</p>
+</blockquote>
 <table>
 <thead>
 <tr>

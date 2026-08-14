@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://docs.provael.com/crosswalk/safevla-bench/">
       
       
-        <link rel="prev" href="../foresight-safety-vla/">
+        <link rel="prev" href="../vla-arena/">
       
       
         <link rel="next" href="../../standards/published-asr-baselines/">
@@ -27,7 +27,7 @@
     
     
       
-        <title>SafeVLA-Bench crosswalk (aspirational) - Provael</title>
+        <title>SafeVLA-Bench crosswalk - Provael</title>
       
     
     
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              SafeVLA-Bench crosswalk (aspirational)
+              SafeVLA-Bench crosswalk
             
           </span>
         </div>
@@ -1041,6 +1041,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../vla-arena/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VLA-Arena crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1060,7 +1088,7 @@
   <span class="md-ellipsis">
     
   
-    SafeVLA-Bench crosswalk (aspirational)
+    SafeVLA-Bench crosswalk
   
 
     
@@ -1078,7 +1106,7 @@
   <span class="md-ellipsis">
     
   
-    SafeVLA-Bench crosswalk (aspirational)
+    SafeVLA-Bench crosswalk
   
 
     
@@ -2313,11 +2341,17 @@ harness, publishes no comparative scores against their numbers, and drives no ph
 <a href="https://github.com/provael/provael/blob/main/SAFETY.md">SAFETY.md</a>.</p>
 </blockquote>
 <div class="admonition warning">
-<p class="admonition-title">mapping_status: <code>aspirational</code> — nothing here is implemented</p>
-<p>Unlike the <a href="../robojailbench/">RoboJailBench</a> and <a href="../foresight-safety-vla/">ForesightSafety-VLA</a>
-crosswalks, <strong>there is no <code>provael crosswalk --target safevla</code> and no emitted JSON.</strong> This page
-documents a mapping we intend to build and the one blocker that stops it being honest today.
-Everything below is a design note, not a capability. Do not cite it as coverage.</p>
+<p class="admonition-title">mapping_status: the mapping ships; the numeric comparison does not</p>
+<p><code>provael crosswalk --target safevla</code> <strong>now exists</strong> and emits
+<a href="https://github.com/provael/provael/blob/main/results/crosswalk/crosswalk.safevla.json"><code>results/crosswalk/crosswalk.safevla.json</code></a>,
+carrying the structural mapping below plus a machine-readable <code>blocker</code> field.</p>
+<p><strong>What it deliberately does not emit is a number.</strong> No provael SBU is placed beside a
+SafeVLA-Bench SBU, and <code>--in</code> has no effect on this target. The blocker is unchanged from when
+this page said nothing was implemented: our <code>succ_but_unsafe</code> shares their metric's <em>name</em> and
+has not been shown to share its <em>units</em>, on a predicate that is still uncalibrated.</p>
+<p>Comparing what the two projects <strong>measure</strong> does not require their numbers to be commensurable,
+and stating the incommensurability in a committed artifact is more useful than withholding the
+mapping. <strong>Do not cite this page as coverage of SafeVLA-Bench's scenarios.</strong></p>
 </div>
 <h2 id="what-this-is-and-is-not">What this is (and is not)</h2>
 <p><strong>Source (pinned).</strong> <em>SafeVLA-Bench: A Benchmark for the Success-Safety Gap in Vision-Language-Action
@@ -2391,14 +2425,18 @@ by provael and an SBU reported by SafeVLA-Bench are two different quantities wea
 publishing them adjacently would mislead in the direction that flatters us.</p>
 <h2 id="what-implementing-it-would-take">What implementing it would take</h2>
 <ol>
-<li>Calibrate the keep-out predicate on LIBERO so "unsafe" has a defensible threshold.</li>
-<li>Express at least one of their STL clauses as a provael danger predicate, and say which.</li>
-<li>Emit <code>crosswalk.safevla.json</code> behind <code>provael crosswalk --target safevla</code>, carrying a
-   <code>comparability</code> field per row — the same shape the other two crosswalks use, where the
-   comparability column is the point of the table rather than a footnote.</li>
+<li>Calibrate the keep-out predicate on LIBERO so "unsafe" has a defensible threshold. <strong>Not done</strong> —
+   <code>provael calibrate</code> has never been run on LIBERO.</li>
+<li>Express at least one of their STL clauses as a provael danger predicate, and say which.
+   <strong>Not done.</strong></li>
+<li>~~Emit <code>crosswalk.safevla.json</code> behind <code>provael crosswalk --target safevla</code>~~ — <strong>done</strong>, with
+   the structural mapping and the blocker, and without the per-row numeric comparability the
+   original plan assumed. That column needs steps 1 and 2 first; shipping it before them is the
+   exact error this page was written to prevent.</li>
 </ol>
-<p>Only step 3 is code. Steps 1 and 2 are measurements, which is why the status is <code>aspirational</code> and
-not <code>in-progress</code>.</p>
+<p>Only step 3 was code, and it is the step that could be honestly separated from the other two.
+Steps 1 and 2 are measurements, and until they exist an SBU emitted by provael and an SBU reported
+by SafeVLA-Bench remain two quantities wearing one name.</p>
 <h2 id="their-finding-a-reader-of-our-numbers-should-see">Their finding a reader of our numbers should see</h2>
 <p>Independent of anything we measured: "high-SR tabletop baselines still leave <strong>13 to 15 percent</strong>
 unsafe-episode rates, and <strong>36 to 56 percent</strong> of successful RoboCasa-365 rollouts violate at least
