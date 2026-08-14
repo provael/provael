@@ -1,0 +1,65 @@
+{
+  "axes": [
+    {
+      "axis": "when it acts",
+      "id": "sv01",
+      "note": "the ordering difference from which every other difference follows.",
+      "provael": "pre-hoc \u2014 perturbs the input first",
+      "safevla_bench": "post-hoc \u2014 scores rollouts already produced"
+    },
+    {
+      "axis": "who causes the failure",
+      "id": "sv02",
+      "note": "the same posture split the VLA-Arena crosswalk carries, arrived at independently.",
+      "provael": "an adversary, by construction",
+      "safevla_bench": "nobody; the policy's own behaviour under ordinary instructions"
+    },
+    {
+      "axis": "safety definition",
+      "id": "sv03",
+      "note": "a declared specification versus an uncalibrated threshold \u2014 the blocker in one line.",
+      "provael": "a keep-out predicate, currently UNCALIBRATED",
+      "safevla_bench": "Signal Temporal Logic (STL) specifications over the trajectory"
+    },
+    {
+      "axis": "denominator",
+      "id": "sv04",
+      "note": "provael's denominator is paired; theirs is not, so even the counts are not like-for-like.",
+      "provael": "matched (task, seed) pairs against a benign twin",
+      "safevla_bench": "rollouts of the native benchmark task"
+    },
+    {
+      "axis": "headline metric",
+      "id": "sv05",
+      "note": "provael reports an interval and a control; SBU as published carries neither.",
+      "provael": "ASR with a 95% Wilson interval and a benign-FPR control",
+      "safevla_bench": "Succ-But-Unsafe (SBU), Violation Severity Index (VSI)"
+    }
+  ],
+  "blocker": {
+    "blocked": true,
+    "prerequisite": "Calibrate the keep-out predicate on LIBERO so `unsafe` has a defensible threshold. `provael calibrate` has never been run on LIBERO.",
+    "what_is_blocked": "emitting a provael SBU beside a SafeVLA-Bench SBU",
+    "what_is_not_blocked": "The taxonomy mapping itself, which is what this artifact contains. Comparing what the two projects MEASURE does not require their numbers to be commensurable \u2014 and stating the incommensurability is more useful than withholding the mapping.",
+    "why": "The two share a name and have not been shown to share units. SafeVLA-Bench judges an STL specification over a trajectory; provael returns a boolean from an uncalibrated keep-out predicate carrying a measured false-positive floor (benign control 2/50 on the ten-task LIBERO run). Publishing them adjacently would mislead in the direction that flatters us."
+  },
+  "complementarity": "Neither substitutes for the other. A policy can score well on SBU and still have a high ASR; a policy with a low ASR can be routinely unsafe on its own. A safety case citing only one is answering half the question.",
+  "format": "provael-crosswalk/v1",
+  "mapping_status": "proposed \u2014 taxonomy comparability only; NO metric comparison is emitted, and the blocker that prevents one is recorded in this artifact",
+  "scope": "Taxonomy comparability only. No SafeVLA-Bench harness is run and no comparative score is produced \u2014 deliberately, and `blocker` says why.",
+  "source": {
+    "arxiv": "2606.00773",
+    "arxiv_date": "2026-05-30",
+    "authors_note": "Fan, Xu, Sokolsky, Lee, Kong \u2014 University of Notre Dame; University of Pennsylvania",
+    "mapping_status": "proposed \u2014 taxonomy comparability only; NO metric comparison is emitted, and the blocker that prevents one is recorded in this artifact",
+    "name": "SafeVLA-Bench",
+    "not_to_be_confused_with": "SafeVLA (arXiv:2503.03480), an alignment defense \u2014 a different work with a near-identical name",
+    "phrasing_rule": "Metric names are quoted verbatim from the abstract. No SafeVLA-Bench harness is run. Provael's `succ_but_unsafe` is NEVER placed beside their SBU \u2014 see `blocker`.",
+    "project_url": "https://safevla.org",
+    "taxonomy_kind": "post-hoc success-safety gap measurement over rollouts, with safety requirements as Signal Temporal Logic (STL) specifications",
+    "their_metrics": "Succ-But-Unsafe (SBU) and Violation Severity Index (VSI)",
+    "title": "SafeVLA-Bench: A Benchmark for the Success-Safety Gap in Vision-Language-Action Models",
+    "url": "https://arxiv.org/abs/2606.00773"
+  },
+  "target": "safevla"
+}

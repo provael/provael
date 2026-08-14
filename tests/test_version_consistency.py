@@ -197,3 +197,78 @@ def test_changelog_is_ready_for_the_current_version() -> None:
     """
     changelog = (REPO / "CHANGELOG.md").read_text(encoding="utf-8")
     assert f"## [{__version__}]" in changelog or "## [Unreleased]" in changelog
+
+
+#: `## [1.2.3] <dash> 2026-08-09` — the *dated* form only. An undated heading (`## [Unreleased]`)
+#: is a work-in-progress marker and makes no claim about having shipped; a dated one does.
+#: Dash class matches scripts/check_changelog.py, which accepts hyphen, en dash and em dash.
+_DATED_HEADING = re.compile(r"^##[ \t]+\[(\d+\.\d+\.\d+)\][ \t]*[-–—][ \t]*\d{4}-\d{2}-\d{2}[ \t]*$",
+                            re.MULTILINE)
+
+
+#: Dated headings that predate the tagging discipline and can never be reconciled: you cannot tag
+#: a release that was never cut. Recorded here rather than deleted from the CHANGELOG, because the
+#: section is the only surviving record of what 0.1.0 contained. :func:`_released_versions` already
+#: documents this same asymmetry from the other side ("0.1.0 has a section and no tag").
+#: **Do not extend this list to excuse a new gap** — it is history, not a policy.
+_UNTAGGABLE_HISTORY = frozenset({"0.1.0"})
+
+
+def _dated_changelog_versions() -> list[str]:
+    """Versions the CHANGELOG presents as released, newest first (file order)."""
+    return _DATED_HEADING.findall((REPO / "CHANGELOG.md").read_text(encoding="utf-8"))
+
+
+def test_every_dated_changelog_version_has_a_tag() -> None:
+    """The changelog must not get ahead of the artifact.
+
+    THE FAILURE THIS CATCHES. On 13 August 2026 ``CHANGELOG.md`` carried
+    ``## [0.33.1] — 2026-08-13`` and ``CITATION.cff`` carried ``date-released: "2026-08-13"``,
+    while ``git tag`` had no ``v0.33.1`` and PyPI's latest was still 0.33.0. Every surface a
+    reader consults said the version had shipped; nothing had. That is the same class of drift as
+    the counted-claims tests — a claim in the repo with no artifact behind it — and it was found by
+    a person, not by CI.
+
+    A **dated** heading is the claim. ``## [Unreleased]`` asserts nothing and is ignored here, so
+    the normal workflow (accumulate under Unreleased, promote in the release commit, tag) is
+    unaffected until the promotion happens.
+
+    THE ONE EXEMPTION, and its cost. The newest dated heading may be untagged when it names
+    :data:`~provael.__version__` — that is the release-prep commit, where promoting the heading and
+    pushing the tag cannot be the same event. ``test_every_pin_names_a_tag_that_exists`` grants the
+    same window for the same reason. The cost is real and worth stating: this test could not have
+    failed on the exact commit that introduced the drift above. What it does catch is the drift
+    *persisting* — the moment any further version lands, or a second release is prepared, the
+    untagged heading stops being the newest and this fails. A one-commit blind spot in exchange for
+    never shipping two.
+    """
+    tagged = _released_versions()
+    if not tagged:
+        # Same posture as test_every_pin_names_a_tag_that_exists: never pass vacuously where it
+        # matters. Both workflows set `fetch-depth: 0` precisely so this list is real.
+        assert not os.environ.get("CI"), (
+            "no git tags available in CI — the checkout must set `fetch-depth: 0` or this "
+            "test verifies nothing"
+        )
+        pytest.skip("no git tags available (shallow clone or no git); cannot verify")
+
+    dated = _dated_changelog_versions()
+    assert len(dated) >= 5, (
+        f"the dated-heading scan found only {len(dated)} headings; it is not working"
+    )
+
+    untagged = [
+        version for version in dated
+        if version not in tagged and version not in _UNTAGGABLE_HISTORY
+    ]
+    if not untagged:
+        return
+
+    in_flight = untagged[0] == dated[0] == __version__
+    remaining = untagged[1:] if in_flight else untagged
+    assert not remaining, (
+        "CHANGELOG.md presents these versions as released, but no git tag exists for them:\n  "
+        + "\n  ".join(f"v{version}" for version in remaining)
+        + "\n\n  A dated heading is a claim that users can install it. Either cut the tag, or "
+        "move the section back under [Unreleased] until you do."
+    )

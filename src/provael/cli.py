@@ -82,12 +82,20 @@ from provael.crosswalk import (
     CROSSWALK_TARGET,
     FORESIGHT_JSON,
     FORESIGHT_TARGET,
+    SAFEVLA_JSON,
+    SAFEVLA_TARGET,
+    VLA_ARENA_JSON,
+    VLA_ARENA_TARGET,
     to_atlas_json,
     to_atlas_markdown,
     to_crosswalk_json,
     to_crosswalk_markdown,
     to_foresight_json,
     to_foresight_markdown,
+    to_safevla_json,
+    to_safevla_markdown,
+    to_vla_arena_json,
+    to_vla_arena_markdown,
 )
 from provael.datasets.lerobot_frames import DatasetRejected, load_info
 from provael.defenses.measure import (
@@ -188,6 +196,8 @@ class CrosswalkTarget(StrEnum):
     robojailbench = CROSSWALK_TARGET
     atlas = ATLAS_TARGET
     foresight = FORESIGHT_TARGET
+    vla_arena = VLA_ARENA_TARGET
+    safevla = SAFEVLA_TARGET
 
 
 class CrosswalkFormat(StrEnum):
@@ -439,6 +449,18 @@ def crosswalk_cmd(
     provael's one real measurement. With ``--in`` it also reports this run's cumulative cost, risk
     exposure time and unsafe success rate — in their vocabulary, in provael's units, with the
     incomparability warning attached.
+
+    ``--target vla_arena`` maps VLA-Arena's five safety suites (arXiv:2512.22539), identifiers
+    verbatim, and carries the fact that their safety axis is **non-adversarial** as a
+    machine-readable field: their suites place a hazard in the scene, none perturbs the instruction,
+    so the corresponding provael arm is the benign control rather than any attack family.
+
+    ``--target safevla`` maps SafeVLA-Bench (arXiv:2606.00773) structurally and records why no
+    numeric comparison is emitted — provael's ``succ_but_unsafe`` shares a name with their SBU and
+    has not been shown to share units, on an uncalibrated predicate.
+
+    Neither ``vla_arena`` nor ``safevla`` accepts a measured comparison, so ``--in`` has no effect
+    on them. That is a property of the mapping, not a missing feature.
     """
     report = load_report(in_dir) if in_dir is not None else None
     if target is CrosswalkTarget.atlas:
@@ -450,6 +472,17 @@ def crosswalk_cmd(
             else to_foresight_json(report)
         )
         basename = FORESIGHT_JSON
+    elif target is CrosswalkTarget.vla_arena:
+        # No `report` branch, unlike foresight: this target deliberately emits no provael number.
+        # See VLA_ARENA_POSTURE — their safety axis is non-adversarial, so any provael ASR placed
+        # beside it would be answering a question their suites do not ask.
+        payload = to_vla_arena_markdown() if fmt is CrosswalkFormat.md else to_vla_arena_json()
+        basename = VLA_ARENA_JSON
+    elif target is CrosswalkTarget.safevla:
+        # Also numberless, for a different reason: SAFEVLA_BLOCKER. Same metric name, unproven
+        # equivalence, uncalibrated predicate.
+        payload = to_safevla_markdown() if fmt is CrosswalkFormat.md else to_safevla_json()
+        basename = SAFEVLA_JSON
     else:
         payload = to_crosswalk_markdown() if fmt is CrosswalkFormat.md else to_crosswalk_json()
         basename = CROSSWALK_JSON

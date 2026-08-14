@@ -6,6 +6,7 @@ and `PROVAEL_INTEGRATION=1`.
 
 | # | Example | What it shows | Runtime | Needs |
 | --- | --- | --- | --- | :---: |
+| ★ | [lerobot_eval_smolvla_libero.py](lerobot_eval_smolvla_libero.py) | **Reproduce the headline result**, one file, nothing to edit | 15.4 GPU-h | GPU |
 | 01 | [first-scan-cpu](01-first-scan-cpu/) | Your first scan — all four attack families on the stub | < 1 s | CPU |
 | 02 | [redteam-smolvla-libero](02-redteam-smolvla-libero/) | Red-team a real SmolVLA policy in LIBERO | minutes | GPU |
 | — | [reproductions/](reproductions/) | Reproduce FreezeVLA / OpenVLA-patch / BadVLA / RoboPAIR in one command | < 1 s | CPU |
@@ -34,6 +35,55 @@ provael list-recipes                   # see every built-in preset
 ```
 
 Prefer not to install anything? **[Open the 5-minute Colab notebook →](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb)**
+
+## Reproducing the headline result
+
+[`lerobot_eval_smolvla_libero.py`](lerobot_eval_smolvla_libero.py) reproduces the SmolVLA × LIBERO
+result end to end. It is one file with [PEP 723](https://peps.python.org/pep-0723/) inline
+dependency metadata, so there is nothing to install and no path to edit:
+
+```bash
+uv run examples/lerobot_eval_smolvla_libero.py --dry-run   # validates on any laptop, seconds
+uv run examples/lerobot_eval_smolvla_libero.py             # the real run — read the table first
+```
+
+`uv run` builds an isolated environment from the pinned header and executes the file. The dry run
+imports no torch and downloads no weights: it resolves the registries, validates the `RunConfig`,
+and confirms the benign control arm is present — the checks that would otherwise fail at minute 0
+of a 15-hour run.
+
+### Expected wall-clock, and the hardware it was measured on
+
+| | value |
+| --- | --- |
+| GPU | **NVIDIA L4** (Modal), single GPU per shard |
+| Episodes | 400 records, **350 measured** (`mcp_tool_desc` is N/A in this suite, 0 attempts) |
+| GPU-hours | **15.4** |
+| Cost | **$12.29**, measured — $0.031/episode |
+| Wall clock | **2.04 h** sharded one task per container ×10; **~15.4 h** unsharded on one GPU |
+| provael | 0.32.0 + the post-tag `--episodes-per-seed` commit |
+| lerobot | **0.5.1** |
+
+The cost row is measured, not projected: the pre-run estimate was $10.17 against an actual $12.29,
+**21% low**. Budget accordingly.
+
+### What it prints, and why
+
+The matched-pair table and the McNemar p-value for every arm, computed by
+`provael.scoring.paired` rather than reimplemented. The benign control is structurally impossible
+to drop: every comparison is built from the `(task, seed)`-matched benign twin, so an arm without a
+twin simply has no row. It then compares your run against the committed reference
+(`roleplay` 44/50, control 2/50) and says whether you reproduced it.
+
+### Two things that will surprise you
+
+- **Your numbers will differ by a few episodes.** SmolVLA's flow-matching sampler is not fully
+  seeded (`stochastic: true`), so provael's determinism contract covers the stub path and not this
+  one. The committed 44/50 is one draw, and so is yours.
+- **lerobot is pinned at 0.5.1, not the newer 0.6.x.** 0.6.0 and 0.6.1 exist; the committed result
+  was measured on 0.5.1 and has never been re-measured on 0.6.x. Pinning forward would make this a
+  script that runs rather than one that reproduces. Re-measuring on 0.6.x is welcome — report the
+  difference.
 
 ## How the pieces fit
 

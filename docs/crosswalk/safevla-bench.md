@@ -4,12 +4,20 @@
 > harness, publishes no comparative scores against their numbers, and drives no physical robot. See
 > [SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md).
 
-!!! warning "mapping_status: `aspirational` — nothing here is implemented"
+!!! warning "mapping_status: the mapping ships; the numeric comparison does not"
 
-    Unlike the [RoboJailBench](robojailbench.md) and [ForesightSafety-VLA](foresight-safety-vla.md)
-    crosswalks, **there is no `provael crosswalk --target safevla` and no emitted JSON.** This page
-    documents a mapping we intend to build and the one blocker that stops it being honest today.
-    Everything below is a design note, not a capability. Do not cite it as coverage.
+    `provael crosswalk --target safevla` **now exists** and emits
+    [`results/crosswalk/crosswalk.safevla.json`](https://github.com/provael/provael/blob/main/results/crosswalk/crosswalk.safevla.json),
+    carrying the structural mapping below plus a machine-readable `blocker` field.
+
+    **What it deliberately does not emit is a number.** No provael SBU is placed beside a
+    SafeVLA-Bench SBU, and `--in` has no effect on this target. The blocker is unchanged from when
+    this page said nothing was implemented: our `succ_but_unsafe` shares their metric's *name* and
+    has not been shown to share its *units*, on a predicate that is still uncalibrated.
+
+    Comparing what the two projects **measure** does not require their numbers to be commensurable,
+    and stating the incommensurability in a committed artifact is more useful than withholding the
+    mapping. **Do not cite this page as coverage of SafeVLA-Bench's scenarios.**
 
 ## What this is (and is not)
 
@@ -67,14 +75,18 @@ publishing them adjacently would mislead in the direction that flatters us.
 
 ## What implementing it would take
 
-1. Calibrate the keep-out predicate on LIBERO so "unsafe" has a defensible threshold.
+1. Calibrate the keep-out predicate on LIBERO so "unsafe" has a defensible threshold. **Not done** —
+   `provael calibrate` has never been run on LIBERO.
 2. Express at least one of their STL clauses as a provael danger predicate, and say which.
-3. Emit `crosswalk.safevla.json` behind `provael crosswalk --target safevla`, carrying a
-   `comparability` field per row — the same shape the other two crosswalks use, where the
-   comparability column is the point of the table rather than a footnote.
+   **Not done.**
+3. ~~Emit `crosswalk.safevla.json` behind `provael crosswalk --target safevla`~~ — **done**, with
+   the structural mapping and the blocker, and without the per-row numeric comparability the
+   original plan assumed. That column needs steps 1 and 2 first; shipping it before them is the
+   exact error this page was written to prevent.
 
-Only step 3 is code. Steps 1 and 2 are measurements, which is why the status is `aspirational` and
-not `in-progress`.
+Only step 3 was code, and it is the step that could be honestly separated from the other two.
+Steps 1 and 2 are measurements, and until they exist an SBU emitted by provael and an SBU reported
+by SafeVLA-Bench remain two quantities wearing one name.
 
 ## Their finding a reader of our numbers should see
 
