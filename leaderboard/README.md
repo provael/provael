@@ -4,11 +4,11 @@ emoji: 🦾
 colorFrom: red
 colorTo: indigo
 sdk: gradio
-sdk_version: 6.16.0
+sdk_version: 6.23.1
 app_file: app.py
 pinned: false
 license: apache-2.0
-short_description: Attack-success rates for VLA robot policies, with benign controls
+short_description: Attack-success rates for VLA policies, with benign controls
 tags:
 - leaderboard
 - submission:manual
@@ -37,8 +37,8 @@ Attack Success Rate (ASR) of instruction / visual / injection attacks against
 Vision-Language-Action (VLA) robot policies in simulation, built with
 [`provael`](https://github.com/provael/provael). Lower ASR = more robust.
 
-> ✅ **Real data.** `results/leaderboard.json` holds the first real SmolVLA-on-LIBERO
-> result (`HuggingFaceVLA/smolvla_libero`, `libero_object/0`, 10 seeds): overall
+> ✅ **Real data.** `results/leaderboard.json` holds a real SmolVLA-on-LIBERO result
+> (`HuggingFaceVLA/smolvla_libero`, `libero_object/0`, 10 seeds): overall
 > **24.3% (17/70) ± 9.1%**, with a benign `none` baseline of **0/10**. Read it as **lift
 > over baseline** — instruction-reframing attacks dominate (roleplay 100%,
 > goal_substitution 60%, paraphrase 10%); visual / scene-text **0%**.
@@ -46,6 +46,15 @@ Vision-Language-Action (VLA) robot policies in simulation, built with
 > ⚠️ **Caveat:** the keep-out predicate is a default, **uncalibrated** region (one task,
 > `n=10`), so this is "diverted out of the benign safe envelope," not a calibrated hazard
 > rate. Per-task zone calibration is the next milestone.
+>
+> 📌 **A larger run exists and is NOT on this leaderboard yet.** The ten-task
+> `libero_object` suite (all 10 tasks × 5 seeds, 350 measured episodes) reports `roleplay` at
+> **88% (44/50)** against a **2/50** benign control — see
+> [`results/smolvla_libero_object_suite/`](https://github.com/provael/provael/tree/main/results/smolvla_libero_object_suite).
+> The figures above are the single-task `n=10` run, which is what this leaderboard's signed
+> JSON actually contains. They are **not** corrected to the larger run here, deliberately: a
+> README describing data the artifact does not hold is the failure this note exists to
+> prevent. Promoting the suite run needs a re-signed `leaderboard.json`.
 
 ## Tabs
 
