@@ -6,6 +6,30 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+Nothing pending — everything currently written is released. New entries go here.
+
+## [0.33.2] — 2026-08-15
+
+### Fixed
+
+- **The Hugging Face Space sync had been failing silently since 12 August**, and the repo was
+  positioned to undo the manual fix. `POST /api/validate-yaml` returns 400 when
+  `short_description` exceeds 60 characters; ours was 65, so the deploy aborted while the repo
+  looked healthy.
+
+  The card was then fixed *on the Space* through the web editor — 58 characters, Gradio 6.23.1 —
+  while the repo kept 65 characters and `sdk_version: 6.16.0`. The repo is the side that syncs, so
+  the next successful deploy would have pushed the broken description back **and downgraded the
+  SDK under the running app**. `tests/test_space_card.py` now asserts the constraints the HF API
+  enforces, offline, so a card that cannot deploy fails `pytest` rather than a workflow nobody
+  reads.
+
+  The card's `24.3% (17/70)` is deliberately unchanged: it is what `leaderboard/results/
+  leaderboard.json` actually holds. The ten-task suite at 44/50 has never been promoted onto the
+  leaderboard, and "correcting" the card to 88% would have made it describe data the Space does not
+  serve. A note points at the larger run instead, and the fourth test pins the card to the
+  artifact's own sum rather than to the newest number the project has.
+
 ### Added
 
 - **A guard that fails when the CHANGELOG gets ahead of the artifact**
