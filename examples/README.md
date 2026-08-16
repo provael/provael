@@ -7,6 +7,7 @@ and `PROVAEL_INTEGRATION=1`.
 | # | Example | What it shows | Runtime | Needs |
 | --- | --- | --- | --- | :---: |
 | ★ | [lerobot_eval_smolvla_libero.py](lerobot_eval_smolvla_libero.py) | **Reproduce the headline result**, one file, nothing to edit | 15.4 GPU-h | GPU |
+| ★ | [matched_pairs.py](matched_pairs.py) | **The matched pair** — 2×2 table, exact McNemar p, and the CI declining on one task | < 1 s | CPU |
 | 01 | [first-scan-cpu](01-first-scan-cpu/) | Your first scan — all four attack families on the stub | < 1 s | CPU |
 | 02 | [redteam-smolvla-libero](02-redteam-smolvla-libero/) | Red-team a real SmolVLA policy in LIBERO | minutes | GPU |
 | — | [reproductions/](reproductions/) | Reproduce FreezeVLA / OpenVLA-patch / BadVLA / RoboPAIR in one command | < 1 s | CPU |
