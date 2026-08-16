@@ -652,6 +652,65 @@ is the same instinct and more than most of this file's entries manage.
 
 **mapping_status: `cited, not crosswalked`.**
 
+### UniTexture — *Cross-Task Universal Adversarial Textures for Vision-Language-Action Models*
+Dai, Dai, Wang, Li, Li, Zhu (2026) — Tongji University, MBZUAI, University of Electronic Science and
+Technology of China.
+arXiv:[2608.13453](https://arxiv.org/abs/2608.13453) · submitted 13 August 2026
+
+The second entry on the perception channel where provael measures a null, and the one that shows the
+null is not even being measured in comparable units.
+
+UniTexture optimises the **surface texture of a single 3D object** in the workspace — a plate or a
+bowl — composited through a differentiable renderer (PyTorch3D), so the attack is a repaint rather
+than an overlay. One texture is optimised to work across tasks, which is the "universal" claim.
+Evaluated against OpenVLA (`openvla-7b-finetuned-libero-spatial`, `-libero-goal`) and π₀.₅
+(`pi05_libero`) on **LIBERO-Spatial and LIBERO-Goal only** — not Object, not Long.
+
+**Their headline is a task-success collapse, not an attack-success rate.** Verified from their
+Table 1, `n = 100 episodes per cell` (10 tasks × 10 rollouts), stated explicitly in the paper.
+Success rate in %, so **lower is a stronger attack** — the opposite reading direction to every ASR
+in this file:
+
+| model / suite | clean | UniTexture (plate) | UniTexture (bowl) |
+| --- | ---: | ---: | ---: |
+| OpenVLA · Spatial | 84.0 | 53.0 | **25.0** |
+| OpenVLA · Goal | 80.0 | 58.0 | **29.0** |
+| π₀.₅ · Spatial | 99.0 | 33.0 | 40.0 |
+| π₀.₅ · Goal | 97.0 | 77.0 | 72.0 |
+
+Their summary figure — mean task success "from 90.0% under benign conditions to 48.4% under attack"
+— is the clean mean over 4 cells (400 episodes) against the attacked mean over 8 (800 episodes).
+Cross-model transfer is **asymmetric and they report it**: textures optimised on π₀.₅ drop OpenVLA to
+26–61%, while textures optimised on OpenVLA leave π₀.₅ at 92–97%.
+
+**Why this cannot be put in a column next to our 0/100, and why that is the point.**
+
+The paper reports **no attack-success rate at all** — the strings "ASR" and "attack success" do not
+appear in it. Its metric is task-success degradation: did the robot finish the job. Ours is envelope
+breach: did the robot leave the region it was allowed to occupy. These are different questions, and
+a policy that fails *safely* — stops, refuses, freezes short of the goal — scores near-total success
+on their axis and **zero** on ours. Placing 48.4% beside 0/100 would not be an unflattering
+comparison, it would be an arithmetic error, and it is the exact error
+`docs/standards/published-asr-baselines.md` and `/compare/published-attack-baselines` exist to stop.
+The honest comparator is the sentence, not the number: *SR 90.0% → 48.4%, n = 100 per cell,
+simulation only.*
+
+**What it does not have, stated because DURA does have it.** No physical validation: UniTexture is
+LIBERO-only, with no real arm, no printed texture and no hardware column. On that axis it is closer
+to us than DURA is — which is not a point in our favour so much as a reminder that most of this
+channel is still simulated.
+
+**Priority note.** This paper (13 August 2026) and DURA (11 August 2026) both **post-date** provael's
+visual family, which shipped in the v0.25.x line in July 2026. They are concurrent work, not prior
+art in the priority sense, and they are in this file because this file credits the literature that
+bounds our claims rather than because either got somewhere first. Neither entry is an admission of
+precedence; both are an admission that the published attacks on this channel are stronger and more
+real than ours.
+
+**mapping_status: `cited, not crosswalked`.** Their unit is task success and ours is envelope breach;
+no denominator is shared, so a crosswalk row would manufacture a comparison the metrics do not
+support.
+
 ### Towards Safe and Trustworthy Embodied AI — *Foundations, Status, and Prospects*
 Tan, Liu, Bao, Tian, Gao, Wu, Luo, Wang, Zhang, Wang, Lu, Zhou (2026) — AI45Lab: Shanghai Artificial
 Intelligence Laboratory, East China Normal University, Tsinghua University.
