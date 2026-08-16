@@ -139,6 +139,29 @@ def test_committed_badge_never_says_never_while_a_measurement_exists() -> None:
     )
 
 
+def _measured_at(record: MeasurementRecord) -> datetime:
+    """The record's measurement instant as an aware datetime."""
+    return datetime.strptime(record.measured_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+
+
+def _committed_age_days(message: str) -> int:
+    """The whole-day age the committed badge's own message asserts.
+
+    Mirrors the wording :func:`provael.watch.badge` emits — ``today``, ``1 day ago``,
+    ``N days ago`` — optionally suffixed with the reconstructed-date marker. Parsing the message
+    back is what lets the colour be re-derived at the instant the file was written rather than at
+    test time; see the caller for why that distinction is the whole point.
+    """
+    head = message.split(" (")[0].strip()
+    if head == "today":
+        return 0
+    if head == "1 day ago":
+        return 1
+    days, _, rest = head.partition(" days ago")
+    assert rest == "" and days.isdigit(), f"unrecognised badge message: {message!r}"
+    return int(days)
+
+
 def test_committed_badge_matches_a_freshly_computed_one() -> None:
     """The committed file must be what the current code computes, modulo the age wording.
 
@@ -147,12 +170,32 @@ def test_committed_badge_matches_a_freshly_computed_one() -> None:
     import json as _json
 
     payload = _json.loads(COMMITTED_BADGE.read_text(encoding="utf-8"))
-    fresh = badge(latest_measurement(Path(__file__).resolve().parent.parent / "watch"))
-    assert payload["label"] == fresh["label"]
-    assert payload["color"] == fresh["color"]
-    # The day count moves with the wall clock, so compare the provenance marker rather than the age.
+    record = latest_measurement(Path(__file__).resolve().parent.parent / "watch")
+    assert record is not None, "no measurement to recompute the badge from"
+
+    # THE COLOUR MOVES WITH THE WALL CLOCK TOO, and comparing it against `now` made this test fail
+    # on a schedule. The badge is regenerated once a day by freshness.yml; the age it encodes keeps
+    # rising in between. So for the ~19 hours between an age crossing FRESH_DAYS or STALE_DAYS and
+    # the next 05:23 UTC run, the committed file is correct-as-written while a `now`-based
+    # recomputation disagrees — and every unrelated PR went red. Observed 16 Aug 2026: the workflow
+    # wrote "6 days ago"/orange at 05:47, the age crossed 7.0 at 14:46, and CI then demanded red.
+    #
+    # The line above already conceded this for `message` ("the day count moves with the wall
+    # clock") and then compared `color`, which is derived from the same clock. This closes that gap
+    # by evaluating at the age the committed message ITSELF asserts, so the comparison is
+    # clock-independent while keeping every tooth the guard was built for: a hand-edited colour, or
+    # a changed FRESH_DAYS/STALE_DAYS threshold, still fails. What no longer fails is time passing.
+    days = _committed_age_days(str(payload["message"]))
+    as_written = badge(record, now=_measured_at(record) + timedelta(days=days))
+
+    assert payload["label"] == as_written["label"]
+    assert payload["color"] == as_written["color"], (
+        f"committed badge says {payload['color']!r} for {payload['message']!r}, but the current "
+        f"thresholds give {as_written['color']!r} at that age. Regenerate it: "
+        "`provael watch --dir watch`."
+    )
     assert ("date reconstructed" in str(payload["message"])) == (
-        "date reconstructed" in str(fresh["message"])
+        "date reconstructed" in str(as_written["message"])
     )
 
 
