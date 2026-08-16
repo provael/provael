@@ -6,7 +6,30 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-Nothing pending — everything currently written is released. New entries go here.
+### Added
+
+- Added DURA and UniTexture to prior art, including the part where DURA's patch attack is far
+  stronger than ours. Added a runnable matched-pair example so the benign twin is reproducible on
+  CPU without a model download.
+
+  On DURA specifically: the entry now says our patch implementation is weak rather than that the
+  attack class is weak, and gives the reason. DURA optimises in the latent space of a pretrained
+  diffusion model; our `patch` appends a fixed string to a dict and performs no search at all, so
+  there is no mechanism by which it could find what DURA finds. `patch` stays published at 0/50 and
+  the visual family at 0/100.
+
+  `examples/matched_pairs.py` runs on the stub policy and stub suite in under a second, with no GPU
+  and no download, and prints the 2x2 contingency table, the exact McNemar p-value and the
+  task-clustered interval. The interval prints as `None`, which is correct and is explained in the
+  file: every CPU-only suite has one task, and `cluster_bootstrap_ci` declines below two by design.
+
+### Known issues
+
+- The benign control fires 2/50 and the keep-out predicate remains uncalibrated. Diagnosed and
+  filed as [#136](https://github.com/provael/provael/issues/136): `CALIBRATED_ZONES` is empty, so
+  every task falls back to a hand-picked default box that overlaps the reachable benign workspace.
+  Benign false-positive rate 4.0%, Wilson 95% [1.1%, 13.5%]. Blocked on GPU budget, because the
+  trajectories needed to fit an envelope were never recorded.
 
 ## [0.33.2] — 2026-08-15
 
