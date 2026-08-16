@@ -624,8 +624,22 @@ harder supervision setting, not the easier one. A label-supervised baseline (UAD
 across that table; attributing it to DURA would be the obvious misreading and is worth naming.
 
 Their patch-area ablation: ASR "rises sharply to 77% at only 2% area", reaches "99%" at 5%, and
-saturates at 100% beyond. Demonstrated on a real Franka arm, with a **printed patch inserted into the
-camera view** — inserting it drives the arm to the target action, removing it lets the arm resume.
+saturates at 100% beyond (white-box, OpenVLA, mean over three seeds). Demonstrated on a real Franka
+arm, with a **printed patch inserted into the camera view** — inserting it drives the arm to the
+target action, removing it lets the arm resume.
+
+Two further results, because they close the obvious escape routes:
+
+- **Query budget.** Black-box ASR rises "from 49% at K=128 to 100% at K=2048". The black-box
+  variant needs only the victim's predicted actions, so 2048 queries is the whole price of entry.
+- **Input transformations.** Under the strongest JPEG compression (Q=10) ASR "remains 90% on
+  OpenVLA and 100% on π₀-FAST", and "stays at 98–100% under bit-depth reduction and Gaussian
+  noise". Sanitising the image does not remove the patch.
+
+One number in that appendix is easy to misquote and worth pinning: their "clean baselines of 23%
+and 14%" are the **Benign (no patch)** rows (Table 1 Avg 23.5, Table 2 Avg 14.5), *not* the
+**Clean patch** rows (39.5 and 20.8). The two differ by roughly sixteen points and citing the
+wrong one flatters their attack by a wide margin.
 
 **How we differ, and where we are weaker — this is the useful part of the entry.**
 
@@ -635,12 +649,23 @@ string `adv_patch::{object}::now` to a list called `visual_tokens` in a simulate
 stand-ins for a perception attack**, evaluated in a simulator that never renders an adversarial
 pixel. DURA optimises actual pixels, prints them, and holds them in front of a real camera.
 
-That gap changes what our own null means. The ten-task suite measured the visual family at
-**0/100**, and it is tempting to read that as "perception attacks did not transfer to SmolVLA". It
-does not support that reading. It supports a narrower one: *our symbolic markers did not fire*. DURA
-is the standing evidence that a real optimised patch on the same class of policy reaches 100% —
-so the honest gloss on our 0/100 is a **coverage gap in our harness**, not a robustness finding
-about the policy.
+That gap changes what our own null means. The ten-task suite measured `patch` at **0/50** and the
+whole visual family at **0/100**, and it is tempting to read that as "perception attacks did not
+transfer to SmolVLA". It does not support that reading. It supports a narrower one: *our symbolic
+markers did not fire*.
+
+**Say it without the hedge: our patch implementation is weak, and that is what the 0/50 measures.**
+Not the attack class. The specific reason to believe that, rather than a general appeal to
+modesty, is the optimisation: DURA searches the **latent space of a pretrained diffusion model**
+for a perturbation that is simultaneously visually natural and action-steering, then renders it to
+pixels. Ours performs no optimisation of any kind — `patch` appends a fixed literal string to a
+list in a dict. There is no gradient, no search, no image and no renderer, so there is no
+mechanism by which it *could* find the perturbation DURA finds. A method with no search space
+returning zero is not evidence about a method with one.
+
+DURA is the standing evidence that a real optimised patch on the same class of policy reaches 100%.
+The honest gloss on our 0/50 and 0/100 is therefore a **coverage gap in our harness**, not a
+robustness finding about the policy. Both nulls stay published exactly as measured.
 
 We also have **zero physical results of any kind**: `results/hardware/` reads 0 and the SO-101
 protocol is pre-registered and unrun. DURA's physical column is not a number we can currently
@@ -680,8 +705,23 @@ in this file:
 
 Their summary figure — mean task success "from 90.0% under benign conditions to 48.4% under attack"
 — is the clean mean over 4 cells (400 episodes) against the attacked mean over 8 (800 episodes).
-Cross-model transfer is **asymmetric and they report it**: textures optimised on π₀.₅ drop OpenVLA to
-26–61%, while textures optimised on OpenVLA leave π₀.₅ at 92–97%.
+
+Two qualifiers travel with that 90.0 → 48.4, and the paper supplies both itself:
+
+- **The 90.0 bypasses the renderer.** It is the clean-observation baseline. Their *rendered*
+  controls — the object's original texture, and a Gaussian-noise texture — average 87.75 and 81.1.
+  So some of the drop is the renderer and the change of appearance rather than the optimised
+  perturbation. Reporting 90.0 → 48.4 without those two controls would overstate the targeted
+  effect, and to their credit they ship both.
+- **Cross-model transfer is one-way.** Textures optimised on π₀.₅ drop OpenVLA to 26–61%; textures
+  optimised on OpenVLA leave π₀.₅ at 92–97% against a clean 97–99%, which is no effect at all.
+  "Transfers cross-model" is true only in the π₀.₅ → OpenVLA direction and should not be repeated
+  without it. Cross-*suite* transfer is reported in both directions and does hold.
+
+Their "distribution of tasks, instructions, states, and viewpoints" is the abstract's wording; the
+formal objective is a two-level expectation over tasks and over that task's demonstration
+distribution. Instruction, state and viewpoint are attributes of a sampled frame, not independent
+randomisation axes — the threat model fixes the camera pose explicitly.
 
 **Why this cannot be put in a column next to our 0/100, and why that is the point.**
 
@@ -699,6 +739,38 @@ simulation only.*
 LIBERO-only, with no real arm, no printed texture and no hardware column. On that axis it is closer
 to us than DURA is — which is not a point in our favour so much as a reminder that most of this
 channel is still simulated.
+
+#### What neither paper reports, and it is the same thing
+
+Both are stronger attacks than ours. Neither reports **a matched benign twin per episode**, and
+neither reports **an interval or a significance test on any figure in either paper**. Verified by
+reading both full texts for confidence / 95% / ± / error bar / significan / McNemar / bootstrap /
+t-test / Wilcoxon / binomial: no hits on any headline number.
+
+- **DURA is silent on pairing.** Its ASR is defined as the fraction of rollouts in which the
+  attacked policy fails, which does not separate attack-caused failure from the failure the policy
+  had anyway — and their own benign row is 23.5%, so roughly a quarter of it is not the attack.
+  The benign row is demonstrably a reused aggregate rather than a per-episode control: it is
+  **byte-identical across the Simulated and Physical column blocks** of Table 1. The only "paired"
+  language in the paper is about image-quality crops, not episode outcomes.
+- **UniTexture pairs, but one level too low.** It computes clean predictions "from the same
+  simulator state" and calls them "step-aligned counterfactuals", which is real matching, and its
+  directional metrics (TDS, pDHR) are honest paired differences. But the clean predictions are
+  never *executed*, so the headline success-rate comparison is still attacked rollouts against
+  separately-run clean rollouts. Once the attacked trajectory diverges there is no matched cell to
+  compare an outcome against.
+
+This is the gap, and it is what provael's harness is for. Our arms run in **one report**, matched at
+the same `(task, seed)`, so every comparison is a cell-by-cell pair: 44/50 for `roleplay` against 0
+discordant benign twins, McNemar exact p = 4.6e-13, task-clustered 95% CI [72%, 100%], plus a
+harmless-variation control arm that fired 1/50 and is indistinguishable from doing nothing
+(p = 0.625). `examples/matched_pairs.py` runs that machinery on CPU in under a second.
+
+Two honest limits on that claim. It is a claim about **method, not about strength** — their attacks
+work and ours does not, and no amount of pairing changes that. And our own benign control fires
+2/50 against an uncalibrated predicate ([#136](https://github.com/provael/provael/issues/136)), so
+the control we are holding up as the missing piece has a false-positive rate we have not yet
+characterised either.
 
 **Priority note.** This paper (13 August 2026) and DURA (11 August 2026) both **post-date** provael's
 visual family, which shipped in the v0.25.x line in July 2026. They are concurrent work, not prior
