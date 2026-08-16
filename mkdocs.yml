@@ -54,6 +54,7 @@ nav:
       - ForesightSafety-VLA crosswalk: crosswalk/foresight-safety-vla.md
       - VLA-Arena crosswalk: crosswalk/vla-arena.md
       - SafeVLA-Bench crosswalk: crosswalk/safevla-bench.md
+      - XPolicyLab crosswalk: crosswalk/xpolicylab.md
       - Published ASR baselines: standards/published-asr-baselines.md
       - Listings & PRs: standards/listings.md
   - Python API: python-api.md
