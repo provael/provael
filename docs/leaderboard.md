@@ -145,9 +145,11 @@ this repo's `leaderboard/` directory with its own deploy state**, and for a mont
 untreated version of the paragraph above: last deployed 30 June 2026, it served a schema-v1 board
 with `signature: null` and no `measured_with` — and no banner, because the app that renders the
 banner had never reached it. Space deployment is now driven from this repo whenever `leaderboard/`
-changes (see `.github/workflows/leaderboard-submission.yml`); this paragraph reverts to a plain
-"the Space renders the banner" claim once the re-deployed Space has been verified live, and not
-before. Two practical notes: **the canonical, signed board is the one committed in this repo** —
+changes (see `.github/workflows/leaderboard-submission.yml`), and that path has now been **verified
+live**: the deployed Space serves the same `schema_version` 5 board this repo signed, same rows,
+same `keyid 8d62aa33ed5162f3`. This paragraph had been holding a softened claim until that check
+passed rather than after it. Two practical notes: **the canonical, signed board is the one
+committed in this repo** —
 verify that one, not a rendering of it — and the Space runs on the free tier, so it sleeps when
 idle and the first visitor after a quiet period waits through a cold start rather than getting an
 instant page.
