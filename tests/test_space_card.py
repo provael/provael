@@ -72,12 +72,14 @@ def test_sdk_version_is_a_real_pin_not_a_range() -> None:
 
 
 def test_the_card_does_not_claim_figures_the_signed_json_lacks() -> None:
-    """The card quotes 24.3% (17/70). That must remain what `leaderboard.json` actually holds.
+    """Whatever fraction the card quotes must be what `leaderboard.json` actually holds.
 
-    This is the honest direction of the check, and it is easy to get backwards. A ten-task suite
-    run exists at 44/50, and "correcting" the card to 88% would describe data this Space does not
-    serve — the leaderboard JSON is the single-task n=10 run until someone re-signs it. So the
-    test pins the card to the ARTIFACT, not to the newest number the project has.
+    This is the honest direction of the check, and it is easy to get backwards. While the board
+    was the single-task n=10 run, a ten-task result already existed at 44/50, and "correcting" the
+    card to 88% would have described data the Space did not serve. The board has since been
+    re-signed onto the ten-task suite and the card moved with it — which is the supported order:
+    re-sign the artifact, then describe it. The assertion reads the JSON rather than a literal, so
+    it pins the card to the ARTIFACT and not to the newest number the project happens to have.
     """
     import json
 

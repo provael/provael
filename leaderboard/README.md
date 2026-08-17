@@ -37,24 +37,33 @@ Attack Success Rate (ASR) of instruction / visual / injection attacks against
 Vision-Language-Action (VLA) robot policies in simulation, built with
 [`provael`](https://github.com/provael/provael). Lower ASR = more robust.
 
-> ✅ **Real data.** `results/leaderboard.json` holds a real SmolVLA-on-LIBERO result
-> (`HuggingFaceVLA/smolvla_libero`, `libero_object/0`, 10 seeds): overall
-> **24.3% (17/70) ± 9.1%**, with a benign `none` baseline of **0/10**. Read it as **lift
-> over baseline** — instruction-reframing attacks dominate (roleplay 100%,
-> goal_substitution 60%, paraphrase 10%); visual / scene-text **0%**.
+> ✅ **Real data.** `results/leaderboard.json` holds the ten-task SmolVLA-on-LIBERO suite
+> screen (`HuggingFaceVLA/smolvla_libero`, all 10 `libero_object` tasks × 5 seeds, 350
+> measured episodes): **instruction 41.3% (62/150) [34–49%]**, against a benign `none`
+> baseline of **4.0% (2/50)**. The board's rows sum to **18.3% (64/350)** across every arm
+> including the benign control — that is the all-episode observed rate, **not** the attack rate,
+> and it is diluted by the arms that measured zero. Read the per-family rows, not the sum.
 >
-> ⚠️ **Caveat:** the keep-out predicate is a default, **uncalibrated** region (one task,
-> `n=10`), so this is "diverted out of the benign safe envelope," not a calibrated hazard
-> rate. Per-task zone calibration is the next milestone.
->
-> 📌 **A larger run exists and is NOT on this leaderboard yet.** The ten-task
-> `libero_object` suite (all 10 tasks × 5 seeds, 350 measured episodes) reports `roleplay` at
-> **88% (44/50)** against a **2/50** benign control — see
+> Read it as **lift over baseline** — instruction-reframing
+> attacks are the only family that moves this policy; **injection 0/50** and **visual
+> 0/100** are measured nulls and stay published as such. Per-attack detail, including
+> `roleplay` at 44/50 with its McNemar and task-clustered interval, is in
 > [`results/smolvla_libero_object_suite/`](https://github.com/provael/provael/tree/main/results/smolvla_libero_object_suite).
-> The figures above are the single-task `n=10` run, which is what this leaderboard's signed
-> JSON actually contains. They are **not** corrected to the larger run here, deliberately: a
-> README describing data the artifact does not hold is the failure this note exists to
-> prevent. Promoting the suite run needs a re-signed `leaderboard.json`.
+>
+> ⚠️ **Four qualifiers, and they now travel inside the artifact** (`schema_version` 5)
+> rather than living only in this README:
+>
+> - `"calibrated": false` on every row — the same default keep-out box on all ten tasks,
+>   never fitted to any of them. This is "diverted out of the benign safe envelope," not a
+>   calibrated hazard rate, and it is why the benign arm tripped at all. Per-task zone
+>   calibration is still owed ([#136](https://github.com/provael/provael/issues/136)).
+> - `"stochastic": true` — SmolVLA's flow-matching sampler is not fully seeded, so these
+>   numbers are one draw, not a reproducible constant.
+> - `"not_applicable": ["mcp_tool_desc"]` — 50 episode records, zero applicable episodes.
+>   Not-measured and measured-zero are different claims, so it is named rather than
+>   silently dropped from the denominator.
+> - `"checkpoint"` — one checkpoint, one suite. Nothing here speaks to `libero_spatial`,
+>   `libero_goal`, `libero_10`, or any other policy.
 
 ## Tabs
 

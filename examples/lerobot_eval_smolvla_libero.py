@@ -2,7 +2,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "provael[lerobot]==0.33.2",
+#     "provael[lerobot]==0.34.0",
 #     "lerobot[libero]==0.5.1",
 # ]
 # ///

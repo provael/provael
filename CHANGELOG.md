@@ -6,7 +6,55 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.34.0] — 2026-08-18
+
 ### Added
+
+- The public leaderboard is now the ten-task `libero_object` suite screen, rebuilt from
+  `results/smolvla_libero_object_suite/` and re-signed (keyid `8d62aa33ed5162f3`). It had been a
+  four-row snapshot of the superseded single-task run, stamped `measured_with: ["0.1.0"]` for
+  numbers produced by 0.32.0. Instruction is 41.3% (62/150) [34–49%] against a 4.0% (2/50) benign
+  control; injection 0/50 and visual 0/100 stay published as measured nulls.
+
+- Leaderboard `schema_version` 5: rows carry `calibrated`, `stochastic` and `checkpoint`, and the
+  board carries `not_applicable`. All four are derived from the aggregated reports rather than
+  passed in, for the same reason `measured_with` is — a qualifier a caller can assert is one a
+  caller can get wrong. `calibrated` reduces as ALL, `stochastic` as ANY, and `checkpoint` resolves
+  only when a bucket is unanimous: each collapses toward the weaker claim, because the reduction is
+  where an aggregate is tempted to launder a qualifier. `not_applicable` names attacks with records
+  but zero applicable episodes (`mcp_tool_desc`), which scoring excludes from every denominator and
+  which therefore used to vanish from the board entirely.
+
+  Older signed boards keep verifying. `_signing_payload` now strips fields introduced after a
+  board's own `schema_version` before canonicalising; without it, adding any defaulted field would
+  have invalidated every signature ever issued, and a correctly-signed v4 board would have verified
+  as INVALID — indistinguishable, to whoever checked it, from a tampered one.
+
+- The uncalibrated keep-out fallback stops being silent ([#136](https://github.com/provael/provael/issues/136),
+  half of it). `zones_for` now warns once per task that it is scoring against the default box rather
+  than a calibration, and `PROVAEL_REQUIRE_CALIBRATED=1` makes it a hard `UncalibratedZoneError`.
+  Off by default so the honest default stays usable for exploratory work; the env var is
+  allow-listed into the execution manifest so "we checked" is verifiable after the fact. The
+  calibration itself is still owed and still needs GPU budget — #136 stays open.
+
+  The state is recorded via the manifest's env allow-list rather than as a new manifest field:
+  `RunReport` already carries `calibrated` and its per-task `calibration` metadata, and the manifest
+  is bound to that report by `report_digest`, so a new field would have bought nothing and
+  invalidated every attestation ever issued (see `EXECUTION_MANIFEST_VERSION`).
+
+### Fixed
+
+- README stated the benign control as `0/10 (benign FPR 0%)` and scoped the result to "one task,
+  n = 10" directly below the ten-task table reporting 2/50. Both were leftovers from the
+  single-task era, and the first one contradicted its own page.
+
+- PyPI metadata gave visitors no route to the project. All three project URLs pointed at GitHub, so
+  neither www.provael.com nor docs.provael.com was reachable from the sidebar; `author_email` was
+  unset. Added `Homepage`, `Documentation` and `Changelog` URLs, set the author email, and added the
+  classifiers the package already earns (`Operating System :: OS Independent`,
+  `Environment :: Console`, `Intended Audience :: Developers`, and `Typing :: Typed`, since
+  `py.typed` ships). Moved `Development Status` from `3 - Alpha` to `4 - Beta`: "Alpha" reads to an
+  evaluator as "do not depend on this yet", which is the audience the package is trying to reach.
 
 - Added DURA and UniTexture to prior art, including the part where DURA's patch attack is far
   stronger than ours. Added a runnable matched-pair example so the benign twin is reproducible on

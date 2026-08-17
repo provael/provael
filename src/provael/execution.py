@@ -35,6 +35,14 @@ ENV_ALLOWLIST: tuple[str, ...] = (
     "PROVAEL_INTEGRATION",
     "PROVAEL_REQUIRE_REAL_INTEGRATION",
     "PROVAEL_ENABLE_EXPERIMENTAL_HOSTED",
+    # Whether the run REFUSED to score against an uncalibrated keep-out box. The calibration state
+    # itself already reaches the manifest without a schema change: RunReport carries `calibrated`
+    # and its per-task `calibration` metadata, and the manifest is bound to that report by
+    # `report_digest`, so the two cannot be paired across runs. What was missing is whether the
+    # gate was armed — a run that passed strict mode and a run that never checked are different
+    # claims, and only the environment distinguishes them. Recorded here rather than as a manifest
+    # field for the reason stated above: a new field would invalidate every attestation ever issued.
+    "PROVAEL_REQUIRE_CALIBRATED",
     "MUJOCO_GL",
     "PYOPENGL_PLATFORM",
     "PROVAEL_SMOLVLA_LIBERO_CKPT",

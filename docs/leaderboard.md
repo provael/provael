@@ -101,9 +101,38 @@ carries the measurement it always did**, possibly made by a much older release.
 That is a trap: a board carrying only `generated_at` reads as a fresh measurement. Schema v3 adds
 **`measured_with`** — the sorted `tool_version` values of the aggregated reports, i.e. the versions
 the *numbers* came from — and `Leaderboard.is_restamp()` answers the question directly. The
-published board reports `measured_with: ["0.1.0"]` against a build commit from the current release
-line: the provenance envelope is current, the measurement is the SmolVLA × LIBERO run it has
-always been.
+published board reports `measured_with: ["0.32.0"]` against a build commit from the current release
+line: the provenance envelope is current, the measurement is the ten-task SmolVLA × LIBERO suite
+screen those shards recorded.
+
+## Qualifiers travel with the row (schema v5)
+
+A leaderboard is where a number travels furthest from its own report, and until v5 it arrived
+stripped: `report.json` recorded `calibrated` and `stochastic`, and the board dropped both. A row
+reading `41.3%` with no further context is a stronger claim than the run behind it ever made.
+
+Each row now carries three fields derived from the aggregated reports — never passed in, for the
+same reason `measured_with` is not:
+
+| field | reduction | why that direction |
+| --- | --- | --- |
+| `calibrated` | ALL | one uncalibrated run makes the row uncalibrated |
+| `stochastic` | ANY | one unseeded sampler makes the row one draw |
+| `checkpoint` | unanimous, else `None` | naming one of several would attribute the rate to a checkpoint that did not wholly earn it |
+
+Each collapses toward the *weaker* claim on purpose: the reduction step is exactly where an
+aggregate is tempted to launder a qualifier.
+
+The board also carries **`not_applicable`** — attacks with episode records but zero applicable
+episodes. Scoring excludes them from every denominator, so without the list they vanish entirely
+and a reader counts one fewer null than was attempted. On the published board that is
+`mcp_tool_desc`: 50 records, 0 applicable. *Not measured* and *measured zero* are different claims.
+
+**Adding these fields did not invalidate older signatures.** `_signing_payload` strips fields
+introduced after a board's own `schema_version` before canonicalising, so a v4 board still verifies
+against its v4 signature under the v5 model. Without that, adding any defaulted field would have
+silently broken every signature ever issued — and a correctly-signed older board would verify as
+INVALID, indistinguishable to the checker from a tampered one.
 
 Recording that in the JSON was only half the fix. Until 0.29.1 the *rendered* Space showed a fresh
 build date and an Ed25519 signature above rows measured many releases earlier, with nothing on the

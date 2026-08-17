@@ -90,6 +90,28 @@ class LeaderboardRow(BaseModel):
         description="How this row reached the board: maintainer-run, third-party-submission, or "
         "unattributed (see the module constants).",
     )
+    # ── Qualifiers. A rate without these is an overclaim, and the board is the one surface where a
+    # number travels furthest from its own report. Every one is DERIVED from the aggregated reports
+    # (never passed in), for the same reason `measured_with` is: a qualifier a caller can assert is
+    # a qualifier a caller can get wrong.
+    calibrated: bool | None = Field(
+        None,
+        description="True only when EVERY report behind this row ran a calibrated predicate. "
+        "False when any did not - an uncalibrated keep-out zone measures divergence out of a "
+        "default box, not a hazard rate. None when no report recorded it.",
+    )
+    stochastic: bool | None = Field(
+        None,
+        description="True when ANY report behind this row was stochastic, i.e. not reproducible "
+        "run-to-run. Deliberately pessimistic: one unseeded sampler makes the row one draw, and a "
+        "board that averaged this away would advertise a determinism it does not have.",
+    )
+    checkpoint: str | None = Field(
+        None,
+        description="The model/checkpoint measured, when exactly one produced this row. None when "
+        "several did - naming one of them would attribute the rate to a checkpoint that did not "
+        "wholly earn it.",
+    )
 
 
 class AttackExample(BaseModel):
@@ -117,9 +139,12 @@ class Leaderboard(BaseModel):
     """
 
     #: 2 -> 3: added ``measured_with``. 3 -> 4: added per-row ``submitted_by`` / ``provenance``,
-    #: so independence is legible in the artifact and not only in a maintainer's head. Both bumps
-    #: are additive with defaults, so an older board still loads.
-    schema_version: int = 4
+    #: so independence is legible in the artifact and not only in a maintainer's head. 4 -> 5: added
+    #: per-row ``calibrated`` / ``stochastic`` / ``checkpoint`` and board-level ``not_applicable``,
+    #: so a row carries the qualifiers its own report always had - the board was the one place they
+    #: were dropped, which is precisely where a number is read furthest from its source. Every bump
+    #: is additive with defaults, so an older board still loads.
+    schema_version: int = 5
     is_demo: bool = Field(..., description="True when every aggregated run used the stub policy.")
     rows: list[LeaderboardRow] = Field(default_factory=list)
     examples: list[AttackExample] = Field(default_factory=list)
@@ -138,6 +163,13 @@ class Leaderboard(BaseModel):
         default_factory=list,
         description="Sorted, de-duplicated `tool_version` values of the aggregated run reports — "
         "the versions the NUMBERS were actually measured with.",
+    )
+    not_applicable: list[str] = Field(
+        default_factory=list,
+        description="Attacks that produced episode records but zero APPLICABLE episodes, sorted. "
+        "Not-measured and measured-zero are different claims: scoring excludes these from every "
+        "denominator, so without this list they vanish from the board entirely and a reader counts "
+        "one fewer null than was actually attempted.",
     )
     signature: LeaderboardSignature | None = None
 
@@ -262,11 +294,26 @@ def aggregate(
     """
     buckets: dict[tuple[str, str, str], list[int]] = {}
     attack_names: set[str] = set()
+    #: Attacks with at least one applicable episode anywhere. Anything in `attack_names` but not
+    #: here was attempted and never measured — see `Leaderboard.not_applicable`.
+    applicable_attacks: set[str] = set()
+    #: Qualifiers, collected per (policy, suite) because that is the granularity a row's rate is
+    #: measured at. Values accumulate rather than overwrite: the reduction happens once, below.
+    qualifiers: dict[tuple[str, str], dict[str, set[object]]] = {}
     for report in reports:
+        run = qualifiers.setdefault(
+            (report.policy, report.suite),
+            {"calibrated": set(), "stochastic": set(), "model": set()},
+        )
+        run["calibrated"].add(report.calibrated)
+        run["stochastic"].add(report.stochastic)
+        if report.model:
+            run["model"].add(report.model)
         for result in report.results:
             attack_names.add(result.attack)
             if not result.applicable:  # excluded from the ASR denominator
                 continue
+            applicable_attacks.add(result.attack)
             key = (report.policy, report.suite, result.family)
             tally = buckets.setdefault(key, [0, 0])
             tally[0] += 1
@@ -278,22 +325,47 @@ def aggregate(
         if family == "baseline" and attempts:
             baseline_fpr[(policy, suite)] = successes / attempts
 
-    rows = [
-        LeaderboardRow(
-            policy=policy,
-            suite=suite,
-            family=family,
-            attempts=attempts,
-            successes=successes,
-            asr=(successes / attempts if attempts else 0.0),
-            ci95=wilson_ci(successes, attempts) if attempts else None,
-            benign_fpr=baseline_fpr.get((policy, suite)),
-            transfer_status=transfer_status(policy, suite),
-            submitted_by=submitted_by,
-            provenance=provenance,
+    def _qualifiers(policy: str, suite: str) -> tuple[bool | None, bool | None, str | None]:
+        """Reduce a (policy, suite) bucket's collected qualifiers, each in its honest direction.
+
+        ``calibrated`` is an ALL (one uncalibrated run makes the row uncalibrated), ``stochastic``
+        is an ANY (one unseeded sampler makes the row one draw), and ``checkpoint`` resolves only
+        when the bucket is unanimous. Every one of those collapses toward the weaker claim on
+        purpose: the reduction is the place an aggregate is most tempted to launder a qualifier.
+        """
+        run = qualifiers.get((policy, suite))
+        if run is None:  # pragma: no cover - a bucket always has its report
+            return None, None, None
+        calib = {c for c in run["calibrated"] if c is not None}
+        stoch = {s for s in run["stochastic"] if s is not None}
+        models = run["model"]
+        return (
+            all(bool(c) for c in calib) if calib else None,
+            any(bool(s) for s in stoch) if stoch else None,
+            str(next(iter(models))) if len(models) == 1 else None,
         )
-        for (policy, suite, family), (attempts, successes) in buckets.items()
-    ]
+
+    rows = []
+    for (policy, suite, family), (attempts, successes) in buckets.items():
+        calibrated, stochastic, checkpoint = _qualifiers(policy, suite)
+        rows.append(
+            LeaderboardRow(
+                policy=policy,
+                suite=suite,
+                family=family,
+                attempts=attempts,
+                successes=successes,
+                asr=(successes / attempts if attempts else 0.0),
+                ci95=wilson_ci(successes, attempts) if attempts else None,
+                benign_fpr=baseline_fpr.get((policy, suite)),
+                transfer_status=transfer_status(policy, suite),
+                submitted_by=submitted_by,
+                provenance=provenance,
+                calibrated=calibrated,
+                stochastic=stochastic,
+                checkpoint=checkpoint,
+            )
+        )
     # Rank by ASR (desc), then by keys for a stable, deterministic order.
     rows.sort(key=lambda r: (-r.asr, r.policy, r.suite, r.family))
 
@@ -305,6 +377,7 @@ def aggregate(
         inputs_digest=_inputs_digest(reports) if reports else None,
         # The versions the NUMBERS came from, not the version assembling the board.
         measured_with=sorted({r.tool_version for r in reports}),
+        not_applicable=sorted(attack_names - applicable_attacks),
     )
 
 
@@ -355,10 +428,38 @@ def load_leaderboard(path: Path) -> Leaderboard:
     return Leaderboard.model_validate_json(path.read_text(encoding="utf-8"))
 
 
+#: Fields introduced by each schema version, so a board is signed over the bytes IT declares rather
+#: than over whatever the current model happens to emit. Without this, adding any field with a
+#: default silently invalidates every signature ever issued: `model_dump_json` would emit the new
+#: key with its default, the canonical bytes would change, and a correctly-signed older board would
+#: verify as INVALID — indistinguishable, to the person checking it, from a tampered one. That is
+#: the worst possible failure for a signed artifact, and it is a one-line mistake to make.
+_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
+    5: ("not_applicable",),
+}
+_ROW_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
+    5: ("calibrated", "stochastic", "checkpoint"),
+}
+
+
 def _signing_payload(board: Leaderboard) -> bytes:
-    """Canonical bytes signed/verified: the whole board minus the ``signature`` field."""
+    """Canonical bytes signed/verified: the board at its OWN schema version, minus ``signature``.
+
+    Fields added after ``board.schema_version`` are stripped before canonicalisation, so a v4 board
+    keeps verifying against a v4 signature under a v5 model. Newer boards carry the new fields and
+    sign over them.
+    """
     data = json.loads(board.model_dump_json())
     data.pop("signature", None)
+    for version, names in _FIELDS_ADDED_IN.items():
+        if board.schema_version < version:
+            for name in names:
+                data.pop(name, None)
+    for version, names in _ROW_FIELDS_ADDED_IN.items():
+        if board.schema_version < version:
+            for row in data.get("rows", []):
+                for name in names:
+                    row.pop(name, None)
     return canonical_json(data)
 
 

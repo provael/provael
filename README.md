@@ -328,7 +328,7 @@ Or in CI, gating the build on the measured rate — SARIF goes to code scanning,
 the adversarial ASR exceeds your threshold or regresses past tolerance against a baseline:
 
 ```yaml
-- uses: provael/provael@v0.33.2
+- uses: provael/provael@v0.34.0
   with: { policy: stub, suite: stub, asr-threshold: "0.5" }
 ```
 
@@ -373,7 +373,7 @@ uv run provael report --in runs/stub/
 uv run provael calibrate --policy stub --suite stub --seeds 20 --out calib/  # fit a per-task predicate
 uv run provael attest --policy stub --suite stub --out runs/attest   # signed, dated evidence bundle
 uv run provael leaderboard build --runs runs --out leaderboard/results   # ranked ASR table (demo)
-uv run provael leaderboard build --real results/smolvla_libero_object --sign   # real signed board
+uv run provael leaderboard build --real results/smolvla_libero_object_suite --sign  # real signed board
 uv run provael version
 ```
 
@@ -391,10 +391,22 @@ uv run provael leaderboard verify --in leaderboard/results/leaderboard.json \
   --pubkey leaderboard/results/leaderboard.pub   # -> leaderboard OK  keyid 8d62aa33ed5162f3
 ```
 
-On the real **SmolVLA × LIBERO** policy only the **instruction** family transfers today
-(roleplay 100%, goal_substitution 60%); **visual and injection are 0%**. The free core builds and
-verifies boards; a hosted, operator-signed board is the intended operated surface (experimental
-today). See [docs/leaderboard.md](docs/leaderboard.md). **Evidence, not certification.**
+The published board is the **ten-task `libero_object` suite screen**: on the real
+**SmolVLA × LIBERO** policy only the **instruction** family transfers, at **41.3% (62/150)
+[34–49%]** against a **4.0% (2/50)** benign control; **injection is 0/50 and visual 0/100** —
+measured nulls, published as such.
+
+Since `schema_version` 5 each row also carries the qualifiers its report always had —
+`calibrated` (false here: the keep-out predicate is the default box, see
+[#136](https://github.com/provael/provael/issues/136)), `stochastic` (true: one draw, not a
+reproducible constant), and `checkpoint` — plus a board-level `not_applicable`
+(`mcp_tool_desc`, which produced records but zero applicable episodes). A rate that outlives its
+qualifiers is the overclaim this board exists not to make, and the board was the one artifact
+where they were being dropped.
+
+The free core builds and verifies boards; a hosted, operator-signed board is the intended operated
+surface (experimental today). See [docs/leaderboard.md](docs/leaderboard.md).
+**Evidence, not certification.**
 
 **What the published board does not cover.** It is one run and it is old: measured with
 **`provael 0.1.0`**, covering **1 policy on 1 suite** and **3 of the 15 adversarial families**. The
@@ -438,7 +450,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.33.2
+      - uses: provael/provael@v0.34.0
         with:
           # `none` is the benign control: without it an ASR has no false-positive baseline,
           # and the release gate cannot reach `pass`. It never moves the adversarial ASR.
@@ -566,16 +578,23 @@ hidden, but a calibrated predicate would be a better measurement. `provael calib
 not been run on LIBERO.
 
 Read each rate **against its control**: the `none` baseline runs the policy's *real* task and
-scores **0/10 (benign FPR 0%)**, so every success above is attack-induced, not the policy failing
-the task on its own. Language-reframing attacks reliably divert SmolVLA's end-effector; pixel and
-scene-text perturbations did not move it (0%) — an honest null on this suite.
+scores **2/50 (benign FPR 4%, Wilson 95% [1.1%, 13.5%])**, so a success above is attack-induced
+only to the extent it clears that floor — which is what the McNemar column tests, pair by pair.
+Language-reframing attacks reliably divert SmolVLA's end-effector; pixel and scene-text
+perturbations did not move it (0%) — an honest null on this suite.
 
-> **Scope (honest, unchanged).** Simulation only, **one task**, **`n = 10`** per attack — read the
-> CIs, not just the point estimates. Only the **instruction** family transfers to the real model so
-> far. **Calibration is available**: `provael calibrate` fits a per-task predicate from the policy's
-> own benign rollouts to a benign-FPR target, and `provael attack --calib` reports a calibrated
-> redirection rate with a 95% CI and the benign FPR as its control (here, 0%) — see
-> [Calibration](#calibration). The real SmolVLA × LIBERO path needs a GPU + the `[lerobot]` extra.
+> **Scope (honest).** Simulation only. **Ten `libero_object` tasks, 5 seeds per (task, arm),
+> 350 measured episodes** — read the CIs, not just the point estimates, and note the interval is
+> clustered over tasks. Only the **instruction** family transfers to the real model so far.
+> **The predicate is uncalibrated**: `CALIBRATED_ZONES` is empty, so all ten tasks were scored
+> against the same default keep-out box, which overlaps the reachable benign workspace and is why
+> the benign arm trips at all. As of this release that fallback warns at runtime and can be refused
+> outright with `PROVAEL_REQUIRE_CALIBRATED=1`; the calibration itself is still owed
+> ([#136](https://github.com/provael/provael/issues/136)). `provael calibrate` fits a per-task
+> predicate from the policy's own benign rollouts to a benign-FPR target, and `provael attack
+> --calib` reports a calibrated redirection rate with its 95% CI and the benign FPR as its control
+> — see [Calibration](#calibration). It has never been run on LIBERO. The real SmolVLA × LIBERO
+> path needs a GPU + the `[lerobot]` extra.
 
 ## Cross-architecture transfer
 

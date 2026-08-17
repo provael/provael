@@ -9,8 +9,8 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
-authors = [{ name = "Sattyam Jain" }]
-maintainers = [{ name = "Sattyam Jain" }]
+authors = [{ name = "Sattyam Jain", email = "sattyamjain96@gmail.com" }]
+maintainers = [{ name = "Sattyam Jain", email = "sattyamjain96@gmail.com" }]
 keywords = [
     "vla",
     "robotics",
@@ -21,12 +21,23 @@ keywords = [
     "lerobot",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    # 4 - Beta, not 3 - Alpha: the API has been stable across the release series, the CLI is
+    # documented and adopted through four surfaces (package, Action, pre-commit hook, container),
+    # and "Alpha" reads to an evaluator as "do not depend on this yet", which is the one audience
+    # this package is trying to reach. Not 5 - Production/Stable: the real-model path is measured on
+    # one policy and one suite, and saying otherwise here would be the same overclaim the tool exists
+    # to catch.
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Security",
+    # src/provael/py.typed ships, so the package is checkable by a consumer's own mypy.
+    "Typing :: Typed",
 ]
 dynamic = ["version"]
 dependencies = [
@@ -39,9 +50,13 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/provael/provael"
+# All three of these used to point at GitHub, so the PyPI sidebar offered a visitor no route to
+# either the site or the docs — every install landed on a page that could not reach them.
+Homepage = "https://www.provael.com"
+Documentation = "https://docs.provael.com"
 Source = "https://github.com/provael/provael"
 Issues = "https://github.com/provael/provael/issues"
+Changelog = "https://github.com/provael/provael/blob/main/CHANGELOG.md"
 
 [project.scripts]
 provael = "provael.cli:app"
