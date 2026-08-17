@@ -523,6 +523,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#qualifiers-travel-with-the-row-schema-v5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Qualifiers travel with the row (schema v5)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#signing-and-offline-verification" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2363,6 +2374,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#qualifiers-travel-with-the-row-schema-v5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Qualifiers travel with the row (schema v5)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#signing-and-offline-verification" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2513,9 +2535,52 @@ carries the measurement it always did</strong>, possibly made by a much older re
 <p>That is a trap: a board carrying only <code>generated_at</code> reads as a fresh measurement. Schema v3 adds
 <strong><code>measured_with</code></strong> — the sorted <code>tool_version</code> values of the aggregated reports, i.e. the versions
 the <em>numbers</em> came from — and <code>Leaderboard.is_restamp()</code> answers the question directly. The
-published board reports <code>measured_with: ["0.1.0"]</code> against a build commit from the current release
-line: the provenance envelope is current, the measurement is the SmolVLA × LIBERO run it has
-always been.</p>
+published board reports <code>measured_with: ["0.32.0"]</code> against a build commit from the current release
+line: the provenance envelope is current, the measurement is the ten-task SmolVLA × LIBERO suite
+screen those shards recorded.</p>
+<h2 id="qualifiers-travel-with-the-row-schema-v5">Qualifiers travel with the row (schema v5)</h2>
+<p>A leaderboard is where a number travels furthest from its own report, and until v5 it arrived
+stripped: <code>report.json</code> recorded <code>calibrated</code> and <code>stochastic</code>, and the board dropped both. A row
+reading <code>41.3%</code> with no further context is a stronger claim than the run behind it ever made.</p>
+<p>Each row now carries three fields derived from the aggregated reports — never passed in, for the
+same reason <code>measured_with</code> is not:</p>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>reduction</th>
+<th>why that direction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>calibrated</code></td>
+<td>ALL</td>
+<td>one uncalibrated run makes the row uncalibrated</td>
+</tr>
+<tr>
+<td><code>stochastic</code></td>
+<td>ANY</td>
+<td>one unseeded sampler makes the row one draw</td>
+</tr>
+<tr>
+<td><code>checkpoint</code></td>
+<td>unanimous, else <code>None</code></td>
+<td>naming one of several would attribute the rate to a checkpoint that did not wholly earn it</td>
+</tr>
+</tbody>
+</table>
+<p>Each collapses toward the <em>weaker</em> claim on purpose: the reduction step is exactly where an
+aggregate is tempted to launder a qualifier.</p>
+<p>The board also carries <strong><code>not_applicable</code></strong> — attacks with episode records but zero applicable
+episodes. Scoring excludes them from every denominator, so without the list they vanish entirely
+and a reader counts one fewer null than was attempted. On the published board that is
+<code>mcp_tool_desc</code>: 50 records, 0 applicable. <em>Not measured</em> and <em>measured zero</em> are different claims.</p>
+<p><strong>Adding these fields did not invalidate older signatures.</strong> <code>_signing_payload</code> strips fields
+introduced after a board's own <code>schema_version</code> before canonicalising, so a v4 board still verifies
+against its v4 signature under the v5 model. Without that, adding any defaulted field would have
+silently broken every signature ever issued — and a correctly-signed older board would verify as
+INVALID, indistinguishable to the checker from a tampered one.</p>
 <p>Recording that in the JSON was only half the fix. Until 0.29.1 the <em>rendered</em> Space showed a fresh
 build date and an Ed25519 signature above rows measured many releases earlier, with nothing on the
 page saying so — and a signature over stale data is worse than no signature, because it reads as
