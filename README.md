@@ -49,6 +49,7 @@ provael attack --policy stub --suite stub --attacks instruction,visual,injection
 [![PyPI](https://img.shields.io/pypi/v/provael.svg)](https://pypi.org/project/provael/)
 [![Downloads](https://img.shields.io/pypi/dm/provael.svg)](https://pypi.org/project/provael/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/provael/provael/blob/main/LICENSE)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21984184.svg)](https://doi.org/10.5281/zenodo.21984184)
 [![last measured](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprovael%2Fprovael%2Fmain%2Fwatch%2Ffreshness.json)](https://github.com/provael/provael/blob/main/watch/freshness.json)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb)
@@ -866,22 +867,30 @@ same metadata, for pasting straight into a `.bib` file:
 @software{jain_provael_2026,
   author  = {Jain, Sattyam},
   title   = {Provael: red-teaming Vision-Language-Action robot policies in simulation},
-  version = {0.33.0},
+  version = {0.34.0},
   year    = {2026},
-  url     = {https://github.com/provael/provael},
+  doi     = {10.5281/zenodo.21984184},
+  url     = {https://doi.org/10.5281/zenodo.21984184},
   license = {Apache-2.0}
 }
 ```
 
-<!-- NO DOI FIELD, DELIBERATELY. Zenodo currently returns zero records for provael, so there is no
-archived version to point at and no concept DOI to mint one from. A `doi = {...}` line here would be
-the single most damaging thing this README could carry: a citation is copied once and lives in
-someone else's bibliography forever, and a DOI that does not resolve fails in a reviewer's reference
-check rather than in ours.
+<!-- THE DOI ABOVE IS THE CONCEPT DOI, and that choice is the point. Zenodo minted two when the
+v0.34.0 GitHub Release fired: 10.5281/zenodo.21984185 for that specific version, and
+10.5281/zenodo.21984184 for the concept. The concept one always resolves to the newest archived
+version, so an entry copied into someone's bibliography today keeps working after the next release
+instead of pinning them to whatever happened to be current when they cited it.
 
-When the Zenodo GitHub integration is enabled and a release archives, add the CONCEPT doi (the one
-that always resolves to the latest version, not the version-specific one) in three places, together:
-this block, `CITATION.cff` as an `identifiers:` entry, and `docs/index.md`. -->
+This block previously carried no DOI at all, for a reason that still holds and is worth keeping in
+view: a citation is copied once and lives in someone else's bibliography forever, so a DOI that
+does not resolve fails in a reviewer's reference check rather than in ours. Both DOIs were
+confirmed resolving (HTTP 200) before this line was written.
+
+Archiving is PROSPECTIVE. The Zenodo integration was enabled at v0.34.0, so nothing from v0.5.0
+through v0.33.2 is archived and no earlier tag can be cited this way. Keep the version field here
+in step with `CITATION.cff`. -->
+
+<!-- Badge lives with the other badges near the top of this file. -->
 
 If you cite the **Embodied AI Security Top 10** specifically, cite it as its own artifact — it is
 CC BY-SA 4.0 and versioned separately from the tool; see
