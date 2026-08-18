@@ -1,0 +1,83 @@
+name: Coverage badge
+
+# WHY THIS IS ITS OWN WORKFLOW AND NOT A STEP IN ci.yml.
+#
+# ci.yml is deliberately `contents: read` with `persist-credentials: false`, so that a pull request
+# from a fork cannot use it to obtain a write token. Committing a regenerated badge needs write, and
+# bolting that onto ci.yml would hand every fork PR a privileged workflow to aim at — a real
+# security regression traded for a cosmetic convenience.
+#
+# So the split mirrors freshness.yml exactly: measurement happens in the read-only lane on every PR
+# (with `--cov-fail-under` as the gate), and only the badge COMMIT lives here, on main, after the
+# merge is already trusted.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "uv.lock"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coverage-badge
+  cancel-in-progress: true
+
+jobs:
+  badge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # commits the regenerated badge JSON
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: true # the commit below pushes; same pattern as freshness.yml
+
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Sync (locked, CPU core only)
+        run: uv sync --locked
+
+      # No --cov-fail-under here: the gate already ran in ci.yml on the way in. This job's only job
+      # is to publish the number, and failing it would leave the badge showing an older figure while
+      # the run went red — the worst of both.
+      - name: Measure coverage
+        run: uv run pytest -q --cov=src/provael --cov-report=term | tee /tmp/cov.out
+
+      - name: Regenerate the badge
+        run: |
+          PCT=$(grep -E '^TOTAL' /tmp/cov.out | awk '{print $NF}' | tr -d '%')
+          if [ -z "$PCT" ]; then
+            echo "::error::could not parse a coverage total — refusing to write a badge from nothing"
+            exit 1
+          fi
+          COLOR=brightgreen
+          [ "$PCT" -lt 85 ] && COLOR=yellow
+          [ "$PCT" -lt 70 ] && COLOR=red
+          printf '{\n  "cacheSeconds": 3600,\n  "color": "%s",\n  "label": "coverage",\n  "message": "%s%%",\n  "schemaVersion": 1\n}\n' "$COLOR" "$PCT" > watch/coverage.json
+          {
+            echo "### Coverage"
+            echo ""
+            echo '```json'
+            cat watch/coverage.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit the badge if it changed
+        run: |
+          if git diff --quiet -- watch/coverage.json; then
+            echo "badge unchanged"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add watch/coverage.json
+          git commit -m "chore(ci): refresh the coverage badge"
+          git push

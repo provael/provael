@@ -6,6 +6,46 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- **Security lint on ourselves.** `S` (flake8-bandit) added to the ruff selection — a tool that
+  publishes other people's attack-success rates was not running security lint on its own source,
+  which is the kind of gap a reviewer is right to notice. Enabling it surfaced 2,500 findings, of
+  which 2,466 were `S101` (assert) in the test suite, where assert is the point. The remaining 34
+  were triaged individually and **none was a live defect**: three `S105` "hardcoded password" hits
+  are an enum member (`PASS = "pass"`), a channel prefix, and a deliberately published fixture token
+  the attacks never present; `S311` is a seeded bootstrap resample where a cryptographic RNG would
+  break the determinism contract; the `subprocess` hits pass fixed argv with no shell. Suppressions
+  are scoped by rule and directory rather than blanket, and every one in `src/` is an inline `noqa`
+  carrying its reason, so a future hit has to be argued rather than absorbed.
+
+  `S101` is suppressed in `tests/` and nowhere else — an assert in `src/` should still fail lint,
+  because `python -O` deletes it silently.
+
+- **Coverage is measured, floored and published: 88% of 7,833 statements.** There were 90 test
+  modules and no figure anywhere, which is the shape of claim this project refuses to accept from
+  anyone else — "well tested" with no denominator. CI now runs `--cov` on every PR, writes the
+  table to the job summary, and gates on `--cov-fail-under=85`. The floor sits below the measured
+  value deliberately: a gate pinned at the current number fires on ordinary refactors, and a gate
+  that fires on noise gets raised until it means nothing.
+
+  The README badge is a shields **endpoint** reading a committed `watch/coverage.json`, regenerated
+  from the run that just happened — the same mechanism as the freshness badge. A hardcoded `88%` in
+  a README is exactly the restated number `src/provael/coverage.py` exists to stop this project
+  publishing.
+
+  The badge commit lives in its own workflow rather than in `ci.yml`. `ci.yml` is `contents: read`
+  with `persist-credentials: false` so a fork PR cannot obtain a write token, and bolting a commit
+  step onto it would have handed every fork PR a privileged workflow to aim at — a real security
+  regression traded for a cosmetic convenience.
+
+  GPU-gated adapters are omitted from the coverage denominator rather than counted as missed: they
+  never execute on the CPU lane, and counting them would understate the covered surface while
+  inviting the number to be gamed by deleting them.
+
+- **CONTRIBUTING now states that new functionality ships with tests.** It was always the practice;
+  it was never written down, and an unwritten rule is one a new contributor has to guess at.
+
 ## [0.35.0] — 2026-08-18
 
 ### Added

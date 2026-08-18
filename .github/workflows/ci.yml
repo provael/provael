@@ -77,8 +77,25 @@ jobs:
       - name: Link check (relative markdown links, case-exact)
         run: uv run python scripts/check_links.py
 
-      - name: Test (pytest, CPU only)
-        run: uv run pytest -q
+      # COVERAGE IS MEASURED AND PUBLISHED, not asserted. The repo had 90 test modules and no
+      # figure anywhere, which is exactly the shape of claim this project refuses to accept from
+      # anyone else: "well tested" with no denominator.
+      #
+      # `--cov-fail-under` is a FLOOR, not a target, and it is deliberately a few points below the
+      # measured value. A gate pinned at the current number fires on ordinary refactors, and a gate
+      # that fires on noise gets raised until it means nothing. The real number is printed on every
+      # run and written to the job summary, so a slide shows up as a number moving rather than as a
+      # threshold being edited.
+      - name: Test (pytest, CPU only) + coverage
+        run: |
+          uv run pytest -q --cov=src/provael --cov-report=term --cov-report=xml --cov-fail-under=85 \
+            | tee /tmp/pytest.out
+          COV=$(grep -E '^TOTAL' /tmp/pytest.out | awk '{print $NF}')
+          echo "### Coverage: ${COV}" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+          grep -E '^TOTAL|^Name' /tmp/pytest.out >> "$GITHUB_STEP_SUMMARY"
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+
 
       # Build the image on every PR, push nothing. The Dockerfile pinned uv 0.5.11 against a
       # `revision = 3` lockfile that version cannot parse, so `uv sync --locked` failed — and it had

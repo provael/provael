@@ -1,0 +1,7 @@
+{
+  "cacheSeconds": 3600,
+  "color": "brightgreen",
+  "label": "coverage",
+  "message": "89%",
+  "schemaVersion": 1
+}

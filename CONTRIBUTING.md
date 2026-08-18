@@ -13,6 +13,14 @@ sim-only security-research tool — please read [SAFETY.md](SAFETY.md) first.
   When a third-party API is involved, read/introspect the installed source rather than
   guessing; if something can't be verified (no GPU/sim), say so and ship a clearly-skipped
   gated test instead of a guess.
+- **New functionality ships with tests.** A change that adds or alters behaviour is not complete
+  until a test would fail without it — every new attack, defense, suite, scorer, emitter and CLI
+  command included. Bug fixes come with the test that reproduces the bug, so the fix cannot be
+  silently undone later. This has always been the practice here (90 test modules, ~88% line
+  coverage, printed on every CI run and floored at 85%); it was simply never written down, and an
+  unwritten rule is one a new contributor has to guess at. Where a real GPU or simulator is
+  genuinely required, ship a clearly-skipped gated test rather than nothing — a skip states what is
+  untested, an absence does not.
 - **Determinism.** The stub policy/suite are byte-deterministic; real policies are seeded
   but model-stochastic (reported as mean ± per-seed std). Don't put wall-clock into
   `report.json`.

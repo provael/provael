@@ -252,7 +252,7 @@ def _git_commit() -> str | None:
     """Best-effort short commit SHA of the working tree, or None outside a git checkout."""
     try:
         result = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
+            ["git", "rev-parse", "--short", "HEAD"],  # noqa: S607 - fixed argv, no user input; resolving git absolutely would break every non-standard install
             capture_output=True, text=True, timeout=5, check=False,
         )
     except (OSError, subprocess.SubprocessError):
@@ -2499,7 +2499,8 @@ def submit_cmd(
     # commands that could not work there. Failing here costs nothing; failing after the signature
     # wastes the one expensive step.
     in_repo = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False
+        ["git", "rev-parse", "--show-toplevel"],  # noqa: S607 - as above: fixed argv, read-only query
+        capture_output=True, text=True, check=False,
     )
     if not dry_run and in_repo.returncode != 0:
         _fail(
@@ -2630,7 +2631,10 @@ def submit_cmd(
         ["gh", "pr", "create", "--repo", SUBMISSION_REPO, "--title", title, "--body", body],
     ):
         _out.print(f"  [dim]$ {' '.join(cmd)}[/dim]")
-        completed = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        # noqa: S603 - `cmd` is drawn from the fixed literal tuple immediately above, never from
+        # user input. The interpolated values (branch, title, body) are passed as ARGV elements, not
+        # through a shell, so they cannot inject an extra command however they are spelled.
+        completed = subprocess.run(cmd, capture_output=True, text=True, check=False)  # noqa: S603
         if completed.returncode != 0:
             _err.print(f"[red]step failed:[/red] {completed.stderr.strip() or completed.stdout}")
             _err.print(

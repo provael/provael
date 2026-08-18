@@ -131,7 +131,7 @@ def main(argv: list[str]) -> int:
             print(f"\n  Headings currently in CHANGELOG.md: {', '.join(existing)}", file=sys.stderr)
         return 1
 
-    assert date is not None
+    assert date is not None  # noqa: S101 - a script invariant, not a test
     try:
         dt.date.fromisoformat(date)
     except ValueError:

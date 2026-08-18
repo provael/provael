@@ -325,7 +325,7 @@ class LiberoSuiteAdapter(SuiteAdapter):
         for attr in ("task_description", "task"):
             try:
                 result = env.call(attr)
-            except Exception:  # noqa: BLE001 - env may not expose it; try the next/fallback
+            except Exception:  # noqa: BLE001, S112 - env may not expose it; try the next/fallback
                 continue
             text = result[0] if isinstance(result, list | tuple) and len(result) else result
             if isinstance(text, str) and text.strip():

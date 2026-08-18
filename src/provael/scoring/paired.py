@@ -226,7 +226,10 @@ def cluster_bootstrap_ci(
     if len(keys) < 2:
         return None
 
-    rng = random.Random(seed)
+    # noqa: S311 - a SEEDED bootstrap resample. `secrets` would be both unnecessary (no adversary
+    # is guessing a cluster draw) and actively wrong: the determinism contract requires the same
+    # seed to reproduce the same interval byte for byte.
+    rng = random.Random(seed)  # noqa: S311
     rates: list[float] = []
     for _ in range(iterations):
         drawn = [clusters[keys[rng.randrange(len(keys))]] for _ in range(len(keys))]
