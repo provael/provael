@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- Crosswalk card for LIBERO-Safety (arXiv:2606.23686, ECCV 2026), indexed in the docs nav. Its
+  `mapping_status` is `complementary-axis, not-yet-crosswalked`: their "strictly collision-free"
+  construct and our keep-out envelope violation measure the same physical property from opposite
+  directions, but their regime is distributional (randomisation, no attacker) and ours is
+  adversarial. Neither subsumes the other — their coverage is ten policies against our one, and
+  their attacker is absent while ours is the point. The taxonomy mapping onto the Top 10 is
+  recorded as owed rather than delivered, and the rates are stated as not comparable in either
+  direction, because neither side publishes a benign FPR on shared fixtures.
+
 ## [0.34.0] — 2026-08-18
 
 ### Added
