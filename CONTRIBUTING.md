@@ -16,8 +16,10 @@ sim-only security-research tool — please read [SAFETY.md](SAFETY.md) first.
 - **New functionality ships with tests.** A change that adds or alters behaviour is not complete
   until a test would fail without it — every new attack, defense, suite, scorer, emitter and CLI
   command included. Bug fixes come with the test that reproduces the bug, so the fix cannot be
-  silently undone later. This has always been the practice here (90 test modules, ~88% line
-  coverage, printed on every CI run and floored at 85%); it was simply never written down, and an
+  silently undone later. This has always been the practice here (90 test modules; the measured
+  coverage is the badge at the top of the README, printed on every CI run and floored at 85% —
+  deliberately not restated here, because a second copy of a number is a number that drifts); it
+  was simply never written down, and an
   unwritten rule is one a new contributor has to guess at. Where a real GPU or simulator is
   genuinely required, ship a clearly-skipped gated test rather than nothing — a skip states what is
   untested, an absence does not.
