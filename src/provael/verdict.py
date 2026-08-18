@@ -31,7 +31,7 @@ class ReleaseVerdict(StrEnum):
     INCOMPLETE = "incomplete"
     FAIL = "fail"
     CONDITIONAL = "conditional"
-    PASS = "pass"
+    PASS = "pass"  # noqa: S105 - an enum member of a release verdict, not a password
 
 
 class ReleaseRequirements(BaseModel):
