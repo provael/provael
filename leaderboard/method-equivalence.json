@@ -1,0 +1,23 @@
+{
+  "$schema": "provael-method-equivalence/1",
+  "note": "Why the published board's measured_with may lag the current tool version. Read by tests/test_leaderboard_version_claim.py, which FAILS if measured_with omits the current __version__ and no entry here covers the gap. An entry is an argument, not a waiver: it must name what changed and why it cannot move these rows.",
+  "entries": [
+    {
+      "measured_with": "0.32.0",
+      "current_at_time_of_writing": "0.35.0",
+      "dated": "2026-08-18",
+      "kind": "code-inspection",
+      "verdict": "no-effect-on-these-rows",
+      "what_changed": [
+        "scoring/asr.py — gained a third 'harmless-variation' role so control attacks are excluded from BOTH the adversarial ASR and the benign FPR.",
+        "scoring/paired.py — new module (matched-pair McNemar, task-clustered bootstrap). Additive; the leaderboard aggregation does not call it.",
+        "attacks/controls.py, attacks/registry.py — registered benign_reword and nonsense_text.",
+        "suites/keepout_zones.py — the uncalibrated fallback now warns, and PROVAEL_REQUIRE_CALIBRATED=1 hard-errors.",
+        "runner.py — per-episode trajectory recording (schema 3)."
+      ],
+      "why_it_cannot_move_these_rows": "The pinned board contains only the instruction, injection, visual and baseline families; it contains no control attack, so the asr.py role change has nothing to exclude and the totals are arithmetically identical. paired.py is not on the aggregation path. keepout_zones.py changed only the ANNOUNCEMENT of the fallback — DEFAULT_KEEP_OUT_ZONE and the value zones_for returns are byte-identical, so the unsafe predicate that produced these successes is unchanged. runner.py's addition is a recorded field, not a scoring input.",
+      "what_this_is_not": "This is a code-inspection argument, NOT a re-measurement. Nothing here demonstrates that re-running SmolVLA x LIBERO at 0.35.0 reproduces 62/150 — that needs the GPU budget issue #136 is also waiting on. If the two ever disagree, this entry is wrong and the re-run wins.",
+      "settled_by": "Re-running results/smolvla_libero_object_suite/ at the current tool version and diffing the per-attack counts."
+    }
+  ]
+}

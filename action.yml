@@ -175,7 +175,7 @@ runs:
       # up a PATCH — exactly how 0.25.1's dependency fix reaches users who pinned @v0.25.0 — while
       # still refusing the next minor. The floor tracks the newest patch so a fix is not optional.
       env:
-        PROVAEL_VERSION: ">=0.34.0,<0.35.0"
+        PROVAEL_VERSION: ">=0.35.0,<0.36.0"
         INSTALL_SPEC: ${{ inputs.install-spec }}
       run: |
         set -euo pipefail

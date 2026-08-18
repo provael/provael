@@ -14,8 +14,9 @@ produces a byte-identical report.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -67,6 +68,75 @@ class Decision(BaseModel):
     unsafe: bool = Field(..., description="Whether the resulting environment state was unsafe.")
 
 
+class Trajectory(BaseModel):
+    """The per-step calibration signal of one episode, stored compactly.
+
+    WHY THIS EXISTS AT ALL. Calibrating a keep-out zone needs the BENIGN end-effector envelope —
+    where the policy actually goes when nobody is attacking it — and that is the one input the
+    runner computed on every step and then threw away. :meth:`Suite.calibration_signal` has always
+    returned exactly this signal, and nothing ever persisted it, so every finished run left the
+    calibration no more possible than before it started. That is why issue #136 is *unfixable*
+    rather than merely unfixed: the blocker is not GPU budget for the fit, it is that the data the
+    fit consumes was never written down.
+
+    WHY NOT JUST REUSE ``decisions``. ``Decision`` is a per-step JSON object and the ten-task suite
+    already sheds 1.9 MB per task of it before anything is committed. A second per-step JSON field
+    would be the same mistake twice. This is a homogeneous numeric array, so it is stored as one
+    base64 blob of zlib-compressed float32 — a few hundred poses collapse to a few hundred bytes,
+    and the shape is carried explicitly so a reader never has to infer the stride.
+
+    DETERMINISM. zlib at a fixed level over identical float32 bytes is byte-stable, so a report
+    carrying trajectories stays a pure function of its inputs and the attestation subject is
+    unchanged in kind.
+    """
+
+    encoding: Literal["float32-zlib-b64"] = Field(
+        "float32-zlib-b64", description="Wire format of `data`. One value today, named so a future "
+        "format is a new value rather than a silent reinterpretation of these bytes."
+    )
+    shape: tuple[int, int] = Field(
+        ..., description="(steps, dims). dims is 3 for a spatial suite (x, y, z) and 1 for a "
+        "scalar-danger suite, so a reader can tell the two apart without guessing."
+    )
+    data: str = Field(..., description="base64(zlib(float32 little-endian, C-order)).")
+
+    @classmethod
+    def encode(cls, samples: Sequence[Sequence[float]]) -> Trajectory:
+        """Pack per-step samples. Every row must share a width; a ragged trajectory is a bug."""
+        import base64
+        import zlib
+
+        import numpy as np
+
+        widths = {len(row) for row in samples}
+        if len(widths) > 1:
+            raise ValueError(
+                f"trajectory must be 2-D (steps, dims); rows have differing widths {sorted(widths)}"
+            )
+        arr = np.asarray(samples, dtype="<f4")
+        if arr.ndim != 2:
+            raise ValueError(f"trajectory must be 2-D (steps, dims); got shape {arr.shape}")
+        blob = zlib.compress(arr.tobytes(order="C"), 6)
+        return cls(
+            shape=(int(arr.shape[0]), int(arr.shape[1])),
+            data=base64.b64encode(blob).decode(),
+        )
+
+    def decode(self) -> list[list[float]]:
+        """Unpack back to plain floats. Raises if the payload disagrees with the declared shape."""
+        import base64
+        import zlib
+
+        import numpy as np
+
+        raw = zlib.decompress(base64.b64decode(self.data))
+        arr = np.frombuffer(raw, dtype="<f4")
+        want = self.shape[0] * self.shape[1]
+        if arr.size != want:
+            raise ValueError(f"trajectory payload has {arr.size} values, shape declares {want}")
+        return [[float(v) for v in row] for row in arr.reshape(self.shape)]
+
+
 class AttackResult(BaseModel):
     """Outcome of a single episode: one ``(task, attack, seed)`` triple."""
 
@@ -116,6 +186,14 @@ class AttackResult(BaseModel):
         default_factory=list,
         description="Per-episode log: one Decision per executed timestep (P0.4). Deterministic on "
         "the stub; bound by the report.json SHA-256 the attestation subject records.",
+    )
+    trajectory: Trajectory | None = Field(
+        None,
+        description="Per-step calibration signal for this episode (end-effector pose on a spatial "
+        "suite). Recorded for EVERY episode, benign and adversarial alike, and on by default: an "
+        "opt-in flag reproduces the pre-0.35.0 situation the first time someone forgets. None only "
+        "where the suite surfaced no signal on any step — never where it surfaced one and it was "
+        "dropped. See issue #136.",
     )
 
 
@@ -294,7 +372,10 @@ class RunReport(BaseModel):
         1,
         description="Report schema version. 1 = legacy: the asr/attempts/successes headline is the "
         "ALL-episode observed-unsafe rate (benign control INCLUDED in the denominator). >=2 also "
-        "carries the adversarial_* fields (the benign control excluded by role) and the roles map.",
+        "carries the adversarial_* fields (the benign control excluded by role) and the roles map. "
+        ">=3 records a per-episode `trajectory` (the calibration signal every step produced and "
+        "every run used to discard). Additive with a default, so a v2 report still loads; what a "
+        "v2 report cannot do is feed a calibration, because its trajectories do not exist.",
     )
     evidence_state: str | None = Field(
         None,

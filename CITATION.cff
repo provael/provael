@@ -15,14 +15,15 @@ authors:
 # 0.25.0 named a date three days before the artifact existed. `version` is guarded by
 # tests/test_version_consistency.py; the date is not machine-checkable against a tag, so it is on
 # the release author.
-version: "0.34.0"
+version: "0.35.0"
 date-released: "2026-08-18"
-# The CONCEPT DOI, deliberately, not the version DOI (0.34.0's own is
-# 10.5281/zenodo.21984185). A concept DOI always resolves to the newest archived version, so a
-# bibliography entry copied today keeps working after the next release instead of silently pinning
-# a reader to whatever was current when they cited it. Zenodo minted both when the v0.34.0 GitHub
-# Release fired; archiving is prospective, so nothing before v0.34.0 is on Zenodo and no earlier
-# tag can be cited this way.
+# The CONCEPT DOI, deliberately, not a version DOI. A concept DOI always resolves to the newest
+# archived version, so a bibliography entry copied today keeps working after the next release
+# instead of silently pinning a reader to whatever was current when they cited it. Zenodo minted
+# it when the v0.34.0 GitHub Release fired (v0.34.0's own version DOI is
+# 10.5281/zenodo.21984185); archiving is prospective, so nothing before v0.34.0 is on Zenodo and
+# no earlier tag can be cited this way. These are historical facts about v0.34.0 and must NOT be
+# swept forward by a version bump.
 doi: "10.5281/zenodo.21984184"
 license: Apache-2.0
 repository-code: "https://github.com/provael/provael"

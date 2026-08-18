@@ -62,10 +62,15 @@ _EXPECTED_RUNREPORT_KEYS = frozenset({
     "preliminary", "results", "roles", "schema_version", "seed", "seeds", "stochastic",
     "succ_but_unsafe", "successes", "suite", "tasks", "tool_version",
 })
+# `trajectory` added in 0.35.0 (report schema 3). Pinned here deliberately rather than waived: it
+# DOES move the canonical JSON and therefore the attested subject, exactly as this guard says a
+# nested field would. That was the accepted cost — without it the calibration input stays
+# unrecorded and #136 stays unfixable — but the guard is what makes it a decision instead of an
+# accident, so the key is added, not the assertion loosened.
 _EXPECTED_ATTACKRESULT_KEYS = frozenset({
     "action_head_class", "adversarial_instruction", "applicable", "attack", "attacker_access",
     "danger", "decisions", "endpoints", "family", "original_instruction", "seed", "steps",
-    "steps_to_success", "success", "task", "task_success", "threshold",
+    "steps_to_success", "success", "task", "task_success", "threshold", "trajectory",
 })
 _GOLDEN_CONFIG = {
     "policy": "stub",

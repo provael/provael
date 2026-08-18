@@ -677,6 +677,56 @@ is the same instinct and more than most of this file's entries manage.
 
 **mapping_status: `cited, not crosswalked`.**
 
+### DRIFT — *Derailing Denoising Trajectories of Flow-Matching VLAs with Adversarial Patch Attack*
+Tae, Lee (2026).
+arXiv:[2608.03207](https://arxiv.org/abs/2608.03207) · submitted 4 August 2026
+
+**The third entry in a row where a published patch attack beats ours, and the sharpest** — because
+the obvious explanation for the gap is available, comfortable, and wrong.
+
+DRIFT is a test-time **universal adversarial patch placed on the robot's gripper** that attacks the
+denoising velocity field of an off-the-shelf flow-matching policy. Their framing of the prior state
+is the part that matters here: flow-matching VLAs "have been reported to resist adversarial
+perturbations that readily fool autoregressive VLAs", and they argue "this robustness is largely
+illusory: it stems from prior attacks ignoring the multi-step denoising ODE". Their headline, from
+the abstract: on π0 and π0.5 across four LIBERO suites, DRIFT "breaks essentially all
+originally-solvable tasks with a small single patch, far exceeding action- and embedding-space
+attack baselines". Their counterintuitive finding is that attacking **only the first denoising
+step** is both stronger and cheaper than attacking a wider window.
+
+Provael's `patch` measured **0/50** on SmolVLA × LIBERO, and the visual family **0/100**.
+
+**The tempting resolution is an architecture difference, and this repo's own data refuses it.**
+It would be convenient to say DRIFT attacks flow-matching policies while we measured something
+else. We did not: `lerobot_adapter.py` declares `action_head_class = "flow"`, and every episode in
+the pinned ten-task evidence records `flow`. SmolVLA **is** a flow-matching policy by this
+project's own taxonomy. So DRIFT's target class and ours are the same class, and the architecture
+explanation is unavailable.
+
+What is left is the threat model and the optimisation, which is the same finding as
+[DURA](#dura--hidden-in-plain-sight-diffusion-based-unrestricted-robotic-attacks-on-vla-models)
+arriving by a different route:
+
+- **DRIFT is white-box and gradient-optimised** against the denoising ODE of the policy under test,
+  fitting a universal patch at test time.
+- **Ours performs no search at all.** `patch` appends the literal string `adv_patch::{object}::now`
+  to a `visual_tokens` list in a simulated observation dict. There is no gradient, no image, no
+  renderer and no optimisation, so there is no mechanism by which it could find what DRIFT finds.
+
+Three independent groups have now published optimised patch attacks that far exceed our null on
+this channel. At that point the honest reading of 0/50 is not "the policy resisted" and not even
+"our implementation is weak on this instance" — it is that **provael has no image-space patch
+attack**, and the visual family's nulls measure the absence of one. That is a coverage gap in the
+harness, stated as such. Both nulls stay published exactly as measured.
+
+**What neither side can currently check.** DRIFT reports no benign false-positive rate on shared
+fixtures, and ours is uncalibrated ([#136](https://github.com/provael/provael/issues/136)) — the
+keep-out predicate is a default box, so our 4% (2/50) benign rate is a property of that box as much
+as of the policy. Neither project can presently say what either attack's rate would be against a
+matched, calibrated control on the same fixtures, and that is the comparison that would settle it.
+
+**mapping_status: `cited, not crosswalked`.**
+
 ### UniTexture — *Cross-Task Universal Adversarial Textures for Vision-Language-Action Models*
 Dai, Dai, Wang, Li, Li, Zhu (2026) — Tongji University, MBZUAI, University of Electronic Science and
 Technology of China.

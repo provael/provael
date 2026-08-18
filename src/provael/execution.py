@@ -131,8 +131,14 @@ class ExecutionManifest(BaseModel):
 
 
 def report_digest(report: RunReport) -> str:
-    """The canonical report.json digest a manifest binds to (matches the attestation subject)."""
-    return sha256_hex(canonical_json(json.loads(report.model_dump_json())))
+    """The canonical report.json digest a manifest binds to (matches the attestation subject).
+
+    Delegates to :func:`provael.attest.report_projection`, which is the single schema-aware
+    implementation — see the note there on why this must not be a fourth copy.
+    """
+    from provael.attest import report_projection
+
+    return sha256_hex(canonical_json(report_projection(report)))
 
 
 def build_execution_manifest(

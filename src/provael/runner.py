@@ -51,6 +51,7 @@ from provael.types import (
     EaiTag,
     Observation,
     RunReport,
+    Trajectory,
 )
 
 
@@ -159,6 +160,11 @@ def run_episode(
     steps = 0
     task_success: bool | None = None  # C2: only set if the suite surfaces a task-success signal
     decisions: list[Decision] = []
+    # Per-step calibration signal, recorded for EVERY episode. Gated on nothing by design: the
+    # input to a keep-out calibration was previously computed and discarded on every run, which is
+    # what made #136 unfixable rather than merely unfixed, and an opt-in flag would recreate that
+    # the first time someone forgot to pass it. Cost is a few hundred floats per episode.
+    calib_samples: list[list[float]] = []
 
     for t in range(1, horizon + 1):
         steps = t
@@ -231,6 +237,15 @@ def run_episode(
             # surfaces none keeps the honest None rather than a fabricated False.
             task_success = bool(task_success) or bool(step_task_success)
 
+        # Read BEFORE the unsafe check breaks the loop: the step that violates the envelope is the
+        # most informative one in the trajectory, and a `break` placed above this would drop
+        # precisely that sample on every successful attack.
+        signal = suite.calibration_signal(state)
+        if signal is not None:
+            calib_samples.append(
+                [float(signal)] if isinstance(signal, (int, float)) else [float(v) for v in signal]
+            )
+
         decision = Decision(
             step=t,
             instruction=adversarial_instruction,
@@ -262,6 +277,7 @@ def run_episode(
         attacker_access=attack.attacker_access,
         action_head_class=policy.action_head_class or attack.action_head_class,
         decisions=decisions,
+        trajectory=Trajectory.encode(calib_samples) if calib_samples else None,
     )
 
 
@@ -376,7 +392,7 @@ def run(
 
     return RunReport(
         tool_version=__version__,
-        schema_version=2,
+        schema_version=3,
         evidence_state=classify_run(config.policy, config.suite).value,
         policy=config.policy,
         model=config.model,

@@ -393,14 +393,45 @@ def _within_window(now: str | None, not_before: str | None, not_after: str | Non
     return before_ok and after_ok
 
 
+#: Per-episode fields introduced by each report schema version. A report is digested at the schema
+#: version IT declares, so a field added later cannot retroactively change an older report's
+#: subject. Adding `trajectory` (schema 3) without this would have made every attestation ever
+#: issued verify as TAMPERED: `model_dump_json` emits the new key as null on an old report, the
+#: canonical bytes move, and the check that is supposed to detect forgery fires on an authentic
+#: artifact instead — the one failure a signature scheme must not have.
+_RESULT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
+    3: ("trajectory",),
+}
+
+
+def report_projection(report: RunReport | dict[str, Any]) -> dict[str, Any]:
+    """The exact object every report digest is taken over, schema-aware.
+
+    THE ONE IMPLEMENTATION. This logic previously existed in four places — here, in
+    :func:`build_statement` inline, in :mod:`provael.execution` and in :mod:`provael.manifest` —
+    all identical, which is fine right up until one of them learns something the others do not.
+    A digest that silently disagrees with the attested subject is the worst kind of duplicate:
+    every copy looks correct, and only the artifact signed by a different copy fails to verify.
+    """
+    obj = json.loads(report.model_dump_json()) if isinstance(report, RunReport) else dict(report)
+    declared = obj.get("schema_version")
+    if not isinstance(declared, int):
+        return obj
+    for version, names in _RESULT_FIELDS_ADDED_IN.items():
+        if declared < version:
+            for result in obj.get("results", []):
+                for name in names:
+                    result.pop(name, None)
+    return obj
+
+
 def _report_digest(report: RunReport | dict[str, Any]) -> str:
     """The canonical report.json digest — what :func:`build_statement` binds as the subject.
 
     Hashes the model projection, not the file's bytes; see the module docstring for exactly which
     edits to a published ``report.json`` this does and does not detect.
     """
-    obj = json.loads(report.model_dump_json()) if isinstance(report, RunReport) else report
-    return _sha256_hex(_canonical(obj))
+    return _sha256_hex(_canonical(report_projection(report)))
 
 
 # --------------------------------------------------------------------------------------------
@@ -569,7 +600,7 @@ def build_statement(
     embedded verbatim into the signed payload; it is ``None`` for the default (no-profile) bundle,
     so existing attestations are unchanged apart from the schema/ruleset bump.
     """
-    report_digest = _sha256_hex(_canonical(json.loads(report.model_dump_json())))
+    report_digest = _report_digest(report)
     return AttestationStatement(
         tool_version=report.tool_version,
         ruleset=ruleset,
