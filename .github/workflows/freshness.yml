@@ -75,5 +75,8 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add watch/freshness.json
-          git commit -m "chore(watch): refresh the measurement-freshness badge"
+          # [skip ci]: this commit lands in watch/**, which is this workflow's own trigger
+          # path — a self-retrigger loop, currently masked only by GitHub declining to run
+          # workflows on GITHUB_TOKEN pushes. Do not rely on that alone.
+          git commit -m "chore(watch): refresh the measurement-freshness badge [skip ci]"
           git push
