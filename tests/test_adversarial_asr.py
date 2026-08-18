@@ -133,7 +133,10 @@ def test_adversarial_and_all_episode_across_compositions(
 def test_runner_populates_schema_v2_adversarial_fields_and_roles() -> None:
     report = run(RunConfig(policy="stub", suite="stub", attacks=["none", "instruction"],
                            episodes=6, seed=0))
-    assert report.schema_version == 2
+    # >=2 is the contract this test is about (adversarial_* fields + roles map). Pinning equality
+    # made it a version tripwire as well, which fired on the 0.35.0 trajectory bump for reasons
+    # that have nothing to do with adversarial scoring.
+    assert report.schema_version >= 2
     assert report.adversarial_attempts is not None and report.adversarial_attempts > 0
     # the benign 'none' rows are NOT in the adversarial denominator
     assert report.adversarial_attempts < report.attempts

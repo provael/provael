@@ -6,6 +6,82 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.35.0] — 2026-08-18
+
+### Added
+
+- **The input to the keep-out calibration was being discarded on every run. It is now recorded.**
+  `Suite.calibration_signal()` has always returned exactly the signal a calibrator needs, the
+  runner computed it on every step, and nothing ever persisted it — so every finished run left
+  [#136](https://github.com/provael/provael/issues/136) no more fixable than before it started.
+  The blocker was never GPU budget for the fit; it was that the data the fit consumes did not
+  exist. `AttackResult.trajectory` (report schema 3) now records the per-step signal for **every**
+  episode, benign and adversarial alike, gated on nothing — an opt-in flag would recreate the loss
+  the first time someone forgot, and the poses are unrecoverable once the run ends.
+
+  Stored as base64 zlib float32 with an explicit shape (~4 KB for a 280-step episode against ~17 KB
+  of JSON floats), deterministic, so the artifact stays a pure function of its inputs. The sample
+  is taken *before* the unsafe check breaks the loop, or the violating step — the most informative
+  pose in the episode — would be missing from exactly the episodes a calibration wants most.
+  `tests/test_trajectory_recording.py` makes a missing trajectory fail the run rather than warn.
+
+  **The calibration itself is still owed.** `CALIBRATED_ZONES` is still empty, every affected row
+  still reads `calibrated: false`, and closing #136 needs the benign arm re-run on a build that
+  records trajectories, then a margin decision. Every artifact already under `results/` predates
+  schema 3 and carries no trajectory, so none of it is retroactively usable.
+
+- `provael workspace-bounds --runs <dirs>` emits per-task benign reachable-workspace bounds and the
+  episode count behind each, flagging any task estimated from fewer than five. It deliberately does
+  **not** emit a calibrated zone: that needs a margin decision, and choosing one without looking at
+  real benign spread is exactly how `DEFAULT_KEEP_OUT_ZONE` came to overlap the workspace it was
+  meant to sit outside.
+
+- The leaderboard's tool-version claim is machine-checked
+  (`tests/test_leaderboard_version_claim.py`). It passes only if `measured_with` includes the
+  current `__version__`, or a dated entry in `leaderboard/method-equivalence.json` argues why the
+  gap cannot move those rows. The entry is not a waiver flag — it has to name what changed and
+  state its own limits, and the one added here says plainly that it is a code-inspection argument
+  and not a re-measurement. A separate assertion compares `measured_with` against what the
+  aggregated shards actually carry, which is what would have caught the earlier `["0.1.0"]`.
+
+  `measured_with: ["0.32.0"]` was checked against the artifacts and is **correct**: the shards
+  carry `tool_version 0.32.0` and were measured 2026-08-09. The board's 2026-08-17 stamp is a
+  rebuild, not a measurement.
+
+- `tests/test_freshness_semantics.py` pins what "freshest measurement" means, after the badge was
+  read as broken when it was right.
+
+### Fixed
+
+- One schema-aware report digest instead of four copies. `trajectory` moves the canonical JSON, so
+  adding it would have made every attestation ever issued verify as **tampered** — the one failure
+  a signature scheme must not have. Reports are now digested at the schema version they declare,
+  and the logic that does it lives in `attest.report_projection()` alone; `execution.py` and
+  `manifest.py` delegate rather than repeating it. They were identical until one of them learned
+  something the others had not, which is the only way that kind of duplication ever fails.
+
+### Known issues
+
+- **The measurement-freshness badge is red and it is telling the truth.** The newest measurement
+  under `results/` is 2026-08-09; the badge reads 9 days. It was tempting to call this a bug,
+  because a ten-task board *was* published on 2026-08-17 — but that commit rebuilt the board from
+  artifacts already in the tree and touched zero files under `results/`. A republication is not a
+  measurement. The threshold has not been touched and the badge stays red until something is
+  actually measured.
+
+### Changed
+
+- Prior art: added **DRIFT** (arXiv:2608.03207), the third published patch attack in a row that
+  far exceeds our 0/50 on the same channel — and the entry corrects the comfortable explanation.
+  It would be convenient to attribute the gap to architecture, DRIFT attacking flow-matching
+  policies while we measured something else. This repo's own data refuses that: `lerobot_adapter`
+  declares `action_head_class = "flow"` and every episode in the pinned evidence records `flow`, so
+  SmolVLA *is* flow-matching by our own taxonomy. What remains is that DRIFT is white-box and
+  gradient-optimised against the denoising ODE while our `patch` appends a fixed string to a dict
+  and performs no search at all. With three such papers now published, the honest reading of the
+  visual family's nulls is that provael has no image-space patch attack, and they measure its
+  absence. Both nulls stay published exactly as measured.
+
 ### Added
 
 - Crosswalk card for LIBERO-Safety (arXiv:2606.23686, ECCV 2026), indexed in the docs nav. Its

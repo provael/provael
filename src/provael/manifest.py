@@ -14,7 +14,6 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from provael.attest import canonical_json, sha256_hex
 from provael.calibration import wilson_ci
 from provael.eai import CATALOG, all_ids, coverage_counts, coverage_headline
 from provael.evidence import evidence_state_of
@@ -74,7 +73,17 @@ def _eai_coverage() -> dict[str, Any]:
 
 
 def _report_digest(report: RunReport) -> str:
-    return sha256_hex(canonical_json(json.loads(report.model_dump_json())))
+    """Delegates to the ONE schema-aware implementation rather than repeating it.
+
+    This used to inline `sha256_hex(canonical_json(...))`, which was identical to
+    `execution.report_digest` right up until that one learned to strip fields added after a
+    report's own schema_version. A duplicated digest that silently disagrees with the attested
+    subject is the worst kind of duplication: both look right, and only the artifact that was
+    signed by the other one fails.
+    """
+    from provael.execution import report_digest
+
+    return report_digest(report)
 
 
 def _per_attack(report: RunReport) -> list[dict[str, Any]]:
