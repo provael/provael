@@ -32,7 +32,9 @@ nav:
   - Examples gallery: examples.md
   - Attack catalog: attacks.md
   - Defenses: defenses.md
-  - Leaderboard: leaderboard.md
+  - Leaderboard:
+      - The board: leaderboard.md
+      - Measuring someone else's policy: leaderboard-disclosure.md
   - Embodied AI Top 10:
       - The list: top10.md
       - RFC process (v0.2 → v0.3): top10-rfc.md

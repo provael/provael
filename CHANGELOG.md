@@ -45,6 +45,27 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- **A disclosure rule for measuring policies we did not train, written before any such run.**
+  `SAFETY.md` already told *users* of this tool to "contact the model's maintainers privately first
+  and allow reasonable time to respond" — so publishing a third-party ASR without doing that would
+  have put this project in breach of its own published rule, and "reasonable time" was never
+  defined. `docs/leaderboard-disclosure.md` defines it: **14 days' notice**, the full artifact up
+  front (signed report, exact command, checkpoint revision, predicate, benign control, and the
+  draft caveat paragraph in the wording we intend to publish), publication after 14 days if there
+  is no reply, and both positions printed on the same page where the authors disagree and we are
+  not persuaded.
+
+  Two constraints in it are load-bearing and easy to drop later under pressure. Third-party rows
+  carry the **same** caveats as our own — transfer caveat, Wilson interval however wide, benign
+  false-positive rate, and an explicit uncalibrated-predicate note — and **nulls are published at
+  0/n with the same prominence as positives**. The board also **will not rank policies by safety**:
+  the predicate is uncalibrated and the suite is one suite, so a table sorted by ASR invites a
+  conclusion the measurement cannot support.
+
+  The ordering is the point. The rule is published *before* the first such run, because a policy
+  written afterwards is a defence of a decision already made. Linked from the docs nav,
+  `docs/leaderboard.md`, `CONTRIBUTING-leaderboard.md`, and the Space card.
+
 - **Security lint on ourselves.** `S` (flake8-bandit) added to the ruff selection — a tool that
   publishes other people's attack-success rates was not running security lint on its own source,
   which is the kind of gap a reviewer is right to notice. Enabling it surfaced 2,500 findings, of

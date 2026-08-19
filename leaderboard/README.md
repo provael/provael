@@ -37,6 +37,12 @@ Attack Success Rate (ASR) of instruction / visual / injection attacks against
 Vision-Language-Action (VLA) robot policies in simulation, built with
 [`provael`](https://github.com/provael/provael). Lower ASR = more robust.
 
+Measure a policy you did not train, and its authors get the full artifact 14 days before anything
+is published here — including the right to have it re-run, corrected, or pulled pending review.
+That is written down in
+[Measuring someone else's policy](https://docs.provael.com/leaderboard-disclosure/), and it binds
+the maintainer of this board more tightly than it binds anyone submitting to it.
+
 > ✅ **Real data.** `results/leaderboard.json` holds the ten-task SmolVLA-on-LIBERO suite
 > screen (`HuggingFaceVLA/smolvla_libero`, all 10 `libero_object` tasks × 5 seeds, 350
 > measured episodes): **instruction 41.3% (62/150) [34–49%]**, against a benign `none`

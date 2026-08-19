@@ -7,6 +7,11 @@ The [leaderboard](https://huggingface.co/spaces/Sattyam/provael-leaderboard) agg
 `(policy × suite × family) → ASR` results into a ranked, reproducible, signable board. Lower ASR is
 more robust.
 
+Not every row is submitted by the policy's own authors. Where Provael measures a policy it did not
+train, the authors get the full artifact **14 days before publication** — see
+[Measuring someone else's policy](leaderboard-disclosure.md). That rule binds this project, not
+just the people submitting to it.
+
 ## What each row carries
 
 Every row is honest about how strong its number is:

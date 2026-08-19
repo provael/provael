@@ -74,4 +74,9 @@ numbers are what reproduce. This is **evidence, not certification**.
 - **Honest scope.** If you used a custom keep-out predicate or calibrated zones, say so.
 - **No fabricated numbers.** Results may be independently re-run.
 
+**If you are measuring a policy you did not train**, the same rule Provael holds itself to applies
+to you: send the authors the full artifact and give them 14 days before the result goes public.
+The commitment, and what happens when they disagree or do not reply, is written down in
+[Measuring someone else's policy](https://docs.provael.com/leaderboard-disclosure/).
+
 Questions or can't open a PR? Use the **Leaderboard submission** issue template.
