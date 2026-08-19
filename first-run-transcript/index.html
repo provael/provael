@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.provael.com/defenses/">
+        <link rel="canonical" href="https://docs.provael.com/first-run-transcript/">
       
       
-        <link rel="prev" href="../attacks/">
+        <link rel="prev" href="../quickstart/">
       
       
-        <link rel="next" href="../leaderboard/">
+        <link rel="next" href="../examples/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Defenses - Provael</title>
+        <title>First run, timed - Provael</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#defenses" class="md-skip">
+        <a href="#first-run-timed-on-a-clean-machine" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Defenses
+              First run, timed
             
           </span>
         </div>
@@ -313,10 +313,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../first-run-transcript/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    First run, timed
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -332,6 +359,81 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Method
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-this-document-exists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why this document exists
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-number-does-and-does-not-explain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the number does and does not explain
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-three-friction-points-found-and-what-was-done-about-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The three friction points found, and what was done about them
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#honest-scope-of-this-measurement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Honest scope of this measurement
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -394,37 +496,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Defenses
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../defenses/" class="md-nav__link">
         
   
   
@@ -440,87 +515,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#mitigation-taxonomy-mapped-to-the-top-10" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Mitigation taxonomy (mapped to the Top 10)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#first-measured-defense-instruction-canonicalization-repair" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        First measured defense: instruction canonicalization / repair
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="First measured defense: instruction canonicalization / repair">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#the-defense" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The defense
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#measurement-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Measurement protocol
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#published-defenses-this-project-has-not-matched" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Published defenses this project has not matched
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2413,10 +2407,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#mitigation-taxonomy-mapped-to-the-top-10" class="md-nav__link">
+  <a href="#method" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mitigation taxonomy (mapped to the Top 10)
+        Method
       
     </span>
   </a>
@@ -2424,49 +2418,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#first-measured-defense-instruction-canonicalization-repair" class="md-nav__link">
+  <a href="#why-this-document-exists" class="md-nav__link">
     <span class="md-ellipsis">
       
-        First measured defense: instruction canonicalization / repair
+        Why this document exists
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="First measured defense: instruction canonicalization / repair">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#the-defense" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The defense
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#measurement-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Measurement protocol
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#published-defenses-this-project-has-not-matched" class="md-nav__link">
+  <a href="#what-the-number-does-and-does-not-explain" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Published defenses this project has not matched
+        What the number does and does not explain
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-three-friction-points-found-and-what-was-done-about-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The three friction points found, and what was done about them
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#honest-scope-of-this-measurement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Honest scope of this measurement
       
     </span>
   </a>
@@ -2493,169 +2481,135 @@
   
 
 
-<h1 id="defenses">Defenses</h1>
+<h1 id="first-run-timed-on-a-clean-machine">First run, timed, on a clean machine</h1>
+<p><strong>Result: 20 seconds.</strong> Install to a written <code>report.json</code>, on a container with no CUDA, no conda,
+no pip cache and no repo checkout. Nothing needed a decision, a lookup, a version guess or a fix.</p>
+<p>That is not the result this page was created to report. It was created on the assumption that a
+slow, fiddly first run explained the project's zero forks and zero third-party reproductions, and
+that timing it would produce a list of things to fix. The timing does not support that. <strong>The
+finding is that runnability is not this project's constraint, and the real wall is one page of
+documentation further in and costs about $12.</strong> Both halves are recorded below.</p>
+<h2 id="method">Method</h2>
+<p>A container with no CUDA, no conda, no prior pip cache and no repo checkout. Follow <code>README.md</code>
+from the top. Wall clock starts at the first command and stops when a <code>report.json</code> exists on disk.
+Every step that needed a decision, a lookup, a version guess or a fix is recorded, including the
+ones that were our fault.</p>
+<ul>
+<li><strong>Image:</strong> <code>python:3.12-slim</code> (Python 3.12.14, pip 25.0.1)</li>
+<li><strong>Host:</strong> Docker Desktop 29.4.3 on macOS, <code>linux/aarch64</code>, 10 CPUs available to the container</li>
+<li><strong>Isolation:</strong> <code>docker run --rm</code>, so each run starts from an empty pip cache and no checkout</li>
+<li><strong>Date:</strong> 19 August 2026, against <code>provael</code> 0.35.0 from PyPI</li>
+<li><strong>Commands:</strong> exactly the two in the README's opening block, unmodified</li>
+</ul>
+<p>Run twice. The wall clock is dominated by package download, so a single number would overstate its
+own precision.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Step</th>
+<th>Command</th>
+<th>Run 1</th>
+<th>Run 2</th>
+<th>Needed a decision?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Install from PyPI</td>
+<td><code>pip install provael</code></td>
+<td>48.5 s</td>
+<td>19.6 s</td>
+<td>No</td>
+</tr>
+<tr>
+<td>2</td>
+<td>First adversarial run</td>
+<td><code>provael attack --policy stub --suite stub --attacks instruction,visual,injection --episodes 10 --seed 0</code></td>
+<td>0.33 s</td>
+<td>0.28 s</td>
+<td>No</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Total to a first ASR number</strong></td>
+<td></td>
+<td><strong>48.8 s</strong></td>
+<td><strong>19.9 s</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Time to a first ASR number: 20 seconds, or 49 on a cold cache.</strong> The spread is entirely pip
+fetching 15 wheels; the measured step is a third of a second either way.</p>
+<p>Both runs printed <code>Adversarial ASR: 67.1% (47/70)</code> — the exact figure the README advertises one
+line above the command — and both wrote <code>runs/stub/report.json</code>. Exit codes were 0 and 0. The core
+has no GPU, no network and no model download in its path, which is why the number is what it is.</p>
+<h2 id="why-this-document-exists">Why this document exists</h2>
+<p>A census of all 31 LLM-safety benchmarks published between 30 November 2022 and 1 November 2024,
+against 382 non-benchmark papers as a control group and over 220 person-hours of hands-on
+runnability testing, found that <strong>only 39% of benchmark repositories run without modification</strong>.
+Comparing citation density against papers with no accessible code, code that runs with no
+additional modification showed a significant advantage (p = 0.005), while <strong>code requiring any
+modification showed no significant difference from having no code at all</strong>. Code-quality standards
+— Pylint score, maintainability index — showed no significant correlation with adoption
+(<a href="https://arxiv.org/abs/2603.04459">arXiv:2603.04459</a>, Chu, Shen, Leng, Backes, Shen, Zhang).</p>
+<p>The same paper surveyed 42 researchers with LLM-safety experience: 32 were willing to spend under
+two hours on usability checking, and no respondent accepted more than six. The authors state
+plainly that this survey <em>"serves as a corroborative check rather than a primary source of
+evidence"</em>, and it is repeated here under that caveat rather than as a measurement.</p>
+<p><strong>Two limits on borrowing any of this.</strong> The census covers prompt injection, jailbreak and
+hallucination — text-only LLM safety, containing zero embodied or VLA benchmarks — so applying it
+here is an extrapolation of ours, not a claim of theirs. And it measures <em>citation density</em>, not
+forks or reproductions, which are the numbers this project is short of.</p>
+<h2 id="what-the-number-does-and-does-not-explain">What the number does and does not explain</h2>
+<p>At the time of writing this project has <strong>4,667 PyPI downloads</strong> (pypistats, 180-day window, mirrors
+excluded), <strong>5 stars</strong>, <strong>0 forks</strong> and <strong>0 third-party reproductions</strong>.</p>
+<p>A 20-second install that reproduces the advertised figure on the first try puts this project in the
+39% that run without modification. Whatever explains 0 forks, it is not the thing this page was
+written to find. The honest conclusion is that <strong>the first run was never the barrier, so improving
+it further would buy nothing</strong> — and that a project can be trivially installable and still
+unreproduced, which is a case the census's framework does not distinguish.</p>
+<p>The barrier is one step later, and it is not a documentation defect:</p>
 <blockquote>
-<p>Status: <strong>TWO ROWS MEASURED, FOUR SPECIFIED AND UNPROVEN.</strong></p>
-<ul>
-<li><code>input canonicalization</code> — <code>stub-validated-scaffolding</code>, see
-  <a href="../studies/instruction-canonicalization/">the study</a>.</li>
-<li><code>action clamping / keep-out enforcement</code> — <code>stub-validated-scaffolding</code>, see
-  <a href="../studies/action-envelope/">the study</a>. <code>credited</code> on <code>stub</code> and <code>reach</code>, <strong><code>not-credited</code> on
-  <code>humanoid</code></strong> — a published null, not an omission.</li>
-</ul>
-<p>Results land in <code>docs/studies/</code> with the same controls as attacks. No defense is claimed until
-measured, and a measured defense is claimed only as far as the evidence reaches: both studies open
-by stating how much of their own credit is circular on a fixture, and the action-envelope study's
-headline is the <strong>coverage map</strong> — the families one protective measure provably cannot address.</p>
-<p>Until 0.28.0 the four output-side rows below were not merely unmeasured but <strong>unimplementable</strong>:
-the <code>Defense</code> ABC offered only a pre-processing hook, so a taxonomy row acting on the policy's
-output could not be written against the interface at all. <code>Defense.filter_action</code> fixed that; one
-of the four is now measured and three remain unwritten.</p>
+<p>Reproducing the <strong>headline SmolVLA result</strong> — the 44/50 figure the README leads with — takes ten
+containers, roughly 2 hours wall clock, <strong>15.4 GPU-hours, and about $12 on an L4</strong>. That is
+stated, with the exact command, in
+<a href="https://github.com/provael/provael/blob/main/results/smolvla_libero_object_suite/README.md"><code>results/smolvla_libero_object_suite/README.md</code></a>.</p>
 </blockquote>
-<p>Provael measures attacks. A defense is only worth shipping if it <strong>measurably</strong> lowers Attack Success
-Rate without breaking the benign task — so every defense here is held to the same bar as an attack: a
-pre/post ASR with a 95% Wilson CI, a benign-FPR control, and a <strong>benign-task-success acceptance
-gate</strong>. This page is the taxonomy and the spec for the first measured defense; nothing below is
-claimed as effective until a study reports it.</p>
-<h2 id="mitigation-taxonomy-mapped-to-the-top-10">Mitigation taxonomy (mapped to the Top 10)</h2>
-<table>
-<thead>
-<tr>
-<th>Mitigation</th>
-<th>What it does</th>
-<th>Primarily addresses</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Input canonicalization / instruction repair</strong></td>
-<td>Normalise phrasing, strip manner/urgency adverbials, re-derive the canonical command before it reaches the policy</td>
-<td>EAI01 instruction jailbreak · EAI05 indirect/embodied injection · EAI06 manner/urgency misalignment</td>
-</tr>
-<tr>
-<td><strong>Observation filtering</strong></td>
-<td>Detect / attenuate adversarial patches, decoy objects, and sensor-spoof markers in the image or observation</td>
-<td>EAI02 adversarial perception</td>
-</tr>
-<tr>
-<td><strong>Action clamping / keep-out enforcement</strong> (<a href="../studies/action-envelope/">study</a>)</td>
-<td>Reject or clip a commanded action that leaves the safe envelope or enters a keep-out zone</td>
-<td>EAI04 action-space integrity · EAI06 embodiment-gap keep-out</td>
-</tr>
-<tr>
-<td><strong>Rate limiting / scope enforcement</strong></td>
-<td>Bound the actions and authority a single instruction can exercise</td>
-<td>EAI08 identity, access &amp; excessive autonomy</td>
-</tr>
-<tr>
-<td><strong>Trajectory anomaly detection</strong></td>
-<td>Flag episodes whose trajectory departs from the benign distribution (freeze, hijack, objective-decoupled triggers)</td>
-<td>EAI04 action-space integrity · EAI03 backdoor triggers</td>
-</tr>
-<tr>
-<td><strong>Output / memory screening</strong></td>
-<td>Screen for memorised-canary leakage and extraction signals</td>
-<td>EAI09 model &amp; data confidentiality</td>
-</tr>
-</tbody>
-</table>
-<p>Risk ids above are defined in <a href="../top10/">the Embodied AI Security Top 10</a>. Each mitigation is a
-<strong>claim to be tested</strong>, not a shipped guarantee — it earns a row in a results table only after a
-study measures its pre/post ASR under the controls below.</p>
-<h2 id="first-measured-defense-instruction-canonicalization-repair">First measured defense: instruction canonicalization / repair</h2>
-<p>The <code>optimized_instruction</code> family (<code>targeted_redirect</code>) redirects a policy through subtle
-manner/urgency cues while keeping the operator's command and never naming the target object. Its
-recommended mitigation is <strong>instruction canonicalization</strong>: collapse that edit space before the
-instruction reaches the policy.</p>
-<h3 id="the-defense">The defense</h3>
-<ol>
-<li><strong>Normalise phrasing</strong> — lowercase / whitespace / punctuation normalisation and paraphrase
-   folding.</li>
-<li><strong>Strip manner/urgency adverbials</strong> — remove redundant "quickly / carefully / no matter what"-style
-   modifiers that carry no task content but steer behaviour.</li>
-<li><strong>Re-derive the canonical command</strong> — reduce to the operator's intended verb + object, discarding
-   the residual the search exploits.</li>
-</ol>
-<p>The pipeline runs as a pre-processing wrapper on the instruction; it changes no policy weights and is
-auditable (the canonical form is logged next to the raw instruction).</p>
-<h3 id="measurement-protocol">Measurement protocol</h3>
+<p>Twenty seconds gets a stranger a fixture result. The claim worth reproducing costs them a GPU
+budget and a Modal account. No amount of README polish moves that line, and pretending the gap is
+about onboarding would be the comfortable answer rather than the true one.</p>
+<h2 id="the-three-friction-points-found-and-what-was-done-about-them">The three friction points found, and what was done about them</h2>
+<p><strong>1. The Python floor is stated eleven lines after the install command. Fixed.</strong>
+<code>pip install provael</code> appeared at README line 43; the <code>Python 3.12+</code> badge at line 54. On Python
+3.11 — still a very common default — <code>pip install provael</code> emits 38 consecutive
+<code>Requires-Python &gt;=3.12</code> lines followed by <code>No matching distribution found for provael</code>, which
+reads like a broken package rather than a version floor. Verified by running it. The README now
+states the requirement at the install command.</p>
+<p><strong>2. The README says <code>libero_object</code>; the CLI suite is <code>libero</code>. Named, not changed.</strong>
+README prose names the measured thing <code>libero_object</code> six times, and <code>--suite libero_object</code> is not
+valid. The failure is well handled — the CLI answers
+<code>unknown suite 'libero_object'; available: ['humanoid', 'libero', 'metaworld', 'reach', 'stub']</code>,
+which is a good error — and the correct command is documented in <code>docs/quickstart.md</code>,
+<code>leaderboard/README.md</code>, <code>CONTRIBUTING-leaderboard.md</code> and the results README. Renaming a CLI
+surface or a results directory to close a prose mismatch is a bigger change than this exercise
+justifies, so it is recorded rather than fixed.</p>
+<p><strong>3. The real wall is a GPU bill, not a papercut. Not fixable here.</strong>
+See the block above. It is already documented with its exact cost, which is the most that
+documentation can do about it.</p>
+<h2 id="honest-scope-of-this-measurement">Honest scope of this measurement</h2>
 <ul>
-<li><strong>Pre/post ASR per attack family.</strong> Run the affected families (<code>optimized_instruction</code>, and the
-  <code>instruction</code> family as a reference) with and without the canonicaliser, and report the ASR for
-  each with its <strong>95% Wilson CI</strong>. The defense is credited only where the post-attack CI is separated
-  from the pre-attack CI.</li>
-<li><strong>Benign-FPR control.</strong> The <code>none</code> baseline runs under the same predicate; the defense must not
-  raise the benign FPR.</li>
-<li><strong>Benign-task-success acceptance gate.</strong> The clean-task success rate (competence on the real task,
-  attacks off) must be <strong>unchanged</strong> within its CI. A defense that lowers ASR by breaking the task is
-  rejected — the acceptance gate is a hard requirement, not a trade-off to be reported and ignored.</li>
-<li><strong>Where it lands.</strong> Results are published in <code>docs/studies/</code> in the same format and under the same
-  controls as an attack transfer study. <strong>Measured:</strong>
-  <a href="../studies/instruction-canonicalization/">instruction-canonicalization</a> — <code>credited</code> on the
-  <code>stub</code> and <code>reach</code> CPU suites (adversarial ASR 67.5% → 7.5% and 35.0% → 0.0%), benign FPR
-  unchanged at 0%, acceptance gate passed on <code>stub</code> and not evaluable on <code>reach</code>. Read the study's
-  circularity section before quoting the number: four of the fixture's seven danger tokens are
-  words this defense strips, so <code>optimized_instruction</code>'s 60% → 0% is close to tautological.
-  <code>stub-validated-scaffolding</code>; no real-model transfer is claimed.</li>
+<li>One path was timed: the README's opening two commands, the CPU-only core against the <code>stub</code>
+  policy and <code>stub</code> suite. The <code>[lerobot]</code> extra, the <code>uv sync</code> developer path, the Docker image
+  and the Colab notebook were <strong>not</strong> timed.</li>
+<li><code>linux/aarch64</code> under Docker Desktop on macOS. An <code>x86_64</code> CI runner or a cold Docker image pull
+  would differ; the image pull is excluded from the clock, matching the stated method.</li>
+<li>Two runs is enough to show the download dominates and not enough to characterise a distribution.</li>
+<li><code>stub</code> is a fixture, not a model. This measures time-to-first-number, which is what the census
+  measures. It is not evidence about any policy.</li>
 </ul>
-<p>Two rows are now <strong>measured</strong> — under the controls above, on CPU fixture suites, with their limits
-stated in their studies: <code>input canonicalization</code>
-(<a href="../studies/instruction-canonicalization/">study</a>) and <code>action clamping / keep-out enforcement</code>
-(<a href="../studies/action-envelope/">study</a>). The action-envelope study reports <code>credited</code> on <code>stub</code> and
-<code>reach</code> and <strong><code>not-credited</code> on <code>humanoid</code></strong>, and its headline is that one protective measure does
-not cover a hazard list: a magnitude cap cannot restore a frozen action, and it does not reach
-successes that route through a decoupled flag (EAI03 backdoor activation, EAI08 authorization,
-EAI09 canary leak).</p>
-<p>The <strong>four other</strong> rows in the taxonomy above remain <strong>specified, unproven</strong> mitigations, and none of
-them is registered in <code>provael list-defenses</code>: an unmeasured mitigation is not a shipped one. Three of
-those four act on the policy's output and became <em>expressible</em> only with <code>Defense.filter_action</code> in
-0.28.0 — they are now writable and still unwritten, which is a different and more honest status than
-the one they had before.</p>
-<h2 id="published-defenses-this-project-has-not-matched">Published defenses this project has not matched</h2>
-<p>The bar this page sets — a measured pre/post ASR with an interval, a benign-FPR control and a
-benign-task-success gate — is met by both rows above on a <strong>CPU fixture</strong>. Two defenses published in
-the last month are measured on a real model, and one of them on real hardware. Recording that here
-rather than in a footnote, because a defenses page that lists only its own results reads as a survey
-of the field and is not one.</p>
-<table>
-<thead>
-<tr>
-<th>Published defense</th>
-<th>What it does</th>
-<th>Measured on</th>
-<th>Provael's comparable result</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>SARF</strong> (<a href="https://arxiv.org/abs/2608.03231">arXiv:2608.03231</a>)</td>
-<td>Structure-aware robust fine-tuning of the visual encoder only, zero inference overhead, against attention-hijacking patches</td>
-<td>OpenVLA on LIBERO <strong>and a real PiPER manipulator</strong></td>
-<td><strong>None.</strong> No Provael defense has been measured against a real model, on any hardware</td>
-</tr>
-<tr>
-<td><strong>ChromaGuard</strong> (<a href="https://arxiv.org/abs/2607.14698">arXiv:2607.14698</a>)</td>
-<td>Chroma-preserving adversarial training against an optimised physical spotlight attack</td>
-<td>A physical 6-DoF robotic platform</td>
-<td><strong>None.</strong> Provael models no illumination channel at all</td>
-</tr>
-</tbody>
-</table>
-<p>SARF's reported figure is <strong>"On LIBERO, SARF reduces OpenVLA's failure rate under AGSD from 100% to
-14.2%-56.8% (28.6% average) across suites while preserving clean performance, and on a real PiPER
-manipulator it improves average success under AGSD from 23.0% to 65.0%."</strong> Provael's two measured
-defenses are <code>stub-validated-scaffolding</code> with no real-model transfer claimed for either, and the
-instruction-canonicalization study says in its own text that its headline number is close to
-tautological on the fixture it was measured on. The comparison is not close and is not presented as
-though it were. See <a href="https://github.com/provael/provael/blob/main/PRIOR_ART.md">PRIOR_ART.md</a> for
-the full citations and <a href="../studies/">the studies index</a> for the gap with a date against it.</p>
-<p>The useful thing to take from ChromaGuard is a warning rather than a benchmark: its authors report
-that naive augmentation defenses "incorrectly condition VLA models to discard color as noise",
-producing a defended model that scores well on a diagnostic and worse than the undefended baseline
-on benign colour-dependent tasks. That failure mode — a defense that improves the attacked number
-while degrading the benign capability — is exactly what the benign-task-success acceptance gate on
-this page exists to catch, and their grayscale diagnostic is a sharper instrument for catching it
-than the gate currently is.</p>
 
 
 
