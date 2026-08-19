@@ -83,14 +83,22 @@ has **0 forks**. Nobody outside this project has reproduced a published result, 
 [the register that would record it](https://www.provael.com/verification/) is empty.
 
 The submission path stopped being the excuse: `provael submit` validates a run, signs it and opens
-the pull request in one command, and it is merged on `main`. It is **not yet in a published
-release**, so today it requires installing from git — which is a real barrier for exactly the
-person most likely to try.
+the pull request in one command.
 
-**Action, with a date:** **by 31 August 2026 the release containing `provael submit` is published to
-PyPI**, so reproducing a result and submitting it needs `pip install provael` and one command. If
-that date passes without the release, the reason is recorded here. Whether anyone then submits is
-not something this project can put a date on, and no date is claimed for it.
+**Action, with a date: MET on 8 August 2026, 23 days before the deadline.** The commitment was
+that *by 31 August 2026 the release containing `provael submit` is published to PyPI*. It shipped
+in **0.32.0** and is in every release since — `pip install provael` then `provael submit --help`
+resolves, with no git install required. The original date is kept above rather than deleted,
+because a commitment that disappears once it is met is not a record.
+
+Two things that did **not** change, and pretending otherwise would be the easy mistake here.
+Shipping the command removed the barrier; it did not produce a submission. The register is still
+empty, the board still reports **0 independent**, and the fork count is still **0**. Whether anyone
+submits was never something this project could put a date on, and no date is claimed for it now.
+The queue is open at
+[`Sattyam/provael-leaderboard-requests`](https://huggingface.co/datasets/Sattyam/provael-leaderboard-requests)
+— an earlier version of this path pointed at an org that had never been created, which is recorded
+in `leaderboard/README.md` rather than quietly repaired.
 
 ### Why this section exists
 

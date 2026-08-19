@@ -6,6 +6,29 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+
+- **The 31 August commitment is recorded as MET, 23 days early.** `docs/studies/index.md` still
+  described the release containing `provael submit` as pending and told readers a git install was
+  required — while the command had shipped in 0.32.0 on 8 August and www.provael.com/studies
+  already showed it met. Two surfaces disagreeing about the same self-imposed deadline is worse
+  than either being stale alone. The original date is kept rather than deleted: a commitment that
+  vanishes once met is not a record.
+
+  What did NOT change is stated in the same breath, because that is the easy thing to skip:
+  shipping the command removed the barrier, it did not produce a submission. The register is still
+  empty, the board still reports 0 independent submitters, and the fork count is still 0.
+
+- **The Hugging Face Space is linked from the README and from PyPI.** It appeared in
+  `docs/leaderboard.md`, `CONTRIBUTING-leaderboard.md` and a setup script, and zero times in the
+  README that PyPI also renders — so a running, clickable leaderboard was unreachable from both
+  places a newcomer actually lands. Added as a badge, as prose in the leaderboard section, and as a
+  `Leaderboard` entry in `project.urls`. The prose says plainly that the Space is a *rendering* and
+  the signed JSON in this repository is the artifact to verify.
+
+- GitHub topics 12 → 18: added `embodied-ai`, `ai-red-teaming`, `llm-security`, `ai-security`,
+  `sarif`, `github-action`.
+
 ### Added
 
 - **Security lint on ourselves.** `S` (flake8-bandit) added to the ruff selection — a tool that

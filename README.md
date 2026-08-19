@@ -55,6 +55,7 @@ provael attack --policy stub --suite stub --attacks instruction,visual,injection
 [![coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprovael%2Fprovael%2Fmain%2Fwatch%2Fcoverage.json)](https://github.com/provael/provael/blob/main/watch/coverage.json)
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb)
 [![Assessment](https://img.shields.io/badge/assessment-design%20partners-blue.svg)](https://www.provael.com/assessment)
+[![Leaderboard Space](https://img.shields.io/badge/%F0%9F%A4%97%20Space-ASR%20leaderboard-yellow.svg)](https://huggingface.co/spaces/Sattyam/provael-leaderboard)
 
 ## Why the policy layer
 
@@ -405,6 +406,12 @@ reproducible constant), and `checkpoint` — plus a board-level `not_applicable`
 (`mcp_tool_desc`, which produced records but zero applicable episodes). A rate that outlives its
 qualifiers is the overclaim this board exists not to make, and the board was the one artifact
 where they were being dropped.
+
+The board is also **live as a Hugging Face Space** —
+[huggingface.co/spaces/Sattyam/provael-leaderboard](https://huggingface.co/spaces/Sattyam/provael-leaderboard)
+— rendering the same signed `leaderboard.json` this repo commits, with an open submission queue.
+The Space is a *rendering*; the canonical artifact is the signed JSON in this repository, so verify
+that one rather than a view of it.
 
 The free core builds and verifies boards; a hosted, operator-signed board is the intended operated
 surface (experimental today). See [docs/leaderboard.md](docs/leaderboard.md).

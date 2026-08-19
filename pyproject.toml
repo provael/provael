@@ -57,6 +57,10 @@ Documentation = "https://docs.provael.com"
 Source = "https://github.com/provael/provael"
 Issues = "https://github.com/provael/provael/issues"
 Changelog = "https://github.com/provael/provael/blob/main/CHANGELOG.md"
+# The running board. PyPI's sidebar is a discovery surface and the Space was reachable from
+# neither it nor the README, despite being the one artifact a visitor can click and immediately see
+# working.
+Leaderboard = "https://huggingface.co/spaces/Sattyam/provael-leaderboard"
 
 [project.scripts]
 provael = "provael.cli:app"
