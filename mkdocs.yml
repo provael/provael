@@ -29,6 +29,7 @@ theme:
 nav:
   - Home: index.md
   - Quickstart: quickstart.md
+  - First run, timed: first-run-transcript.md
   - Examples gallery: examples.md
   - Attack catalog: attacks.md
   - Defenses: defenses.md

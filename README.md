@@ -40,10 +40,13 @@ sampler is not fully seeded, so this is **one draw**, not a reproducible constan
 [Scope & honest limitations](#scope-and-honest-limitations).
 
 ```bash
-pip install provael
+pip install provael          # requires Python 3.12+
 # deterministic CPU run — no GPU, no model download; prints an ASR-by-attack table (47/70)
 provael attack --policy stub --suite stub --attacks instruction,visual,injection --episodes 10 --seed 0
 ```
+
+Timed on a clean container: **20 s** from `pip install` to a written `report.json`, no fixes needed
+— [the transcript](docs/first-run-transcript.md), including what it does *not* explain.
 
 [![CI](https://github.com/provael/provael/actions/workflows/ci.yml/badge.svg)](https://github.com/provael/provael/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/provael.svg)](https://pypi.org/project/provael/)

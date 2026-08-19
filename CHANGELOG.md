@@ -45,6 +45,32 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- **The first run was timed on a clean machine, and the result did not support the reason the
+  measurement was taken.** `docs/first-run-transcript.md` records **20 s** (49 s on a cold cache)
+  from `pip install provael` to a written `report.json`, in a `python:3.12-slim` container with no
+  CUDA, no conda, no pip cache and no checkout — reproducing the README's advertised `47/70` on the
+  first try, with nothing needing a decision, a lookup or a fix. The page was created on the
+  premise that a slow first run explained 0 forks and 0 third-party reproductions. It does not: at
+  20 seconds this project is in the 39% of safety-benchmark repositories that run without
+  modification (arXiv:2603.04459), so improving onboarding further would buy nothing. The barrier
+  is one step later and it is economic — reproducing the headline SmolVLA result costs ~15.4
+  GPU-hours and ~$12, which is already documented with its exact command and price. Two papercuts
+  found in passing: the README stated the Python 3.12 floor eleven lines *after* `pip install`
+  (fixed — on 3.11 pip emits 38 `Requires-Python` lines that read like a broken package), and the
+  README prose says `libero_object` six times where the CLI suite is `libero` (recorded, not
+  changed; renaming a CLI surface to close a prose mismatch is a larger decision than this
+  exercise justifies).
+
+- **Bit-flip attacks cited in `PRIOR_ART.md` as an unimplemented channel, not as coverage.**
+  arXiv:2608.15475 (16 August 2026) attacks the *parameters* rather than the input, which no
+  provael family does: gradient-selected INT8 flips collapse closed-loop success to 0% while
+  hundreds of random flips are harmless, and the budget tracks the action head — 1–5 flips for
+  direct-regression and token heads against ~100–300 for the flow-matching policies evaluated. The
+  entry records their real-robot arm **with its control**: emulated K=100 gave 0/20 against 14/20
+  clean *and* 16/20 equal-count global-random. `mapping_status: cited, not crosswalked` — no
+  crosswalk is possible because **provael implements no weight-integrity attack as of 0.35.0**, and
+  the entry says so rather than implying coverage. A `weight_integrity` family is named a
+  candidate, explicitly not a shipped feature and not a dated roadmap commitment.
 - **A disclosure rule for measuring policies we did not train, written before any such run.**
   `SAFETY.md` already told *users* of this tool to "contact the model's maintainers privately first
   and allow reasonable time to respond" — so publishing a third-party ASR without doing that would

@@ -1041,6 +1041,49 @@ does not test whether governance *works*.
 perturbation; ours is a policy under adversarial input. The overlap is in what gets reported, not in
 what gets measured.
 
+### Bit-Flip VLA — *Bit-Flip Attacks on Vision-Language-Action Models: Action-Decoding Architecture Shapes the Vulnerability*
+Gao, Chen, Wu, Zhou, Wang, Ji, Guo, Chen (2026).
+arXiv:[2608.15475](https://arxiv.org/abs/2608.15475) · submitted 16 August 2026
+
+**The first entry in this file that attacks the parameters rather than the input.** Every one of
+provael's 15 adversarial families perturbs what the policy is shown or told — pixels, instruction,
+sensor stream, injected text. This one corrupts the deployed weights, and reports that the boundary
+sits in a different place depending on how the policy decodes actions.
+
+What it establishes. Quantized INT8 VLA weights are a Rowhammer-style fault surface: *"a few
+gradient-selected flips reduce closed-loop success to 0%, while hundreds of random flips are
+harmless."* The budget tracks the action head — **1–5 flips** for direct-regression and
+discrete-token heads, against roughly **100–300** for the flow-matching policies they evaluate
+(π0, π0.5). On a real 6-DoF arm, task-calibrated **emulated** K=100 corruption yielded **0/20**
+successes against **14/20** clean and **16/20** for an equal-count global-random control, with 95%
+CIs of [0, 16.8]% and [45.7, 88.1]%.
+
+**Why it belongs here.** It reaches a surface none of our families reach, and it reports in the
+shape we report in: a per-policy rate, a matched control arm at the same budget, and an interval.
+The equal-count global-random arm is the part worth copying — it is the same move as our benign
+control, and it is what turns "we broke it" into "we broke it *and* the breakage is attributable to
+selection rather than to damage in general."
+
+**Where we are weaker.** Two ways, and neither is close. We have no weight-integrity family at all,
+so there is nothing here to compare against — this is a channel provael does not measure. And they
+ran a physical arm; provael's hardware run count is still zero.
+
+**Where they are careful, and we should say so.** They scope their own claim rather than inflating
+it: they evaluate *"logical INT8 corruption rather than end-to-end physical delivery"*, and state
+that *"physical fault delivery and ECC remain outside scope."* Their "first bit-flip attack on a
+VLA" is their claim, recorded here as theirs; this project does not repeat "first" claims of its
+own or anyone else's.
+
+**mapping_status: `cited, not crosswalked`.** No crosswalk is possible in either direction today,
+because there is nothing on our side to crosswalk *to*: **as of 0.35.0 provael implements no
+weight-integrity attack**, and this entry is a citation rather than coverage. A `weight_integrity`
+family is a **candidate, not a shipped feature and not a dated roadmap commitment**. If it is ever
+built, the shape is already constrained by this paper and by our own posture: emulated in-memory
+flips against loaded weights only, always alongside an equal-count random-flip control arm, and
+explicitly silent on whether an attacker could deliver the corruption on a real deployment — that
+is a platform question about memory integrity, ECC and supply chain, and it is one this tool does
+not touch and should not appear to answer.
+
 ## What is actually novel here
 
 Not the attacks. **And — since AttackVLA (arXiv:2511.12149) — not simply "a unified harness with a
