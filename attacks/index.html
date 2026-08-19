@@ -584,6 +584,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#weight_integrity-emulated-weight-corruption-eai03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        weight_integrity — emulated weight corruption (EAI03)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#baseline" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1461,6 +1472,62 @@
     
   
     LIBERO-Safety crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crosswalk/bit-flip-vla/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bit-Flip VLA crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crosswalk/embodied-agent-attack-surfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Embodied-agent attack surfaces
   
 
     
@@ -2671,6 +2738,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#weight_integrity-emulated-weight-corruption-eai03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        weight_integrity — emulated weight corruption (EAI03)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#baseline" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3048,6 +3126,58 @@ command intact, gated by <code>is_command_preserving</code>. Primary channel EAI
 — and the study leads with <em>why</em> that result is substantially circular on a fixture whose
 danger function is lexical. Read it before quoting the number.</p>
 </div>
+<h2 id="weight_integrity-emulated-weight-corruption-eai03"><code>weight_integrity</code> — emulated weight corruption (EAI03)</h2>
+<p>The first family that attacks the <strong>parameters</strong> instead of the input. It leaves the instruction and
+the observation exactly as the benign baseline delivers them and flips bits in the policy's loaded
+INT8 weights, so any unsafe behaviour is attributable to the weights and to nothing else.</p>
+<table>
+<thead>
+<tr>
+<th>Attack</th>
+<th>Idea</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>weight_bitflip_gradient_k{1,4,16,64,256}</code></td>
+<td>flip the K bits ranked highest by their first-order effect on the danger output</td>
+</tr>
+<tr>
+<td><code>weight_bitflip_random_k{1,4,16,64,256}</code></td>
+<td>flip K bits chosen uniformly — the <strong>equal-count control</strong>, re-drawn every episode</td>
+</tr>
+</tbody>
+</table>
+<p>Attacker access: <strong><code>white-box-gradient</code></strong> (reading the weights and their gradients is strictly more
+access than any input-channel family here assumes) · transfer: <strong>stub-validated scaffolding</strong>.</p>
+<div class="admonition warning">
+<p class="admonition-title">What this measures, and what it does not</p>
+<p>It measures whether a policy is <strong>fragile to weight corruption</strong> — how few flipped bits it takes
+before the closed loop goes unsafe under a benign instruction.</p>
+<p>It does <strong>not</strong> measure whether an attacker can achieve that corruption on a real deployment.
+That is a platform question — DRAM fault injection (Rowhammer), ECC, memory integrity, the
+supply chain that delivered the checkpoint — and Provael touches none of it. Every flip is
+emulated in memory, every record carries <code>emulated: true</code>, and there is no hardware
+fault-injection path in this repository. <strong>A high rate here is evidence about the policy, never
+about the platform.</strong></p>
+</div>
+<div class="admonition danger">
+<p class="admonition-title">Read it per arm, and never pool it</p>
+<p>The two arms are <em>meant</em> to differ, so the family's pooled ASR averages them and means nothing.
+A gradient result published without its equal-count control is not a result at all: it cannot
+separate "the ranking found the bits that matter" from "corrupting K bits of anything breaks
+it", and those have opposite engineering consequences.</p>
+<p>The number to publish is the <strong>crossing point</strong> — the smallest K whose unsafe rate reaches a
+stated floor — from <code>provael.scoring.weight_integrity.crossing_pair</code>, which refuses to return a
+gradient crossing without the random one beside it.</p>
+</div>
+<p>The family exists because of <a href="https://arxiv.org/abs/2608.15475">arXiv:2608.15475</a>, whose headline is
+that the flip budget tracks the action-decoding architecture (1–5 for direct-regression and
+discrete-token heads, roughly 100–300 for flow-matching). <strong>Provael has not reproduced that.</strong> Its
+only run is against the CPU fixture, which has one scalar danger head and no action-decoding
+architecture to depend on, so the gradient-beats-random separation it shows is a property of that
+fixture. See the <a href="../crosswalk/bit-flip-vla/">crosswalk</a> for the clause-by-clause split of what is
+implemented and what is not.</p>
 <h2 id="baseline">Baseline</h2>
 <p><code>none</code> is the benign control — it never perturbs anything, so its ASR is the false-positive floor
 every other rate is read against.</p>
