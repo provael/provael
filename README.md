@@ -56,6 +56,7 @@ provael attack --policy stub --suite stub --attacks instruction,visual,injection
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb)
 [![Assessment](https://img.shields.io/badge/assessment-design%20partners-blue.svg)](https://www.provael.com/assessment)
 [![Leaderboard Space](https://img.shields.io/badge/%F0%9F%A4%97%20Space-ASR%20leaderboard-yellow.svg)](https://huggingface.co/spaces/Sattyam/provael-leaderboard)
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-VLA%20red--team-blue.svg?logo=github)](https://github.com/marketplace/actions/provael-vla-red-team)
 
 ## Why the policy layer
 
@@ -335,15 +336,10 @@ the adversarial ASR exceeds your threshold or regresses past tolerance against a
   with: { policy: stub, suite: stub, asr-threshold: "0.5" }
 ```
 
-<!-- NO MARKETPLACE BADGE HERE YET, DELIBERATELY. github.com/marketplace/actions/provael returns 404:
-the Action has never been published, and publishing requires accepting the Marketplace Developer
-Agreement and drafting a release through the GitHub web UI — there is no API for it, so it cannot be
-done from here. A badge linking to a 404 is the same error as advertising a Docker Hub image that does
-not exist, and this README already declines to do that.
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-VLA%20red--team-blue.svg?logo=github)](https://github.com/marketplace/actions/provael-vla-red-team)
 
-The snippet above works TODAY without the Marketplace, because `uses:` resolves from the repository
-and tag directly; the Marketplace is discovery, not a dependency. Add the badge in the same commit
-that publishes the listing. -->
+Listed on the Marketplace for discovery only. `uses:` resolves straight from the repository and
+tag, so the snippet above works identically with or without the listing — it is not a dependency.
 
 ```
                        Provael — ASR by attack

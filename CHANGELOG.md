@@ -29,6 +29,20 @@ All notable changes to this project are documented here. The format is based on
 - GitHub topics 12 → 18: added `embodied-ai`, `ai-red-teaming`, `llm-security`, `ai-security`,
   `sarif`, `github-action`.
 
+- **The GitHub Action is listed on the Marketplace, and the badge landed in the same commit.** The
+  README had carried a nine-line comment since 0.33.1 explaining why no badge was there — the
+  listing 404'd, and a badge pointing at a 404 is the same error as advertising a container image
+  that does not exist. Publishing needs the Developer Agreement accepted and a release edited
+  through the web UI, neither of which has an API, so this was blocked on an operator action rather
+  than on code. Now published as
+  [`provael-vla-red-team`](https://github.com/marketplace/actions/provael-vla-red-team), the comment
+  is replaced by the badge it was reserving, and the point it was making is kept in prose.
+
+  Nothing about how the Action *runs* changed. `uses: provael/provael@v0.35.0` resolved from the
+  repository and tag before the listing existed and resolves identically now; the Marketplace is
+  discovery, not a dependency. The 0.33.1 known-issue recording the 404 is left exactly as written,
+  because it was true on 13 August and a changelog that edits its own history is not a record.
+
 ### Added
 
 - **Security lint on ourselves.** `S` (flake8-bandit) added to the ruff selection — a tool that
