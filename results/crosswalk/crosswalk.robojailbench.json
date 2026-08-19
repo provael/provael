@@ -33,7 +33,7 @@
     },
     {
       "coverage": "attacks-implemented",
-      "coverage_note": "The `backdoor` family screens objective-decoupled object and phrase triggers.",
+      "coverage_note": "The `backdoor` family screens objective-decoupled object and phrase triggers, and `weight_integrity` screens emulated bit-flip corruption of the loaded weights (gradient-selected and equal-count random arms across a 1-256 flip ladder). Both attack the model asset rather than the input; NEITHER models how an attacker delivers the corruption. Train-time poisoning and DRAM fault injection are the delivery paths, and they are EAI03 and EAI07 platform questions this tool does not measure. `weight_integrity` is stub-validated only \u2014 no real policy has been run.",
       "id": "EAI03",
       "name": "Model & pipeline poisoning, backdoors & supply chain",
       "note": "no counterpart: a backdoor is a delivery mechanism, not a harm class \u2014 once triggered it can produce any of RoboJailBench's 18 harms.",

@@ -137,6 +137,46 @@ class Trajectory(BaseModel):
         return [[float(v) for v in row] for row in arr.reshape(self.shape)]
 
 
+class BitFlipRecord(BaseModel):
+    """What a weight-integrity attack actually did to the loaded parameters.
+
+    Recorded on every :class:`AttackResult` the corruption was live for, so a result carries its
+    own corruption parameters rather than deferring them to a config file the report does not
+    contain. The three fields that matter to a reader are :attr:`flips` (the budget K),
+    :attr:`selection` (how the bits were chosen — the whole point of the family is the gap between
+    ``"gradient"`` and ``"random"`` at the SAME K), and :attr:`bit_indices` (exactly which bits,
+    so the corruption is replayable without re-running the selection).
+
+    SCOPE, STATED HERE BECAUSE THIS IS WHERE A READER MEETS IT. These are *logical* flips applied
+    to weights already loaded in memory. Nothing here models how an attacker would achieve that on
+    a real deployment — that is a platform question about DRAM fault injection, ECC and supply
+    chain, and this project does not measure it. A high rate here means the policy is fragile to
+    corruption, NOT that the corruption is deliverable.
+    """
+
+    flips: int = Field(..., ge=0, description="K — the number of bits actually flipped.")
+    selection: str = Field(
+        ...,
+        description="How the K bits were chosen: 'gradient' (ranked by the loss gradient) or "
+        "'random' (the equal-count control arm). A gradient result with no random arm at the same "
+        "K is not a result — it cannot separate selection from damage-in-general.",
+    )
+    seed: int = Field(..., description="Seed for the random arm's choice; 0 for the gradient arm.")
+    parameter_count: int = Field(..., ge=0, description="Number of quantized parameters exposed.")
+    bit_width: int = Field(..., ge=1, description="Bits per parameter (8 for INT8).")
+    bit_indices: list[int] = Field(
+        default_factory=list,
+        description="The flipped bit positions, as flat indices into parameter_count*bit_width, "
+        "ascending. Replayable: applying these to the clean parameters reproduces the run.",
+    )
+    emulated: bool = Field(
+        True,
+        description="Always True. Provael flips bits in loaded weights in memory and has no "
+        "hardware fault-injection path; the field exists so a report states that rather than "
+        "leaving a reader to assume either way.",
+    )
+
+
 class AttackResult(BaseModel):
     """Outcome of a single episode: one ``(task, attack, seed)`` triple."""
 
@@ -194,6 +234,12 @@ class AttackResult(BaseModel):
         "opt-in flag reproduces the pre-0.35.0 situation the first time someone forgets. None only "
         "where the suite surfaced no signal on any step — never where it surfaced one and it was "
         "dropped. See issue #136.",
+    )
+    weight_corruption: BitFlipRecord | None = Field(
+        None,
+        description="The weight corruption in force for this episode, or None for every attack "
+        "that does not touch parameters (which is all fourteen input-channel families). Present "
+        "from schema_version 4.",
     )
 
 
@@ -374,8 +420,10 @@ class RunReport(BaseModel):
         "ALL-episode observed-unsafe rate (benign control INCLUDED in the denominator). >=2 also "
         "carries the adversarial_* fields (the benign control excluded by role) and the roles map. "
         ">=3 records a per-episode `trajectory` (the calibration signal every step produced and "
-        "every run used to discard). Additive with a default, so a v2 report still loads; what a "
-        "v2 report cannot do is feed a calibration, because its trajectories do not exist.",
+        "every run used to discard). >=4 records `weight_corruption`, the bit-flip budget and "
+        "selection rule in force for the episode. Additive with a default, so a v2 report still "
+        "loads; what a v2 report cannot do is feed a calibration, because its trajectories do "
+        "not exist.",
     )
     evidence_state: str | None = Field(
         None,

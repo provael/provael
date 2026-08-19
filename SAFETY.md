@@ -16,7 +16,7 @@ the spirit of responsible disclosure.
 
 ## No real-world-harm payloads
 
-- The registry ships **15 adversarial families** (plus the benign `baseline` control). Eleven of
+- The registry ships **16 adversarial families** (plus the benign `baseline` control). Eleven of
   them — `instruction`, `visual`, `injection`, `action`, `action_space`, `backdoor`,
   `sensor_spoof`, `misalignment`, `authorization`, `confidentiality`, `humanoid` — are short,
   generic, **templated** reframings, cues and markers: a fixed transform of the observation,

@@ -34,7 +34,7 @@
         "Persistence \u2192 backdoor the ML model; ML Supply Chain Compromise \u2192 poison an open-weights checkpoint"
       ],
       "coverage": "attacks-implemented",
-      "coverage_note": "The `backdoor` family screens objective-decoupled object and phrase triggers.",
+      "coverage_note": "The `backdoor` family screens objective-decoupled object and phrase triggers, and `weight_integrity` screens emulated bit-flip corruption of the loaded weights (gradient-selected and equal-count random arms across a 1-256 flip ladder). Both attack the model asset rather than the input; NEITHER models how an attacker delivers the corruption. Train-time poisoning and DRAM fault injection are the delivery paths, and they are EAI03 and EAI07 platform questions this tool does not measure. `weight_integrity` is stub-validated only \u2014 no real policy has been run.",
       "description": "A hidden, objective-decoupled trigger (a benign-looking object or phrase) planted at train/fine-tune time or via a poisoned open-weights checkpoint: normal behaviour until the trigger fires an attacker-chosen action.",
       "help_uri": "https://github.com/provael/provael/blob/main/docs/top10.md#eai03--model--pipeline-poisoning-backdoors--supply-chain",
       "id": "EAI03",

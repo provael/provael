@@ -59,6 +59,8 @@ nav:
       - SafeVLA-Bench crosswalk: crosswalk/safevla-bench.md
       - XPolicyLab crosswalk: crosswalk/xpolicylab.md
       - LIBERO-Safety crosswalk: crosswalk/libero-safety.md
+      - Bit-Flip VLA crosswalk: crosswalk/bit-flip-vla.md
+      - Embodied-agent attack surfaces: crosswalk/embodied-agent-attack-surfaces.md
       - Published ASR baselines: standards/published-asr-baselines.md
       - Listings & PRs: standards/listings.md
   - Python API: python-api.md

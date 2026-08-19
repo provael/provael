@@ -55,12 +55,12 @@ GUARANTEED_ROUTE = "https://github.com/provael/provael/issues/new"
 #: them. A hardcoded count is a claim, and claims here drift: the repo shipped a release with three
 #: documents still saying "fourteen" after this number became 15. `tests/test_counted_claims.py`
 #: therefore checks this constant against the live registry and fails the build if they disagree.
-TOTAL_ADVERSARIAL_FAMILIES = 15
+TOTAL_ADVERSARIAL_FAMILIES = 16
 
 #: The release this Space was published from — the "you are here" against which `measured_with`
 #: reads as stale. Checked against `provael.__version__` by `tests/test_counted_claims.py` for the
 #: same reason as above: an unguarded version string in an uninstalled Space rots invisibly.
-CURRENT_RELEASE = "0.35.0"
+CURRENT_RELEASE = "0.36.0"
 
 #: Policies considered open-source (weights available) — drives the RoboArena-style split.
 OPEN_SOURCE_POLICIES = frozenset(

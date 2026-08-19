@@ -117,7 +117,13 @@ CATALOG: dict[str, EaiRisk] = {
         anchor="eai03--model--pipeline-poisoning-backdoors--supply-chain",
         coverage=EaiCoverage.attacks_implemented,
         coverage_note=(
-            "The `backdoor` family screens objective-decoupled object and phrase triggers."
+            "The `backdoor` family screens objective-decoupled object and phrase triggers, and "
+            "`weight_integrity` screens emulated bit-flip corruption of the loaded weights "
+            "(gradient-selected and equal-count random arms across a 1-256 flip ladder). Both "
+            "attack the model asset rather than the input; NEITHER models how an attacker "
+            "delivers the corruption. Train-time poisoning and DRAM fault injection are the "
+            "delivery paths, and they are EAI03 and EAI07 platform questions this tool does not "
+            "measure. `weight_integrity` is stub-validated only — no real policy has been run."
         ),
         atlas_techniques=("Persistence → backdoor the ML model; ML Supply Chain Compromise → "
                           "poison an open-weights checkpoint",),

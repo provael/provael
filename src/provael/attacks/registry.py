@@ -146,9 +146,34 @@ from provael.attacks.visual import (
     DecoyObjectAttack,
     PatchAttack,
 )
+from provael.attacks.weight_integrity import (
+    FAMILY as WEIGHT_INTEGRITY_FAMILY,
+)
+from provael.attacks.weight_integrity import (
+    FLIP_LADDER,
+    GradientBitFlip,
+    RandomBitFlip,
+)
+
 
 #: Registry of attack factories keyed by attack name.
+def _weight_entries() -> dict[str, Callable[[], Attack]]:
+    """Weight-integrity registry entries: both arms at every budget in FLIP_LADDER."""
+    entries: dict[str, Callable[[], Attack]] = {}
+    for budget in FLIP_LADDER:
+        for cls in (GradientBitFlip, RandomBitFlip):
+            key = f"{cls.name}_k{budget}"
+            entries[key] = lambda c=cls, k=budget: c(flips=k)  # type: ignore[misc]
+    return entries
+
+
 ATTACKS: dict[str, Callable[[], Attack]] = {
+    # EAI03 weight-integrity, one entry per (arm, K). Built by comprehension rather than typed
+    # out because the two arms MUST cover the same ladder: a gradient budget with no random arm at
+    # the same K cannot separate selection from damage-in-general, and a hand-written list is
+    # exactly where that pairing rots. `_weight_entries` binds K per closure (a bare lambda in a
+    # loop captures the variable, not its value, and every entry would flip the last budget).
+    **_weight_entries(),
     # Harmless-variation controls. Registered only now that provael.scoring.asr excludes
     # CONTROL_FAMILY from BOTH the adversarial population and the benign-FPR baseline; before that,
     # running them would have folded a benign rephrasing into the attack success rate.
@@ -204,6 +229,13 @@ FAMILIES: dict[str, list[str]] = {
     OPTIMIZED_PATCH_FAMILY: ["patch_hijack"],
     UNIVERSAL_PATCH_FAMILY: ["universal_patch"],
     OPTIMIZED_INSTRUCTION_FAMILY: ["targeted_redirect"],
+    # Ordered by budget with each arm beside its control, so a per-attack table reads as the
+    # paired comparison it is rather than as ten unrelated rows.
+    WEIGHT_INTEGRITY_FAMILY: [
+        f"{cls.name}_k{budget}"
+        for budget in FLIP_LADDER
+        for cls in (GradientBitFlip, RandomBitFlip)
+    ],
 }
 
 

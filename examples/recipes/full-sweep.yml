@@ -21,5 +21,6 @@ attacks:
 - optimized_patch
 - universal_patch
 - optimized_instruction
+- weight_integrity
 - control
 episodes: 10

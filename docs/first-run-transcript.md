@@ -44,7 +44,7 @@ A census of all 31 LLM-safety benchmarks published between 30 November 2022 and 
 against 382 non-benchmark papers as a control group and over 220 person-hours of hands-on
 runnability testing, found that **only 39% of benchmark repositories run without modification**.
 Comparing citation density against papers with no accessible code, code that runs with no
-additional modification showed a significant advantage (p = 0.005), while **code requiring any
+additional modification showed a significant advantage (p = 0.004), while **code requiring any
 modification showed no significant difference from having no code at all**. Code-quality standards
 — Pylint score, maintainability index — showed no significant correlation with adoption
 ([arXiv:2603.04459](https://arxiv.org/abs/2603.04459), Chu, Shen, Leng, Backes, Shen, Zhang).
