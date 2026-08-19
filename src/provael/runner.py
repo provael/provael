@@ -23,6 +23,7 @@ from provael import __version__
 from provael.attacks.base import Attack
 from provael.attacks.optimized import OracleAttack, SchemaAwareAttack, ZoneAwareAttack
 from provael.attacks.registry import resolve_attacks
+from provael.attacks.weight_integrity import WeightIntegrityAttack
 from provael.calibration import Calibration, anytime_ci, wilson_ci
 from provael.config import RunConfig
 from provael.defenses.base import Defense
@@ -278,6 +279,10 @@ def run_episode(
         action_head_class=policy.action_head_class or attack.action_head_class,
         decisions=decisions,
         trajectory=Trajectory.encode(calib_samples) if calib_samples else None,
+        # None for every input-channel family. Read from the attack rather than passed in, so
+        # a result records the corruption that was ACTUALLY in force when it ran, not one a
+        # caller believed was in force.
+        weight_corruption=getattr(attack, "record", None),
     )
 
 
@@ -356,13 +361,33 @@ def run(
             for seed_index in range(seeds):
                 seed = config.seed + seed_index
                 for _repeat in range(config.episodes_per_seed):
-                    results.append(
-                        run_episode(
-                            policy, suite, attack, task, seed, config.horizon,
-                            defense=defense, audit_sink=audit_sink,
-                        )
+                    # WEIGHT-INTEGRITY BRACKET, per episode. A parameter attack corrupts the
+                    # policy for exactly one episode and MUST hand back clean weights afterwards.
+                    #
+                    # The `finally` is the load-bearing part: corruption surviving its own episode
+                    # would silently score every later episode and every later ATTACK against a
+                    # broken policy — a full report of wrong numbers with nothing visibly failed,
+                    # which is the worst outcome available to a tool whose product is trustworthy
+                    # numbers.
+                    #
+                    # Per episode rather than per (task, attack) because the random control has to
+                    # re-draw its K bits each episode to estimate a rate over draws instead of
+                    # reporting one draw as the rate. See WeightIntegrityAttack.corrupt.
+                    weight_attack = (
+                        attack if isinstance(attack, WeightIntegrityAttack) else None
                     )
-
+                    if weight_attack is not None:
+                        weight_attack.corrupt(policy, seed)
+                    try:
+                        results.append(
+                            run_episode(
+                                policy, suite, attack, task, seed, config.horizon,
+                                defense=defense, audit_sink=audit_sink,
+                            )
+                        )
+                    finally:
+                        if weight_attack is not None:
+                            weight_attack.restore(policy)
     overall = overall_stat(results)
     adversarial = adversarial_asr(results)  # headline ASR: benign control excluded by role
     attack_breakdown = by_attack(results)
@@ -392,7 +417,12 @@ def run(
 
     return RunReport(
         tool_version=__version__,
-        schema_version=3,
+        # 4: results carry `weight_corruption`. Bumped in the SAME change that started
+        # emitting the field — a report that declares 3 while carrying a 4 field has that
+        # field stripped by attest.report_projection before the digest, i.e. signed around
+        # rather than signed over, and the corruption parameters would sit outside the
+        # signature that is supposed to cover them.
+        schema_version=4,
         evidence_state=classify_run(config.policy, config.suite).value,
         policy=config.policy,
         model=config.model,

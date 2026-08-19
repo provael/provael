@@ -67,10 +67,16 @@ _EXPECTED_RUNREPORT_KEYS = frozenset({
 # nested field would. That was the accepted cost — without it the calibration input stays
 # unrecorded and #136 stays unfixable — but the guard is what makes it a decision instead of an
 # accident, so the key is added, not the assertion loosened.
+# `weight_corruption` (0.36.0) is the second field added under this guard, and for the same kind of
+# reason: the EAI03 weight-integrity family's flip budget and selection rule ARE the result, and a
+# report that records the ASR without them cannot be read at all — 100% at K=4 and 100% at K=256 are
+# different findings. It moves the canonical JSON, so the schema_version moved with it (3 -> 4) and
+# attest._RESULT_FIELDS_ADDED_IN strips it for anything that declares less. Added, not loosened.
 _EXPECTED_ATTACKRESULT_KEYS = frozenset({
     "action_head_class", "adversarial_instruction", "applicable", "attack", "attacker_access",
     "danger", "decisions", "endpoints", "family", "original_instruction", "seed", "steps",
     "steps_to_success", "success", "task", "task_success", "threshold", "trajectory",
+    "weight_corruption",
 })
 _GOLDEN_CONFIG = {
     "policy": "stub",

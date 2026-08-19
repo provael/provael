@@ -182,6 +182,19 @@ def test_registry_includes_new_families() -> None:
         "balance_spoof",
         "whole_body_hijack",
         "stride_freeze",
+        # EAI03 weight-integrity, both arms across the whole flip ladder. Enumerated rather than
+        # generated so that adding a budget to FLIP_LADDER fails this golden — the ladder is what
+        # the family's crossing-point claim is computed over, and it must not grow by accident.
+        "weight_bitflip_gradient_k1",
+        "weight_bitflip_random_k1",
+        "weight_bitflip_gradient_k4",
+        "weight_bitflip_random_k4",
+        "weight_bitflip_gradient_k16",
+        "weight_bitflip_random_k16",
+        "weight_bitflip_gradient_k64",
+        "weight_bitflip_random_k64",
+        "weight_bitflip_gradient_k256",
+        "weight_bitflip_random_k256",
     }
     assert available_families() == [
         "action", "action_space", "authorization", "backdoor", "baseline", "confidentiality",
@@ -191,6 +204,7 @@ def test_registry_includes_new_families() -> None:
         "control",
         "humanoid", "injection", "instruction", "misalignment", "optimized",
         "optimized_instruction", "optimized_patch", "sensor_spoof", "universal_patch", "visual",
+        "weight_integrity",
     ]
     assert [a.name for a in resolve_attacks(["control"])] == ["benign_reword", "nonsense_text"]
     assert [a.name for a in resolve_attacks(["baseline"])] == ["none"]

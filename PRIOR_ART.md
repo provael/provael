@@ -1045,10 +1045,12 @@ what gets measured.
 Gao, Chen, Wu, Zhou, Wang, Ji, Guo, Chen (2026).
 arXiv:[2608.15475](https://arxiv.org/abs/2608.15475) · submitted 16 August 2026
 
-**The first entry in this file that attacks the parameters rather than the input.** Every one of
-provael's 15 adversarial families perturbs what the policy is shown or told — pixels, instruction,
+**The entry that made this project build a family it did not have.** Until 0.36.0, every one of
+provael's adversarial families perturbed what the policy is shown or told — pixels, instruction,
 sensor stream, injected text. This one corrupts the deployed weights, and reports that the boundary
-sits in a different place depending on how the policy decodes actions.
+sits in a different place depending on how the policy decodes actions. The `weight_integrity`
+family (16 of 16) exists because of this paper and is shaped by it; what that family has and has
+not established is set out under *mapping_status* below, and it is less than the paper's.
 
 What it establishes. Quantized INT8 VLA weights are a Rowhammer-style fault surface: *"a few
 gradient-selected flips reduce closed-loop success to 0%, while hundreds of random flips are
@@ -1064,9 +1066,12 @@ The equal-count global-random arm is the part worth copying — it is the same m
 control, and it is what turns "we broke it" into "we broke it *and* the breakage is attributable to
 selection rather than to damage in general."
 
-**Where we are weaker.** Two ways, and neither is close. We have no weight-integrity family at all,
-so there is nothing here to compare against — this is a channel provael does not measure. And they
-ran a physical arm; provael's hardware run count is still zero.
+**Where we are weaker.** Three ways, and none is close. Their selection is a progressive search
+that re-ranks after each flip; ours is a one-shot first-order ranking taken once against the clean
+weights, which is strictly weaker and makes any provael null a lower bound rather than a finding.
+They measured π0 and π0.5; provael has run this family against the deterministic CPU fixture and
+nothing else, so it corroborates none of their architecture result. And they ran a physical 6-DoF
+arm; provael's hardware run count is still zero.
 
 **Where they are careful, and we should say so.** They scope their own claim rather than inflating
 it: they evaluate *"logical INT8 corruption rather than end-to-end physical delivery"*, and state
@@ -1074,12 +1079,20 @@ that *"physical fault delivery and ECC remain outside scope."* Their "first bit-
 VLA" is their claim, recorded here as theirs; this project does not repeat "first" claims of its
 own or anyone else's.
 
-**mapping_status: `cited, not crosswalked`.** No crosswalk is possible in either direction today,
-because there is nothing on our side to crosswalk *to*: **as of 0.35.0 provael implements no
-weight-integrity attack**, and this entry is a citation rather than coverage. A `weight_integrity`
-family is a **candidate, not a shipped feature and not a dated roadmap commitment**. If it is ever
-built, the shape is already constrained by this paper and by our own posture: emulated in-memory
-flips against loaded weights only, always alongside an equal-count random-flip control arm, and
+**mapping_status: `implemented, not corroborated`.** Since 0.36.0 there is something on our side
+to crosswalk to — `weight_integrity`, with a gradient arm and an equal-count random arm across a
+1/4/16/64/256 flip ladder — and `docs/crosswalk/bit-flip-vla.md` states clause by clause what it
+takes from this paper and what it does not.
+
+**Implemented is not corroborated, and the gap is the whole story.** The family has run against the
+deterministic CPU stub and against no real policy. The stub has one scalar danger head and no
+action-decoding architecture, so it cannot exhibit architecture-dependence and does not: the
+gradient-beats-random separation it shows is a property of that fixture, engineered so the
+measurement path could be exercised at all. **Provael has not reproduced the 1–5 versus 100–300
+result, has not tested a flow-matching head, and must not be cited as independent support for it.**
+Doing so needs a GPU run against SmolVLA or π0 that has not happened. The shape the family holds to
+is the one this paper and our own posture already constrained: emulated in-memory flips against
+loaded weights only, always alongside an equal-count random-flip control arm, and
 explicitly silent on whether an attacker could deliver the corruption on a real deployment — that
 is a platform question about memory integrity, ECC and supply chain, and it is one this tool does
 not touch and should not appear to answer.

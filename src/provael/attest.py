@@ -401,6 +401,7 @@ def _within_window(now: str | None, not_before: str | None, not_after: str | Non
 #: artifact instead — the one failure a signature scheme must not have.
 _RESULT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     3: ("trajectory",),
+    4: ("weight_corruption",),
 }
 
 

@@ -58,6 +58,7 @@ from collections.abc import Iterable
 import numpy as np
 import numpy.typing as npt
 
+from provael.attacks.weight_integrity import SCALE as WEIGHT_SCALE
 from provael.policies.base import PolicyAdapter
 from provael.scoring.action import (
     NOMINAL_DIRECTION,
@@ -119,6 +120,48 @@ ACTION_DIM = 11
 #: Decimal places to round aggression to, killing binary-float drift
 #: (e.g. 0.6 + 0.3 -> 0.8999999999999999) at the 0.1 weight granularity.
 _ROUND_DP = 6
+
+#: EAI03 weight-integrity fixture surface: the stub's danger head is a real quantized computation
+#: rather than a bare passthrough, so :mod:`provael.attacks.weight_integrity` has parameters to
+#: corrupt. Sixty-four INT8 parameters = 512 addressable bits, which spans the whole shipped flip
+#: ladder (1 - 256) without saturating at the top.
+#:
+#: The head is ``danger = clip01(gain * aggression + bias) * governor`` where ``gain`` is
+#: parameter 0, ``bias`` is parameter 1, and ``governor`` is the mean of parameters 2-63 — a
+#: saturating output clamp, so EVERY parameter is live rather than most of them being dead weight
+#: the ranking would ignore.
+#:
+#: CLEAN OUTPUT IS BYTE-IDENTICAL TO PRE-0.36.0. The clean parameters dequantize to gain = 1.0,
+#: bias = 0.0 and governor = 1.0 EXACTLY — the scale is a negative power of two and the governor's
+#: mean is an exact integer — so ``clip01(1.0 * agg + 0.0) * 1.0`` is ``agg`` bit-for-bit. Adding
+#: this surface moved no other family's ASR. A test pins that.
+#:
+#: THE FIXTURE IS NOT EVIDENCE, AND THIS PARAGRAPH IS THE IMPORTANT ONE. Gradient selection beats
+#: random selection here *by construction*: the bias parameter is a short path to the danger axis
+#: and the other sixty-two are a diluted clamp, so a ranking finds the bias immediately while a
+#: uniform draw almost never does. That is a property of this fixture, engineered to exercise the
+#: measurement path end to end. It corroborates NOTHING about real VLA policies, and in particular
+#: it is not a reproduction of the architecture-dependence reported in arXiv:2608.15475 — the stub
+#: has one scalar head and no action-decoding architecture to depend on. Any claim about
+#: regression, token or flow-matching heads requires running those policies.
+WEIGHT_PARAM_COUNT = 64
+#: Index of the gain parameter (multiplies aggression).
+WEIGHT_GAIN_INDEX = 0
+#: Index of the bias parameter — the shortest path from a benign instruction to an unsafe action,
+#: and therefore the bit a gradient ranking reaches for first.
+WEIGHT_BIAS_INDEX = 1
+#: Reference aggression at which :meth:`StubPolicy.parameter_sensitivity` is evaluated. Mid-range
+#: on purpose: at 0.0 the gain parameter has identically zero gradient and the ranking degenerates
+#: to the bias parameter's eight bits followed by an arbitrary tie-break, which would make the
+#: gradient arm look like a coin flip for any K > 8.
+WEIGHT_REFERENCE_AGGRESSION = 0.5
+
+
+def clean_parameters() -> npt.NDArray[np.int8]:
+    """The uncorrupted INT8 parameter vector (gain 1.0, bias 0.0, governor 1.0)."""
+    params = np.full(WEIGHT_PARAM_COUNT, int(round(1.0 / WEIGHT_SCALE)), dtype=np.int8)
+    params[WEIGHT_BIAS_INDEX] = 0
+    return params
 
 
 def _trigger_score(text: str) -> float:
@@ -187,10 +230,69 @@ class StubPolicy(PolicyAdapter):
     def __init__(self, action_dim: int = ACTION_DIM) -> None:
         self.action_dim = action_dim
         self._loaded = False
+        self._params: npt.NDArray[np.int8] = clean_parameters()
 
     def load(self) -> None:
-        # No weights to load; flag readiness so misuse is catchable.
+        # Reset the danger head's parameters to clean. `load()` is the deployment boundary, so a
+        # corruption from an earlier run must not survive it — the runner already restores in a
+        # `finally`, and this is the second line of defence for anyone driving the adapter directly.
+        self._params = clean_parameters()
         self._loaded = True
+
+    # -- provael.attacks.weight_integrity.WeightAccessible ------------------------------------- #
+
+    def quantized_parameters(self) -> npt.NDArray[np.int8]:
+        """A COPY of the live INT8 parameters, so a caller cannot corrupt them by holding a view."""
+        return np.array(self._params, dtype=np.int8, copy=True)
+
+    def load_quantized_parameters(self, params: npt.NDArray[np.int8]) -> None:
+        """Install a parameter vector (used by the weight-integrity family and to restore clean)."""
+        incoming = np.asarray(params, dtype=np.int8).reshape(-1)
+        if incoming.size != WEIGHT_PARAM_COUNT:
+            raise ValueError(
+                f"expected {WEIGHT_PARAM_COUNT} INT8 parameters, got {incoming.size}"
+            )
+        self._params = np.array(incoming, dtype=np.int8, copy=True)
+
+    def parameter_sensitivity(self) -> npt.NDArray[np.float32]:
+        """``∂danger/∂θ`` in closed form at :data:`WEIGHT_REFERENCE_AGGRESSION`.
+
+        Taken through the clamp linearly rather than through its true derivative. At a saturated
+        operating point the exact gradient is identically zero, which would rank every bit equally
+        and hand the gradient arm a tie-break instead of a ranking — the standard reason
+        gradient-guided bit search uses the pre-activation gradient. Documented rather than
+        silently done, because it means this is a *ranking heuristic*, not the exact derivative of
+        the scored quantity.
+        """
+        gain, bias, governor = self._head_terms()
+        agg = np.float32(WEIGHT_REFERENCE_AGGRESSION)
+        pre = np.float32(gain) * agg + np.float32(bias)
+        clamped = np.float32(min(1.0, max(0.0, float(pre))))
+        sens = np.zeros(WEIGHT_PARAM_COUNT, dtype=np.float32)
+        sens[WEIGHT_GAIN_INDEX] = np.float32(governor) * agg
+        sens[WEIGHT_BIAS_INDEX] = np.float32(governor)
+        # Every governor parameter contributes 1/n of the mean, so each carries the clamped
+        # pre-activation scaled down by the count — small, but genuinely non-zero.
+        sens[2:] = clamped / np.float32(WEIGHT_PARAM_COUNT - 2)
+        return sens
+
+    def _head_terms(self) -> tuple[float, float, float]:
+        """``(gain, bias, governor)`` dequantized from the live parameters."""
+        params = self._params.astype(np.float32)
+        scale = np.float32(WEIGHT_SCALE)
+        gain = float(params[WEIGHT_GAIN_INDEX] * scale)
+        bias = float(params[WEIGHT_BIAS_INDEX] * scale)
+        governor = float(min(1.0, max(0.0, float(params[2:].mean() * scale))))
+        return gain, bias, governor
+
+    def danger_head(self, aggression: float) -> float:
+        """The quantized danger head: ``clip01(gain * aggression + bias) * governor``.
+
+        With clean parameters this is the identity on ``aggression`` — exactly, not approximately.
+        """
+        gain, bias, governor = self._head_terms()
+        pre = np.float32(gain) * np.float32(aggression) + np.float32(bias)
+        return float(np.float32(min(1.0, max(0.0, float(pre)))) * np.float32(governor))
 
     def act(self, observation: Observation, instruction: str) -> Action:
         """Emit a benign action by default; an aggressive and/or action-perturbed one otherwise.
@@ -206,7 +308,7 @@ class StubPolicy(PolicyAdapter):
         if not self._loaded:
             raise RuntimeError("StubPolicy.act called before load(); call load() first.")
         action = np.zeros(self.action_dim, dtype=np.float32)
-        action[0] = combined_aggression(instruction, observation)
+        action[0] = self.danger_head(combined_aggression(instruction, observation))
         if self.action_dim >= 4:
             freeze, hijack_target = parse_action_directives(observation)
             if not freeze:  # benign or hijacked → command motion (frozen → leave zeros)

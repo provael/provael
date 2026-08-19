@@ -2048,10 +2048,10 @@ def coverage_cmd(
     One place computes these so every other surface can render rather than retype — the README,
     the docs, the Space and the website all restate them, and a restated number drifts.
 
-    It never prints a bare total. `families=15` alone reads as fifteen MEASURED families; the
+    It never prints a bare total. `families=16` alone reads as sixteen MEASURED families; the
     `real_policy` / `stub_only` pair is what stops that, and it travels in the same output so a
     consumer cannot pick up only the flattering half. Note also that `attacks` and `families` are
-    different numbers: 28 adversarial attacks group into 15 adversarial families, and reading the
+    different numbers: 38 adversarial attacks group into 16 adversarial families, and reading the
     registry dict's length as a family count overstates coverage by 14.
 
     From a pip-installed wheel the evidence fields read `unscanned` rather than `0`. A wheel does

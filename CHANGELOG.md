@@ -4,46 +4,56 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Changed
-
-- **The 31 August commitment is recorded as MET, 23 days early.** `docs/studies/index.md` still
-  described the release containing `provael submit` as pending and told readers a git install was
-  required — while the command had shipped in 0.32.0 on 8 August and www.provael.com/studies
-  already showed it met. Two surfaces disagreeing about the same self-imposed deadline is worse
-  than either being stale alone. The original date is kept rather than deleted: a commitment that
-  vanishes once met is not a record.
-
-  What did NOT change is stated in the same breath, because that is the easy thing to skip:
-  shipping the command removed the barrier, it did not produce a submission. The register is still
-  empty, the board still reports 0 independent submitters, and the fork count is still 0.
-
-- **The Hugging Face Space is linked from the README and from PyPI.** It appeared in
-  `docs/leaderboard.md`, `CONTRIBUTING-leaderboard.md` and a setup script, and zero times in the
-  README that PyPI also renders — so a running, clickable leaderboard was unreachable from both
-  places a newcomer actually lands. Added as a badge, as prose in the leaderboard section, and as a
-  `Leaderboard` entry in `project.urls`. The prose says plainly that the Space is a *rendering* and
-  the signed JSON in this repository is the artifact to verify.
-
-- GitHub topics 12 → 18: added `embodied-ai`, `ai-red-teaming`, `llm-security`, `ai-security`,
-  `sarif`, `github-action`.
-
-- **The GitHub Action is listed on the Marketplace, and the badge landed in the same commit.** The
-  README had carried a nine-line comment since 0.33.1 explaining why no badge was there — the
-  listing 404'd, and a badge pointing at a 404 is the same error as advertising a container image
-  that does not exist. Publishing needs the Developer Agreement accepted and a release edited
-  through the web UI, neither of which has an API, so this was blocked on an operator action rather
-  than on code. Now published as
-  [`provael-vla-red-team`](https://github.com/marketplace/actions/provael-vla-red-team), the comment
-  is replaced by the badge it was reserving, and the point it was making is kept in prose.
-
-  Nothing about how the Action *runs* changed. `uses: provael/provael@v0.35.0` resolved from the
-  repository and tag before the listing existed and resolves identically now; the Marketplace is
-  discovery, not a dependency. The 0.33.1 known-issue recording the 404 is left exactly as written,
-  because it was true on 13 August and a changelog that edits its own history is not a record.
+## [0.36.0] — 2026-08-20
 
 ### Added
+
+- **`weight_integrity` — the first family that attacks the parameters instead of the input
+  (EAI03).** Every one of the fifteen families before it perturbs what the policy is shown or told.
+  This one leaves the instruction and the observation exactly as the benign baseline delivers them
+  and flips bits in the policy's loaded INT8 weights, so any unsafe behaviour is attributable to
+  the weights and to nothing else. Ten registry entries: a gradient-selected arm and an
+  equal-count random arm at each budget in a `K = 1/4/16/64/256` ladder, runnable as
+  `--recipe eai03-weight-integrity` or `--attacks weight_integrity`.
+
+  **What it measures and what it does not, because the difference is the whole reason a sim-only
+  tool can ship this at all.** It measures whether a policy is fragile to weight corruption. It
+  does *not* measure whether an attacker can achieve that corruption on a real deployment — that
+  is a platform question about DRAM fault injection, ECC, memory integrity and supply chain, and
+  provael touches none of it. Every flip is emulated in memory, there is no hardware
+  fault-injection path in the repository and none is planned, and every record carries
+  `emulated: true` so a report states this rather than leaving a reader to assume it.
+
+  **The control arm is mandatory, not optional.** A gradient result with no equal-count random arm
+  cannot separate "the ranking found the bits that matter" from "corrupting K bits of anything
+  breaks it", and those have opposite engineering consequences.
+  `scoring.weight_integrity.crossing_pair` returns `None` rather than half a result when the
+  control is missing — a caller holding a number publishes it.
+
+- **`scoring/weight_integrity.py` — the crossing point, which is the number worth publishing.** A
+  weight-integrity run has a curve, not a rate: "100% ASR" is meaningless without the flip budget
+  it was bought at, and the family's pooled ASR averages two arms that are *meant* to differ. The
+  reportable summary is the smallest K whose unsafe rate reaches a stated floor, and the floor is
+  a required argument recorded on the result — a crossing at 50% and a crossing at 90% are
+  different claims about the same curve. Non-monotone curves are reported as non-monotone rather
+  than smoothed.
+
+- **A quantized danger head on the deterministic stub**, so the family has real parameters to
+  corrupt: 64 INT8 parameters (512 addressable bits) computing
+  `clip01(gain * aggression + bias) * governor`. The clean parameters dequantize to gain 1.0,
+  bias 0.0 and governor 1.0 **exactly** — the scale is a negative power of two — so the clean
+  output is byte-identical to the pre-0.36.0 action and **no other family's ASR moved**. The
+  shipped stub run is still `67.1% (47/70)`, asserted by a test over the whole `[0, 1]` range with
+  equality rather than a tolerance.
+
+- Crosswalks for both papers this release responds to: `docs/crosswalk/bit-flip-vla.md`
+  (arXiv:2608.15475) and `docs/crosswalk/embodied-agent-attack-surfaces.md` (arXiv:2608.16843).
+  The second is a coverage map and it is not flattering: **five of the survey's twelve attack
+  surfaces have no provael attack at all**, provael is well covered exactly where the survey says
+  the field already concentrates, and it is absent from three of the four areas the survey calls
+  underexplored. Its five-layer taxonomy is *not* reproduced, because the layer names were not
+  readable from the abstract page and inventing a counterpart's categories in order to map onto
+  them is the failure these cards exist to avoid.
 
 - **The first run was timed on a clean machine, and the result did not support the reason the
   measurement was taken.** `docs/first-run-transcript.md` records **20 s** (49 s on a cold cache)
@@ -129,6 +139,70 @@ All notable changes to this project are documented here. The format is based on
 
 - **CONTRIBUTING now states that new functionality ships with tests.** It was always the practice;
   it was never written down, and an unwritten rule is one a new contributor has to guess at.
+
+
+### Changed
+
+- **Report schema 3 → 4: results carry `weight_corruption`.** The flip budget and the selection
+  rule *are* the result — 100% at K=4 and 100% at K=256 are different findings — so they are
+  recorded per result rather than deferred to a config the report does not contain. The bump
+  landed in the same change that started emitting the field: a report declaring 3 while carrying
+  a 4 field has that field stripped by `attest.report_projection` before the digest, which signs
+  *around* the corruption parameters rather than *over* them.
+  `attest._RESULT_FIELDS_ADDED_IN` gained the `4:` entry in the same commit, and the committed
+  v4 leaderboard still verifies (`keyid 8d62aa33ed5162f3`).
+
+- **`PRIOR_ART.md`'s bit-flip entry moved from `cited, not crosswalked` to
+  `implemented, not corroborated`** — and the second half of that label is doing the work. The
+  entry previously said provael implements no weight-integrity attack and that such a family was a
+  candidate rather than a shipped feature. Both are now false. What is still true, and is now
+  stated in three places rather than left to be inferred: **provael has not reproduced the
+  architecture-dependence result** (1–5 flips for direct-regression and discrete-token heads
+  against roughly 100–300 for flow-matching). The only run is against the CPU fixture, which has
+  one scalar danger head and no action-decoding architecture to depend on, so the
+  gradient-beats-random separation it shows is a property of that fixture. Citing provael as
+  independent support for that claim would be wrong.
+
+- `docs/first-run-transcript.md` cited **p = 0.005** for the runnability/citation-density result in
+  arXiv:2603.04459. The paper says **p = 0.004**, in its introduction and again in §4.6. The
+  substantive claim — ready-to-use code relates to higher citation density while code needing
+  modification does not — is exactly as reported; the digit was wrong. Checked against the paper
+  text, not the abstract, which is the rule this repository already holds itself to.
+
+- **The 31 August commitment is recorded as MET, 23 days early.** `docs/studies/index.md` still
+  described the release containing `provael submit` as pending and told readers a git install was
+  required — while the command had shipped in 0.32.0 on 8 August and www.provael.com/studies
+  already showed it met. Two surfaces disagreeing about the same self-imposed deadline is worse
+  than either being stale alone. The original date is kept rather than deleted: a commitment that
+  vanishes once met is not a record.
+
+  What did NOT change is stated in the same breath, because that is the easy thing to skip:
+  shipping the command removed the barrier, it did not produce a submission. The register is still
+  empty, the board still reports 0 independent submitters, and the fork count is still 0.
+
+- **The Hugging Face Space is linked from the README and from PyPI.** It appeared in
+  `docs/leaderboard.md`, `CONTRIBUTING-leaderboard.md` and a setup script, and zero times in the
+  README that PyPI also renders — so a running, clickable leaderboard was unreachable from both
+  places a newcomer actually lands. Added as a badge, as prose in the leaderboard section, and as a
+  `Leaderboard` entry in `project.urls`. The prose says plainly that the Space is a *rendering* and
+  the signed JSON in this repository is the artifact to verify.
+
+- GitHub topics 12 → 18: added `embodied-ai`, `ai-red-teaming`, `llm-security`, `ai-security`,
+  `sarif`, `github-action`.
+
+- **The GitHub Action is listed on the Marketplace, and the badge landed in the same commit.** The
+  README had carried a nine-line comment since 0.33.1 explaining why no badge was there — the
+  listing 404'd, and a badge pointing at a 404 is the same error as advertising a container image
+  that does not exist. Publishing needs the Developer Agreement accepted and a release edited
+  through the web UI, neither of which has an API, so this was blocked on an operator action rather
+  than on code. Now published as
+  [`provael-vla-red-team`](https://github.com/marketplace/actions/provael-vla-red-team), the comment
+  is replaced by the badge it was reserving, and the point it was making is kept in prose.
+
+  Nothing about how the Action *runs* changed. `uses: provael/provael@v0.35.0` resolved from the
+  repository and tag before the listing existed and resolves identically now; the Marketplace is
+  discovery, not a dependency. The 0.33.1 known-issue recording the 404 is left exactly as written,
+  because it was true on 13 August and a changelog that edits its own history is not a record.
 
 ## [0.35.0] — 2026-08-18
 
