@@ -18,7 +18,8 @@ import json
 from pathlib import Path
 
 from provael import __version__
-from provael.leaderboard import find_reports, load_leaderboard
+from provael.leaderboard import _inputs_digest, find_reports, load_leaderboard
+from provael.report import load_report
 from provael.types import RunReport
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -85,4 +86,41 @@ def test_measured_with_matches_the_artifacts_it_claims_to_aggregate() -> None:
     assert set(board.measured_with) == shard_versions, (
         f"board claims measured_with {sorted(board.measured_with)} but the aggregated shards "
         f"carry {sorted(shard_versions)}"
+    )
+
+
+def test_the_committed_board_still_rebuilds_to_its_committed_digest() -> None:
+    """A published board must rebuild to the SAME inputs_digest under a later tool.
+
+    THE REGRESSION THIS PINS, which shipped twice before anyone noticed. `_inputs_digest` used
+    `r.model_dump_json()`, re-serialising every input report through whatever `RunReport` the
+    RUNNING version defines. Adding an optional field rewrote the bytes of reports that predate it,
+    so the digest of an unchanged committed artifact moved with the tool version: 0.33.2 and 0.34.0
+    gave `69396ef8…`, 0.35.0 gave `46008680…` once `trajectory` landed, and 0.36.0 gave
+    `5d63664f…` once `weight_corruption` did.
+
+    /verification tells strangers to rebuild the board and expect a match, so this turned the
+    project's own reproduction instructions into a failing check on every schema addition.
+
+    THE ASSERTION IS AGAINST THE REAL COMMITTED ARTIFACTS, deliberately. The first version of this
+    test compared two synthetic projections and passed under the broken code as well as the fixed
+    code — it asserted two digests differed, which they did either way, and proved nothing. The only
+    assertion that separates them is the one the docs actually promise: rebuild the committed board
+    from the committed reports and get the committed digest back.
+    """
+    board = json.loads(_BOARD.read_text(encoding="utf-8"))
+    committed = board.get("inputs_digest")
+    assert committed, "the committed board carries no inputs_digest to check against"
+
+    suite = _ROOT / "results" / "smolvla_libero_object_suite"
+    assert suite.is_dir(), f"{suite} is missing; the board's input run is not in this checkout"
+
+    reports = [load_report(path) for path in find_reports([str(suite)])]
+    assert reports, f"no run reports found under {suite}"
+
+    assert _inputs_digest(reports) == committed, (
+        "the committed board no longer rebuilds to its own inputs_digest. A schema addition has "
+        "changed the bytes of reports that predate it — _inputs_digest must project each report to "
+        "its DECLARED schema_version (attest.report_projection), not re-serialise it through the "
+        "model the running version happens to define."
     )

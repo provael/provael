@@ -19,7 +19,13 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from provael.attacks.registry import make_attack
-from provael.attest import canonical_json, sha256_hex, sign_bytes, verify_bytes
+from provael.attest import (
+    canonical_json,
+    report_projection,
+    sha256_hex,
+    sign_bytes,
+    verify_bytes,
+)
 from provael.calibration import wilson_ci
 from provael.policies.stub import ATTACKABLE_OBS_FIELDS
 from provael.report import REPORT_JSON, load_report
@@ -271,10 +277,26 @@ def attack_examples(attack_names: list[str]) -> list[AttackExample]:
 def _inputs_digest(reports: list[RunReport]) -> str:
     """SHA-256 over the canonical, order-independent set of input reports (deterministic).
 
-    Reuses the digest approach from :mod:`provael.attest` so the board and an attestation speak the
-    same integrity language.
+    Reuses the digest approach from :mod:`provael.attest` — including, since 0.36.1, its
+    SCHEMA-AWARE projection, which this docstring claimed and the body did not do.
+
+    THE BUG THIS FIXES, because it is subtle and shipped twice. The old body re-serialised every
+    input report through whatever ``RunReport`` the RUNNING version defines, so adding an optional
+    field rewrote the bytes of reports that predate it: a schema-2 report loaded by a schema-4 tool
+    dumps ``"trajectory": null, "weight_corruption": null`` on every result. The digest of an
+    unchanged, committed artifact therefore moved with the tool version.
+
+    Measured against the board committed at 983c829: 0.33.2 and 0.34.0 reproduce ``69396ef8…``;
+    0.35.0 (which added ``trajectory``) yields ``46008680…``; 0.36.0 (which added
+    ``weight_corruption``) yields ``5d63664f…``. Three answers for one unchanged input — and
+    /verification tells strangers to rebuild the board and expect a match.
+
+    :func:`provael.attest.report_projection` already solves this for attestations by stripping
+    fields added after a report's DECLARED ``schema_version``. Using it here is what the docstring
+    always promised, and it is why an old board verifies again rather than being re-signed to match
+    a newer tool.
     """
-    canon = sorted(canonical_json(json.loads(r.model_dump_json())) for r in reports)
+    canon = sorted(canonical_json(report_projection(r)) for r in reports)
     return sha256_hex(b"\n".join(canon))
 
 
