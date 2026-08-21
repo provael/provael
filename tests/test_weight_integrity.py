@@ -8,9 +8,14 @@ nobody would notice — a corrupted policy still returns actions, still scores, 
 
 from __future__ import annotations
 
+import ast
+from pathlib import Path
+
 import numpy as np
 import pytest
+from pydantic import ValidationError
 
+from provael.attacks import weight_integrity
 from provael.attacks.registry import make_attack, resolve_attacks
 from provael.attacks.weight_integrity import (
     BIT_WIDTH,
@@ -306,6 +311,72 @@ def test_recorded_corruption_is_replayable() -> None:
     live = policy.quantized_parameters()
     attack.restore(policy)
     assert np.array_equal(apply_flips(clean_parameters(), record.bit_indices), live)
+
+
+def test_a_non_emulated_record_cannot_be_constructed() -> None:
+    """THE SAFETY BOUNDARY, enforced by the type rather than by a default.
+
+    `emulated` was `bool = Field(True, ...)` with a docstring reading "Always True". Nothing
+    enforced it, and `BitFlipRecord(..., emulated=False)` serialised `"emulated": false` without
+    complaint. A record asserting a non-emulated bit flip asserts that this tool performed hardware
+    fault injection — out of scope under SAFETY.md, and something provael has no path to do.
+
+    A claim that keeps a family inside a safety boundary must not rest on a default a caller can
+    override, so the field is `Literal[True]` and this pins that. The serialised value is unchanged,
+    so report digests and existing attestations are untouched.
+    """
+    from provael.types import BitFlipRecord
+
+    with pytest.raises(ValidationError):
+        BitFlipRecord(
+            flips=1,
+            selection="gradient",
+            seed=0,
+            parameter_count=8,
+            bit_width=8,
+            emulated=False,  # type: ignore[arg-type]
+        )
+
+
+def test_no_hardware_fault_injection_code_exists_in_the_family() -> None:
+    """No CODE in the attack package implements a hardware fault-injection path.
+
+    The family's licence to exist inside a sim-only tool is that it flips bits in memory and cannot
+    help anyone deliver a fault on real hardware. A helper added later under an innocuous name is
+    how that erodes, so this asserts it over the source rather than trusting review.
+
+    IT CHECKS NAMES, NOT PROSE, and the first version of this test got that wrong: it grepped the
+    raw text and flagged `weight_integrity.py`'s own docstring, which names DRAM fault injection and
+    Rowhammer precisely to say they are out of scope. A test that punishes the disclaimer would
+    pressure someone to delete the scoping paragraph to get a green build — strictly the wrong
+    incentive. So it walks the AST and inspects defined names, imports and attribute access, where a
+    real implementation would have to appear.
+    """
+    package = Path(weight_integrity.__file__).parent
+    banned = ("rowhammer", "faultinject", "hammerrow", "dram", "physicalflip")
+    offenders: list[str] = []
+
+    for path in sorted(package.glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        names: list[str] = []
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                names.append(node.name)
+            elif isinstance(node, ast.Name):
+                names.append(node.id)
+            elif isinstance(node, ast.Attribute):
+                names.append(node.attr)
+            elif isinstance(node, ast.alias):
+                names.append(node.name.split(".")[-1])
+                if node.asname:
+                    names.append(node.asname)
+        for name in names:
+            flat = name.lower().replace("_", "")
+            for token in banned:
+                if token in flat:
+                    offenders.append(f"{path.name}: {name}")
+
+    assert not offenders, f"hardware fault-injection code in the attack package: {offenders}"
 
 
 def test_every_record_says_it_is_emulated() -> None:

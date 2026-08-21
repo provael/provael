@@ -107,3 +107,57 @@ The freshness refresh (`.github/workflows/freshness.yml`) recomputes the age dai
 artifacts, whether or not anything was measured — so the badge ages by itself and does not freeze on
 its last good state. The day a run lands with a genuinely recorded manifest, the badge switches from
 reconstructed to recorded without anyone editing it.
+
+## The cadence, and why it is not currently held — 21 August 2026
+
+The badge has been red for eleven days. That warranted a decision rather than another week of
+apologetic prose, and the decision was **not** to lengthen the window.
+
+**The seven-day window is not too ambitious. It is unenforced.** The job that would hold it,
+`.github/workflows/gpu-nightly.yml`, runs a real SmolVLA × LIBERO red-team on a Modal GPU nightly
+and records the result into the watch ledger **only on success** — it explicitly refuses to stamp a
+fresh measurement time for a run that produced no number. It is well built and it has never run,
+because it is switched off in two independent ways:
+
+| Requirement | State on 21 August 2026 |
+| --- | --- |
+| Repo variable `ENABLE_GPU_NIGHTLY` = `"true"` | **unset** — the repo has no variables at all, so the job no-ops in seconds |
+| Secrets `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` | **absent** — the repo has `HF_TOKEN` and `PROVAEL_SIGNING_KEY` only |
+
+Both are deliberate defaults: the workflow is gated off so that a fork, or this repo before anyone
+decided to spend, can never bill. That was the right default. It also means **no cadence of any
+length is currently held**, which is why the window was not moved from seven days to fourteen.
+Fourteen would have been broken by the same absence, and publishing a second number nothing enforces
+would have been worse than publishing the first one — it would look like a considered adjustment
+rather than what it is.
+
+### What changed instead
+
+The **claim** moved, not the threshold. `STALE_DAYS` is still 7, because seven days genuinely is old
+for a currency claim and the badge reddening at that point is correct. What was wrong was the
+sentence beside it. "The newest committed measurement is older than the seven-day window this
+project holds itself to" invites one inference — that a cadence slipped — and that inference is
+false. `provael watch` now says the cause in the output, and names the two settings that would fix
+it.
+
+### What would close this
+
+Configuring the two settings above. That is a maintainer action, not a code change, and nothing in
+this repository can do it. Once the nightly runs, the badge refreshes on its own and the seven-day
+window becomes a rule that is actually enforced rather than asserted.
+
+The workflow's own header estimates each run at one L4 for at most an hour. **Check that figure
+against current Modal pricing before enabling** — it is a comment written at authoring time, not a
+measured bill, and it is the sort of number this project would not accept from anyone else without
+a source.
+
+### The shortcut that exists, and why it is not taken
+
+By the letter of the definition at the top of this page, a run against the deterministic `stub`
+policy *would* refresh the badge: the stub is a registered policy and such a run does execute
+attacks against it. It takes under a second on CPU and would turn the badge green today.
+
+It is not done, and it must not be. A stub run measures a fixture, not a policy. Turning a currency
+signal green with a run that re-measured nothing is the same category of error as rebuilding the
+board and calling it a measurement — the failure this page was written to prevent, wearing a
+different costume. The badge stays red until a real policy is re-measured.
