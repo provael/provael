@@ -4,6 +4,44 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.36.1] — 2026-08-21
+
+### Fixed
+
+- **A published leaderboard stopped rebuilding to its own `inputs_digest`, and had done since
+  0.35.0.** `_inputs_digest` re-serialised every input report through whatever `RunReport` the
+  *running* version defines. Adding an optional field therefore rewrote the bytes of reports that
+  predate it — a schema-2 report loaded by a schema-4 tool dumps
+  `"trajectory": null, "weight_corruption": null` on every result — so the digest of an unchanged,
+  committed artifact moved with the tool version.
+
+  Measured against the board committed at `983c829`, one unchanged input gave three answers:
+
+  | tool | `inputs_digest` | |
+  |---|---|---|
+  | 0.33.2 | `69396ef8…` | reproduces |
+  | 0.34.0 | `69396ef8…` | reproduces |
+  | 0.35.0 | `46008680…` | broke here (`trajectory`, schema 3) |
+  | 0.36.0 | `5d63664f…` | worse (`weight_corruption`, schema 4) |
+
+  This is the offline-verifiability claim, so it matters more than its size suggests:
+  www.provael.com/verification tells a stranger to rebuild the board and expect a match, and since
+  0.35.0 they would have got `match: False` and reasonably concluded the evidence did not reconcile.
+  **Signatures were never affected** — `leaderboard verify` checks the board's own bytes and has
+  passed throughout (`keyid 8d62aa33ed5162f3`). What broke was reproducing the board from its
+  inputs.
+
+  The fix makes the code do what its docstring already claimed: `_inputs_digest` now projects each
+  report through `attest.report_projection`, which strips fields added after the report's
+  **declared** `schema_version`. An artifact digests to its own schema regardless of what is
+  installed, so old boards verify again rather than needing to be re-signed against a newer tool.
+
+  Found by running the release smoke test the long way — rebuilding from a clean clone at the pinned
+  commit rather than trusting that a green suite covered it. It did not: the golden test that would
+  have caught this compared two synthetic projections and passed under the broken code too. The
+  replacement asserts the real invariant against the committed artifacts, and was checked by
+  restoring the old behaviour and watching it fail.
+
 ## [0.36.0] — 2026-08-21
 
 ### Added
