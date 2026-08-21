@@ -335,7 +335,7 @@ Or in CI, gating the build on the measured rate — SARIF goes to code scanning,
 the adversarial ASR exceeds your threshold or regresses past tolerance against a baseline:
 
 ```yaml
-- uses: provael/provael@v0.36.2
+- uses: provael/provael@v0.37.0
   with: { policy: stub, suite: stub, asr-threshold: "0.5" }
 ```
 
@@ -417,12 +417,17 @@ surface (experimental today). See [docs/leaderboard.md](docs/leaderboard.md).
 **Evidence, not certification.**
 
 **What the published board does not cover.** It is one run and it is old: measured with
-**`provael 0.1.0`**, covering **1 policy on 1 suite** and **3 of the 16 adversarial families**. The
-other **twelve families have no real-model measurement at all** — they are *absent* from the board,
+**`provael 0.32.0`**, covering **1 policy on 1 suite** and **3 of the 16 adversarial families**. The
+other **thirteen families have no real-model measurement at all** — they are *absent* from the board,
 which is not the same as scoring 0%. That run also predates the clean-task-success control, so it
 carries a benign false-positive control but no measured competence baseline. The Space states all
 of this above its own tables; rebuilding cannot fix it, because a re-stamp re-aggregates committed
 reports and never re-runs a policy. Closing the gap needs GPU time.
+
+The board is now several minor versions behind the shipping tool. That gap is bridged by
+[`leaderboard/method-equivalence.json`](leaderboard/method-equivalence.json), whose own
+`what_this_is_not` field says it plainly: **"This is a code-inspection argument, NOT a
+re-measurement."** Nothing has re-run 0.32.0's numbers on the current tool.
 
 ## What runs on CPU vs. what needs a GPU
 
@@ -458,7 +463,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.36.2
+      - uses: provael/provael@v0.37.0
         with:
           # `none` is the benign control: without it an ASR has no false-positive baseline,
           # and the release gate cannot reach `pass`. It never moves the adversarial ASR.
@@ -874,7 +879,7 @@ same metadata, for pasting straight into a `.bib` file:
 @software{jain_provael_2026,
   author  = {Jain, Sattyam},
   title   = {Provael: red-teaming Vision-Language-Action robot policies in simulation},
-  version = {0.36.2},
+  version = {0.37.0},
   year    = {2026},
   doi     = {10.5281/zenodo.21984184},
   url     = {https://doi.org/10.5281/zenodo.21984184},

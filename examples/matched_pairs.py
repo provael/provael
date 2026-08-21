@@ -2,7 +2,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "provael==0.36.2",
+#     "provael==0.37.0",
 # ]
 # ///
 """The matched pair, in one CPU-only file with nothing to download.

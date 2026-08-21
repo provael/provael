@@ -199,6 +199,31 @@ def measurements_from_results(results_dir: Path = RESULTS_DIR) -> list[Measureme
     return out
 
 
+#: Backends that are FIXTURES, not policies. A run against one of these is not a measurement of
+#: anything this badge claims to track.
+FIXTURE_POLICIES: frozenset[str] = frozenset({"stub"})
+
+
+def counts_as_measurement(record: MeasurementRecord) -> bool:
+    """Whether a record may refresh the freshness signal.
+
+    ONLY A REAL-POLICY RUN COUNTS, and this function exists because the alternative was available
+    and tempting. The badge asks "when was a policy last red-teamed". A run against the
+    deterministic ``stub`` satisfies the letter of that — the stub is a registered policy and such a
+    run does execute attacks against it — takes under a second on CPU, and would turn the badge
+    green today with nothing re-measured.
+
+    That is the same error as rebuilding the leaderboard and calling it a measurement, which this
+    module's own docstring already refuses. `docs/standards/last-measured.md` wrote the refusal down
+    on 21 August; this is the code that enforces it, added the moment a stub study was committed
+    under `results/` and the badge silently went from "11 days ago" to "today".
+
+    A fixture run is still a real artifact and still belongs under `results/`. It just cannot be the
+    thing that says a policy was measured.
+    """
+    return record.policy not in FIXTURE_POLICIES
+
+
 def latest_measurement(
     watch_dir: Path, *, results_dir: Path = RESULTS_DIR
 ) -> MeasurementRecord | None:
@@ -210,7 +235,11 @@ def latest_measurement(
     published 10/10 result — the log was empty because the nightly has never run, and the badge
     reported that as "nothing was ever measured", which is false.
     """
-    records = [*read_measurements(watch_dir), *measurements_from_results(results_dir)]
+    records = [
+        r
+        for r in (*read_measurements(watch_dir), *measurements_from_results(results_dir))
+        if counts_as_measurement(r)
+    ]
     return max(records, key=lambda r: r.measured_at) if records else None
 
 

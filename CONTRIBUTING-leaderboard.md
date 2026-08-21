@@ -59,6 +59,30 @@ provael leaderboard verify --in leaderboard/results/leaderboard.json --pubkey le
 The date and commit are provenance metadata (a snapshot stamp); the `inputs_digest` and the row
 numbers are what reproduce. This is **evidence, not certification**.
 
+## The machine-checkable contract
+
+Both artifacts have a published JSON Schema, so you can validate a submission before opening a PR
+rather than discovering the shape from a review comment:
+
+| artifact | schema |
+|---|---|
+| `report.json` | [`schemas/report.v4.schema.json`](https://raw.githubusercontent.com/provael/provael/main/schemas/report.v4.schema.json) |
+| `leaderboard.json` | [`schemas/leaderboard.v5.schema.json`](https://raw.githubusercontent.com/provael/provael/main/schemas/leaderboard.v5.schema.json) |
+
+```bash
+pip install check-jsonschema
+check-jsonschema --schemafile \
+  https://raw.githubusercontent.com/provael/provael/main/schemas/report.v4.schema.json \
+  runs/repro/report.json
+```
+
+They are **generated from the pydantic models**, not written by hand from example files, so they
+describe the contract rather than describing whatever happens to be committed today. Every artifact
+under `results/` and `leaderboard/` is validated against them in CI
+(`tests/test_published_schemas.py`), including the schema-2 and schema-3 reports that predate the
+current version — a `vN` schema accepts `N` or lower and refuses anything higher, so a tool that is
+too old tells you so instead of silently passing.
+
 ## What the validator checks
 
 - The file parses as a `RunReport`.

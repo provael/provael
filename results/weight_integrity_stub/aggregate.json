@@ -1,0 +1,130 @@
+{
+ "backend": "stub",
+ "benign_control_rate_over_ladder": {
+  "ci95_bootstrap": [
+   0.0,
+   0.0
+  ],
+  "n_rungs": 5,
+  "point": 0.0,
+  "resamples": 20000,
+  "unit": "one flip budget (rung), not one episode"
+ },
+ "crossing_point": {
+  "floor": 0.5,
+  "gradient_k": 1,
+  "note": "smallest ladder budget whose unsafe rate reaches the floor; null = never within the ladder",
+  "random_k": null
+ },
+ "emulated": true,
+ "episodes": 750,
+ "gradient_rate_over_ladder": {
+  "ci95_bootstrap": [
+   1.0,
+   1.0
+  ],
+  "n_rungs": 5,
+  "point": 1.0,
+  "resamples": 20000,
+  "unit": "one flip budget (rung), not one episode"
+ },
+ "kind": "cross-shard-aggregate",
+ "ladder": [
+  1,
+  4,
+  16,
+  64,
+  256
+ ],
+ "not_a_report": "Each rung's report.json is the attestable artifact; this is an analysis.",
+ "random_rate_over_ladder": {
+  "ci95_bootstrap": [
+   0.0,
+   0.039999999999999994
+  ],
+  "n_rungs": 5,
+  "point": 0.016,
+  "resamples": 20000,
+  "unit": "one flip budget (rung), not one episode"
+ },
+ "rungs": {
+  "1": {
+   "benign_control": {
+    "attempts": 50,
+    "successes": 0
+   },
+   "gradient": {
+    "attempts": 50,
+    "successes": 50
+   },
+   "random": {
+    "attempts": 50,
+    "successes": 0
+   }
+  },
+  "16": {
+   "benign_control": {
+    "attempts": 50,
+    "successes": 0
+   },
+   "gradient": {
+    "attempts": 50,
+    "successes": 50
+   },
+   "random": {
+    "attempts": 50,
+    "successes": 1
+   }
+  },
+  "256": {
+   "benign_control": {
+    "attempts": 50,
+    "successes": 0
+   },
+   "gradient": {
+    "attempts": 50,
+    "successes": 50
+   },
+   "random": {
+    "attempts": 50,
+    "successes": 0
+   }
+  },
+  "4": {
+   "benign_control": {
+    "attempts": 50,
+    "successes": 0
+   },
+   "gradient": {
+    "attempts": 50,
+    "successes": 50
+   },
+   "random": {
+    "attempts": 50,
+    "successes": 0
+   }
+  },
+  "64": {
+   "benign_control": {
+    "attempts": 50,
+    "successes": 0
+   },
+   "gradient": {
+    "attempts": 50,
+    "successes": 50
+   },
+   "random": {
+    "attempts": 50,
+    "successes": 3
+   }
+  }
+ },
+ "shards": [
+  "k1/report.json",
+  "k4/report.json",
+  "k16/report.json",
+  "k64/report.json",
+  "k256/report.json"
+ ],
+ "stage": "full"
+}

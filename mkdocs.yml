@@ -76,6 +76,7 @@ nav:
       - EAI04 action-space transfer: studies/eai04-action-space-transfer.md
       - Instruction canonicalization (defense, measured): studies/instruction-canonicalization.md
       - Action envelope (defense, measured): studies/action-envelope.md
+      - Weight integrity on the stub (measured, stub-only): studies/weight-integrity-stub.md
   - Studies (pre-registered):
       - Overview: studies/index.md
       - π0 / openpi transfer: studies/pi0-openpi-transfer.md

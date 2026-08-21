@@ -52,7 +52,7 @@ sections below, and they are the reason this study exists.
 ## Results — the coverage map
 
 Policy `stub`, 10 episodes per (task, attack), seed base 0, the benign `none` control in both arms,
-and the **full adversarial registry** (14 families). Shipped bounds: danger cap `0.0`, motion-L2 cap
+and the **full adversarial registry** (16 families). Shipped bounds: danger cap `0.0`, motion-L2 cap
 `0.125` (benign max 0.1 + 25% stated headroom).
 
 ### `stub` suite — verdict `credited`

@@ -22,7 +22,11 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-from provael.watch import measurements_from_results
+from provael.watch import (
+    MeasurementRecord,
+    counts_as_measurement,
+    measurements_from_results,
+)
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RESULTS = _ROOT / "results"
@@ -93,3 +97,47 @@ def test_the_committed_badge_is_not_green_while_the_measurements_are_old() -> No
         assert badge.get("color") != "green", (
             f"newest measurement is {age_days} days old but the badge renders green"
         )
+
+
+def test_a_stub_run_cannot_refresh_the_badge() -> None:
+    """A fixture run must not reset a signal that claims a POLICY was measured.
+
+    THE INCIDENT, caught the same hour it was created. Committing the weight-integrity stub study
+    under `results/` put a `policy='stub'` execution manifest in the tree, and
+    `latest_measurement` — which scans committed runs — immediately reported "today". The badge
+    would have gone from "11 days ago, red" to green with nothing re-measured.
+
+    The stub satisfies the letter of the definition: it is a registered policy and the run does
+    execute attacks against it. It takes under a second on CPU. That combination is exactly what
+    makes it dangerous, and it is the same error as rebuilding the leaderboard and calling it a
+    measurement — which `docs/standards/last-measured.md` had already written down as refused,
+    without anything in the code enforcing the refusal.
+    """
+    stub = MeasurementRecord(
+        measured_at="2099-01-01T00:00:00Z",
+        recorded=True,
+        policy="stub",
+        suite="stub",
+        tool_version="0.0.0",
+        attempts=10,
+        successes=5,
+        asr=0.5,
+    )
+    real = MeasurementRecord(
+        measured_at="2026-08-09T14:46:00Z",
+        recorded=True,
+        policy="smolvla",
+        suite="libero",
+        tool_version="0.32.0",
+        attempts=10,
+        successes=5,
+        asr=0.5,
+    )
+    assert not counts_as_measurement(stub), "a stub run must not count as a measurement"
+    assert counts_as_measurement(real), "a real-policy run must count"
+
+    # And the consequence, not just the predicate: a far-future stub record must not win.
+    assert (
+        max((r for r in (stub, real) if counts_as_measurement(r)), key=lambda r: r.measured_at)
+        is real
+    )

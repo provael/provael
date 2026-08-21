@@ -4,6 +4,87 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.0] — 2026-08-22
+
+### Added
+
+- **`provael doctor` — the command that answers "why did that not work here".** Twenty-six
+  top-level commands and not one diagnosed an install. The first-run transcript shows the cold path
+  is twenty seconds, so the install is not the problem; the SECOND run is, when someone reaches for
+  `--policy smolvla` without the `[lerobot]` extra or for a keep-out suite with no calibration and
+  gets an import error or a silent default instead of a diagnosis.
+
+  One screen: Python and platform, installed version against PyPI (`--offline` skips the lookup),
+  which policy backends are ready and which are `SCAFFOLDING_POLICIES` **with the reason each is
+  scaffolding**, which suites actually import, whether `CALIBRATED_ZONES` is populated (it is not —
+  it says so and points at issue #136), whether `PROVAEL_REQUIRE_CALIBRATED` is set, and the age of
+  the freshness signal against `STALE_DAYS`. Nothing is inferred: a suite is reported importable
+  only after being constructed, and "ready" explicitly does not claim a checkpoint is present.
+
+- **Published JSON Schemas for the two artifacts third parties are asked to produce.**
+  `schemas/report.v4.schema.json` and `schemas/leaderboard.v5.schema.json`. The tree carried three
+  `$schema` keys and none described `report.json` or `leaderboard.json`, so an open submission queue
+  with zero external rows was asking people to guess the shape. They are **generated from the
+  pydantic models** (`scripts/gen_schemas.py`), not written from example files, so they describe the
+  contract rather than today's artifacts; `tests/test_published_schemas.py` validates all 33
+  committed artifacts against them, including schema-2 and schema-3 reports that predate the current
+  model. A `vN` schema accepts `N` or lower and **refuses** anything higher, so a too-old tool says
+  so rather than silently passing. Referenced from `CONTRIBUTING-leaderboard.md` with a
+  `check-jsonschema` one-liner.
+
+- **A measured result for `weight_integrity`, and a study page that leads with what it is not.**
+  The family shipped with zero output. `results/weight_integrity_stub/` now holds the ladder as five
+  shards plus an `aggregate.json` analysis, in the same shape as the ten-task suite — 750 episodes,
+  both arms at every rung, benign control throughout. `docs/studies/weight-integrity-stub.md`
+  publishes it with the caveat block **above** any number: stub backend, 64-parameter INT8 danger
+  head, separation expected by construction, flips emulated with `Literal[True]`, and no
+  corroboration of the architecture-dependence result it was built from.
+
+  Gradient 50/50 at every rung; random 4/250; benign control 0/50 throughout. The interval is
+  bootstrapped over the five **rungs**, not over episodes, because the rung is the unit of analysis
+  — and n = 5 is stated rather than hidden. **No leaderboard row was added**, and the study page says
+  why: the board is the real-policy board, a shared table asserts comparability, and this is not
+  comparable to anything on it.
+
+### Fixed
+
+- **A stub run could reset the freshness badge, and briefly did.** Committing the study above put a
+  `policy='stub'` execution manifest under `results/`, and `latest_measurement` — which scans
+  committed runs — immediately reported "today". The badge would have gone from "11 days ago, red"
+  to green with nothing re-measured.
+
+  The stub satisfies the letter of the definition: it is a registered policy and the run does
+  execute attacks against it. `docs/standards/last-measured.md` had already written this refusal
+  down on 21 August with nothing in the code enforcing it. `watch.counts_as_measurement` now
+  enforces it, `FIXTURE_POLICIES` names the backends that do not count, and the badge correctly
+  reads **12 days, red**.
+
+- **One family count, computed, everywhere.** Four surfaces disagreed simultaneously:
+  `docs/attacks.md` opened with "**Fourteen** adversarial families", `docs/examples.md` said
+  `full-sweep` "runs all 14", `docs/studies/action-envelope.md` called 14 "the **full adversarial
+  registry**", and README said thirteen families lacked a real-model measurement while claiming
+  twelve. The true numbers, each with its definition: **16** adversarial families (registry minus
+  `baseline` and `control`), **18** total registered families, **38** adversarial attacks, **41**
+  total registered attacks.
+
+  `tests/test_counted_claims.py` enumerated phrase patterns, which is why it was green while all
+  four were wrong — it checked the claims it was handed rather than the claims that exist. It now
+  sweeps every `<number> … families` / `<number> … attacks` construction in README and `docs/**`,
+  requiring each to be a registry-derived value or a **named subset** with a stated reason. The
+  first version of the regex missed `**Fourteen**` because emphasis wraps the number; that hole is
+  fixed and noted, since it would have skipped the exact claim the sweep was written for.
+
+- **The README described a different run than the board publishes.** It said the board was "measured
+  with **`provael 0.1.0`**" while the board and all ten shards say `0.32.0`; `0.1.0` is the
+  `tool_version` of the superseded single-task run. `test_leaderboard_version_claim` already tied
+  the board to its shards and passed throughout, because the README was never in the comparison. It
+  is now. The paragraph also states, in the words of the file itself, that
+  `leaderboard/method-equivalence.json` is *"a code-inspection argument, NOT a re-measurement."*
+
+- The 0.36.0 coverage entry hardcoded "88% of 7,833 statements" three lines above a paragraph
+  criticising hardcoded percentages. It is now explicitly a snapshot and points at the badge as the
+  live figure, rather than being rewritten — the entry records what was measured on the day.
+
 ## [0.36.2] — 2026-08-21
 
 ### Fixed
@@ -183,7 +264,13 @@ All notable changes to this project are documented here. The format is based on
   `S101` is suppressed in `tests/` and nowhere else — an assert in `src/` should still fail lint,
   because `python -O` deletes it silently.
 
-- **Coverage is measured, floored and published: 88% of 7,833 statements.** There were 90 test
+- **Coverage is measured, floored and published: 88% of 7,833 statements when this landed.** That
+  figure is a snapshot and is already out of date — `weight_integrity` moved it to 89% of 8,053 in
+  the same release. **The live number is the badge**, which reads a committed `watch/coverage.json`
+  regenerated from the run that just happened; this entry records what was measured on the day, not
+  a standing claim. Stating it that way rather than restating the current value is the point of the
+  paragraph below, which this sentence originally contradicted by hardcoding a percentage three
+  lines above criticising hardcoded percentages. There were 90 test
   modules and no figure anywhere, which is the shape of claim this project refuses to accept from
   anyone else — "well tested" with no denominator. CI now runs `--cov` on every PR, writes the
   table to the job summary, and gates on `--cov-fail-under=85`. The floor sits below the measured
