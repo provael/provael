@@ -1,0 +1,127 @@
+name: readme-quickstart
+
+# THE README IS A TEST, and the emphasis is on "the README" rather than "a test".
+#
+# This runs the literal commands from the README quickstart against the PUBLISHED PyPI artifact, on
+# a clean runner, with no repo checkout on the PATH. If installing and running the project the way
+# a stranger is told to no longer works, this goes red — and it goes red on a schedule rather than
+# when someone happens to try it.
+#
+# WHY IT ASSERTS THE COMMANDS ARE STILL IN THE README. A workflow that hard-codes commands and runs
+# them is not "the README is a test"; it is a workflow that happens to run some commands. The
+# README could drift to a different install line tomorrow and this would stay green while the
+# documented path was broken — which is the exact failure it claims to prevent. So step 1 checks the
+# strings out of README.md itself, and a drifted README fails the job before anything is installed.
+#
+# WHY THE ADVERTISED FIGURE IS ASSERTED. The README prints `(47/70)` beside the command as what the
+# reader should see. That is a claim, and this project's rule is that a published number is checked
+# rather than trusted. If the output stops matching, either the number is stale or the tool changed;
+# both are worth a red build.
+#
+# NO CHECKOUT, DELIBERATELY. `actions/checkout` would put the working tree on the path and
+# `provael` could resolve to the repo rather than to the wheel PyPI is serving. The whole point is
+# to exercise what a stranger gets, so the only checkout is a single sparse fetch of README.md in
+# step 1 into a subdirectory that is never on the path.
+
+on:
+  schedule:
+    # 04:19 UTC — off the hour and off every other scheduled job in this repo (freshness, robots,
+    # distribution, scorecard). A detector that fires alongside another one gets read as its noise.
+    - cron: "19 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clean-machine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Fetch README.md only, into a directory that never joins PATH
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            README.md
+          sparse-checkout-cone-mode: false
+          path: readme-only
+
+      - name: The README still documents the commands this job runs
+        run: |
+          set -euo pipefail
+          README=readme-only/README.md
+          fail=0
+          expect() {
+            if grep -qF -- "$1" "$README"; then
+              echo "  ok      $1"
+            else
+              echo "  MISSING $1"
+              fail=1
+            fi
+          }
+          echo "Asserting the quickstart in README.md is what this job exercises:"
+          expect 'pip install provael'
+          expect 'provael attack --policy stub --suite stub --attacks instruction,visual,injection --episodes 10 --seed 0'
+          expect '(47/70)'
+          if [ "$fail" -ne 0 ]; then
+            echo
+            echo "The README quickstart drifted from this workflow."
+            echo "Update BOTH: the README is the documented path and this job is its test."
+            exit 1
+          fi
+
+      - name: Install from PyPI exactly as the README says
+        id: install
+        run: |
+          set -euo pipefail
+          start=$(date +%s)
+          python -m pip install --no-cache-dir --disable-pip-version-check provael
+          provael --help > /dev/null
+          echo "install_seconds=$(( $(date +%s) - start ))" >> "$GITHUB_OUTPUT"
+          echo "version=$(provael --version 2>/dev/null || echo unknown)" >> "$GITHUB_OUTPUT"
+
+      - name: Run the quickstart and assert the figure the README advertises
+        id: quickstart
+        run: |
+          set -euo pipefail
+          # `cd` out of the workspace so nothing in readme-only/ can shadow the installed package.
+          cd "$RUNNER_TEMP"
+          start=$(date +%s)
+          provael attack --policy stub --suite stub \
+            --attacks instruction,visual,injection --episodes 10 --seed 0 | tee out.txt
+          echo "run_seconds=$(( $(date +%s) - start ))" >> "$GITHUB_OUTPUT"
+          if ! grep -qE '47/70' out.txt; then
+            echo "::error::the README advertises (47/70) and the run did not print it"
+            exit 1
+          fi
+
+      - name: Verify the signed leaderboard — no GPU, no checkout, no trust in the publisher
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          # The [attest] extra carries `cryptography`, which the CPU-default install deliberately
+          # omits. Installed here rather than assumed, because the README's own verification route
+          # says to install it.
+          python -m pip install --no-cache-dir --disable-pip-version-check 'provael[attest]'
+          base=https://raw.githubusercontent.com/provael/provael/main/leaderboard/results
+          curl -fsSL -o leaderboard.json "$base/leaderboard.json"
+          curl -fsSL -o leaderboard.pub  "$base/leaderboard.pub"
+          provael leaderboard verify --in leaderboard.json --pubkey leaderboard.pub
+
+      - name: Record how long a stranger actually waits
+        if: always()
+        run: |
+          {
+            echo "### Time to a first ASR number, from a clean runner"
+            echo
+            echo "| step | seconds |"
+            echo "| --- | ---: |"
+            echo "| \`pip install provael\` | ${{ steps.install.outputs.install_seconds }} |"
+            echo "| first \`provael attack\` | ${{ steps.quickstart.outputs.run_seconds }} |"
+            echo "| **total** | **$(( ${{ steps.install.outputs.install_seconds || 0 }} + ${{ steps.quickstart.outputs.run_seconds || 0 }} ))** |"
+            echo
+            echo "Installed version: \`${{ steps.install.outputs.version }}\`"
+            echo
+            echo "The README claims **20 s** on a clean container. This runner is not that container,"
+            echo "so treat this as an independent second data point rather than a reproduction of it."
+          } >> "$GITHUB_STEP_SUMMARY"

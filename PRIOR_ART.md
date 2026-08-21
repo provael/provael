@@ -1097,6 +1097,56 @@ explicitly silent on whether an attacker could deliver the corruption on a real 
 is a platform question about memory integrity, ECC and supply chain, and it is one this tool does
 not touch and should not appear to answer.
 
+### Manipulation Benchmark Audit — *What Are We Actually Benchmarking in Robot Manipulation?*
+Tianchong Jiang, Xiangshan Tan, Samuel Wheeler, Luzhe Sun, Tewodros W. Ayalew, Matthew Walter (2026).
+arXiv:[2606.04233](https://arxiv.org/abs/2606.04233) · submitted 2 June 2026 ·
+[ripl/manipulation_benchmark_audit](https://github.com/ripl/manipulation_benchmark_audit)
+(RIPL — Robot Intelligence through Perception Laboratory, Chicago).
+
+**The only entry in this file that attacks the benchmarks rather than the policies.** Every other
+citation here either breaks a VLA or measures one. This one asks whether the scores everybody
+reports mean what they are taken to mean, and answers mostly no.
+
+What it establishes. Four failure modes, *"each of which weakens or invalidates a benchmark's role
+as a valid proxy for that capability"*: shortcut solvability, absent statistical significance,
+creeping overfitting, and data-source dependence. Two results land directly on this project:
+
+- **On LIBERO, *"a 0.09B probe with no language encoder scores at or near reported SOTA."*** The
+  suite Provael's only real-policy result is measured on can be substantially solved by a model
+  that cannot read the instruction.
+- **On LIBERO, *"most reported gains are not provably statistically significant."***
+- On CALVIN, *"randomizing block poses within the training range drops performance for every tested
+  policy"* — the data-source dependence result.
+
+**Why it belongs here, and it is not a comfortable reason.** Provael's headline is an attack-success
+rate on LIBERO. If a language-blind 0.09B probe reaches near-SOTA task success on that suite, then
+LIBERO task success is a weaker signal about language grounding than its use implies — and an
+instruction-channel attack measured against it inherits that weakness. This does not invalidate the
+redirection rate, which scores a keep-out predicate rather than task success. It does mean the
+suite carries less evidential weight than the word "LIBERO" suggests to a reader who has not read
+this paper.
+
+**What it retroactively justifies.** Two choices this project already made, and now has a citation
+for rather than a preference:
+
+- Every rate ships with a **95% Wilson interval**, never a point estimate. Their significance
+  finding is the argument for that, and it is the argument against the version of this project that
+  reported a bare percentage.
+- The two measured nulls stay in the table at **0/50 (`injection`) and 0/100 (`visual`)** rather
+  than being dropped. Only three of the sixteen adversarial families in the registry have run
+  against a real policy at all, and **two of those three returned zero** — so a board that quietly
+  shed its zeros would be reporting a selected subset of an already small sample.
+
+**mapping_status: `informs, does not overlap`.** Their unit is a benchmark's construct validity;
+ours is a policy's behaviour under attack. Neither measures the other and no rate here is
+comparable to anything there. The connection is methodological and runs one way: their result is a
+reason to distrust a number, and this project publishes numbers.
+
+**Not integrated.** Their audit code is public and **Provael runs none of it** — no shortcut probe,
+no significance test from their harness, nothing. If any of it is ever adopted, this paragraph
+changes and says which test and on what date. Until then this is a citation, not coverage, and the
+distinction is the same one the bit-flip entry above draws.
+
 ## What is actually novel here
 
 Not the attacks. **And — since AttackVLA (arXiv:2511.12149) — not simply "a unified harness with a
