@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.36.0] — 2026-08-20
+## [0.36.0] — 2026-08-21
 
 ### Added
 
@@ -142,6 +142,57 @@ All notable changes to this project are documented here. The format is based on
 
 
 ### Changed
+
+- **The freshness badge's explanation now names the cause, and the seven-day window was NOT
+  lengthened.** The badge has read red for eleven days beside a sentence saying the newest committed
+  measurement was older than "the seven-day window this project holds itself to". That sentence is
+  accurate and misleading: it invites the inference that a cadence slipped, and no cadence ever ran.
+
+  `gpu-nightly.yml` is the job that would hold the window. It runs a real SmolVLA × LIBERO red-team
+  on a Modal GPU and records into the watch ledger **only on success**. It is well built and has
+  never executed, because it is switched off twice over — the repo variable `ENABLE_GPU_NIGHTLY` is
+  unset (the repo has no variables at all) and `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` are absent.
+  Both are deliberate cost-safety defaults.
+
+  So moving the window to fourteen days would have fixed the wrong thing: fourteen would be broken
+  by the same absence, and a second unenforced number presented as a considered adjustment is worse
+  than the first. `STALE_DAYS` stays **7** — seven days genuinely is old for a currency claim.
+  What changed is the claim beside it. `provael watch` now prints the two settings that would fix
+  it, and `docs/standards/last-measured.md` records the decision, what closes it, and the shortcut
+  that was available and refused: a `stub`-policy run satisfies the letter of the definition and
+  would turn the badge green today, which is the same error as calling a republication a
+  measurement.
+
+- Dependency bumps, all three merged with CI green: `docker/setup-buildx-action` 3.11.1 → 4.3.0,
+  `astral-sh/setup-uv` 9.0.0 → 10.0.1, `github/codeql-action/upload-sarif` 4.37.6 → 4.37.7.
+
+  The two majors were read against actual usage rather than merged on green alone, because green
+  was not evidence for one of them. setup-uv v10 disables caching for `pull_request_target`,
+  `workflow_run` and `release` events; **no workflow here uses any of those**, and `ci.yml` runs on
+  `pull_request` so its green run genuinely exercised v10. setup-buildx v4 requires Node 24 and
+  removes deprecated inputs; **this repo passes it no inputs at all**, and `docker-publish.yml`
+  runs on `push` only — so the green checks on that PR exercised setup-buildx *not at all*, and it
+  is verified by the release image build instead.
+
+### Fixed
+
+- **`BitFlipRecord.emulated` is `Literal[True]`, not `bool` defaulting to True.** The field carried
+  a docstring reading "Always True" and nothing enforced it:
+  `BitFlipRecord(..., emulated=False)` constructed happily and serialised `"emulated": false`.
+
+  A record asserting a non-emulated bit flip asserts that this tool performed hardware fault
+  injection — out of scope under `SAFETY.md`, and something provael has no path to do. The claim
+  that keeps `weight_integrity` inside that boundary must not rest on a default a caller can
+  override. Pydantic now rejects `False` at construction and mypy rejects it statically; the
+  serialised value is unchanged, so canonical JSON, report digests and existing attestations are
+  byte-identical. Found by auditing the family before tagging rather than after.
+
+  Two tests pin it: one that a non-emulated record cannot be constructed, and one that walks the
+  AST of every module in `attacks/` for hardware fault-injection code. The second checks *names*
+  rather than raw text — its first version flagged `weight_integrity.py`'s own docstring, which
+  names DRAM fault injection and Rowhammer precisely to say they are out of scope, and a test that
+  punishes the disclaimer would pressure someone to delete the scoping paragraph for a green build.
+
 
 - **Report schema 3 → 4: results carry `weight_corruption`.** The flip budget and the selection
   rule *are* the result — 100% at K=4 and 100% at K=256 are different findings — so they are

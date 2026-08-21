@@ -169,12 +169,25 @@ class BitFlipRecord(BaseModel):
         description="The flipped bit positions, as flat indices into parameter_count*bit_width, "
         "ascending. Replayable: applying these to the clean parameters reproduces the run.",
     )
-    emulated: bool = Field(
+    emulated: Literal[True] = Field(
         True,
-        description="Always True. Provael flips bits in loaded weights in memory and has no "
-        "hardware fault-injection path; the field exists so a report states that rather than "
-        "leaving a reader to assume either way.",
+        description="Always True, and typed so it CANNOT be anything else. Provael flips bits in "
+        "loaded weights in memory and has no hardware fault-injection path; the field exists so a "
+        "report states that rather than leaving a reader to assume either way.",
     )
+    """Structurally True, not True-by-default — and the difference is the safety boundary.
+
+    This was ``bool = Field(True, ...)`` with a docstring that said "Always True". Nothing enforced
+    it: ``BitFlipRecord(..., emulated=False)`` constructed happily and serialised
+    ``"emulated": false``. A record asserting a NON-emulated bit flip is a record asserting this
+    tool performed hardware fault injection, which is out of scope under SAFETY.md and which this
+    project does not do. The claim that keeps the family inside that boundary must not rest on a
+    default a caller can override.
+
+    ``Literal[True]`` makes pydantic reject ``False`` at construction and mypy reject it statically.
+    The serialised value is unchanged (``true``), so canonical JSON, report digests and existing
+    attestations are byte-identical — this hardens the type without touching the signature surface.
+    """
 
 
 class AttackResult(BaseModel):
