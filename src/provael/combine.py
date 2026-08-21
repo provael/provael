@@ -30,7 +30,6 @@ describing nothing. :func:`combine_reports` raises rather than silently pooling 
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from provael.calibration import anytime_ci, wilson_ci
@@ -166,16 +165,33 @@ def combine_reports(reports: list[RunReport]) -> RunReport:
 
 
 def shard_digests(shards: list[tuple[Path, RunReport]], *, root: Path) -> list[dict[str, str]]:
-    """Per-shard provenance: the relative path and the sha256 of its canonical report bytes.
+    """Per-shard provenance: the relative path and the schema-aware digest of each shard.
 
     Ten digests rather than one, because there is no single artifact to digest. A consumer can
     re-fetch each shard and verify it independently, which a merged hash would not allow.
+
+    SCHEMA-AWARE, since 0.36.2, and it was not before. The body used
+    ``model_dump_json()``, re-serialising each shard through whatever ``RunReport`` the RUNNING
+    version defines — so every schema addition changed the advertised digest of an unchanged,
+    committed shard. The pinned evidence manifest records
+    ``52bcdb70…`` for ``libero_object_0/report.json``; 0.34.0 reproduces it and 0.36.1 returned
+    ``66897a4c…`` for the same untouched bytes.
+
+    That defeats the only thing these digests are for. The docstring above promises a consumer can
+    re-fetch a shard and verify it; under the old body they could only do so with the exact tool
+    version that wrote the manifest, which is not a property anyone can discover from the manifest.
+
+    This is the same defect fixed in :func:`provael.leaderboard._inputs_digest` (0.36.1) and it is
+    the third place it appeared, so the rule is worth stating once: **a digest over a RunReport goes
+    through :func:`provael.attest.report_projection`, never through ``model_dump_json``.** The
+    projection strips fields added after the report's DECLARED ``schema_version``, so an artifact
+    digests to its own schema no matter what is installed.
     """
-    from provael.attest import canonical_json, sha256_hex
+    from provael.attest import canonical_json, report_projection, sha256_hex
 
     out: list[dict[str, str]] = []
     for path, report in shards:
-        digest = sha256_hex(canonical_json(json.loads(report.model_dump_json())))
+        digest = sha256_hex(canonical_json(report_projection(report)))
         out.append({"path": path.relative_to(root).as_posix(), "sha256": digest})
     return out
 

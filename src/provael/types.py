@@ -391,17 +391,26 @@ class RunReport(BaseModel):
     """The full, deterministic result of a red-team run.
 
     DIGEST CONTRACT (read before adding a field). ``provael.attest`` binds an attestation to
-    ``sha256`` of the *canonical re-serialisation* of this model, not to the bytes of
-    ``report.json``:
+    ``sha256`` of a *canonical, SCHEMA-AWARE projection* of this model, not to the bytes of
+    ``report.json`` and not to a bare re-serialisation:
 
-        report_digest = sha256(json.dumps(json.loads(report.model_dump_json()),
-                               sort_keys=True, separators=(",", ":")))
+        report_digest = sha256(canonical_json(attest.report_projection(report)))
 
-    That has a consequence worth stating plainly: because the dump includes every declared field
-    (defaults included), **adding any field changes the digest of every historical report**, so an
-    attestation issued by an older version will not re-verify under a newer one. Adding a field is
-    therefore a breaking change to attestation verification and must be released deliberately — bump
-    ``provael.attest.RULESET_VERSION`` and say so in the CHANGELOG.
+    ``report_projection`` strips fields added after the report's DECLARED ``schema_version``
+    (registered in ``attest._RESULT_FIELDS_ADDED_IN``), so a schema-2 artifact digests to its
+    schema-2 bytes no matter which version is installed.
+
+    THIS PARAGRAPH USED TO SAY THE OPPOSITE, and the correction is the point. It read: "because the
+    dump includes every declared field, **adding any field changes the digest of every historical
+    report**", and prescribed bumping ``RULESET_VERSION`` for every added field. That was true when
+    it was written and stopped being true when the projection landed — but three digest sites went
+    on doing the bare dump anyway, and two of them shipped broken:
+    ``leaderboard._inputs_digest`` (fixed 0.36.1) and ``combine.shard_digests`` (fixed 0.36.2).
+
+    So the rule, stated once: **any digest over a RunReport goes through
+    ``attest.report_projection``.** Adding an optional field is then additive rather than breaking —
+    register it in ``_RESULT_FIELDS_ADDED_IN`` with its schema version, bump ``schema_version`` in
+    the same change that starts emitting it, and old attestations keep verifying.
 
     ``extra="forbid"`` is set so an unrecognised key cannot ride along into the signed payload: a
     report file carrying an unexpected field is rejected at load rather than silently absorbed into
