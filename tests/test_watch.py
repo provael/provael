@@ -9,6 +9,7 @@ and these tests pin that: same recorded data, different `now`, different colour.
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -17,10 +18,12 @@ from provael.runner import run
 from provael.watch import (
     FRESH_DAYS,
     STALE_DAYS,
+    WATCH_LOG,
     MeasurementRecord,
     age_days,
     append_measurement,
     badge,
+    counts_as_measurement,
     latest_measurement,
     measurements_from_results,
     read_measurements,
@@ -40,9 +43,26 @@ def test_records_a_measurement_into_both_ledgers(tmp_path: Path) -> None:
     assert len(read_measurements(tmp_path)) == 1  # plus the run-level roll-up
 
 
+def _as_real_policy(watch_dir: Path) -> None:
+    """Rewrite the ledger's `policy` to a non-fixture name.
+
+    These tests exercise append/ordering mechanics on a stub-generated report. Since
+    `watch.counts_as_measurement` excludes fixture backends from the freshness signal — so a
+    one-second stub run cannot green a badge that claims a POLICY was measured — a stub-labelled
+    record is now correctly invisible to `latest_measurement`. Relabelling here keeps these tests
+    about what they are about; weakening the filter to keep them passing would delete the guarantee.
+    """
+    path = watch_dir / WATCH_LOG
+    lines = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    for entry in lines:
+        entry["policy"] = "smolvla"
+    path.write_text("".join(json.dumps(e) + "\n" for e in lines))
+
+
 def test_appends_rather_than_overwrites(tmp_path: Path) -> None:
     append_measurement(tmp_path, _report(), measured_at="2026-08-01T00:00:00Z")
     append_measurement(tmp_path, _report(), measured_at="2026-08-02T00:00:00Z")
+    _as_real_policy(tmp_path)
     assert len(read_measurements(tmp_path)) == 2
     # results_dir is pinned to an empty directory ON PURPOSE. `latest_measurement` merges the watch
     # log with the committed manifests under results/, so without this the assertion depends on
@@ -55,6 +75,7 @@ def test_latest_is_by_time_not_by_file_order(tmp_path: Path) -> None:
     """Appends can arrive out of order (a re-run of an older commit); newest MEASURED wins."""
     append_measurement(tmp_path, _report(), measured_at="2026-08-05T00:00:00Z")
     append_measurement(tmp_path, _report(), measured_at="2026-08-03T00:00:00Z")
+    _as_real_policy(tmp_path)
     # Isolated from results/ for the same reason as the test above.
     assert latest_measurement(tmp_path, results_dir=tmp_path).measured_at == "2026-08-05T00:00:00Z"
 
@@ -238,8 +259,12 @@ def test_the_newest_committed_run_is_a_recorded_measurement() -> None:
     Inverting it is the point. The repo now contains a measurement whose start and end were observed
     rather than reconstructed, and the badge is entitled to say so.
     """
-    records = measurements_from_results()
-    assert records, "results/ carries no execution manifest with an end time"
+    # Filtered, because `results/` now also holds a stub study (weight_integrity) whose manifest is
+    # newer than any real run. That artifact is legitimate and must not drive this badge, which is
+    # exactly what `counts_as_measurement` enforces — so the assertion below is about the newest
+    # record that COUNTS, not the newest file on disk.
+    records = [r for r in measurements_from_results() if counts_as_measurement(r)]
+    assert records, "results/ carries no real-policy execution manifest with an end time"
     newest = max(records, key=lambda r: r.measured_at)
     assert newest.recorded is True, f"newest manifest is reconstructed: {newest.measured_at}"
     assert newest.policy == "smolvla"

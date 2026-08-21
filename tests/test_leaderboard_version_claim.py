@@ -15,6 +15,7 @@ if a re-run were possible.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from provael import __version__
@@ -123,4 +124,39 @@ def test_the_committed_board_still_rebuilds_to_its_committed_digest() -> None:
         "changed the bytes of reports that predate it — _inputs_digest must project each report to "
         "its DECLARED schema_version (attest.report_projection), not re-serialise it through the "
         "model the running version happens to define."
+    )
+
+
+def test_the_readme_states_the_version_the_board_was_actually_measured_with() -> None:
+    """The README's stated measured-with version must equal the board's `measured_with`.
+
+    THE GAP THIS CLOSES. `test_board_measured_with_matches_its_shards` already ties the board to its
+    shards, and it passed throughout — because the README was never in the comparison. So the README
+    said the board was "measured with **`provael 0.1.0`**" while the board and all ten shards said
+    `0.32.0`, and every test was green. `0.1.0` is the tool_version of the SUPERSEDED single-task
+    `results/smolvla_libero_object/report.json`, which the ten-task suite replaced; the sentence was
+    correct once and was not updated when the run behind it was.
+
+    That is the whole failure mode: two artifacts agreeing with each other while the prose describing
+    them agrees with neither. A README claim about an artifact is a claim like any other.
+    """
+    board = json.loads(_BOARD.read_text(encoding="utf-8"))
+    measured_with = board.get("measured_with") or []
+    assert measured_with, "the board carries no measured_with to check the README against"
+
+    readme = (_ROOT / "README.md").read_text(encoding="utf-8")
+    stated = re.search(
+        r"published board does not cover.*?measured with\s*\n?\*\*`provael ([0-9][^`]*)`\*\*",
+        readme,
+        re.S,
+    )
+    assert stated, (
+        "could not find the README's board measured-with claim. If the wording moved, move this "
+        "pattern with it — do not delete the assertion, which is the only thing tying the README "
+        "to the artifact it describes."
+    )
+    assert stated.group(1) in measured_with, (
+        f"README says the board was measured with {stated.group(1)!r}, but the board's "
+        f"measured_with is {measured_with}. The README describes a different run than the one "
+        f"published."
     )

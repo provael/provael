@@ -41,7 +41,7 @@ import pytest
 
 from provael.attacks.baseline import FAMILY as BASELINE_FAMILY
 from provael.attacks.registry import ATTACKS
-from provael.coverage import NON_ADVERSARIAL_FAMILIES
+from provael.coverage import NON_ADVERSARIAL_FAMILIES, coverage
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -326,3 +326,114 @@ def test_the_list_attacks_sweep_catches_a_fenced_shell_comment() -> None:
     got_attacks, got_families = _LIST_ATTACKS_COUNT.findall(live)[0]
     assert _as_int(got_attacks) == _registry_counts()["total attacks"]
     assert _as_int(got_families) == _registry_counts()["total families"]
+
+
+# --------------------------------------------------------------------------- #
+# THE SWEEP: every count claim, not only the ones somebody remembered to list
+# --------------------------------------------------------------------------- #
+#
+# `_CLAIMS` above enumerates phrase patterns. That is useful and it is not sufficient, and the
+# insufficiency shipped: while every `_CLAIMS` entry passed, `docs/attacks.md` opened with
+# "**Fourteen** adversarial families" and `docs/examples.md` said "`full-sweep` runs all 14". Both
+# were two releases stale and neither was in the list, so the suite was green and four published
+# surfaces disagreed with each other. A test that checks the claims it was given, rather than the
+# claims that exist, measures the list rather than the docs.
+#
+# This sweeps every `<number> … families` and `<number> … attacks` construction in README.md and
+# docs/**/*.md and requires each to be either a registry-derived value or a NAMED subset.
+#
+# WHY A NAMED-SUBSET LIST AND NOT A SMARTER REGEX. Plenty of legitimate claims are about a subset:
+# "four optimized search families", "3 of the 16 adversarial families", a historical changelog line
+# reading "v0.1.0 — 3 attack families". No regex separates those from a stale total, because the
+# difference is semantic. Naming them costs one line each and makes every future subset claim a
+# decision somebody made rather than a pattern that happened to slip through.
+
+#: Numbers a whole-registry claim is allowed to be, each derived.
+def _derived_values() -> dict[int, str]:
+    c = coverage()
+    return {
+        c.adversarial_families: "adversarial families",
+        c.families_total: "total registered families (incl. baseline + control)",
+        c.adversarial_attacks: "adversarial attacks",
+        c.attacks_total: "total registered attacks (incl. baseline + controls)",
+        len(c.stub_only_families): "families with no real-policy measurement",
+        len(c.real_policy_families): "families measured against a real policy",
+    }
+
+
+#: `(file, exact matched text)` → why this number is not a whole-registry count.
+_NAMED_SUBSETS: dict[tuple[str, str], str] = {
+    ("README.md", "four **optimized** search families"): "the optimized* subset, not the registry",
+    ("README.md", "four optimized search families"): "the optimized* subset, not the registry",
+    ("README.md", "Four **optimized** families"): "the optimized* subset, not the registry",
+    ("README.md", "3 attack families"): "a v0.1.0 changelog line; historical, must not be updated",
+    ("docs/examples.md", "four core attack families"): "the core-sweep subset, not the registry",
+    ("docs/findings/2026-instruction-transfer.md", "six attacks"): (
+        "how many attacks THAT study screened at once, for the multiplicity correction"
+    ),
+    ("docs/findings/2026-instruction-transfer.md", "eight families"): (
+        "how many families THAT run covered; a fact about the run, not the registry"
+    ),
+    ("docs/studies/eai04-action-space-transfer.md", "four EAI04 attacks"): (
+        "the EAI04 subset, not the registry"
+    ),
+}
+
+#: Number words this project actually writes. Digits are matched separately.
+_WORDS_RE = (
+    "one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|"
+    "sixteen|seventeen|eighteen|nineteen|twenty"
+)
+#: `<number> <up to three words> (adversarial )?(families|attacks)`. Markdown emphasis is kept in
+#: the captured text so a subset entry can name the exact string a reader sees.
+#: `\**` around the NUMBER as well as the words after it. Without that, `**Fourteen** adversarial
+#: families` — the exact string that shipped two releases stale on docs/attacks.md — does not match,
+#: because the emphasis markers sit between the lookbehind and the digit. The first draft of this
+#: regex had that hole and silently skipped the claim it was written to catch.
+_COUNT_CLAIM = re.compile(
+    rf"(?<![\w%])(\**(?:\d+|{_WORDS_RE})\**(?:\s+\**[\w-]+\**){{0,3}}?\s+(?:adversarial\s+)?"
+    r"(?:attack\s+)?(?:families|attacks))\b",
+    re.IGNORECASE,
+)
+
+
+def _sweep_files() -> list[Path]:
+    root = Path(__file__).resolve().parent.parent
+    return [root / "README.md", *sorted((root / "docs").rglob("*.md"))]
+
+
+def test_every_count_claim_is_derived_or_a_named_subset() -> None:
+    """No `<n> families` / `<n> attacks` claim may disagree with the registry.
+
+    See the header above: the enumerated `_CLAIMS` list was green while four published surfaces
+    disagreed, because it checked the claims it was handed rather than the claims that exist.
+    """
+    root = Path(__file__).resolve().parent.parent
+    values = _derived_values()
+    problems: list[str] = []
+
+    for path in _sweep_files():
+        rel = path.relative_to(root).as_posix()
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            for raw in _COUNT_CLAIM.findall(line):
+                text = raw.strip()
+                number = _as_int(re.split(r"\s+", text)[0].strip("*"))
+                if number is None:
+                    continue
+                if (rel, text) in _NAMED_SUBSETS:
+                    continue
+                # "3 of the 16 adversarial families" — the scoped numerator is carried by the
+                # denominator immediately after it, so only the denominator is a registry claim.
+                if re.search(rf"{re.escape(text)}", line) and re.search(
+                    rf"\b{number}\s+of\s+(?:the\s+)?\d+", line
+                ):
+                    continue
+                if number in values:
+                    continue
+                problems.append(
+                    f"{rel}:{lineno} — {text!r} is {number}, which is not any registry count "
+                    f"({', '.join(f'{k} = {v}' for k, v in sorted(values.items()))}). "
+                    f"Fix the number, or add it to _NAMED_SUBSETS with the subset it describes."
+                )
+
+    assert not problems, "stale or unexplained count claims:\n  " + "\n  ".join(problems)

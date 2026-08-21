@@ -114,6 +114,7 @@ hosted = ["fastapi>=0.110", "uvicorn>=0.27", "cryptography>=50"]
 
 [dependency-groups]
 dev = [
+    "jsonschema>=4.20",
     "pytest",
     "pytest-cov",
     "ruff",

@@ -49,7 +49,7 @@ CI (`.github/workflows/ci.yml`) is CPU-only by design and never installs GPU ext
 
 Optional extras: `[lerobot]`, `[hardware]` (lerobot + feetech, for the sim-to-real path), `[openvla]`, `[openpi]`, `[attest]`, `[hosted]`. Dependency groups: `dev`, `docs`.
 
-The CLI surface beyond `attack`: `reproduce`, `report`, `export`, `certify`, `attest`, `calibrate`, `serve`, `crosswalk`, `transfer-test`, `evidence-manifest` (emits the JSON the website pins), `coverage` (registry + committed-run counts), `watch` (freshness), `submit` (leaderboard), `offline-study`, `sim-to-real`, `verify-checkpoint`, `mitigation`, and the `list-*` introspection commands.
+The CLI surface beyond `attack`: `reproduce`, `report`, `export`, `certify`, `attest`, `calibrate`, `serve`, `crosswalk`, `transfer-test`, `evidence-manifest` (emits the JSON the website pins), `coverage` (registry + committed-run counts), `watch` (freshness), `submit` (leaderboard), `offline-study`, `sim-to-real`, `verify-checkpoint`, `mitigation`, `doctor`, and the `list-*` introspection commands.
 
 <!-- END AUTO-MANAGED -->
 

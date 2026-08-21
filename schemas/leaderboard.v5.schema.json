@@ -1,0 +1,293 @@
+{
+  "$defs": {
+    "AttackExample": {
+      "description": "A representative adversarial artifact produced by one attack.",
+      "properties": {
+        "attack": {
+          "title": "Attack",
+          "type": "string"
+        },
+        "example": {
+          "title": "Example",
+          "type": "string"
+        },
+        "family": {
+          "title": "Family",
+          "type": "string"
+        }
+      },
+      "required": [
+        "attack",
+        "family",
+        "example"
+      ],
+      "title": "AttackExample",
+      "type": "object"
+    },
+    "LeaderboardRow": {
+      "description": "One ranked row: ASR for a ``(policy, suite, family)`` slice, with its honesty context.",
+      "properties": {
+        "asr": {
+          "title": "Asr",
+          "type": "number"
+        },
+        "attempts": {
+          "title": "Attempts",
+          "type": "integer"
+        },
+        "benign_fpr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The benign control: the baseline ('none') ASR for this policy x suite.",
+          "title": "Benign Fpr"
+        },
+        "calibrated": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "True only when EVERY report behind this row ran a calibrated predicate. False when any did not - an uncalibrated keep-out zone measures divergence out of a default box, not a hazard rate. None when no report recorded it.",
+          "title": "Calibrated"
+        },
+        "checkpoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The model/checkpoint measured, when exactly one produced this row. None when several did - naming one of them would attribute the rate to a checkpoint that did not wholly earn it.",
+          "title": "Checkpoint"
+        },
+        "ci95": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "95% Wilson CI on this row's ASR.",
+          "title": "Ci95"
+        },
+        "family": {
+          "title": "Family",
+          "type": "string"
+        },
+        "policy": {
+          "title": "Policy",
+          "type": "string"
+        },
+        "provenance": {
+          "default": "unattributed",
+          "description": "How this row reached the board: maintainer-run, third-party-submission, or unattributed (see the module constants).",
+          "title": "Provenance",
+          "type": "string"
+        },
+        "stochastic": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "True when ANY report behind this row was stochastic, i.e. not reproducible run-to-run. Deliberately pessimistic: one unseeded sampler makes the row one draw, and a board that averaged this away would advertise a determinism it does not have.",
+          "title": "Stochastic"
+        },
+        "submitted_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Who submitted this row (a GitHub handle or org), or None when unattributed.",
+          "title": "Submitted By"
+        },
+        "successes": {
+          "title": "Successes",
+          "type": "integer"
+        },
+        "suite": {
+          "title": "Suite",
+          "type": "string"
+        },
+        "transfer_status": {
+          "default": "stub-scaffolding",
+          "description": "'real-transfer' or 'stub-scaffolding' (see transfer_status).",
+          "title": "Transfer Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "policy",
+        "suite",
+        "family",
+        "attempts",
+        "successes",
+        "asr"
+      ],
+      "title": "LeaderboardRow",
+      "type": "object"
+    },
+    "LeaderboardSignature": {
+      "description": "Ed25519 signature over the board's canonical bytes (signature field excluded).",
+      "properties": {
+        "alg": {
+          "default": "ed25519",
+          "title": "Alg",
+          "type": "string"
+        },
+        "keyid": {
+          "title": "Keyid",
+          "type": "string"
+        },
+        "sig": {
+          "title": "Sig",
+          "type": "string"
+        }
+      },
+      "required": [
+        "keyid",
+        "sig"
+      ],
+      "title": "LeaderboardSignature",
+      "type": "object"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/provael/provael/main/schemas/leaderboard.v5.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A ranked, deterministic ASR leaderboard built from run reports.\n\nThe rows/examples/``inputs_digest`` are a pure function of the input reports (byte-stable). The\nprovenance envelope (``generated_at``, ``commit``, ``signature``) is stamped only on the signed\nreal-run build path, so a plain ``build_leaderboard`` stays deterministic.",
+  "properties": {
+    "commit": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Source commit the board was built from, if stamped.",
+      "title": "Commit"
+    },
+    "examples": {
+      "items": {
+        "$ref": "#/$defs/AttackExample"
+      },
+      "title": "Examples",
+      "type": "array"
+    },
+    "generated_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "UTC ISO-8601 time the BOARD was assembled (\u2026Z), if stamped. This is not when the underlying runs were measured \u2014 see `measured_with`.",
+      "title": "Generated At"
+    },
+    "inputs_digest": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "SHA-256 of the canonical aggregated input reports (deterministic).",
+      "title": "Inputs Digest"
+    },
+    "is_demo": {
+      "description": "True when every aggregated run used the stub policy.",
+      "title": "Is Demo",
+      "type": "boolean"
+    },
+    "measured_with": {
+      "description": "Sorted, de-duplicated `tool_version` values of the aggregated run reports \u2014 the versions the NUMBERS were actually measured with.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Measured With",
+      "type": "array"
+    },
+    "not_applicable": {
+      "description": "Attacks that produced episode records but zero APPLICABLE episodes, sorted. Not-measured and measured-zero are different claims: scoring excludes these from every denominator, so without this list they vanish from the board entirely and a reader counts one fewer null than was actually attempted.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Not Applicable",
+      "type": "array"
+    },
+    "rows": {
+      "items": {
+        "$ref": "#/$defs/LeaderboardRow"
+      },
+      "title": "Rows",
+      "type": "array"
+    },
+    "schema_version": {
+      "default": 5,
+      "description": " This schema documents version 5; it accepts artifacts declaring 5 or lower, because every bump so far has been additive with defaults. It refuses a higher version rather than silently validating a format it does not describe.",
+      "maximum": 5,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "signature": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LeaderboardSignature"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "is_demo"
+  ],
+  "title": "Leaderboard",
+  "type": "object"
+}

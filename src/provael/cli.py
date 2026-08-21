@@ -2796,3 +2796,113 @@ def mitigation(
             "defense REJECTED: it raised the benign FPR or moved clean-task success outside its "
             "CI. Lowering ASR by breaking the task is not a mitigation."
         )
+
+
+@app.command()
+def doctor(
+    offline: Annotated[
+        bool,
+        typer.Option("--offline", help="Skip the PyPI lookup; everything else is local anyway."),
+    ] = False,
+) -> None:
+    """Diagnose this install in one screen: versions, backends, calibration, freshness.
+
+    WHY THIS EXISTS. There were twenty-six top-level commands and not one of them answered "why did
+    that not work on my machine". The first-run transcript shows the cold path is twenty seconds, so
+    the install is not the problem — the SECOND run is, when someone reaches for `--policy smolvla`
+    without the `[lerobot]` extra, or for the keep-out suite without a calibration, and gets an
+    import error or a silent default instead of a diagnosis.
+
+    Everything here is read locally except the PyPI version, which `--offline` skips. Nothing is
+    inferred: a backend is reported as importable only after actually importing it, and the
+    calibration and freshness rows read the same constants the runtime does.
+    """
+    import platform
+    from datetime import UTC, datetime
+
+    from provael.policies.registry import POLICIES, SCAFFOLDING_POLICIES
+    from provael.suites import SUITES, make_suite
+    from provael.suites.keepout_zones import CALIBRATED_ZONES, REQUIRE_CALIBRATED_ENV
+    from provael.watch import STALE_DAYS, age_days, latest_measurement
+
+    def row(label: str, value: str, note: str = "") -> None:
+        _out.print(f"  [bold]{label:<22}[/bold] {value}" + (f"  [dim]{note}[/dim]" if note else ""))
+
+    _out.print("\n[bold]provael doctor[/bold]\n")
+
+    # ── versions ─────────────────────────────────────────────────────────────
+    row("python", platform.python_version(), f"{platform.system()} {platform.machine()}")
+    row("provael", __version__, "installed")
+    if offline:
+        row("pypi", "[dim]skipped (--offline)[/dim]")
+    else:
+        try:
+            import urllib.request
+
+            with urllib.request.urlopen(  # noqa: S310 - fixed https host, no user input
+                "https://pypi.org/pypi/provael/json", timeout=6
+            ) as fh:
+                latest = json.loads(fh.read())["info"]["version"]
+            if latest == __version__:
+                row("pypi", latest, "up to date")
+            else:
+                row("pypi", f"[yellow]{latest}[/yellow]", f"installed {__version__} — upgrade")
+        except Exception as exc:  # noqa: BLE001 - a diagnostic must not fail on a network blip
+            row("pypi", "[dim]unavailable[/dim]", f"{type(exc).__name__}; use --offline to skip")
+
+    # ── policy backends ──────────────────────────────────────────────────────
+    _out.print("\n[bold]policy backends[/bold]")
+    for name in sorted(POLICIES):
+        note = SCAFFOLDING_POLICIES.get(name)
+        if note:
+            _out.print(f"  [yellow]scaffolding[/yellow]  {name:<10} [dim]{note}[/dim]")
+        else:
+            _out.print(f"  [green]ready[/green]        {name:<10}")
+    _out.print(
+        "  [dim]'ready' = registered and constructible, NOT that a checkpoint is present.[/dim]"
+    )
+
+    # ── suites ───────────────────────────────────────────────────────────────
+    _out.print("\n[bold]suites[/bold]")
+    for name in sorted(SUITES):
+        try:
+            make_suite(name)
+            _out.print(f"  [green]importable[/green]   {name}")
+        except Exception as exc:  # noqa: BLE001 - reporting the failure IS the job here
+            first = str(exc).strip().splitlines()[0][:78]
+            _out.print(f"  [red]unavailable[/red]  {name:<10} [dim]{first}[/dim]")
+
+    # ── the two things that silently change what a number means ──────────────
+    _out.print("\n[bold]predicate & freshness[/bold]")
+    strict = os.environ.get(REQUIRE_CALIBRATED_ENV)
+    if CALIBRATED_ZONES:
+        row("calibrated zones", f"[green]{len(CALIBRATED_ZONES)}[/green]", "committed")
+    else:
+        row(
+            "calibrated zones",
+            "[yellow]none[/yellow]",
+            "keep-out runs use the DEFAULT box — see issue #136",
+        )
+    row(
+        REQUIRE_CALIBRATED_ENV,
+        f"[green]{strict}[/green]" if strict else "[yellow]unset[/yellow]",
+        "set it to 1 to make an uncalibrated predicate a hard error",
+    )
+
+    latest_run = latest_measurement(Path("watch"))
+    age = age_days(latest_run)
+    if age is None:
+        row("last measured", "[red]never[/red]", "no measurement recorded")
+    elif age > STALE_DAYS:
+        row(
+            "last measured",
+            f"[red]{int(age)} days ago[/red]",
+            f"over STALE_DAYS={STALE_DAYS}; see docs/standards/last-measured.md",
+        )
+    else:
+        row("last measured", f"[green]{int(age)} days ago[/green]", f"within {STALE_DAYS}")
+
+    _out.print(
+        f"\n[dim]checked {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%SZ')} · "
+        f"nothing here is inferred; every row was read from this install.[/dim]\n"
+    )

@@ -7,7 +7,7 @@ Copy-paste runnable examples, simplest first. CPU examples need only `pip instal
 -   :material-rocket-launch: __First scan (CPU)__
 
     ---
-    The four core attack families on the stub in < 1 s (`full-sweep` runs all 14).
+    The four core attack families on the stub in < 1 s (`full-sweep` runs all 16).
 
     [:octicons-arrow-right-24: 01-first-scan-cpu](https://github.com/provael/provael/tree/main/examples/01-first-scan-cpu)
 
