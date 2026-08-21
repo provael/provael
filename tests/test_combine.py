@@ -9,7 +9,6 @@ produced. Every derived quantity here is recomputed from the pooled EPISODES ins
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
@@ -22,7 +21,7 @@ from provael.combine import (
     load_shards,
     shard_digests,
 )
-from provael.types import RunReport
+from provael.types import BitFlipRecord, RunReport
 
 SUITE = Path(__file__).resolve().parent.parent / "results" / "smolvla_libero_object_suite"
 SINGLE = Path(__file__).resolve().parent.parent / "results" / "smolvla_libero_object"
@@ -126,15 +125,46 @@ def test_every_shard_gets_its_own_digest() -> None:
     assert all(len(d["sha256"]) == 64 for d in digests)
 
 
-def test_the_digests_match_the_committed_files() -> None:
-    """Provenance must describe the artifacts actually on disk, or it is decoration."""
-    from provael.attest import canonical_json, sha256_hex
+def test_the_digests_describe_the_artifacts_on_disk() -> None:
+    """Provenance must describe the artifacts actually on disk, or it is decoration.
+
+    THIS TEST USED TO BE DECORATION. It computed the expected value with the same
+    ``sha256_hex(canonical_json(json.loads(report.model_dump_json())))`` call the implementation
+    used, so it asserted that a function does what the function does and could not fail while both
+    sides shared a bug. Both sides did: the digest re-serialised each shard through whatever
+    ``RunReport`` the running version defines, so it moved on every schema addition. The pinned
+    evidence manifest records ``52bcdb70…`` for ``libero_object_0``; 0.34.0 reproduced it and
+    0.36.1 returned ``66897a4c…`` for byte-identical committed input.
+
+    It now asserts the property that actually matters and that a shared bug cannot satisfy: the
+    digest is a function of the artifact's DECLARED schema, not of the installed version.
+    """
+    from provael.attest import canonical_json, report_projection, sha256_hex
+
+    digests = {d["path"]: d["sha256"] for d in shard_digests(load_shards(SUITE), root=SUITE)}
+    assert digests, "no shards found"
 
     for path, report in load_shards(SUITE):
-        expected = sha256_hex(canonical_json(json.loads(report.model_dump_json())))
-        [entry] = [d for d in shard_digests(load_shards(SUITE), root=SUITE)
-                   if d["path"] == path.relative_to(SUITE).as_posix()]
-        assert entry["sha256"] == expected
+        rel = path.relative_to(SUITE).as_posix()
+
+        # 1. It is the projection of the report on disk, not a re-dump of it.
+        assert digests[rel] == sha256_hex(canonical_json(report_projection(report)))
+
+        # 2. THE LOAD-BEARING HALF. Populating a field introduced AFTER this shard's declared
+        #    schema_version must not move its digest — that is exactly what an older artifact
+        #    experiences when a newer tool reads it. Under the old body this assertion fails,
+        #    because the dump carried the new field and the bytes changed.
+        assert report.schema_version < 4, "fixture assumes a pre-schema-4 shard"
+        mutated = report.model_copy(deep=True)
+        mutated.results[0].weight_corruption = BitFlipRecord(
+            flips=1, selection="gradient", seed=0, parameter_count=8, bit_width=8
+        )
+        assert (
+            sha256_hex(canonical_json(report_projection(mutated))) == digests[rel]
+        ), (
+            f"{rel}: a field added after schema_version {report.schema_version} changed its "
+            "digest — shard provenance must project to the artifact's own declared schema"
+        )
 
 
 def test_no_merged_report_json_is_written_anywhere() -> None:

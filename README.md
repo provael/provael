@@ -335,7 +335,7 @@ Or in CI, gating the build on the measured rate — SARIF goes to code scanning,
 the adversarial ASR exceeds your threshold or regresses past tolerance against a baseline:
 
 ```yaml
-- uses: provael/provael@v0.36.1
+- uses: provael/provael@v0.36.2
   with: { policy: stub, suite: stub, asr-threshold: "0.5" }
 ```
 
@@ -458,7 +458,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.36.1
+      - uses: provael/provael@v0.36.2
         with:
           # `none` is the benign control: without it an ASR has no false-positive baseline,
           # and the release gate cannot reach `pass`. It never moves the adversarial ASR.
@@ -874,7 +874,7 @@ same metadata, for pasting straight into a `.bib` file:
 @software{jain_provael_2026,
   author  = {Jain, Sattyam},
   title   = {Provael: red-teaming Vision-Language-Action robot policies in simulation},
-  version = {0.36.1},
+  version = {0.36.2},
   year    = {2026},
   doi     = {10.5281/zenodo.21984184},
   url     = {https://doi.org/10.5281/zenodo.21984184},

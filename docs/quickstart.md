@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.36.1
+      - uses: provael/provael@v0.36.2
         with:
           attacks: instruction,visual,injection
           episodes: "10"
