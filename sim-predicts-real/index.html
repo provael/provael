@@ -2531,17 +2531,25 @@ honest answer, with citations — not a promise.</p>
 <h2 id="the-short-version">The short version</h2>
 <p>Provael is a <strong>pre-deployment</strong> scanner: it measures how often an attack drives a policy out of
 its safe envelope <strong>in simulation</strong>, before that policy ever touches hardware. The relevant
-research finding is that, for VLA policies, <strong>sim (and even edited-image) evaluation predicts
-real-robot failure well enough to be useful</strong> — without breaking real robots to find out.</p>
+research finding is that, for learned visuomotor policies, <strong>sim (and even edited-image)
+evaluation predicts real-robot failure well enough to be useful</strong> — without breaking real robots to
+find out. The strongest evidence below is about <strong>diffusion</strong> policies rather than VLAs; the VLA
+evidence is real but weaker, and that difference is marked per citation rather than averaged away.</p>
 <ul>
 <li><strong>Predictive Red Teaming</strong> (Majumdar et al., 2025) degrades a policy's <em>inputs</em> (lighting,
   textures, distractors, camera pose) in sim / on edited images and shows the predicted
-  per-factor success tracks real-robot success with a small gap (reported mean absolute error
-  <strong>&lt; 0.19</strong>), identifying brittle factors <em>without</em> real-world rollouts.
+  per-factor success tracks real-robot success closely — in the paper's own words, <strong>"less than
+  0.19 average difference between predicted and real success rates"</strong>, across 500+ hardware trials
+  in twelve off-nominal conditions. It identifies brittle factors <em>without</em> real-world rollouts.
+  <strong>This result is on visuomotor <em>diffusion</em> policies, not VLAs.</strong> It is the strongest
+  sim-predicts-real evidence on this page and it is not about the model class Provael tests, so it
+  is a reason to think the approach is sound rather than a measurement about VLAs.
   arXiv:2502.06575 · https://arxiv.org/abs/2502.06575</li>
 <li><strong>Robustness benchmarks</strong> (LIBERO-Plus, LIBERO-PRO, 2025–26) independently find VLAs collapse
   under camera/position shifts and largely ignore language perturbations — the same failure modes
-  Provael's instruction/visual families exercise. arXiv:2510.13626</li>
+  Provael's instruction/visual families exercise. <strong>This one is about VLAs</strong>, but it measures
+  robustness rather than sim-to-real agreement — it corroborates the failure modes, not the
+  prediction claim. arXiv:2510.13626</li>
 <li><strong>Real-to-sim</strong> evaluation (SimplerEnv) is the methodology VLA papers use precisely because sim
   rankings track real hardware closely enough to compare policies. https://simpler-env.github.io/</li>
 </ul>
