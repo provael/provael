@@ -2519,6 +2519,12 @@
   <a href="../checkpoint-integrity/">checkpoint-integrity</a>); the CycloneDX <strong>ML-BOM ships</strong> (<code>provael report
   --format mlbom</code>), while model-<em>signing</em> (Sigstore) remains planned. The public leaderboard is
   Ed25519-signed as of 0.27.0.</li>
+<li><strong>Public leaderboard with open submission — SHIPPED, and this line was wrong until 22 Aug 2026.</strong>
+  <code>provael submit</code> has been in every release since <strong>0.32.0</strong>, <code>CONTRIBUTING-leaderboard.md</code> documents
+  the PR route, and <code>leaderboard-submission.yml</code> validates submissions on <code>results/**</code>. It sat under
+  <em>Planned</em> while the Shipped section above already said the board is Ed25519-signed — the file
+  contradicted itself. <strong>Zero external submissions have arrived</strong>, which is the honest reason it felt
+  unshipped, and is a fact about adoption rather than about the code.</li>
 <li><strong>Defenses — what is measured and what is not.</strong> Two of the six <code>docs/defenses.md</code> taxonomy rows
   are measured under the protocol, both <code>stub-validated-scaffolding</code> on CPU fixtures:
   <code>instruction_canonicalization</code> (input side) and <code>action_envelope</code> (action side). The action-envelope
@@ -2534,7 +2540,7 @@
 <ul>
 <li><strong>Suites:</strong> RoboCasa, CALVIN, SimplerEnv, and the AI2 vla-evaluation-harness bridge (one adapter
   → ~18 benchmarks). See <a href="https://github.com/provael/provael/tree/main/examples/suites">examples/suites</a>.</li>
-<li><strong>Public leaderboard</strong> with open submission; <strong>docs site</strong> versioning.</li>
+<li><strong>Docs-site versioning</strong> (<code>mike</code>). The dependency is installed; nothing is wired to it yet.</li>
 <li><strong>Standards:</strong> MITRE ATLAS case study, OWASP Agentic embodied annex, OECD.AI listing (drafts in
   <a href="https://github.com/provael/provael/tree/main/docs/standards">docs/standards</a>).</li>
 <li><strong>Stronger attacks:</strong> white-box gradient variants (GCG-style suffixes, transferable pixel/patch
