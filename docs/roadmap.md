@@ -22,6 +22,12 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
   [checkpoint-integrity](checkpoint-integrity.md)); the CycloneDX **ML-BOM ships** (`provael report
   --format mlbom`), while model-*signing* (Sigstore) remains planned. The public leaderboard is
   Ed25519-signed as of 0.27.0.
+- **Public leaderboard with open submission — SHIPPED, and this line was wrong until 22 Aug 2026.**
+  `provael submit` has been in every release since **0.32.0**, `CONTRIBUTING-leaderboard.md` documents
+  the PR route, and `leaderboard-submission.yml` validates submissions on `results/**`. It sat under
+  *Planned* while the Shipped section above already said the board is Ed25519-signed — the file
+  contradicted itself. **Zero external submissions have arrived**, which is the honest reason it felt
+  unshipped, and is a fact about adoption rather than about the code.
 - **Defenses — what is measured and what is not.** Two of the six `docs/defenses.md` taxonomy rows
   are measured under the protocol, both `stub-validated-scaffolding` on CPU fixtures:
   `instruction_canonicalization` (input side) and `action_envelope` (action side). The action-envelope
@@ -37,7 +43,7 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
 
 - **Suites:** RoboCasa, CALVIN, SimplerEnv, and the AI2 vla-evaluation-harness bridge (one adapter
   → ~18 benchmarks). See [examples/suites](https://github.com/provael/provael/tree/main/examples/suites).
-- **Public leaderboard** with open submission; **docs site** versioning.
+- **Docs-site versioning** (`mike`). The dependency is installed; nothing is wired to it yet.
 - **Standards:** MITRE ATLAS case study, OWASP Agentic embodied annex, OECD.AI listing (drafts in
   [docs/standards](https://github.com/provael/provael/tree/main/docs/standards)).
 - **Stronger attacks:** white-box gradient variants (GCG-style suffixes, transferable pixel/patch

@@ -2826,7 +2826,8 @@ def doctor(
     from provael.watch import STALE_DAYS, age_days, latest_measurement
 
     def row(label: str, value: str, note: str = "") -> None:
-        _out.print(f"  [bold]{label:<22}[/bold] {value}" + (f"  [dim]{note}[/dim]" if note else ""))
+        suffix = f"  [dim]{escape(note)}[/dim]" if note else ""
+        _out.print(f"  [bold]{label:<22}[/bold] {value}{suffix}")
 
     _out.print("\n[bold]provael doctor[/bold]\n")
 
@@ -2855,7 +2856,14 @@ def doctor(
     for name in sorted(POLICIES):
         note = SCAFFOLDING_POLICIES.get(name)
         if note:
-            _out.print(f"  [yellow]scaffolding[/yellow]  {name:<10} [dim]{note}[/dim]")
+            # escape(), because the note names extras in brackets — "needs lerobot[groot], which
+            # provael[lerobot] does not install". Rich reads [groot] and [lerobot] as style tags
+            # and DELETES them, so this line rendered "needs lerobot, which provael does not
+            # install": the opposite of true, since provael[lerobot] exists and installs fine.
+            #
+            # A disclosure that inverts its own meaning is worse than no disclosure. list-policies
+            # got this right (see policy_is_ready above); doctor shipped without it.
+            _out.print(f"  [yellow]scaffolding[/yellow]  {name:<10} [dim]{escape(note)}[/dim]")
         else:
             _out.print(f"  [green]ready[/green]        {name:<10}")
     _out.print(
@@ -2870,7 +2878,10 @@ def doctor(
             _out.print(f"  [green]importable[/green]   {name}")
         except Exception as exc:  # noqa: BLE001 - reporting the failure IS the job here
             first = str(exc).strip().splitlines()[0][:78]
-            _out.print(f"  [red]unavailable[/red]  {name:<10} [dim]{first}[/dim]")
+            # Same class: an exception message is arbitrary text, and any [...] in it would be
+            # eaten as markup. An import error that silently loses part of itself is the worst
+            # possible thing to print in a diagnostic command.
+            _out.print(f"  [red]unavailable[/red]  {name:<10} [dim]{escape(first)}[/dim]")
 
     # ── the two things that silently change what a number means ──────────────
     _out.print("\n[bold]predicate & freshness[/bold]")
