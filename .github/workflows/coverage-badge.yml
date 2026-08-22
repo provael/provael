@@ -70,6 +70,12 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Publish the registry counts alongside the badge
+        # Rides along for the same reason and by the same rule as the coverage total: both are
+        # properties of the installed package, and www.provael.com derives its family and attack
+        # counts from this file rather than restating them in prose.
+        run: uv run python scripts/gen_registry_artifact.py
+
       - name: Commit the badge if it changed
         run: |
           if git diff --quiet -- watch/coverage.json; then
@@ -87,5 +93,5 @@ jobs:
           # implicit and evaporates the day someone swaps in a PAT or deploy key to make bot
           # commits visible to CI, which is a normal thing to want. The paths allow-list above
           # already stops THIS workflow retriggering itself; this stops the cross-trigger too.
-          git commit -m "chore(ci): refresh the coverage badge [skip ci]"
+          git commit -m "chore(ci): refresh the coverage badge and registry counts [skip ci]"
           git push
