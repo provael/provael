@@ -109,6 +109,35 @@ jobs:
           docker build -t provael:ci .
           docker run --rm provael:ci --version
 
+  # Every label an issue FORM declares must exist on the repository.
+  #
+  # THE INCIDENT. Six intake forms declared five labels and not one existed. GitHub does not error
+  # on an unknown label in a form; it drops it silently, so every issue filed through a form
+  # arrived unlabelled — including through evidence-defect.yml, the channel for reporting that a
+  # published number might be wrong.
+  #
+  # The check is scripts/check_issue_labels.py so it can be run and negative-tested locally rather
+  # than only in CI. Read-only on purpose: it names the missing label and the form that declares
+  # it, and does NOT create it. Creating one silently is how the next person never learns the form
+  # was wrong.
+  labels:
+    name: issue-form labels exist
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/check_issue_labels.py
+
   build:
     name: package build + metadata check
     runs-on: ubuntu-latest
