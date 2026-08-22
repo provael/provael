@@ -149,9 +149,27 @@ Provael is open core. The CLI, every attack family, calibration, SARIF/OSCAL/ML-
 GitHub Action are Apache-2.0, forever. The paid surface is operated work a solo tool can't sign
 for: a hosted real-VLA (GPU) transfer run, a leaderboard entry signed with a published, stable
 project key (which a verifier may choose to trust — no signature is authoritative on its own), and a
-compliance dossier. Design-partner assessments ($15K, first 3) and standard assessments ($25K):
-[www.provael.com/assessment](https://www.provael.com/assessment) — free PV-SCAN of your nearest
-public checkpoint included.
+compliance dossier.
+
+Five rungs, cheapest first — [full detail and what each includes](https://www.provael.com/pricing):
+
+| Rung | Price | What it is |
+| --- | --- | --- |
+| Open core | **$0**, forever | Everything in this repository. Apache-2.0, CPU-first, no account. |
+| Checkpoint report | **$1,950** | One checkpoint, run and written up. The cheapest paid thing there is. |
+| Design partner | **$15,000** | First three only. Deeper engagement, and the findings are published. |
+| Assessment | **$25,000** | A full assessment against your deployment. |
+| Retainer | **from $3,000/mo** | Continuous re-testing as the policy and the suite move. |
+
+This table previously listed only the $15K and $25K rungs, which made the cheapest paid option look
+like $15,000 — an 8x overstatement of what it costs to start, in the one place a reader forms that
+impression. The website hit the same bug and now computes its entry price from the rungs rather than
+stating it; if you are editing this table, the site is the source and
+[/pricing](https://www.provael.com/pricing) wins on any disagreement.
+
+A free PV-SCAN of your nearest public checkpoint comes with any of the paid rungs:
+[www.provael.com/assessment](https://www.provael.com/assessment). Provael is maintained by one
+person, and every commercial page says so before you commit to anything.
 
 Run Provael? Add yourself to [docs/adopters.md](docs/adopters.md) via PR — the self-reported
 sign-up sheet, which is empty. The measured distribution figures are a separate page at
