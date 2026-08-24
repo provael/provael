@@ -65,6 +65,14 @@ def check(path: Path, *, fix: bool) -> list[str]:
     if not stale:
         return []
     if declared is True:
+        # Already honest. The REASON can still have aged — it names the release the rows were
+        # judged against, and that moves every version. Refreshed on --fix, never a failure: an
+        # out-of-date reason beside a correct `stale: true` misleads nobody, and making it fatal
+        # would put a forced refresh in the path of every release for no gain in safety.
+        if fix and data.get("stale_reason") != reason:
+            data["stale_reason"] = reason
+            path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            print(f"refreshed {name}: {reason}")
         return []
 
     if fix:

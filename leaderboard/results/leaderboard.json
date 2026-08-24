@@ -160,6 +160,6 @@
     "sig": "Ew9+/It0/a8wQrM1ay622VPIvLaNbwUfImPzNw9jjIVgzg42rY5nsTQUNIjBU2jOe4X26wXDjCf/mytfcepbBQ=="
   },
   "stale": true,
-  "stale_reason": "rows measured with provael 0.32.0 are 5 minor versions behind 0.37.0 (limit 1); re-run the underlying policy before treating these numbers as current",
+  "stale_reason": "rows measured with provael 0.32.0 are 6 minor versions behind 0.38.0 (limit 1); re-run the underlying policy before treating these numbers as current",
   "tool_version": "0.33.2"
 }
