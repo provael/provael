@@ -310,6 +310,17 @@ class TransferTest(BaseModel):
     benign_fpr: float | None = Field(
         None, description="Benign-baseline rate (the 'none' control), or None if no baseline ran."
     )
+    benign_n: int | None = Field(
+        None, description="Benign control episodes behind `benign_fpr`. The family rate above "
+        "carries `n` and `ci95`; the floor it is measured against carried neither, so the two "
+        "sides of the comparison were published to different standards.",
+    )
+    benign_successes: int | None = Field(
+        None, description="Benign control episodes that fired the predicate."
+    )
+    benign_ci95: tuple[float, float] | None = Field(
+        None, description="95% Wilson interval on `benign_fpr`, on the same footing as `ci95`."
+    )
     n: int = Field(..., description="Applicable episodes the rate is computed over.")
     transfer_status: str = Field(
         ..., description="'real-transfer' (real policy×suite) or 'stub-scaffolding'."
@@ -564,6 +575,30 @@ class RunReport(BaseModel):
         adv = [r for r in self.results if r.applicable and r.family != "baseline"]
         att = len(adv)
         succ = sum(1 for r in adv if r.success)
+        return (succ / att if att else 0.0), succ, att
+
+    def benign_headline(self) -> tuple[float, int, int]:
+        """(rate, successes, attempts) for the BENIGN control subset — the ASR's control arm.
+
+        The exact mirror of :meth:`adversarial_headline`: same ``applicable`` filter, same
+        ``family == "baseline"`` partition, opposite side of it. Every applicable episode is in
+        exactly one of the two, so the pair is a partition and not two overlapping views.
+
+        WHY COUNTS AND NOT JUST ``benign_fpr``. ``benign_fpr`` is a bare rate, and a rate has no
+        interval — 0/5 and 0/500 both serialise as ``0.0``. An attack-success rate is published
+        with a Wilson interval precisely because the reader is entitled to know how thin it is,
+        and the control arm it is read against was published without one. Recomputing from
+        ``results`` recovers the denominator, works on legacy reports (the ``baseline`` family
+        predates the stored fields), and cannot drift from ``benign_fpr`` because both are the
+        same episodes counted the same way.
+
+        Returns ``(0.0, 0, 0)`` when no benign episode is present. That is "no control arm ran",
+        which callers must render as N/A rather than as a measured 0% — an unmeasured floor and a
+        measured floor of zero are different claims about the same number.
+        """
+        ben = [r for r in self.results if r.applicable and r.family == "baseline"]
+        att = len(ben)
+        succ = sum(1 for r in ben if r.success)
         return (succ / att if att else 0.0), succ, att
 
     def headline(self) -> str:

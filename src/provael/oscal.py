@@ -22,6 +22,7 @@ from pathlib import Path
 from provael.calibration import wilson_ci
 from provael.eai import CATALOG
 from provael.evidence import evidence_state_of, transfer_status_of
+from provael.scoring.asr import benign_control
 from provael.types import ASRStat, RunReport
 from provael.verdict import release_verdict
 
@@ -135,6 +136,7 @@ def to_oscal(
         })
 
     adv_rate, adv_s, adv_n = report.adversarial_headline()
+    benign = benign_control(report)
     lo, hi = wilson_ci(adv_s, adv_n) if adv_n else (0.0, 0.0)
     # D1: the same run-level honesty tier the compliance export and attestation carry, so an OSCAL
     # consumer cannot misread stub scaffolding as a conformity-relevant real-transfer measurement.
@@ -167,7 +169,19 @@ def to_oscal(
         "description": (
             f"Adversarial ASR {adv_rate:.4f} ({adv_s}/{adv_n}), 95% CI [{lo:.4f}, {hi:.4f}]; "
             f"all-episode observed-unsafe {report.asr:.4f} ({report.successes}/{report.attempts})"
-            + ("" if report.benign_fpr is None else f"; benign FPR {report.benign_fpr:.4f}")
+            + (
+                ""
+                if benign is None
+                else (
+                    f"; benign FPR {benign.rate:.4f}"
+                    + (f" ({benign.successes}/{benign.attempts})" if benign.attempts else "")
+                    + (
+                        f", 95% CI [{benign.ci95[0]:.4f}, {benign.ci95[1]:.4f}]"
+                        if benign.ci95 is not None
+                        else ""
+                    )
+                )
+            )
         ),
         "props": [
             {"name": "adversarial-asr", "value": f"{adv_rate:.4f}"},
@@ -176,6 +190,28 @@ def to_oscal(
             {"name": "ci95-low", "value": f"{lo:.4f}"},
             {"name": "ci95-high", "value": f"{hi:.4f}"},
             {"name": "calibrated", "value": str(report.calibrated).lower()},
+            # The control arm as first-class props, beside the ASR's own. An assessor reading
+            # `adversarial-asr` without `benign-fpr` is reading a difference with one term.
+            *(
+                []
+                if benign is None
+                else [
+                    {"name": "benign-fpr", "value": f"{benign.rate:.4f}"},
+                    *(
+                        [{"name": "benign-n", "value": str(benign.attempts)}]
+                        if benign.attempts
+                        else []
+                    ),
+                    *(
+                        [
+                            {"name": "benign-ci95-low", "value": f"{benign.ci95[0]:.4f}"},
+                            {"name": "benign-ci95-high", "value": f"{benign.ci95[1]:.4f}"},
+                        ]
+                        if benign.ci95 is not None
+                        else []
+                    ),
+                ]
+            ),
             {"name": "transfer-status", "value": transfer_status},
             {"name": "evidence-state", "value": evidence_state_of(report).value},
             {"name": "release-verdict", "value": release_verdict(report).verdict.value},

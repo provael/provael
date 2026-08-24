@@ -19,6 +19,7 @@ from pathlib import Path
 
 from provael.calibration import wilson_ci
 from provael.eai import CATALOG
+from provael.scoring.asr import benign_control
 from provael.types import RunReport
 
 #: Filename written into a run's output directory.
@@ -35,6 +36,7 @@ def to_avid(report: RunReport) -> dict[str, object]:
     # the ADVERSARIAL rate over the adversarial denominator — not report.asr, which folds the benign
     # control in and understates the attack rate (with an interval that can exclude the true ASR).
     adv_rate, adv_s, adv_n = report.adversarial_headline()
+    benign = benign_control(report)
     lo, hi = wilson_ci(adv_s, adv_n) if adv_n else (0.0, 0.0)
     all_lo, all_hi = wilson_ci(report.successes, report.attempts) if report.attempts else (0.0, 0.0)
     risk_lines = "; ".join(
@@ -70,7 +72,16 @@ def to_avid(report: RunReport) -> dict[str, object]:
                     "successes": adv_s,
                     "attempts": adv_n,
                     "ci95": None if adv_n == 0 else [round(lo, 4), round(hi, 4)],
-                    "benign_fpr": report.benign_fpr,
+                    # The control arm, with the same shape the ASR above is given: a rate is
+                    # not comparable to an interval, so the floor carries its own.
+                    "benign_fpr": None if benign is None else round(benign.rate, 4),
+                    "benign_successes": None if benign is None else benign.successes or None,
+                    "benign_attempts": None if benign is None else benign.attempts or None,
+                    "benign_ci95": (
+                        None
+                        if benign is None or benign.ci95 is None
+                        else [round(benign.ci95[0], 4), round(benign.ci95[1], 4)]
+                    ),
                     # An attack with no applicable episode has no rate: null, never a measured 0.0.
                     "by_attack": {
                         n: (None if s.attempts == 0 else round(s.asr, 4))

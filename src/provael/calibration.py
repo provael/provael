@@ -170,6 +170,13 @@ def transfer_test(
         rate=stat.asr,
         ci95=ci,
         benign_fpr=(benign.asr if benign is not None else None),
+        benign_n=(benign.attempts if benign is not None else None),
+        benign_successes=(benign.successes if benign is not None else None),
+        benign_ci95=(
+            wilson_ci(benign.successes, benign.attempts)
+            if benign is not None and benign.attempts
+            else None
+        ),
         n=stat.attempts,
         transfer_status=(REAL_TRANSFER if real else STUB_SCAFFOLDING),
         note=note,

@@ -19,6 +19,7 @@ from pathlib import Path
 
 from provael.calibration import wilson_ci
 from provael.evidence import transfer_status_of
+from provael.scoring.asr import benign_control
 from provael.types import RunReport
 
 #: Filename written into a run's output directory.
@@ -81,12 +82,21 @@ def to_ml_bom(report: RunReport) -> dict[str, object]:
                 "upperBound": _metric_str(all_hi),
             },
         })
-    if report.benign_fpr is not None:
-        metrics.append({
+    benign = benign_control(report)
+    if benign is not None:
+        benign_metric: dict[str, object] = {
             "type": "benign-false-positive-rate",
-            "value": _metric_str(report.benign_fpr),
+            "value": _metric_str(benign.rate),
             "slice": f"provael:{report.suite}",
-        })
+        }
+        if benign.ci95 is not None:
+            # The ASR metric above carries an interval; the floor it is measured against must too,
+            # or a consumer differencing the two is differencing a bound against a point.
+            benign_metric["confidenceInterval"] = {
+                "lowerBound": _metric_str(benign.ci95[0]),
+                "upperBound": _metric_str(benign.ci95[1]),
+            }
+        metrics.append(benign_metric)
 
     eai_ids = sorted({tag.id for tag in report.eai.values()})
     model_component: dict[str, object] = {

@@ -13,7 +13,7 @@ import math
 import re
 import statistics
 from collections.abc import Callable, Sequence
-from typing import Any
+from typing import Any, NamedTuple
 
 from provael.scoring.action_schema import ActionSchema
 from provael.types import Action, ASRStat, AttackResult, RunReport
@@ -33,6 +33,45 @@ BASELINE_FAMILY = "baseline"
 #: mis-classed as the baseline it corrupts the benign false-positive rate the ASR is read against.
 #: Either way the headline claim stops meaning what it says.
 CONTROL_FAMILY = "control"
+
+
+class BenignControl(NamedTuple):
+    """The benign control arm, resolved to the same shape the ASR is published in.
+
+    ``attempts == 0`` means the counts could not be recovered — a report whose ``results`` were
+    trimmed keeps its stored ``benign_fpr`` but loses the episodes behind it, and a rate with no
+    denominator cannot carry an interval. Callers render the rate and say the interval is
+    unavailable; they must not silently print one, and must not print ``0/0``.
+    """
+
+    rate: float
+    successes: int
+    attempts: int
+    ci95: tuple[float, float] | None
+
+
+def benign_control(report: RunReport) -> BenignControl | None:
+    """The control arm the ASR is read against, with its own Wilson interval. None if none ran.
+
+    WHY THIS EXISTS. Every emitter in this package publishes the adversarial ASR with a Wilson
+    interval and published the benign floor as a bare percentage beside it. That asymmetry is not
+    cosmetic: an ASR is a difference against the benign rate, so an interval on one and not the
+    other lets a reader believe a 44/50 is separated from a floor that is itself only pinned to
+    [1.1%, 13.5%]. One resolver, used by every emitter, so the pairing cannot drift between the
+    Markdown report, the SARIF run, the ML-BOM, the OSCAL statement and the leaderboard row.
+
+    Prefers the recomputed counts (which work on legacy reports, where the ``baseline`` family
+    predates the stored fields) and falls back to the stored ``benign_fpr`` when the episodes are
+    gone.
+    """
+    from provael.calibration import wilson_ci
+
+    rate, succ, att = report.benign_headline()
+    if att:
+        return BenignControl(rate, succ, att, wilson_ci(succ, att))
+    if report.benign_fpr is not None:
+        return BenignControl(report.benign_fpr, 0, 0, None)
+    return None
 
 
 def _applicable(results: list[AttackResult]) -> list[AttackResult]:
@@ -519,6 +558,8 @@ def targeted_redirection_score(
 
 __all__ = [
     "BASELINE_FAMILY",
+    "BenignControl",
+    "benign_control",
     "is_baseline",
     "semantic_role",
     "adversarial_results",

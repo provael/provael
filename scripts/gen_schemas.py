@@ -20,7 +20,7 @@ BASE = "https://raw.githubusercontent.com/provael/provael/main/schemas"
 
 def main() -> None:
     OUT.mkdir(exist_ok=True)
-    for model, name, ver in ((RunReport, "report", 4), (Leaderboard, "leaderboard", 5)):
+    for model, name, ver in ((RunReport, "report", 4), (Leaderboard, "leaderboard", 6)):
         schema = model.model_json_schema(mode="serialization")
         doc = {
             "$schema": "https://json-schema.org/draft/2020-12/schema",

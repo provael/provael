@@ -19,7 +19,7 @@ from rich.table import Table
 from provael.calibration import wilson_ci
 from provael.eai import CATALOG
 from provael.evidence import evidence_state_of
-from provael.scoring.asr import fdr_by_attack
+from provael.scoring.asr import benign_control, fdr_by_attack
 from provael.scoring.safety_cost import (
     QUADRANT_KEYS,
     TASK_SUCCESS_UNMEASURED,
@@ -119,8 +119,18 @@ def to_markdown(report: RunReport) -> str:
     )
     predicate = "calibrated" if report.calibrated else "default (uncalibrated)"
     lines.append(f"| predicate | {predicate} |")
-    if report.benign_fpr is not None:
-        lines.append(f"| benign baseline FPR | {100.0 * report.benign_fpr:.1f}% |")
+    benign = benign_control(report)
+    if benign is not None:
+        counts = f" ({benign.successes}/{benign.attempts})" if benign.attempts else ""
+        lines.append(
+            f"| **benign baseline FPR** (the ASR's control arm) | "
+            f"**{100.0 * benign.rate:.1f}%{counts}** |"
+        )
+        lines.append(
+            "| benign FPR 95% CI (Wilson) | "
+            + (_fmt_ci(benign.ci95) if benign.ci95 else "n/a (counts not retained)")
+            + " |"
+        )
     if report.clean_task_success_rate is not None:
         lines.append(
             f"| clean-task-success (benign control) | "
@@ -275,6 +285,27 @@ def build_summary_table(report: RunReport) -> Table:
     return table
 
 
+def benign_control_text(report: RunReport) -> str:
+    """One-line benign control arm: rate, counts and Wilson interval, for prose consumers.
+
+    ``"4.0% (2/50) [1-14%]"``, or ``"4.0% (counts not retained)"`` on a trimmed report, or
+    ``"n/a (no benign control arm)"`` when none ran. The last is deliberately not ``"0.0%"``:
+    an unmeasured false-positive floor and a measured floor of zero are different claims, and
+    only one of them is a clean bill of health.
+    """
+    benign = benign_control(report)
+    if benign is None:
+        return "n/a (no benign control arm)"
+    text = f"{100.0 * benign.rate:.1f}%"
+    if benign.attempts:
+        text += f" ({benign.successes}/{benign.attempts})"
+    if benign.ci95 is not None:
+        text += f" [{100.0 * benign.ci95[0]:.0f}-{100.0 * benign.ci95[1]:.0f}%]"
+    else:
+        text += " (counts not retained)"
+    return text
+
+
 def render_summary(report: RunReport, console: Console | None = None) -> None:
     """Print the ASR table and the headline ASR line to ``console`` (or a fresh one)."""
     console = console or Console()
@@ -286,18 +317,20 @@ def render_summary(report: RunReport, console: Console | None = None) -> None:
             f"{100.0 * report.clean_task_success_rate:.1f}% — the unattacked task-completion rate "
             "the ASR is read against"
         )
-    fpr = "n/a" if report.benign_fpr is None else f"{100.0 * report.benign_fpr:.1f}%"
+    benign = benign_control(report)
+    fpr = "n/a" if benign is None else benign_control_text(report)
     if report.calibrated:
         console.print(
             f"[magenta]calibrated predicate[/magenta] — ASR is a redirection rate (95% CI shown); "
             f"benign baseline FPR {fpr}"
         )
-    elif report.benign_fpr is not None:
+    elif benign is not None:
         console.print(f"predicate: default (uncalibrated) · benign baseline FPR {fpr}")
 
 
 __all__ = [
     "REPORT_JSON",
+    "benign_control_text",
     "REPORT_MD",
     "to_json",
     "to_markdown",

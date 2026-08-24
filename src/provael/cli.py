@@ -113,6 +113,7 @@ from provael.leaderboard import (
     THIRD_PARTY_SUBMISSION,
     UNATTRIBUTED,
     Leaderboard,
+    LeaderboardRow,
     build_leaderboard,
     find_reports,
     load_leaderboard,
@@ -147,7 +148,12 @@ from provael.regression import (
     write_regression_attestation,
     write_regression_sarif,
 )
-from provael.report import load_report, render_summary, write_report
+from provael.report import (
+    benign_control_text,
+    load_report,
+    render_summary,
+    write_report,
+)
 from provael.reproductions import available_reproductions, get_reproduction
 from provael.runner import run
 from provael.sarif import to_sarif_json, write_sarif
@@ -1226,6 +1232,10 @@ def transfer_test_cmd(
     for t in tests:
         ci = "" if t.ci95 is None else f" [{100.0 * t.ci95[0]:.0f}-{100.0 * t.ci95[1]:.0f}%]"
         benign = "n/a" if t.benign_fpr is None else f"{100.0 * t.benign_fpr:.1f}%"
+        if t.benign_n:
+            benign += f" ({t.benign_successes}/{t.benign_n})"
+        if t.benign_ci95 is not None:
+            benign += f" [{100.0 * t.benign_ci95[0]:.0f}-{100.0 * t.benign_ci95[1]:.0f}%]"
         table.add_row(
             t.family, f"{100.0 * t.rate:.1f}%{ci}", benign, str(t.n), t.transfer_status
         )
@@ -1699,7 +1709,7 @@ def attest(
     # rate made the console block and the bundle it had just written disagree by the width of the
     # benign control — and the console figure is the one that gets pasted into tickets.
     rate, succ, att = report.adversarial_headline()
-    fpr = "n/a" if report.benign_fpr is None else f"{100.0 * report.benign_fpr:.1f}%"
+    fpr = benign_control_text(report)
     if att == 0:
         evidence = "adversarial ASR N/A (0 adversarial episodes)"
     else:
@@ -1799,6 +1809,22 @@ def calibrate(
     )
 
 
+def _benign_cell(row: LeaderboardRow) -> str:
+    """The row's benign control, rendered like its ASR: rate, counts, interval.
+
+    ``"n/a"`` when the row has no baseline arm — never ``"0.0%"``. A board that prints a measured
+    zero where no control ran advertises a floor it never established.
+    """
+    if row.benign_fpr is None:
+        return "[dim]n/a[/dim]"
+    cell = f"{100.0 * row.benign_fpr:.1f}%"
+    if row.benign_attempts:
+        cell += f" ({row.benign_successes}/{row.benign_attempts})"
+    if row.benign_ci95 is not None:
+        cell += f" [{100.0 * row.benign_ci95[0]:.0f}-{100.0 * row.benign_ci95[1]:.0f}%]"
+    return cell
+
+
 def _render_leaderboard(leaderboard: Leaderboard) -> None:
     if leaderboard.is_demo:
         _out.print(
@@ -1812,6 +1838,10 @@ def _render_leaderboard(leaderboard: Leaderboard) -> None:
     table.add_column("family")
     table.add_column("ASR (95% CI)", justify="right", style="bold red")
     table.add_column("n", justify="right")
+    # The control arm, immediately beside the rate it qualifies. The board is the surface where a
+    # number travels furthest from its report, and it published the ASR with an interval and the
+    # floor not at all — so the one column a reader needed to judge the gap was the missing one.
+    table.add_column("benign FPR (95% CI)", justify="right")
     table.add_column("transfer")
     table.add_column("submitted by")
     for rank, row in enumerate(leaderboard.rows, start=1):
@@ -1827,6 +1857,7 @@ def _render_leaderboard(leaderboard: Leaderboard) -> None:
             row.family,
             f"{100.0 * row.asr:.1f}%{ci}",
             f"{row.successes}/{row.attempts}",
+            _benign_cell(row),
             transfer,
             by,
         )

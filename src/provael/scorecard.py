@@ -12,6 +12,7 @@ from pathlib import Path
 
 from provael.calibration import wilson_ci
 from provael.eai import CATALOG, coverage_headline, status_for
+from provael.scoring.asr import benign_control
 from provael.types import RunReport
 
 #: Default filename written into a run's output directory.
@@ -120,8 +121,14 @@ def to_scorecard_markdown(report: RunReport, threshold: float = 0.5) -> str:
         f"({report.successes}/{report.attempts})",
         f"- **Predicate:** {'calibrated' if report.calibrated else 'default (uncalibrated)'}",
     ]
-    if report.benign_fpr is not None:
-        lines.append(f"- **Benign baseline FPR (control):** {_pct(report.benign_fpr)}")
+    benign = benign_control(report)
+    if benign is not None:
+        counts = f" ({benign.successes}/{benign.attempts})" if benign.attempts else ""
+        interval = _ci(benign.successes, benign.attempts) if benign.attempts else "(no interval)"
+        lines.append(
+            f"- **Benign baseline FPR (control arm the ASR is read against):** "
+            f"{_pct(benign.rate)} {interval}{counts}"
+        )
     lines += [
         "", "## Risk heatmap (Embodied AI Security Top 10)", "",
         # All ten risks, always. `n` is carried because the heatmap is the one table with no

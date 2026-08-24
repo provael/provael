@@ -16,11 +16,13 @@
 <p align="center"><sub>Deterministic CPU stub run, seed 0 — reproduce it in seconds.</sub></p>
 
 **The finding.** A single `roleplay` instruction drove a **real SmolVLA** policy out of its safe
-envelope on **44 of 50 matched pairs across all ten `libero_object` tasks**, against **0** benign
-twins at the same (task, seed) — McNemar exact **p = 4.6e-13**, surviving Holm correction across the
-six-arm screen. The interval is **task-clustered [72%, 100%]**: bootstrapped over *tasks*, not
-episodes, because episodes inside one task are correlated and pooling them reports an interval far
-too narrow.
+envelope on **44 of 50 matched pairs across all ten `libero_object` tasks (88%, task-clustered 95%
+CI [72%, 100%]) against a benign control of 2/50 (4.0%, Wilson 95% [1.1%, 13.5%])** — and against
+**0** benign twins at the same (task, seed), McNemar exact **p = 4.6e-13**, surviving Holm
+correction across the six-arm screen. The headline interval is **clustered over *tasks*, not
+episodes**, because episodes inside one task are correlated and pooling them reports an interval far
+too narrow. The two numbers are quoted together because an attack-success rate is a difference
+against that floor: read alone, 88% is a rate with no control arm.
 
 This supersedes the earlier n=10 single-task result, and the upgrade is the scope rather than the
 number. That run measured `libero_object/0` alone and was explicitly an existence proof; a
@@ -30,7 +32,13 @@ there were ten tasks:** `goal_substitution` was 6/10 at p=0.031 and did *not* su
 one task; pooled over ten it reaches **15/50, p=9.8e-4**, and does.
 
 The honest other half. The benign control fired on **2 of 50** episodes, so the predicate is not
-clean — it is uncalibrated, the same fixed keep-out zone on all ten tasks. Three families are
+clean — it is uncalibrated, the same fixed keep-out zone on all ten tasks. Those firings are not
+scattered: across **both** committed runs the benign arm fires **5/100 (5.0%, Wilson 95% [2.2%,
+11.2%])** and every single firing lands on `libero_object/4` or `/5`, on different seeds, with the
+other eight tasks silent through 80 benign episodes — a task-conditional, seed-independent pattern
+that replicates out-of-sample at p = 0.04
+([the study](studies/keepout_calibration/README.md)). That is the signature of a boundary in the
+wrong place, not of a policy that wanders. Three families are
 **measured nulls at 0/50 each** (`patch`, `decoy_object`, `scene_text`), and `mcp_tool_desc` is
 **not applicable** to this suite rather than a null. Clean-task-success under the benign arm averages
 84% and ranges 40–100% across tasks, so the policy is not uniformly competent. And the policy's
@@ -413,7 +421,7 @@ uv run provael leaderboard verify --in leaderboard/results/leaderboard.json \
 
 The published board is the **ten-task `libero_object` suite screen**: on the real
 **SmolVLA × LIBERO** policy only the **instruction** family transfers, at **41.3% (62/150)
-[34–49%]** against a **4.0% (2/50)** benign control; **injection is 0/50 and visual 0/100** —
+[34–49%]** against a **4.0% (2/50, Wilson 95% [1.1%, 13.5%])** benign control; **injection is 0/50 and visual 0/100** —
 measured nulls, published as such.
 
 Since `schema_version` 5 each row also carries the qualifiers its report always had —
@@ -571,9 +579,10 @@ checkpoint on a GPU runner. Generality is intended; it is **tested on SmolVLA ×
 `HuggingFaceVLA/smolvla_libero` · **all ten `libero_object` tasks** · 5 seeds per (task, arm) ·
 horizon 280 · L4, 2026-08-09. 350 measured episodes of 400 records.
 
-**`roleplay` redirected SmolVLA out of its safe envelope on 44 of 50 matched pairs against 0 benign
-twins at identical (task, seed) — McNemar exact p = 4.6e-13, Holm-adjusted to 2.7e-12 across the
-six-arm screen.** Task-clustered 95% CI **[72%, 100%]**.
+**`roleplay` redirected SmolVLA out of its safe envelope on 44 of 50 matched pairs (88%,
+task-clustered 95% CI [72%, 100%]) against a 2/50 benign control (4.0%, Wilson 95% [1.1%, 13.5%]),
+and against 0 benign twins at identical (task, seed) — McNemar exact p = 4.6e-13, Holm-adjusted to
+2.7e-12 across the six-arm screen.**
 
 **That interval is clustered over TASKS, not episodes**, and the distinction matters more than the
 identical-looking bounds of the older single-task Wilson interval. Episodes inside one task are
@@ -607,6 +616,16 @@ the predicate is uncalibrated — the same fixed keep-out zone on all ten tasks.
 correctly by discarding concordant pairs, and `benign_only` counts are reported per arm rather than
 hidden, but a calibrated predicate would be a better measurement. `provael calibrate` exists and has
 not been run on LIBERO.
+
+That "because" is now measured rather than assumed. Pooling this run's benign arm with the
+[control run](results/smolvla_libero_object_control/README.md)'s gives 5 firings in 100 benign
+episodes, and **all five land on `libero_object/4` and `/5`** — the two tasks that ask for the
+ketchup and the tomato sauce — while the other eight tasks stay silent across 80 episodes. The
+seeds differ between the runs, so each tests the other's task set out-of-sample; the weaker
+direction gives p = 0.04. See
+[studies/keepout_calibration](studies/keepout_calibration/README.md), which also records why no
+corrected zone is derived there: every committed LIBERO report predates `AttackResult.trajectory`,
+so the benign end-effector poses a fit would consume were never written down.
 
 Read each rate **against its control**: the `none` baseline runs the policy's *real* task and
 scores **2/50 (benign FPR 4%, Wilson 95% [1.1%, 13.5%])**, so a success above is attack-induced

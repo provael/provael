@@ -4,6 +4,71 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **The benign false-positive rate is now published beside every ASR, with its own Wilson
+  interval.** An attack-success rate is a difference against the benign floor, and every exporter
+  in this package published the ASR with an interval and a denominator and the floor as a bare
+  percentage: `benignFpr: 0.04` in the SARIF run, `benign_fpr` in AVID, one metric with no
+  `confidenceInterval` in the ML-BOM, one prose clause in OSCAL, one table row in the Markdown
+  report, one column in the transfer-test table — and, on the leaderboard, nothing at all. A rate
+  with no denominator cannot be read: 0/5 and 0/500 both serialise as `0.0`, and 4% at n=50 is
+  Wilson [1.1%, 13.5%], which is most of the interval a reader was implicitly assuming away.
+
+  `RunReport.benign_headline()` is the exact mirror of `adversarial_headline()` — same
+  `applicable` filter, same `family == "baseline"` partition, opposite side of it, so the two are
+  a partition of the run and a test pins that they sum to the applicable episodes.
+  `scoring.asr.benign_control()` resolves it once for every emitter, so the pairing cannot drift
+  between surfaces. Both recompute from `results`, so they work on the legacy schema-2 reports
+  where the counts predate the stored fields, and a trimmed report keeps its stored rate and
+  reports that the interval is unavailable rather than inventing one from a denominator that is
+  not there. A run with no control arm renders `n/a`, never `0.0%`: an unmeasured floor and a
+  measured floor of zero are different claims about the same number.
+
+  Leaderboard `schema_version` 5 → 6 adds per-row `benign_successes` / `benign_attempts` /
+  `benign_ci95`, and `provael leaderboard` grows a `benign FPR (95% CI)` column beside the ASR
+  column. `TransferTest` gains `benign_n` / `benign_successes` / `benign_ci95` on the same
+  reasoning.
+
+  Additive with defaults, and registered in `_ROW_FIELDS_ADDED_IN[6]` — which is not bookkeeping.
+  Adding the three fields without registering them changed the canonical bytes of the **committed,
+  signed v5 board** and its Ed25519 signature stopped verifying; to anyone checking it, a
+  correctly-signed board then looks exactly like a tampered one. The existing regression test
+  caught it, but only because a v5 board happens to be committed, so two structural guards now
+  fail immediately and by name when any future field is added without a version.
+
+### Added
+
+- **`studies/keepout_calibration/` — what the benign 2/50 actually is (#136).** The claim that the
+  default keep-out box is misplaced has been asserted in this repository since 0.34.0 and never
+  tested. It is now measured, from artifacts already committed, on CPU, with no simulator.
+
+  A benign false-positive rate is one number and one number cannot separate "the policy left the
+  safe region" from "the boundary is in the wrong place" — opposite findings needing opposite
+  responses. The discriminator is structure, not magnitude: a wandering policy scatters, a
+  misplaced boundary fires on the same tasks every time. Pooling the ten-task suite with the
+  control run gives **5 firings in 100 benign episodes (5.0%, Wilson 95% [2.2%, 11.2%])**, and
+  every one lands on `libero_object/4` or `/5` while the other eight tasks stay silent through 80
+  episodes. The seeds differ between runs, so each tests the other's task set out-of-sample; both
+  directions are reported and the weaker, **p = 0.04**, is the headline. The other disjunct of the
+  predicate is provably not involved: `ForbiddenObjectGrasp` ships empty and with no extractor.
+
+  **No corrected zone is derived, and no threshold sweep is committed.** Knowing a boundary is
+  misplaced is not knowing where it belongs, and the study records why the second is impossible
+  here: every committed LIBERO report is `schema_version 2`, predating `AttackResult.trajectory`,
+  so the benign end-effector poses a fit consumes were computed on every step and discarded —
+  `endpoints` is `{}` and `danger` is `0.0` on all five firings, and the untrimmed Modal artifacts
+  only add `decisions[]`, which carries no position. Sweeping a grid of boxes against episodes
+  whose poses are unknown produces a curve of the right shape and no content. Choosing an
+  operating point from it would be picking a second constant exactly the way the first one was
+  picked, which is the bug rather than the fix.
+
+  So **#136 stays open and the 44/50 headline has not moved** — it cannot move without a benign
+  re-run on a build at or after 0.35.0, which is GPU-gated. What the study does buy is scheduling:
+  tasks 4 and 5 are the two to calibrate first, and a re-run does not need all ten.
+
 ## [0.37.0] — 2026-08-22
 
 ### Added

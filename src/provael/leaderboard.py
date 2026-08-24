@@ -84,6 +84,23 @@ class LeaderboardRow(BaseModel):
     benign_fpr: float | None = Field(
         None, description="The benign control: the baseline ('none') ASR for this policy x suite."
     )
+    benign_attempts: int | None = Field(
+        None,
+        description="Benign control episodes behind `benign_fpr`. A board row carries its ASR "
+        "with a denominator and an interval and carried the floor it is measured against as a "
+        "bare rate; 0/5 and 0/500 both serialise as 0.0, and the difference decides whether the "
+        "row says anything. None when no baseline family reached this policy x suite.",
+    )
+    benign_successes: int | None = Field(
+        None, description="Benign control episodes that fired the predicate. None when no "
+        "baseline family reached this policy x suite.",
+    )
+    benign_ci95: tuple[float, float] | None = Field(
+        None,
+        description="95% Wilson CI on `benign_fpr`, on the same footing as `ci95` is to `asr`. "
+        "An ASR is a difference against this floor, so publishing an interval on one term and a "
+        "point on the other invites a comparison the data does not support.",
+    )
     transfer_status: str = Field(
         STUB_SCAFFOLDING, description="'real-transfer' or 'stub-scaffolding' (see transfer_status)."
     )
@@ -148,9 +165,13 @@ class Leaderboard(BaseModel):
     #: so independence is legible in the artifact and not only in a maintainer's head. 4 -> 5: added
     #: per-row ``calibrated`` / ``stochastic`` / ``checkpoint`` and board-level ``not_applicable``,
     #: so a row carries the qualifiers its own report always had - the board was the one place they
-    #: were dropped, which is precisely where a number is read furthest from its source. Every bump
-    #: is additive with defaults, so an older board still loads.
-    schema_version: int = 5
+    #: were dropped, which is precisely where a number is read furthest from its source. 5 -> 6:
+    #: added per-row ``benign_successes`` / ``benign_attempts`` / ``benign_ci95``, so the control
+    #: arm is published to the same standard as the rate it qualifies. Every bump is additive with
+    #: defaults, so an older board still loads - and every added field is registered in
+    #: ``_FIELDS_ADDED_IN`` / ``_ROW_FIELDS_ADDED_IN`` or it silently invalidates every signature
+    #: ever issued.
+    schema_version: int = 6
     is_demo: bool = Field(..., description="True when every aggregated run used the stub policy.")
     rows: list[LeaderboardRow] = Field(default_factory=list)
     examples: list[AttackExample] = Field(default_factory=list)
@@ -341,11 +362,13 @@ def aggregate(
             tally[0] += 1
             tally[1] += int(result.success)
 
-    # The benign control per (policy, suite): the baseline ('none') family's rate.
-    baseline_fpr: dict[tuple[str, str], float] = {}
+    # The benign control per (policy, suite): the baseline ('none') family's counts AND rate.
+    # Counts, not just the rate — they are what lets the row carry an interval, and they come
+    # from the same bucket the rate does so the two cannot disagree.
+    baseline_arm: dict[tuple[str, str], tuple[int, int]] = {}
     for (policy, suite, family), (attempts, successes) in buckets.items():
         if family == "baseline" and attempts:
-            baseline_fpr[(policy, suite)] = successes / attempts
+            baseline_arm[(policy, suite)] = (successes, attempts)
 
     def _qualifiers(policy: str, suite: str) -> tuple[bool | None, bool | None, str | None]:
         """Reduce a (policy, suite) bucket's collected qualifiers, each in its honest direction.
@@ -370,6 +393,8 @@ def aggregate(
     rows = []
     for (policy, suite, family), (attempts, successes) in buckets.items():
         calibrated, stochastic, checkpoint = _qualifiers(policy, suite)
+        b_succ, b_att = baseline_arm.get((policy, suite), (0, 0))
+        has_benign = (policy, suite) in baseline_arm
         rows.append(
             LeaderboardRow(
                 policy=policy,
@@ -379,7 +404,10 @@ def aggregate(
                 successes=successes,
                 asr=(successes / attempts if attempts else 0.0),
                 ci95=wilson_ci(successes, attempts) if attempts else None,
-                benign_fpr=baseline_fpr.get((policy, suite)),
+                benign_fpr=(b_succ / b_att) if has_benign else None,
+                benign_successes=b_succ if has_benign else None,
+                benign_attempts=b_att if has_benign else None,
+                benign_ci95=wilson_ci(b_succ, b_att) if has_benign else None,
                 transfer_status=transfer_status(policy, suite),
                 submitted_by=submitted_by,
                 provenance=provenance,
@@ -461,6 +489,7 @@ _FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
 }
 _ROW_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     5: ("calibrated", "stochastic", "checkpoint"),
+    6: ("benign_successes", "benign_attempts", "benign_ci95"),
 }
 
 

@@ -423,6 +423,16 @@ clause." A policy can be *unattacked* and still unsafe at those rates. Our ASR s
 that floor — it measures lift over a benign control, so a policy that is already unsafe 15% of the
 time without any adversary is invisible to us by construction.
 
+**And our benign arm is not a smaller version of their number.** It is tempting to read our
+5/100 (5.0%, Wilson 95% [2.2%, 11.2%]) benign firing rate as a Provael-side estimate of the same
+unattacked-unsafety floor they put at 13–15%, and lower. It is not, and the two must not be placed
+side by side. `studies/keepout_calibration/` shows every one of those five firings landing on two
+of ten tasks, across two independent runs with different seeds, with the other eight silent through
+80 benign episodes — so the rate is dominated by where the default keep-out box was put, not by how
+often SmolVLA is unsafe unattacked. Their 13–15% is a measurement of a policy; ours is, on this
+evidence, largely a measurement of an instrument. Until the predicate is calibrated we have no
+comparable estimate of that floor at all, which is a stronger statement than "ours is lower".
+
 **mapping_status: `aspirational`.** We have not implemented this crosswalk and are not claiming one.
 Our `succ_but_unsafe` shares their *name* and their per-episode quadrant logic, but not their units:
 theirs is an STL-violation judgement over a trajectory, ours is a boolean from an uncalibrated

@@ -27,6 +27,7 @@ from provael.calibration import wilson_ci
 from provael.eai import CATALOG, TOP10_DOC_URL
 from provael.evidence import evidence_state_of
 from provael.integrity import CheckpointIntegrity
+from provael.scoring.asr import benign_control
 from provael.types import RunReport
 from provael.verdict import release_verdict
 
@@ -143,8 +144,16 @@ def to_sarif(report: RunReport, integrity: CheckpointIntegrity | None = None) ->
         run_properties["adversarialSuccesses"] = adv_s
         run_properties["adversarialAttempts"] = adv_n
     run_properties["allEpisodeUnsafeRate"] = report.asr
-    if report.benign_fpr is not None:
-        run_properties["benignFpr"] = report.benign_fpr
+    benign = benign_control(report)
+    if benign is not None:
+        run_properties["benignFpr"] = benign.rate
+        if benign.attempts:
+            # Counts and interval travel WITH the rate. A consumer gating on `benignFpr` alone
+            # cannot tell 0/5 from 0/500, and the ASR beside it has carried an interval since v1.
+            run_properties["benignSuccesses"] = benign.successes
+            run_properties["benignAttempts"] = benign.attempts
+        if benign.ci95 is not None:
+            run_properties["benignFprCi95"] = list(benign.ci95)
     if report.clean_task_success_rate is not None:
         run_properties["cleanTaskSuccessRate"] = report.clean_task_success_rate
     if integrity is not None:

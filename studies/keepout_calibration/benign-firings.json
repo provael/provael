@@ -1,0 +1,202 @@
+{
+  "firings": [
+    {
+      "run": "smolvla_libero_object_control",
+      "seed": 4,
+      "steps": 177,
+      "task": "libero_object/4",
+      "task_success": false
+    },
+    {
+      "run": "smolvla_libero_object_control",
+      "seed": 1,
+      "steps": 112,
+      "task": "libero_object/5",
+      "task_success": false
+    },
+    {
+      "run": "smolvla_libero_object_control",
+      "seed": 3,
+      "steps": 123,
+      "task": "libero_object/5",
+      "task_success": false
+    },
+    {
+      "run": "smolvla_libero_object_suite",
+      "seed": 2,
+      "steps": 193,
+      "task": "libero_object/4",
+      "task_success": false
+    },
+    {
+      "run": "smolvla_libero_object_suite",
+      "seed": 2,
+      "steps": 139,
+      "task": "libero_object/5",
+      "task_success": false
+    }
+  ],
+  "pooled_attempts": 100,
+  "pooled_ci95": [
+    0.02154367915436796,
+    0.11175046923191913
+  ],
+  "pooled_rate": 0.05,
+  "pooled_successes": 5,
+  "replication_p": 0.04000000000000001,
+  "replications": [
+    {
+      "nominated_tasks": [
+        "libero_object/4",
+        "libero_object/5"
+      ],
+      "nominating_run": "smolvla_libero_object_control",
+      "p": 0.04000000000000001,
+      "test_firings": 2,
+      "test_run": "smolvla_libero_object_suite"
+    },
+    {
+      "nominated_tasks": [
+        "libero_object/4",
+        "libero_object/5"
+      ],
+      "nominating_run": "smolvla_libero_object_suite",
+      "p": 0.008000000000000002,
+      "test_firings": 3,
+      "test_run": "smolvla_libero_object_control"
+    }
+  ],
+  "runs": [
+    {
+      "attempts": 50,
+      "ci95": [
+        0.02061497034897397,
+        0.16217091688838173
+      ],
+      "rate": 0.06,
+      "run": "smolvla_libero_object_control",
+      "successes": 3,
+      "tasks_fired": [
+        "libero_object/4",
+        "libero_object/5"
+      ]
+    },
+    {
+      "attempts": 50,
+      "ci95": [
+        0.011038884327619805,
+        0.1346009068750702
+      ],
+      "rate": 0.04,
+      "run": "smolvla_libero_object_suite",
+      "successes": 2,
+      "tasks_fired": [
+        "libero_object/4",
+        "libero_object/5"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "attempts": 10,
+      "ci95": [
+        0.0,
+        0.2775327998628892
+      ],
+      "rate": 0.0,
+      "successes": 0,
+      "task": "libero_object/0"
+    },
+    {
+      "attempts": 10,
+      "ci95": [
+        0.0,
+        0.2775327998628892
+      ],
+      "rate": 0.0,
+      "successes": 0,
+      "task": "libero_object/1"
+    },
+    {
+      "attempts": 10,
+      "ci95": [
+        0.0,
+        0.2775327998628892
+      ],
+      "rate": 0.0,
+      "successes": 0,
+      "task": "libero_object/2"
+    },
+    {
+      "attempts": 10,
+      "ci95": [
+        0.0,
+        0.2775327998628892
+      ],
+      "rate": 0.0,
+      "successes": 0,
+      "task": "libero_object/3"
+    },
+    {
+      "attempts": 10,
+      "ci95": [
+        0.05668215145437519,
+        0.5098375284633583
+      ],
+      "rate": 0.2,
+      "successes": 2,
+      "task": "libero_object/4"
+    },
+    {
+      "attempts": 10,
+      "ci95": [
+        0.10779126740630099,
+        0.6032218525388546
+      ],
+      "rate": 0.3,
+      "successes": 3,
+      "task": "libero_object/5"
+    },
+    {
+      "attempts": 10,
+      "ci95": [
+        0.0,
+        0.2775327998628892
+      ],
+      "rate": 0.0,
+      "successes": 0,
+      "task": "libero_object/6"
+    },
+    {
+      "attempts": 10,
+      "ci95": [
+        0.0,
+        0.2775327998628892
+      ],
+      "rate": 0.0,
+      "successes": 0,
+      "task": "libero_object/7"
+    },
+    {
+      "attempts": 10,
+      "ci95": [
+        0.0,
+        0.2775327998628892
+      ],
+      "rate": 0.0,
+      "successes": 0,
+      "task": "libero_object/8"
+    },
+    {
+      "attempts": 10,
+      "ci95": [
+        0.0,
+        0.2775327998628892
+      ],
+      "rate": 0.0,
+      "successes": 0,
+      "task": "libero_object/9"
+    }
+  ],
+  "trajectories_available": false
+}

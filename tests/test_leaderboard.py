@@ -424,3 +424,66 @@ def test_the_committed_board_states_its_own_independence() -> None:
     # Zero independent submitters is the TRUE state today. When a real third-party row lands this
     # assertion is what forces the claim on the website/docs to be revisited in the same change.
     assert board.independent_submitters() == []
+
+
+# ---------------------------------------------------------------------------------------------
+# Signature stability under additive schema evolution.
+#
+# Incident: adding `benign_successes` / `benign_attempts` / `benign_ci95` to `LeaderboardRow`
+# without registering them in `_ROW_FIELDS_ADDED_IN` changed the canonical bytes of the COMMITTED
+# v5 board, and its Ed25519 signature stopped verifying. To anyone checking that signature, a
+# correctly-signed board is then indistinguishable from a tampered one.
+#
+# `test_committed_leaderboard_signature_actually_verifies` caught it, but only because a v5 board
+# happens to be committed. These two make the requirement structural rather than incidental: a new
+# field fails here immediately, naming itself, whatever boards happen to be in the repo.
+# ---------------------------------------------------------------------------------------------
+
+#: Fields that predate the `_FIELDS_ADDED_IN` registry (i.e. schema_version <= 4). Frozen: this
+#: list must never grow. Anything new belongs in the registry, keyed by the version that adds it.
+_BOARD_FIELDS_AT_FLOOR = frozenset({
+    "commit", "examples", "generated_at", "inputs_digest", "is_demo", "measured_with", "rows",
+    "schema_version", "signature",
+})
+_ROW_FIELDS_AT_FLOOR = frozenset({
+    "asr", "attempts", "benign_fpr", "ci95", "family", "policy", "provenance", "submitted_by",
+    "successes", "suite", "transfer_status",
+})
+
+
+def test_every_board_field_is_either_at_the_floor_or_registered_to_a_version() -> None:
+    from provael.leaderboard import _FIELDS_ADDED_IN, Leaderboard
+
+    registered = {name for names in _FIELDS_ADDED_IN.values() for name in names}
+    unaccounted = set(Leaderboard.model_fields) - _BOARD_FIELDS_AT_FLOOR - registered
+    assert not unaccounted, (
+        f"Leaderboard field(s) {sorted(unaccounted)} are not registered in _FIELDS_ADDED_IN. "
+        "Add them under the schema_version that introduces them, or every previously-signed "
+        "board silently fails to verify."
+    )
+
+
+def test_every_row_field_is_either_at_the_floor_or_registered_to_a_version() -> None:
+    from provael.leaderboard import _ROW_FIELDS_ADDED_IN, LeaderboardRow
+
+    registered = {name for names in _ROW_FIELDS_ADDED_IN.values() for name in names}
+    unaccounted = set(LeaderboardRow.model_fields) - _ROW_FIELDS_AT_FLOOR - registered
+    assert not unaccounted, (
+        f"LeaderboardRow field(s) {sorted(unaccounted)} are not registered in "
+        "_ROW_FIELDS_ADDED_IN. Add them under the schema_version that introduces them, or every "
+        "previously-signed board silently fails to verify."
+    )
+
+
+def test_registered_fields_are_stripped_below_their_own_version() -> None:
+    """The mechanism itself: a v5 board's signing payload carries no v6 field."""
+    import json as _json
+
+    from provael.leaderboard import _ROW_FIELDS_ADDED_IN, _signing_payload
+
+    board = load_leaderboard(_BOARD)
+    assert board.schema_version == 5, "the committed board is no longer the v5 regression fixture"
+    payload = _json.loads(_signing_payload(board))
+    for row in payload["rows"]:
+        for name in _ROW_FIELDS_ADDED_IN[6]:
+            assert name not in row, f"{name} leaked into a v5 board's signed bytes"
