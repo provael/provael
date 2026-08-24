@@ -22,7 +22,7 @@ import re
 from pathlib import Path
 
 import pytest
-from typer.testing import CliRunner
+import typer.main
 
 from provael.cli import app
 
@@ -43,10 +43,18 @@ def _planned_section() -> str:
 
 
 def _cli_commands() -> set[str]:
-    out = CliRunner().invoke(app, ["--help"]).output
-    # Typer's help table lists one command per row, leading the cell with the name.
-    names = set(re.findall(r"^\s*│\s*([a-z][a-z0-9-]{2,})\s{2,}", out, re.M))
-    assert names, "could not parse any command names out of `provael --help`"
+    """Every registered command name, read from the app OBJECT rather than from its help text.
+
+    The first version of this scraped `provael --help` for Typer's box-drawn table rows. That
+    passed on one CI runner and returned the empty set on another, which failed the RELEASE gate
+    at v0.38.0 — Rich decides borders, wrapping and glyphs from terminal width, TERM and colour
+    support, so the same command list renders differently on two machines that are otherwise
+    identical. Parsing a human-facing rendering for a structural fact is the bug; the Click group
+    Typer builds has the names exactly, and cannot be reformatted out from under the test.
+    """
+    group = typer.main.get_command(app)
+    names = set(getattr(group, "commands", {}))
+    assert names, "the Typer app registered no commands at all"
     return names
 
 
