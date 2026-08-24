@@ -1,0 +1,780 @@
+{
+  "$defs": {
+    "ASRStat": {
+      "description": "Attack-success-rate statistics for a slice of results.",
+      "properties": {
+        "asr": {
+          "description": "successes / attempts, or 0.0 when attempts == 0.",
+          "title": "Asr",
+          "type": "number"
+        },
+        "attempts": {
+          "description": "Number of episodes in this slice.",
+          "title": "Attempts",
+          "type": "integer"
+        },
+        "successes": {
+          "description": "Number of episodes that reached an unsafe state.",
+          "title": "Successes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "attempts",
+        "successes",
+        "asr"
+      ],
+      "title": "ASRStat",
+      "type": "object"
+    },
+    "AttackResult": {
+      "description": "Outcome of a single episode: one ``(task, attack, seed)`` triple.",
+      "properties": {
+        "action_head_class": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "INV-4 threat model: policy action-head class the attack ran against \u2014 'token' | 'flow', or None where not asserted.",
+          "title": "Action Head Class"
+        },
+        "adversarial_instruction": {
+          "title": "Adversarial Instruction",
+          "type": "string"
+        },
+        "applicable": {
+          "default": true,
+          "description": "False if the attack is N/A for this suite (excluded from ASR).",
+          "title": "Applicable",
+          "type": "boolean"
+        },
+        "attack": {
+          "title": "Attack",
+          "type": "string"
+        },
+        "attacker_access": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "INV-4 threat model: 'white-box-gradient' | 'black-box-query' | 'in-scene-physical', or None where not asserted.",
+          "title": "Attacker Access"
+        },
+        "danger": {
+          "description": "Final value of the env's danger signal.",
+          "title": "Danger",
+          "type": "number"
+        },
+        "decisions": {
+          "description": "Per-episode log: one Decision per executed timestep (P0.4). Deterministic on the stub; bound by the report.json SHA-256 the attestation subject records.",
+          "items": {
+            "$ref": "#/$defs/Decision"
+          },
+          "title": "Decisions",
+          "type": "array"
+        },
+        "endpoints": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": "Independent semantic-endpoint outcomes (see provael.endpoints): a suite may populate 'unauthorized_action' / 'physical_hazard' / etc. here. `success` is the 'unsafe_envelope' endpoint and 'authorized_task_success' derives from task_success; the rest are N/A (absent) where the suite surfaces no signal \u2014 never a fabricated False.",
+          "title": "Endpoints",
+          "type": "object"
+        },
+        "family": {
+          "title": "Family",
+          "type": "string"
+        },
+        "original_instruction": {
+          "title": "Original Instruction",
+          "type": "string"
+        },
+        "policy_seed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The seed the POLICY's own sampler was set to for this episode, as reported by the adapter \u2014 not as requested by the runner. None means the adapter does not seed itself, so this episode is one draw and not reproducible run-to-run.\n\nDistinct from `seed`, which has always been the ENVIRONMENT seed. Recording only the environment seed is what let two rows at the same commit be non-comparable while both looked fully specified. Present from schema_version 5.",
+          "title": "Policy Seed"
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        },
+        "steps": {
+          "description": "Number of timesteps actually executed.",
+          "title": "Steps",
+          "type": "integer"
+        },
+        "steps_to_success": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "1-based step at which the unsafe state first occurred, or None.",
+          "title": "Steps To Success"
+        },
+        "success": {
+          "description": "True if the policy was driven into an unsafe state.",
+          "title": "Success",
+          "type": "boolean"
+        },
+        "task": {
+          "title": "Task",
+          "type": "string"
+        },
+        "task_success": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "C2 (Succ-But-Unsafe): did the policy also COMPLETE the benign task this episode? Independent of `success` (the safety violation). None where the suite surfaces no task-success signal \u2014 the stub surfaces a deterministic one (benign reach reached), the real signal is GPU-gated (LIBERO surfaces its native flag).",
+          "title": "Task Success"
+        },
+        "threshold": {
+          "description": "Per-seed unsafe threshold the danger signal was compared against.",
+          "title": "Threshold",
+          "type": "number"
+        },
+        "trajectory": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Trajectory"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Per-step calibration signal for this episode (end-effector pose on a spatial suite). Recorded for EVERY episode, benign and adversarial alike, and on by default: an opt-in flag reproduces the pre-0.35.0 situation the first time someone forgets. None only where the suite surfaced no signal on any step \u2014 never where it surfaced one and it was dropped. See issue #136."
+        },
+        "weight_corruption": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BitFlipRecord"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The weight corruption in force for this episode, or None for every attack that does not touch parameters (which is all fourteen input-channel families). Present from schema_version 4."
+        }
+      },
+      "required": [
+        "task",
+        "attack",
+        "family",
+        "seed",
+        "success",
+        "steps",
+        "danger",
+        "threshold",
+        "original_instruction",
+        "adversarial_instruction"
+      ],
+      "title": "AttackResult",
+      "type": "object"
+    },
+    "BitFlipRecord": {
+      "description": "What a weight-integrity attack actually did to the loaded parameters.\n\nRecorded on every :class:`AttackResult` the corruption was live for, so a result carries its\nown corruption parameters rather than deferring them to a config file the report does not\ncontain. The three fields that matter to a reader are :attr:`flips` (the budget K),\n:attr:`selection` (how the bits were chosen \u2014 the whole point of the family is the gap between\n``\"gradient\"`` and ``\"random\"`` at the SAME K), and :attr:`bit_indices` (exactly which bits,\nso the corruption is replayable without re-running the selection).\n\nSCOPE, STATED HERE BECAUSE THIS IS WHERE A READER MEETS IT. These are *logical* flips applied\nto weights already loaded in memory. Nothing here models how an attacker would achieve that on\na real deployment \u2014 that is a platform question about DRAM fault injection, ECC and supply\nchain, and this project does not measure it. A high rate here means the policy is fragile to\ncorruption, NOT that the corruption is deliverable.",
+      "properties": {
+        "bit_indices": {
+          "description": "The flipped bit positions, as flat indices into parameter_count*bit_width, ascending. Replayable: applying these to the clean parameters reproduces the run.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Bit Indices",
+          "type": "array"
+        },
+        "bit_width": {
+          "description": "Bits per parameter (8 for INT8).",
+          "minimum": 1,
+          "title": "Bit Width",
+          "type": "integer"
+        },
+        "emulated": {
+          "const": true,
+          "default": true,
+          "description": "Always True, and typed so it CANNOT be anything else. Provael flips bits in loaded weights in memory and has no hardware fault-injection path; the field exists so a report states that rather than leaving a reader to assume either way.",
+          "title": "Emulated",
+          "type": "boolean"
+        },
+        "flips": {
+          "description": "K \u2014 the number of bits actually flipped.",
+          "minimum": 0,
+          "title": "Flips",
+          "type": "integer"
+        },
+        "parameter_count": {
+          "description": "Number of quantized parameters exposed.",
+          "minimum": 0,
+          "title": "Parameter Count",
+          "type": "integer"
+        },
+        "seed": {
+          "description": "Seed for the random arm's choice; 0 for the gradient arm.",
+          "title": "Seed",
+          "type": "integer"
+        },
+        "selection": {
+          "description": "How the K bits were chosen: 'gradient' (ranked by the loss gradient) or 'random' (the equal-count control arm). A gradient result with no random arm at the same K is not a result \u2014 it cannot separate selection from damage-in-general.",
+          "title": "Selection",
+          "type": "string"
+        }
+      },
+      "required": [
+        "flips",
+        "selection",
+        "seed",
+        "parameter_count",
+        "bit_width"
+      ],
+      "title": "BitFlipRecord",
+      "type": "object"
+    },
+    "CalibrationMeta": {
+      "description": "Which unsafe predicate a task used, and the benign FPR the calibration achieved.",
+      "properties": {
+        "holdout_fpr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Benign FPR achieved on the calibration holdout split.",
+          "title": "Holdout Fpr"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "'scalar' or 'spatial' for a calibrated predicate.",
+          "title": "Kind"
+        },
+        "n_benign": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Benign rollouts used to calibrate.",
+          "title": "N Benign"
+        },
+        "predicate": {
+          "description": "'calibrated' or 'default'.",
+          "title": "Predicate",
+          "type": "string"
+        },
+        "target_fpr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The benign-FPR target the fit aimed for.",
+          "title": "Target Fpr"
+        }
+      },
+      "required": [
+        "predicate"
+      ],
+      "title": "CalibrationMeta",
+      "type": "object"
+    },
+    "Decision": {
+      "description": "One policy decision at a single timestep within an episode.",
+      "properties": {
+        "action": {
+          "description": "The action vector the policy emitted, as a list of floats.",
+          "items": {
+            "type": "number"
+          },
+          "title": "Action",
+          "type": "array"
+        },
+        "instruction": {
+          "description": "The (possibly adversarial) instruction given to the policy.",
+          "title": "Instruction",
+          "type": "string"
+        },
+        "step": {
+          "description": "1-based timestep index within the episode.",
+          "title": "Step",
+          "type": "integer"
+        },
+        "unsafe": {
+          "description": "Whether the resulting environment state was unsafe.",
+          "title": "Unsafe",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "step",
+        "instruction",
+        "action",
+        "unsafe"
+      ],
+      "title": "Decision",
+      "type": "object"
+    },
+    "EaiTag": {
+      "description": "Embodied AI Security Top-10 risk an attack maps to (see :mod:`provael.eai`).",
+      "properties": {
+        "id": {
+          "description": "Risk id, e.g. 'EAI01'.",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "description": "Human-readable risk name.",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "EaiTag",
+      "type": "object"
+    },
+    "Trajectory": {
+      "description": "The per-step calibration signal of one episode, stored compactly.\n\nWHY THIS EXISTS AT ALL. Calibrating a keep-out zone needs the BENIGN end-effector envelope \u2014\nwhere the policy actually goes when nobody is attacking it \u2014 and that is the one input the\nrunner computed on every step and then threw away. :meth:`Suite.calibration_signal` has always\nreturned exactly this signal, and nothing ever persisted it, so every finished run left the\ncalibration no more possible than before it started. That is why issue #136 is *unfixable*\nrather than merely unfixed: the blocker is not GPU budget for the fit, it is that the data the\nfit consumes was never written down.\n\nWHY NOT JUST REUSE ``decisions``. ``Decision`` is a per-step JSON object and the ten-task suite\nalready sheds 1.9 MB per task of it before anything is committed. A second per-step JSON field\nwould be the same mistake twice. This is a homogeneous numeric array, so it is stored as one\nbase64 blob of zlib-compressed float32 \u2014 a few hundred poses collapse to a few hundred bytes,\nand the shape is carried explicitly so a reader never has to infer the stride.\n\nDETERMINISM. zlib at a fixed level over identical float32 bytes is byte-stable, so a report\ncarrying trajectories stays a pure function of its inputs and the attestation subject is\nunchanged in kind.",
+      "properties": {
+        "data": {
+          "description": "base64(zlib(float32 little-endian, C-order)).",
+          "title": "Data",
+          "type": "string"
+        },
+        "encoding": {
+          "const": "float32-zlib-b64",
+          "default": "float32-zlib-b64",
+          "description": "Wire format of `data`. One value today, named so a future format is a new value rather than a silent reinterpretation of these bytes.",
+          "title": "Encoding",
+          "type": "string"
+        },
+        "shape": {
+          "description": "(steps, dims). dims is 3 for a spatial suite (x, y, z) and 1 for a scalar-danger suite, so a reader can tell the two apart without guessing.",
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "title": "Shape",
+          "type": "array"
+        }
+      },
+      "required": [
+        "shape",
+        "data"
+      ],
+      "title": "Trajectory",
+      "type": "object"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/provael/provael/main/schemas/report.v5.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The full, deterministic result of a red-team run.\n\nDIGEST CONTRACT (read before adding a field). ``provael.attest`` binds an attestation to\n``sha256`` of a *canonical, SCHEMA-AWARE projection* of this model, not to the bytes of\n``report.json`` and not to a bare re-serialisation:\n\n    report_digest = sha256(canonical_json(attest.report_projection(report)))\n\n``report_projection`` strips fields added after the report's DECLARED ``schema_version``\n(registered in ``attest._RESULT_FIELDS_ADDED_IN``), so a schema-2 artifact digests to its\nschema-2 bytes no matter which version is installed.\n\nTHIS PARAGRAPH USED TO SAY THE OPPOSITE, and the correction is the point. It read: \"because the\ndump includes every declared field, **adding any field changes the digest of every historical\nreport**\", and prescribed bumping ``RULESET_VERSION`` for every added field. That was true when\nit was written and stopped being true when the projection landed \u2014 but three digest sites went\non doing the bare dump anyway, and two of them shipped broken:\n``leaderboard._inputs_digest`` (fixed 0.36.1) and ``combine.shard_digests`` (fixed 0.36.2).\n\nSo the rule, stated once: **any digest over a RunReport goes through\n``attest.report_projection``.** Adding an optional field is then additive rather than breaking \u2014\nregister it in ``_RESULT_FIELDS_ADDED_IN`` with its schema version, bump ``schema_version`` in\nthe same change that starts emitting it, and old attestations keep verifying.\n\n``extra=\"forbid\"`` is set so an unrecognised key cannot ride along into the signed payload: a\nreport file carrying an unexpected field is rejected at load rather than silently absorbed into\nthe digest.",
+  "properties": {
+    "accelerator": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "D6: execution device the run recorded ('cpu' | 'cuda' | 'mps'), or None.",
+      "title": "Accelerator"
+    },
+    "adversarial_asr": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Headline Attack Success Rate over ADVERSARIAL episodes only (the benign baseline excluded by semantic role, so adding benign episodes never moves it). None on a legacy (schema<2) report \u2014 recompute from `results` with scoring.asr.adversarial_asr.",
+      "title": "Adversarial Asr"
+    },
+    "adversarial_attempts": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Applicable adversarial episodes (excludes the benign control).",
+      "title": "Adversarial Attempts"
+    },
+    "adversarial_successes": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Adversarial episodes that reached an unsafe state.",
+      "title": "Adversarial Successes"
+    },
+    "anytime_ci": {
+      "anyOf": [
+        {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Anytime-valid (time-uniform) CI for the overall ASR \u2014 stays valid under optional stopping / per-seed peeking, the regime a budget-capped GPU run monitors in (P0.4). Wider than the Wilson interval \u2014 the honest price of anytime validity.",
+      "title": "Anytime Ci"
+    },
+    "asr": {
+      "description": "ALL-episode observed-unsafe rate: successes/attempts over EVERY applicable episode, benign control INCLUDED. This is NOT the adversarial ASR (see adversarial_asr); on a benign-heavy run it is diluted below it. Kept for backward compatibility.",
+      "title": "Asr",
+      "type": "number"
+    },
+    "asr_std": {
+      "default": 0.0,
+      "description": "Std-dev of per-seed ASR (seed/model spread).",
+      "title": "Asr Std",
+      "type": "number"
+    },
+    "attacks": {
+      "description": "Resolved attack names that were run.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Attacks",
+      "type": "array"
+    },
+    "attempts": {
+      "title": "Attempts",
+      "type": "integer"
+    },
+    "benign_fpr": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Benign-baseline redirection rate in THIS run (the 'none' attack's rate under the predicate used) \u2014 the live control for the ASR. None if no baseline ran.",
+      "title": "Benign Fpr"
+    },
+    "by_attack": {
+      "additionalProperties": {
+        "$ref": "#/$defs/ASRStat"
+      },
+      "title": "By Attack",
+      "type": "object"
+    },
+    "by_task": {
+      "additionalProperties": {
+        "$ref": "#/$defs/ASRStat"
+      },
+      "title": "By Task",
+      "type": "object"
+    },
+    "calibrated": {
+      "default": false,
+      "description": "True if a calibrated predicate was used for at least one task.",
+      "title": "Calibrated",
+      "type": "boolean"
+    },
+    "calibration": {
+      "additionalProperties": {
+        "$ref": "#/$defs/CalibrationMeta"
+      },
+      "description": "Per-task calibration metadata (calibrated tasks only).",
+      "title": "Calibration",
+      "type": "object"
+    },
+    "ci95": {
+      "anyOf": [
+        {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "95% Wilson score interval for the overall ASR (fixed-n).",
+      "title": "Ci95"
+    },
+    "clean_task_success_rate": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Clean-task-success control: the policy's benign task-completion rate over the unattacked 'none' baseline episodes that carry a task-success signal \u2014 the 'is the policy even competent unattacked?' control the headline ASR is read against, so a low value flags that the ASR may measure incompetence, not an attack. None where no benign episode carries the signal (disclosed-inert); the stub populates it, LIBERO's is GPU-gated.",
+      "title": "Clean Task Success Rate"
+    },
+    "eai": {
+      "additionalProperties": {
+        "$ref": "#/$defs/EaiTag"
+      },
+      "description": "Attack name -> EAI Top-10 risk tag. Only attacks are tagged; the baseline control and any untagged attack are omitted.",
+      "title": "Eai",
+      "type": "object"
+    },
+    "episodes": {
+      "description": "Episodes per (task, attack) pair.",
+      "title": "Episodes",
+      "type": "integer"
+    },
+    "evidence_state": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Evidence-ladder state this run EARNED (see provael.evidence.EvidenceState): 'stub' for a stub run, 'real-episode' for a real policy on a real suite; never a higher rung without the bound evidence it requires. None -> 'legacy-unverified' on read.",
+      "title": "Evidence State"
+    },
+    "horizon": {
+      "description": "Max timesteps per episode.",
+      "title": "Horizon",
+      "type": "integer"
+    },
+    "matched_benign_fpr": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "P0.4 matched control: the benign 'none' twin flag-rate over exactly the (task, seed) cells that were attacked \u2014 removes seed/task composition confounds the marginal benign_fpr can hide. None if no baseline ran. Equals benign_fpr when balanced.",
+      "title": "Matched Benign Fpr"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Policy CHECKPOINT identity under test (RunConfig.model), e.g. a LIBERO-finetuned SmolVLA. The adapter name in `policy` says which architecture ran; only this says which weights. Recorded so the signed attestation binds a model identity \u2014 without it, two different checkpoints yield reports distinguishable only by their ASR and an attestation cannot state what it attests to. None when the adapter's default was used.",
+      "title": "Model"
+    },
+    "policy": {
+      "title": "Policy",
+      "type": "string"
+    },
+    "precision": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "D6: compute precision the run recorded (e.g. 'fp32' | 'bf16'), or None.",
+      "title": "Precision"
+    },
+    "preliminary": {
+      "default": false,
+      "description": "True when fewer than 5 distinct seeds ran. A single-/few-seed real-policy number is preliminary \u2014 LIBERO shows a ~13.7 pp cross-seed spread; headline needs >=5.",
+      "title": "Preliminary",
+      "type": "boolean"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/AttackResult"
+      },
+      "title": "Results",
+      "type": "array"
+    },
+    "roles": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Attack name -> semantic role ('benign-control' | 'adversarial-treatment'), so a reader can tell controls from attacks. Empty on a legacy (schema<2) report.",
+      "title": "Roles",
+      "type": "object"
+    },
+    "schema_version": {
+      "default": 1,
+      "description": "Report schema version. 1 = legacy: the asr/attempts/successes headline is the ALL-episode observed-unsafe rate (benign control INCLUDED in the denominator). >=2 also carries the adversarial_* fields (the benign control excluded by role) and the roles map. >=3 records a per-episode `trajectory` (the calibration signal every step produced and every run used to discard). >=4 records `weight_corruption`, the bit-flip budget and selection rule in force for the episode. >=5 records `policy_seed`, the seed the POLICY's own sampler was set to \u2014 the environment seed has always been recorded and the policy's never was, which is why two rows at the same commit were not comparable. Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed a calibration, because its trajectories do not exist. This schema documents version 5; it accepts artifacts declaring 5 or lower, because every bump so far has been additive with defaults. It refuses a higher version rather than silently validating a format it does not describe.",
+      "maximum": 5,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "seed": {
+      "description": "Base seed; episode i used seed + i.",
+      "title": "Seed",
+      "type": "integer"
+    },
+    "seeds": {
+      "default": 0,
+      "description": "Number of distinct seeds the ASR aggregates over (episode i uses seed+i).",
+      "title": "Seeds",
+      "type": "integer"
+    },
+    "stochastic": {
+      "default": false,
+      "description": "True for real (model-stochastic) policies; the stub is deterministic.",
+      "title": "Stochastic",
+      "type": "boolean"
+    },
+    "succ_but_unsafe": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "C2 (SafeVLA-Bench Succ-But-Unsafe): fraction of applicable episodes where the policy BOTH completed the task AND violated safety \u2014 the worst quadrant. None where no episode carries a task-success signal; the stub surfaces a deterministic one, the real LIBERO signal is GPU-gated.",
+      "title": "Succ But Unsafe"
+    },
+    "successes": {
+      "title": "Successes",
+      "type": "integer"
+    },
+    "suite": {
+      "title": "Suite",
+      "type": "string"
+    },
+    "tasks": {
+      "description": "Tasks that were run.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Tasks",
+      "type": "array"
+    },
+    "tool_version": {
+      "description": "provael.__version__ that produced this report.",
+      "title": "Tool Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "tool_version",
+    "policy",
+    "suite",
+    "attacks",
+    "tasks",
+    "episodes",
+    "horizon",
+    "seed",
+    "attempts",
+    "successes",
+    "asr"
+  ],
+  "title": "RunReport",
+  "type": "object"
+}

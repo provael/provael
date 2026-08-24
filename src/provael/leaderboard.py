@@ -501,7 +501,55 @@ def validate_report(report: RunReport) -> list[str]:
             errors.append(f"results[{i}] missing 'attack'")
         if not r.family:
             errors.append(f"results[{i}] missing 'family'")
+
+    # A stochastic policy whose own sampler was never seeded produces ONE DRAW, and a board of
+    # single draws is not a leaderboard — two rows at the same commit are not comparable, which is
+    # the comparison the board exists to support. `seed` has always been present and required by
+    # the model, so it cannot be "absent"; the seed that WAS absent is the policy's, and that is
+    # what this refuses. A deterministic policy needs no such seed and is not asked for one.
+    #
+    # A pre-schema-5 report predates the field entirely and is rejected with that named as the
+    # reason, so a submitter is told to re-run on a current build rather than left guessing which
+    # field is missing.
+    if (
+        report.stochastic
+        and report.schema_version >= POLICY_SEED_SCHEMA
+        and not any(r.policy_seed is not None for r in report.results)
+    ):
+        errors.append(
+            f"stochastic policy {report.policy!r} recorded no 'policy_seed' on any episode: its "
+            f"sampler ran unseeded, so this is one draw rather than a measurement another run can "
+            f"reproduce, and two rows at the same commit are not comparable. Use an adapter that "
+            f"seeds itself, or submit a deterministic policy."
+        )
     return errors
+
+
+def validate_warnings(report: RunReport) -> list[str]:
+    """Advisories: admissible, but a reader should be told. Never a reason to exit non-zero.
+
+    WHY THIS IS NOT AN ERROR. A report produced before schema 5 could not have carried
+    ``policy_seed`` — the field did not exist. Refusing those is refusing history, and every
+    artifact committed in this repository is history: `validate_submission.py` runs over all of
+    `results/` on any PR that touches it, so a hard rule here would be red on the SmolVLA reports
+    from the day it landed and stay red until a GPU re-run nobody has scheduled. A gate that is
+    permanently red reports nothing, and the honest state — "measured before the tool recorded
+    this, and disclosed" — is not a failure.
+
+    It is not silence either. The advisory names the file, and the same gap reaches a consumer
+    through the board's own `stale` flag, because a report old enough to predate `policy_seed` is
+    also old enough to put its board past `MAX_MINOR_LAG`. Two independent surfaces, neither of
+    them prose.
+    """
+    if report.stochastic and report.schema_version < POLICY_SEED_SCHEMA:
+        return [
+            f"stochastic policy {report.policy!r} on report schema_version "
+            f"{report.schema_version}, which predates 'policy_seed' (schema "
+            f"{POLICY_SEED_SCHEMA}): the policy's own sampler was not recorded as seeded, so "
+            f"these episodes are one draw. Accepted as a historical artifact; a NEW submission "
+            f"should be measured on a build that records it."
+        ]
+    return []
 
 
 def to_json(leaderboard: Leaderboard) -> str:
@@ -514,6 +562,11 @@ def load_leaderboard(path: Path) -> Leaderboard:
     """Load a :class:`Leaderboard` from a JSON file."""
     return Leaderboard.model_validate_json(path.read_text(encoding="utf-8"))
 
+
+#: Report schema version that introduced per-episode ``policy_seed``. Named rather than inlined
+#: because two places need it — the submission gate and its error message — and a bare 5 in either
+#: is a number a reader has to go and look up.
+POLICY_SEED_SCHEMA = 5
 
 #: How far behind the assembling tool a row's measurement may fall before the board is stale.
 #: One MINOR version, counted on (major, minor) and ignoring the patch: 0.37.0 -> 0.38.x is a lag
@@ -698,6 +751,8 @@ def build_leaderboard(
 
 __all__ = [
     "MAX_MINOR_LAG",
+    "POLICY_SEED_SCHEMA",
+    "validate_warnings",
     "minor_lag",
     "staleness",
     "LEADERBOARD_JSON",

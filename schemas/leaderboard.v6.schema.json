@@ -271,7 +271,7 @@
         }
       ],
       "default": null,
-      "description": "UTC ISO-8601 time the BOARD was assembled (\u2026Z), if stamped. This is not when the underlying runs were measured \u2014 see `measured_with`.",
+      "description": "UTC ISO-8601 time the BOARD was ASSEMBLED (\u2026Z), if stamped. This is the assembled-at timestamp; there is deliberately no second field spelling it, because two fields carrying one instant are two fields that can disagree. It is not when the underlying runs were measured \u2014 see `measured_with` \u2014 and it moves on every rebuild while the numbers do not, which is what `stale` is for.",
       "title": "Generated At"
     },
     "inputs_digest": {

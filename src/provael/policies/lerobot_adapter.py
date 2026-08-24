@@ -247,6 +247,43 @@ class LeRobotAdapter(PolicyAdapter):
         if self._policy is not None:
             self._policy.reset()
 
+    def seed(self, seed: int) -> int | None:
+        """Seed torch's RNGs so the flow-matching sampler is a function of the episode seed.
+
+        WHAT THIS FIXES. The leaderboard's caveat — "SmolVLA's flow-matching sampler is not fully
+        seeded, treat every number as one draw" — was true because nothing seeded it. The
+        environment got ``suite.reset(task, seed)``; the policy got nothing, so the denoising
+        noise came from whatever state the process's global generator was in. An earlier pilot at
+        identical config gave ``goal_substitution`` 1/4 on one run and 0/4 on the next.
+
+        WHY THE GLOBAL GENERATOR AND NOT A LOCAL ONE. LeRobot's policies call ``torch.randn`` and
+        friends without accepting a ``generator=``, so there is no local generator to hand them.
+        Seeding the process-wide RNG immediately before the episode is the only lever the adapter
+        actually has. It is coarse — anything else in the process drawing from torch between this
+        call and the rollout perturbs the sequence — but it is honest, and it is the difference
+        between "seeded" and "not seeded at all".
+
+        WHY IT IS NOT CLAIMED TO BE FULL DETERMINISM. cuDNN kernel selection, TF32 and non-
+        deterministic reductions are unaffected by a seed, and this adapter does NOT set
+        ``torch.use_deterministic_algorithms``: that changes which kernels run, and a measurement
+        harness must not silently alter the compute path of the thing it is measuring. So
+        ``stochastic`` stays True and the report still says so. What changes is that the run
+        records WHICH seed the sampler started from, so a re-run is reproducible to the extent the
+        hardware allows and two rows are comparable to the extent they share a seed. Overstating
+        that would be the same error as the caveat this replaces, in the other direction.
+
+        UNVERIFIED ON GPU IN THIS CHANGE. There is no lerobot or CUDA in the CPU test environment,
+        so what is tested here is the contract (the runner calls it, the result records what it
+        returns, a stochastic adapter must override it) and not the numerical effect. Confirming
+        that two GPU runs at one seed now agree needs the GPU lane.
+        """
+        import torch
+
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():  # pragma: no cover - no CUDA in the CPU test environment
+            torch.cuda.manual_seed_all(seed)
+        return seed
+
     def _apply_image_override(self, observation: Observation, raw: Any) -> Any:
         """Fold ``observation[image_key]`` (an attack may have edited it) back into ``raw``.
 

@@ -27,7 +27,7 @@ from provael.types import RunReport
 
 _ROOT = Path(__file__).resolve().parent.parent
 _SCHEMAS = _ROOT / "schemas"
-_REPORT_SCHEMA = _SCHEMAS / "report.v4.schema.json"
+_REPORT_SCHEMA = _SCHEMAS / "report.v5.schema.json"
 _BOARD_SCHEMA = _SCHEMAS / "leaderboard.v6.schema.json"
 
 #: Schemas that a NEWER version has superseded. They stay committed and stay frozen: `$id` is a
@@ -35,7 +35,11 @@ _BOARD_SCHEMA = _SCHEMAS / "leaderboard.v6.schema.json"
 #: regenerating one would rewrite a contract already published under that name. They are not
 #: compared against the current models — describing an older model is what makes them a version —
 #: but they must still honour the promise their own `schema_version` bound makes.
-_SUPERSEDED_SCHEMAS = (_SCHEMAS / "leaderboard.v5.schema.json",)
+#: (superseded schema, the current schema that replaced it, how to find its artifacts).
+_SUPERSEDED_SCHEMAS = (
+    (_SCHEMAS / "leaderboard.v5.schema.json", "_BOARD_SCHEMA"),
+    (_SCHEMAS / "report.v4.schema.json", "_REPORT_SCHEMA"),
+)
 
 
 def _load(path: Path) -> dict:
@@ -52,7 +56,7 @@ def _committed_boards() -> list[Path]:
 
 def test_the_schemas_are_themselves_valid_json_schema() -> None:
     """A malformed schema validates nothing and reports success, so check the checker first."""
-    for path in (_REPORT_SCHEMA, _BOARD_SCHEMA, *_SUPERSEDED_SCHEMAS):
+    for path in (_REPORT_SCHEMA, _BOARD_SCHEMA, *(p for p, _ in _SUPERSEDED_SCHEMAS)):
         Draft202012Validator.check_schema(_load(path))
 
 
@@ -89,10 +93,14 @@ def test_a_higher_schema_version_is_refused() -> None:
     A v4 schema that happily validates a v5 artifact is a schema that cannot tell a consumer their
     tool is too old, which is the one thing a versioned contract is for.
     """
-    validator = Draft202012Validator(_load(_REPORT_SCHEMA))
+    schema = _load(_REPORT_SCHEMA)
+    ceiling = schema["properties"]["schema_version"]["maximum"]
+    validator = Draft202012Validator(schema)
     sample = _load(_committed_reports()[0])
-    sample["schema_version"] = 5
-    assert list(validator.iter_errors(sample)), "the v4 schema accepted a schema_version 5 report"
+    sample["schema_version"] = ceiling + 1
+    assert list(validator.iter_errors(sample)), (
+        f"the v{ceiling} schema accepted a schema_version {ceiling + 1} report"
+    )
 
 
 def test_the_schemas_match_the_models_they_claim_to_describe() -> None:
@@ -112,11 +120,17 @@ def test_the_schemas_match_the_models_they_claim_to_describe() -> None:
         )
 
 
-@pytest.mark.parametrize("schema_path", _SUPERSEDED_SCHEMAS, ids=lambda p: p.name)
-def test_a_superseded_schema_still_accepts_the_artifacts_it_promised_to(schema_path: Path) -> None:
+_ARTIFACTS = {"_BOARD_SCHEMA": _committed_boards, "_REPORT_SCHEMA": _committed_reports}
+_CURRENT = {"_BOARD_SCHEMA": _BOARD_SCHEMA, "_REPORT_SCHEMA": _REPORT_SCHEMA}
+
+
+@pytest.mark.parametrize(("schema_path", "kind"), _SUPERSEDED_SCHEMAS, ids=lambda v: getattr(v, "name", v))
+def test_a_superseded_schema_still_accepts_the_artifacts_it_promised_to(
+    schema_path: Path, kind: str
+) -> None:
     """A published contract does not stop being a contract when a newer one appears.
 
-    Every board committed at or below a superseded schema's version must still validate against
+    Every artifact committed at or below a superseded schema's version must still validate against
     it. Otherwise a consumer that pinned that `$id` — which is the correct, conservative thing for
     a consumer to do — starts rejecting artifacts the project still publishes.
     """
@@ -124,32 +138,36 @@ def test_a_superseded_schema_still_accepts_the_artifacts_it_promised_to(schema_p
     ceiling = schema["properties"]["schema_version"]["maximum"]
     validator = Draft202012Validator(schema)
     checked = 0
-    for path in _committed_boards():
-        board = _load(path)
-        if board.get("schema_version", 0) > ceiling:
+    for path in _ARTIFACTS[kind]():
+        artifact = _load(path)
+        if artifact.get("schema_version", 1) > ceiling:
             continue
-        errors = list(validator.iter_errors(board))
+        errors = list(validator.iter_errors(artifact))
         assert not errors, f"{path.name} no longer validates against {schema_path.name}: {errors[0]}"
         checked += 1
     assert checked, f"nothing at or below v{ceiling} remains to check {schema_path.name} against"
 
 
-@pytest.mark.parametrize("schema_path", _SUPERSEDED_SCHEMAS, ids=lambda p: p.name)
-def test_a_superseded_schema_is_frozen_below_the_current_one(schema_path: Path) -> None:
-    """It must describe an OLDER model, or the version bump bought nothing.
+@pytest.mark.parametrize(("schema_path", "kind"), _SUPERSEDED_SCHEMAS, ids=lambda v: getattr(v, "name", v))
+def test_a_superseded_schema_is_frozen_below_the_current_one(schema_path: Path, kind: str) -> None:
+    """A superseded file keeps its own version, and that version is genuinely behind the current.
 
-    This is the inverse of `test_the_schemas_match_the_models_they_claim_to_describe`: the current
-    schema must track the model, and a superseded one must not. If a regeneration ever overwrites
-    an old file in place, this catches it — and that is a rewrite of an already-published contract,
-    not a routine update.
+    `scripts/gen_schemas.py` writes `<name>.v<N>.schema.json` for the CURRENT N only, so a bump
+    creates a new file and leaves the old one alone. What this checks is that it stayed alone: the
+    filename, the `$id` and the declared `schema_version` ceiling still agree with each other and
+    are still below the current contract. Rewriting one in place would be a rewrite of something
+    already published at a stable URL, not a routine update — and the model comparison in
+    `test_the_schemas_match_the_models_they_claim_to_describe` is deliberately NOT applied to
+    these, because describing an older model is exactly what makes them a version.
     """
-    ceiling = _load(schema_path)["properties"]["schema_version"]["maximum"]
-    current = _load(_BOARD_SCHEMA)["properties"]["schema_version"]["maximum"]
+    schema = _load(schema_path)
+    ceiling = schema["properties"]["schema_version"]["maximum"]
+    current = _load(_CURRENT[kind])["properties"]["schema_version"]["maximum"]
     assert ceiling < current, f"{schema_path.name} is not superseded by anything"
-    live = set(Leaderboard.model_json_schema(mode="serialization").get("properties", {}))
-    published = set(_load(schema_path).get("properties", {}))
-    assert live != published, (
-        f"{schema_path.name} matches the current model exactly, so v{ceiling} and v{current} "
-        "describe the same contract. Either the bump was unnecessary or an old schema was "
-        "regenerated in place."
+    assert f".v{ceiling}." in schema_path.name, (
+        f"{schema_path.name} declares a ceiling of {ceiling}; the filename and the contract it "
+        "documents disagree, so a consumer resolving it by name gets something else."
+    )
+    assert schema["$id"].endswith(schema_path.name), (
+        f"{schema_path.name} carries $id {schema['$id']}, which resolves elsewhere."
     )

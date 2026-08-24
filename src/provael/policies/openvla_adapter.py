@@ -185,6 +185,23 @@ class OpenVLAAdapter(PolicyAdapter):
         self.resolved_precision = "bf16"
         self._loaded = True
 
+    def seed(self, seed: int) -> int | None:
+        """Seed torch's RNGs before the episode; return the seed applied.
+
+        OpenVLA runs locally on torch, so the same lever the LeRobot adapter uses applies here:
+        seed the process-wide generator immediately before the rollout, because the model's
+        sampling calls do not accept a ``generator=``. As there, this does not touch
+        ``torch.use_deterministic_algorithms`` — a measurement harness must not silently change
+        which kernels run in the thing it is measuring — so ``stochastic`` stays True and the
+        claim is "which seed the sampler started from", not "bit-identical".
+        """
+        import torch
+
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():  # pragma: no cover - no CUDA in the CPU test environment
+            torch.cuda.manual_seed_all(seed)
+        return seed
+
     def _rgb(self, observation: Observation) -> npt.NDArray[Any]:
         """Pull an (H, W, 3) uint8 RGB frame from the observation (image / rgb / pixels keys)."""
         for key in ("image", "rgb", "pixels"):

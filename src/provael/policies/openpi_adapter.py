@@ -183,6 +183,25 @@ class OpenPiAdapter(PolicyAdapter):
         self._client = websocket_client_policy.WebsocketClientPolicy(host=self.host, port=self.port)
         self._loaded = True
 
+    def seed(self, seed: int) -> int | None:
+        """Cannot seed: inference happens in a separate process this adapter only talks to.
+
+        DISCLOSED-INERT, AND OVERRIDDEN ON PURPOSE. openpi runs the policy in its own server and
+        this adapter sends an observation over HTTP; the sampler's RNG lives in that process, and
+        the websocket policy protocol carries no seed field to set it with. Seeding this process's
+        torch would change nothing about the numbers and would let the episode record a
+        ``policy_seed`` that had no effect — a report asserting a determinism nothing delivered,
+        which is worse than the honest null.
+
+        So this returns None and every openpi episode records ``policy_seed: null``, which reads
+        correctly as "one draw". The method exists rather than inheriting the default because a
+        stochastic adapter must state its answer: inherited silence and a considered "cannot" look
+        identical in a result file, and only one of them is a decision.
+
+        Closing it needs a seed field in the openpi serving protocol, i.e. an upstream change.
+        """
+        return None
+
     def _rgb(self, observation: Observation) -> npt.NDArray[Any]:
         """Pull an (H, W, 3) uint8 RGB frame from the observation (image / rgb / pixels keys)."""
         for key in ("image", "rgb", "pixels"):

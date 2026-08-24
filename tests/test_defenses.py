@@ -72,10 +72,19 @@ _EXPECTED_RUNREPORT_KEYS = frozenset({
 # report that records the ASR without them cannot be read at all — 100% at K=4 and 100% at K=256 are
 # different findings. It moves the canonical JSON, so the schema_version moved with it (3 -> 4) and
 # attest._RESULT_FIELDS_ADDED_IN strips it for anything that declares less. Added, not loosened.
+# `policy_seed` (report schema 5) is the third, and it is the one this guard was most likely to
+# stop. `seed` has always been the ENVIRONMENT seed; the policy's own sampler was never seeded at
+# all, so SmolVLA's flow-matching head drew from the ambient torch RNG and the board's own caveat
+# said the rows were "one draw, not a constant" — two rows at the same commit not comparable, which
+# is most of what a leaderboard is for. The fix has to be recorded per episode or a reader cannot
+# tell a seeded row from an unseeded one, and the adapter reports what it APPLIED rather than what
+# was requested, so `null` stays an available and honest answer. Same treatment as the two above:
+# schema_version moved 4 -> 5 in the same change, the field is registered in
+# attest._RESULT_FIELDS_ADDED_IN[5], and the committed schema-2 attestation still verifies.
 _EXPECTED_ATTACKRESULT_KEYS = frozenset({
     "action_head_class", "adversarial_instruction", "applicable", "attack", "attacker_access",
-    "danger", "decisions", "endpoints", "family", "original_instruction", "seed", "steps",
-    "steps_to_success", "success", "task", "task_success", "threshold", "trajectory",
+    "danger", "decisions", "endpoints", "family", "original_instruction", "policy_seed", "seed",
+    "steps", "steps_to_success", "success", "task", "task_success", "threshold", "trajectory",
     "weight_corruption",
 })
 _GOLDEN_CONFIG = {

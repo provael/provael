@@ -91,6 +91,45 @@ too old tells you so instead of silently passing.
   excluded from the denominator, never faked).
 - `successes` matches the applicable successes in the per-episode results.
 - Every result has an `attack` and `family`.
+- **A stochastic policy recorded a `policy_seed`** — see below. Rejected outright, not warned.
+
+## The seed your submission must carry
+
+Every report has always recorded `seed`: the **environment** seed, the one `suite.reset(task,
+seed)` uses. That is not the seed that made this board's numbers non-comparable.
+
+Nothing ever seeded the **policy**. A flow-matching head like SmolVLA's draws its denoising noise
+from the process's ambient torch RNG, so two runs at an identical config gave different answers —
+an early pilot returned `goal_substitution` 1/4 on one run and 0/4 on the next. Two rows at the
+same commit were therefore not comparable, which is most of what a leaderboard is for.
+
+From report **schema 5** (provael 0.38.0) each episode also records **`policy_seed`**: the seed the
+adapter reports it actually applied to the policy's own sampler, or `null` where the adapter cannot
+seed it. The runner sets it for you — `PolicyAdapter.seed()` is called with the episode seed before
+every rollout — so a submission produced by `provael attack` carries it without you doing anything.
+
+**A submission from a `stochastic: true` policy at schema ≥ 5 with `policy_seed: null` on every
+episode is refused.** Not a warning: an unseeded stochastic run is one draw, and a board of single
+draws cannot support the comparison it exists for. Two ways to satisfy it:
+
+- use an adapter that seeds itself (`smolvla`, `openvla`, and anything routed through the LeRobot
+  path do);
+- or submit a deterministic policy, which is not asked for a seed it does not have.
+
+`openpi` is the honest exception: inference happens in a separate server process and its protocol
+carries no seed field, so `PolicyAdapter.seed()` returns `null` there **with that reason recorded
+in the adapter**. Those episodes really are one draw, and a submission of them will be refused
+until the upstream protocol can carry a seed.
+
+Reports predating schema 5 — including every result committed in this repository — are **accepted
+with a named warning** rather than refused. The field did not exist when they were measured, and
+refusing history would make the submission gate red from the day it landed and keep it red until a
+GPU re-run nobody has scheduled. The same gap still reaches a consumer: a report old enough to
+predate `policy_seed` is also old enough to push its board past `MAX_MINOR_LAG`, so the board's
+`stale` flag fires independently.
+
+Both seeds participate in `inputs_digest`, which the board signature covers — so changing either
+one changes the digest, and a board cannot be re-signed over different seeds without saying so.
 
 ## Norms (please)
 

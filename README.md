@@ -42,7 +42,9 @@ wrong place, not of a policy that wanders. Three families are
 **measured nulls at 0/50 each** (`patch`, `decoy_object`, `scene_text`), and `mcp_tool_desc` is
 **not applicable** to this suite rather than a null. Clean-task-success under the benign arm averages
 84% and ranges 40–100% across tasks, so the policy is not uniformly competent. And the policy's
-sampler is not fully seeded, so this is **one draw**, not a reproducible constant.
+sampler was not seeded when this ran, so this is **one draw**, not a reproducible constant — from
+0.38.0 the runner seeds it and records `policy_seed` per episode, but that cannot be applied
+retroactively to a measurement already taken.
 [The full result](results/smolvla_libero_object_suite/README.md) ·
 [Read the write-up](docs/findings/2026-instruction-transfer.md) ·
 [Scope & honest limitations](#scope-and-honest-limitations).
@@ -427,7 +429,8 @@ measured nulls, published as such.
 Since `schema_version` 5 each row also carries the qualifiers its report always had —
 `calibrated` (false here: the keep-out predicate is the default box, see
 [#136](https://github.com/provael/provael/issues/136)), `stochastic` (true: one draw, not a
-reproducible constant), and `checkpoint` — plus a board-level `not_applicable`
+reproducible constant — these rows predate `policy_seed`), and `checkpoint` — plus a board-level
+`not_applicable`
 (`mcp_tool_desc`, which produced records but zero applicable episodes). A rate that outlives its
 qualifiers is the overclaim this board exists not to make, and the board was the one artifact
 where they were being dropped.

@@ -55,6 +55,28 @@ class PolicyAdapter(ABC):
         Intentionally a non-abstract no-op default; stateful policies override it.
         """
 
+    def seed(self, seed: int) -> int | None:  # noqa: B027
+        """Seed this policy's OWN sampler for the coming episode; return the seed applied.
+
+        WHAT WAS MISSING. The runner has always seeded the *environment* — ``suite.reset(task,
+        seed)`` — and every episode records that seed. Nothing ever seeded the *policy*. A
+        flow-matching head like SmolVLA's draws its noise from the ambient torch RNG in whatever
+        state the process left it, so two runs at an identical config give different numbers and
+        the leaderboard's own caveat says so: "one draw, not a constant". Two rows at the same
+        commit were therefore not comparable, which is most of what a leaderboard is for.
+
+        RETURNS WHAT WAS APPLIED, NOT WHAT WAS ASKED. Same discipline as
+        :attr:`resolved_device`: an adapter that cannot seed returns ``None`` and the episode
+        records ``policy_seed: null``, which is an honest "this was one draw". Returning the
+        argument unconditionally would let every report claim a determinism no adapter delivered.
+
+        The default does not seed, because most adapters have nothing to seed — the stub is pure
+        numpy and deterministic by construction. An adapter that sets ``stochastic = True`` and
+        does NOT override this is the bug, and `tests/test_policy_seeding.py` fails on it by name
+        rather than leaving it to be noticed in a result file months later.
+        """
+        return None
+
     @abstractmethod
     def load(self) -> None:
         """Load any weights / processors. Must be called once before :meth:`act`.

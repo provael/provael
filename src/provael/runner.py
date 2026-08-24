@@ -130,6 +130,12 @@ def run_episode(
     earlier version.
     """
     policy.reset()  # clear per-episode policy state (e.g. SmolVLA's action-chunk queue)
+    # Seed the POLICY as well as the environment. `suite.reset` has always seeded the env; the
+    # policy's own sampler ran off whatever state the process happened to be in, which is the
+    # whole of the leaderboard's "one draw, not a constant" caveat. The adapter reports what it
+    # actually applied — None if it does not seed — and that answer is what the episode records,
+    # never the value we asked for.
+    policy_seed = policy.seed(seed)
     obs = suite.reset(task, seed)
     base_instruction = str(obs.get("instruction", ""))
 
@@ -141,6 +147,7 @@ def run_episode(
             attack=attack.name,
             family=attack.family,
             seed=seed,
+            policy_seed=policy_seed,
             success=False,
             steps=0,
             steps_to_success=None,
@@ -267,6 +274,7 @@ def run_episode(
         attack=attack.name,
         family=attack.family,
         seed=seed,
+        policy_seed=policy_seed,
         success=success,
         steps=steps,
         steps_to_success=steps_to_success,
@@ -422,7 +430,7 @@ def run(
         # field stripped by attest.report_projection before the digest, i.e. signed around
         # rather than signed over, and the corruption parameters would sit outside the
         # signature that is supposed to cover them.
-        schema_version=4,
+        schema_version=5,
         evidence_state=classify_run(config.policy, config.suite).value,
         policy=config.policy,
         model=config.model,

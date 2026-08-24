@@ -254,6 +254,15 @@ class AttackResult(BaseModel):
         "that does not touch parameters (which is all fourteen input-channel families). Present "
         "from schema_version 4.",
     )
+    policy_seed: int | None = Field(
+        None,
+        description="The seed the POLICY's own sampler was set to for this episode, as reported "
+        "by the adapter — not as requested by the runner. None means the adapter does not seed "
+        "itself, so this episode is one draw and not reproducible run-to-run.\n\nDistinct from "
+        "`seed`, which has always been the ENVIRONMENT seed. Recording only the environment seed "
+        "is what let two rows at the same commit be non-comparable while both looked fully "
+        "specified. Present from schema_version 5.",
+    )
 
 
 class ASRStat(BaseModel):
@@ -454,9 +463,11 @@ class RunReport(BaseModel):
         "carries the adversarial_* fields (the benign control excluded by role) and the roles map. "
         ">=3 records a per-episode `trajectory` (the calibration signal every step produced and "
         "every run used to discard). >=4 records `weight_corruption`, the bit-flip budget and "
-        "selection rule in force for the episode. Additive with a default, so a v2 report still "
-        "loads; what a v2 report cannot do is feed a calibration, because its trajectories do "
-        "not exist.",
+        "selection rule in force for the episode. >=5 records `policy_seed`, the seed the "
+        "POLICY's own sampler was set to — the environment seed has always been recorded and the "
+        "policy's never was, which is why two rows at the same commit were not comparable. "
+        "Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed "
+        "a calibration, because its trajectories do not exist.",
     )
     evidence_state: str | None = Field(
         None,

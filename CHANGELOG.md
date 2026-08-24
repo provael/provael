@@ -105,6 +105,50 @@ All notable changes to this project are documented here. The format is based on
   re-run on a build at or after 0.35.0, which is GPU-gated. What the study does buy is scheduling:
   tasks 4 and 5 are the two to calibrate first, and a re-run does not need all ten.
 
+- **The policy's own sampler is seeded, and the seed is recorded (report schema v5).** The board
+  carried a caveat that SmolVLA's flow-matching sampler is "one draw, not a constant", which
+  quietly means two rows at the same commit are not comparable — most of what a leaderboard is
+  for. That was not a property of flow matching. Nothing had ever seeded it: `suite.reset(task,
+  seed)` seeded the ENVIRONMENT and every episode recorded that seed, while the policy drew its
+  denoising noise from wherever the process's torch RNG happened to be. An early pilot at
+  identical config returned `goal_substitution` 1/4 on one run and 0/4 on the next.
+
+  `PolicyAdapter.seed(seed) -> int | None` is now called with the episode seed before every
+  rollout, and `AttackResult.policy_seed` records **what the adapter reports it applied**, not what
+  the runner asked for — the same discipline as `resolved_device`, because returning the argument
+  unconditionally would let every report claim a determinism no adapter delivered. The LeRobot and
+  OpenVLA adapters seed torch's generators; `openpi` returns `None` **with the reason in the
+  method**, since inference happens in a separate server process whose protocol has no seed field.
+  A stochastic adapter that inherits the default unchanged fails a test by name: inherited silence
+  and a considered "cannot" look identical in a result file, and only one of them is a decision.
+
+  This does **not** claim bit-identical runs, and deliberately does not set
+  `torch.use_deterministic_algorithms` — that changes which kernels run, and a measurement harness
+  must not silently alter the compute path of the thing it is measuring. `stochastic` stays true.
+  What changes is that a run records which seed its sampler started from. The GPU effect is
+  untested here: there is no lerobot or CUDA in the CPU environment, so what is tested is the
+  contract, not the numbers.
+
+  `validate_report` now **refuses** a stochastic submission at schema ≥ 5 with no `policy_seed` on
+  any episode. Reports predating schema 5 — every result committed in this repository — are
+  accepted with a named warning instead: the field did not exist when they were measured, and
+  `validate_submission.py` runs over all of `results/` on any PR that touches it, so a hard rule
+  would have been red from the day it landed. The gap still reaches a consumer through the board's
+  `stale` flag, since a report old enough to predate `policy_seed` is old enough to put its board
+  past `MAX_MINOR_LAG`.
+
+  Both seeds already participate in `inputs_digest` and therefore in the board signature. That was
+  true and had no test, which is the same as being true by accident; it has one now.
+
+  **The caveat stays.** The published rows were measured before any of this and carry no
+  `policy_seed`, so nothing here makes them reproducible after the fact — it is scoped to those
+  rows rather than deleted, and re-running them is GPU-gated. Deleting it belongs in the commit
+  that completes the re-run.
+
+  Published schemas: `report.v5.schema.json` and `leaderboard.v6.schema.json`. `report.v4` and
+  `leaderboard.v5` stay committed and frozen — their `$id` is a stable URL, so deleting one 404s
+  any consumer that pinned it — with tests holding each to the promise its own version bound makes.
+
 ### Fixed
 
 - **The leaderboard Space told visitors the rates were read against "a 0% benign false-positive

@@ -64,7 +64,11 @@ the maintainer of this board more tightly than it binds anyone submitting to it.
 >   calibrated hazard rate, and it is why the benign arm tripped at all. Per-task zone
 >   calibration is still owed ([#136](https://github.com/provael/provael/issues/136)).
 > - `"stochastic": true` — SmolVLA's flow-matching sampler is not fully seeded, so these
->   numbers are one draw, not a reproducible constant.
+>   numbers are one draw, not a reproducible constant. **This caveat stays until these rows are
+>   re-run**, and it is about these rows specifically: from provael 0.38.0 the runner seeds the
+>   policy's own sampler and each episode records `policy_seed`, and a stochastic submission
+>   without one is refused. The rows above were measured before that and carry no `policy_seed`,
+>   so nothing about the fix makes them reproducible after the fact. Re-running them is GPU-gated.
 > - `"not_applicable": ["mcp_tool_desc"]` — 50 episode records, zero applicable episodes.
 >   Not-measured and measured-zero are different claims, so it is named rather than
 >   silently dropped from the denominator.

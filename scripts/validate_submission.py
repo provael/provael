@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import sys
 
-from provael.leaderboard import find_reports, validate_report
+from provael.leaderboard import find_reports, validate_report, validate_warnings
 from provael.report import load_report
 
 
@@ -33,6 +33,11 @@ def main(argv: list[str]) -> int:
             print(f"FAIL {path}: not a valid report.json ({exc})")
             ok = False
             continue
+        for warning in validate_warnings(report):
+            # Loud, named, and non-fatal. See leaderboard.validate_warnings for why this is not
+            # an error: every committed artifact predates the field, and a gate that is red from
+            # the day it lands reports nothing.
+            print(f"WARN {path}:\n  - {warning}")
         errors = validate_report(report)
         if errors:
             ok = False

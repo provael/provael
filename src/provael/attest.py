@@ -402,6 +402,7 @@ def _within_window(now: str | None, not_before: str | None, not_after: str | Non
 _RESULT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     3: ("trajectory",),
     4: ("weight_corruption",),
+    5: ("policy_seed",),
 }
 
 
