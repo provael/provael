@@ -601,6 +601,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="What a re-stamp does and does not change">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#staleness-is-a-field-not-a-banner-schema-v6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Staleness is a field, not a banner (schema v6)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2600,6 +2617,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="What a re-stamp does and does not change">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#staleness-is-a-field-not-a-banner-schema-v6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Staleness is a field, not a banner (schema v6)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2771,6 +2805,50 @@ the <em>numbers</em> came from — and <code>Leaderboard.is_restamp()</code> ans
 published board reports <code>measured_with: ["0.32.0"]</code> against a build commit from the current release
 line: the provenance envelope is current, the measurement is the ten-task SmolVLA × LIBERO suite
 screen those shards recorded.</p>
+<h3 id="staleness-is-a-field-not-a-banner-schema-v6">Staleness is a field, not a banner (schema v6)</h3>
+<p><code>measured_with</code> and <code>is_restamp()</code> let a reader work it out. <strong>A consumer should not have to.</strong> The
+published board carried four rates, an Ed25519 signature, and nothing machine-readable saying the
+signature vouches for a <em>measurement</em> rather than for its <em>currency</em> — a distinction that only
+lived in prose the Space renders. So v6 records the verdict:</p>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>what it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tool_version</code></td>
+<td>the version that <strong>assembled</strong> the board — distinct from <code>measured_with</code>, which is what <strong>measured</strong> the rows. The gap between them is the staleness.</td>
+</tr>
+<tr>
+<td><code>stale</code></td>
+<td><code>true</code> when some row is more than <code>MAX_MINOR_LAG</code> (1) minor versions behind. <code>null</code> when it cannot be determined — never <code>false</code> by default.</td>
+</tr>
+<tr>
+<td><code>stale_reason</code></td>
+<td>why, naming both versions, so the verdict is re-derivable from its own text.</td>
+</tr>
+</tbody>
+</table>
+<p>The lag is counted on <code>(major, minor)</code> and ignores the patch, because a patch by definition changes
+no measured behaviour. Across a major bump it is not a subtraction: 0.40 → 1.0 is one release, not
+minus thirty-nine, so a differing major reports "too far" rather than a negative number that would
+read as fresh.</p>
+<p><strong><code>stale</code> sits outside the signature, on purpose.</strong> Staleness is a function of today, not of the
+board: a board that was current when signed becomes stale without a byte changing. Inside the
+signed subject it would need either a signature re-issued as time passes, or a flag frozen at a
+value that was true once. Being registered in <code>_FIELDS_ADDED_IN[6]</code> means it is stripped from the
+signing payload of any board declaring an earlier schema — which is exactly what lets the
+already-signed v5 board be annotated with <code>stale: true</code> and still verify against the committed
+public key.</p>
+<p>The verdict is also <strong>monotone</strong>: a row's measured version never changes and the release only moves
+forward, so a <code>true</code> can never become wrong. Only a <code>false</code> can decay, and
+<code>scripts/check_leaderboard_staleness.py</code> re-checks that single direction in CI. It fails on
+<strong>undeclared</strong> staleness only — a board past the limit that does not say so. Failing on staleness
+itself would be red until a GPU re-run nobody has scheduled, and a permanently-red detector reports
+nothing. Disclosed staleness is the honest state; silent staleness is the bug.</p>
 <h2 id="qualifiers-travel-with-the-row-schema-v5">Qualifiers travel with the row (schema v5)</h2>
 <p>A leaderboard is where a number travels furthest from its own report, and until v5 it arrived
 stripped: <code>report.json</code> recorded <code>calibrated</code> and <code>stochastic</code>, and the board dropped both. A row
