@@ -77,6 +77,18 @@ jobs:
       - name: Link check (relative markdown links, case-exact)
         run: uv run python scripts/check_links.py
 
+      # A published board's rows age without a byte of it changing, and the only thing that said so
+      # was a banner the Space renders. A consumer reading leaderboard.json got four rates, an
+      # Ed25519 signature, and nothing machine-readable to tell it the signature vouches for a
+      # measurement rather than for its currency.
+      #
+      # This fails on UNDECLARED staleness only — a board more than MAX_MINOR_LAG minors behind the
+      # running release that does not carry `stale: true`. Failing on staleness itself would be red
+      # today and red until a GPU re-run nobody has scheduled, and a permanently-red detector
+      # reports nothing. Disclosed staleness is the honest state; silent staleness is the bug.
+      - name: Leaderboard staleness is declared, not implied
+        run: uv run python scripts/check_leaderboard_staleness.py
+
       # COVERAGE IS MEASURED AND PUBLISHED, not asserted. The repo had 90 test modules and no
       # figure anywhere, which is exactly the shape of claim this project refuses to accept from
       # anyone else: "well tested" with no denominator.

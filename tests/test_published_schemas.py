@@ -28,7 +28,14 @@ from provael.types import RunReport
 _ROOT = Path(__file__).resolve().parent.parent
 _SCHEMAS = _ROOT / "schemas"
 _REPORT_SCHEMA = _SCHEMAS / "report.v4.schema.json"
-_BOARD_SCHEMA = _SCHEMAS / "leaderboard.v5.schema.json"
+_BOARD_SCHEMA = _SCHEMAS / "leaderboard.v6.schema.json"
+
+#: Schemas that a NEWER version has superseded. They stay committed and stay frozen: `$id` is a
+#: raw.githubusercontent URL on `main`, so deleting one 404s every consumer that pinned it, and
+#: regenerating one would rewrite a contract already published under that name. They are not
+#: compared against the current models — describing an older model is what makes them a version —
+#: but they must still honour the promise their own `schema_version` bound makes.
+_SUPERSEDED_SCHEMAS = (_SCHEMAS / "leaderboard.v5.schema.json",)
 
 
 def _load(path: Path) -> dict:
@@ -45,7 +52,7 @@ def _committed_boards() -> list[Path]:
 
 def test_the_schemas_are_themselves_valid_json_schema() -> None:
     """A malformed schema validates nothing and reports success, so check the checker first."""
-    for path in (_REPORT_SCHEMA, _BOARD_SCHEMA):
+    for path in (_REPORT_SCHEMA, _BOARD_SCHEMA, *_SUPERSEDED_SCHEMAS):
         Draft202012Validator.check_schema(_load(path))
 
 
@@ -103,3 +110,46 @@ def test_the_schemas_match_the_models_they_claim_to_describe() -> None:
             f"only in model {sorted(live - published)}, only in schema {sorted(published - live)}. "
             f"Regenerate with scripts/gen_schemas.py."
         )
+
+
+@pytest.mark.parametrize("schema_path", _SUPERSEDED_SCHEMAS, ids=lambda p: p.name)
+def test_a_superseded_schema_still_accepts_the_artifacts_it_promised_to(schema_path: Path) -> None:
+    """A published contract does not stop being a contract when a newer one appears.
+
+    Every board committed at or below a superseded schema's version must still validate against
+    it. Otherwise a consumer that pinned that `$id` — which is the correct, conservative thing for
+    a consumer to do — starts rejecting artifacts the project still publishes.
+    """
+    schema = _load(schema_path)
+    ceiling = schema["properties"]["schema_version"]["maximum"]
+    validator = Draft202012Validator(schema)
+    checked = 0
+    for path in _committed_boards():
+        board = _load(path)
+        if board.get("schema_version", 0) > ceiling:
+            continue
+        errors = list(validator.iter_errors(board))
+        assert not errors, f"{path.name} no longer validates against {schema_path.name}: {errors[0]}"
+        checked += 1
+    assert checked, f"nothing at or below v{ceiling} remains to check {schema_path.name} against"
+
+
+@pytest.mark.parametrize("schema_path", _SUPERSEDED_SCHEMAS, ids=lambda p: p.name)
+def test_a_superseded_schema_is_frozen_below_the_current_one(schema_path: Path) -> None:
+    """It must describe an OLDER model, or the version bump bought nothing.
+
+    This is the inverse of `test_the_schemas_match_the_models_they_claim_to_describe`: the current
+    schema must track the model, and a superseded one must not. If a regeneration ever overwrites
+    an old file in place, this catches it — and that is a rewrite of an already-published contract,
+    not a routine update.
+    """
+    ceiling = _load(schema_path)["properties"]["schema_version"]["maximum"]
+    current = _load(_BOARD_SCHEMA)["properties"]["schema_version"]["maximum"]
+    assert ceiling < current, f"{schema_path.name} is not superseded by anything"
+    live = set(Leaderboard.model_json_schema(mode="serialization").get("properties", {}))
+    published = set(_load(schema_path).get("properties", {}))
+    assert live != published, (
+        f"{schema_path.name} matches the current model exactly, so v{ceiling} and v{current} "
+        "describe the same contract. Either the bump was unnecessary or an old schema was "
+        "regenerated in place."
+    )

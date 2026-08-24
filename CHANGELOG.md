@@ -41,6 +41,42 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- **The leaderboard states its own staleness in a field a machine can refuse on (schema v6).**
+  `leaderboard/results/leaderboard.json` publishes four rows measured with provael 0.32.0 — six
+  minor versions behind 0.37.0. It said so in a banner the Space renders, and prose does not stop a
+  consumer: anything reading the JSON got four rates, an Ed25519 signature, and no way to tell that
+  the signature vouches for a *measurement* rather than for its *currency*. A signature over stale
+  data reads as currency, which is worse than no signature.
+
+  Three additive board fields: `tool_version` (which release **assembled** the board — distinct
+  from `measured_with`, which is what **measured** the rows; the gap between them is the
+  staleness), `stale`, and `stale_reason` naming both versions so the verdict is re-derivable from
+  its own text. The lag is counted on `(major, minor)` and ignores the patch, since a patch changes
+  no measured behaviour; across a major bump it is not a subtraction, because 0.40 → 1.0 is one
+  release and not minus thirty-nine.
+
+  There is deliberately **no `assembled_at` field**: `generated_at` already carries exactly that
+  instant, and two fields holding one value are two fields that can disagree. Its description now
+  says so outright.
+
+  **The flag sits outside the signed subject.** Staleness is a function of today, not of the board
+  — one that was current when signed becomes stale without a byte changing. Registering the fields
+  in `_FIELDS_ADDED_IN[6]` strips them from the signing payload of any board declaring an earlier
+  schema, which is what let the already-signed v5 board be annotated with `stale: true`,
+  `tool_version: "0.33.2"` (read from `src/provael/__init__.py` at its own recorded commit
+  8cd8d99, not guessed) and per-row benign counts, and still verify against the committed public
+  key. A four-line diff, signature intact.
+
+  `scripts/check_leaderboard_staleness.py` runs in CI and fails on **undeclared** staleness only —
+  a board past the limit that does not carry `stale: true`. Failing on staleness itself would be
+  red today and red until a GPU re-run nobody has scheduled, and a permanently-red detector reports
+  nothing. Disclosed staleness is the honest state; silent staleness is the bug. `--fix` refreshes
+  the flag; the verdict is monotone, so only a `false` can ever decay and that is the single
+  direction re-checked.
+
+  The re-run was not taken: the rows are SmolVLA × LIBERO and re-running them is GPU-gated, so the
+  board is flagged rather than refreshed.
+
 - **`studies/keepout_calibration/` — what the benign 2/50 actually is (#136).** The claim that the
   default keep-out box is misplaced has been asserted in this repository since 0.34.0 and never
   tested. It is now measured, from artifacts already committed, on CPU, with no simulator.
@@ -68,6 +104,17 @@ All notable changes to this project are documented here. The format is based on
   So **#136 stays open and the 44/50 headline has not moved** — it cannot move without a benign
   re-run on a build at or after 0.35.0, which is GPU-gated. What the study does buy is scheduling:
   tasks 4 and 5 are the two to calibrate first, and a re-run does not need all ten.
+
+### Fixed
+
+- **The leaderboard Space told visitors the rates were read against "a 0% benign false-positive
+  control" while the board underneath it carried a `baseline` row at 4% (2/50).** The 0% was the
+  *matched* control for one arm — `roleplay` had no benign twin fire at the same (task, seed) —
+  which is a different quantity from the marginal false-positive rate and not interchangeable with
+  it. The page now computes the figure from its own baseline row, like every other number in that
+  banner, so it cannot drift from the rows it describes again. The benign column also renders
+  counts and the interval, so the board reads `41.3% [34-49%]` against `4.0% (2/50) [1-13%]`
+  rather than against a bare percentage.
 
 ## [0.37.0] — 2026-08-22
 

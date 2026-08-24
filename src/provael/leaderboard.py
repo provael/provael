@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import glob
 import json
+from collections.abc import Sequence
 from pathlib import Path
 
 from pydantic import BaseModel, Field
@@ -180,8 +181,11 @@ class Leaderboard(BaseModel):
     )
     generated_at: str | None = Field(
         None,
-        description="UTC ISO-8601 time the BOARD was assembled (…Z), if stamped. This is not when "
-        "the underlying runs were measured — see `measured_with`.",
+        description="UTC ISO-8601 time the BOARD was ASSEMBLED (…Z), if stamped. This is the "
+        "assembled-at timestamp; there is deliberately no second field spelling it, because two "
+        "fields carrying one instant are two fields that can disagree. It is not when the "
+        "underlying runs were measured — see `measured_with` — and it moves on every rebuild "
+        "while the numbers do not, which is what `stale` is for.",
     )
     commit: str | None = Field(
         None, description="Source commit the board was built from, if stamped."
@@ -197,6 +201,31 @@ class Leaderboard(BaseModel):
         "Not-measured and measured-zero are different claims: scoring excludes these from every "
         "denominator, so without this list they vanish from the board entirely and a reader counts "
         "one fewer null than was actually attempted.",
+    )
+    tool_version: str | None = Field(
+        None,
+        description="The provael version that ASSEMBLED this board — deliberately distinct from "
+        "`measured_with`, which is the version(s) the NUMBERS came from. A rebuild re-stamps the "
+        "assembler and re-runs no policy, so the two diverge and the gap is the staleness. None "
+        "on a board built before this field existed.",
+    )
+    stale: bool | None = Field(
+        None,
+        description="True when some row was measured more than MAX_MINOR_LAG minor versions "
+        "behind the assembling tool — machine-readable, so a consumer can refuse the board "
+        "without parsing a banner. None when it could not be determined (no `measured_with`, or "
+        "no `tool_version`).\n\nDERIVED AND OUTSIDE THE SIGNATURE, on purpose. Staleness is a "
+        "function of today, not of the board: a board that was current when signed becomes stale "
+        "without a byte changing. Putting it inside the signed subject would mean either a "
+        "signature that must be re-issued as time passes, or a flag frozen at a value that was "
+        "true once. It is registered in `_FIELDS_ADDED_IN`, so it is stripped from the signing "
+        "payload of any board declaring an earlier schema — which is what lets an already-signed "
+        "board be annotated with it and still verify.",
+    )
+    stale_reason: str | None = Field(
+        None,
+        description="Why `stale` is what it is, naming both versions. Present whenever `stale` "
+        "is not None, so the flag is never a bare boolean a reader has to reverse-engineer.",
     )
     signature: LeaderboardSignature | None = None
 
@@ -419,14 +448,22 @@ def aggregate(
     # Rank by ASR (desc), then by keys for a stable, deterministic order.
     rows.sort(key=lambda r: (-r.asr, r.policy, r.suite, r.family))
 
+    from provael import __version__
+
     is_demo = all(report.policy == "stub" for report in reports) if reports else True
+    # The versions the NUMBERS came from, not the version assembling the board. The gap between
+    # the two IS the staleness, which is why both are recorded and neither is inferred.
+    measured_with = sorted({r.tool_version for r in reports})
+    stale, stale_reason = staleness(measured_with, __version__)
     return Leaderboard(
         is_demo=is_demo,
         rows=rows,
         examples=attack_examples(sorted(attack_names)),
         inputs_digest=_inputs_digest(reports) if reports else None,
-        # The versions the NUMBERS came from, not the version assembling the board.
-        measured_with=sorted({r.tool_version for r in reports}),
+        measured_with=measured_with,
+        tool_version=__version__,
+        stale=stale,
+        stale_reason=stale_reason,
         not_applicable=sorted(attack_names - applicable_attacks),
     )
 
@@ -478,6 +515,89 @@ def load_leaderboard(path: Path) -> Leaderboard:
     return Leaderboard.model_validate_json(path.read_text(encoding="utf-8"))
 
 
+#: How far behind the assembling tool a row's measurement may fall before the board is stale.
+#: One MINOR version, counted on (major, minor) and ignoring the patch: 0.37.0 -> 0.38.x is a lag
+#: of 1 and fine, 0.32.0 -> 0.38.x is a lag of 6 and is not. Patch releases are excluded because a
+#: patch by definition changes no measured behaviour, and counting them would make every board
+#: stale for reasons that cannot affect a number.
+MAX_MINOR_LAG = 1
+
+
+def _minor(version: str) -> tuple[int, int] | None:
+    """``"0.32.1"`` -> ``(0, 32)``. None for anything that is not a dotted numeric version.
+
+    Returning None rather than raising matters: a board carrying an unparseable version must come
+    out as "cannot determine", not as "fresh". Every failure mode of this function has to land on
+    the conservative side, because the answer gates whether a number gets published.
+    """
+    parts = version.strip().lstrip("v").split(".")
+    if len(parts) < 2:
+        return None
+    try:
+        return int(parts[0]), int(parts[1])
+    except ValueError:
+        return None
+
+
+def minor_lag(measured: str, assembled: str) -> int | None:
+    """Minor versions between two releases, or None if either will not parse.
+
+    Across a major bump the lag is not a subtraction — 0.40 to 1.0 is one release, not minus
+    thirty-nine — so a differing major is reported as the maximum lag rather than as a number
+    invented from two incomparable series.
+    """
+    a, b = _minor(measured), _minor(assembled)
+    if a is None or b is None:
+        return None
+    if a[0] != b[0]:
+        return max(MAX_MINOR_LAG + 1, abs(b[1] - a[1]))
+    return b[1] - a[1]
+
+
+def staleness(measured_with: Sequence[str], against: str | None) -> tuple[bool | None, str]:
+    """``(stale, reason)``: is any row more than MAX_MINOR_LAG minors behind ``against``?
+
+    ``against`` is the version the rows are being judged current *relative to* — the assembling
+    tool at build time, the running release when the flag is later refreshed. The reason string
+    names it either way, so the verdict is always re-derivable from its own text.
+
+    WHY THE OLDEST ROW DECIDES. A board is one artifact and a consumer accepts or refuses it
+    whole, so the honest summary is its worst row, not its average or its newest. Mixing a current
+    measurement with a six-minors-old one does not make the old one fresher.
+
+    WHY IT IS NOT COMPUTED FROM THE ASSEMBLING VERSION ALONE. Rebuilding a board re-aggregates
+    committed reports: it moves `generated_at`, `commit` and `tool_version` to today and re-runs no
+    policy. A gate reading only the assembling version is therefore cleared by a rebuild, which is
+    exactly the laundering `is_restamp` exists to expose. The lag that matters is between the
+    version that MEASURED a row and the version it is being judged against.
+
+    THE VERDICT IS MONOTONE, which is what makes it safe to commit. A row's measured version never
+    changes and `against` only moves forward, so a True can never become False. A False can become
+    True with time — and that one direction is what `scripts/check_leaderboard_staleness.py`
+    re-checks, rather than the whole flag.
+    """
+    if not measured_with:
+        return None, "no measured_with recorded; staleness cannot be determined"
+    if against is None:
+        return None, "no comparison version available; staleness cannot be determined"
+    lags = {v: minor_lag(v, against) for v in measured_with}
+    if any(lag is None for lag in lags.values()):
+        unparsed = sorted(v for v, lag in lags.items() if lag is None)
+        return None, f"unparseable measured_with version(s) {unparsed}; cannot determine staleness"
+    worst_version = max(measured_with, key=lambda v: lags[v] or 0)
+    worst = lags[worst_version] or 0
+    if worst > MAX_MINOR_LAG:
+        return True, (
+            f"rows measured with provael {worst_version} are {worst} minor versions behind "
+            f"{against} (limit {MAX_MINOR_LAG}); re-run the underlying policy before treating "
+            f"these numbers as current"
+        )
+    return False, (
+        f"oldest rows measured with provael {worst_version}, judged against {against} "
+        f"(lag {worst}, limit {MAX_MINOR_LAG})"
+    )
+
+
 #: Fields introduced by each schema version, so a board is signed over the bytes IT declares rather
 #: than over whatever the current model happens to emit. Without this, adding any field with a
 #: default silently invalidates every signature ever issued: `model_dump_json` would emit the new
@@ -486,6 +606,7 @@ def load_leaderboard(path: Path) -> Leaderboard:
 #: the worst possible failure for a signed artifact, and it is a one-line mistake to make.
 _FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     5: ("not_applicable",),
+    6: ("tool_version", "stale", "stale_reason"),
 }
 _ROW_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     5: ("calibrated", "stochastic", "checkpoint"),
@@ -576,6 +697,9 @@ def build_leaderboard(
 
 
 __all__ = [
+    "MAX_MINOR_LAG",
+    "minor_lag",
+    "staleness",
     "LEADERBOARD_JSON",
     "LEADERBOARD_PAYLOAD_TYPE",
     "REAL_TRANSFER",

@@ -110,6 +110,39 @@ published board reports `measured_with: ["0.32.0"]` against a build commit from 
 line: the provenance envelope is current, the measurement is the ten-task SmolVLA × LIBERO suite
 screen those shards recorded.
 
+### Staleness is a field, not a banner (schema v6)
+
+`measured_with` and `is_restamp()` let a reader work it out. **A consumer should not have to.** The
+published board carried four rates, an Ed25519 signature, and nothing machine-readable saying the
+signature vouches for a *measurement* rather than for its *currency* — a distinction that only
+lived in prose the Space renders. So v6 records the verdict:
+
+| field | what it is |
+| --- | --- |
+| `tool_version` | the version that **assembled** the board — distinct from `measured_with`, which is what **measured** the rows. The gap between them is the staleness. |
+| `stale` | `true` when some row is more than `MAX_MINOR_LAG` (1) minor versions behind. `null` when it cannot be determined — never `false` by default. |
+| `stale_reason` | why, naming both versions, so the verdict is re-derivable from its own text. |
+
+The lag is counted on `(major, minor)` and ignores the patch, because a patch by definition changes
+no measured behaviour. Across a major bump it is not a subtraction: 0.40 → 1.0 is one release, not
+minus thirty-nine, so a differing major reports "too far" rather than a negative number that would
+read as fresh.
+
+**`stale` sits outside the signature, on purpose.** Staleness is a function of today, not of the
+board: a board that was current when signed becomes stale without a byte changing. Inside the
+signed subject it would need either a signature re-issued as time passes, or a flag frozen at a
+value that was true once. Being registered in `_FIELDS_ADDED_IN[6]` means it is stripped from the
+signing payload of any board declaring an earlier schema — which is exactly what lets the
+already-signed v5 board be annotated with `stale: true` and still verify against the committed
+public key.
+
+The verdict is also **monotone**: a row's measured version never changes and the release only moves
+forward, so a `true` can never become wrong. Only a `false` can decay, and
+`scripts/check_leaderboard_staleness.py` re-checks that single direction in CI. It fails on
+**undeclared** staleness only — a board past the limit that does not say so. Failing on staleness
+itself would be red until a GPU re-run nobody has scheduled, and a permanently-red detector reports
+nothing. Disclosed staleness is the honest state; silent staleness is the bug.
+
 ## Qualifiers travel with the row (schema v5)
 
 A leaderboard is where a number travels furthest from its own report, and until v5 it arrived

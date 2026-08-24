@@ -487,3 +487,98 @@ def test_registered_fields_are_stripped_below_their_own_version() -> None:
     for row in payload["rows"]:
         for name in _ROW_FIELDS_ADDED_IN[6]:
             assert name not in row, f"{name} leaked into a v5 board's signed bytes"
+
+
+# ---------------------------------------------------------------------------------------------
+# Staleness: machine-readable, monotone, and outside the signature.
+#
+# The published board carried four rows measured with 0.32.0 and said so only in prose the Space
+# renders. Prose does not stop a consumer: anything reading the JSON got four rates, a signature,
+# and no way to tell that the signature vouches for a measurement rather than for its currency.
+# ---------------------------------------------------------------------------------------------
+
+
+def test_minor_lag_ignores_the_patch_and_refuses_to_subtract_across_a_major() -> None:
+    from provael.leaderboard import minor_lag
+
+    assert minor_lag("0.37.0", "0.38.0") == 1
+    assert minor_lag("0.32.0", "0.38.0") == 6
+    assert minor_lag("0.38.0", "0.38.7") == 0, "a patch changes no measured behaviour"
+    assert minor_lag("main", "0.38.0") is None, "an unparseable version is not fresh"
+    # 0.40 -> 1.0 is one release, not minus thirty-nine. Two incomparable series must not be
+    # subtracted; the honest answer is "too far", never a negative number that reads as fresh.
+    assert (minor_lag("0.40.0", "1.0.0") or 0) > 1
+
+
+def test_staleness_answers_none_rather_than_fresh_when_it_cannot_tell() -> None:
+    from provael.leaderboard import staleness
+
+    for measured, against in (([], "0.38.0"), (["0.32.0"], None), (["main"], "0.38.0")):
+        stale, reason = staleness(measured, against)
+        assert stale is None, f"{measured} vs {against} must be undetermined, not fresh"
+        assert reason, "an undetermined verdict still has to say why"
+
+
+def test_staleness_is_decided_by_the_oldest_row() -> None:
+    """A consumer accepts or refuses a board whole, so its worst row is the honest summary."""
+    from provael.leaderboard import staleness
+
+    stale, reason = staleness(["0.32.0", "0.38.0"], "0.38.0")
+    assert stale is True
+    assert "0.32.0" in reason
+
+
+def test_the_published_board_declares_its_own_staleness() -> None:
+    """The board's rows are six minors old; that must be a field, not a banner."""
+    import json as _json
+
+    board = _json.loads(_BOARD.read_text(encoding="utf-8"))
+    assert board["tool_version"] == "0.33.2", "the assembling version is a fact from commit 8cd8d99"
+    assert board["stale"] is True
+    assert "0.32.0" in board["stale_reason"]
+
+
+def test_the_staleness_fields_are_outside_the_signed_subject() -> None:
+    """Staleness is a function of today; the signature must not be.
+
+    A board that was current when signed becomes stale without a byte changing. If the flag were
+    inside the signed subject, annotating it would break the signature — which is exactly why the
+    published v5 board can carry `stale: true` and still verify.
+    """
+    import json as _json
+
+    from provael.leaderboard import _FIELDS_ADDED_IN, _signing_payload
+
+    board = load_leaderboard(_BOARD)
+    payload = _json.loads(_signing_payload(board))
+    for name in _FIELDS_ADDED_IN[6]:
+        assert name not in payload, f"{name} is inside the signed bytes of a v5 board"
+    assert verify_leaderboard(board, _BOARD_PUB.read_bytes())
+
+
+def test_the_staleness_gate_fails_on_undeclared_staleness_only() -> None:
+    """Disclosed staleness is the honest state; silent staleness is the bug.
+
+    A gate that failed on staleness itself would be red until a GPU re-run nobody has scheduled,
+    and a permanently-red detector reports nothing.
+    """
+    import importlib.util
+    import json as _json
+
+    script = Path(__file__).resolve().parent.parent / "scripts" / "check_leaderboard_staleness.py"
+    spec = importlib.util.spec_from_file_location("check_leaderboard_staleness", script)
+    assert spec is not None and spec.loader is not None
+    gate = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gate)
+
+    board = _json.loads(_BOARD.read_text(encoding="utf-8"))
+    assert gate.check(_BOARD, fix=False) == [], "the committed board declares its staleness"
+
+    undeclared = _BOARD.parent / "_undeclared.json"
+    board["stale"] = None
+    undeclared.write_text(_json.dumps(board, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    try:
+        problems = gate.check(undeclared, fix=False)
+        assert problems and "stale=None" in problems[0]
+    finally:
+        undeclared.unlink()

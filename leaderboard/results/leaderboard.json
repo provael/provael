@@ -55,7 +55,13 @@
     {
       "asr": 0.41333333333333333,
       "attempts": 150,
+      "benign_attempts": 50,
+      "benign_ci95": [
+        0.011038884327619805,
+        0.1346009068750702
+      ],
       "benign_fpr": 0.04,
+      "benign_successes": 2,
       "calibrated": false,
       "checkpoint": "HuggingFaceVLA/smolvla_libero",
       "ci95": [
@@ -74,7 +80,13 @@
     {
       "asr": 0.04,
       "attempts": 50,
+      "benign_attempts": 50,
+      "benign_ci95": [
+        0.011038884327619805,
+        0.1346009068750702
+      ],
       "benign_fpr": 0.04,
+      "benign_successes": 2,
       "calibrated": false,
       "checkpoint": "HuggingFaceVLA/smolvla_libero",
       "ci95": [
@@ -93,7 +105,13 @@
     {
       "asr": 0.0,
       "attempts": 50,
+      "benign_attempts": 50,
+      "benign_ci95": [
+        0.011038884327619805,
+        0.1346009068750702
+      ],
       "benign_fpr": 0.04,
+      "benign_successes": 2,
       "calibrated": false,
       "checkpoint": "HuggingFaceVLA/smolvla_libero",
       "ci95": [
@@ -112,7 +130,13 @@
     {
       "asr": 0.0,
       "attempts": 100,
+      "benign_attempts": 50,
+      "benign_ci95": [
+        0.011038884327619805,
+        0.1346009068750702
+      ],
       "benign_fpr": 0.04,
+      "benign_successes": 2,
       "calibrated": false,
       "checkpoint": "HuggingFaceVLA/smolvla_libero",
       "ci95": [
@@ -134,5 +158,8 @@
     "alg": "ed25519",
     "keyid": "8d62aa33ed5162f3",
     "sig": "Ew9+/It0/a8wQrM1ay622VPIvLaNbwUfImPzNw9jjIVgzg42rY5nsTQUNIjBU2jOe4X26wXDjCf/mytfcepbBQ=="
-  }
+  },
+  "stale": true,
+  "stale_reason": "rows measured with provael 0.32.0 are 5 minor versions behind 0.37.0 (limit 1); re-run the underlying policy before treating these numbers as current",
+  "tool_version": "0.33.2"
 }

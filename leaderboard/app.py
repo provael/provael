@@ -94,11 +94,37 @@ def _load_results() -> tuple[list[dict], list[dict], bool, list[dict]]:
                 "commit": data.get("commit"),
                 "inputs_digest": data.get("inputs_digest"),
                 "measured_with": data.get("measured_with") or [],
+                "tool_version": data.get("tool_version"),
+                "stale": data.get("stale"),
+                "stale_reason": data.get("stale_reason"),
                 "signed": data.get("signature") is not None,
             })
     rows.sort(key=lambda r: (-r["asr"], r["policy"], r["suite"], r["family"]))
     ordered_examples = sorted(examples.values(), key=lambda e: (e["family"], e["attack"]))
     return rows, ordered_examples, not real_seen, provenance
+
+
+def _benign_floor(rows: list[dict]) -> str:
+    """The benign control this board actually measured, computed from its own baseline row.
+
+    It was written into the prose as "a 0% benign false-positive control" while the board carried
+    a `baseline` row at 4% (2/50) and `benign_fpr: 0.04` on every row — a page contradicting the
+    artifact underneath it, on the most public surface this project has. The 0% figure was the
+    MATCHED control for one arm (`roleplay` had no benign twin fire at the same task and seed),
+    which is a different quantity from the marginal false-positive rate and not interchangeable
+    with it. Computed here for the same reason every other number in this banner is: prose drifts
+    from the rows it describes, and this one had.
+    """
+    baseline = [r for r in rows if r.get("family") == "baseline"]
+    if baseline:
+        successes = sum(int(r.get("successes", 0)) for r in baseline)
+        attempts = sum(int(r.get("attempts", 0)) for r in baseline)
+        if attempts:
+            return f"{100.0 * successes / attempts:.1f}% ({successes}/{attempts})"
+    fprs = {r.get("benign_fpr") for r in rows if r.get("benign_fpr") is not None}
+    if len(fprs) == 1:
+        return _pct(next(iter(fprs)))
+    return "an unrecorded"
 
 
 def _coverage_banner(rows: list[dict], provenance: list[dict]) -> str:
@@ -124,7 +150,12 @@ def _coverage_banner(rows: list[dict], provenance: list[dict]) -> str:
 
     if not measured_with:
         return ""
-    stale = CURRENT_RELEASE not in measured_with
+    # The board's own `stale` flag leads, because it is what a downstream consumer refuses on;
+    # the version comparison is kept as the fallback for a board that predates the field. If the
+    # two ever disagree, the declared flag wins here and CI fails on it in the repo, rather than
+    # this page quietly rendering a verdict the artifact does not carry.
+    declared = next((p["stale"] for p in provenance if p.get("stale") is not None), None)
+    stale = bool(declared) if declared is not None else CURRENT_RELEASE not in measured_with
     versions = ", ".join(f"`{v}`" for v in measured_with)
     lines = [
         f"> {'⚠️ **Stale measurement.**' if stale else '**Measurement provenance.**'} "
@@ -139,10 +170,11 @@ def _coverage_banner(rows: list[dict], provenance: list[dict]) -> str:
         f"({', '.join(covered)}). **{missing} families have no real-model measurement at all** — "
         "they are absent from this board, which is not the same as scoring 0%.",
         "",
-        "> **No clean-task-success control.** The underlying SmolVLA × LIBERO run predates the "
-        "competence control, so `clean_task_success_rate` is unrecorded: these rates are read "
-        "against a 0% benign false-positive control, but not against a measured demonstration "
-        "that the policy completes its benign task unattacked. Not back-filled.",
+        f"> **No clean-task-success control.** The underlying SmolVLA × LIBERO run predates the "
+        f"competence control, so `clean_task_success_rate` is unrecorded: these rates are read "
+        f"against a {_benign_floor(rows)} benign false-positive control, but not against a "
+        f"measured demonstration that the policy completes its benign task unattacked. "
+        f"Not back-filled.",
         "",
         _independence_line(rows),
     ]
@@ -193,6 +225,28 @@ def _pct(x: float | None) -> str:
     return "n/a" if x is None else f"{100.0 * x:.1f}%"
 
 
+def _benign(row: dict) -> str:
+    """The control arm, rendered the way the ASR beside it is: rate, counts, interval.
+
+    The ASR column has carried `x/y` and a 95% interval since this board existed; the benign
+    column carried a bare percentage. An ASR is a difference against that floor, and 4% at n=50 is
+    Wilson [1.1%, 13.5%] — most of an interval a reader was left to assume away. Board schema 6
+    records the counts per row (`benign_successes` / `benign_attempts` / `benign_ci95`); an older
+    row has only the rate and renders as it always did rather than gaining an invented interval.
+    """
+    fpr = row.get("benign_fpr")
+    if fpr is None:
+        return "n/a"
+    cell = f"{100.0 * fpr:.1f}%"
+    attempts = row.get("benign_attempts")
+    if attempts:
+        cell += f" ({row.get('benign_successes')}/{attempts})"
+    ci = row.get("benign_ci95")
+    if ci:
+        cell += f" [{100.0 * ci[0]:.0f}-{100.0 * ci[1]:.0f}%]"
+    return cell
+
+
 def _provenance_label(row: dict) -> str:
     """Provenance, rendered per row rather than left in the JSON.
 
@@ -219,7 +273,7 @@ def _row_table(rows: list[dict]) -> list[list[str]]:
     return [
         [
             str(rank), r["policy"], r["suite"], r["family"],
-            f"{100.0 * r['asr']:.1f}%{_ci(r)}", _pct(r.get("benign_fpr")),
+            f"{100.0 * r['asr']:.1f}%{_ci(r)}", _benign(r),
             f"{r['successes']}/{r['attempts']}",
             "real" if r.get("transfer_status") == "real-transfer" else "stub",
             r.get("submitted_by") or "unattributed",

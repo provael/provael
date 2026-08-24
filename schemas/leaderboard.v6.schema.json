@@ -332,6 +332,45 @@
         }
       ],
       "default": null
+    },
+    "stale": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "True when some row was measured more than MAX_MINOR_LAG minor versions behind the assembling tool \u2014 machine-readable, so a consumer can refuse the board without parsing a banner. None when it could not be determined (no `measured_with`, or no `tool_version`).\n\nDERIVED AND OUTSIDE THE SIGNATURE, on purpose. Staleness is a function of today, not of the board: a board that was current when signed becomes stale without a byte changing. Putting it inside the signed subject would mean either a signature that must be re-issued as time passes, or a flag frozen at a value that was true once. It is registered in `_FIELDS_ADDED_IN`, so it is stripped from the signing payload of any board declaring an earlier schema \u2014 which is what lets an already-signed board be annotated with it and still verify.",
+      "title": "Stale"
+    },
+    "stale_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Why `stale` is what it is, naming both versions. Present whenever `stale` is not None, so the flag is never a bare boolean a reader has to reverse-engineer.",
+      "title": "Stale Reason"
+    },
+    "tool_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "The provael version that ASSEMBLED this board \u2014 deliberately distinct from `measured_with`, which is the version(s) the NUMBERS came from. A rebuild re-stamps the assembler and re-runs no policy, so the two diverge and the gap is the staleness. None on a board built before this field existed.",
+      "title": "Tool Version"
     }
   },
   "required": [
