@@ -1787,6 +1787,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#prompt-form-vs-prompt-semantics-an-open-question-from-town-vla" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prompt form vs prompt semantics: an open question from TOWN-VLA
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#results" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2543,6 +2554,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#prompt-form-vs-prompt-semantics-an-open-question-from-town-vla" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prompt form vs prompt semantics: an open question from TOWN-VLA
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#results" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2726,6 +2748,48 @@ pipeline position is right, the credit rule fires, the controls hold, and the ar
 re-derivable. It does <strong>not</strong> show that lexical canonicalization defends a real policy. A lexical
 defense measured against a lexical search on a fixture whose danger function is itself lexical is
 close to a closed loop, and saying so is the point of publishing it.</p>
+<hr />
+<h2 id="prompt-form-vs-prompt-semantics-an-open-question-from-town-vla">Prompt form vs prompt semantics: an open question from TOWN-VLA</h2>
+<p>The section above is one reason to read <code>credited</code> narrowly. This is a second, independent one,
+and it arrived from outside this project.</p>
+<p><strong>TOWN-VLA</strong> (<a href="https://arxiv.org/abs/2608.23224">arXiv:2608.23224</a>, submitted 24 August 2026;
+recorded in <a href="https://github.com/provael/provael/blob/main/PRIOR_ART.md">PRIOR_ART.md</a>) ran a matched
+audit on a frozen VLA under retrieval augmentation and reported, verbatim:</p>
+<blockquote>
+<p>In a matched audit, raw appended text reduces mean success from 92.47% to 3.00%, while meaningful
+and length-matched meaningless appends both fail on all 500 states.</p>
+</blockquote>
+<p>They call it <strong>prompt-form collapse</strong>: "changing the instruction form, rather than adding useful
+semantics, can dominate execution."</p>
+<p><strong>Why that is a problem for this page.</strong> <code>instruction_canonicalization</code> normalises <strong>semantics</strong>.
+It strips urgency, manner and paraphrase frames and leaves the object word alone — that is the whole
+design, and the table above is an accounting of which <em>meanings</em> it removes. If length-matched
+<strong>meaningless</strong> appends collapse a policy exactly as hard as meaningful ones, then the axis that
+does the damage is <strong>form</strong>, not meaning, and a defense built on the meaning axis may leave the
+failure mode entirely untouched on a real policy while still scoring <code>credited</code> here.</p>
+<p><strong>And the credit itself may be confounded.</strong> Stripping tokens does not only remove semantics — it
+also <strong>shortens the prompt</strong>. On this fixture those two effects cannot be told apart, because they
+never vary independently: every canonicalisation that removes a trigger also removes characters.
+So the pre/post drop reported above is consistent with <em>either</em> explanation, and this study has no
+way to distinguish them.</p>
+<p><strong>The concrete test that would settle it.</strong> Canonicalize as now, then <strong>re-pad the canonicalised
+instruction back to the original token length with semantically null filler</strong>, and re-run the same
+pre/post comparison. If the defense still credits, the credit is attributable to the semantic
+change. If the credit collapses once length is held fixed, it was substantially a length effect and
+the mitigation claim on this page needs restating.</p>
+<p><strong>This test is not informative on the current fixture, and that is worth stating plainly rather
+than leaving for someone to discover.</strong> The stub's danger head is
+<code>sum(weight for token, weight in TRIGGER_WEIGHTS.items() if token in lowered)</code> — substring presence
+only, with no length term anywhere in it. Semantically null filler introduces no trigger substrings,
+so it moves the score by exactly zero and the test is guaranteed to return "credit survives" for
+reasons that have nothing to do with the question being asked. <strong>It is only informative against a
+real policy</strong>, which makes it a rider on item 1 of
+<a href="#what-would-make-this-a-real-result">What would make this a real result</a> rather than a separate
+piece of work.</p>
+<p><strong>No result is claimed here.</strong> The test has not been run, by us or, as far as we can find, by
+anyone. TOWN-VLA's own magnitude is recorded as awaiting independent replication — their arXiv page
+lists no institutional affiliation and no code — but the <em>control</em> is what makes the question bite,
+and a length-matched control does not depend on trusting the headline number.</p>
 <hr />
 <h2 id="results">Results</h2>
 <p>Policy <code>stub</code>, 10 episodes per (task, attack), seed base 0, horizon 8. Benign control <code>none</code>
