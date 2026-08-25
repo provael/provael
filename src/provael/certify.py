@@ -43,6 +43,7 @@ from provael.crosswalk import build_appendix as _crosswalk_appendix
 from provael.defenses.measure import MitigationReport, MitigationVerdict
 from provael.defenses.registry import DEFENSES
 from provael.eai import CATALOG, all_ids, attacked_ids
+from provael.evidence import transfer_status_of
 from provael.hosted.report import (
     ANNEX_III_CONTROL_SYSTEMS,
     ANNEX_III_CORRUPTION,
@@ -179,9 +180,20 @@ class CertifyProfile(StrEnum):
 # --------------------------------------------------------------------------------------------
 
 def _run_transfer_tier(report: RunReport) -> str:
-    """Run-level honesty tier — the same derivation the attestation and every exporter use."""
-    real = report.policy != "stub" and report.suite != "stub"
-    return MEASURED_REAL_TRANSFER if real else STUB_VALIDATED_SCAFFOLDING
+    """Run-level honesty tier — read from the evidence ladder, never re-derived.
+
+    The docstring here used to claim this was "the same derivation the attestation and every
+    exporter use" while doing `policy != "stub" and suite != "stub"` itself, which stopped being
+    true when mlbom.py was fixed. That comment (mlbom.py:56-59) states the bug exactly: the
+    re-derivation "awarded measured-real-transfer to any non-stub name — including a real policy on
+    a numpy fixture suite, which earns only adapter-smoke".
+
+    It mattered here more than there. FIXTURE_SUITES is {stub, reach, humanoid}, so a real policy
+    on `reach` or `humanoid` took `adapter-smoke` from the ladder and `measured-real-transfer` from
+    this function — and the dossier embeds an attestation_statement that DOES read the ladder, so a
+    single certify output could carry two tiers that disagree about the same run.
+    """
+    return transfer_status_of(report)
 
 
 def _family_transfer_tier(family: str, report: RunReport) -> str:
