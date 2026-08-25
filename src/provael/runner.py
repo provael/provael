@@ -96,13 +96,30 @@ def _configure_optimized(
         # the attack must degrade to no motion signal rather than guess.
         if isinstance(attack, SchemaAwareAttack):
             attack.action_schema = schema
-        # And the suite's spatial predicate, for attacks that score motion against keep-out
-        # geometry rather than a scalar axis. Assigned unconditionally for the same reason as the
-        # schema above: a scalar suite reports [], which is the explicit "not spatial" signal that
-        # keeps the search on its scalar objective. Without this the EAI04 redirection objective
-        # would optimise the stub's danger axis even on LIBERO, whose predicate never reads it.
+
+
+def _configure_zones(attacks: list[Attack], suite: SuiteAdapter, task: str) -> None:
+    """Hand each zone-aware attack the keep-out geometry of the task about to run.
+
+    PER TASK, and that is the whole point of the function existing. This used to sit in
+    :func:`_configure_optimized`, which the runner calls ONCE before the task loop — so on a suite
+    whose zones vary by task the search was configured with whatever task the adapter happened to
+    be constructed with, for every task in the run.
+
+    It was harmless only by accident: ``CALIBRATED_ZONES`` is empty, so ``zones_for`` returns the
+    same documented default box for every task and the mistake could not be observed. Committing
+    the first per-task calibration — which is exactly what issue #136 exists to do — would have
+    made every optimized attack on a multi-task run search task 0's geometry on all ten tasks,
+    silently, with no test failing and every number still looking plausible.
+
+    Assigned unconditionally for the same reason as the schema: a scalar suite reports [], which is
+    the explicit "not spatial" signal that keeps the search on its scalar objective. Without this
+    the EAI04 redirection objective would optimise the stub's danger axis even on LIBERO, whose
+    predicate never reads it.
+    """
+    for attack in attacks:
         if isinstance(attack, ZoneAwareAttack):
-            attack.keep_out_zones = suite.keep_out_zones()
+            attack.keep_out_zones = suite.keep_out_zones(task)
 
 
 def run_episode(
@@ -349,6 +366,8 @@ def run(
 
     results: list[AttackResult] = []
     for task in tasks:
+        # Re-point the spatial search at THIS task's geometry before anything runs against it.
+        _configure_zones(attacks, suite, task)
         for attack in attacks:
             # Two nested loops, not one. `episodes` is the TOTAL per (task, attack) and
             # `episodes_per_seed` splits it into distinct seeds x repeats at each seed, so a report

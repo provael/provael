@@ -293,7 +293,8 @@ def test_targeted_redirect_transfer_smolvla_libero() -> None:  # pragma: no cove
 # --------------------------------------------------------------------------------------------- #
 
 from provael.attacks.optimized import SchemaAwareAttack, ZoneAwareAttack  # noqa: E402
-from provael.runner import _configure_optimized  # noqa: E402
+from provael.runner import _configure_optimized, _configure_zones  # noqa: E402
+from provael.suites.base import KeepOutZone  # noqa: E402
 from provael.suites.keepout_zones import zone_margin  # noqa: E402
 from provael.suites.reach import KEEP_OUT_ZONE, ReachSuite  # noqa: E402
 
@@ -303,10 +304,14 @@ def test_the_runner_hands_over_the_suites_zones_not_an_assumed_predicate() -> No
     attack = TargetedRedirect()
     assert isinstance(attack, ZoneAwareAttack) and isinstance(attack, SchemaAwareAttack)
 
-    _configure_optimized([attack], StubPolicy(), ReachSuite(), None)
+    reach = ReachSuite()
+    _configure_optimized([attack], StubPolicy(), reach, None)
+    _configure_zones([attack], reach, reach.tasks()[0])
     assert [z.name for z in attack.keep_out_zones] == [KEEP_OUT_ZONE.name]
 
-    _configure_optimized([attack], StubPolicy(), StubSuite(), None)
+    stub = StubSuite()
+    _configure_optimized([attack], StubPolicy(), stub, None)
+    _configure_zones([attack], stub, stub.tasks()[0])
     assert attack.keep_out_zones == []  # scalar suite => explicit "not spatial", not a stale zone
 
 
@@ -318,10 +323,12 @@ def test_objective_follows_the_suite_scalar_axis_vs_spatial_margin() -> None:
 
     scalar = TargetedRedirect()
     _configure_optimized([scalar], StubPolicy(), StubSuite(), None)
+    _configure_zones([scalar], StubSuite(), StubSuite().tasks()[0])
     assert scalar._objective(action) == pytest.approx(0.9)  # unchanged legacy behaviour
 
     spatial = TargetedRedirect()
     _configure_optimized([spatial], StubPolicy(), ReachSuite(), None)
+    _configure_zones([spatial], ReachSuite(), ReachSuite().tasks()[0])
     # Projected from the origin by the translation delta, scored against the hazard box.
     assert spatial._objective(action) == pytest.approx(zone_margin([0.8, 0.0, 0.0], [KEEP_OUT_ZONE]))
     assert spatial._objective(action) != pytest.approx(0.9)
@@ -331,6 +338,7 @@ def test_spatial_objective_ranks_a_deeper_reach_higher() -> None:
     """The property the greedy search needs: more redirection toward the zone scores higher."""
     attack = TargetedRedirect()
     _configure_optimized([attack], StubPolicy(), ReachSuite(), None)
+    _configure_zones([attack], ReachSuite(), ReachSuite().tasks()[0])
 
     def act(translation_x: float):
         a = np.zeros(10, dtype=np.float32)
@@ -340,6 +348,43 @@ def test_spatial_objective_ranks_a_deeper_reach_higher() -> None:
     scores = [attack._objective(act(x)) for x in (0.0, 0.4, 0.8, 1.2)]
     assert scores == sorted(scores)
     assert scores[-1] >= 0.0 > scores[0]  # ends inside the keep-out box, starts well outside
+
+
+def test_zones_are_re_read_for_every_task_not_captured_once() -> None:
+    """The search must be pointed at the geometry of the task it is about to run.
+
+    This is the invariant `_configure_zones` was split out for. The handover used to live in
+    `_configure_optimized`, which the runner calls ONCE before the task loop — so on a suite whose
+    zones vary by task, every task after the first was searched against the first one's geometry.
+
+    It could not be observed at the time: `CALIBRATED_ZONES` is empty, so `zones_for` returns the
+    same default box for every task and the two behaviours were identical. Committing the first
+    per-task calibration (issue #136) is what would have made it real, silently, with no test
+    failing — which is exactly why the assertion is written now rather than then.
+    """
+
+    class PerTaskZoneSuite(ReachSuite):
+        """A suite whose keep-out geometry differs per task, as a calibrated LIBERO will."""
+
+        def tasks(self) -> list[str]:
+            return ["t0", "t1"]
+
+        def keep_out_zones(self, task: str | None = None) -> list[KeepOutZone]:
+            return [KEEP_OUT_ZONE.model_copy(update={'name': f"hazard::{task or 'active'}"})]
+
+    suite = PerTaskZoneSuite()
+    attack = TargetedRedirect()
+    _configure_optimized([attack], StubPolicy(), suite, None)
+
+    seen = []
+    for task in suite.tasks():
+        _configure_zones([attack], suite, task)
+        seen.append([z.name for z in attack.keep_out_zones])
+
+    assert seen == [["hazard::t0"], ["hazard::t1"]], (
+        "the search kept the first task's geometry across the run — the whole failure "
+        f"_configure_zones exists to prevent. saw: {seen}"
+    )
 
 
 def test_spatial_objective_declines_to_guess_without_a_verified_layout() -> None:

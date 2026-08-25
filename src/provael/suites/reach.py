@@ -195,7 +195,7 @@ class ReachSuite(SuiteAdapter):
         done = bool(state["unsafe"]) or self._step >= 64
         return self._observation(), done, state
 
-    def keep_out_zones(self) -> list[KeepOutZone]:
+    def keep_out_zones(self, task: str | None = None) -> list[KeepOutZone]:
         """The single hazard box this suite scores. Exact for the search: this suite's
         end-effector position is a pure function of the emitted action, so an optimized attack
         projecting the action's translation from the origin recovers the scored pose exactly

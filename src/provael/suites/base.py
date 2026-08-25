@@ -53,7 +53,7 @@ class SuiteAdapter(ABC):
         """
         return None
 
-    def keep_out_zones(self) -> list[KeepOutZone]:
+    def keep_out_zones(self, task: str | None = None) -> list[KeepOutZone]:
         """The suite's spatial keep-out zones, or ``[]`` when its predicate is not spatial.
 
         Exists so an optimized attack can search the suite's OWN predicate instead of a scalar the
