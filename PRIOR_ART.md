@@ -1157,6 +1157,44 @@ no significance test from their harness, nothing. If any of it is ever adopted, 
 changes and says which test and on what date. Until then this is a citation, not coverage, and the
 distinction is the same one the bit-flip entry above draws.
 
+### Frozen-backbone attachments (August 2026) — ForeTime-VLA and Q-Planning
+
+Two papers submitted 21 August 2026 attach a small trained component to a **frozen** visuomotor
+policy rather than fine-tuning it. Both are prior art for a question this project does not
+currently ask: what, exactly, is Provael attacking when it attacks a deployed policy?
+
+**ForeTime-VLA — *Causal Future-Token Distillation from a World Action Model for Conveyor-Belt
+Manipulation*** ([arXiv:2608.20735](https://arxiv.org/abs/2608.20735); Siyuan Ma, Yutian Zhang,
+Boshi Zhang, Qinglian Wu, Jiaqi Zhai, Dong Wei, Xiaojin Huang). Offline, current and future video
+latents are compressed into a whitened 64-D target; online, an eight-frame history encoder predicts
+that target together with manipulation phase and normalised time-to-transition, at a 2.46–2.93%
+latency cost. In real-robot evaluation it reports 81.1% stationary and 58.9% slow-moving grasp
+success, and 44/90 grasps across three belt speeds against 23/90 for π0.5.
+
+**`mapping_status: not_implemented`.** Provael attacks a policy as a single artifact. If the
+anticipation head is a separable component, the attack surface is not the one we model — a
+perturbation that reaches the history encoder is not the same as one that reaches the action
+expert — and we have not tested that distinction, so we do not claim it either way.
+
+**Q-Planning — *Beyond Imitation: Self-Improving Robot Policies via Off-Policy Q-Planning***
+([arXiv:2608.21204](https://arxiv.org/abs/2608.21204); Varun Giridhar, Anant Khandelwal, Jeremy A.
+Collins, Ignat Georgiev, Animesh Garg). A small off-policy Q-function over a frozen BC policy,
+absorbing both successful and failed deployment rollouts — an asymmetry BC does not have — with
+only the Q-function fine-tuned. On two contact-rich bimanual real-robot tasks, with the BC weights
+frozen and no human intervention, it improves purely from its own deployment rollouts: stack-cups
+40% → 90% and insert-wallet 25% → 80% in five iterations.
+
+**`mapping_status: not_implemented`.** This one matters for a reason worth stating plainly rather
+than burying: **a policy that learns from its own failures makes a one-shot ASR a snapshot rather
+than a property.** Every number this project publishes assumes the thing measured holds still. Our
+leaderboard has no concept of a policy that moves after we measure it — no re-measurement cadence,
+no field for "measured at iteration *n*", nothing that would stop a stale row being read as a
+current property of a policy that has since improved past it. That is a gap in the *instrument*,
+not in coverage, and it is not fixed by adding an attack.
+
+Neither is implemented and neither is covered. They are recorded because they change what our
+number means, which is a different reason from the one most entries above are here for.
+
 ## What is actually novel here
 
 Not the attacks. **And — since AttackVLA (arXiv:2511.12149) — not simply "a unified harness with a

@@ -105,6 +105,7 @@ of the field and is not one.
 | --- | --- | --- | --- |
 | **SARF** ([arXiv:2608.03231](https://arxiv.org/abs/2608.03231)) | Structure-aware robust fine-tuning of the visual encoder only, zero inference overhead, against attention-hijacking patches | OpenVLA on LIBERO **and a real PiPER manipulator** | **None.** No Provael defense has been measured against a real model, on any hardware |
 | **ChromaGuard** ([arXiv:2607.14698](https://arxiv.org/abs/2607.14698)) | Chroma-preserving adversarial training against an optimised physical spotlight attack | A physical 6-DoF robotic platform | **None.** Provael models no illumination channel at all |
+| **PhyFilter** ([arXiv:2608.22701](https://arxiv.org/abs/2608.22701)) | Corrects a learned policy's *outputs* with physics-filtered learning residuals; a lightweight, model-agnostic module whose parameters are set by an auto-learning algorithm rather than by hand | Quadrupeds, drones, aerial manipulators and an acceleration differentiator — four systems, real hardware | **None.** But see below: it is the closest published evidence that the output-side class this taxonomy specifies is real |
 
 SARF's reported figure is **"On LIBERO, SARF reduces OpenVLA's failure rate under AGSD from 100% to
 14.2%-56.8% (28.6% average) across suites while preserving clean performance, and on a real PiPER
@@ -114,6 +115,40 @@ instruction-canonicalization study says in its own text that its headline number
 tautological on the fixture it was measured on. The comparison is not close and is not presented as
 though it were. See [PRIOR_ART.md](https://github.com/provael/provael/blob/main/PRIOR_ART.md) for
 the full citations and [the studies index](studies/index.md) for the gap with a date against it.
+
+### PhyFilter, and what it says about the three unwritten output-side rows
+
+**PhyFilter — *Physics Filtering Favors the Generalization of Robot Learning***
+([arXiv:2608.22701](https://arxiv.org/abs/2608.22701), submitted 24 August 2026; the preprint
+states it is accepted by *npj Robotics*). Jindou Jia, Shixuan Han, Meng Wang, Gen Li, Zihan Yang,
+Sicheng Zhou, Kexin Guo, Jianfei Yang, Xiang Yu, Wei Wang, Lei Guo. Code:
+[JIAjindou/PhyFilter](https://github.com/JIAjindou/PhyFilter) — public, and carrying no licence
+file at the time of writing, which is worth knowing before depending on it.
+
+**What it establishes.** A lightweight, model-agnostic module that corrects a learned policy's
+outputs with physics-filtered learning residuals, its parameters set by an auto-learning algorithm
+rather than by hand. The authors report generalisation to unseen terrains, payload variations and
+speed ranges for quadrupeds; flight under unseen wind for drones; centimetre-level in-air capture
+for aerial manipulators despite wind and mass uncertainty; and robustness under distribution shift
+for an acceleration differentiator. Their framing is that physics-filtered feedback is an
+alternative to massive data scaling.
+
+**Why it is recorded on this page.** Three of the four rows above that remain *specified and
+unproven* act on the policy's **output**, and became expressible at all only with
+`Defense.filter_action` in 0.28.0. Until then this taxonomy asserted a defense class it could not
+have implemented. PhyFilter is independent, peer-reviewed evidence that an output-side correction
+module is a real and effective class of intervention — which is the part of those three rows that
+was doing the most unearned work.
+
+**It is not a security defense and does not claim to be.** PhyFilter corrects for *dynamics
+uncertainty*: unmodelled terrain, wind, payload. Nothing in it is adversarial, and no attacker
+appears anywhere in the paper. It is credited here as evidence for the class, never as prior art
+for an attack and never as a baseline any Provael number is measured against.
+
+**`mapping_status: referenced-not-measured`.** Nothing in this project has been run against
+PhyFilter and no comparison is claimed. Its abstract reports capability gains across four systems
+without a single headline percentage — deliberately not paraphrased into one here, because a
+percentage this page did not read out of the paper body is a number this page invented.
 
 The useful thing to take from ChromaGuard is a warning rather than a benchmark: its authors report
 that naive augmentation defenses "incorrectly condition VLA models to discard color as noise",
