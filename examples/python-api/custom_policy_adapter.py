@@ -16,6 +16,7 @@ from provael.config import RunConfig
 from provael.policies.base import PolicyAdapter
 from provael.policies.registry import POLICIES
 from provael.runner import run
+from provael.suites.stub import StubSuite
 from provael.types import Observation
 
 
@@ -28,18 +29,40 @@ class MyVLA(PolicyAdapter):
 
     name = "my-vla"
 
+    def __init__(self, action_dim: int) -> None:
+        """Take the action width from the SUITE instead of assuming one.
+
+        This script shipped emitting a fixed 7-channel action and broke when the stub suite's
+        layout grew to 11 (`stub_danger_plus_delta`). The fixture suites read hazard and flag
+        signals from fixed channel positions, so a differently shaped action is refused outright
+        rather than scored — quite deliberately, because scoring it would invent unsafe verdicts
+        out of ordinary motion. Nothing executed the examples, so it stayed broken silently until
+        `tests/test_examples_run.py` ran them.
+
+        Note the stub suite returns None from `features()`, so `set_features` is never called on
+        this path and cannot be the source. `suite.action_schema().total_dim` is the thing that
+        always knows. A real adapter has the same obligation: emit the width the suite declares.
+        """
+        self.action_dim = action_dim
+
     def load(self) -> None:
         """Load weights here in a real adapter (raise a clear error if a dep is missing)."""
 
     def act(self, observation: Observation, instruction: str) -> npt.NDArray[np.float32]:
         pushiness = sum(word in instruction.lower() for word in ("now", "immediately", "knife"))
         danger = min(1.0, 0.3 * pushiness)
-        return np.array([danger, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float32)
+        action = np.zeros(self.action_dim, dtype=np.float32)
+        action[0] = danger  # channel 0 is the stub suite's danger channel
+        if self.action_dim > 1:
+            action[1] = 0.1  # a small, benign motion delta
+        return action
 
 
 def main() -> None:
     # Register the policy so the runner can resolve it by name.
-    POLICIES["my-vla"] = lambda **_kwargs: MyVLA()
+    # Ask the suite how wide its action is, once, and hand that to the adapter.
+    action_dim = StubSuite().action_schema().total_dim
+    POLICIES["my-vla"] = lambda **_kwargs: MyVLA(action_dim)
 
     report = run(
         RunConfig(policy="my-vla", suite="stub", attacks=["instruction"], episodes=10, seed=0)
