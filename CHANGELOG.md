@@ -4,6 +4,39 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **PRIOR_ART records TOWN-VLA ([arXiv:2608.23224](https://arxiv.org/abs/2608.23224)), including
+  its length-matched meaningless-append control, and marks its magnitude as awaiting independent
+  replication.** The control is the part that matters: raw appended text drops mean success from
+  92.47% to 3.00%, and *meaningless* appends matched for length fail on all 500 states just as
+  meaningful ones do. That isolates prompt **form**, not semantics, as the axis doing the damage.
+  Their arXiv page lists no institutional affiliation and no code link, so the headline magnitude
+  is recorded as unreplicated while the control is credited on its own terms — the same standard
+  this project asks to be held to.
+
+- **The instruction-canonicalization study names the open question TOWN-VLA raises for it, and the
+  test that would settle it.** `instruction_canonicalization` normalises semantics; if form is what
+  collapses a policy, the defense may miss the failure mode entirely on a real policy while still
+  scoring `credited` on the fixture. Worse, the existing credit is **confounded**: stripping a
+  trigger token also shortens the prompt, and on this fixture the two effects never vary
+  independently. The test named is to canonicalize, re-pad to the original token length with
+  semantically null filler, and re-run the pre/post comparison. It is stated as a test, not a
+  result — and the page says plainly that it is **uninformative on the current stub**, whose danger
+  head is substring-presence only with no length term, so filler moves the score by exactly zero.
+  It is a rider on "run this against a real policy", not separate work.
+
+### Notes
+
+- **No version bump and no calibration in this entry.** Issue
+  [#136](https://github.com/provael/provael/issues/136) (the uncalibrated keep-out predicate) stays
+  open and untouched: `CALIBRATED_ZONES` is still empty, and the published 44/50 against a 4.0%
+  benign control keeps its uncalibrated caveat on every surface that quotes it. Committing zones
+  requires benign end-effector trajectories from a GPU/sim box, which this change did not have —
+  see the PR for what specifically blocked it.
+
 ## [0.38.0] — 2026-08-24
 
 ### Changed

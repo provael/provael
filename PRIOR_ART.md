@@ -1195,6 +1195,54 @@ not in coverage, and it is not fixed by adding an attack.
 Neither is implemented and neither is covered. They are recorded because they change what our
 number means, which is a different reason from the one most entries above are here for.
 
+### TOWN-VLA — *Think Only When Needed: Prompt-Authority Control for Selective Slow-Path Intervention in Vision-Language-Action Manipulation*
+Zhiruo Zhou, Zelin Li, Xiwen Chen, Jiazhuo Li, Chenwei Wang, Huiming Chen, Xiaojun Zhu (2026).
+arXiv:[2608.23224](https://arxiv.org/abs/2608.23224) · submitted 24 August 2026
+
+**The finding is more interesting than the fix, so take it first.** Retrieval-augmenting a frozen
+VLA is normally read as supplying *context*. Their framing is that it does not: retrieved text
+"becomes a control intervention once it enters the executed prompt". The audit behind that sentence
+is worth quoting verbatim, because it is a **control** rather than a headline:
+
+> In a matched audit, raw appended text reduces mean success from 92.47% to 3.00%, while meaningful
+> and length-matched meaningless appends both fail on all 500 states.
+
+They name the effect **prompt-form collapse**: "changing the instruction form, rather than adding
+useful semantics, can dominate execution."
+
+**Their mechanism, credited.** TOWN-VLA is a *prompt-authority interface* that separates candidate
+generation from permission to alter the policy input. A fixed compatibility rule authorizes a
+canonical compact instruction; otherwise the interface restores the original Base prompt exactly.
+Across 900 audited routes they report every route following that contract — 525 routes recovering
+Base with matching hashes, and all 375 authorized prompts preserving the task signature. The
+hash-verified restore is the design idea worth reusing: an interface that can *decline* to rewrite,
+and prove afterwards that it did not.
+
+**`mapping_status: not_implemented`.** Provael ships no retrieval path and no prompt-authority
+gate, and has measured neither. What this paper changes is not our coverage but our reading of a
+defense we have already published — see the last paragraph.
+
+**The caveat, stated rather than omitted.** The arXiv abstract page carries **no institutional
+affiliation**, **no code link and no comments field**, and the numbers are self-reported with no
+independent replication we could find. Metadata above was read from the arXiv abstract page on
+25 August 2026. **The magnitude is recorded as awaiting independent replication.** The *control* is
+what makes the paper hard to argue with, and the control does not depend on trusting the magnitude.
+Note also which arm is which: their simulation number is the modest one — on a matched 4×7
+LIBERO-Plus evaluation at 10,030 episodes per method, success rises from 69.5% to 73.1%, 95% CI
+1.89–5.45 points — while the physical-arm result (a frozen π0.5 checkpoint on a PiPER arm, 52.7% →
+78.7% over 150 trials per method, p = 3.16e-6) is the large one. Anyone quoting only the second is
+quoting the arm with the smaller *n* and no released code.
+
+**What it costs us, and this is why the entry exists.** Provael's one credited defense,
+`instruction_canonicalization`, normalises *semantics* — it strips urgency, manner and paraphrase
+frames. If length-matched *meaningless* appends collapse a policy exactly as hard as meaningful
+ones, then the failure mode TOWN-VLA identifies is invisible to that defense by construction; and
+our own `credited` verdict may be partly an artifact of the same axis, because stripping tokens
+also **shortens** the prompt. The open question, and the concrete test that would settle it, are
+recorded in
+[the canonicalization study](docs/studies/instruction-canonicalization.md#prompt-form-vs-prompt-semantics-an-open-question-from-town-vla).
+We do not have the answer and this entry does not guess at one.
+
 ## What is actually novel here
 
 Not the attacks. **And — since AttackVLA (arXiv:2511.12149) — not simply "a unified harness with a
