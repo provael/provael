@@ -301,12 +301,28 @@ next to the academic state of the art.
 Nothing to install — Docker (amd64 + arm64):
 
 ```bash
+# Does this environment work? Prints Python, platform, which backends are ready, whether the
+# keep-out predicate is calibrated, and how old the newest measurement is.
+docker run --rm ghcr.io/provael/provael:latest doctor
+
+# One deterministic scan. Prints the ASR, its Wilson interval, and the benign control beside it.
 docker run --rm ghcr.io/provael/provael:latest attack --recipe quick
 
 # keep the report after --rm
 docker run --rm -v "$PWD/runs:/home/provael/runs" \
   ghcr.io/provael/provael:latest attack --recipe quick
 ```
+
+**Measured, not estimated** — cold pull on arm64 with no cached image, 25 August 2026,
+`ghcr.io/provael/provael:0.38.0`: **12.5 s** to pull, **1.3 s** for `doctor`, **0.7 s** for
+`attack --recipe quick`. Under fifteen seconds from nothing installed to a scored run with an
+interval and a control arm. Pin the tag (`:0.38.0`) rather than `:latest` if you want that to stay
+true; `:latest` moves.
+
+The scan above is the deterministic CPU fixture, which is the point of it — it is the same numbers
+on every machine, and it needs no GPU, no checkpoint and no network. A real policy on a real
+simulator (`--suite libero`) is GPU-gated and is not this command; see
+[What runs on CPU vs. what needs a GPU](#what-runs-on-cpu-vs-what-needs-a-gpu).
 
 <!-- VERIFIED from a logged-out daemon with no cached image, on arm64. Four things this line
      depends on, every one of which has broken at least once:
