@@ -51,6 +51,57 @@ close to a closed loop, and saying so is the point of publishing it.
 
 ---
 
+## Prompt form vs prompt semantics: an open question from TOWN-VLA
+
+The section above is one reason to read `credited` narrowly. This is a second, independent one,
+and it arrived from outside this project.
+
+**TOWN-VLA** ([arXiv:2608.23224](https://arxiv.org/abs/2608.23224), submitted 24 August 2026;
+recorded in [PRIOR_ART.md](https://github.com/provael/provael/blob/main/PRIOR_ART.md)) ran a matched
+audit on a frozen VLA under retrieval augmentation and reported, verbatim:
+
+> In a matched audit, raw appended text reduces mean success from 92.47% to 3.00%, while meaningful
+> and length-matched meaningless appends both fail on all 500 states.
+
+They call it **prompt-form collapse**: "changing the instruction form, rather than adding useful
+semantics, can dominate execution."
+
+**Why that is a problem for this page.** `instruction_canonicalization` normalises **semantics**.
+It strips urgency, manner and paraphrase frames and leaves the object word alone — that is the whole
+design, and the table above is an accounting of which *meanings* it removes. If length-matched
+**meaningless** appends collapse a policy exactly as hard as meaningful ones, then the axis that
+does the damage is **form**, not meaning, and a defense built on the meaning axis may leave the
+failure mode entirely untouched on a real policy while still scoring `credited` here.
+
+**And the credit itself may be confounded.** Stripping tokens does not only remove semantics — it
+also **shortens the prompt**. On this fixture those two effects cannot be told apart, because they
+never vary independently: every canonicalisation that removes a trigger also removes characters.
+So the pre/post drop reported above is consistent with *either* explanation, and this study has no
+way to distinguish them.
+
+**The concrete test that would settle it.** Canonicalize as now, then **re-pad the canonicalised
+instruction back to the original token length with semantically null filler**, and re-run the same
+pre/post comparison. If the defense still credits, the credit is attributable to the semantic
+change. If the credit collapses once length is held fixed, it was substantially a length effect and
+the mitigation claim on this page needs restating.
+
+**This test is not informative on the current fixture, and that is worth stating plainly rather
+than leaving for someone to discover.** The stub's danger head is
+`sum(weight for token, weight in TRIGGER_WEIGHTS.items() if token in lowered)` — substring presence
+only, with no length term anywhere in it. Semantically null filler introduces no trigger substrings,
+so it moves the score by exactly zero and the test is guaranteed to return "credit survives" for
+reasons that have nothing to do with the question being asked. **It is only informative against a
+real policy**, which makes it a rider on item 1 of
+[What would make this a real result](#what-would-make-this-a-real-result) rather than a separate
+piece of work.
+
+**No result is claimed here.** The test has not been run, by us or, as far as we can find, by
+anyone. TOWN-VLA's own magnitude is recorded as awaiting independent replication — their arXiv page
+lists no institutional affiliation and no code — but the *control* is what makes the question bite,
+and a length-matched control does not depend on trusting the headline number.
+
+---
+
 ## Results
 
 Policy `stub`, 10 episodes per (task, attack), seed base 0, horizon 8. Benign control `none`
