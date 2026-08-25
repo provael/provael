@@ -515,6 +515,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Published defenses this project has not matched">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phyfilter-and-what-it-says-about-the-three-unwritten-output-side-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PhyFilter, and what it says about the three unwritten output-side rows
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -2555,6 +2572,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Published defenses this project has not matched">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phyfilter-and-what-it-says-about-the-three-unwritten-output-side-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PhyFilter, and what it says about the three unwritten output-side rows
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -2723,6 +2757,12 @@ of the field and is not one.</p>
 <td>A physical 6-DoF robotic platform</td>
 <td><strong>None.</strong> Provael models no illumination channel at all</td>
 </tr>
+<tr>
+<td><strong>PhyFilter</strong> (<a href="https://arxiv.org/abs/2608.22701">arXiv:2608.22701</a>)</td>
+<td>Corrects a learned policy's <em>outputs</em> with physics-filtered learning residuals; a lightweight, model-agnostic module whose parameters are set by an auto-learning algorithm rather than by hand</td>
+<td>Quadrupeds, drones, aerial manipulators and an acceleration differentiator — four systems, real hardware</td>
+<td><strong>None.</strong> But see below: it is the closest published evidence that the output-side class this taxonomy specifies is real</td>
+</tr>
 </tbody>
 </table>
 <p>SARF's reported figure is <strong>"On LIBERO, SARF reduces OpenVLA's failure rate under AGSD from 100% to
@@ -2733,6 +2773,34 @@ instruction-canonicalization study says in its own text that its headline number
 tautological on the fixture it was measured on. The comparison is not close and is not presented as
 though it were. See <a href="https://github.com/provael/provael/blob/main/PRIOR_ART.md">PRIOR_ART.md</a> for
 the full citations and <a href="../studies/">the studies index</a> for the gap with a date against it.</p>
+<h3 id="phyfilter-and-what-it-says-about-the-three-unwritten-output-side-rows">PhyFilter, and what it says about the three unwritten output-side rows</h3>
+<p><strong>PhyFilter — <em>Physics Filtering Favors the Generalization of Robot Learning</em></strong>
+(<a href="https://arxiv.org/abs/2608.22701">arXiv:2608.22701</a>, submitted 24 August 2026; the preprint
+states it is accepted by <em>npj Robotics</em>). Jindou Jia, Shixuan Han, Meng Wang, Gen Li, Zihan Yang,
+Sicheng Zhou, Kexin Guo, Jianfei Yang, Xiang Yu, Wei Wang, Lei Guo. Code:
+<a href="https://github.com/JIAjindou/PhyFilter">JIAjindou/PhyFilter</a> — public, and carrying no licence
+file at the time of writing, which is worth knowing before depending on it.</p>
+<p><strong>What it establishes.</strong> A lightweight, model-agnostic module that corrects a learned policy's
+outputs with physics-filtered learning residuals, its parameters set by an auto-learning algorithm
+rather than by hand. The authors report generalisation to unseen terrains, payload variations and
+speed ranges for quadrupeds; flight under unseen wind for drones; centimetre-level in-air capture
+for aerial manipulators despite wind and mass uncertainty; and robustness under distribution shift
+for an acceleration differentiator. Their framing is that physics-filtered feedback is an
+alternative to massive data scaling.</p>
+<p><strong>Why it is recorded on this page.</strong> Three of the four rows above that remain <em>specified and
+unproven</em> act on the policy's <strong>output</strong>, and became expressible at all only with
+<code>Defense.filter_action</code> in 0.28.0. Until then this taxonomy asserted a defense class it could not
+have implemented. PhyFilter is independent, peer-reviewed evidence that an output-side correction
+module is a real and effective class of intervention — which is the part of those three rows that
+was doing the most unearned work.</p>
+<p><strong>It is not a security defense and does not claim to be.</strong> PhyFilter corrects for <em>dynamics
+uncertainty</em>: unmodelled terrain, wind, payload. Nothing in it is adversarial, and no attacker
+appears anywhere in the paper. It is credited here as evidence for the class, never as prior art
+for an attack and never as a baseline any Provael number is measured against.</p>
+<p><strong><code>mapping_status: referenced-not-measured</code>.</strong> Nothing in this project has been run against
+PhyFilter and no comparison is claimed. Its abstract reports capability gains across four systems
+without a single headline percentage — deliberately not paraphrased into one here, because a
+percentage this page did not read out of the paper body is a number this page invented.</p>
 <p>The useful thing to take from ChromaGuard is a warning rather than a benchmark: its authors report
 that naive augmentation defenses "incorrectly condition VLA models to discard color as noise",
 producing a defended model that scores well on a diagnostic and worse than the undefended baseline
