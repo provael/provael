@@ -17,6 +17,8 @@ time, so the same config always yields a byte-identical report.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 
 from provael import __version__
@@ -29,6 +31,7 @@ from provael.config import RunConfig
 from provael.defenses.base import Defense
 from provael.defenses.registry import make_defense
 from provael.evidence import classify_run
+from provael.ledger import TrialKey, append_trial, completed_keys, record_of, results_for
 from provael.policies.base import PolicyAdapter
 from provael.policies.registry import make_policy
 from provael.scoring.asr import (
@@ -316,6 +319,7 @@ def run(
     calibrations: dict[str, Calibration] | None = None,
     *,
     audit_sink: list[dict[str, str]] | None = None,
+    ledger_path: Path | None = None,
 ) -> RunReport:
     """Execute a full red-team run described by ``config`` and return a report.
 
@@ -327,6 +331,16 @@ def run(
     (see :func:`run_episode`). ``audit_sink`` collects its raw → canonical trail for the caller to
     write as a ``defense-log.jsonl`` sidecar — this function performs no file IO, and the trail is
     deliberately NOT part of the report, so the attestation subject digest is unaffected.
+
+    ``ledger_path``, when set, makes the run **resumable**: each finished episode is appended to an
+    append-only JSONL ledger, and a re-run replays the episodes already there instead of
+    re-measuring them. That is what makes a preemptible spot instance affordable — a job reclaimed
+    at hour 19 resumes rather than starting over. Passing it is the ONLY thing that turns file IO
+    on in this function.
+
+    The replayed episodes are spliced back **in plan order**, not appended at the end, so a resumed
+    report is identical to the uninterrupted one rather than merely equivalent. Determinism is the
+    product here; "same numbers, different order" would still change the digest ``attest`` signs.
     """
     # `device` is forwarded so --accelerator is actually HONOURED. Every real factory already
     # accepts a `device` kwarg (defaulting to "cuda"), but the runner never passed one, so the
@@ -364,6 +378,28 @@ def run(
             "attempts=0 is not a measurement — fix the suite or pass an explicit --tasks."
         )
 
+    # RESUME. `episodes_per_seed > 1` puts several episodes on ONE (attack, task, seed) key, which
+    # the ledger cannot tell apart — pending_trials would dedup them and the run would quietly
+    # measure a fraction of its own design. Refuse rather than under-run: an unbalanced or
+    # short-changed denominator is exactly what the divmod guard above also refuses.
+    done_keys: set[TrialKey] = set()
+    replay: dict[TrialKey, AttackResult] = {}
+    if ledger_path is not None:
+        if config.episodes_per_seed > 1:
+            raise ValueError(
+                f"--resume cannot be used with episodes_per_seed={config.episodes_per_seed}: the "
+                "ledger keys trials by (attack, task, seed), so repeats at one seed are "
+                "indistinguishable and resume would silently drop all but the first."
+            )
+        planned: list[TrialKey] = [
+            (attack.name, task, config.seed + i)
+            for task in tasks
+            for attack in attacks
+            for i in range(config.episodes)
+        ]
+        done_keys = completed_keys(ledger_path) & set(planned)
+        replay = results_for(planned, ledger_path)
+
     results: list[AttackResult] = []
     for task in tasks:
         # Re-point the spatial search at THIS task's geometry before anything runs against it.
@@ -400,21 +436,29 @@ def run(
                     # Per episode rather than per (task, attack) because the random control has to
                     # re-draw its K bits each episode to estimate a rate over draws instead of
                     # reporting one draw as the rate. See WeightIntegrityAttack.corrupt.
+                    # Already measured on an earlier attempt? Splice the stored episode in HERE,
+                    # at its plan position, and neither load the policy for it nor re-run it.
+                    key: TrialKey = (attack.name, task, seed)
+                    if key in done_keys:
+                        results.append(replay[key])
+                        continue
                     weight_attack = (
                         attack if isinstance(attack, WeightIntegrityAttack) else None
                     )
                     if weight_attack is not None:
                         weight_attack.corrupt(policy, seed)
                     try:
-                        results.append(
-                            run_episode(
-                                policy, suite, attack, task, seed, config.horizon,
-                                defense=defense, audit_sink=audit_sink,
-                            )
+                        episode = run_episode(
+                            policy, suite, attack, task, seed, config.horizon,
+                            defense=defense, audit_sink=audit_sink,
                         )
                     finally:
                         if weight_attack is not None:
                             weight_attack.restore(policy)
+                    # Append BEFORE the next episode starts, so a kill loses at most this one.
+                    if ledger_path is not None:
+                        append_trial(ledger_path, record_of(episode, trial_index=len(results)))
+                    results.append(episode)
     overall = overall_stat(results)
     adversarial = adversarial_asr(results)  # headline ASR: benign control excluded by role
     attack_breakdown = by_attack(results)

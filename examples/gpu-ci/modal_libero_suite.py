@@ -28,11 +28,14 @@ correction rather than repeating the optimism.
 
 STAGES WITH >1 TASK ARE SHARDED ONE TASK PER CONTAINER, which is why wall clock is a tenth of
 GPU-hours at identical cost. That is a survivability decision, not a speed one.
-:mod:`provael.ledger` is an append-only resumable trial ledger whose docstring says it exists so a
-"budget-capped GPU run spread across preemptible spot instances" can resume — but it is NOT wired
-into the runner, so
-`provael attack` cannot resume, and a 25-hour single container that dies at hour 19 loses nineteen
-hours. Ten containers lose one task.
+:mod:`provael.ledger` is an append-only resumable trial ledger, and it is now WIRED IN: pass
+`--resume <ledger.jsonl>` and a container reclaimed at hour 19 replays what it already measured
+instead of starting over. That was not always true — for most of this file's life the ledger existed
+and nothing called it, so sharding was the ONLY survivability mechanism and a 25-hour single
+container that died at hour 19 lost nineteen hours. Sharding still earns its place (ten containers
+finish in a tenth the wall clock at identical GPU-seconds), but it is no longer the only thing
+standing between a preemption and a lost run — which is what makes the cheap interruptible tiers,
+the ones that give no eviction warning at all, usable at all.
 
 Each shard writes its own report.json under `<out>/libero_object_<n>/`, and :func:`aggregate` runs
 the cross-task statistics over their union. The aggregate is deliberately NOT shaped like a report:
@@ -372,11 +375,10 @@ def redteam(stage: str, task: str | None = None) -> str:
     wrong question, which is the worst way for a configuration bug to behave.
 
     ``task`` shards the run. Passing one task per container is how the big stages are made
-    survivable: :mod:`provael.ledger` exists precisely to resume a preempted budget run, and its
-    docstring says so — but it is NOT wired into the runner, so `provael attack` cannot resume and a
-    sequential 800-episode run that dies at hour 19 loses all nineteen hours. Ten containers each
-    owning one task cost the same GPU-seconds, finish in a tenth the wall clock, and lose one
-    task's data rather than the run when something goes wrong.
+    survivable, and it now composes with `--resume`: a shard that dies replays its own ledger and
+    continues, rather than re-measuring the task from the top. Ten containers each owning one task
+    cost the same GPU-seconds, finish in a tenth the wall clock, and lose at most one episode
+    rather than one task's data when something goes wrong.
     """
     # LIBERO writes its 586-file asset bundle to ~/.cache/libero, resolved internally rather than
     # from an env var, so HF_HOME cannot redirect it. Point that one path at the cache Volume with a
