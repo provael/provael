@@ -179,6 +179,39 @@ def test_the_committed_headline_cannot_get_a_clustered_interval() -> None:
     assert cluster_bootstrap_ci(_committed(), attack="roleplay") is None
 
 
+def test_bootstrap_refuses_an_all_zero_sweep() -> None:
+    """Ten tasks, every one scoring zero, is as degenerate as one task.
+
+    THE DRIFT THIS EXISTS TO STOP. The two-task guard reads the number of clusters, so ten tasks
+    sail past it — but if every task scores the same rate, every draw returns that rate and the
+    percentiles collapse anyway. README.md published `[0%, 0%]` for `patch`, `decoy_object` and
+    `scene_text` while the website published a non-zero upper bound for the same three 0/50
+    results. Two public surfaces, one dataset, contradictory claims, and no test could see it
+    because the guard was checking a proxy (cluster count) rather than the thing it cared about
+    (whether the interval carries information).
+    """
+    all_zero = [_r(f"task{t}", "patch", s, False) for t in range(10) for s in range(5)]
+    assert cluster_bootstrap_ci(all_zero) is None
+
+
+def test_bootstrap_refuses_an_all_success_sweep() -> None:
+    """The mirror case, which no published result has hit yet and which fails identically.
+
+    Guarding only the zero side would leave `[100%, 100%]` reachable by an attack that lands on
+    every task — a claim of certainty the data cannot support any more than the zero one can.
+    """
+    all_hit = [_r(f"task{t}", "roleplay", s, True) for t in range(10) for s in range(5)]
+    assert cluster_bootstrap_ci(all_hit) is None
+
+
+def test_bootstrap_still_answers_when_one_task_differs() -> None:
+    """The refusal must be narrow. A single dissenting task carries real information."""
+    rows = [_r(f"task{t}", "patch", s, t == 0) for t in range(10) for s in range(5)]
+    ci = cluster_bootstrap_ci(rows, iterations=1000, seed=0)
+    assert ci is not None, "declining here would throw away a real measurement"
+    assert ci[0] != ci[1]
+
+
 def test_bootstrap_is_deterministic() -> None:
     """Required by the report contract: same results + same seed => same interval."""
     rs = [_r(f"t{i%3}", "roleplay", i, i % 2 == 0) for i in range(30)]

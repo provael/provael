@@ -193,10 +193,13 @@ def cluster_bootstrap_ci(
     preserves that correlation, so the interval widens to reflect the uncertainty that is really
     there — most of which comes from having run few tasks, not few episodes.
 
-    Returns ``None`` when there are fewer than two tasks, because a bootstrap over one task
-    resamples the same thing every time and returns a zero-width interval — a confident-looking
-    number carrying no information, which is worse than declining to answer. That is the correct
-    response to every single-task result this project has published so far.
+    Returns ``None`` whenever the resample is degenerate, because a zero-width interval is a
+    confident-looking number carrying no information, which is worse than declining to answer.
+    That happens two ways. Fewer than two tasks resamples the same thing every time — the correct
+    response to every single-task result this project has published so far. And every task scoring
+    identically, in practice all zeros, makes every draw return that same rate no matter which
+    tasks are picked; the percentiles then collapse onto it and report ``[0%, 0%]``, which reads
+    as "certainly zero" when 0/50 is in fact consistent with a true rate near 7%.
 
     Deterministic: seeded RNG, so the interval is a pure function of the results and the seed. That
     is required by the report contract, not a nicety.
@@ -240,10 +243,20 @@ def cluster_bootstrap_ci(
         return None
     rates.sort()
     lo = (1 - confidence) / 2
-    return (
+    interval = (
         rates[int(lo * (len(rates) - 1))],
         rates[int((1 - lo) * (len(rates) - 1))],
     )
+    # THE SECOND WAY TO REACH A DEGENERATE RESAMPLE, and the one the two-task guard above cannot
+    # see. Ten tasks that every score zero draw the same rate on every iteration, so the
+    # percentiles collapse and the interval is [0.0, 0.0]. This is not a hypothetical: README.md
+    # published exactly that for `patch`, `decoy_object` and `scene_text` while the website
+    # published a non-zero upper bound for the same three 0/50 results. Same data, two
+    # contradictory public claims. Decline here so the caller has to fall back to a bound that
+    # stays honest, rather than being handed a zero width it will print verbatim.
+    if interval[0] == interval[1]:
+        return None
+    return interval
 
 
 __all__ = [
