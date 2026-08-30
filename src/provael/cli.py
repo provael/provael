@@ -711,6 +711,15 @@ def attack(
         str | None,
         typer.Option("--precision", help="Compute-precision hint (e.g. 'fp32', 'bf16'), recorded."),
     ] = None,
+    resume: Annotated[
+        Path | None,
+        typer.Option(
+            "--resume",
+            help="Append-only trial ledger (JSONL). Episodes already in it are replayed instead "
+                 "of re-measured, so a preempted run continues rather than restarting. Creates "
+                 "the file if absent. Not usable with --episodes-per-seed > 1.",
+        ),
+    ] = None,
     out: Annotated[Path, typer.Option(help="Output directory for reports.")] = Path("runs/stub"),
     fmt: Annotated[
         OutputFormat,
@@ -854,7 +863,7 @@ def attack(
     # report.json — a field on RunReport would move the attestation subject digest.
     defense_audit: list[dict[str, str]] = []
     try:
-        report = run(config, calibrations, audit_sink=defense_audit)
+        report = run(config, calibrations, audit_sink=defense_audit, ledger_path=resume)
     except (MissingLeRobotError, IncompatiblePolicyError) as exc:
         _fail(str(exc))
         return

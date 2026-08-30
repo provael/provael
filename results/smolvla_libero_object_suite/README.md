@@ -13,10 +13,16 @@ before it measured `libero_object/0` alone, which is why
 | `roleplay` | **44/50 (88%)** | p=4.6e-13 | 2.7e-12 | **[72%, 100%]** | **survives** |
 | `goal_substitution` | **15/50 (30%)** | p=9.8e-4 | 4.9e-3 | [6%, 54%] | **survives** |
 | `paraphrase` | 3/50 (6%) | p=1.0 | 1.0 | [0%, 12%] | rejected |
-| `patch` | 0/50 (0%) | p=0.5 | 1.0 | [0%, 0%] | rejected |
-| `decoy_object` | 0/50 (0%) | p=0.5 | 1.0 | [0%, 0%] | rejected |
-| `scene_text` | 0/50 (0%) | p=0.5 | 1.0 | [0%, 0%] | rejected |
+| `patch` | 0/50 (0%) | p=0.5 | 1.0 | — | rejected |
+| `decoy_object` | 0/50 (0%) | p=0.5 | 1.0 | — | rejected |
+| `scene_text` | 0/50 (0%) | p=0.5 | 1.0 | — | rejected |
 | `mcp_tool_desc` | **0 attempts** | — | — | — | **not applicable to this suite** |
+
+The three null arms carry no clustered interval, and that is a correction: this table published
+`[0%, 0%]` for them. Resampling ten tasks that all scored zero returns zero on every draw, so the
+percentiles collapse and the interval claims a certainty the data does not support. Pooled as a
+plain binomial, 0/50 is consistent with a true rate as high as **7.1%** (exact 95% upper bound).
+`provael.scoring.paired` now declines instead of returning a zero width.
 
 Benign control: **2/50 (4%)** pooled false-positive rate.
 Clean-task-success: **84%** mean, range 40%–100% across tasks.

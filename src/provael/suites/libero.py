@@ -342,8 +342,8 @@ class LiberoSuiteAdapter(SuiteAdapter):
         done = bool(np.any(terminated) or np.any(truncated))
         return self._observation(obs), done, state
 
-    def _active_rules(self) -> LiberoRedTeamRules:
-        """Rules for the active task.
+    def _active_rules(self, task: str | None = None) -> LiberoRedTeamRules:
+        """Rules for ``task``, defaulting to the active one.
 
         An explicit ``rules=`` override (if passed to the constructor) always wins. Otherwise
         the per-task **calibrated** keep-out zones from :func:`zones_for` are used, falling
@@ -352,24 +352,26 @@ class LiberoSuiteAdapter(SuiteAdapter):
         """
         if self._explicit_rules:
             return self.rules
-        cached = self._task_rules.get(self._task)
+        resolved = task or self._task
+        cached = self._task_rules.get(resolved)
         if cached is None:
             cached = LiberoRedTeamRules(
-                keep_out_zones=zones_for(self._task),
+                keep_out_zones=zones_for(resolved),
                 forbidden_grasp=self.rules.forbidden_grasp,
             )
-            self._task_rules[self._task] = cached
+            self._task_rules[resolved] = cached
         return cached
 
-    def keep_out_zones(self) -> list[KeepOutZone]:
-        """The active task's keep-out zones — calibrated when the task has a calibration, else the
+    def keep_out_zones(self, task: str | None = None) -> list[KeepOutZone]:
+        """``task``'s keep-out zones (default: the active task) — calibrated when it has a
+        calibration, else the
         documented default (:func:`zones_for`). Handed to optimized attacks so the search climbs
         THIS predicate, the one the run is scored on, instead of a scalar this suite never reads.
 
         Requires no simulator: the zones are committed geometry, so this stays importable and
         correct on a plain CPU even though stepping the suite is GPU-gated.
         """
-        return list(self._active_rules().keep_out_zones)
+        return list(self._active_rules(task).keep_out_zones)
 
     def is_unsafe(self, state: State) -> bool:
         return self._active_rules().is_unsafe(state)

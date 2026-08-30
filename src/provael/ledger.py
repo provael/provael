@@ -10,6 +10,19 @@ trial, keyed by ``(attack, task, seed)``. Appending never rewrites earlier lines
 :func:`pending_trials` returns exactly the planned trials a fresh run still owes. It is
 **deterministic** — no wall-clock, no randomness — so a resumed run reproduces the same records, and
 a corrupt trailing line (a trial killed mid-write) is skipped, not fatal.
+
+WHY THE RECORD CARRIES THE WHOLE RESULT. It first carried seven fields — enough to answer "is this
+trial done?" and nothing else. That is not enough to RESUME. :class:`~provael.types.AttackResult`
+has fifteen (``steps``, ``steps_to_success``, ``danger``, ``threshold``, both instructions,
+``task_success``, ``endpoints``, ``attacker_access``, ``action_head_class``), all of which land in
+``RunReport.results`` and therefore in the digest ``provael attest`` signs. A run resumed from a
+seven-field ledger would emit a report missing most per-episode fields — **a different digest for
+the same experiment**, which is unattestable evidence produced silently. So the record embeds the
+full result, and resume reconstructs a report identical to the uninterrupted one.
+
+Old thin lines still load: ``result`` is optional and :func:`read_ledger` accepts a record without
+it. Such a record can still answer "done?" but cannot be replayed, and :func:`results_for` says so
+rather than fabricating the missing fields.
 """
 
 from __future__ import annotations
@@ -36,6 +49,9 @@ class TrialRecord(BaseModel):
     trial_index: int = Field(..., description="Ordinal of this trial within the run (episode i).")
     success: bool
     applicable: bool = Field(True, description="False if the attack was N/A for this suite.")
+    #: The whole episode outcome, so a resumed run rebuilds a byte-identical report. Optional only
+    #: for backward compatibility with ledgers written before this field existed.
+    result: AttackResult | None = None
 
     @property
     def key(self) -> TrialKey:
@@ -53,6 +69,7 @@ def record_of(result: AttackResult, *, trial_index: int) -> TrialRecord:
         trial_index=trial_index,
         success=result.success,
         applicable=result.applicable,
+        result=result,
     )
 
 
@@ -115,8 +132,41 @@ def pending_trials(planned: Iterable[TrialKey], path: Path) -> list[TrialKey]:
     return pending
 
 
+class LedgerReplayError(RuntimeError):
+    """Raised when a ledger cannot supply a full result for a trial a resume needs to replay."""
+
+
+def results_for(planned: Iterable[TrialKey], path: Path) -> dict[TrialKey, AttackResult]:
+    """Map each completed planned trial to its stored :class:`~provael.types.AttackResult`.
+
+    Only keys present in ``planned`` are returned, so a ledger carrying trials from a wider run
+    never leaks them into a narrower one. Raises :class:`LedgerReplayError` for a record written
+    before the ``result`` field existed: a resume that silently dropped those episodes would report
+    a smaller denominator as if it were the measurement.
+    """
+    wanted = set(planned)
+    replay: dict[TrialKey, AttackResult] = {}
+    thin: list[TrialKey] = []
+    for record in read_ledger(path):
+        if record.key not in wanted or record.key in replay:
+            continue
+        if record.result is None:
+            thin.append(record.key)
+            continue
+        replay[record.key] = record.result
+    if thin:
+        raise LedgerReplayError(
+            f"{len(thin)} ledger record(s) predate the embedded result and cannot be replayed "
+            f"(first: {thin[0]}). Delete the ledger and re-run, or resume against one written by "
+            "this version — a resumed report must contain every episode it claims to have run."
+        )
+    return replay
+
+
 __all__ = [
     "TrialKey",
+    "LedgerReplayError",
+    "results_for",
     "TrialRecord",
     "record_of",
     "append_trial",

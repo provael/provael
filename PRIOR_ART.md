@@ -1200,7 +1200,8 @@ Zhiruo Zhou, Zelin Li, Xiwen Chen, Jiazhuo Li, Chenwei Wang, Huiming Chen, Xiaoj
 arXiv:[2608.23224](https://arxiv.org/abs/2608.23224) · submitted 24 August 2026
 
 **The finding is more interesting than the fix, so take it first.** Retrieval-augmenting a frozen
-VLA is normally read as supplying *context*. Their framing is that it does not: retrieved text
+VLA — the audited base policy is **OpenVLA-OFT**, OpenVLA under the Optimized Fine-Tuning recipe,
+in LIBERO-Plus simulation — is normally read as supplying *context*. Their framing is that it does not: retrieved text
 "becomes a control intervention once it enters the executed prompt". The audit behind that sentence
 is worth quoting verbatim, because it is a **control** rather than a headline:
 

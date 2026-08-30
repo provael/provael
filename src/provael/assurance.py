@@ -22,6 +22,7 @@ from typing import Any
 
 from provael.calibration import wilson_ci
 from provael.compliance import REQUIREMENTS
+from provael.evidence import transfer_status_of
 from provael.hosted.report import build_insurer_report
 from provael.scoring.asr import by_family, matched_benign_fpr
 from provael.types import MEASURED_REAL_TRANSFER, STUB_VALIDATED_SCAFFOLDING, RunReport
@@ -125,7 +126,9 @@ def family_transfer_table(report: RunReport) -> list[dict[str, Any]]:
     :func:`provael.scoring.asr.matched_benign_fpr` — no statistic is recomputed by hand. This is the
     "which families transfer on the real model" table an insurer / assessor reads.
     """
-    real_run = report.policy != "stub" and report.suite != "stub"
+    # From the ladder, not re-derived: a real policy on a fixture suite (reach, humanoid) earns
+    # adapter-smoke, and `policy != "stub" and suite != "stub"` promotes it to real transfer.
+    real_run = transfer_status_of(report) == MEASURED_REAL_TRANSFER
     mbf = matched_benign_fpr(report.results)
     fam_eai = _family_to_eai(report)
     rows: list[dict[str, Any]] = []
@@ -216,7 +219,10 @@ def build_assurance(
     return {
         "format": ASSURANCE_FORMAT,
         "profile": profile.value,
-        "real_model_run": report.policy != "stub" and report.suite != "stub",
+        # This dict is embedded in the ATTESTATION (attest.py: `assurance`), so this boolean is
+        # inside the signed payload. It carried no ladder behind it at all — a bare re-derivation
+        # that called a fixture-suite run a real-model run, over a signature.
+        "real_model_run": transfer_status_of(report) == MEASURED_REAL_TRANSFER,
         **view,
         "cert_readiness_crossref": [dict(row) for row in CERT_READINESS],
         "transfer_caveat": _TRANSFER_CAVEAT,

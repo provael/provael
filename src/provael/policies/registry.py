@@ -44,7 +44,9 @@ def _make_stub(**_kwargs: object) -> PolicyAdapter:
     return StubPolicy()
 
 
-def _lerobot_native(default_model: str, policy_name: str) -> Callable[..., PolicyAdapter]:
+def _lerobot_native(
+    default_model: str, policy_name: str, action_head_class: str | None = None
+) -> Callable[..., PolicyAdapter]:
     """Build a factory for a LeRobot-native policy (reuses the generic LeRobotAdapter).
 
     ``smolvla`` / ``pi0`` / ``pi05`` / ``pi0fast`` differ only by their default checkpoint —
@@ -60,12 +62,21 @@ def _lerobot_native(default_model: str, policy_name: str) -> Callable[..., Polic
     ) -> PolicyAdapter:
         from provael.policies.lerobot_adapter import LeRobotAdapter
 
-        return LeRobotAdapter(
+        adapter = LeRobotAdapter(
             model_id=model or default_model,
             name=policy_name,
             device=device,
             rename_map=rename_map,
         )
+        # LeRobotAdapter declares "flow" because SmolVLA and the pi0/pi0.5 checkpoints it loads use
+        # flow-matching heads, and its own comment names pi0-FAST as the exception that "should
+        # override this". Nothing did: pi0fast was registered through this same factory, so every
+        # pi0fast result would have stamped action_head_class="flow" when the head is discrete FAST
+        # tokens. The runner prefers the policy's value over the attack's, so nothing downstream
+        # would have caught it — a self-describing result, wrong by construction.
+        if action_head_class is not None:
+            adapter.action_head_class = action_head_class
+        return adapter
 
     return factory
 
@@ -120,7 +131,7 @@ POLICIES: dict[str, Callable[..., PolicyAdapter]] = {
     "smolvla": _lerobot_native("lerobot/smolvla_base", "smolvla"),
     "pi0": _lerobot_native("lerobot/pi0", "pi0"),
     "pi05": _lerobot_native("lerobot/pi05_base", "pi05"),
-    "pi0fast": _lerobot_native("lerobot/pi0fast_base", "pi0fast"),
+    "pi0fast": _lerobot_native("lerobot/pi0fast_base", "pi0fast", action_head_class="token"),
     "groot": _make_groot,
     "openvla": _make_openvla,
     "openpi": _make_openpi,
