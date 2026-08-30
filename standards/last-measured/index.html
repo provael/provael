@@ -2639,7 +2639,8 @@ reconstructed to recorded without anyone editing it.</p>
 <p>The badge has been red for eleven days. That warranted a decision rather than another week of
 apologetic prose, and the decision was <strong>not</strong> to lengthen the window.</p>
 <p><strong>The seven-day window is not too ambitious. It is unenforced.</strong> The job that would hold it,
-<code>.github/workflows/gpu-nightly.yml</code>, runs a real SmolVLA × LIBERO red-team on a Modal GPU nightly
+<code>.github/workflows/gpu-scheduled.yml</code> (then named <code>gpu-nightly.yml</code>), runs a real SmolVLA ×
+LIBERO red-team on a Modal GPU on a schedule
 and records the result into the watch ledger <strong>only on success</strong> — it explicitly refuses to stamp a
 fresh measurement time for a run that produced no number. It is well built and it has never run,
 because it is switched off in two independent ways:</p>
@@ -2667,6 +2668,21 @@ length is currently held</strong>, which is why the window was not moved from se
 Fourteen would have been broken by the same absence, and publishing a second number nothing enforces
 would have been worse than publishing the first one — it would look like a considered adjustment
 rather than what it is.</p>
+<p><strong>Update, 30 August 2026 — both gates are open, and the cadence is now derived rather than chosen.</strong>
+<code>ENABLE_GPU_SCHEDULED</code> is set and both Modal secrets are present, so the job can run for the first
+time. Two things had to change first.</p>
+<p>The run could never have finished. <code>none,instruction,visual,injection</code> expands to eight arms and
+<code>task_ids</code> defaults to one task, so the old <code>--seeds 10</code> was 80 episodes — about three hours at the
+measured ~139 s/episode, against a one-hour container timeout. Every scheduled run would have burned
+the full hour, been killed before recording anything, and cost ~$0.80: roughly $24 of a $30/month
+credit for no measurement, while this page went on saying the window was unenforced. It is now two
+seeds, 16 episodes, ~37 min, ~$0.49/run.</p>
+<p>And the cadence now follows <code>STALE_DAYS</code> instead of a round number. Nightly was unaffordable;
+weekly sits exactly on the seven-day red boundary, so a single missed run turns the badge red.
+Tuesday and Friday give gaps of three and four days, holding the window with margin at ~$4.25/month.
+Green would need <code>FRESH_DAYS = 2</code>, a run every other day at ~$7.40/month, which is not worth a
+quarter of the budget for a canary. <strong>The seven-day window is, for the first time, held by something
+that can actually run.</strong></p>
 <h3 id="what-changed-instead">What changed instead</h3>
 <p>The <strong>claim</strong> moved, not the threshold. <code>STALE_DAYS</code> is still 7, because seven days genuinely is old
 for a currency claim and the badge reddening at that point is correct. What was wrong was the
