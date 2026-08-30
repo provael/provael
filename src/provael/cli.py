@@ -2166,18 +2166,19 @@ def watch_cmd(
     elif payload.get("isError"):
         # NAMES THE CAUSE, not just the symptom. This used to read "the README's
         # continuous-verification claim is not currently true", which is accurate and useless: it
-        # tells a reader the claim is broken without telling them why, and the natural inference —
-        # that a cadence slipped — is wrong. The cadence never ran. `gpu-nightly.yml` is the job
-        # that would hold it, and it is gated off by default for cost safety and has never been
-        # configured. See docs/standards/last-measured.md.
+        # tells a reader the claim is broken without telling them why. It then over-corrected into
+        # asserting the lane had NEVER been configured, which was true when written and stopped
+        # being true the day it was enabled. Both failure modes age the badge identically, so the
+        # message must not guess between them. See docs/standards/last-measured.md.
         _err.print(
             f"[red]stale[/red]: the newest measurement is {int(age)} days old (over "
             f"{STALE_DAYS}).\n"
-            "This is not a missed deadline. No automated measurement lane is running: "
-            "`gpu-nightly.yml` needs the repo variable ENABLE_GPU_NIGHTLY=true and the "
-            "MODAL_TOKEN_ID / MODAL_TOKEN_SECRET secrets, and has neither. Until it is "
-            "configured the badge measures the age of the newest COMMITTED run and nothing "
-            "refreshes it. See docs/standards/last-measured.md."
+            "Either the scheduled measurement lane is not configured, or it is configured and "
+            "its recent runs did not record. `gpu-scheduled.yml` needs the repo variable "
+            "ENABLE_GPU_SCHEDULED=true and the MODAL_TOKEN_ID / MODAL_TOKEN_SECRET secrets, and "
+            "it records only on success — so a failing run ages this badge exactly like an "
+            "absent one. Check its recent runs before assuming it was never switched on. "
+            "See docs/standards/last-measured.md."
         )
 
 

@@ -1,4 +1,4 @@
-# GitHub Actions: label-gated real-model GPU red-team via Modal (~$0.02/run, fork-safe).
+# GitHub Actions: label-gated real-model GPU red-team via Modal (~$0.49/run, fork-safe).
 # Copy to .github/workflows/. Triggers ONLY when a maintainer adds the `gpu-tests` label to a PR,
 # so untrusted fork PRs can never spend your Modal credits.
 name: Provael GPU red-team (Modal)

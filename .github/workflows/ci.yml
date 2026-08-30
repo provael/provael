@@ -28,8 +28,8 @@ concurrency:
 #   package build + metadata ........ `build` (uv build + twine check)
 #   docs strict ..................... .github/workflows/docs.yml
 #   optional integration ............ gated (PROVAEL_INTEGRATION); skips here. The real-model path
-#                                     runs in gpu-nightly.yml (scheduled, and only when the
-#                                     ENABLE_GPU_NIGHTLY repo variable is "true"), NOT as a release
+#                                     runs in gpu-scheduled.yml (scheduled, and only when the
+#                                     ENABLE_GPU_SCHEDULED repo variable is "true"), NOT as a release
 #                                     gate — release.yml re-runs this CPU gate plus a tag/version
 #                                     match, but it does not run the GPU integration tests.
 jobs:
