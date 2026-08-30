@@ -43,7 +43,7 @@ uv build && uvx twine check dist/*
 PROVAEL_INTEGRATION=1 pytest tests/test_lerobot_adapter.py tests/test_libero_adapter.py -q
 ```
 
-CI (`.github/workflows/ci.yml`) is CPU-only by design and never installs GPU extras; `gpu-nightly.yml` covers the real-model path. The rest of the wall: `checkpoint-security-gate.yml` (per-checkpoint regression + supply-chain integrity, emitting signed attestations), `docker-publish.yml` (multi-arch image), `freshness.yml` (refreshes the measurement-freshness badge), `coverage-badge.yml` (refreshes the published coverage and registry counts), `readme-quickstart.yml` (runs the README's own quickstart, so the docs are a test rather than a promise), `scorecard.yml`, `leaderboard-submission.yml`, `docs.yml`, `release.yml`. Use `uv sync --locked` to reproduce CI exactly.
+CI (`.github/workflows/ci.yml`) is CPU-only by design and never installs GPU extras; `gpu-scheduled.yml` covers the real-model path. The rest of the wall: `checkpoint-security-gate.yml` (per-checkpoint regression + supply-chain integrity, emitting signed attestations), `docker-publish.yml` (multi-arch image), `freshness.yml` (refreshes the measurement-freshness badge), `coverage-badge.yml` (refreshes the published coverage and registry counts), `readme-quickstart.yml` (runs the README's own quickstart, so the docs are a test rather than a promise), `scorecard.yml`, `leaderboard-submission.yml`, `docs.yml`, `release.yml`. Use `uv sync --locked` to reproduce CI exactly.
 
 `release.yml` refuses to cut a tag that `CHANGELOG.md` does not document (`scripts/check_changelog.py`), and the Action's gate logic lives in `scripts/action/` rather than inline in `action.yml` — lifted out specifically so it can be tested.
 

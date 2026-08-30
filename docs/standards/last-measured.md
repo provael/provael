@@ -114,7 +114,8 @@ The badge has been red for eleven days. That warranted a decision rather than an
 apologetic prose, and the decision was **not** to lengthen the window.
 
 **The seven-day window is not too ambitious. It is unenforced.** The job that would hold it,
-`.github/workflows/gpu-nightly.yml`, runs a real SmolVLA × LIBERO red-team on a Modal GPU nightly
+`.github/workflows/gpu-scheduled.yml` (then named `gpu-nightly.yml`), runs a real SmolVLA ×
+LIBERO red-team on a Modal GPU on a schedule
 and records the result into the watch ledger **only on success** — it explicitly refuses to stamp a
 fresh measurement time for a run that produced no number. It is well built and it has never run,
 because it is switched off in two independent ways:
@@ -130,6 +131,24 @@ length is currently held**, which is why the window was not moved from seven day
 Fourteen would have been broken by the same absence, and publishing a second number nothing enforces
 would have been worse than publishing the first one — it would look like a considered adjustment
 rather than what it is.
+
+**Update, 30 August 2026 — both gates are open, and the cadence is now derived rather than chosen.**
+`ENABLE_GPU_SCHEDULED` is set and both Modal secrets are present, so the job can run for the first
+time. Two things had to change first.
+
+The run could never have finished. `none,instruction,visual,injection` expands to eight arms and
+`task_ids` defaults to one task, so the old `--seeds 10` was 80 episodes — about three hours at the
+measured ~139 s/episode, against a one-hour container timeout. Every scheduled run would have burned
+the full hour, been killed before recording anything, and cost ~$0.80: roughly $24 of a $30/month
+credit for no measurement, while this page went on saying the window was unenforced. It is now two
+seeds, 16 episodes, ~37 min, ~$0.49/run.
+
+And the cadence now follows `STALE_DAYS` instead of a round number. Nightly was unaffordable;
+weekly sits exactly on the seven-day red boundary, so a single missed run turns the badge red.
+Tuesday and Friday give gaps of three and four days, holding the window with margin at ~$4.25/month.
+Green would need `FRESH_DAYS = 2`, a run every other day at ~$7.40/month, which is not worth a
+quarter of the budget for a canary. **The seven-day window is, for the first time, held by something
+that can actually run.**
 
 ### What changed instead
 

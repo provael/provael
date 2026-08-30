@@ -1,9 +1,9 @@
 # Refresh the "last measured" freshness badge — daily, on CPU, free, and DELIBERATELY independent
 # of whether any measurement ran.
 #
-# WHY THIS IS A SEPARATE WORKFLOW FROM gpu-nightly.yml. The obvious design is to have the nightly
+# WHY THIS IS A SEPARATE WORKFLOW FROM gpu-scheduled.yml. The obvious design is to have the
 # measurement emit its own green badge. That fails in exactly the case the badge exists for: if the
-# nightly stops running — disabled, out of budget, broken, or never enabled in the first place —
+# measurement stops running — disabled, out of budget, broken, or never enabled in the first place —
 # nothing regenerates the file and the badge stays frozen on the last green it ever wrote. A
 # freshness indicator that cannot go stale-red is worse than none, because it actively asserts
 # currency it is not checking. The published board sat a month stale under exactly that kind of
