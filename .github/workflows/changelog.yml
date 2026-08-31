@@ -1,0 +1,71 @@
+# Refuse a pull request that changes published behaviour without a changelog line.
+#
+# WHY THIS IS SEPARATE FROM ci.yml. It asks a different question from the CPU gate, and a signal
+# that is single-purpose stays readable: "changelog" going red means exactly one thing, and never
+# masks a lint failure or the reverse. It also needs `types: [..., labeled, unlabeled]`, which the
+# CPU gate has no use for — without them, applying the skip label would not re-run the check and a
+# contributor would be told to push an empty commit to clear a label they had already added.
+#
+# THE GAP IT CLOSES. `scripts/check_changelog.py` gates a RELEASE — it refuses a tag CHANGELOG.md
+# does not document. #157 and #158 both merged with no changelog line, and that gate could not have
+# seen either: `[Unreleased]` was non-empty, so it was satisfied by entries about an unrelated
+# change. #157 had corrected a confidence interval published on two READMEs for 21 days.
+#
+# The decision lives in scripts/check_changelog_entry.py, not inline here, for the reason the
+# Action's gate logic lives in scripts/action/ rather than in action.yml: so it can be tested.
+# tests/test_check_changelog_entry.py pins it, including against the real #157 diff shape.
+name: Changelog
+
+on:
+  pull_request:
+    # `labeled`/`unlabeled` matter: adding `no-changelog` must re-run this and turn it green.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+# Least privilege: reads the repo and the PR's own labels, which arrive in the event payload.
+# A fork PR therefore cannot use this workflow to obtain a write token or secrets.
+permissions:
+  contents: read
+
+concurrency:
+  group: changelog-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  entry:
+    name: a published change carries a changelog line
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          # The diff is computed against the base branch, so the base commit has to be present.
+          # A default shallow checkout leaves `git diff` with nothing to resolve; the script then
+          # sees an empty change list and FAILS rather than passing, but the message would be
+          # about the checkout instead of the changelog. Fetch enough to avoid the confusion.
+          fetch-depth: 0
+
+      - name: Compute the changed paths
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          # Three dots: changes on the PR branch since it diverged, not changes that landed on the
+          # base meanwhile. Two dots would make an out-of-date branch look like it edited files it
+          # never touched.
+          git diff --name-only "${BASE_SHA}...${HEAD_SHA}" > changed-files.txt
+          echo "Changed paths:"
+          sed 's/^/  /' changed-files.txt
+
+      - name: Require a CHANGELOG entry
+        env:
+          # Quoted through the environment rather than interpolated into the run block: a label is
+          # attacker-controllable text on a fork PR, and `${{ }}` inside `run:` is substituted
+          # before the shell sees it.
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+          python scripts/check_changelog_entry.py \
+            --changed-files changed-files.txt \
+            --labels "${PR_LABELS}"
