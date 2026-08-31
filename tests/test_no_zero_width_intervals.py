@@ -38,7 +38,13 @@ DEGENERATE_ROW = re.compile(r"^\|.*\[\s*([0-9]+(?:\.[0-9]+)?)\s*%\s*,\s*\1\s*%\s
 
 #: A record of what shipped is not a claim about today — the same exemption
 #: `test_counted_claims.py` grants for historical counts.
-EXEMPT = {"CHANGELOG.md"}
+#:
+#: `errata.md` is exempt for that reason and no other. Its whole purpose is to state, in a
+#: "Superseded value" column, exactly what a past artifact published — E-2026-03 records this
+#: very defect. Flagging it would make the guard punish the disclosure it exists to force,
+#: which is the same reasoning the module docstring gives for scoping to table rows in the
+#: first place. Both files are records; every other document is a claim.
+EXEMPT = {"CHANGELOG.md", "errata.md"}
 
 
 def _documents() -> list[Path]:

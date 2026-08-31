@@ -6,6 +6,59 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- **A zero-width confidence interval was published for three null arms for 21 days, and the
+  project's own two surfaces disagreed with each other about it.**
+  ([#157](https://github.com/provael/provael/pull/157)) `README.md` (since
+  [#113](https://github.com/provael/provael/pull/113), 9 August 2026) and
+  `results/smolvla_libero_object_suite/README.md` (since
+  [#110](https://github.com/provael/provael/pull/110), 9 August 2026) both published the
+  task-clustered 95% interval for `patch`, `decoy_object` and `scene_text` as:
+
+  ```
+  [0%, 0%]
+  ```
+
+  Each of those arms is 0/50. Resampling ten tasks that all scored zero returns zero on every
+  draw, so the percentiles collapse onto the point and the interval asserts a certainty the data
+  cannot support. The corrected tables carry **`—`** instead, and state in prose that 0/50 is
+  consistent with a true rate as high as **7.1%** — the exact binomial 95% upper bound.
+
+  `cluster_bootstrap_ci` already declined below two tasks, on exactly this reasoning. It guarded a
+  *proxy* — the number of clusters — rather than the interval it computed, and ten tasks that all
+  score the same rate clear a cluster count while being just as degenerate. The fix guards the
+  computed interval.
+
+  **The signed leaderboard was correct throughout.** It carries Wilson intervals, not the
+  clustered bootstrap, and has always published `[0.0%, 7.1%]` for the 0/50 injection row and
+  `[0.0%, 3.7%]` for the 0/100 visual row. So did the website. The defect was confined to two
+  hand-maintained Markdown tables, which is also why no regeneration step would ever have
+  corrected it: `cluster_bootstrap_ci` has no caller in `src/`. Recorded as
+  [E-2026-03](docs/errata.md).
+
+- **The scheduled GPU lane could never finish, and cost roughly 40× what three surfaces said it
+  did.** ([#158](https://github.com/provael/provael/pull/158)) The lane ran nightly at
+  `--seeds 10`. `ATTACKS` expands to eight arms and `task_ids` defaults to one task, so that is
+  **80 episodes**; against this repo's own measured anchor of ~139 s/episode it is **~3 hours
+  into a 1-hour Modal timeout**. Every scheduled run would have burned the full hour, been killed
+  before recording anything, and cost **~$0.80** — about **$24/month of a $30/month credit for no
+  measurement** — while the docstring, the example workflow and `docs/standards/last-measured.md`
+  all advertised **~$0.02/run**. Caught the day the lane was first enabled, before its first run.
+
+  Now `--seeds 2`: 16 episodes, ~37 minutes, ~$0.49, and it completes. The freshness badge this
+  feeds carries a timestamp and no rate, so fewer seeds cannot weaken a published number. The
+  cadence is **derived rather than chosen** — `watch.py` sets `STALE_DAYS = 7`, so a weekly run
+  sits exactly on the red boundary and one miss turns the badge red; Tuesday and Friday give gaps
+  of three and four days at ~$4.25/month.
+
+  `gpu-nightly.yml` → `gpu-scheduled.yml` and `ENABLE_GPU_NIGHTLY` → `ENABLE_GPU_SCHEDULED`: the
+  file is named for being scheduled, not for a cadence that is a tuning parameter of `STALE_DAYS`
+  and has now changed once. The stale-badge CLI message is corrected too — it asserted the lane
+  had never been configured, which was true when written and false the day it was switched on.
+  **No test pinned the old filename, variable or CLI string**, so nothing would have caught that
+  rename going half-done.
+
 ### Added
 
 - **PRIOR_ART records TOWN-VLA ([arXiv:2608.23224](https://arxiv.org/abs/2608.23224)), including
