@@ -252,36 +252,6 @@ degrade gracefully, or the coverage statement may simply not apply outside its c
 distribution. **We have not tested this and make no claim about the answer** — we raise it
 because it is the question our harness is shaped to ask and theirs is shaped to answer.
 
-### DRIFT — *Derailing Denoising Trajectories of Flow-Matching VLAs with Adversarial Patch Attack*
-Tae, Lee (2026). arXiv:[2608.03207](https://arxiv.org/abs/2608.03207) · submitted 4 August 2026
-
-The paper this project should be pointing at rather than competing with. Flow-matching VLAs such as
-π0 had been reported to resist perturbations that fool autoregressive VLAs, and the authors state
-plainly what that reputation was made of: **"We show that this robustness is largely illusory: it
-stems from prior attacks ignoring the multi-step denoising ODE."** DRIFT is a test-time universal
-adversarial patch, placed on the robot's gripper, that attacks the denoising *velocity field* of an
-off-the-shelf policy. Its central result is the one that matters for a taxonomy: **"attacking only
-the first denoising step is both stronger and cheaper than attacking a wider window of steps"** —
-which the authors attribute to a gradient conflict specific to input-space optimization, and note is
-"exactly opposite to the training-time backdoor regime". On π0 and π0.5 across four LIBERO suites
-they report that DRIFT "breaks essentially all originally-solvable tasks with a small single patch,
-far exceeding action- and embedding-space attack baselines".
-
-**How we differ:** the threat model is adjacent to our `universal_patch` family — one frozen patch,
-placed physically, carried to episodes it never queried — and the method is not comparable at all.
-DRIFT is **white-box**: it optimises in input space against gradients of the velocity field. Ours is
-an inference-time **black-box query** search over placements, with no gradients and no access to
-model internals. A black-box search cannot find what DRIFT found, because the structure it exploits
-(which step of the ODE to hit) is invisible without the derivative.
-
-**The gap this exposes, stated rather than hedged:** **Provael has never measured a flow-matching
-policy.** The `pi0`, `pi05` and `pi0fast` adapters are registered and `provael list-policies` marks
-them scaffolding — they have never loaded a checkpoint. So DRIFT's finding is not a result we can
-confirm, contradict or contextualise with a number of our own, and until we can, the honest position
-is that this is a capability of theirs sitting on a class of policy we do not cover. The taxonomy
-implication is separately argued in [docs/top10-rfc.md](docs/top10-rfc.md); it is a proposal, not a
-change.
-
 ### SARF and AGSD — *Structure-Aware Robust Fine-Tuning: Defending Vision-Language-Action Robots Against Physical Attention Hijacking*
 Zhang, Yin, Yang, Yan, Tian, Yu (2026). arXiv:[2608.03231](https://arxiv.org/abs/2608.03231) · submitted 4 August 2026
 
@@ -728,6 +698,22 @@ this channel. At that point the honest reading of 0/50 is not "the policy resist
 "our implementation is weak on this instance" — it is that **provael has no image-space patch
 attack**, and the visual family's nulls measure the absence of one. That is a coverage gap in the
 harness, stated as such. Both nulls stay published exactly as measured.
+
+**Their mechanism finding, kept because it is the transferable part.** The authors attribute the
+first-step result to a gradient conflict specific to input-space optimization, and note it is
+"exactly opposite to the training-time backdoor regime". That is a claim about where to spend a
+gradient budget, and it survives independently of whether anyone reproduces the headline.
+
+**The gap, stated at its true width.** This register carried a second copy of this entry until
+31 August 2026, and that copy asserted **"Provael has never measured a flow-matching policy"**.
+That was wrong, and wrong in the direction that excuses us: `lerobot_adapter.py` declares
+`action_head_class = "flow"` and all 400 episodes of the pinned ten-task evidence record `flow`, so
+SmolVLA is a flow-matching policy by this project's own taxonomy and we have measured one. The real
+gap is narrower and less comfortable — provael has not measured **π0 or π0.5**, the specific
+checkpoints DRIFT attacks; `provael list-policies` marks `pi0`, `pi05` and `pi0fast` as having no
+run committed. So the architecture explanation stays unavailable, and what is missing is a
+checkpoint, not a policy class. The taxonomy implication is argued separately in
+[docs/top10-rfc.md](docs/top10-rfc.md); it is a proposal, not a change.
 
 **What neither side can currently check.** DRIFT reports no benign false-positive rate on shared
 fixtures, and ours is uncalibrated ([#136](https://github.com/provael/provael/issues/136)) — the

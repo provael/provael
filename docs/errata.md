@@ -134,3 +134,92 @@ every tracked file and fails the build on any 16-hex value following the token `
 published key does not derive to — the same single-source discipline the family counts and
 version pins already have. A future rotation that forgets the docs now fails CI instead of
 waiting for a reader to find the contradiction.
+
+---
+
+## E-2026-03 — Two READMEs published a zero-width confidence interval for three null arms
+
+**Status:** corrected in the tool and on both surfaces · the signed board and its signature were correct throughout
+**Date raised:** 30 August 2026
+**Window:** 9 August 2026 (#110 and #113, first publication) to 30 August 2026 (#157, this correction) — 21 days
+**Affects:** `README.md` and `results/smolvla_libero_object_suite/README.md` as published in that window. No signed artifact is affected.
+
+### What was wrong
+
+Both READMEs published the task-clustered 95% confidence interval for the three null arms
+(`patch`, `decoy_object`, `scene_text`, each 0/50) as:
+
+```
+[0%, 0%]
+```
+
+A zero-width interval states that the true rate is known exactly. It is not: the arms are null
+because nothing succeeded in fifty attempts, which is a very different claim from a rate of
+precisely zero.
+
+The mechanism was a guard that checked a proxy. `provael.scoring.paired.cluster_bootstrap_ci`
+already refused to answer below two tasks, and the reasoning recorded beside that refusal was
+correct — a bootstrap over one task resamples the same thing every time and returns a zero-width
+interval carrying no information. But the guard counted **clusters**, not the interval it produced.
+Ten tasks that all score zero pass a cluster count and are just as degenerate: every resample
+returns the same rate, so the percentiles collapse onto it.
+
+Worse for a reader trying to check the work, the project contradicted itself in public.
+provael.com published a **non-zero** upper bound for those same three 0/50 results throughout.
+Same dataset, two Provael surfaces, incompatible claims.
+
+### What is correct
+
+| Arm | n | Superseded value | Correct value |
+| --- | ---: | --- | --- |
+| `patch` | 0/50 | `[0%, 0%]` | **no clustered interval** — the bootstrap declines |
+| `decoy_object` | 0/50 | `[0%, 0%]` | **no clustered interval** — the bootstrap declines |
+| `scene_text` | 0/50 | `[0%, 0%]` | **no clustered interval** — the bootstrap declines |
+
+Both tables now render `—` for these arms and say why. Pooled as a plain binomial rather than
+clustered, 0/50 is consistent with a true rate as high as **7.1%** (exact 95% upper bound), and the
+corrected prose states that figure so the reader is left with a bound rather than nothing.
+
+Declining is the right answer rather than a gap to be filled: a caller that receives no interval
+must fall back to a bound that stays honest, where one that receives `[0%, 0%]` will print it.
+
+### What this does and does not affect
+
+**No signed artifact is affected, and no signature verdict was ever wrong.** The published
+leaderboard carries **Wilson** intervals, not the clustered bootstrap, and has always recorded
+`[0.0%, 7.1%]` for the 0/50 injection row and `[0.0%, 3.7%]` for the 0/100 visual row. Attestation
+bundles are likewise unaffected. The defect lived only in two hand-maintained Markdown tables.
+
+**No measured result changes.** The rates, denominators, McNemar p-values and Holm-adjusted values
+in those tables were correct. Only the interval column was wrong, and only for the three arms whose
+rate is zero.
+
+**What does change** is how strong those three nulls look. A reader taking `[0%, 0%]` at face value
+would conclude the attack had been shown to have no effect. The measurement supports only that it
+was not observed to succeed in fifty attempts, which leaves a true rate of up to 7.1% on the table —
+and 7.1% of a keep-out violation is not nothing.
+
+### How to tell whether a copy you hold is affected
+
+Search it:
+
+```bash
+grep -n '\[0%, 0%\]' README.md results/smolvla_libero_object_suite/README.md
+```
+
+Any match outside the paragraph explaining this correction predates the fix.
+
+### What was changed to prevent recurrence
+
+`cluster_bootstrap_ci` now guards **the interval it computed** rather than the shape of its input:
+if the lower and upper bounds are equal it returns nothing, whatever the cluster count.
+`tests/test_paired.py` pins that with an all-zero and an all-success sweep, and
+`test_bootstrap_still_answers_when_one_task_differs` keeps the refusal narrow — one dissenting task
+is a real measurement and must not be declined.
+
+The second guard is the one that earned its place. Because these tables are hand-maintained and
+`cluster_bootstrap_ci` has no caller in `src/`, fixing the function would never have corrected a
+published number. `tests/test_no_zero_width_intervals.py` scans tracked Markdown for a degenerate
+interval in a table row, and **on its first run it found the second copy under `results/` that the
+first fix had missed**. It carries `test_the_guard_can_actually_fail`, which pins the regex against
+the exact row that shipped, so it cannot quietly stop matching.
