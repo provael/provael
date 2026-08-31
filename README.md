@@ -984,3 +984,5 @@ Apache-2.0. The **Embodied AI Security Top 10** is a **separate**, independent c
 licensed **CC-BY-SA 4.0** — deliberately **unbranded and donatable**, not a Provael™ product, and
 not affiliated with or endorsed by the OWASP® Foundation or MITRE®. Please keep the product name
 (Provael™) distinct from the standard's name when citing either.
+
+<!-- seed: deliberate gate test for PR #159, reverted immediately -->
