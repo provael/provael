@@ -2464,6 +2464,78 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#e-2026-03-two-readmes-published-a-zero-width-confidence-interval-for-three-null-arms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-2026-03 — Two READMEs published a zero-width confidence interval for three null arms
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="E-2026-03 — Two READMEs published a zero-width confidence interval for three null arms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-was-wrong_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-correct_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is correct
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-this-does-and-does-not-affect_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this does and does not affect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-tell-whether-a-copy-you-hold-is-affected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to tell whether a copy you hold is affected
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-was-changed-to-prevent-recurrence_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was changed to prevent recurrence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2723,6 +2795,78 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#e-2026-03-two-readmes-published-a-zero-width-confidence-interval-for-three-null-arms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-2026-03 — Two READMEs published a zero-width confidence interval for three null arms
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="E-2026-03 — Two READMEs published a zero-width confidence interval for three null arms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-was-wrong_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-correct_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is correct
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-this-does-and-does-not-affect_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this does and does not affect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-tell-whether-a-copy-you-hold-is-affected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to tell whether a copy you hold is affected
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-was-changed-to-prevent-recurrence_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was changed to prevent recurrence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2848,6 +2992,94 @@ every tracked file and fails the build on any 16-hex value following the token <
 published key does not derive to — the same single-source discipline the family counts and
 version pins already have. A future rotation that forgets the docs now fails CI instead of
 waiting for a reader to find the contradiction.</p>
+<hr />
+<h2 id="e-2026-03-two-readmes-published-a-zero-width-confidence-interval-for-three-null-arms">E-2026-03 — Two READMEs published a zero-width confidence interval for three null arms</h2>
+<p><strong>Status:</strong> corrected in the tool and on both surfaces · the signed board and its signature were correct throughout
+<strong>Date raised:</strong> 30 August 2026
+<strong>Window:</strong> 9 August 2026 (#110 and #113, first publication) to 30 August 2026 (#157, this correction) — 21 days
+<strong>Affects:</strong> <code>README.md</code> and <code>results/smolvla_libero_object_suite/README.md</code> as published in that window. No signed artifact is affected.</p>
+<h3 id="what-was-wrong_1">What was wrong</h3>
+<p>Both READMEs published the task-clustered 95% confidence interval for the three null arms
+(<code>patch</code>, <code>decoy_object</code>, <code>scene_text</code>, each 0/50) as:</p>
+<div class="highlight"><pre><span></span><code>[0%, 0%]
+</code></pre></div>
+<p>A zero-width interval states that the true rate is known exactly. It is not: the arms are null
+because nothing succeeded in fifty attempts, which is a very different claim from a rate of
+precisely zero.</p>
+<p>The mechanism was a guard that checked a proxy. <code>provael.scoring.paired.cluster_bootstrap_ci</code>
+already refused to answer below two tasks, and the reasoning recorded beside that refusal was
+correct — a bootstrap over one task resamples the same thing every time and returns a zero-width
+interval carrying no information. But the guard counted <strong>clusters</strong>, not the interval it produced.
+Ten tasks that all score zero pass a cluster count and are just as degenerate: every resample
+returns the same rate, so the percentiles collapse onto it.</p>
+<p>Worse for a reader trying to check the work, the project contradicted itself in public.
+provael.com published a <strong>non-zero</strong> upper bound for those same three 0/50 results throughout.
+Same dataset, two Provael surfaces, incompatible claims.</p>
+<h3 id="what-is-correct_2">What is correct</h3>
+<table>
+<thead>
+<tr>
+<th>Arm</th>
+<th style="text-align: right;">n</th>
+<th>Superseded value</th>
+<th>Correct value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>patch</code></td>
+<td style="text-align: right;">0/50</td>
+<td><code>[0%, 0%]</code></td>
+<td><strong>no clustered interval</strong> — the bootstrap declines</td>
+</tr>
+<tr>
+<td><code>decoy_object</code></td>
+<td style="text-align: right;">0/50</td>
+<td><code>[0%, 0%]</code></td>
+<td><strong>no clustered interval</strong> — the bootstrap declines</td>
+</tr>
+<tr>
+<td><code>scene_text</code></td>
+<td style="text-align: right;">0/50</td>
+<td><code>[0%, 0%]</code></td>
+<td><strong>no clustered interval</strong> — the bootstrap declines</td>
+</tr>
+</tbody>
+</table>
+<p>Both tables now render <code>—</code> for these arms and say why. Pooled as a plain binomial rather than
+clustered, 0/50 is consistent with a true rate as high as <strong>7.1%</strong> (exact 95% upper bound), and the
+corrected prose states that figure so the reader is left with a bound rather than nothing.</p>
+<p>Declining is the right answer rather than a gap to be filled: a caller that receives no interval
+must fall back to a bound that stays honest, where one that receives <code>[0%, 0%]</code> will print it.</p>
+<h3 id="what-this-does-and-does-not-affect_2">What this does and does not affect</h3>
+<p><strong>No signed artifact is affected, and no signature verdict was ever wrong.</strong> The published
+leaderboard carries <strong>Wilson</strong> intervals, not the clustered bootstrap, and has always recorded
+<code>[0.0%, 7.1%]</code> for the 0/50 injection row and <code>[0.0%, 3.7%]</code> for the 0/100 visual row. Attestation
+bundles are likewise unaffected. The defect lived only in two hand-maintained Markdown tables.</p>
+<p><strong>No measured result changes.</strong> The rates, denominators, McNemar p-values and Holm-adjusted values
+in those tables were correct. Only the interval column was wrong, and only for the three arms whose
+rate is zero.</p>
+<p><strong>What does change</strong> is how strong those three nulls look. A reader taking <code>[0%, 0%]</code> at face value
+would conclude the attack had been shown to have no effect. The measurement supports only that it
+was not observed to succeed in fifty attempts, which leaves a true rate of up to 7.1% on the table —
+and 7.1% of a keep-out violation is not nothing.</p>
+<h3 id="how-to-tell-whether-a-copy-you-hold-is-affected">How to tell whether a copy you hold is affected</h3>
+<p>Search it:</p>
+<div class="highlight"><pre><span></span><code>grep<span class="w"> </span>-n<span class="w"> </span><span class="s1">&#39;\[0%, 0%\]&#39;</span><span class="w"> </span>README.md<span class="w"> </span>results/smolvla_libero_object_suite/README.md
+</code></pre></div>
+<p>Any match outside the paragraph explaining this correction predates the fix.</p>
+<h3 id="what-was-changed-to-prevent-recurrence_2">What was changed to prevent recurrence</h3>
+<p><code>cluster_bootstrap_ci</code> now guards <strong>the interval it computed</strong> rather than the shape of its input:
+if the lower and upper bounds are equal it returns nothing, whatever the cluster count.
+<code>tests/test_paired.py</code> pins that with an all-zero and an all-success sweep, and
+<code>test_bootstrap_still_answers_when_one_task_differs</code> keeps the refusal narrow — one dissenting task
+is a real measurement and must not be declined.</p>
+<p>The second guard is the one that earned its place. Because these tables are hand-maintained and
+<code>cluster_bootstrap_ci</code> has no caller in <code>src/</code>, fixing the function would never have corrected a
+published number. <code>tests/test_no_zero_width_intervals.py</code> scans tracked Markdown for a degenerate
+interval in a table row, and <strong>on its first run it found the second copy under <code>results/</code> that the
+first fix had missed</strong>. It carries <code>test_the_guard_can_actually_fail</code>, which pins the regex against
+the exact row that shipped, so it cannot quietly stop matching.</p>
 
 
 
