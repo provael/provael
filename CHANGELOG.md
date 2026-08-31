@@ -6,7 +6,31 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-Nothing pending — everything currently written is released.
+### Changed
+
+- **The SO-101 sim-to-real protocol is amended, before any trial has run (executed to date: 0).**
+  Two corrections, both from bench research rather than from data, and both recorded in
+  `docs/studies/sim-to-real-so101.md` with the amendment date — amending a pre-registration *after*
+  a run is a different and much worse act, so the window is stated where it can be checked.
+
+  **A power-integrity confound that runs in the direction that flatters the result.** The kits ship
+  a 12 V 7.5 A supply while per-servo over-current protection trips above ~2 A, so six servos
+  stalling together can outdraw the supply: voltage sags, servos drop torque mid-motion, the arm
+  falls. Adversarial action sequences are jerkier and drive more joints at once than benign teleop,
+  so the **attacked condition is the likelier one to brown out** — and an arm losing torque above a
+  keep-out zone falls into it. Unmeasured, a power fault is indistinguishable from a successful
+  redirection. The protocol now requires a per-trial servo-bus voltage trace and fixes a trial
+  invalidation rule in advance, so the rule cannot be chosen later to suit the outcome.
+
+  **The e-stop claim was wrong and is corrected.** The protocol asserted "a human supervisor with an
+  e-stop at all times". The STS3215's own over-current protection is **not a latch** — output is
+  disabled only until a new position command arrives — so a policy that keeps streaming commands
+  re-arms the servo it just faulted. The protection holds under benign teleop and fails under
+  exactly the condition being tested, and no kit ships a real e-stop. The protocol now specifies an
+  inline DC supply cut as a required addition, and pins the study to the 7.4 V servos (jaw stall
+  ~48 N against ~74 N on the 12 V variant).
+
+  No number moved and no result is claimed; runs executed remains 0.
 
 ## [0.38.1] — 2026-08-31
 
