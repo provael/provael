@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+Nothing pending — everything currently written is released.
+
+## [0.38.1] — 2026-08-31
+
 ### Fixed
 
 - **A zero-width confidence interval was published for three null arms for 21 days, and the
@@ -59,6 +63,25 @@ All notable changes to this project are documented here. The format is based on
   **No test pinned the old filename, variable or CLI string**, so nothing would have caught that
   rename going half-done.
 
+- **PRIOR_ART.md carried the DRIFT entry twice, and the two copies contradicted each other on a
+  fact about our own coverage.** Both were the same work — Tae & Lee, arXiv:2608.03207 — under an
+  identical heading at two places in the register, so this is a duplicate rather than a name
+  collision. The copies did not merely repeat: the first asserted, in bold, **"Provael has never
+  measured a flow-matching policy"**, and the second refuted it from this repo's own data.
+
+  The second is right. `lerobot_adapter.py` declares `action_head_class = "flow"` and **all 400
+  episodes** of the pinned ten-task evidence record `flow`, so SmolVLA is a flow-matching policy by
+  this project's own taxonomy and we have measured one. The false copy was wrong in the direction
+  that excuses us: it offered an architecture difference as the reason a published patch attack
+  beats our null, and that excuse is unavailable. The merged entry keeps the accurate
+  `mapping_status: cited, not crosswalked`, keeps the first copy's mechanism finding (the gradient
+  conflict behind DRIFT's first-denoising-step result), and restates the gap at its true width —
+  provael has not measured **π0 or π0.5**, the specific checkpoints DRIFT attacks, which is a
+  missing checkpoint rather than a missing policy class.
+
+  No test or surface asserts a prior-art entry count, verified rather than assumed, so the register
+  going from 35 entries to 34 needs no other change.
+
 ### Added
 
 - **PRIOR_ART records TOWN-VLA ([arXiv:2608.23224](https://arxiv.org/abs/2608.23224)), including
@@ -83,7 +106,39 @@ All notable changes to this project are documented here. The format is based on
 
 ### Notes
 
-- **No version bump and no calibration in this entry.** Issue
+- **The published leaderboard stays `stale: true`, and was deliberately NOT regenerated.** Its four
+  rows are real-model SmolVLA × LIBERO, measured with provael 0.32.0 — six minor versions back. Re-
+  measuring needs lerobot **and LIBERO on a GPU**, and none of that is available here: `libero` is
+  not importable, `torch.cuda.is_available()` is `False`, and the machine is arm64 macOS, where
+  `hf-libero` does not install at all (its dependency carries `sys_platform == 'linux'`). So **zero**
+  of the four rows can be re-measured today. There is no partial subset to refresh either — the
+  CPU/stub path would measure a *different policy*, and putting that on the board as a SmolVLA row
+  would be fabrication.
+
+  Rebuilding from the same committed reports was considered and rejected as actively worse than
+  doing nothing. It re-runs no policy: `measured_with` is read from the reports, so `staleness()`
+  would return `True` and the six-minor gap unchanged, while `generated_at`, `commit` and
+  `tool_version` all moved to today. A dated, signed record that reads as freshly measured is the
+  one thing it must not do — which is what `Leaderboard.is_restamp()` already exists to expose.
+  `scripts/check_leaderboard_staleness.py` passes because the board declares its staleness
+  honestly; the flag is the consumer's ability to refuse, and clearing it would be unrecoverable.
+
+  The signature was verified before and after this release and is unchanged:
+  `provael leaderboard verify` reports `leaderboard OK  keyid 8d62aa33ed5162f3`. The board declares
+  `schema_version 5` while carrying v6-shaped per-row benign fields, which is correct as designed —
+  the staleness fields sit outside the signed subject, so a v5 board annotated with them still
+  verifies. Not changed.
+
+- **`CITATION.cff` had drifted two days off its own release date, and the file's comment predicted
+  it.** `date-released` read `2026-08-22` for 0.38.0, while the `v0.38.0` tag, the PyPI upload and
+  this changelog all say **2026-08-24**. The comment beside the field records this exact failure
+  happening at 0.25.0 ("a citation to 0.25.0 named a date three days before the artifact existed")
+  and says plainly that the date is not machine-checkable against a tag, so it is on the release
+  author. It recurred. Both fields are set correctly for this release; the guard gap is noted rather
+  than closed, because checking a date against a tag that does not exist until after the release
+  commit is not a check that can run in the release commit.
+
+- **No calibration in this release.** Issue
   [#136](https://github.com/provael/provael/issues/136) (the uncalibrated keep-out predicate) stays
   open and untouched: `CALIBRATED_ZONES` is still empty, and the published 44/50 against a 4.0%
   benign control keeps its uncalibrated caveat on every surface that quotes it. Committing zones
