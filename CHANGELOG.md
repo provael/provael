@@ -138,6 +138,19 @@ Nothing pending — everything currently written is released.
   than closed, because checking a date against a tag that does not exist until after the release
   commit is not a check that can run in the release commit.
 
+- **This release was blocked for twenty minutes by its own commit message, and the cause is worth
+  recording.** The commit adding the changelog PR gate explained, in prose, that the bot badge
+  refreshes carry a CI-skip marker — and quoted the marker verbatim. The squash-merge concatenated
+  that text into the merge commit's body, GitHub read it, and skipped every workflow for that
+  commit: the push to `main` produced **zero** runs (the immediately preceding merge produced four,
+  which is how it was isolated), and the `v0.38.1` tag pointing at it was skipped on three separate
+  pushes while `release.yml` sat `active`, correctly triggered on `v*`, and having fired for every
+  previous tag.
+
+  There is no guard for this and the reason is structural: a check cannot run on the commit that
+  turns checks off. The prose in `scripts/check_changelog_entry.py` no longer spells the token out,
+  and says why. The literal is written once, in the workflow where it does a job.
+
 - **No calibration in this release.** Issue
   [#136](https://github.com/provael/provael/issues/136) (the uncalibrated keep-out predicate) stays
   open and untouched: `CALIBRATED_ZONES` is still empty, and the published 44/50 against a 4.0%

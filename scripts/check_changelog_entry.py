@@ -26,9 +26,20 @@ rather than a commit-message token so that applying it is a visible, attributabl
 rather than something buried in a squashed subject.
 
 Worth stating plainly, because the motivating example does not need it: the bot refreshes
-(`chore(watch): refresh the measurement-freshness badge [skip ci]`) never reach this check at all.
-They push directly to `main` rather than opening a PR, they carry `[skip ci]`, and they touch only
-`watch/`, which is not a watched path. Three independent reasons. The label is for humans.
+(`chore(watch): refresh the measurement-freshness badge …`) never reach this check at all. They
+push directly to `main` rather than opening a PR, they carry a CI-skip marker in the subject, and
+they touch only `watch/`, which is not a watched path. Three independent reasons. The label is for
+humans.
+
+DO NOT SPELL THAT MARKER OUT HERE, OR IN A COMMIT MESSAGE. The literal token is written once, in
+`.github/workflows/freshness.yml`, where it does a job. Describing it in prose costs a release:
+the commit that first added this file explained the bot refreshes and quoted the token verbatim,
+the squash-merge carried that text into the merge commit's body, and GitHub honoured it — the push
+to `main` produced zero workflow runs, and every `v0.38.1` tag pointing at that commit was skipped
+too, three pushes in a row, while the workflow sat there `active` and correctly configured.
+
+This class cannot be guarded from CI, which is the whole trouble: a check cannot run on the commit
+that switches checks off. The only defence is not writing the token where it can be copied.
 
     python scripts/check_changelog_entry.py --changed-files changed.txt --labels "bug,no-changelog"
 """
