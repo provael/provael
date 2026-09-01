@@ -55,7 +55,7 @@ GUARANTEED_ROUTE = "https://github.com/provael/provael/issues/new"
 #: them. A hardcoded count is a claim, and claims here drift: the repo shipped a release with three
 #: documents still saying "fourteen" after this number became 15. `tests/test_counted_claims.py`
 #: therefore checks this constant against the live registry and fails the build if they disagree.
-TOTAL_ADVERSARIAL_FAMILIES = 16
+TOTAL_ADVERSARIAL_FAMILIES = 17
 
 #: The release this Space was published from — the "you are here" against which `measured_with`
 #: reads as stale. Checked against `provael.__version__` by `tests/test_counted_claims.py` for the

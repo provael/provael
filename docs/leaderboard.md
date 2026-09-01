@@ -40,7 +40,7 @@ The board is one run, and it is old. Stated plainly, because the rendered page n
 - **1 policy, 1 suite.** `smolvla` × `libero_object/0`. Seven of the eight registered policy
   backends have never produced a board row, and three of those (`groot`, `openvla`, `openpi`) have
   never loaded a checkpoint at all — `provael list-policies` marks them `scaffolding`.
-- **3 of 16 adversarial families measured** (`instruction`, `injection`, `visual`). **The other
+- **3 of 17 adversarial families measured** (`instruction`, `injection`, `visual`). **The other
   twelve have no real-model measurement whatsoever.** They are *absent* from the board, which is
   not the same as scoring 0% — an absent family is `N/A`, and reading it as a pass is the single
   most likely way to misuse this page.

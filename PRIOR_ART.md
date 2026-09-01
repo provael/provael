@@ -695,9 +695,36 @@ arriving by a different route:
 
 Three independent groups have now published optimised patch attacks that far exceed our null on
 this channel. At that point the honest reading of 0/50 is not "the policy resisted" and not even
-"our implementation is weak on this instance" — it is that **provael has no image-space patch
+"our implementation is weak on this instance" — it is that **provael had no image-space patch
 attack**, and the visual family's nulls measure the absence of one. That is a coverage gap in the
 harness, stated as such. Both nulls stay published exactly as measured.
+
+**Update, 1 September 2026 — the gap is half closed, and it is worth being exact about which
+half.** `gradient_patch` (family `gradient_patch`, `attacker_access: white-box-gradient`) now ships:
+untargeted L-inf projected gradient ascent on the feature the action head consumes, using the
+policy's own input gradients. So the first clause above is no longer true — there IS an image-space
+gradient attack in the harness.
+
+The second clause still stands, and nothing here retires it. **The published 0/50 nulls were
+measured with `patch`, and they remain exactly what they were**: the result of a string-append
+fixture, not of this attack. `gradient_patch` has never run against SmolVLA × LIBERO, so no VLA
+number is claimed, and `applicable()` keeps the arm out of the ASR denominator wherever the
+gradient path is absent — a CPU run cannot report it as a null it never attempted.
+
+What it HAS been measured on is a different policy and a different task: **Diffusion Policy ×
+PushT**, n = 20 per condition on identical seeds. Task success went from 9/20 clean and **14/20
+under random L-inf noise** to **0/20 under the optimised perturbation at the same eps = 0.10
+budget** (exact McNemar vs the noise arm, p = 0.00012; mean target coverage 0.971 → 0.333). The
+noise arm is the load-bearing control: it establishes that the damage comes from the optimisation
+and not from the corruption, which is precisely the comparison the 0/50 nulls never made. Random
+noise at that budget slightly *helped* the policy, so the attack had to beat a control that was
+improving it.
+
+That is evidence about the METHOD, on a 2-D pushing task, against a policy with no language
+conditioning. It is not evidence about VLAs, about LIBERO, or about the arms this project
+publishes. Until `gradient_patch` runs on the GPU lane, the correct summary is: **the harness now
+has the attack it was missing, and has not yet pointed it at the policy the nulls were measured
+on.**
 
 **Their mechanism finding, kept because it is the transferable part.** The authors attribute the
 first-step result to a gradient conflict specific to input-space optimization, and note it is
@@ -1129,7 +1156,7 @@ for rather than a preference:
   finding is the argument for that, and it is the argument against the version of this project that
   reported a bare percentage.
 - The two measured nulls stay in the table at **0/50 (`injection`) and 0/100 (`visual`)** rather
-  than being dropped. Only three of the sixteen adversarial families in the registry have run
+  than being dropped. Only three of the seventeen adversarial families in the registry have run
   against a real policy at all, and **two of those three returned zero** — so a board that quietly
   shed its zeros would be reporting a selected subset of an already small sample.
 

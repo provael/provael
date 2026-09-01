@@ -145,7 +145,7 @@ def test_full_sweep_covers_every_registry_family() -> None:
     # objection to this project's own headline result.
     assert BENIGN_CONTROL in swept_all, "full-sweep lost the benign-FPR control"
     assert CONTROL_FAMILY in swept_all, "full-sweep lost the harmless-variation control"
-    assert len(swept) == 16  # adversarial families only; the two control families are not attacks
+    assert len(swept) == 17  # adversarial families only; the two control families are not attacks
 
 
 def test_every_family_is_swept_or_declared_conditional_with_a_reason() -> None:

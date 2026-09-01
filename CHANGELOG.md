@@ -6,7 +6,50 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- **`gradient_patch` — the white-box image-space attack `PRIOR_ART.md` records the harness as
+  missing.** Untargeted L-inf projected gradient ascent on the feature the action head consumes,
+  maximising `||enc(x+d) - enc(x)||` using the policy's own input gradients. No labels, no
+  ground-truth actions, no reward — only the encoder a published checkpoint already exposes.
+
+  **Its own family, not a member of `optimized_patch`.** Same channel and same EAI category,
+  different threat model: this reads gradients, which assumes an attacker holding the weights. A
+  combined family rate would average a white-box result with a black-box one and answer neither
+  question. `attacker_access` records `white-box-gradient` against the sibling's
+  `black-box-query`; the comparison between them is the interesting quantity, the average is not.
+
+  **Inert unless it can genuinely attack.** `applicable()` requires BOTH a real camera frame and an
+  attached gradient oracle, and returns False otherwise so the arm leaves the ASR denominator
+  rather than scoring 0. That gate is the point: a white-box null recorded for a run that never
+  took a gradient would recreate, one level deeper, the defect this family exists to fix. Without
+  an oracle `perturb()` returns the frame untouched — it never substitutes noise, because
+  noise-shaped damage under a white-box label is the confusion `attacker_access` prevents. `torch`
+  is never imported: the policy supplies the gradient array and the attack does the projection in
+  numpy, so the module stays CPU-clean and framework-agnostic.
+
+  **What is measured, and what is not.** On **Diffusion Policy x PushT**, n=20 per condition on
+  identical seeds, task success went from 9/20 clean and **14/20 under random L-inf noise** to
+  **0/20 under the optimised perturbation at the same eps=0.10 budget** — exact McNemar against the
+  noise arm **p = 0.00012**, mean coverage 0.971 -> 0.333. The noise control is load-bearing: it
+  shows the damage comes from the optimisation rather than the corruption, which is the comparison
+  the published 0/50 visual nulls never made. Random noise at that budget slightly *helped* the
+  policy, so the attack had to beat a control that was improving it.
+
+  **No VLA number is claimed.** This has never run against SmolVLA x LIBERO. The published `patch`,
+  `decoy_object` and `scene_text` nulls stay exactly as measured — they were produced by a
+  string-append fixture, not by this attack. `PRIOR_ART.md` now states which half of its own gap
+  closed: the harness has the attack it was missing, and has not yet pointed it at the policy the
+  nulls were measured on. Measured cost of that next step on an Apple M4: one PGD refinement
+  through SmolVLA's vision tower is ~3.5 s (backward is 27x forward), so a 20-seed sweep is a GPU
+  job, not a laptop one.
+
 ### Changed
+
+- **Registry counts move with the family:** **17 adversarial families** (was 16), **39 adversarial
+  attacks** (was 38), 42 total including baseline and controls. Swept across README, SAFETY.md,
+  PRIOR_ART.md, `docs/`, the notebook, `leaderboard/app.py`, the `full-sweep` example recipe and the
+  pinned evidence manifest — every surface `test_counted_claims.py` and `test_coverage.py` guard.
 
 - **The SO-101 sim-to-real protocol is amended, before any trial has run (executed to date: 0).**
   Two corrections, both from bench research rather than from data, and both recorded in

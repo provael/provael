@@ -67,7 +67,7 @@ round: **Provael is well-covered where the field is crowded and empty where the 
 ## What is not done yet
 
 Nothing here is a roadmap commitment. The five empty rows are recorded as empty, not as planned;
-this project has sixteen adversarial families of which **three have been exercised against a real
+this project has seventeen adversarial families of which **three have been exercised against a real
 policy**, so breadth of registry is not its constraint and adding surfaces would not change that.
 A dated commitment to any of these rows would be a claim this card cannot support.
 

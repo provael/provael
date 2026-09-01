@@ -19,6 +19,7 @@ attacks:
 - humanoid
 - optimized
 - optimized_patch
+- gradient_patch
 - universal_patch
 - optimized_instruction
 - weight_integrity

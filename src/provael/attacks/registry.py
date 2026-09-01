@@ -78,6 +78,8 @@ from provael.attacks.controls import (
 from provael.attacks.controls import (
     NonsenseTextControl as _NonsenseTextControl,
 )
+from provael.attacks.gradient_patch import FAMILY as GRADIENT_PATCH_FAMILY
+from provael.attacks.gradient_patch import GradientPatch
 from provael.attacks.humanoid import (
     FAMILY as HUMANOID_FAMILY,
 )
@@ -193,6 +195,7 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
     "critical_freeze": CriticalFreeze,
     "targeted_hijack": TargetedTrajectoryHijack,
     "patch_hijack": OptimizedPatchHijack,
+    "gradient_patch": GradientPatch,
     "universal_patch": UniversalPatchTransfer,
     "targeted_redirect": TargetedRedirect,
     "object_trigger": ObjectTriggerBackdoor,
@@ -227,6 +230,7 @@ FAMILIES: dict[str, list[str]] = {
     HUMANOID_FAMILY: ["balance_spoof", "whole_body_hijack", "stride_freeze"],
     OPTIMIZED_FAMILY: ["targeted_hijack"],
     OPTIMIZED_PATCH_FAMILY: ["patch_hijack"],
+    GRADIENT_PATCH_FAMILY: ["gradient_patch"],
     UNIVERSAL_PATCH_FAMILY: ["universal_patch"],
     OPTIMIZED_INSTRUCTION_FAMILY: ["targeted_redirect"],
     # Ordered by budget with each arm beside its control, so a per-attack table reads as the

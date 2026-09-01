@@ -1,6 +1,6 @@
 # Attack catalog
 
-**Sixteen** adversarial families of templated, auditable attacks plus two non-adversarial
+**Seventeen** adversarial families of templated, auditable attacks plus two non-adversarial
 families — the `baseline` benign control and the `control` harmless-variation arms — each tagged with its [Embodied AI Security Top 10](top10.md) risk. Most are heuristic
 perturbations rather than gradient/optimisation-based attacks; the three `optimized*` families are
 the exception — bounded-budget black-box searches. List them with `provael list-attacks`.
