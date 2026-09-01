@@ -1,0 +1,16 @@
+# Canonical author identity.
+#
+# Two identities were used across this history, and this file maps both onto one WITHOUT
+# rewriting a single commit. That distinction is the whole point: `provael attest` binds a source
+# commit into every signed payload (see attest.py), so rewriting history to change an author would
+# orphan every attestation ever issued, break existing clones and PR references, and move the tags
+# the Zenodo archive points at. A .mailmap changes what git and GitHub DISPLAY, and changes no
+# object, no SHA and no signature.
+#
+# Maps, in order:
+#   1. a work account used by mistake through 19 August 2026, before the local git identity was
+#      corrected. 85 commits on the default branches across the three repositories.
+#   2. a lower-case spelling of the same personal identity, so shortlog and contributor views
+#      stop reporting one person as two.
+Sattyam Jain <sattyamjain96@gmail.com> sattyamj-attri <sattyam.jain@attri.ai>
+Sattyam Jain <sattyamjain96@gmail.com> Sattyam jain <sattyamjain96@gmail.com>
