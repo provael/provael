@@ -60,7 +60,7 @@ TOTAL_ADVERSARIAL_FAMILIES = 17
 #: The release this Space was published from — the "you are here" against which `measured_with`
 #: reads as stale. Checked against `provael.__version__` by `tests/test_counted_claims.py` for the
 #: same reason as above: an unguarded version string in an uninstalled Space rots invisibly.
-CURRENT_RELEASE = "0.39.0"
+CURRENT_RELEASE = "0.39.1"
 
 #: Policies considered open-source (weights available) — drives the RoboArena-style split.
 OPEN_SOURCE_POLICIES = frozenset(
