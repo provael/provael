@@ -8,13 +8,16 @@ statement differ. The two directories are kept apart so they cannot drift into e
 make          # regenerate figure from artifacts, compile, run the anonymity gate
 ```
 
-## Before uploading
+## The anonymized repository link
 
-**The anonymized repository URL is a placeholder.** `\anonrepo` in `paper.tex` reads
-`ANONYMOUS-REPO-URL-TO-FILL-IN`. Create the mirror at <https://anonymous.4open.science> (it needs
-the web UI and a GitHub URL) and replace the macro. `check_anonymity.sh` fails while the
-placeholder is present, so `make` will not report success until it is filled in. Submitting with
-the placeholder visible would be worse than including no link at all.
+This venue permits linking an anonymized mirror, and the paper does **not** carry one. Creating it
+needs the web UI at <https://anonymous.4open.science> plus a GitHub URL, so it cannot be produced
+from the build. The reproducibility statement says the repository is withheld for anonymous review,
+which is accurate and identifies nobody.
+
+If you make the mirror, add it back in one line in the Reproducibility paragraph of `paper.tex` and
+rebuild. `check_anonymity.sh` retains the gate that fails on an unfilled
+`ANONYMOUS-REPO-URL-TO-FILL-IN`, so a half-finished edit cannot ship.
 
 ## What differs from the VLM4RWD version
 
@@ -22,7 +25,7 @@ the placeholder visible would be worse than including no link at all.
 | --- | --- | --- |
 | Page limit | 8 excluding references | 9 of main content, references unlimited |
 | This paper | 6 pages | 7 pages, 6 of main content |
-| Anonymized repo link | not permitted | permitted, and used |
+| Anonymized repo link | not permitted | permitted, not used (mirror needs a web UI) |
 | New section | none | `A per-checkpoint protocol` |
 
 Everything else is identical: method, results table, the three subsections on what the control arm

@@ -10,10 +10,6 @@
 \usepackage{graphicx}
 \usepackage{microtype}
 
-% MUST BE REPLACED BEFORE UPLOAD. Submitting with the placeholder visible is worse than
-% including no link at all: it tells a reviewer the reproducibility statement was not read.
-\newcommand{\anonrepo}{ANONYMOUS-REPO-URL-TO-FILL-IN}
-
 \title{What Should You Measure Before Shipping an Adapted Policy?\\
   Attack Success Against a Benign Control Arm}
 
@@ -383,11 +379,12 @@ predicate misfires are not the two weakest. That variation is part of the pictur
 carry, because an arm scored on a task the policy rarely completes is measuring something different
 from an arm scored on a task it always completes.
 
-\paragraph{Reproducibility.} The harness is open source under a permissive licence. An anonymized
-mirror is available at \url{\anonrepo}. Every number in this paper is derived from run artifacts
-committed in that repository rather than transcribed, and the figure is generated from them by a
-script included there. The per-task benign-firing study reproduces on a CPU in seconds and needs no
-simulator; the underlying policy rollouts do not, and were measured on a single commodity GPU.
+\paragraph{Reproducibility.} The harness is open source under a permissive licence, and the
+repository is withheld for anonymous review. Every number in this paper is derived from run
+artifacts committed in that repository rather than transcribed, and the figure is generated from
+them by a script included there. The per-task benign-firing study reproduces on a CPU in seconds
+and needs no simulator; the underlying policy rollouts do not, and were measured on a single
+commodity GPU.
 
 \bibliographystyle{plainnat}
 \begin{thebibliography}{4}

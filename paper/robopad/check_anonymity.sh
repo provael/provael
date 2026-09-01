@@ -55,7 +55,7 @@ if grep -q 'ANONYMOUS-REPO-URL-TO-FILL-IN' "$TXT"; then
   echo "      replace \\anonrepo in paper.tex with the real anonymized mirror before upload"
   fail=1
 else
-  echo "  placeholder: anonymized-repo URL has been filled in"
+  echo "  placeholder: no unfilled anonymized-repo placeholder present"
 fi
 
 # -- 2. document info metadata ----------------------------------------------------------------
