@@ -578,6 +578,9 @@ def test_the_v5_fixture_records_the_assembling_version_it_was_built_by() -> None
 def test_the_staleness_fields_are_outside_the_signed_subject() -> None:
     """Staleness is a function of today; the signature must not be.
 
+    Reads the FROZEN v5 fixture: this asserts what a v5 board's signed bytes exclude, and the
+    live board is v6 the moment it is re-stamped (tool_version joined the signed subject in v6).
+
     A board that was current when signed becomes stale without a byte changing. If the flag were
     inside the signed subject, annotating it would break the signature — which is exactly why the
     published v5 board can carry `stale: true` and still verify.
@@ -586,11 +589,11 @@ def test_the_staleness_fields_are_outside_the_signed_subject() -> None:
 
     from provael.leaderboard import _FIELDS_ADDED_IN, _signing_payload
 
-    board = load_leaderboard(_BOARD)
+    board = load_leaderboard(_V5_FIXTURE)
     payload = _json.loads(_signing_payload(board))
     for name in _FIELDS_ADDED_IN[6]:
         assert name not in payload, f"{name} is inside the signed bytes of a v5 board"
-    assert verify_leaderboard(board, _BOARD_PUB.read_bytes())
+    assert verify_leaderboard(board, _V5_FIXTURE_PUB.read_bytes())
 
 
 def test_the_staleness_gate_fails_on_undeclared_staleness_only() -> None:
