@@ -167,6 +167,7 @@ def test_registry_includes_new_families() -> None:
         "critical_freeze",
         "targeted_hijack",
         "patch_hijack",
+        "gradient_patch",
         "universal_patch",
         "targeted_redirect",
         "object_trigger",
@@ -202,6 +203,7 @@ def test_registry_includes_new_families() -> None:
         # registered, runnable family and NOT an adversarial one — every ASR/coverage count
         # subtracts it alongside "baseline".
         "control",
+        "gradient_patch",
         "humanoid", "injection", "instruction", "misalignment", "optimized",
         "optimized_instruction", "optimized_patch", "sensor_spoof", "universal_patch", "visual",
         "weight_integrity",
@@ -225,6 +227,7 @@ def test_registry_includes_new_families() -> None:
     ]
     assert [a.name for a in resolve_attacks(["optimized"])] == ["targeted_hijack"]
     assert [a.name for a in resolve_attacks(["optimized_patch"])] == ["patch_hijack"]
+    assert [a.name for a in resolve_attacks(["gradient_patch"])] == ["gradient_patch"]
     assert [a.name for a in resolve_attacks(["universal_patch"])] == ["universal_patch"]
     # Cross-family selection by individual name.
     assert [a.name for a in resolve_attacks(["patch", "scene_text"])] == ["patch", "scene_text"]

@@ -93,7 +93,7 @@ CI, a benign false-positive control, a clean-task-success (competence) control, 
 
 > **New here?** Run it in your browser in 5 minutes — [open the Colab notebook](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb) — or browse the [examples gallery](examples/) and the built-in `provael list-recipes`.
 
-It ships **sixteen adversarial families of auditable attacks** — `instruction` (text
+It ships **seventeen adversarial families of auditable attacks** — `instruction` (text
 reframings), `visual` (observation-space markers), `sensor_spoof` (EAI02: a sim
 perception spoof driving the end-effector into a keep-out zone), `injection` (indirect /
 embodied prompt injection), `action` (action-space integrity: freeze / trajectory
@@ -122,16 +122,16 @@ on what leaves the policy, and until `Defense.filter_action` those four were not
 but **unimplementable** — the taxonomy was a spec its own interface could not satisfy. The
 action-envelope study is `credited` on `stub` and `reach` and **`not-credited` on `humanoid`**, and
 its headline is the coverage map: a magnitude cap cannot restore a frozen action and does not reach
-successes routing through a decoupled flag ([study](docs/studies/action-envelope.md)). `--recipe full-sweep` runs every one of the sixteen; families the chosen suite
+successes routing through a decoupled flag ([study](docs/studies/action-envelope.md)). `--recipe full-sweep` runs every one of the seventeen; families the chosen suite
 cannot support are skipped and reported N/A, never scored 0%. Every family carries its transfer-test (rate + 95% Wilson CI + benign-FPR
 control); run `provael transfer-test` to print it. The `action`, `action_space`, `sensor_spoof`,
 `backdoor`, `authorization`, `misalignment`, `confidentiality`, and `humanoid` families are
 **stub-validated only** (no real-model transfer claimed). `provael coverage` prints the whole
 picture as one machine-readable line rather than leaving it to prose — and prints it as three
-numbers on purpose, because *registered is not validated*: **16 adversarial families registered,
+numbers on purpose, because *registered is not validated*: **17 adversarial families registered,
 3 exercised against a real policy** (`instruction`, `visual`, `injection` — and two of those three
-returned measured nulls, which is a result), **13 stub-validated only**. Note also that the
-registry holds **38 adversarial attacks**, which is not the same number as 16 families; reading
+returned measured nulls, which is a result), **14 stub-validated only**. Note also that the
+registry holds **39 adversarial attacks**, which is not the same number as 17 families; reading
 the registry dict's length as a family count overstates coverage by 14. It red-teams **8
 policies** — the CPU `stub`
 plus real **SmolVLA / π0 / π0.5 / π0-FAST** (via the `[lerobot]` extra), **OpenVLA**
@@ -412,7 +412,7 @@ Other commands:
 
 ```bash
 uv run provael list-policies            # stub (CPU); smolvla (needs the [lerobot] extra)
-uv run provael list-attacks             # 41 attacks across 18 families: baseline/instruction/visual/sensor_spoof/injection/action/action_space/backdoor/authorization/confidentiality/misalignment/humanoid/optimized/optimized_patch/universal_patch/optimized_instruction/weight_integrity
+uv run provael list-attacks             # 42 attacks across 19 families: baseline/instruction/visual/sensor_spoof/injection/action/action_space/backdoor/authorization/confidentiality/misalignment/humanoid/optimized/optimized_patch/gradient_patch/universal_patch/optimized_instruction/weight_integrity
 uv run provael list-recipes             # named presets: quick / instruction-only / core-sweep / full-sweep / ci-gate
 uv run provael attack --recipe quick    # a recipe is the base config; explicit flags override it
 uv run provael report --in runs/stub/
@@ -462,8 +462,8 @@ surface (experimental today). See [docs/leaderboard.md](docs/leaderboard.md).
 **Evidence, not certification.**
 
 **What the published board does not cover.** It is one run and it is old: measured with
-**`provael 0.32.0`**, covering **1 policy on 1 suite** and **3 of the 16 adversarial families**. The
-other **thirteen families have no real-model measurement at all** — they are *absent* from the board,
+**`provael 0.32.0`**, covering **1 policy on 1 suite** and **3 of the 17 adversarial families**. The
+other **fourteen families have no real-model measurement at all** — they are *absent* from the board,
 which is not the same as scoring 0%. That run also predates the clean-task-success control, so it
 carries a benign false-positive control but no measured competence baseline. The Space states all
 of this above its own tables; rebuilding cannot fix it, because a re-stamp re-aggregates committed
@@ -479,7 +479,7 @@ re-measurement."** Nothing has re-run 0.32.0's numbers on the current tool.
 | Capability | CPU (default) | Needs GPU + `[lerobot]` extra |
 | --- | :---: | :---: |
 | `stub` (scalar) + `reach` (spatial) suites | ✅ | |
-| All 16 adversarial families (`instruction`/`visual`/`sensor_spoof`/`injection`/`action`/`action_space`/`backdoor`/`authorization`/`confidentiality`/`misalignment`/`humanoid`/`optimized`/`optimized_patch`/`universal_patch`/`optimized_instruction`/`weight_integrity`) | ✅ | |
+| All 17 adversarial families (`instruction`/`visual`/`sensor_spoof`/`injection`/`action`/`action_space`/`backdoor`/`authorization`/`confidentiality`/`misalignment`/`humanoid`/`optimized`/`optimized_patch`/`gradient_patch`/`universal_patch`/`optimized_instruction`/`weight_integrity`) | ✅ | |
 | `humanoid` whole-body / locomotion suite (fall / balance / self-collision / footstep keep-out) | ✅ | |
 | Scoring, runner, report, CLI, recipes, `reproduce`, scorecard/SARIF/OSCAL/AVID | ✅ | |
 | `attest` — signed, dated evidence bundle (digest-only core; Ed25519 via `[attest]` extra) | ✅ | |

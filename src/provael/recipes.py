@@ -87,6 +87,13 @@ CONDITIONAL_FAMILIES: dict[str, str] = {
         "needs a real image channel from a GPU policy; inert on every CPU suite, so it scores no "
         "episode in any CPU run"
     ),
+    "gradient_patch": (
+        "needs a real image channel AND a policy that can backprop to its own input; inert on "
+        "every CPU suite, so it scores no episode in any CPU run. The second condition is the "
+        "one that matters: without an attached gradient oracle this arm is not applicable rather "
+        "than zero, because a white-box rate recorded for a run that never took a gradient would "
+        "be a null the attack did not actually attempt"
+    ),
     "universal_patch": (
         "needs a real image channel from a GPU policy; inert on every CPU suite, so it scores no "
         "episode in any CPU run"

@@ -8,7 +8,7 @@ Every "proven" red-team tool scores LLM/agent *text I/O*. Provael measures the *
 
 ```bash
 pip install provael
-provael attack --recipe full-sweep        # all 16 adversarial families (suite-inapplicable ones are skipped)
+provael attack --recipe full-sweep        # all 17 adversarial families (suite-inapplicable ones are skipped)
 ```
 
 [Quickstart](quickstart.md){ .md-button .md-button--primary }
@@ -24,7 +24,7 @@ state. The headline number is the ASR, reported with a 95% Wilson CI and a benig
 - **CPU-first.** The whole engine (attacks, scoring, runner, report, CLI) runs and is tested on a
   plain CPU with a deterministic stub. Real policies (SmolVLA, π0, GR00T, OpenVLA…) and real
   simulators (LIBERO, Meta-World) live behind optional extras + a `PROVAEL_INTEGRATION` gate.
-- **Sixteen adversarial families** mapped to the [Embodied AI Security Top 10](top10.md) — 8 of the 10
+- **Seventeen adversarial families** mapped to the [Embodied AI Security Top 10](top10.md) — 8 of the 10
   categories (EAI01–06, EAI08, EAI09): `instruction`, `visual`, `sensor_spoof`, `injection`, `action`,
   `action_space`, `backdoor`, `authorization`, `confidentiality`, `misalignment`, `humanoid`, plus the
   black-box, query-budgeted searches `optimized`, `optimized_patch`, `universal_patch` and

@@ -4,7 +4,7 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
 
 ## Shipped
 
-- **Attacks:** 16 adversarial families + a `none` benign control, mapped
+- **Attacks:** 17 adversarial families + a `none` benign control, mapped
   to the [Embodied AI Security Top 10](top10.md).
 - **Policies:** `stub` (CPU); `smolvla`, `pi0`, `pi05`, `pi0fast`, `groot` (LeRobot); `openvla`
   (HF transformers); `openpi` (websocket client to a π0 policy *server*). Bring-your-own via the
