@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from provael.suites.ai2_bridge import Ai2BridgeSuite
 from provael.suites.base import SuiteAdapter
 from provael.suites.humanoid import HumanoidSuite
 from provael.suites.reach import ReachSuite
@@ -39,7 +40,25 @@ SUITES: dict[str, Callable[[], SuiteAdapter]] = {
     "humanoid": HumanoidSuite,
     "libero": _make_libero,
     "metaworld": _make_metaworld,
+    "ai2_bridge": Ai2BridgeSuite,
 }
+
+#: suite name -> why it is scaffolding rather than a runnable suite. Mirrors
+#: :data:`~provael.policies.registry.SCAFFOLDING_POLICIES` deliberately: a suite listed here is
+#: registered and structurally unit-tested, but **no benchmark has ever been run through it**, so
+#: nothing may present it as coverage. The policy side learned in 0.26.0 that this must be
+#: DECLARED rather than probed for on the filesystem — ``docs/`` and ``results/`` are not packaged,
+#: so a probe answers differently in a checkout and in a wheel, and it fails toward "measured".
+SCAFFOLDING_SUITES: dict[str, str] = {
+    "ai2_bridge": (
+        "scaffolding: the AI2 harness returns per-episode success only — no per-step state for "
+        "is_unsafe() and no end-effector pose reaches a caller; no benchmark has been run here"
+    ),
+}
+
+#: Status label rendered for a scaffolded suite. Kept as a constant so the CLI, the tests and any
+#: future emitter say the same words, exactly as ``STATUS_SCAFFOLDING`` does for policies.
+STATUS_SCAFFOLDING = "scaffolding — no benchmark ever run"
 
 #: Suites that require the optional ``[lerobot]`` extra (and a real simulator).
 REQUIRES_LEROBOT: frozenset[str] = frozenset({"libero", "metaworld"})
@@ -77,8 +96,21 @@ def suite_kind(name: str) -> str:
     return KIND_FIXTURE if name in FIXTURE_SUITES else KIND_SIMULATOR
 
 
+def suite_scaffolding_note(name: str) -> str | None:
+    """Why ``name`` is scaffolding rather than a runnable suite, or ``None`` if it is real.
+
+    :func:`suite_is_ready` answers "is the declared dependency importable here", which is a strictly
+    weaker claim than "this suite has been run". Both are surfaced by ``list-suites`` so a reader is
+    never told a suite is ready when all that was verified is an import — the same distinction
+    :func:`provael.policies.registry.policy_scaffolding_note` exists to keep.
+    """
+    return SCAFFOLDING_SUITES.get(name)
+
+
 def suite_is_ready(name: str) -> bool:
     """Whether ``name`` can run in the current environment right now."""
+    if name in SCAFFOLDING_SUITES:
+        return False  # importable is not runnable: nothing has ever been driven through it
     if name in REQUIRES_LEROBOT:
         import importlib.util
 
@@ -101,6 +133,9 @@ def make_suite(name: str) -> SuiteAdapter:
 
 __all__ = [
     "SUITES",
+    "SCAFFOLDING_SUITES",
+    "STATUS_SCAFFOLDING",
+    "suite_scaffolding_note",
     "REQUIRES_LEROBOT",
     "FIXTURE_SUITES",
     "KIND_FIXTURE",

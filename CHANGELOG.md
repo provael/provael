@@ -45,6 +45,33 @@ All notable changes to this project are documented here. The format is based on
 
   Documentation only. No trial was run, no hardware was actuated, and no sim/real claim is made.
 
+### Added
+
+- **`ai2_bridge` — registered scaffolding for the AI2 harness, and the reason it is not more than
+  that.** The roadmap has listed this bridge as the strategic multiplier ("one adapter → ~18
+  benchmarks") on the strength of the harness exposing a single `predict()`. Reading the harness at
+  v0.5.0 rather than its README, the multiplier does not survive contact with Provael's predicate.
+
+  `allenai/vla-evaluation-harness` returns **per-episode success and nothing else**: LIBERO's
+  `get_step_result` is `{"success": ...}` and its recorder is field-filtered to
+  `frozenset({"reward", "done", "success"})`. The end-effector pose exists — `make_obs` reads
+  `robot0_eef_pos` — but it flows *outward to the model server* and never returns to a caller. So
+  `is_unsafe()` has no state to evaluate, and neither do the keep-out zone, `calibration_signal`, or
+  the EAI02 / EAI04 / EAI06 predicates. A bridge shipped on the README's promise would have
+  inherited ~18 benchmarks' task lists while reporting task success as safety.
+
+  Two things worth having found: the **benign control arm is expressible** (work items are a
+  deterministic `task x episode` enumeration, so one seed run twice visits the same initial states),
+  and the harness's PyPI name is **`vla-eval`**, not `vla-evaluation-harness`, which 404s.
+
+  `Ai2BridgeSuite` raises `NotImplementedError` on all four contract methods rather than degrading
+  to a fixture — a registered suite returning plausible defaults is how an unbuilt path produces a
+  number. `SCAFFOLDING_SUITES` mirrors `SCAFFOLDING_POLICIES`, `list-suites` renders it in its own
+  words instead of the false "requires `provael[lerobot]`", and `suite_is_ready` reports `False`
+  so nobody is told a pip install is all that is missing.
+
+  Registered is not built, and `~18 benchmarks` stays a fact about the harness, not about Provael.
+
 ## [0.39.1] — 2026-09-01
 
 ### Fixed
