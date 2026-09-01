@@ -70,3 +70,8 @@ docs/assets/*.gif
 *.pem
 *.key
 !leaderboard/results/leaderboard.pub
+
+# Workshop paper build products. The .tex, the figure script and the checker are tracked; the
+# compiled PDF and log are not, because they are regenerable by `make` and a stale committed PDF
+# is worse than none.
+paper/**/paper.log
