@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+Nothing pending — everything currently written is released.
+
+## [0.39.0] — 2026-09-01
+
 ### Added
 
 - **`gradient_patch` — the white-box image-space attack `PRIOR_ART.md` records the harness as
