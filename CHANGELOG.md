@@ -8,6 +8,27 @@ All notable changes to this project are documented here. The format is based on
 
 Nothing pending — everything currently written is released.
 
+## [0.39.1] — 2026-09-01
+
+### Fixed
+
+- **v0.39.0 shipped a counts artifact that contradicted its own code, and nothing in this repo
+  could tell.** `watch/registry.json` said 16 adversarial families and 38 adversarial attacks
+  while the registry it describes had 17 and 39. The full suite passed at that tag. The file's own
+  note says it exists so that "no human types these numbers" — provael.com fetches it rather than
+  restating counts in prose, because four site surfaces once disagreed simultaneously — but nothing
+  checked that the GENERATED file had actually been regenerated. Only the downstream website
+  noticed, from another repository, after the release.
+
+  `tests/test_registry_artifact_agrees.py` now compares the artifact against the live registry, pins
+  the two counting conventions apart (`adversarial*` excludes baseline and control; `*Total`
+  includes them — the artifact's own note warns that mixing them inflates coverage by a family), and
+  asserts the validation split partitions the registry, which was previously only enforced
+  downstream. Mutation-checked against the exact v0.39.0 values.
+
+  A generated artifact needs a guard that it was regenerated. Otherwise "generated" only means
+  "nobody typed it recently".
+
 ## [0.39.0] — 2026-09-01
 
 ### Added
