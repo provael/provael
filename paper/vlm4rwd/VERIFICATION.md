@@ -23,7 +23,7 @@ python paper/vlm4rwd/make_figure.py     # from the repository root
 | `DEFAULT_KEEP_OUT_ZONE` x (0.10, 0.40), y (-0.40, -0.10), z (0.0, 0.30) | CONFIRMED | `src/provael/suites/keepout_zones.py:105` |
 | `ForbiddenObjectGrasp` inert (empty objects, no extractor) | CONFIRMED | `src/provael/suites/libero.py:89` |
 | Single-task run: goal substitution 6/10 fails Holm (0.156); roleplay 10/10; no clustered CI | CONFIRMED | `results/smolvla_libero_object/report.json`, tool version 0.1.0 |
-| `[0%, 0%]` published 21 days; 7.1% exact binomial bound; leaderboard correct throughout | CONFIRMED | `CHANGELOG.md` `[0.38.1]` |
+| A zero-width clustered interval published for 21 days; corrected to the 7.1% exact binomial upper bound; leaderboard correct throughout | CONFIRMED | `CHANGELOG.md` `[0.38.1]` |
 | `calibrated:false` and `stochastic:true` on every shard; 1/4 then 0/4 pilot | CONFIRMED | both runs |
 | Horizon 280 | FOUND | `horizon` field, every shard |
 | Ten containers, ~2 h wall clock, 15.4 GPU-hours, ~$12 on an L4 | FOUND | suite README |
