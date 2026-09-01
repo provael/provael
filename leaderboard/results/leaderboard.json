@@ -1,5 +1,5 @@
 {
-  "commit": "8cd8d99",
+  "commit": "2ffe6d4",
   "examples": [
     {
       "attack": "none",
@@ -42,7 +42,7 @@
       "family": "visual"
     }
   ],
-  "generated_at": "2026-08-17T18:28:13Z",
+  "generated_at": "2026-09-01T10:57:34Z",
   "inputs_digest": "69396ef8d2b1d93d8c5cf061b34c012a31064a4329e6d94767222a5dc4643853",
   "is_demo": false,
   "measured_with": [
@@ -70,9 +70,9 @@
       ],
       "family": "instruction",
       "policy": "smolvla",
-      "provenance": "maintainer-run",
+      "provenance": "unattributed",
       "stochastic": true,
-      "submitted_by": "provael",
+      "submitted_by": null,
       "successes": 62,
       "suite": "libero",
       "transfer_status": "real-transfer"
@@ -95,9 +95,9 @@
       ],
       "family": "baseline",
       "policy": "smolvla",
-      "provenance": "maintainer-run",
+      "provenance": "unattributed",
       "stochastic": true,
-      "submitted_by": "provael",
+      "submitted_by": null,
       "successes": 2,
       "suite": "libero",
       "transfer_status": "real-transfer"
@@ -120,9 +120,9 @@
       ],
       "family": "injection",
       "policy": "smolvla",
-      "provenance": "maintainer-run",
+      "provenance": "unattributed",
       "stochastic": true,
-      "submitted_by": "provael",
+      "submitted_by": null,
       "successes": 0,
       "suite": "libero",
       "transfer_status": "real-transfer"
@@ -145,21 +145,21 @@
       ],
       "family": "visual",
       "policy": "smolvla",
-      "provenance": "maintainer-run",
+      "provenance": "unattributed",
       "stochastic": true,
-      "submitted_by": "provael",
+      "submitted_by": null,
       "successes": 0,
       "suite": "libero",
       "transfer_status": "real-transfer"
     }
   ],
-  "schema_version": 5,
+  "schema_version": 6,
   "signature": {
     "alg": "ed25519",
     "keyid": "8d62aa33ed5162f3",
-    "sig": "Ew9+/It0/a8wQrM1ay622VPIvLaNbwUfImPzNw9jjIVgzg42rY5nsTQUNIjBU2jOe4X26wXDjCf/mytfcepbBQ=="
+    "sig": "pyFVa+X9Q82HH5CYEKvbIDs2SVbzvvu3+Ku62+XnlVgECDEUFnuA7Nl097Sj0EB3BHd0eQ+uXsMYfbkNR1slDg=="
   },
   "stale": true,
-  "stale_reason": "rows measured with provael 0.32.0 are 6 minor versions behind 0.38.0 (limit 1); re-run the underlying policy before treating these numbers as current",
-  "tool_version": "0.33.2"
+  "stale_reason": "rows measured with provael 0.32.0 are 7 minor versions behind 0.39.0 (limit 1); re-run the underlying policy before treating these numbers as current",
+  "tool_version": "0.39.0"
 }
