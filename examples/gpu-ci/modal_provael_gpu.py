@@ -41,7 +41,14 @@ SEEDS = "2"
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
-    .apt_install("libegl1-mesa-dev", "libgl1-mesa-glx", "libosmesa6-dev")
+    # cmake/build-essential/git are load-bearing: lerobot[libero] pulls `egl_probe` and
+    # `hf-egl-probe`, which build native wheels and fail with "CMake must be installed."
+    # modal_libero_suite.py already carries this list; this file did not, and the failure was
+    # invisible while the step could not fail.
+    .apt_install(
+        "libegl1-mesa-dev", "libgl1-mesa-glx", "libosmesa6-dev", "git", "cmake",
+        "build-essential", "libglib2.0-0", "libsm6", "libxrender1", "libfontconfig1",
+    )
     .pip_install("provael[lerobot]", "lerobot[libero]==0.5.1")
     .env({"MUJOCO_GL": "egl", "PYOPENGL_PLATFORM": "egl", "PROVAEL_INTEGRATION": "1"})
 )
