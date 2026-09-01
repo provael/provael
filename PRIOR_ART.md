@@ -1208,6 +1208,41 @@ not in coverage, and it is not fixed by adding an attack.
 Neither is implemented and neither is covered. They are recorded because they change what our
 number means, which is a different reason from the one most entries above are here for.
 
+### ESTI — *Breaking Planner Integrity Boundary: Enviroment State-Text Injection Attack on LLM-Driven Embodied Agents*
+Jiawei Liu, Jiacheng Guo, Tian Zhang, Yiwei Xu, Juan Wang, Jinlin Fan, Bowen Xiao, Chi Guo,
+Keyan Guo, Hongxin Hu (2026).
+arXiv:[2608.16806](https://arxiv.org/abs/2608.16806) · v1 17 August 2026, v2 18 August 2026
+
+(The misspelling of "Environment" is the authors' own, in the published title. Quoted as printed
+so the string matches what a search returns.)
+
+**A different injection surface from ours.** ESTI writes adversarial text into the **environment
+state** an LLM-driven planner reads — object properties, spatial relations, affordances — rather
+than into the user instruction. The authors describe it as the first closed-loop attack fabricating
+"false state evidence compatible with the current environment" without touching the instruction or
+the model weights. Their abstract reports **improvements of up to 89.32% (planning-level) and
+43.69% (execution-level) attack success over prior methods** — improvements over baselines, not
+absolute rates, and stated here as reported rather than replicated.
+
+**Their separation of P-ASR from E-ASR is the transferable part.** A planner can be successfully
+misled and the manipulated plan still fail to execute; collapsing the two into one number would
+report a capability the robot does not have. That is the same distinction `endpoints.py` exists to
+protect, arrived at from a different architecture.
+
+**mapping_status: `partial`.** The injection surface maps onto **EAI01** (instruction and prompt
+integrity) and the planner/execution split onto **EAI05**. It does **not** map onto a runnable
+attack family here, and the reason is architectural rather than a matter of effort: ESTI targets a
+**planner-plus-executor** stack, where the attack lands on the text a planner reads. Our families
+target a **single end-to-end VLA policy**, which has no separate planner to mislead and no plan to
+corrupt between deciding and acting. Treating the two as equivalent would overstate our coverage by
+claiming a surface our threat model does not contain.
+
+**What they have that we do not:** a planner/executor decomposition of failure, so a partial
+compromise is visible as one.
+**What we have that they do not:** a benign control arm, so our rates carry a floor. An attack-side
+number without one cannot distinguish a policy the attack broke from a policy that was failing
+anyway.
+
 ### TOWN-VLA — *Think Only When Needed: Prompt-Authority Control for Selective Slow-Path Intervention in Vision-Language-Action Manipulation*
 Zhiruo Zhou, Zelin Li, Xiwen Chen, Jiazhuo Li, Chenwei Wang, Huiming Chen, Xiaojun Zhu (2026).
 arXiv:[2608.23224](https://arxiv.org/abs/2608.23224) · submitted 24 August 2026
