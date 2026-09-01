@@ -2536,6 +2536,78 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#e-2026-04-the-cra-severe-incident-final-report-was-published-with-the-wrong-start-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-2026-04 — The CRA severe-incident final report was published with the wrong start point
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="E-2026-04 — The CRA severe-incident final report was published with the wrong start point">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-was-wrong_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-correct_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is correct
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-this-does-and-does-not-affect_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this does and does not affect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-tell-whether-a-copy-you-hold-is-affected_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to tell whether a copy you hold is affected
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-was-changed-to-prevent-recurrence_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was changed to prevent recurrence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2867,6 +2939,78 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#e-2026-04-the-cra-severe-incident-final-report-was-published-with-the-wrong-start-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-2026-04 — The CRA severe-incident final report was published with the wrong start point
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="E-2026-04 — The CRA severe-incident final report was published with the wrong start point">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-was-wrong_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-correct_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is correct
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-this-does-and-does-not-affect_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this does and does not affect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-tell-whether-a-copy-you-hold-is-affected_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to tell whether a copy you hold is affected
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-was-changed-to-prevent-recurrence_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was changed to prevent recurrence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3080,6 +3224,68 @@ published number. <code>tests/test_no_zero_width_intervals.py</code> scans track
 interval in a table row, and <strong>on its first run it found the second copy under <code>results/</code> that the
 first fix had missed</strong>. It carries <code>test_the_guard_can_actually_fail</code>, which pins the regex against
 the exact row that shipped, so it cannot quietly stop matching.</p>
+<hr />
+<h2 id="e-2026-04-the-cra-severe-incident-final-report-was-published-with-the-wrong-start-point">E-2026-04 — The CRA severe-incident final report was published with the wrong start point</h2>
+<p><strong>Status:</strong> corrected on provael.com and in its machine-readable clock · no signed artifact is affected
+<strong>Date raised:</strong> 1 September 2026
+<strong>Window:</strong> 25 August 2026 (#86, first publication of the Article 14 sub-deadlines) to 1 September 2026 — 7 days
+<strong>Affects:</strong> <code>provael.com/regulatory-clock</code> and <code>/regulatory-clock.json</code> as published in that window. Nothing in this repository, and no attestation bundle, carried the defect.</p>
+<h3 id="what-was-wrong_2">What was wrong</h3>
+<p>The CRA Article 14 reporting clock published both of its final-report deadlines as a single row:</p>
+<div class="highlight"><pre><span></span><code>Final report, due once a corrective or mitigating measure is available
+  — 14 days for an actively exploited vulnerability, one month for a severe incident.
+</code></pre></div>
+<p>The start point named in that sentence is correct for the vulnerability branch and <strong>wrong for the
+incident branch</strong>.</p>
+<h3 id="what-is-correct_3">What is correct</h3>
+<p>Article 14(2)(c) and Article 14(4)(c) measure from different events:</p>
+<table>
+<thead>
+<tr>
+<th>Branch</th>
+<th>Deadline</th>
+<th>Runs from</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Actively exploited vulnerability, Art. 14(2)(c)</td>
+<td>14 days</td>
+<td>after a corrective or mitigating measure <strong>is available</strong></td>
+</tr>
+<tr>
+<td>Severe incident, Art. 14(4)(c)</td>
+<td>one month</td>
+<td>after <strong>submission of the 72-hour incident notification</strong> under Art. 14(4)(b)</td>
+</tr>
+</tbody>
+</table>
+<p>The incident clock does not wait for a fix at all. Collapsing both into one sentence applied the
+first branch's anchor to the second, which points a reader at a later start than the regulation
+allows.</p>
+<h3 id="what-this-does-and-does-not-affect_3">What this does and does not affect</h3>
+<p><strong>No measured result, signed artifact or attestation is affected.</strong> The defect was in a regulatory
+date rendered on the website, not in any number this tool produces, and not in any payload it signs.</p>
+<p><strong>The 24-hour, 72-hour and 14-day figures were correct throughout.</strong> Only the anchor for the
+one-month incident deadline was wrong.</p>
+<p><strong>What does change</strong> is a runbook. A reader who took the superseded wording at face value would wait
+for a corrective measure before starting the one-month count — a count that had already been running
+since their own 72-hour filing.</p>
+<h3 id="how-to-tell-whether-a-copy-you-hold-is-affected_1">How to tell whether a copy you hold is affected</h3>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-s<span class="w"> </span>https://www.provael.com/regulatory-clock.json<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.entries[] | select(.id == &quot;eu-cyber-resilience-act&quot;) | .reportingSubDeadlines&#39;</span>
+</code></pre></div>
+<p>Three sub-deadlines rather than four, with no <code>one month</code> row, means the copy predates this
+correction.</p>
+<h3 id="what-was-changed-to-prevent-recurrence_3">What was changed to prevent recurrence</h3>
+<p>The two branches are now separate rows carrying their own anchors, and the clock entry's
+<code>reportingSubDeadlinesSource</code> was moved from the Commission's CRA summary to the OJ text on
+EUR-Lex. That is the reusable lesson: the sub-deadlines had been transcribed from a <strong>secondary
+summary</strong>, whose phrasing does not carry the distinction the regulation makes. A secondary source is
+fine for finding a fact and not for pinning one.</p>
+<p>The entry also now records Article 69(3) — the express derogation from 69(2) that puts the entire
+in-scope installed base under Article 14 reporting while leaving it outside the product
+requirements, which is the clause most often missed.</p>
 
 
 
