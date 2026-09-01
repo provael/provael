@@ -51,7 +51,18 @@ def _committed_reports() -> list[Path]:
 
 
 def _committed_boards() -> list[Path]:
-    return sorted((_ROOT / "leaderboard").rglob("leaderboard.json"))
+    """Every committed board, INCLUDING the frozen v5 fixture.
+
+    The live board is re-stamped by whatever version assembles it, so it stops being a v5
+    artifact the first time that happens — and then `leaderboard.v5.schema.json` has nothing
+    left to validate against and this file's superseded-schema guard fails on an empty set.
+    A published schema promises to keep accepting what it accepted; proving that needs a
+    preserved artifact of that version, which is what tests/fixtures holds.
+    """
+    return sorted(
+        [*(_ROOT / "leaderboard").rglob("leaderboard.json"),
+         *(_ROOT / "tests" / "fixtures").rglob("leaderboard-v*.json")]
+    )
 
 
 def test_the_schemas_are_themselves_valid_json_schema() -> None:
