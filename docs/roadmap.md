@@ -71,8 +71,8 @@ comparison here would be reporting a hardware fault as a finding.
   → ~18 benchmarks at the harness's v0.4.0; v0.5.0 exposes 20). See
   [examples/suites](https://github.com/provael/provael/tree/main/examples/suites).
 
-    **Scaffolding exists, and it is not a bridge yet.** `provael list-suites` shows `ai2_bridge` as
-    *scaffolding — no benchmark ever run*; every contract method raises. The interface was read at
+    **Scaffolding exists, and it is not a bridge yet.** The `ai2_bridge` suite is registered and
+    listed as *scaffolding — no benchmark ever run*; every contract method raises. The interface was read at
     v0.5.0 and the blocker is in the harness's public surface, not in the effort: it returns
     per-episode success only (LIBERO's `get_step_result` is `{"success": ...}`, its recorder filtered
     to `{reward, done, success}`), and the end-effector pose flows outward to the model server rather

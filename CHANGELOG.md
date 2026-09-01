@@ -8,6 +8,41 @@ All notable changes to this project are documented here. The format is based on
 
 ### Fixed
 
+- **`provael submit` told a blocked user to pass a flag it does not define.** Without the `attest`
+  extra, `submit` echoed the shared `MissingAttestExtraError`, which ends "(or pass `--no-sign` for
+  a digest-only bundle)". Correct advice for `attest`; impossible for `submit`, which calls
+  `to_bundle(..., sign=True)` unconditionally and defines no `--no-sign` — a leaderboard row that is
+  not tamper-evident is not a submission. So the one command whose failure blocks an outside
+  contribution answered with an escape hatch that was never there.
+
+  The message was right about the extra and wrong about the way out, which is the worse half to get
+  wrong: the extra is discoverable from the error itself, while a flag that does not exist sends
+  someone reading `--help` for it. `submit` now says the extra is required here and names
+  `provael attest --no-sign` for the digest-only case, rather than echoing a flag as if it were its
+  own. `tests/test_cli_error_flags_exist.py` walks the real Typer app rather than grepping source.
+
+- **The roadmap called a shipped command planned, and it reached `main` unnoticed.** The AI2 bridge
+  note added in the previous change wrote `provael list-suites` inside `## Planned`, and
+  `tests/test_roadmap_honesty.py` correctly reads that as claiming a shipped command is not yet
+  shipped. The note now names the `ai2_bridge` suite rather than the command that lists it.
+
+  Worth recording is *why nobody saw it*: the pull request was green, but GitHub created no workflow
+  run at all for the squash-merge commit on `main` — no `[skip ci]`, no skip directive of any kind,
+  Actions reported operational, and a manual dispatch on `main` ran fine moments later. A dropped
+  push event. The merged tree was byte-identical to the tested one, so the PR's green was not a lie
+  — it simply never re-ran on a tree containing this line, because the line was written in that PR.
+
+### Documentation
+
+- **E-2026-04** recorded in `docs/errata.md`: provael.com published the CRA severe-incident
+  final-report deadline with the wrong start point for seven days. Art. 14(2)(c) runs 14 days from a
+  corrective measure being available; Art. 14(4)(c) runs one month from submission of the 72-hour
+  notification and does not wait for a fix. Nothing in this repository was affected — the defect was
+  in the website's regulatory clock — but this file is the maintained source that page mirrors, so
+  the record belongs here. The reusable lesson is in the entry: the sub-deadlines were transcribed
+  from the Commission's summary rather than the OJ text, and a secondary source is fine for finding
+  a fact and not for pinning one.
+
 - **The scheduled GPU lane reported success twice a week for 22 days while measuring nothing.**
   `examples/gpu-ci/modal_provael_gpu.py` constructed its Modal app inside `build_app()` so the
   module would import without modal installed. `modal run` resolves an app from a module's GLOBAL

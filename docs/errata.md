@@ -223,3 +223,72 @@ published number. `tests/test_no_zero_width_intervals.py` scans tracked Markdown
 interval in a table row, and **on its first run it found the second copy under `results/` that the
 first fix had missed**. It carries `test_the_guard_can_actually_fail`, which pins the regex against
 the exact row that shipped, so it cannot quietly stop matching.
+
+---
+
+## E-2026-04 — The CRA severe-incident final report was published with the wrong start point
+
+**Status:** corrected on provael.com and in its machine-readable clock · no signed artifact is affected
+**Date raised:** 1 September 2026
+**Window:** 25 August 2026 (#86, first publication of the Article 14 sub-deadlines) to 1 September 2026 — 7 days
+**Affects:** `provael.com/regulatory-clock` and `/regulatory-clock.json` as published in that window. Nothing in this repository, and no attestation bundle, carried the defect.
+
+### What was wrong
+
+The CRA Article 14 reporting clock published both of its final-report deadlines as a single row:
+
+```
+Final report, due once a corrective or mitigating measure is available
+  — 14 days for an actively exploited vulnerability, one month for a severe incident.
+```
+
+The start point named in that sentence is correct for the vulnerability branch and **wrong for the
+incident branch**.
+
+### What is correct
+
+Article 14(2)(c) and Article 14(4)(c) measure from different events:
+
+| Branch | Deadline | Runs from |
+| --- | --- | --- |
+| Actively exploited vulnerability, Art. 14(2)(c) | 14 days | after a corrective or mitigating measure **is available** |
+| Severe incident, Art. 14(4)(c) | one month | after **submission of the 72-hour incident notification** under Art. 14(4)(b) |
+
+The incident clock does not wait for a fix at all. Collapsing both into one sentence applied the
+first branch's anchor to the second, which points a reader at a later start than the regulation
+allows.
+
+### What this does and does not affect
+
+**No measured result, signed artifact or attestation is affected.** The defect was in a regulatory
+date rendered on the website, not in any number this tool produces, and not in any payload it signs.
+
+**The 24-hour, 72-hour and 14-day figures were correct throughout.** Only the anchor for the
+one-month incident deadline was wrong.
+
+**What does change** is a runbook. A reader who took the superseded wording at face value would wait
+for a corrective measure before starting the one-month count — a count that had already been running
+since their own 72-hour filing.
+
+### How to tell whether a copy you hold is affected
+
+```bash
+curl -s https://www.provael.com/regulatory-clock.json \
+  | jq '.entries[] | select(.id == "eu-cyber-resilience-act") | .reportingSubDeadlines'
+```
+
+Three sub-deadlines rather than four, with no `one month` row, means the copy predates this
+correction.
+
+### What was changed to prevent recurrence
+
+The two branches are now separate rows carrying their own anchors, and the clock entry's
+`reportingSubDeadlinesSource` was moved from the Commission's CRA summary to the OJ text on
+EUR-Lex. That is the reusable lesson: the sub-deadlines had been transcribed from a **secondary
+summary**, whose phrasing does not carry the distinction the regulation makes. A secondary source is
+fine for finding a fact and not for pinning one.
+
+The entry also now records Article 69(3) — the express derogation from 69(2) that puts the entire
+in-scope installed base under Article 14 reporting while leaving it outside the product
+requirements, which is the clause most often missed.
+

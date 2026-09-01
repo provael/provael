@@ -2614,8 +2614,17 @@ def submit_cmd(
             report, issued_at=issued_at, commit=stamp,
             private_key_pem=key.read_bytes() if key is not None else None, sign=True,
         )
-    except MissingAttestExtraError as exc:
-        _fail(f"{exc}  (install with: pip install 'provael[attest]')")
+    except MissingAttestExtraError:
+        # NOT `exc`. The shared message ends "(or pass --no-sign for a digest-only bundle)",
+        # which is correct advice for `attest` and impossible here: `submit` signs
+        # unconditionally and defines no --no-sign, so echoing it sent a blocked user looking
+        # for a flag that does not exist. A submission is a claim someone else will act on, so
+        # the signature is the point of the command rather than an option on it.
+        _fail(
+            "Submitting needs the `attest` extra, because a leaderboard row must be "
+            "tamper-evident: pip install 'provael[attest]'. There is no unsigned submission "
+            "path — use `provael attest --no-sign` if you only want a digest-only bundle."
+        )
         return
 
     slug = (name or submitted_by).strip().replace("/", "__")
