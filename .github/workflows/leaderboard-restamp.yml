@@ -65,6 +65,7 @@ jobs:
           d = json.load(open("leaderboard/results/leaderboard.json"))
           print(f"stale={json.dumps(d.get('stale'))}")
           print(f"measured_with={json.dumps(d.get('measured_with'))}")
+          print(f"submitters={json.dumps(sorted({r.get('submitted_by') for r in d['rows'] if r.get('submitted_by')}))}")
           print(f"generated_at={d.get('generated_at')}")
           PY
 
@@ -82,8 +83,15 @@ jobs:
           umask 077
           printf '%s' "${PROVAEL_SIGNING_KEY}" > "${KEY}"
           trap 'rm -f "${KEY}"' EXIT
+          # --submitted-by / --provenance are NOT optional here. Omitting them on the first
+          # real run silently dropped every row's attribution: submitted_by 'provael' -> None,
+          # provenance 'maintainer-run' -> 'unattributed'. The board still verified and still
+          # declared its staleness, so nothing downstream complained — it just stopped recording
+          # who ran it, which is the one field that separates a maintainer board from an
+          # anonymous submission.
           uv run provael leaderboard build \
             --real results/smolvla_libero_object_suite \
+            --submitted-by provael --provenance maintainer-run \
             --sign --key "${KEY}" \
             --out leaderboard/results
 
@@ -97,6 +105,7 @@ jobs:
         env:
           BEFORE_STALE: ${{ steps.before.outputs.stale }}
           BEFORE_MEASURED: ${{ steps.before.outputs.measured_with }}
+          BEFORE_SUBMITTERS: ${{ steps.before.outputs.submitters }}
         run: |
           python - <<'PY'
           import json, os, sys
@@ -108,6 +117,13 @@ jobs:
               bad.append(f"measured_with moved {before_measured} -> {d.get('measured_with')}")
           if before_stale is True and d.get("stale") is not True:
               bad.append(f"stale was cleared: {before_stale} -> {d.get('stale')}")
+          # Added after the first real run dropped every row's attribution while passing the two
+          # checks above. The guard watched what I had thought about; the board had other fields
+          # that mattered. Anything a re-stamp must preserve belongs in THIS list.
+          before_subs = json.loads(os.environ["BEFORE_SUBMITTERS"])
+          now_subs = sorted({r.get("submitted_by") for r in d["rows"] if r.get("submitted_by")})
+          if before_subs and now_subs != before_subs:
+              bad.append(f"submitters changed {before_subs} -> {now_subs}")
           if bad:
               print("::error::a re-stamp must not change what was measured or how stale it is")
               for b in bad:
