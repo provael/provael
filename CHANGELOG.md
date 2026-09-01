@@ -29,6 +29,22 @@ All notable changes to this project are documented here. The format is based on
 
   A workflow step that cannot fail is a workflow step that cannot report.
 
+### Changed
+
+- **The SO-101 amendment created two hardware blockers that existed only inside the study file.**
+  `docs/studies/sim-to-real-so101.md` was amended on 1 September 2026 — before any trial — with a
+  power-integrity confound and a corrected e-stop claim. Both were on the record in the right place
+  and invisible everywhere else: the roadmap had no real-robot entry at all, so a reader had no way
+  to see why that work had not moved, or that it is blocked on hardware rather than on effort.
+
+  `docs/roadmap.md` now carries a "Blocked on hardware" section naming both prerequisites — an
+  inline DC-supply cut (the STS3215's over-current protection is not a latch and re-arms under a
+  policy that keeps streaming commands, which is exactly this threat model) and a per-trial
+  servo-bus voltage trace (the brownout is biased toward the hypothesis, since adversarial action
+  sequences drive more joints at once than benign teleop) — and states that runs executed is 0.
+
+  Documentation only. No trial was run, no hardware was actuated, and no sim/real claim is made.
+
 ## [0.39.1] — 2026-09-01
 
 ### Fixed

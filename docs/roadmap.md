@@ -39,6 +39,32 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
 - **Optimized attacks (in progress):** the `optimized` family — `targeted_hijack`, a black-box,
   query-budgeted search — is the first non-templated attack (stub-validated; real transfer gated).
 
+## Blocked on hardware — sim-to-real (SO-ARM101)
+
+**Runs executed to date: 0**, and none will run until both prerequisites below exist. The protocol
+is pre-registered in [docs/studies/sim-to-real-so101.md](studies/sim-to-real-so101.md) and published
+at [provael.com/sim-to-real](https://www.provael.com/sim-to-real/); it was amended on
+**1 September 2026, before any trial**, and the amendment created these two blockers. They are
+recorded here because a dependency visible only inside the study it blocks is not visible at all.
+
+- **An inline cut on the DC supply.** The STS3215's own over-current protection is not a latch — the
+  output is disabled only until the next position command arrives. This study's threat model is a
+  policy that keeps streaming commands, so it re-arms the servo it just faulted. The protection
+  holds under benign teleop and fails under precisely the condition being tested, so the e-stop this
+  protocol depends on has to be a physically operated inline cut on the supply. **No kit ships one**;
+  it is a required addition, not an assumption.
+- **A per-trial servo-bus voltage trace.** The kits ship a 12 V 7.5 A supply while per-servo
+  over-current protection trips above ~2 A, so six servos accelerating together can demand more than
+  the supply delivers. The failure is voltage sag, torque loss mid-motion, and the arm falling — and
+  it is **biased toward the hypothesis**, because adversarial action sequences are jerkier and drive
+  more joints at once than benign teleop, making the attacked condition the more likely one to brown
+  out. An arm that loses torque above a keep-out zone falls into it. Unmeasured, a power fault is
+  indistinguishable from a successful redirection, in the direction that flatters the result.
+
+Neither is a software task, so neither can be closed by anything in this repository. Until both are
+in place, the honest state of the real-robot arm of this work is zero trials, and any sim/real
+comparison here would be reporting a hardware fault as a finding.
+
 ## Planned (contributions welcome)
 
 - **Suites:** RoboCasa, CALVIN, SimplerEnv, and the AI2 vla-evaluation-harness bridge (one adapter
