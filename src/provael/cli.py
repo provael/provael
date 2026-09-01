@@ -168,7 +168,16 @@ from provael.studies.cross_arch import (
     write_study,
 )
 from provael.studies.offline_runner import run_offline_study
-from provael.suites import KIND_FIXTURE, available_suites, suite_is_ready, suite_kind
+from provael.suites import (
+    KIND_FIXTURE,
+    available_suites,
+    suite_is_ready,
+    suite_kind,
+    suite_scaffolding_note,
+)
+from provael.suites import (
+    STATUS_SCAFFOLDING as SUITE_STATUS_SCAFFOLDING,
+)
 from provael.types import ComponentProfile, RunReport, TransferTest
 from provael.watch import (
     STALE_DAYS,
@@ -571,15 +580,20 @@ def list_suites() -> None:
         # scaffolding regardless of which policy drove it (see evidence.classify_run, which refuses
         # to label such a run `real-episode`). Saying so here is cheaper than discovering it after
         # a number has been quoted.
-        note = (
-            "deterministic, in-process; no physics — never a real-episode measurement"
-            if fixture
-            else escape("requires `provael[lerobot]` and a real simulator")
-        )
+        # Scaffolding is checked FIRST and rendered in its own words. A registered-but-never-run
+        # bridge is not "a real simulator that needs an extra" — saying so would tell a reader the
+        # only thing standing between them and a measurement is a pip install.
+        scaffold = suite_scaffolding_note(name)
+        if scaffold is not None:
+            note = escape(scaffold)
+            kind = SUITE_STATUS_SCAFFOLDING
+        elif fixture:
+            note = "deterministic, in-process; no physics — never a real-episode measurement"
+        else:
+            note = escape("requires `provael[lerobot]` and a real simulator")
         mark = "[green]yes[/green]" if suite_is_ready(name) else "[yellow]no[/yellow]"
-        table.add_row(
-            name, mark, f"[{'cyan' if fixture else 'green'}]{kind}[/]", note
-        )
+        colour = "yellow" if scaffold is not None else ("cyan" if fixture else "green")
+        table.add_row(name, mark, f"[{colour}]{kind}[/]", note)
     _out.print(table)
     _out.print(
         "[dim]A CPU fixture is reproducible scaffolding, not evidence about a robot. Only a real "

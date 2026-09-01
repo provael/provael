@@ -65,8 +65,15 @@ jobs:
       - name: Install the Modal client
         run: pip install "modal>=0.64"
 
+      # `set -o pipefail` is load-bearing, not hygiene. `modal run ... | tee` reports TEE's exit
+      # status, so for 22 days this step stayed green while modal exited on "has no functions or
+      # local entrypoints" and measured nothing. A lane that cannot fail is a lane that cannot
+      # report, and the freshness badge was the only thing telling anyone.
       - name: Run the real SmolVLA x LIBERO red-team on a Modal GPU
-        run: modal run examples/gpu-ci/modal_provael_gpu.py | tee gpu-scheduled-report.txt
+        shell: bash
+        run: |
+          set -o pipefail
+          modal run examples/gpu-ci/modal_provael_gpu.py | tee gpu-scheduled-report.txt
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}

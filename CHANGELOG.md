@@ -6,7 +6,71 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-Nothing pending — everything currently written is released.
+### Fixed
+
+- **The scheduled GPU lane reported success twice a week for 22 days while measuring nothing.**
+  `examples/gpu-ci/modal_provael_gpu.py` constructed its Modal app inside `build_app()` so the
+  module would import without modal installed. `modal run` resolves an app from a module's GLOBAL
+  scope, found none, and printed "has no functions or local entrypoints". The workflow piped that
+  into `tee` without `pipefail`, so the step took tee's exit status and went green. Nothing was
+  measured, nothing was recorded, and every run said it worked.
+
+  Two things kept this from becoming a false published number rather than merely a missing one.
+  The record step is guarded on a `report.json` actually existing, so no fresh measurement time was
+  ever stamped for a run that produced nothing; and `freshness.yml` recomputes age on its own
+  schedule instead of trusting the measurement job to emit a green badge. The badge ageing to 22
+  days was the only signal that the lane was dead — which is the job it was designed for.
+
+  The app and its `@app.local_entrypoint()` now sit at global scope, mirroring
+  `modal_libero_suite.py`, which records the identical trap at its own line 83. The importability
+  the nesting bought was asserted by no test and cost the measurement the badge exists for.
+  `tests/test_modal_examples_are_runnable.py` parses both examples on the CPU lane — where modal is
+  absent — and fails if either stops exposing a module-level app and entrypoint.
+
+  A workflow step that cannot fail is a workflow step that cannot report.
+
+### Changed
+
+- **The SO-101 amendment created two hardware blockers that existed only inside the study file.**
+  `docs/studies/sim-to-real-so101.md` was amended on 1 September 2026 — before any trial — with a
+  power-integrity confound and a corrected e-stop claim. Both were on the record in the right place
+  and invisible everywhere else: the roadmap had no real-robot entry at all, so a reader had no way
+  to see why that work had not moved, or that it is blocked on hardware rather than on effort.
+
+  `docs/roadmap.md` now carries a "Blocked on hardware" section naming both prerequisites — an
+  inline DC-supply cut (the STS3215's over-current protection is not a latch and re-arms under a
+  policy that keeps streaming commands, which is exactly this threat model) and a per-trial
+  servo-bus voltage trace (the brownout is biased toward the hypothesis, since adversarial action
+  sequences drive more joints at once than benign teleop) — and states that runs executed is 0.
+
+  Documentation only. No trial was run, no hardware was actuated, and no sim/real claim is made.
+
+### Added
+
+- **`ai2_bridge` — registered scaffolding for the AI2 harness, and the reason it is not more than
+  that.** The roadmap has listed this bridge as the strategic multiplier ("one adapter → ~18
+  benchmarks") on the strength of the harness exposing a single `predict()`. Reading the harness at
+  v0.5.0 rather than its README, the multiplier does not survive contact with Provael's predicate.
+
+  `allenai/vla-evaluation-harness` returns **per-episode success and nothing else**: LIBERO's
+  `get_step_result` is `{"success": ...}` and its recorder is field-filtered to
+  `frozenset({"reward", "done", "success"})`. The end-effector pose exists — `make_obs` reads
+  `robot0_eef_pos` — but it flows *outward to the model server* and never returns to a caller. So
+  `is_unsafe()` has no state to evaluate, and neither do the keep-out zone, `calibration_signal`, or
+  the EAI02 / EAI04 / EAI06 predicates. A bridge shipped on the README's promise would have
+  inherited ~18 benchmarks' task lists while reporting task success as safety.
+
+  Two things worth having found: the **benign control arm is expressible** (work items are a
+  deterministic `task x episode` enumeration, so one seed run twice visits the same initial states),
+  and the harness's PyPI name is **`vla-eval`**, not `vla-evaluation-harness`, which 404s.
+
+  `Ai2BridgeSuite` raises `NotImplementedError` on all four contract methods rather than degrading
+  to a fixture — a registered suite returning plausible defaults is how an unbuilt path produces a
+  number. `SCAFFOLDING_SUITES` mirrors `SCAFFOLDING_POLICIES`, `list-suites` renders it in its own
+  words instead of the false "requires `provael[lerobot]`", and `suite_is_ready` reports `False`
+  so nobody is told a pip install is all that is missing.
+
+  Registered is not built, and `~18 benchmarks` stays a fact about the harness, not about Provael.
 
 ## [0.39.1] — 2026-09-01
 

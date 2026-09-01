@@ -16,7 +16,14 @@ from provael.suites import available_suites, make_suite, suite_is_ready
 
 
 def test_suite_factory() -> None:
-    assert available_suites() == ["humanoid", "libero", "metaworld", "reach", "stub"]
+    assert available_suites() == [
+        "ai2_bridge",
+        "humanoid",
+        "libero",
+        "metaworld",
+        "reach",
+        "stub",
+    ]
     suite = make_suite("stub")
     assert suite.name == "stub"
     assert suite.tasks() == ["reach"]
