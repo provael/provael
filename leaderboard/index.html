@@ -2787,11 +2787,16 @@ process nobody has executed is a process that does not work, so this was run rat
 the aggregated input reports</strong> (the same digest approach as <a href="../attestation/">attestation</a>, so a board
 and an attestation speak one integrity language). The date and commit are a snapshot stamp; the
 <code>inputs_digest</code> and the row numbers are what reproduce.</p>
+<p>The source directory is <strong><code>results/smolvla_libero_object_suite</code></strong> — the ten-task suite. It is not
+<code>results/smolvla_libero_object</code>, which is an older single-task run measured with <strong>0.1.0</strong>;
+rebuilding from that one produces a different digest, different rows, and a board 31 minor versions
+behind the published one. Both directories are committed and their names differ by one word, which
+is why this says so rather than leaving it to be inferred.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Build the real board (stamps date + commit + inputs digest)</span>
-provael<span class="w"> </span>leaderboard<span class="w"> </span>build<span class="w"> </span>--real<span class="w"> </span>results/smolvla_libero_object<span class="w"> </span>--out<span class="w"> </span>leaderboard/results
+provael<span class="w"> </span>leaderboard<span class="w"> </span>build<span class="w"> </span>--real<span class="w"> </span>results/smolvla_libero_object_suite<span class="w"> </span>--out<span class="w"> </span>leaderboard/results
 
 <span class="c1"># Reproduce: rebuild and confirm the digest matches</span>
-provael<span class="w"> </span>leaderboard<span class="w"> </span>build<span class="w"> </span>--real<span class="w"> </span>results/smolvla_libero_object<span class="w"> </span>--out<span class="w"> </span>/tmp/rebuild
+provael<span class="w"> </span>leaderboard<span class="w"> </span>build<span class="w"> </span>--real<span class="w"> </span>results/smolvla_libero_object_suite<span class="w"> </span>--out<span class="w"> </span>/tmp/rebuild
 python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import json; a=json.load(open(&#39;leaderboard/results/leaderboard.json&#39;))[&#39;inputs_digest&#39;]; \</span>
 <span class="s2">b=json.load(open(&#39;/tmp/rebuild/leaderboard.json&#39;))[&#39;inputs_digest&#39;]; print(&#39;match:&#39;, a==b)&quot;</span>
 </code></pre></div>
@@ -2932,7 +2937,7 @@ board is signed, the signature verifies <strong>against that published key</stro
 derived from the key file, and the board's stamp lags the newest released tag by at most <strong>14
 days</strong> — re-stamping is a GPU-free one-command operation, so the cost of staying current is low.</p>
 <p>Rebuild and re-sign:</p>
-<div class="highlight"><pre><span></span><code>provael<span class="w"> </span>leaderboard<span class="w"> </span>build<span class="w"> </span>--real<span class="w"> </span>results/smolvla_libero_object<span class="w"> </span>--sign<span class="w"> </span>--key<span class="w"> </span>provael-ed25519.pem<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>provael<span class="w"> </span>leaderboard<span class="w"> </span>build<span class="w"> </span>--real<span class="w"> </span>results/smolvla_libero_object_suite<span class="w"> </span>--sign<span class="w"> </span>--key<span class="w"> </span>provael-ed25519.pem<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--out<span class="w"> </span>leaderboard/results
 provael<span class="w"> </span>leaderboard<span class="w"> </span>verify<span class="w"> </span>--in<span class="w"> </span>leaderboard/results/leaderboard.json<span class="w"> </span>--pubkey<span class="w"> </span>leaderboard.pub
 </code></pre></div>
