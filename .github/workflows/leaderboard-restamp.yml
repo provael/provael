@@ -83,7 +83,7 @@ jobs:
           printf '%s' "${PROVAEL_SIGNING_KEY}" > "${KEY}"
           trap 'rm -f "${KEY}"' EXIT
           uv run provael leaderboard build \
-            --real results/smolvla_libero_object \
+            --real results/smolvla_libero_object_suite \
             --sign --key "${KEY}" \
             --out leaderboard/results
 

@@ -285,7 +285,7 @@ def test_committed_leaderboard_is_signed() -> None:
     board = load_leaderboard(_BOARD)
     assert board.signature is not None, (
         "the committed leaderboard is UNSIGNED. Rebuild and sign it:\n"
-        "  provael leaderboard build --real results/smolvla_libero_object "
+        "  provael leaderboard build --real results/smolvla_libero_object_suite "
         "--sign --key <PROVAEL_SIGNING_KEY> --out leaderboard/results"
     )
     assert board.signature.alg == "ed25519"
@@ -339,7 +339,7 @@ def test_committed_leaderboard_stamp_is_not_too_far_behind_the_release_line() ->
         f"{lag.days} days before the newest release {tags[0]} ({tag_date}) — over the "
         f"{MAX_STAMP_LAG_DAYS}-day envelope policy. Rebuild and re-sign it: a GPU-free "
         f"re-stamp from the committed run reports, `provael leaderboard build --real "
-        f"results/smolvla_libero_object --sign --key <PROVAEL_SIGNING_KEY> --out "
+        f"results/smolvla_libero_object_suite --sign --key <PROVAEL_SIGNING_KEY> --out "
         f"leaderboard/results`."
     )
 
