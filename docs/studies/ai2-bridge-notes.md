@@ -69,7 +69,9 @@ predicate that makes a Provael run a safety measurement rather than a success-ra
 Everything in `scoring/` that reads a spatial state — keep-out zones, `calibration_signal`, the EAI02
 / EAI04 / EAI06 predicates — is unreachable through the published API.
 
-Three ways round it, none free:
+Reported upstream as [allenai/vla-evaluation-harness#127](https://github.com/allenai/vla-evaluation-harness/issues/127),
+asking whether a benchmark could opt into recording additional per-step fields. Until that is
+answered, three ways round it, none free:
 
 1. **Subclass the benchmark and override `make_obs`.** `benchmark:` is an unrestricted import string
    (`resolve_import_string("module:Class")`, no allow-list), so a Provael subclass can live entirely
