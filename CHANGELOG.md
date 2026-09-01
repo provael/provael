@@ -6,7 +6,28 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-Nothing pending — everything currently written is released.
+### Fixed
+
+- **The scheduled GPU lane reported success twice a week for 22 days while measuring nothing.**
+  `examples/gpu-ci/modal_provael_gpu.py` constructed its Modal app inside `build_app()` so the
+  module would import without modal installed. `modal run` resolves an app from a module's GLOBAL
+  scope, found none, and printed "has no functions or local entrypoints". The workflow piped that
+  into `tee` without `pipefail`, so the step took tee's exit status and went green. Nothing was
+  measured, nothing was recorded, and every run said it worked.
+
+  Two things kept this from becoming a false published number rather than merely a missing one.
+  The record step is guarded on a `report.json` actually existing, so no fresh measurement time was
+  ever stamped for a run that produced nothing; and `freshness.yml` recomputes age on its own
+  schedule instead of trusting the measurement job to emit a green badge. The badge ageing to 22
+  days was the only signal that the lane was dead — which is the job it was designed for.
+
+  The app and its `@app.local_entrypoint()` now sit at global scope, mirroring
+  `modal_libero_suite.py`, which records the identical trap at its own line 83. The importability
+  the nesting bought was asserted by no test and cost the measurement the badge exists for.
+  `tests/test_modal_examples_are_runnable.py` parses both examples on the CPU lane — where modal is
+  absent — and fails if either stops exposing a module-level app and entrypoint.
+
+  A workflow step that cannot fail is a workflow step that cannot report.
 
 ## [0.39.1] — 2026-09-01
 
