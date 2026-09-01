@@ -1,0 +1,138 @@
+# Re-stamp and re-sign the committed leaderboard, without re-measuring anything.
+#
+# WHY THIS EXISTS. `tests/test_leaderboard.py::test_committed_leaderboard_stamp_is_not_too_far_
+# behind_the_release_line` fails a release whose newest tag is more than MAX_STAMP_LAG_DAYS past
+# the board's `generated_at`. It is deterministic — it can only turn red when a NEW TAG is created,
+# never from wall-clock drift — so it fires during a release and blocks it. That is what happened
+# to v0.39.0: the board was stamped 17 Aug, the tag landed 1 Sep, and the gate refused at 14 days
+# and 14 hours.
+#
+# The fix the test names is a GPU-free re-stamp from the already-committed run reports. Doing it by
+# hand needs the Ed25519 private key on someone's laptop; doing it here needs only the
+# PROVAEL_SIGNING_KEY secret that already exists for `checkpoint-security-gate.yml`, so the key
+# never leaves GitHub and never reaches a workstation.
+#
+# WHAT A RE-STAMP IS AND IS NOT, because the difference is the whole point. It re-aggregates the
+# SAME committed reports: `measured_with` is read from them, so the rows keep the version that
+# actually measured them and `staleness()` returns the same verdict. Only `generated_at`, `commit`
+# and `tool_version` move. `Leaderboard.is_restamp()` exists precisely to expose a board assembled
+# by a version that measured none of its own rows, and the guard step below REFUSES to commit if
+# the re-stamp cleared `stale` or altered `measured_with` — a re-stamp that laundered staleness
+# would be worse than a blocked release, and unlike a blocked release nobody would notice.
+#
+# Dispatch-only, never automatic: moving the date on a signed, dated artifact is a deliberate act.
+name: Leaderboard re-stamp
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why this re-stamp is being run (recorded in the commit message)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: leaderboard-restamp
+  cancel-in-progress: false
+
+jobs:
+  restamp:
+    name: re-stamp and re-sign, without re-measuring
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write   # commits the re-stamped board
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Install (locked, CPU core + attest extra)
+        run: uv sync --locked --extra attest
+
+      - name: Record the board's pre-state
+        id: before
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          d = json.load(open("leaderboard/results/leaderboard.json"))
+          print(f"stale={json.dumps(d.get('stale'))}")
+          print(f"measured_with={json.dumps(d.get('measured_with'))}")
+          print(f"generated_at={d.get('generated_at')}")
+          PY
+
+      - name: Re-stamp and re-sign
+        env:
+          PROVAEL_SIGNING_KEY: ${{ secrets.PROVAEL_SIGNING_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PROVAEL_SIGNING_KEY}" ]; then
+            echo "::error::PROVAEL_SIGNING_KEY is not set; an ephemeral key would break every"
+            echo "::error::published verification against leaderboard.pub. Refusing."
+            exit 1
+          fi
+          KEY="${RUNNER_TEMP}/leaderboard.pem"
+          umask 077
+          printf '%s' "${PROVAEL_SIGNING_KEY}" > "${KEY}"
+          trap 'rm -f "${KEY}"' EXIT
+          uv run provael leaderboard build \
+            --real results/smolvla_libero_object \
+            --sign --key "${KEY}" \
+            --out leaderboard/results
+
+      - name: The signature must still verify against the PUBLISHED public key
+        run: |
+          uv run provael leaderboard verify \
+            --in leaderboard/results/leaderboard.json \
+            --pubkey leaderboard/results/leaderboard.pub
+
+      - name: Refuse a re-stamp that laundered staleness
+        env:
+          BEFORE_STALE: ${{ steps.before.outputs.stale }}
+          BEFORE_MEASURED: ${{ steps.before.outputs.measured_with }}
+        run: |
+          python - <<'PY'
+          import json, os, sys
+          d = json.load(open("leaderboard/results/leaderboard.json"))
+          before_stale = json.loads(os.environ["BEFORE_STALE"])
+          before_measured = json.loads(os.environ["BEFORE_MEASURED"])
+          bad = []
+          if d.get("measured_with") != before_measured:
+              bad.append(f"measured_with moved {before_measured} -> {d.get('measured_with')}")
+          if before_stale is True and d.get("stale") is not True:
+              bad.append(f"stale was cleared: {before_stale} -> {d.get('stale')}")
+          if bad:
+              print("::error::a re-stamp must not change what was measured or how stale it is")
+              for b in bad:
+                  print(f"::error::{b}")
+              sys.exit(1)
+          print(f"OK  stale={d.get('stale')}  measured_with={d.get('measured_with')}")
+          print(f"    generated_at -> {d.get('generated_at')}  tool_version -> {d.get('tool_version')}")
+          PY
+
+      - name: Commit
+        env:
+          REASON: ${{ inputs.reason }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- leaderboard/results/leaderboard.json; then
+            echo "board unchanged; nothing to commit"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add leaderboard/results/leaderboard.json
+          # No CI-skip token anywhere in this message, deliberately. One quoted in prose on the
+          # 0.38.1 release was honoured by GitHub on the squashed merge commit and skipped every
+          # workflow for it, including the release tag. This commit SHOULD run CI.
+          git commit -m "chore(leaderboard): re-stamp the signed board (no re-measurement)" \
+                     -m "Reason: ${REASON}" \
+                     -m "Re-aggregated from the same committed reports. measured_with and stale are unchanged and asserted so by the workflow; only generated_at, commit and tool_version move."
+          git push
