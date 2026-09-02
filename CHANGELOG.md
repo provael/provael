@@ -8,6 +8,18 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- **`docs/community.md` now names the external surfaces this project is actually aimed at**, with
+  dates and an as-of marker. Two open calls: NIST's AI Standards Zero Drafts documentation draft
+  (comment by 16 September 2026) and SPAIS 2026 at CoRL (submissions close 1 October 2026). The
+  SPAIS entry states what the call does *not* cover rather than rounding it up — it is scoped to
+  interpretability, alignment, control and evaluation, it names neither red-teaming nor
+  hardware-in-the-loop, and Provael has no hardware result, so it answers part of that call and not
+  the rest. ROS Discourse was dropped from the draft of this section: there is no participation
+  there to report, and a page headed "where this project participates" listing a forum it has never
+  posted in would be the same kind of claim this project fails builds over.
+
+### Added
+
 - **`watch/freshness.json` now carries `measuredAt`, an ISO-8601 timestamp.** The badge published
   the measurement date only as the rendered string `message` (`"23 days ago"`), and provael.com was
   parsing that string to decide whether to fail its own build — its `src/lib/freshness.ts` says so
