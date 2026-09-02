@@ -6,6 +6,18 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- **The OpenSSF Scorecard badge, at 4.4/10.** The Scorecard workflow has run on every push to
+  `main` since it landed and nothing rendered the result, so the score existed and no reader could
+  reach it. Publishing it at 4.4 rather than after improving it: `Code-Review`, `Branch-Protection`,
+  `Token-Permissions`, `SAST`, `Fuzzing` and `Signed-Releases` all score 0, most of them structural
+  for a single maintainer who self-merges, and a badge withheld until it flatters is a badge that
+  never ships. `Signed-Releases: 0` is the one worth reading carefully — attestation bundles are
+  Ed25519-signed, release artifacts are not, and Scorecard is measuring the second. Against 10/10
+  on `License`, `Packaging`, `CI-Tests`, `Security-Policy`, `Binary-Artifacts`, `Dangerous-Workflow`
+  and `Dependency-Update-Tool`.
+
 ### Fixed
 
 - **`provael submit` told a blocked user to pass a flag it does not define.** Without the `attest`
