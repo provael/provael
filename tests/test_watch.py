@@ -99,6 +99,31 @@ def test_badge_reddens_on_its_own_as_time_passes(tmp_path: Path) -> None:
     assert "days ago" in str(stale["message"])
 
 
+def test_badge_carries_the_measured_at_timestamp_not_only_the_rendered_string(
+    tmp_path: Path,
+) -> None:
+    """Consumers get the date structurally, so nobody has to parse `message`.
+
+    provael.com read `message` ("22 days ago") to decide whether to fail its own build, because it
+    was the only date the badge published. A rendered string is one wording change away from being
+    unparseable, and that consumer closed the failure by throwing — so a cosmetic edit here would
+    have stopped a different repo from building. `measuredAt` is the same value the age is computed
+    from, so the two cannot disagree.
+    """
+    record = append_measurement(tmp_path, _report(), measured_at="2026-08-01T00:00:00Z")
+    payload = badge(record, now=datetime(2026, 8, 23, tzinfo=UTC))
+
+    assert payload["measuredAt"] == "2026-08-01T00:00:00Z"
+    assert payload["message"] == "22 days ago", "the display string still renders for shields"
+    # The structural field and the rendered one must describe the same measurement.
+    assert int(age_days(record, now=datetime(2026, 8, 23, tzinfo=UTC)) or 0) == 22
+
+
+def test_never_measured_carries_no_measured_at() -> None:
+    """No measurement means no date. An absent field is honest; a placeholder one is not."""
+    assert "measuredAt" not in badge(None)
+
+
 def test_never_measured_is_an_error_state_not_a_neutral_one(tmp_path: Path) -> None:
     """An unbacked badge must not read green: it would assert currency it is not checking."""
     payload = badge(None)

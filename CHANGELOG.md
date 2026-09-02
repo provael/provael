@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- **`watch/freshness.json` now carries `measuredAt`, an ISO-8601 timestamp.** The badge published
+  the measurement date only as the rendered string `message` (`"23 days ago"`), and provael.com was
+  parsing that string to decide whether to fail its own build — its `src/lib/freshness.ts` says so
+  in its header and names an ISO field here as the right fix. A structural fact carried as prose is
+  one wording change away from being unparseable, and that consumer closed the failure by throwing,
+  so a cosmetic edit to this string would have stopped a different repository from building.
+  `measuredAt` is the same value the age is computed from, so the two cannot disagree. shields.io
+  ignores unknown keys, so the badge renders unchanged.
+
 ### Changed
 
 - **Docs-site versioning (`mike`) decided against, and the dependency removed.** It sat in the

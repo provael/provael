@@ -301,6 +301,13 @@ def badge(record: MeasurementRecord | None, *, now: datetime | None = None) -> d
         "isError": age > STALE_DAYS,
         # Shields caches endpoint responses; 1h keeps the badge honest without hammering the host.
         "cacheSeconds": 3600,
+        # Not for shields, which ignores unknown keys. `message` is a rendered human string
+        # ("22 days ago"), and provael.com was parsing it to decide whether to fail its own build —
+        # its freshness module says so in its header, and calls an ISO timestamp here the right
+        # long-term fix. A structural fact carried as prose is one wording change away from an
+        # unparseable age, and the consumer closed that failure by throwing. This gives it the
+        # date instead. Consumers should prefer `measuredAt` and keep `message` for display.
+        "measuredAt": record.measured_at,
     }
 
 
