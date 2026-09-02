@@ -80,7 +80,22 @@ comparison here would be reporting a hardware fault as a finding.
     calibration signal and the EAI02/04/06 predicates. The benign control arm, by contrast, **is**
     expressible. Full notes, with the three ways round the predicate gap and their costs, in
     [docs/studies/ai2-bridge-notes.md](studies/ai2-bridge-notes.md).
-- **Docs-site versioning** (`mike`). The dependency is installed; nothing is wired to it yet.
+- **Docs-site versioning** (`mike`). **Decided against, 2 September 2026.** The dependency has been
+  removed rather than left installed and unwired.
+
+    `mike` publishes every build under a version path and leaves a redirect at the root, so wiring
+    it moves `docs.provael.com/top10/` to `docs.provael.com/latest/top10/` and 404s the old URL.
+    There is no configuration that avoids this: `alias_type` chooses how the alias is stored, not
+    whether content is namespaced. Those URLs are published, cited from the marketing site and
+    named in the Top 10's own BibTeX, and this repo already carries a redirect map and the rule
+    that [an old URL stays old forever](https://github.com/provael/provael/blob/main/mkdocs.yml).
+    Trading that for a version selector nobody has asked for, on a project three months old whose
+    docs describe one supported release, is the wrong side of the trade.
+
+    **What would reopen it:** a second supported release line, or a reader who needs the docs for a
+    version they are pinned to. At that point the migration is worth doing properly — every retired
+    URL gets a stub, the same way the uppercase→lowercase rename was handled — rather than done
+    cheaply now and paid for in dead links.
 - **Standards:** MITRE ATLAS case study, OWASP Agentic embodied annex, OECD.AI listing (drafts in
   [docs/standards](https://github.com/provael/provael/tree/main/docs/standards)).
 - **Stronger attacks:** white-box gradient variants (GCG-style suffixes, transferable pixel/patch

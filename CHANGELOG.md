@@ -6,6 +6,19 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+
+- **Docs-site versioning (`mike`) decided against, and the dependency removed.** It sat in the
+  `docs` group referenced by nothing, while `docs/roadmap.md` described it as installed but not yet
+  wired — an open loop that reads as almost-done and was neither. `mike` namespaces every build
+  under a version path and leaves a redirect at the root, so wiring it moves
+  `docs.provael.com/top10/` to `/latest/top10/` and 404s the published URL. `alias_type` chooses
+  how an alias is stored, not whether content is namespaced, so no configuration avoids it. Those
+  URLs are cited from the marketing site and from the Top 10's own BibTeX, and this repo already
+  runs a redirect map specifically so a rename does not strand them. Recorded as a decision with
+  the condition that would reopen it — a second supported release line — rather than left as a
+  standing intention.
+
 ### Added
 
 - **The OpenSSF Scorecard badge, at 4.4/10.** The Scorecard workflow has run on every push to
