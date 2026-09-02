@@ -26,7 +26,20 @@ import typer.main
 
 from provael.cli import app
 
-ROADMAP = Path(__file__).resolve().parent.parent / "docs" / "roadmap.md"
+ROOT = Path(__file__).resolve().parent.parent
+ROADMAP = ROOT / "docs" / "roadmap.md"
+
+#: Capabilities that ship as CONFIG rather than as a CLI command, with the committed evidence
+#: that each is wired. Keyword -> (human name, [(file, substring proving it is live)]).
+#: Deliberately short and literal: the point is to cover the class the CLI check cannot see,
+#: not to build a second roadmap parser.
+CONFIG_WIRED: tuple[tuple[str, str, tuple[tuple[Path, str], ...]], ...] = (
+    (
+        "mike",
+        "docs-site versioning",
+        ((ROOT / "pyproject.toml", '"mike",'), (ROOT / "mkdocs.yml", "provider: mike")),
+    ),
+)
 
 #: Command names too generic to search for — every roadmap mentions "run" and "report" in prose.
 _TOO_GENERIC = frozenset({"run", "report", "list", "version", "doctor", "init", "show"})
@@ -92,3 +105,30 @@ def test_signing_claims_do_not_appear_in_planned(phrase: str) -> None:
     ever appears under Planned too, the file is contradicting itself again — which is exactly the
     shape of the defect this module was written for."""
     assert phrase not in _planned_section().lower()
+
+
+def test_no_config_wired_capability_is_listed_as_planned() -> None:
+    """The class `test_no_shipped_cli_command_is_listed_as_planned` structurally cannot see.
+
+    That test keys on CLI command names and its docstring is honest that a feature shipping without
+    a command is invisible to it. Docs-site versioning is exactly that shape: `mike` registers no
+    `provael` subcommand, so wiring it while the roadmap still discussed it under Planned would have
+    left the repo contradicting itself with nothing failing — the same defect as the leaderboard
+    one, in the only place the original check has no reach.
+
+    Kept narrow on purpose. It fires only when the capability is demonstrably wired in committed
+    config, so it cannot nag about something merely intended.
+    """
+    planned = _planned_section()
+    offenders = []
+    for keyword, name, evidence in CONFIG_WIRED:
+        if not re.search(rf"\b{re.escape(keyword)}\b", planned):
+            continue
+        if all(marker in path.read_text(encoding="utf-8") for path, marker in evidence):
+            offenders.append(f"{keyword} ({name})")
+    assert not offenders, (
+        f"docs/roadmap.md discusses these under '## Planned', but the committed config shows them "
+        f"wired today: {offenders}. Move the entry and say when it landed — including when the "
+        f"entry is a decision AGAINST the thing, which is worse than a stale plan: it tells a "
+        f"reader the opposite of what the repo does."
+    )

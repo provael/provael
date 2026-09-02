@@ -39,6 +39,32 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
 - **Optimized attacks (in progress):** the `optimized` family — `targeted_hijack`, a black-box,
   query-budgeted search — is the first non-templated attack (stub-validated; real transfer gated).
 
+- **Docs-site versioning** (`mike`), tag-driven. A tagged release publishes a versioned docs set
+  and moves the `latest` alias; a push to `main` does not. The version selector renders from
+  `extra.version.provider: mike`.
+
+    **This reverses a decision recorded earlier the same day (2 September 2026), and the reversal is
+    the interesting part.** The objection was never to versioning — it was that `mike` namespaces
+    every page under a version path, so `docs.provael.com/top10/` becomes `/latest/top10/` and the
+    root URL 404s. Those URLs are cited from the marketing site and named in the Top 10's own
+    BibTeX. The earlier entry said what would make it acceptable: *every retired URL gets a stub,
+    the same way the uppercase→lowercase rename was handled.* That is what
+    [`scripts/gen_root_stubs.py`](https://github.com/provael/provael/blob/main/scripts/gen_root_stubs.py)
+    now does — it walks the published alias after each deploy and writes a meta-refresh page at
+    every root path that would otherwise be dead, and the docs smoke job probes both forms. The
+    cost was paid rather than argued away; an old URL stays old forever.
+
+    Two things were found while wiring it, both of which would have shipped broken. `mike`'s default
+    `alias_type` writes `latest` as a git **symlink** (mode 120000), and GitHub Pages does not serve
+    symlinked directories — every `/latest/…` URL would have 404'd, so the deploy pins
+    `--alias-type=copy`. And `alias_type: redirect`, the other option, would have made every alias
+    URL bounce to a **dated** `/0.39.2/…` path, which defeats the point of having an alias at all.
+
+    **What this costs:** `main` no longer publishes, so a docs fix waits for the next release. That
+    reopens a narrowed version of the incident push-on-main was introduced to fix. If it bites, the
+    answer is to publish `main` as its own unaliased version, not to move `latest` off releases —
+    recorded in `.github/workflows/docs.yml` next to the trigger.
+
 ## Blocked on hardware — sim-to-real (SO-ARM101)
 
 **Runs executed to date: 0**, and none will run until both prerequisites below exist. The protocol
@@ -80,22 +106,6 @@ comparison here would be reporting a hardware fault as a finding.
     calibration signal and the EAI02/04/06 predicates. The benign control arm, by contrast, **is**
     expressible. Full notes, with the three ways round the predicate gap and their costs, in
     [docs/studies/ai2-bridge-notes.md](studies/ai2-bridge-notes.md).
-- **Docs-site versioning** (`mike`). **Decided against, 2 September 2026.** The dependency has been
-  removed rather than left installed and unwired.
-
-    `mike` publishes every build under a version path and leaves a redirect at the root, so wiring
-    it moves `docs.provael.com/top10/` to `docs.provael.com/latest/top10/` and 404s the old URL.
-    There is no configuration that avoids this: `alias_type` chooses how the alias is stored, not
-    whether content is namespaced. Those URLs are published, cited from the marketing site and
-    named in the Top 10's own BibTeX, and this repo already carries a redirect map and the rule
-    that [an old URL stays old forever](https://github.com/provael/provael/blob/main/mkdocs.yml).
-    Trading that for a version selector nobody has asked for, on a project three months old whose
-    docs describe one supported release, is the wrong side of the trade.
-
-    **What would reopen it:** a second supported release line, or a reader who needs the docs for a
-    version they are pinned to. At that point the migration is worth doing properly — every retired
-    URL gets a stub, the same way the uppercase→lowercase rename was handled — rather than done
-    cheaply now and paid for in dead links.
 - **Standards:** MITRE ATLAS case study, OWASP Agentic embodied annex, OECD.AI listing (drafts in
   [docs/standards](https://github.com/provael/provael/tree/main/docs/standards)).
 - **Stronger attacks:** white-box gradient variants (GCG-style suffixes, transferable pixel/patch

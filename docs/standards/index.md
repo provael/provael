@@ -13,7 +13,7 @@ withholding is documented where the row would have gone.
 
 | Page | Status |
 | --- | --- |
-| [MITRE ATLAS case study](atlas-case-study.md) | Draft (the human-readable version) |
+| [MITRE ATLAS case study](atlas-case-study.md) | Mirror of the submission, complete: all ten EAI rows with a per-row `mapping_status`, two of them `none-yet`. The **PR** route to `atlas-data` is what remains a draft. |
 | [MITRE ATLAS submission YAML](atlas-submission-2026-08-08.yaml) | **SENT 8 August 2026** to atlas@mitre.org — one technique + one case study. Awaiting a response. |
 | [OWASP Agentic Top-10 — embodied annex](owasp-asi-embodied.md) | Draft |
 | [Directory listings & awesome-list PRs](listings.md) | Prepared |
