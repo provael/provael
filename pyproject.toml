@@ -129,6 +129,12 @@ dev = [
 docs = [
     "mkdocs-material",
     "mkdocs-jupyter",
+    # Docs-site versioning. Removed on 2 September 2026 as unwired and not worth its URL cost, then
+    # restored the same day once that cost was actually paid: `scripts/gen_root_stubs.py` keeps
+    # every pre-versioning root URL alive, so the namespacing no longer breaks a published link.
+    # Wired in `mkdocs.yml` (`extra.version.provider`) and driven by the tag job in
+    # `.github/workflows/docs.yml` — it is not an unused dependency this time round.
+    "mike",
     # Serves redirect stubs (meta-refresh HTML pages, HTTP 200 — GitHub Pages cannot emit a real
     # 3xx for a renamed path) for the uppercase docs URLs retired in the lowercase migration.
     # Without it those URLs 404 outright, which trades a case-sensitivity trap for a dead-link one

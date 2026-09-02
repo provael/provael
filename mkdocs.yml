@@ -100,6 +100,20 @@ nav:
   - Open-core promise: open-core-promise.md
   - Roadmap: roadmap.md
 
+# Docs-site versioning. `extra.version.provider: mike` is what renders the selector; mike itself
+# publishes each build under a version path and points `latest` at the newest release.
+#
+# THE COST THIS BUYS OFF. Namespacing moves every URL under /latest/, and the root copies 404 —
+# including the redirect stubs below, which exist because the uppercase URLs are cited. That is
+# unacceptable on its own, so the deploy does not stop at `mike deploy`:
+# `scripts/gen_root_stubs.py` writes a meta-refresh page at every retired ROOT path pointing into
+# the alias, and `.github/workflows/docs.yml` runs it on every deploy and smoke-checks both forms.
+# An old URL stays old forever; versioning is paid for with stubs, not with dead links.
+extra:
+  version:
+    provider: mike
+    alias: true
+
 markdown_extensions:
   - admonition
   - attr_list

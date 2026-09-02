@@ -1,22 +1,28 @@
-# Build the MkDocs site; deploy to GitHub Pages on every push to main (and on a gated manual
-# dispatch), then smoke-check the live origin.
+# Build the MkDocs site; on a TAG, publish a versioned docs set with `mike` and move the `latest`
+# alias; then smoke-check the live origin.
 #
 # `build` runs on untrusted PR code — `mkdocs build` executes the `docs` dependency group and any
 # plugin hooks the PR adds — so it holds a read-only token and drops the checkout credentials.
 # Write scope lives only in `deploy`, which no pull_request event can reach.
 #
-# WHY DEPLOY-ON-PUSH. Deploy used to be reachable ONLY via `workflow_dispatch` with
-# `deploy=true`, so publishing docs.provael.com was a manual step nobody was reminded to take.
-# The result: the lowercase URL migration (plus the errata register, the changelog page, the
-# maintainer runbooks, and the findings/studies/standards hubs) merged to main and the live site
-# kept serving the pre-rename tree for days — /errata/ 404'd, which is the one page that tells an
-# artifact holder to check it before relying on a regulatory date. A green repo says nothing
-# about the origin; the fix is that main IS the published tree, plus the smoke job below.
+# WHY TAGS AND NOT PUSH-TO-MAIN, AND WHAT THAT COSTS. Deploy used to fire on every push to main,
+# and that was itself a fix: publishing had been manual, so the lowercase URL migration merged and
+# the live site served the pre-rename tree for days — /errata/ 404'd, the one page that tells an
+# artifact holder to check it before relying on a regulatory date. Versioned docs make main-deploy
+# wrong for a different reason: `latest` must mean "the newest RELEASE", and moving it on every
+# merge would publish unreleased docs under the alias every reader lands on.
+#
+# So the incident window is back, narrowed to "between releases" rather than "until someone
+# remembers". That is a real cost, accepted deliberately. If it bites — a docs fix that matters
+# sitting unpublished behind a release — the fix is NOT to move `latest` on main: deploy main as
+# its own version (`mike deploy --branch gh-pages dev`) with no alias change, so main is published
+# at /dev/ and `latest` still tracks releases. The smoke job below still runs on every deploy.
 name: Docs
 
 on:
   push:
-    branches: [main]
+    branches: [main]      # build only — see the `deploy` job's `if:`
+    tags: ["v*"]          # build AND publish
   pull_request:
   workflow_dispatch:
     inputs:
@@ -46,28 +52,23 @@ jobs:
 
   deploy:
     needs: build
-    # Push events are already limited to main by `on.push.branches`; the ref check restates it as
-    # defense in depth. The dispatch path stays gated behind `inputs.deploy` for ad-hoc republishes.
+    # Tags publish; main does not. The dispatch path stays gated behind `inputs.deploy`.
     if: >-
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy)
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      # gh-deploy runs `git push origin gh-pages`, so this checkout MUST keep its credentials.
+      # `mike` pushes to gh-pages, so this checkout MUST keep its credentials.
       #
-      # It said `persist-credentials: false` while the comment above it claimed the opposite, so
-      # every deploy failed with `fatal: could not read Username for 'https://github.com'`. The job
-      # is gated behind `workflow_dispatch` + `inputs.deploy`, so it had almost never been run and
-      # the failure went unnoticed — docs.provael.com served a build from before the DEFENSES page
-      # and both measured-defense studies existed, and looked merely "stale" rather than broken.
+      # It once said `persist-credentials: false` while the comment above it claimed the opposite,
+      # so every deploy failed with `fatal: could not read Username for 'https://github.com'`. The
+      # job was rarely reached, so the failure went unnoticed and docs.provael.com served a build
+      # from before the DEFENSES page existed — it looked stale rather than broken.
       #
-      # Keeping credentials here is safe and is the point of the two-job split: `build` runs
-      # untrusted PR code with a read-only token and drops credentials, while `deploy` carries write
-      # scope and CANNOT be reached by a pull_request event.
-      #
-      # fetch-depth: 0 so mkdocs commits onto the existing gh-pages branch instead of orphaning it.
+      # fetch-depth: 0 so the existing gh-pages history is present and mike appends to it instead
+      # of orphaning it.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: true
@@ -75,20 +76,66 @@ jobs:
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           python-version: "3.12"
-      - name: Deploy to gh-pages
-        run: uv run --group docs mkdocs gh-deploy --force
+
+      - name: Resolve the version to publish
+        id: ver
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            v="${GITHUB_REF_NAME#v}"          # refs/tags/v0.39.2 -> 0.39.2
+          else
+            v="$(uv run python -c 'import provael; print(provael.__version__)')"
+          fi
+          [ -n "$v" ] || { echo "::error::could not resolve a version to publish"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "publishing docs for $v"
+
+      - name: Deploy the versioned docs and move the latest alias
+        run: |
+          set -euo pipefail
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          # Materialise the existing branch locally so mike appends rather than starting over.
+          git fetch origin gh-pages:gh-pages || echo "no gh-pages yet — mike will create it"
+          # --alias-type=copy is LOAD-BEARING, not a preference. mike's default writes `latest` as a
+          # git SYMLINK (mode 120000), and GitHub Pages does not serve symlinked directories: every
+          # /latest/… URL would 404, which is worse than not versioning at all. `redirect` is also
+          # wrong here — it would make every alias URL bounce to a DATED /0.39.2/… path, and a
+          # stable undated URL is the entire reason `latest` exists.
+          uv run --group docs mike deploy --branch gh-pages --alias-type=copy \
+            --update-aliases "${{ steps.ver.outputs.version }}" latest
+          uv run --group docs mike set-default --branch gh-pages latest
+
+      # mike namespaces everything under the version path, so without this every published URL
+      # (/top10/, /errata/, and the retired UPPERCASE ones) 404s at the root. An old URL stays old
+      # forever — see scripts/gen_root_stubs.py. `--check` afterwards makes a generator that wrote
+      # nothing distinguishable from one with nothing to write.
+      - name: Keep every pre-versioning URL alive at the root
+        run: |
+          set -euo pipefail
+          git worktree add ../ghp gh-pages
+          uv run python scripts/gen_root_stubs.py --root ../ghp
+          uv run python scripts/gen_root_stubs.py --root ../ghp --check
+          git -C ../ghp add -A
+          git -C ../ghp diff --cached --quiet && echo "no new root stubs" || \
+            git -C ../ghp commit -m "docs: root stubs for the pre-versioning URLs"
+
+      - name: Push gh-pages
+        run: git push origin gh-pages
 
   # A docs deploy that silently publishes a broken tree is exactly how /errata/ spent days
   # unreachable while every build stayed green: the repo checks cannot see the origin. This job
   # asks the origin. It polls (Pages builds + CDN propagation take a minute or two) and fails the
   # workflow on any page that never turns up.
   #
-  # On the redirects: the uppercase URLs retired in the lowercase migration are served by
-  # mkdocs-redirects as meta-refresh stub pages, which answer HTTP 200 — GitHub Pages cannot emit
-  # a real 301/302 for a renamed path, so a status-code assertion is not available from this repo.
-  # The stub's BODY must point at the lowercase target, and that is what is asserted. If
-  # docs.provael.com is ever fronted by a proxy that can 301 (the marketing site's Cloudflare
-  # zone can), tighten this to expect 3xx and delete this paragraph.
+  # Versioning DOUBLED what has to be checked. Every page now has two live forms and both can break
+  # independently: the real page under /latest/, and the root stub that keeps the published URL
+  # alive. Checking only one would let the other rot — and the root form is the one that is cited.
+  #
+  # On the redirects: both the retired uppercase URLs and the new root stubs are meta-refresh pages,
+  # which answer HTTP 200 — GitHub Pages cannot emit a real 301/302 for a renamed path, so a
+  # status-code assertion is not available from this repo. The stub's BODY must name its target, and
+  # that is what is asserted.
   smoke:
     needs: deploy
     runs-on: ubuntu-latest
@@ -100,12 +147,19 @@ jobs:
           ORIGIN="https://docs.provael.com"
           BUST="smoke=${GITHUB_RUN_ID}"
 
-          # Pages that must answer 200. /errata/ and /top10/ are here by name because they are
-          # the two this check exists for: the corrections register and the most-cited page.
-          PAGES="/ /errata/ /top10/ /changelog/ /leaderboard/ /findings/ /studies/ /standards/ /compliance/ /maintainers/github-security-settings/"
+          # Real pages, under the alias. /errata/ and /top10/ are here by name because they are the
+          # two this check exists for: the corrections register and the most-cited page.
+          PAGES="/latest/ /latest/errata/ /latest/top10/ /latest/changelog/ /latest/leaderboard/ /latest/findings/ /latest/studies/ /latest/standards/ /latest/compliance/ /latest/maintainers/github-security-settings/"
 
-          # Retired uppercase paths -> the lowercase target their redirect stub must name.
-          REDIRECTS="/TOP10/=/top10/ /TOP10_RFC/=/top10-rfc/ /DEFENSES/=/defenses/ /COMPLIANCE/=/compliance/ /ATTESTATION/=/attestation/ /SIM_PREDICTS_REAL/=/sim-predicts-real/ /ADOPTERS/=/adopters/ /COMMUNITY/=/community/ /MEASURE-2-7/=/measure-2-7/"
+          # Root paths that were published before versioning -> the alias path their stub must name.
+          # These are the cited ones; if any of these breaks, versioning has cost more than it bought.
+          ROOT="/top10/=/latest/top10/ /errata/=/latest/errata/ /changelog/=/latest/changelog/ /leaderboard/=/latest/leaderboard/ /compliance/=/latest/compliance/ /standards/=/latest/standards/"
+
+          # Retired uppercase paths -> the lowercase target their stub chain must reach.
+          REDIRECTS="/TOP10/=/latest/top10/ /TOP10_RFC/=/latest/top10-rfc/ /DEFENSES/=/latest/defenses/ /COMPLIANCE/=/latest/compliance/ /ATTESTATION/=/latest/attestation/ /SIM_PREDICTS_REAL/=/latest/sim-predicts-real/ /ADOPTERS/=/latest/adopters/ /COMMUNITY/=/latest/community/ /MEASURE-2-7/=/latest/measure-2-7/"
+
+          # The front door must redirect into the alias, or docs.provael.com itself is a dead end.
+          ROOTINDEX="/=/latest/"
 
           fail=0
           probe() {  # $1 = path; $2 = required body substring ("" = none). 12 tries x 15s.
@@ -122,7 +176,7 @@ jobs:
           }
 
           for p in $PAGES; do probe "$p" "" || fail=1; done
-          for pair in $REDIRECTS; do
+          for pair in $ROOTINDEX $ROOT $REDIRECTS; do
             probe "${pair%%=*}" "${pair##*=}" || fail=1
           done
           exit $fail

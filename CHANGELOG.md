@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.39.2] — 2026-09-02
+
 ### Added
 
 - **`docs/community.md` now names the external surfaces this project is actually aimed at**, with
@@ -31,16 +33,48 @@ All notable changes to this project are documented here. The format is based on
 
 ### Changed
 
-- **Docs-site versioning (`mike`) decided against, and the dependency removed.** It sat in the
-  `docs` group referenced by nothing, while `docs/roadmap.md` described it as installed but not yet
-  wired — an open loop that reads as almost-done and was neither. `mike` namespaces every build
-  under a version path and leaves a redirect at the root, so wiring it moves
-  `docs.provael.com/top10/` to `/latest/top10/` and 404s the published URL. `alias_type` chooses
-  how an alias is stored, not whether content is namespaced, so no configuration avoids it. Those
-  URLs are cited from the marketing site and from the Top 10's own BibTeX, and this repo already
-  runs a redirect map specifically so a rename does not strand them. Recorded as a decision with
-  the condition that would reopen it — a second supported release line — rather than left as a
-  standing intention.
+- **Docs-site versioning (`mike`) is wired, tag-driven, and the published URLs were kept alive.**
+  A tagged release now publishes a versioned docs set and moves the `latest` alias; a push to `main`
+  does not. The version selector renders from `extra.version.provider: mike`.
+
+  **This reverses a decision recorded earlier the same day, and the reversal is the point.** The
+  objection was never to versioning: `mike` namespaces every build under a version path, so wiring
+  it moves `docs.provael.com/top10/` to `/latest/top10/` and 404s the published URL — and those URLs
+  are cited from the marketing site and named in the Top 10's own BibTeX. `alias_type` chooses how
+  an alias is stored, not whether content is namespaced, so no configuration avoids it. The earlier
+  entry named the price of doing it properly — *every retired URL gets a stub, the same way the
+  uppercase→lowercase rename was handled* — and this pays it rather than arguing it away:
+  `scripts/gen_root_stubs.py` walks the published alias after each deploy and writes a meta-refresh
+  page at every root path that would otherwise be dead. 67 of them on the current tree. An old URL
+  stays old forever.
+
+  Two defects were caught while wiring it, both of which would have shipped broken and neither
+  visible without deploying. `mike`'s default `alias_type` writes `latest` as a git **symlink**
+  (mode `120000`), and GitHub Pages does not serve symlinked directories — every `/latest/…` URL
+  would have 404'd, making the site *worse* than before versioning; the deploy pins
+  `--alias-type=copy`. The remaining option, `alias_type: redirect`, would have bounced every alias
+  URL to a **dated** `/0.39.2/…` path, which defeats the reason an alias exists at all.
+
+  **What it costs:** `main` no longer publishes docs, so a fix waits for the next release. That
+  reopens a narrowed version of the incident push-on-main was introduced to fix, and is accepted
+  deliberately — the alternative is publishing unreleased docs under the alias every reader lands
+  on. `.github/workflows/docs.yml` records the fallback next to the trigger: publish `main` as its
+  own unaliased version, never move `latest` off releases.
+
+  The docs smoke job now probes both live forms of every page — the real one under `/latest/` and
+  the root stub that keeps the cited URL alive — because versioning made them able to break
+  independently, and the root form is the one in other people's bibliographies.
+
+- **`docs/standards/atlas-case-study.md` now carries all ten EAI rows with a per-row
+  `mapping_status`.** It hand-maintained eight, and the two it dropped were exactly the two that map
+  to nothing — EAI07 (out of scope for simulation: real firmware, radio and teleoperation are
+  IEC 62443 / ATT&CK-for-ICS work, and Provael ships no exploit tooling) and EAI10 (not attackable:
+  there is no policy input that attacks the absence of a process). An absent row reads as an
+  oversight; an explicit `none-yet` reads as an answer. The page also stated "not submitted" while
+  a submission had been emailed to `atlas@mitre.org` on 8 August 2026 and was awaiting a response,
+  and described the route as a "STIX 2.1" pull request, which the 12 August validation of the v6
+  object model had already established it is not. `tests/test_atlas_case_study_mapping.py` pins the
+  table to `provael.eai.CATALOG` so the mirror cannot drift again.
 
 ### Added
 
