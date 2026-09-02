@@ -2597,7 +2597,20 @@ than back to a caller. So <code>is_unsafe()</code> has no state to score, and wi
 calibration signal and the EAI02/04/06 predicates. The benign control arm, by contrast, <strong>is</strong>
 expressible. Full notes, with the three ways round the predicate gap and their costs, in
 <a href="../studies/ai2-bridge-notes/">docs/studies/ai2-bridge-notes.md</a>.
-- <strong>Docs-site versioning</strong> (<code>mike</code>). The dependency is installed; nothing is wired to it yet.
+- <strong>Docs-site versioning</strong> (<code>mike</code>). <strong>Decided against, 2 September 2026.</strong> The dependency has been
+  removed rather than left installed and unwired.</p>
+<p><code>mike</code> publishes every build under a version path and leaves a redirect at the root, so wiring
+it moves <code>docs.provael.com/top10/</code> to <code>docs.provael.com/latest/top10/</code> and 404s the old URL.
+There is no configuration that avoids this: <code>alias_type</code> chooses how the alias is stored, not
+whether content is namespaced. Those URLs are published, cited from the marketing site and
+named in the Top 10's own BibTeX, and this repo already carries a redirect map and the rule
+that <a href="https://github.com/provael/provael/blob/main/mkdocs.yml">an old URL stays old forever</a>.
+Trading that for a version selector nobody has asked for, on a project three months old whose
+docs describe one supported release, is the wrong side of the trade.</p>
+<p><strong>What would reopen it:</strong> a second supported release line, or a reader who needs the docs for a
+version they are pinned to. At that point the migration is worth doing properly — every retired
+URL gets a stub, the same way the uppercase→lowercase rename was handled — rather than done
+cheaply now and paid for in dead links.
 - <strong>Standards:</strong> MITRE ATLAS case study, OWASP Agentic embodied annex, OECD.AI listing (drafts in
   <a href="https://github.com/provael/provael/tree/main/docs/standards">docs/standards</a>).
 - <strong>Stronger attacks:</strong> white-box gradient variants (GCG-style suffixes, transferable pixel/patch
