@@ -3,6 +3,7 @@
   "color": "red",
   "isError": true,
   "label": "last measured",
-  "message": "22 days ago",
+  "measuredAt": "2026-08-09T14:46:00Z",
+  "message": "23 days ago",
   "schemaVersion": 1
 }
