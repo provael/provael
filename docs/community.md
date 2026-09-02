@@ -36,6 +36,33 @@ Roadmap, findings, and honest nulls are published as they land — in the
 [studies](studies/pi0-openpi-transfer.md). A cleanly-measured negative result is a first-class output
 here, not a failure to hide.
 
+## Where this project participates
+
+*Accurate as of 2 September 2026. The dates below are other people's deadlines and will go stale —
+check the linked source before relying on one.*
+
+**Community indexes.** Provael has open submissions to a number of community-maintained lists of
+embodied-AI and ML-security tooling. Those are other people's repositories on other people's
+schedules, so the honest statement is that the submissions are open, not that they have all landed.
+
+**Open calls this work is aimed at.**
+
+- **NIST AI Standards "Zero Drafts"** — the initial public draft on public-facing AI documentation
+  is open for comment; NIST will consider input received by **16 September 2026**. See
+  [the project page](https://www.nist.gov/artificial-intelligence/nists-ai-standards-zero-drafts-pilot-project-accelerate-standardization).
+- **SPAIS 2026 — The Science of Physical AI Safety**, a CoRL workshop
+  ([spais-ws.org](https://spais-ws.org/)). Submissions close **1 October 2026**. Its third question
+  asks whether robot foundation models need evaluation techniques meaningfully different from both
+  LLMs and classical robotics, which is the question this tool answers in one narrow way. Worth
+  stating plainly: the call is scoped to interpretability, alignment, control and evaluation, it
+  does not name red-teaming or hardware-in-the-loop as topics, and Provael has **no hardware result
+  of any kind** — so it speaks to part of what that workshop is asking and not the rest.
+
+**Reproductions.** If you maintain a benchmark, a leaderboard or an index and you want a
+reproduction run against it, [open an issue](https://github.com/provael/provael/issues/new/choose).
+Reproductions of other people's numbers are welcome here and get published whichever way they come
+out — including when they fail to reproduce ours.
+
 <!--
 ========================================================================================
 MAINTAINER TODO — one-time GitHub UI actions (cannot be set via API / not in this repo)
