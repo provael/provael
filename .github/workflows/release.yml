@@ -70,7 +70,7 @@ jobs:
           # its own checkout and was missed, so v0.26.0 was the first release to hit it.
           fetch-depth: 0
       - name: Install uv (pinned Python 3.12)
-        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
         with:
           python-version: "3.12"
           enable-cache: true
@@ -107,7 +107,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Install uv (Python 3.12)
-        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
         with:
           python-version: "3.12"
       - name: Build distributions
@@ -173,7 +173,7 @@ jobs:
             exit 1
           fi
       - name: Install uv (Python 3.12)
-        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
         with:
           python-version: "3.12"
       - name: Generate CycloneDX SBOM + SHA-256 checksums
