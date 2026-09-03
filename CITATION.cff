@@ -15,8 +15,8 @@ authors:
 # 0.25.0 named a date three days before the artifact existed. `version` is guarded by
 # tests/test_version_consistency.py; the date is not machine-checkable against a tag, so it is on
 # the release author.
-version: "0.39.2"
-date-released: "2026-09-02"
+version: "0.39.3"
+date-released: "2026-09-03"
 # The CONCEPT DOI, deliberately, not a version DOI. A concept DOI always resolves to the newest
 # archived version, so a bibliography entry copied today keeps working after the next release
 # instead of silently pinning a reader to whatever was current when they cited it. Zenodo minted

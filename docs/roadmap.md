@@ -6,6 +6,12 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
 
 - **Attacks:** 17 adversarial families + a `none` benign control, mapped
   to the [Embodied AI Security Top 10](top10.md).
+- **White-box gradient attacks** (`gradient_patch`), shipped in **0.39.0, 1 September 2026**.
+  Untargeted L-inf projected gradient ascent through the policy's own vision encoder, GPU-gated
+  and sim-only. This was listed under Planned for two days after it shipped, and neither
+  `SAFETY.md` nor this file knew — SAFETY.md still said the registry used no gradients or model
+  internals, which by then was false. Corrected in 0.39.3, along with the roadmap-honesty test
+  that could not have caught it because an attack family registers no CLI command.
 - **Policies:** `stub` (CPU); `smolvla`, `pi0`, `pi05`, `pi0fast`, `groot` (LeRobot); `openvla`
   (HF transformers); `openpi` (websocket client to a π0 policy *server*). Bring-your-own via the
   `PolicyAdapter` ABC. **`groot`, `openvla` and `openpi` are registered scaffolding** — no
@@ -108,8 +114,10 @@ comparison here would be reporting a hardware fault as a finding.
     [docs/studies/ai2-bridge-notes.md](studies/ai2-bridge-notes.md).
 - **Standards:** MITRE ATLAS case study, OWASP Agentic embodied annex, OECD.AI listing (drafts in
   [docs/standards](https://github.com/provael/provael/tree/main/docs/standards)).
-- **Stronger attacks:** white-box gradient variants (GCG-style suffixes, transferable pixel/patch
-  search) and a real-model transfer of the `optimized` family beyond the stub.
+- **Stronger attacks:** gradient-based adversarial **suffixes** (GCG-style) and a real-model
+  transfer of the `optimized` family beyond the stub. The white-box *patch* half of this line
+  shipped in 0.39.0 and has moved to Shipped above; what is left here is the text-side white-box
+  work, which is not implemented.
 
 !!! note
     "Planned" means not yet shipped — we don't ship fabricated capability. Each lands behind tests

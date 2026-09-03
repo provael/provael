@@ -132,3 +132,41 @@ def test_no_config_wired_capability_is_listed_as_planned() -> None:
         f"entry is a decision AGAINST the thing, which is worse than a stale plan: it tells a "
         f"reader the opposite of what the repo does."
     )
+
+
+#: Registered families the Planned section MAY name, with the reason. The planned work has to be
+#: about a shipped family rather than the family itself, and saying which is the price of the
+#: exception — a bare allowlist is how a check stops meaning anything.
+_PLANNED_MAY_NAME = {
+    "optimized": "the planned item is a real-model transfer of an already-shipped family, "
+    "not the family",
+}
+
+
+def test_no_registered_attack_family_is_listed_as_planned() -> None:
+    """The third class, and the one that let `gradient_patch` sit under Planned after it shipped.
+
+    `test_no_shipped_cli_command_is_listed_as_planned` keys on CLI command names and
+    `test_no_config_wired_capability_is_listed_as_planned` on committed config. An attack family is
+    neither: it registers no subcommand and lives in no config file, so `gradient_patch` shipped in
+    0.39.0 on 1 September 2026 while this file still listed white-box gradient attacks as Planned
+    and `SAFETY.md` still said the registry used no gradients or model internals. Nothing failed.
+
+    Backticked names only. Half the registry is ordinary English — `action`, `visual`, `control`,
+    `instruction` — and matching those as bare words would make this fire on prose, which is the
+    failure mode `_TOO_GENERIC` already exists to avoid above.
+    """
+    from provael.attacks.registry import available_families
+
+    planned = _planned_section()
+    offenders = [
+        family
+        for family in sorted(available_families())
+        if family not in _PLANNED_MAY_NAME and f"`{family}`" in planned
+    ]
+    assert not offenders, (
+        f"docs/roadmap.md names these under '## Planned', but they are REGISTERED attack families "
+        f"today: {offenders}. Move them to Shipped with the release that carried them, and check "
+        f"SAFETY.md in the same commit — it enumerates the families and their threat models, so a "
+        f"family it does not know about is a safety document that is wrong, not merely stale."
+    )

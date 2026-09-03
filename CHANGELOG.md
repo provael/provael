@@ -6,7 +6,86 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-## [0.39.2] — 2026-09-02
+## [0.39.3] — 2026-09-03
+
+### Fixed
+
+- **The pytest gate could not fail, and had not been able to since 19 August.** `ci.yml` piped
+  pytest into `tee` with no `pipefail`, so the step took TEE's exit status. **A workflow step that
+  cannot fail is a workflow step that cannot report** — the same sentence `gpu-scheduled.yml`
+  already carries, after that lane spent 22 days green while measuring nothing. This is the second
+  occurrence and the worse one, because it is the gate every other result is read against: `main`
+  reported "success" on 2 September with **16 tests failing**, and every green tick on every PR
+  merged in that window was worth exactly that. Fixed with `shell: bash` plus an explicit
+  `set -o pipefail`, keeping the `tee` the job summary needs. Closes #183.
+
+- **`coverage-badge.yml` had the same defect, and its tolerance is now declared rather than
+  accidental.** That job deliberately publishes a coverage number even when tests fail — its
+  comment says so, and the reasoning is sound — but without `pipefail` it could not have failed
+  even if someone had wanted it to, and the premise it rests on ("the gate already ran in ci.yml")
+  was false for as long as ci.yml could not fail. The behaviour is unchanged; the choice is now
+  visible, and a failing run says so in a warning instead of vanishing. No other workflow was
+  affected: `gpu-scheduled.yml` and `readme-quickstart.yml` already set `pipefail`, and the pipe in
+  `docs.yml` sits inside an `if` condition whose status is consumed by the conditional.
+
+- **The 16 tests the gate was hiding — one bug, not sixteen.** Every failure was
+  `test_help_text_only_names_flags_it_defines`, which scraped rendered `--help` output for flags.
+  Rich decides borders, wrapping and glyphs from terminal width, `TERM` and colour support, so the
+  scrape returned the empty set on Linux CI while passing on macOS, and the test's own canary
+  ("the flag scan has drifted") fired correctly with nobody listening. **No product bug: the CLI's
+  help text was right throughout.** `tests/test_roadmap_honesty.py` had already recorded this
+  lesson after it failed the release gate at v0.38.0 — parsing a human-facing rendering for a
+  structural fact is the bug — so the test now reads the Click object graph and the declared help
+  strings instead. It also does more than it used to: the old assertion compared the scrape against
+  itself and could only check it was non-empty, so it never verified the property its own docstring
+  claimed. It now genuinely checks that no command's help names a flag it does not define, allowing
+  a flag attributed to a real owning command.
+
+### Added
+
+- **`tests/test_workflow_pipefail.py` — the check that stops the third occurrence.** Asserts every
+  workflow step containing a pipeline whose exit status reaches the step also carries
+  `set -o pipefail`, `shell: bash`, or an explicit `PIPESTATUS` check. Pins the ci.yml pytest step
+  by name, because that is the one everything else is read against, and refuses to pass if it finds
+  no workflows to scan. Both fixes are mutation-proven: reinstating the defect fails the general
+  check, and "fixing" it by deleting the `tee` fails the specific one.
+
+- **`SAFETY.md` now documents `gradient_patch`, and says it reads gradients.** The family shipped
+  in 0.39.0 on 1 September and the safety document did not know. That is not a stale doc, it is a
+  wrong one: SAFETY.md stated that the non-templated families use no gradients or model internals,
+  which stopped being true on release day, and it listed the white-box line as deferred in full
+  when its patch half had shipped. `gradient_patch` is now its own group with its threat model
+  stated plainly — it assumes an attacker **holding the weights**, not one who can only query — and
+  the no-real-world-harm boundary is restated in the terms that actually constrain a white-box
+  attack: GPU-gated, bounded by an explicit `eps`, optimising a feature-space distance rather than
+  a harm objective, sim-only, with `applicable` keeping the arm out of the ASR denominator and no
+  transferable artifact shipped.
+
+- **`SAFETY.md` also gained `weight_integrity`, which was missing too.** The enumeration read
+  "eleven templated plus four search" against a registry of **seventeen** adversarial families, so
+  the arithmetic had not closed since that family landed. It is documented as a fragility
+  measurement rather than an exploit: it does not claim an attacker can achieve weight corruption
+  on any deployment, which is a platform question this project does not answer.
+
+- **A third check in `tests/test_roadmap_honesty.py`, for the class that let this through.** The
+  existing checks key on CLI command names and on committed config. An attack family is neither, so
+  nothing could have caught `gradient_patch` sitting under Planned for two days after it shipped.
+  The new check matches backticked family names only — half the registry is ordinary English, and
+  matching bare words would fire on prose — and any exception has to carry its reason.
+
+### Changed
+
+- **`docs/roadmap.md`: white-box gradient attacks moved from Planned to Shipped**, naming 0.39.0
+  and 1 September 2026. Only the patch half moved: GCG-style adversarial **suffixes** are still not
+  implemented and stay under Planned, which is the distinction the original line collapsed.
+
+**Also carries everything prepared as 0.39.2 on 2026-09-02.** That version was promoted to a dated
+heading and no tag or PyPI artifact ever followed it, so it is folded in here rather than left
+standing as a release that never happened — which is exactly the drift
+`test_every_dated_changelog_version_has_a_tag` exists to catch, and which it caught during this
+change rather than after it.
+
+### Prepared as 0.39.2, released as part of 0.39.3
 
 ### Added
 
