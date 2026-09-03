@@ -99,7 +99,16 @@ jobs:
       # run and written to the job summary, so a slide shows up as a number moving rather than as a
       # threshold being edited.
       - name: Test (pytest, CPU only) + coverage
+        # `set -o pipefail` is load-bearing, not hygiene, and this is the SECOND place it was
+        # missing. Without it the step takes TEE's exit status, so pytest failed and the job went
+        # green: `main` reported "success" on 2 Sep 2026 while 16 tests were failing, and had done
+        # since this pipeline landed in d7bc1e2 on 19 Aug. A step that cannot fail is a step that
+        # cannot report — the same sentence gpu-scheduled.yml carries for the same reason, after
+        # that lane spent 22 days green while measuring nothing.
+        # tests/test_workflow_pipefail.py now asserts this across every workflow.
+        shell: bash
         run: |
+          set -o pipefail
           uv run pytest -q --cov=src/provael --cov-report=term --cov-report=xml --cov-fail-under=85 \
             | tee /tmp/pytest.out
           COV=$(grep -E '^TOTAL' /tmp/pytest.out | awk '{print $NF}')

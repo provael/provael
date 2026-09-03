@@ -48,8 +48,18 @@ jobs:
       # No --cov-fail-under here: the gate already ran in ci.yml on the way in. This job's only job
       # is to publish the number, and failing it would leave the badge showing an older figure while
       # the run went red — the worst of both.
+      # Tolerant ON PURPOSE, and now tolerant BY DECLARATION rather than by accident. Without
+      # `pipefail` this step took TEE's status, so it could not have failed even if someone wanted
+      # it to — the same defect that let ci.yml's gate go green over 16 failing tests. The intent
+      # above is still right, so the tolerance is kept and made explicit: pipefail is set, the
+      # failure is caught, and it is announced instead of vanishing. The premise that sentence
+      # rests on ("the gate already ran in ci.yml") is only true now that ci.yml can fail.
       - name: Measure coverage
-        run: uv run pytest -q --cov=src/provael --cov-report=term | tee /tmp/cov.out
+        shell: bash
+        run: |
+          set -o pipefail
+          uv run pytest -q --cov=src/provael --cov-report=term | tee /tmp/cov.out \
+            || echo "::warning::tests failed; publishing the coverage number anyway — ci.yml is the gate for pass/fail"
 
       - name: Regenerate the badge
         run: |

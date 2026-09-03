@@ -22,23 +22,51 @@ the spirit of responsible disclosure.
   generic, **templated** reframings, cues and markers: a fixed transform of the observation,
   non-transferable by construction. They probe whether a policy follows a redirected goal in a
   benchmark — they are **not** a recipe for causing harm.
-- The remaining four — `optimized`, `optimized_patch`, `optimized_instruction`,
-  `universal_patch` — are **not** templated. They are black-box, **query-budgeted searches** that
-  adapt to the policy's own responses. Each is bounded by an explicit query budget, is
-  deterministic under a seed, and searches only toward a harmless, sim-only goal direction; none
-  uses gradients or model internals. `universal_patch` differs from the other three in *when* it
-  pays that budget — once for the whole run rather than per episode — not in what it may search
-  for. They are covered individually below.
+- Four more — `optimized`, `optimized_patch`, `optimized_instruction`, `universal_patch` — are
+  **not** templated. They are black-box, **query-budgeted searches** that adapt to the policy's own
+  responses. Each is bounded by an explicit query budget, is deterministic under a seed, and
+  searches only toward a harmless, sim-only goal direction; **none of these four** uses gradients or
+  model internals. `universal_patch` differs from the other three in *when* it pays that budget —
+  once for the whole run rather than per episode — not in what it may search for. They are covered
+  individually below.
+- **`gradient_patch` is white-box, and is its own group because of it.** It shipped in **0.39.0
+  (1 September 2026)** and **does read the policy's gradients** — untargeted L-inf projected
+  gradient ascent through the checkpoint's own vision encoder, maximising
+  `||enc(x + d) - enc(x)||` subject to `||d||_inf <= eps`. That is a different threat model from
+  everything above it: it assumes an attacker **holding the weights**, not one who can only query.
+  Until this shipped, the sentence above could be read as a claim about the whole registry. It
+  cannot any more, which is why the qualifier is now explicit and why this bullet exists.
+
+    **The no-real-world-harm boundary holds, and holds differently here.** For a templated family
+    the boundary is that the transform is generic; for a query search it is the query budget. For a
+    white-box attack neither of those is what constrains it, so the constraints are: it is
+    **GPU-gated** and does not run on the CPU path; the perturbation is bounded by an explicit
+    `eps`; it optimises a **feature-space distance, not a harm objective** — there is no target
+    pose, no goal state and no payload it is steering toward; it runs against a **local benchmark
+    checkpoint in simulation**; and `applicable` keeps the arm out of the ASR denominator wherever
+    the gradient path is unavailable, so it cannot silently dilute a published rate. It ships **no
+    transferable artifact**: the patch is computed against one checkpoint and is not claimed to
+    move to another. No family claims cross-model transfer, and this one least of all, because a
+    gradient is taken through specific weights.
+
+- **`weight_integrity` is the seventeenth, and attacks parameters rather than input.** It emulates
+  bit-flip corruption of already-loaded weights and measures how few flips it takes before the
+  closed loop goes unsafe under a **benign** instruction. It is a **fragility measurement, not an
+  exploit**: it does not claim an attacker can achieve that corruption on any deployment, which is
+  a platform question (Rowhammer, ECC, memory integrity) this project does not answer and does not
+  ship tooling for. It was absent from this section until 0.39.3; the eleven-plus-four enumeration
+  above accounted for fifteen of seventeen adversarial families and the arithmetic did not close.
 - The `StubPolicy`'s "trigger lexicon" is an intentionally transparent **test fixture**
   (a handful of words with weights, read from the instruction and a fixed set of
   observation channels) so the CPU pipeline produces a measurable Attack Success Rate
   with no model. It is not a real exploit and does not transfer to real policies.
 - The `visual` and `injection` families target the **stub's observation channels**. They
   demonstrate the *measurement* of perception/injection attacks; they do **not** ship
-  pixel-level perturbations that transfer to a real model. What remains deliberately **deferred**
-  is the *white-box* line — gradient-based adversarial suffixes (GCG) and white-box patch-gradient
-  attacks; the black-box query searches described above do ship, and when the white-box variants
-  are added they will stay sim-only and benchmark-scoped. No family claims cross-model transfer.
+  pixel-level perturbations that transfer to a real model. Of the *white-box* line that this
+  paragraph once deferred in full, the **patch-gradient half shipped** as `gradient_patch` in
+  0.39.0 — sim-only and benchmark-scoped, as promised. What is still **deferred** is
+  gradient-based adversarial **suffixes** (GCG-style), which have not been implemented. No family
+  claims cross-model transfer.
 - The `backdoor` family (EAI03) is a **pre-deployment trigger *screen***, not an implant. It injects
   harmless, sim-only candidate triggers and measures whether a policy activates a hidden objective on
   a **known-planted stub fixture**. Provael **does not train, fine-tune, or implant a real backdoor**,
