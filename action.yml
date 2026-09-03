@@ -8,7 +8,8 @@ name: "Provael VLA red-team"
 # the ADVERSARIAL attack-success rate exceeds `asr-threshold`, or when it regressed past
 # `regression-tolerance` against a known-good baseline with disjoint 95% CIs.
 description: >-
-  Red-team a Vision-Language-Action robot policy in simulation. Uploads SARIF; fails the build on an ASR regression.
+  Red-team a vision-language-action robot policy in simulation. Reports an Attack Success Rate with
+  a benign control, uploads SARIF, and fails the build on an ASR regression.
 author: "Provael"
 branding:
   icon: "shield"

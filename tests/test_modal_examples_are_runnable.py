@@ -71,3 +71,40 @@ def test_the_guard_can_actually_fail() -> None:
         if isinstance(t, ast.Name)
     }
     assert "app" not in names, "the nested-app shape must still be detectable as broken"
+
+
+GPU_SCRIPT = pathlib.Path(__file__).resolve().parents[1] / "examples" / "gpu-ci" / "modal_provael_gpu.py"
+
+
+def test_the_gpu_lane_returns_its_artifacts_not_only_stdout() -> None:
+    """The measurement happening and the measurement being RECORDED are different events.
+
+    `redteam()` used to return `subprocess.run(...).stdout` alone, so `report.json` was written
+    inside the Modal container and died with it. The workflow looks for that file on the RUNNER,
+    found nothing, warned, and exited 0 — so every run from 30 Aug to 3 Sep 2026 reached a real
+    policy, printed a real ASR, and recorded nothing while `watch/freshness.json` aged past 24 days
+    and provael.com served STALE MEASUREMENT off the back of it (#181).
+
+    Third time this lane has been green while producing nothing, after the nested app and the
+    missing `pipefail`. Parsed rather than imported, because the CPU lane has no modal.
+    """
+    tree = ast.parse(GPU_SCRIPT.read_text(encoding="utf-8"))
+    fn = next(
+        (n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "redteam"), None
+    )
+    assert fn is not None, "examples/gpu-ci/modal_provael_gpu.py no longer defines redteam()"
+
+    returns = [n for n in ast.walk(fn) if isinstance(n, ast.Return) and n.value is not None]
+    assert returns, "redteam() returns nothing"
+    assert any(isinstance(r.value, ast.Tuple) for r in returns), (
+        "redteam() must return the artifacts alongside stdout. Returning stdout alone is #181: the "
+        "container is deleted with report.json still in it, and the ledger step records nothing "
+        "while the job stays green."
+    )
+
+    src = GPU_SCRIPT.read_text(encoding="utf-8")
+    assert "rglob" in src, "redteam() no longer collects the artifact files it must return"
+    assert "write_text" in src, (
+        "the local entrypoint must WRITE the returned artifacts to the runner; returning them and "
+        "printing them leaves the ledger step with nothing to find"
+    )

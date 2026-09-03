@@ -56,18 +56,57 @@ app = modal.App("provael-gpu-ci", image=image)
 
 
 @app.function(gpu="L4", timeout=3600)
-def redteam() -> str:
-    """Run the gated real-model path and return the CLI's stdout."""
+def redteam() -> tuple[str, dict[str, str]]:
+    """Run the gated real-model path and return the CLI's stdout AND its artifacts.
+
+    RETURNING THE ARTIFACTS IS THE WHOLE POINT, not a convenience. This used to return stdout
+    alone, so `report.json` was written inside the container and died with it. The workflow's
+    ledger step looks for that file ON THE RUNNER, found nothing, emitted a warning and exited 0 —
+    so every scheduled run since the Modal credentials landed on 30 Aug 2026 reached a real policy,
+    printed a real ASR, and recorded nothing. `watch/freshness.json` sat at 2026-08-09 while the job
+    reported success twice a week, and provael.com served STALE MEASUREMENT off the back of it.
+
+    A lane that measures and discards is indistinguishable from a lane that never ran. See #181.
+
+    No Volume or NetworkFileSystem: the artifacts are small JSON and Markdown, they cross back in
+    the return value, and adding a storage resource would be one more thing to provision before the
+    measurement works.
+    """
+    import pathlib
     import subprocess
 
+    out = pathlib.Path("runs/smolvla_libero")
     cmd = [
         "provael", "attack", "--policy", "smolvla", "--suite", "libero",
         "--model", CKPT, "--attacks", ATTACKS, "--seeds", SEEDS, "--horizon", "280",
-        "--seed", "0", "--out", "runs/smolvla_libero",
+        "--seed", "0", "--out", str(out),
     ]
-    return subprocess.run(cmd, check=True, capture_output=True, text=True).stdout
+    stdout = subprocess.run(cmd, check=True, capture_output=True, text=True).stdout
+
+    files = {
+        str(path.relative_to(out)): path.read_text(encoding="utf-8")
+        for path in sorted(out.rglob("*"))
+        if path.is_file() and path.suffix in {".json", ".md"}
+    }
+    if not any(name.endswith("report.json") for name in files):
+        raise RuntimeError(
+            f"the run produced no report.json under {out} — refusing to return a success that "
+            f"records nothing. Files seen: {sorted(files) or 'none'}"
+        )
+    return stdout, files
 
 
 @app.local_entrypoint()
 def main() -> None:
-    print(redteam.remote())
+    """Print the run and WRITE ITS ARTIFACTS to the runner, where the ledger step can find them."""
+    import pathlib
+
+    stdout, files = redteam.remote()
+    print(stdout)
+
+    out = pathlib.Path("runs/smolvla_libero")
+    for rel, text in files.items():
+        dest = out / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(text, encoding="utf-8")
+    print(f"wrote {len(files)} artifact(s) to {out}/ — `provael watch --record` reads these")
