@@ -18,6 +18,7 @@ keywords = [
     "security",
     "adversarial",
     "ai-safety",
+    "embodied-ai",
     "lerobot",
 ]
 classifiers = [

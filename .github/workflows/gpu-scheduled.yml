@@ -83,13 +83,22 @@ jobs:
       # badge would report currency for a run that never produced a number — the precise failure
       # the badge exists to make visible. Freshness badge refresh is a separate, cheap, always-on
       # job (freshness.yml); this step only records.
+      # FAILS where it used to warn. A warning inside a green job is the failure mode itself: this
+      # step emitted one on every run from 30 Aug to 3 Sep 2026 while the lane reached a real policy
+      # and printed a real ASR, and watch/freshness.json sat at 2026-08-09 the whole time (#181).
+      # The measurement happening and the measurement being recorded are different events, and only
+      # the second one moves the badge — so the second one is what this step reports on.
       - name: Record the measurement in the watch ledger
         if: success()
+        shell: bash
         run: |
+          set -o pipefail
           report="$(find . -name report.json -newer gpu-scheduled-report.txt -print -quit 2>/dev/null || true)"
           if [ -z "$report" ]; then
-            echo "::warning::no report.json produced by the scheduled run — nothing recorded, badge keeps ageing"
-            exit 0
+            echo "::error::the run reported an ASR but produced no report.json on the runner, so"
+            echo "::error::nothing was recorded and the freshness badge keeps ageing. This is #181:"
+            echo "::error::check that examples/gpu-ci/modal_provael_gpu.py still RETURNS its artifacts."
+            exit 1
           fi
           pip install --quiet -e .
           provael watch --record "$(dirname "$report")" --dir watch

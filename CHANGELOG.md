@@ -6,6 +6,35 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- **The scheduled GPU lane measured a real policy twice a week and threw the result away.**
+  `redteam()` returned the container's stdout alone, so `report.json` was written inside the Modal
+  container and deleted with it. The workflow looks for that file on the RUNNER, found nothing,
+  emitted a warning and exited 0. Every run since the Modal credentials landed on 30 August 2026
+  reached a real model and printed a real ASR while `watch/freshness.json` stayed at
+  `2026-08-09T14:46:00Z` — and provael.com served STALE MEASUREMENT off the back of it for 24 days.
+  **A lane that measures and discards is indistinguishable from a lane that never ran.** The
+  function now returns its artifacts alongside stdout and the local entrypoint writes them where
+  `provael watch --record` looks. Closes #181.
+
+- **The ledger step now fails where it warned.** A warning inside a green job is the failure mode
+  itself: this step emitted one on every affected run. Measuring and recording are different
+  events, and only the second moves the badge, so that is what the step reports on.
+  `tests/test_modal_examples_are_runnable.py` pins the artifact-return contract — the third guard on
+  this lane, after the nested-app and the missing-`pipefail` ones, and the third time it has been
+  green while producing nothing.
+
+### Changed
+
+- **The Action's Marketplace description leads with the searchable terms.** Marketplace search is
+  keyword-driven and the listing's visible first line now names the policy type and the Attack
+  Success Rate rather than stopping at "red-team", which collides with every LLM red-team action.
+
+- **`embodied-ai` added to the PyPI keywords.** The four topic and audience classifiers this needed
+  were already present; only that keyword was missing.
+
+
 ## [0.39.3] — 2026-09-03
 
 ### Fixed
