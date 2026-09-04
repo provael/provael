@@ -38,6 +38,28 @@ ATTACKS = "none,instruction,visual,injection"
 #: canary that the real-model path still runs — not a measurement, and not a published number.
 SEEDS = "2"
 
+#: Where the artifacts land, as ONE fact. It used to be the same string typed twice — once for the
+#: CLI's `--out` inside the container, once for the mirror path in the local entrypoint — and the
+#: workflow knew neither, so it went looking for `report.json` by modification time instead.
+OUT_DIR = "runs/smolvla_libero"
+
+#: The local entrypoint writes :data:`OUT_DIR` here, last, after the artifacts are on disk. The
+#: workflow READS this file; it does not search.
+#:
+#: WHY THE SEARCH COULD NOT WORK. `gpu-scheduled.yml` ran
+#: `find . -name report.json -newer gpu-scheduled-report.txt`, and that predicate is unsatisfiable
+#: by construction: the entrypoint prints its closing line AFTER writing the artifacts, that line
+#: goes through the same `tee` that produces the log, so the log's mtime is always newer than the
+#: report it is announcing. On 4 September 2026 — the first scheduled run after #181's fix landed —
+#: this lane reached a real policy, printed `Adversarial ASR: 33.3% (4/12)`, wrote three artifacts,
+#: and the ledger step reported that it had produced none. Fourth time this lane has been unable to
+#: report, after the nested app, the missing `pipefail`, and the discarded return value.
+#:
+#: The name is mirrored in `.github/workflows/gpu-scheduled.yml` and pinned by
+#: `tests/test_modal_examples_are_runnable.py`, the same way every other cross-file contract in
+#: this repo is held: copied deliberately, then guarded against drifting.
+OUT_DIR_FILE = "gpu-scheduled-outdir.txt"
+
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -75,7 +97,7 @@ def redteam() -> tuple[str, dict[str, str]]:
     import pathlib
     import subprocess
 
-    out = pathlib.Path("runs/smolvla_libero")
+    out = pathlib.Path(OUT_DIR)
     cmd = [
         "provael", "attack", "--policy", "smolvla", "--suite", "libero",
         "--model", CKPT, "--attacks", ATTACKS, "--seeds", SEEDS, "--horizon", "280",
@@ -98,15 +120,27 @@ def redteam() -> tuple[str, dict[str, str]]:
 
 @app.local_entrypoint()
 def main() -> None:
-    """Print the run and WRITE ITS ARTIFACTS to the runner, where the ledger step can find them."""
+    """Print the run, WRITE ITS ARTIFACTS to the runner, then declare where they went.
+
+    WRITING THE ARTIFACTS IS NOT ENOUGH, which is the lesson of the 4 September 2026 run. It wrote
+    all three of them and the ledger step still recorded nothing, because the workflow was
+    searching for `report.json` by modification time rather than being told the path. Announcing
+    the location is therefore part of producing the measurement, not a courtesy: see
+    :data:`OUT_DIR_FILE`.
+    """
     import pathlib
 
     stdout, files = redteam.remote()
     print(stdout)
 
-    out = pathlib.Path("runs/smolvla_libero")
+    out = pathlib.Path(OUT_DIR)
     for rel, text in files.items():
         dest = out / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(text, encoding="utf-8")
-    print(f"wrote {len(files)} artifact(s) to {out}/ — `provael watch --record` reads these")
+
+    # LAST, and only once the artifacts are on disk: the file existing is the claim that they are
+    # there, and its contents are where. A failed run leaves no file, so the ledger step fails
+    # loudly instead of recording a measurement that was never produced.
+    pathlib.Path(OUT_DIR_FILE).write_text(f"{OUT_DIR}\n", encoding="utf-8")
+    print(f"wrote {len(files)} artifact(s) to {out}/ — path declared in {OUT_DIR_FILE}")

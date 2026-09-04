@@ -10,17 +10,26 @@ WHY LIBERO CANNOT RUN ON A MAC, so this is not optional. lerobot declares
 `hf-libero; sys_platform == "linux"`, so the LIBERO extra does not install on darwin at any price. A
 rented Linux GPU is the cheapest path, not a luxury.
 
-SIX STAGES, IN COST ORDER, AND THE ORDER IS THE POINT.
+THE STAGES, IN COST ORDER, AND THE ORDER IS THE POINT. (No count in this heading: it said SIX
+while the dict held eight, which is the same hand-maintained-inventory drift that put an
+eighteen-name family list under a "19 families" label in README.md. The table below is the list.)
 
-    stage    tasks x arms x seeds x reps  episodes  GPU-hours   cost   wall clock
-    timing     1  x  1  x  1  x 1   =      1     0.03      ~$0.05   3 min   (RUN)
-    pilot      2  x  4  x  2  x 1   =     16     0.5       ~$0.41  31 min   (RUN)
-    suite     10  x  2  x  5  x 1   =    100     3.2       ~$2.55  ~20 min sharded
-    probe     10  x  8  x  3  x 1   =    240     7.6       ~$6.11  ~45 min sharded
-    full      10  x  8  x  5  x 1   =    400    15.4       $12.29   2.04 h sharded (RUN)
-                                                    hard ceiling ~$20 (10 x 2.5 h timeout)
-    control   10  x  4  x  5  x 1   =    200     6.3       ~$6.15   ~1.1 h sharded
+    stage           tasks x arms x seeds x reps  episodes  GPU-hours   cost   wall clock
+    timing            1  x  1  x  1  x 1   =      1     0.03      ~$0.05   3 min   (RUN)
+    pilot             2  x  4  x  2  x 1   =     16     0.5       ~$0.41  31 min   (RUN)
+    suite            10  x  2  x  5  x 1   =    100     3.2       ~$2.55  ~20 min sharded
+    calibrate        10  x  1  x 20  x 1   =    200     6.3       ~$5     ~0.6 h sharded
+                                                    hard ceiling ~$8  (10 x 1 h timeout)
+    probe            10  x  8  x  3  x 1   =    240     7.6       ~$6.11  ~45 min sharded
+    control          10  x  4  x  5  x 1   =    200     6.3       ~$6.15   ~1.1 h sharded
                                                     hard ceiling ~$12 (10 x 1.5 h timeout)
+    eai04-redirect   10  x  4  x  5  x 1   =    200     6.3       ~$6.2    ~1.1 h sharded
+                                                    hard ceiling ~$12 (10 x 1.5 h timeout)
+    full             10  x  8  x  5  x 1   =    400    15.4       $12.29   2.04 h sharded (RUN)
+                                                    hard ceiling ~$20 (10 x 2.5 h timeout)
+
+    (RUN) marks a stage that has actually been run. Everything unmarked is a projection, and
+    `full`'s row is the reason to read projections sceptically — see below.
 
 `full`'s row is MEASURED, not projected — it ran, and its estimate was $10.17 against an actual
 $12.29, 21% low. `control`'s ~$6.15 is that measured $0.031/episode times 200, so it inherits the
@@ -284,6 +293,45 @@ STAGES: dict[str, dict[str, str]] = {
         "tasks": ALL_TASKS, "attacks": "none,roleplay,control",
         "seeds": "5", "episodes_per_seed": "1", "timeout": "5400",
     },
+    # THE NEXT ARM, and the only optimized family with a measured basis for asking.
+    #
+    # WHY THIS FAMILY AND NOT ANOTHER. `optimized_instruction` (targeted_redirect) is a bounded
+    # black-box search over the INSTRUCTION channel — and the instruction channel is the only one
+    # this project has measured transferring on a real model. `full` put roleplay at 88% (44/50) on
+    # SmolVLA x LIBERO; visual and injection are honest nulls on that suite. So a search over the
+    # instruction channel is a question with a known answer to beat, while a search over the visual
+    # channel would be a search over a channel nothing has been shown to move through. The other two
+    # optimized families (`optimized`, `optimized_patch`) are stub-validated only.
+    #
+    # WHAT IT MUST PRODUCE BEFORE ANY NUMBER IS PUBLISHED — all three, or none of it ships:
+    #   1. a redirection rate,
+    #   2. a 95% Wilson interval on it, and
+    #   3. a benign false-positive control it is read against.
+    # `scoring/asr.py` already computes all three for this family (it holds the search objective and
+    # the command-preserving gate beside the ASR statistics precisely so the discovered edit is
+    # scored by the same module that reports it), so this is a matter of running the arm, not of
+    # building anything. `none` supplies (3) and BOTH `control` arms are in because a redirection
+    # search that also fires on a harmless reword has found brittleness, not attacker control —
+    # the falsification `full`'s headline had to survive, and this arm must survive it too.
+    #
+    # THE PROTOCOL IS THE SHIPPED ONE, not a new one: `--horizon 280` and `--query-budget 64` are
+    # the `eai04-redirect` recipe in `src/provael/recipes.py`, which is itself pinned to "the SAME
+    # protocol as the published SmolVLA x LIBERO run, so a result is comparable to it". Changing
+    # either here forks the protocol and quietly makes the result incomparable.
+    #
+    # SIZING, derived rather than guessed. 4 arms (none, targeted_redirect, benign_reword,
+    # nonsense_text) x 10 tasks x 5 seeds = 200 episodes, sharded one task per container = 20 per
+    # shard. At the measured 0.694 s/step and the full 280-step horizon that is 1.08 h worst case,
+    # so the 1.5 h timeout holds a ceiling of 10 x 1.5 h x ~$0.80 = ~$12; expected spend at `full`'s
+    # measured $0.031/episode is ~$6. The search itself is cheap against the horizon: only the
+    # targeted_redirect arm searches, 5 of the 20 episodes in a shard, at most 64 extra policy
+    # queries each — ~220 s, under 4% of the shard. THE CEILING IS THE NUMBER THAT MATTERS: it is
+    # what ten hung containers bill regardless of what they were asked to do.
+    "eai04-redirect": {
+        "tasks": ALL_TASKS, "attacks": "none,optimized_instruction,control",
+        "seeds": "5", "episodes_per_seed": "1", "timeout": "5400",
+        "query_budget": "64",
+    },
 }
 
 #: Defaults to the ONE-episode timing stage. The previous default was the 210-episode probe, and a
@@ -444,6 +492,11 @@ def redteam(stage: str, task: str | None = None) -> str:
         "--seed", "0",
         "--out", out,
     ]
+    # Only the stages that declare a budget pass one, so the flag cannot silently appear on a
+    # stage whose protocol never had it — which would make that stage's results incomparable with
+    # every earlier run of the same name.
+    if "query_budget" in cfg:
+        cmd += ["--query-budget", cfg["query_budget"]]
     # Say which stage the CONTAINER thinks it is running. The stage bug above was invisible
     # precisely because nothing in the output named the stage, so a wrong-stage run read as a
     # right one.
