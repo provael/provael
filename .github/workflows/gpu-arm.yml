@@ -1,0 +1,152 @@
+# Run ONE named arm of the LIBERO suite on a Modal GPU. Manual only, never scheduled.
+#
+# WHY THIS EXISTS. `examples/gpu-ci/modal_libero_suite.py` has carried the expensive stages —
+# `calibrate`, `full`, `control` — since they were designed, and every one of them could only be
+# started from a maintainer's laptop with `modal` installed and authenticated. Two consequences,
+# both of which have bitten:
+#
+#   * The stage that unblocks issue #171 (`calibrate`) has been sitting ready and unrun. It is not
+#     blocked on design or on code; it is blocked on someone having a laptop set up. That is a bad
+#     reason for a measurement not to exist, and it is invisible from the outside — the issue reads
+#     as a research problem when it is a logistics one.
+#   * A run started from a laptop leaves its log on that laptop. `gpu-scheduled.yml` exists partly
+#     so the canary's output is an artifact anyone can read; the expensive stages deserve the same.
+#
+# WHY IT IS NOT SCHEDULED, AND MUST NOT BECOME SCHEDULED. Each stage here costs $5-$12 per run
+# against a $30/month credit — `gpu-scheduled.yml`'s canary is ~$0.49 and that is what a schedule
+# can afford. These are measurements taken deliberately, once, and then committed and cited. A
+# cron on this file would drain the credit in a week and produce a pile of near-identical reports
+# nobody reads. `workflow_dispatch` is the whole safety model, alongside the opt-in variable below.
+#
+# COST SAFETY, same three layers as gpu-scheduled.yml:
+#   * `ENABLE_GPU_SCHEDULED` must be "true" (Settings -> Variables), or the job no-ops in seconds.
+#   * Modal caps each container at the stage's own timeout and shuts it down; the ceiling is
+#     shards x timeout x rate and is printed in the run summary BEFORE anything is billed.
+#   * MODAL_TOKEN_ID / MODAL_TOKEN_SECRET are required; without them nothing can spend.
+#
+# WHAT IT DELIBERATELY DOES NOT DO. It does not touch `watch/`, and it does not commit anything.
+# `gpu-scheduled.yml` records its canary into the freshness ledger because a canary's only job is
+# to be recent. A measurement is different: it gets read, checked against the question it was meant
+# to answer, and committed under `results/` by a person who looked at it. Auto-committing a
+# $12 measurement would be the fastest way to publish one nobody checked.
+name: GPU arm (manual, Modal)
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "Which arm to run (cost is per RUN, ceiling in brackets)"
+        required: true
+        type: choice
+        options:
+          - timing          # 1 episode, ~$0.05 — proves the path works before spending
+          - calibrate       # ~$5  [~$8]  benign-only; the run issue #171 is waiting on
+          - eai04-redirect  # ~$6  [~$12] optimized_instruction transfer + both controls
+          - control         # ~$6  [~$12] the falsification arm for the roleplay headline
+          - suite           # ~$2.55      10 tasks x {none, roleplay}
+          - probe           # ~$6.11      direction check across all ten tasks
+        default: timing
+      confirm_spend:
+        description: 'Type the stage name again to confirm the spend'
+        required: true
+        type: string
+
+concurrency:
+  group: gpu-arm
+  cancel-in-progress: false   # NOT cancel-in-progress: a half-killed sharded run wastes the spend
+
+permissions:
+  contents: read
+
+jobs:
+  arm:
+    if: ${{ vars.ENABLE_GPU_SCHEDULED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Confirm the operator meant this stage
+        # A choice input is one click away from the default, and the default is the $0.05 stage.
+        # Re-typing the name is the difference between running `timing` and running `full`.
+        env:
+          STAGE: ${{ inputs.stage }}
+          CONFIRM: ${{ inputs.confirm_spend }}
+        run: |
+          set -euo pipefail
+          if [ "$STAGE" != "$CONFIRM" ]; then
+            echo "::error::confirm_spend was '$CONFIRM' but the selected stage is '$STAGE'."
+            echo "::error::Nothing has been billed. Re-dispatch with both fields matching."
+            exit 1
+          fi
+          echo "confirmed: $STAGE"
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the Modal client
+        run: pip install "modal>=0.64"
+
+      - name: Say what this will cost before it costs it
+        # The logic is in scripts/gpu_arm_plan.py, not here. It lived here for one draft and was
+        # wrong twice in twenty lines — both bugs of a kind that only shows up on a dispatch, in
+        # the step whose whole job is to speak before spending. Same reason the Action's gate logic
+        # sits in scripts/action/ rather than inside action.yml: so it can be tested.
+        # Stdlib only, so no install step is needed before it runs.
+        #
+        # `shell: bash` + `pipefail` are load-bearing here, not hygiene: the pipe into `tee` would
+        # otherwise hand the step TEE's exit status, so a plan script that crashed would leave the
+        # operator with no cost table and the run would go on to spend anyway. That is #183's shape
+        # — a step that cannot fail is a step that cannot report — and tests/test_workflow_pipefail.py
+        # caught this exact step before it ever ran.
+        shell: bash
+        env:
+          STAGE: ${{ inputs.stage }}
+        run: |
+          set -o pipefail
+          python scripts/gpu_arm_plan.py "$STAGE" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Same `set -o pipefail` as gpu-scheduled.yml, for the same reason: `modal run ... | tee`
+      # reports TEE's exit status, and a lane that cannot fail is a lane that cannot report.
+      - name: Run the arm
+        shell: bash
+        env:
+          PROVAEL_STAGE: ${{ inputs.stage }}
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+        run: |
+          set -o pipefail
+          modal run examples/gpu-ci/modal_libero_suite.py | tee gpu-arm-log.txt
+
+      # The suite runner writes to a Modal Volume rather than returning its artifacts, deliberately:
+      # a container killed by its timeout takes its filesystem with it, and a Volume keeps the
+      # partial run. So retrieving them is a separate step here, unlike the canary lane.
+      - name: Retrieve the artifacts from the Modal volume
+        if: always()
+        shell: bash
+        env:
+          STAGE: ${{ inputs.stage }}
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+        run: |
+          set -o pipefail
+          mkdir -p artifacts
+          # `|| true`: on a failed or partial run there may be nothing to fetch yet, and losing the
+          # LOG as well would leave the operator with no way to see what went wrong.
+          modal volume get provael-libero-runs "libero_object_${STAGE}" artifacts/ || \
+            echo "::warning::nothing retrieved from the volume for stage ${STAGE}"
+          find artifacts -type f | head -50
+
+      - name: Upload the run
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gpu-arm-${{ inputs.stage }}
+          path: |
+            gpu-arm-log.txt
+            artifacts/
+          retention-days: 90
+          if-no-files-found: error

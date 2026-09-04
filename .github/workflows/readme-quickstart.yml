@@ -18,6 +18,20 @@ name: readme-quickstart
 # rather than trusted. If the output stops matching, either the number is stale or the tool changed;
 # both are worth a red build.
 #
+# WHY THE ACTION PIN IS ASSERTED HERE AND NOT IN THE TEST SUITE. `tests/test_version_consistency.py`
+# already checks that every `provael/provael@vX.Y.Z` in the tree names a tag that exists — but it
+# accepts `__version__` alongside the real tags, because a release PR legitimately repins everything
+# to the version it is about to cut. That exemption is correct and it is also a hole: it can only
+# be closed from OUTSIDE the working tree, by something that runs after the release rather than
+# during it. This job is that something. It fetches the tag list from the remote and takes no view
+# on what the tree thinks it is.
+#
+# THE HOLE WAS REAL. From 2 to 4 September 2026 README.md advertised `provael/provael@v0.39.3`
+# while the newest tag was v0.39.1 — first as v0.39.2, then renamed — so every reader who copied
+# the snippet got `Unable to resolve action provael/provael@v0.39.3`. The pip half of this job was
+# green throughout, because the pip half was the only half that existed. An Action that cannot
+# resolve is a broken quickstart exactly as much as a wheel that will not install.
+#
 # NO CHECKOUT, DELIBERATELY. `actions/checkout` would put the working tree on the path and
 # `provael` could resolve to the repo rather than to the wheel PyPI is serving. The whole point is
 # to exercise what a stranger gets, so the only checkout is a single sparse fetch of README.md in
@@ -67,6 +81,45 @@ jobs:
             echo
             echo "The README quickstart drifted from this workflow."
             echo "Update BOTH: the README is the documented path and this job is its test."
+            exit 1
+          fi
+
+      - name: The Action pin the README advertises resolves to a real tag
+        run: |
+          set -euo pipefail
+          README=readme-only/README.md
+          # `sort -u`: the README carries the same pin in more than one snippet, and they must all
+          # be right, but each distinct version only needs resolving once.
+          pins="$(grep -oE 'provael/provael@v[0-9]+\.[0-9]+\.[0-9]+' "$README" | sort -u || true)"
+          if [ -z "$pins" ]; then
+            echo "::error::README.md no longer advertises a provael/provael@vX.Y.Z pin."
+            echo "::error::A deleted snippet passes every correctness check by having nothing to check."
+            exit 1
+          fi
+          # ls-remote, not the local clone: this job holds a sparse checkout of README.md and no
+          # tags at all, and asking the remote is what a `uses:` resolution actually does.
+          tags="$(git ls-remote --tags --refs https://github.com/provael/provael.git \
+                  | sed 's#.*refs/tags/##')"
+          if [ -z "$tags" ]; then
+            echo "::error::git ls-remote returned no tags; refusing to vouch for any pin."
+            exit 1
+          fi
+          fail=0
+          for pin in $pins; do
+            ref="${pin##*@}"
+            if printf '%s\n' "$tags" | grep -qx -- "$ref"; then
+              echo "  ok      $pin"
+            else
+              echo "  MISSING $pin  <-- no such tag on the remote"
+              fail=1
+            fi
+          done
+          if [ "$fail" -ne 0 ]; then
+            echo
+            echo "The README tells a reader to pin the Action at a ref that does not exist."
+            echo "A uses: ref resolves against the repository tags, so this snippet fails at ref"
+            echo "resolution before the Action runs a single step. Either cut the tag, or repin"
+            echo "the README at a release that has actually shipped."
             exit 1
           fi
 

@@ -88,13 +88,20 @@ jobs:
 
       - name: Commit the badge if it changed
         run: |
-          if git diff --quiet -- watch/coverage.json; then
-            echo "badge unchanged"
+          # BOTH FILES, and the plural in this step's commit message has been a lie since the
+          # registry artifact was added. The gate and the `git add` below both named
+          # watch/coverage.json alone, so a run where the REGISTRY counts moved and the coverage
+          # total did not exited at "badge unchanged" and threw the regenerated registry.json away
+          # — the same shape as the GPU lane measuring and discarding (#181). It never surfaced
+          # because `tests/test_registry_artifact_agrees.py` fails the next PR instead, which turns
+          # a self-healing job into a chore for whoever pushes next.
+          if git diff --quiet -- watch/coverage.json watch/registry.json; then
+            echo "coverage badge and registry counts both unchanged"
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add watch/coverage.json
+          git add watch/coverage.json watch/registry.json
           # [skip ci] is belt-and-braces, and the braces matter more than they look.
           # This job writes watch/coverage.json, which sits inside freshness.yml's
           # `paths: ["watch/**"]` trigger — so this commit would fire THAT workflow, and

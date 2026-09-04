@@ -38,7 +38,11 @@ scattered: across **both** committed runs the benign arm fires **5/100 (5.0%, Wi
 other eight tasks silent through 80 benign episodes — a task-conditional, seed-independent pattern
 that replicates out-of-sample at p = 0.04
 ([the study](studies/keepout_calibration/README.md)). That is the signature of a boundary in the
-wrong place, not of a policy that wanders. Three families are
+wrong place, not of a policy that wanders. **It is not fixed yet, and what is missing is a run
+rather than an idea**: fitting a per-task boundary needs benign end-effector trajectories, and every
+committed LIBERO report predates the field that records them
+([#171](https://github.com/provael/provael/issues/171)). The run that produces them is the
+`calibrate` arm of `GPU arm (manual, Modal)` — ten tasks, benign only, ~$5. Three families are
 **measured nulls at 0/50 each** (`patch`, `decoy_object`, `scene_text`), and `mcp_tool_desc` is
 **not applicable** to this suite rather than a null. Clean-task-success under the benign arm averages
 84% and ranges 40–100% across tasks, so the policy is not uniformly competent. And the policy's
@@ -137,9 +141,10 @@ the registry dict's length as a family count overstates coverage by 14. It red-t
 policies** — the CPU `stub`
 plus real **SmolVLA / π0 / π0.5 / π0-FAST** (via the `[lerobot]` extra), **OpenVLA**
 (via `[openvla]`), and **π0 served by openpi** — Physical Intelligence's own stack, via the CPU-only
-`[openpi]` websocket client to a GPU policy server. **Three of those eight are registered scaffolding**: `groot` (needs `lerobot[groot]`, which `provael[lerobot]` does not provision), `openvla` and `openpi` have each been structurally tested but have **never had a checkpoint loaded here**. Only `smolvla` has produced a committed real-model result. `provael list-policies` gives each backend a `status` of `measured` / `scaffolding` / `no run committed here`, so the difference is visible before you point `--policy` at one. Suites: **5** (`stub` + `reach` +
-`humanoid` on CPU; **LIBERO** + **Meta-World** gated), or any policy/suite you wrap with the tiny
-adapter ABCs. The templated families are
+`[openpi]` websocket client to a GPU policy server. **Three of those eight are registered scaffolding**: `groot` (needs `lerobot[groot]`, which `provael[lerobot]` does not provision), `openvla` and `openpi` have each been structurally tested but have **never had a checkpoint loaded here**. Only `smolvla` has produced a committed real-model result. `provael list-policies` gives each backend a `status` of `measured` / `scaffolding` / `no run committed here`, so the difference is visible before you point `--policy` at one. Suites: **6** registered (`stub` + `reach` +
+`humanoid` on CPU; **LIBERO** + **Meta-World** gated; `ai2_bridge` is **scaffolding** — registered
+and structurally tested, but no benchmark has ever been run through it, so it is not coverage), or
+any policy/suite you wrap with the tiny adapter ABCs. The templated families are
 heuristic perturbations (not gradient-based); the `optimized` family is a model-agnostic search
 that only *queries* the policy — see
 [Scope and honest limitations](#scope-and-honest-limitations) and the
@@ -413,7 +418,7 @@ Other commands:
 
 ```bash
 uv run provael list-policies            # stub (CPU); smolvla (needs the [lerobot] extra)
-uv run provael list-attacks             # 42 attacks across 19 families: baseline/instruction/visual/sensor_spoof/injection/action/action_space/backdoor/authorization/confidentiality/misalignment/humanoid/optimized/optimized_patch/gradient_patch/universal_patch/optimized_instruction/weight_integrity
+uv run provael list-attacks             # 42 attacks across 19 families (17 adversarial + 2 benign control): action/action_space/authorization/backdoor/confidentiality/gradient_patch/humanoid/injection/instruction/misalignment/optimized/optimized_instruction/optimized_patch/sensor_spoof/universal_patch/visual/weight_integrity/baseline/control
 uv run provael list-recipes             # named presets: quick / instruction-only / core-sweep / full-sweep / ci-gate
 uv run provael attack --recipe quick    # a recipe is the base config; explicit flags override it
 uv run provael report --in runs/stub/

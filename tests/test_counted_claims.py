@@ -42,6 +42,7 @@ import pytest
 from provael.attacks.baseline import FAMILY as BASELINE_FAMILY
 from provael.attacks.registry import ATTACKS
 from provael.coverage import NON_ADVERSARIAL_FAMILIES, coverage
+from provael.suites import SUITES
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -82,6 +83,7 @@ def _registry_counts() -> dict[str, int]:
         "total families": len(families),
         "total attacks": len(ATTACKS),
         "adversarial attacks": len(adversarial),
+        "suites": len(SUITES),
     }
 
 
@@ -116,6 +118,13 @@ _CLAIMS: tuple[_Claim, ...] = (
     # requirements.txt), so it cannot import the registry and must hardcode the denominator.
     # That makes it exactly the kind of claim this guard exists for.
     _Claim("leaderboard/app.py", r"TOTAL_ADVERSARIAL_FAMILIES = (\d+)", "adversarial families"),
+    # README's suite tally. It said **5** — the number of RUNNABLE suites — while `SUITES` held six
+    # and `watch/registry.json` published 6, so the repo's own artifact contradicted its own README
+    # in public. Anchored on this exact sentence rather than swept for, because "suite" is an
+    # overloaded word here: LIBERO has ten task suites, VLA-Arena eleven benchmark suites, and a
+    # sweep for "N suites" flags every one of them. A narrow guard that holds beats a broad one
+    # that gets reverted.
+    _Claim("README.md", r"Suites: \*\*(\w+)\*\*", "suites"),
 )
 
 
@@ -437,3 +446,92 @@ def test_every_count_claim_is_derived_or_a_named_subset() -> None:
                 )
 
     assert not problems, "stale or unexplained count claims:\n  " + "\n  ".join(problems)
+
+
+# --------------------------------------------------------------------------- #
+# the enumerations — the shape that got past every check above
+# --------------------------------------------------------------------------- #
+
+#: WHY A THIRD CLASS OF CHECK. Everything above guards a NUMBER. On 4 September 2026 every number
+#: in this repo was right and three documents were still wrong, because what had drifted was the
+#: LIST beside the number:
+#:
+#: * ``README.md`` annotated ``provael list-attacks`` with "42 attacks across 19 families:" and
+#:   then enumerated **eighteen** of them. ``control`` had been missing since it was registered.
+#:   :data:`_LIST_ATTACKS_COUNT` matched that very line, read "42" and "19", found both correct,
+#:   and passed — it was never looking at the names.
+#: * ``docs/quickstart.md`` said "19 families (17 adversarial + the benign baseline)". Both numbers
+#:   correct; 17 + 1 = 18.
+#: * ``README.md`` and ``docs/quickstart.md`` both said **5 suites** and enumerated the same five,
+#:   while ``keepout_zones``… in fact while ``ai2_bridge`` had been registered as a sixth. The
+#:   published ``watch/registry.json`` said 6 the whole time, so the artifact and the prose
+#:   contradicted each other in public.
+#:
+#: A count and its enumeration are the same claim made twice. Guarding one of them is guarding
+#: half a claim.
+_FAMILY_TOKEN = r"[a-z][a-z0-9_]{2,}"  # noqa: S105 - a regex for family names, not a secret
+
+#: A run of family names joined by ``/``. Five is the threshold and it is chosen, not arbitrary:
+#: the largest legitimate PARTIAL enumeration in this repo is ``CORE_FAMILIES`` at four
+#: (``recipes.py`` renders "nine attacks across four families"), so five or more slash-joined
+#: registry names is a list that means to be complete. A lower threshold would flag real subsets
+#: and the guard would be reverted inside a week, which is worse than no guard.
+_SLASH_RUN = re.compile(rf"{_FAMILY_TOKEN}(?:/{_FAMILY_TOKEN})+")
+_MIN_RUN = 5
+
+
+def test_no_family_enumeration_is_missing_a_family() -> None:
+    """A slash-joined list of five or more registry families must name all of them."""
+    every = {ctor().family for ctor in ATTACKS.values()}
+    offenders: list[str] = []
+    checked = 0
+    for path in _tracked_text_files():
+        rel = path.relative_to(REPO).as_posix()
+        if rel in _HISTORICAL or rel.startswith("tests/") or rel == "watch/registry.json":
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        for run in _SLASH_RUN.findall(text):
+            names = run.split("/")
+            hits = [name for name in names if name in every]
+            # A run is an enumeration of families only if MOST of it is family names; otherwise it
+            # is a path, a URL fragment, or an unrelated slash-joined list.
+            if len(hits) < _MIN_RUN or len(hits) < len(names) - 1:
+                continue
+            checked += 1
+            missing = sorted(every - set(hits))
+            if missing:
+                offenders.append(f"{rel}: names {len(hits)} of {len(every)}, missing {missing}")
+
+    assert checked, (
+        "the family-enumeration sweep matched no lists at all. Either the enumerations were "
+        "removed or their formatting changed; a sweep that inspects nothing passes vacuously."
+    )
+    assert not offenders, (
+        "family enumerations that do not name every registered family:\n  "
+        + "\n  ".join(offenders)
+        + "\n\n  These lines are generated. Run `python scripts/gen_doc_counts.py`."
+    )
+
+
+def test_the_generated_inventory_lines_are_regenerated() -> None:
+    """`scripts/gen_doc_counts.py --check` must be clean, the way the registry artifact must be.
+
+    Same posture as ``tests/test_registry_artifact_agrees.py``: the generator is only worth having
+    if a stale output fails the build rather than waiting to be noticed.
+    """
+    import importlib.util  # noqa: PLC0415 - the idiom tests/test_check_changelog_entry.py uses
+
+    spec = importlib.util.spec_from_file_location(
+        "gen_doc_counts", REPO / "scripts" / "gen_doc_counts.py"
+    )
+    assert spec and spec.loader
+    gen = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gen)
+
+    assert gen.main(["--check"]) == 0, (
+        "a generated inventory line is stale. Run `python scripts/gen_doc_counts.py` and commit "
+        "the result; do not edit those lines by hand."
+    )

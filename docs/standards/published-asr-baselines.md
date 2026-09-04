@@ -6,8 +6,11 @@
 > check it yourself.
 
 Provael's headline is a `roleplay` instruction diverting SmolVLA × LIBERO **88% of the time
-(44/50)**, across all ten `libero_object` tasks. Any technical buyer will immediately benchmark that
-against the published record — where attacks routinely report 76%, 96%, near-100%. If those numbers
+(44/50)** against a **2/50 (4%) benign control**, across all ten `libero_object` tasks. The floor
+travels with the rate on this page for the same reason the page exists: 88% is not a number until
+you know what the same measurement returns when nothing is attacking. Most rows below report no
+floor at all, because their authors published none — that absence is part of what the last column
+is measuring. Any technical buyer will immediately benchmark that against the published record — where attacks routinely report 76%, 96%, near-100%. If those numbers
 sit in one column, provael looks unremarkable.
 
 **They do not belong in one column.** That is what this page is for, and the last column is the

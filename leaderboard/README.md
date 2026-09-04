@@ -53,7 +53,8 @@ the maintainer of this board more tightly than it binds anyone submitting to it.
 > Read it as **lift over baseline** — instruction-reframing
 > attacks are the only family that moves this policy; **injection 0/50** and **visual
 > 0/100** are measured nulls and stay published as such. Per-attack detail, including
-> `roleplay` at 44/50 with its McNemar and task-clustered interval, is in
+> `roleplay` at 44/50 against the run's own **2/50 benign control**, with its McNemar and
+> task-clustered interval, is in
 > [`results/smolvla_libero_object_suite/`](https://github.com/provael/provael/tree/main/results/smolvla_libero_object_suite).
 >
 > ⚠️ **Four qualifiers, and they now travel inside the artifact** (`schema_version` 5)

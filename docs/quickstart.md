@@ -27,9 +27,9 @@ predicate: default (uncalibrated) · benign baseline FPR 0.0%
 ## Commands
 
 ```bash
-provael list-policies         # 8 policies (stub is CPU; the other 7 need a GPU extra)
-provael list-attacks          # 42 attacks across 19 families (17 adversarial + the benign baseline)
-provael list-suites           # 5 suites — 3 CPU fixtures, 2 real simulators (gated)
+provael list-policies         # 8 policies — 1 CPU (stub), 7 need a GPU extra, of which 3 are registered scaffolding
+provael list-attacks          # 42 attacks across 19 families (17 adversarial + 2 benign control): action/action_space/authorization/backdoor/confidentiality/gradient_patch/humanoid/injection/instruction/misalignment/optimized/optimized_instruction/optimized_patch/sensor_spoof/universal_patch/visual/weight_integrity/baseline/control
+provael list-suites           # 6 suites registered — 3 CPU fixtures, 2 gated real simulators, 1 scaffolding (never run)
 provael list-recipes          # named presets: quick / instruction-only / core-sweep / full-sweep / ci-gate
 provael list-reproductions    # FreezeVLA / OpenVLA-patch / BadVLA / RoboPAIR
 provael reproduce freezevla   # reproduce a published attack on the CPU stub

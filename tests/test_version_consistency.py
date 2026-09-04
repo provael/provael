@@ -272,3 +272,105 @@ def test_every_dated_changelog_version_has_a_tag() -> None:
         + "\n\n  A dated heading is a claim that users can install it. Either cut the tag, or "
         "move the section back under [Unreleased] until you do."
     )
+
+
+#: Versions this package DECLARED in ``__init__.py`` and then abandoned without ever tagging.
+#: Each entry is a release that was prepared and rolled forward into a later one, so the number
+#: exists in the git history and nowhere a user can reach it.
+#:
+#: **This list is the point of the guard, not an escape from it.** Recording an abandoned version
+#: costs one line; leaving it unrecorded costs an afternoon with ``git log -p`` the next time
+#: someone asks why a number is missing — or a pin at a ref that never existed, which is exactly
+#: what ``@v0.24.0`` was before the scan above started catching it.
+_ABANDONED: dict[str, str] = {
+    # Bare bumps during the first month, before the CHANGELOG-per-release discipline. Neither
+    # carried a dated heading, so neither ever *claimed* to have shipped; both were rolled into
+    # 0.25.0 on 26 July 2026. 0.24.0 is the one that leaked: the reference security-gate workflow
+    # pinned it, and a ref that never existed cannot resolve.
+    "0.23.0": "rolled into 0.25.0 (2026-07-26); never carried a CHANGELOG heading",
+    "0.24.0": "rolled into 0.25.0 (2026-07-26); never carried a CHANGELOG heading",
+    # Different and worse: 0.39.2 DID carry `## [0.39.2] — 2026-09-02`, so it claimed to have
+    # shipped. No tag and no PyPI artifact followed. It was folded into 0.39.3 rather than left
+    # standing, and the fold is written into the 0.39.3 section.
+    "0.39.2": "prepared 2026-09-02, folded into 0.39.3 (see that CHANGELOG section)",
+}
+
+
+def _declared_versions() -> list[str]:
+    """Every value ``__version__`` has ever held, newest first, from the file's own history."""
+    log = subprocess.run(
+        ["git", "log", "-p", "--format=%H", "--", "src/provael/__init__.py"],
+        cwd=REPO, capture_output=True, text=True, check=False,
+    ).stdout
+    seen: list[str] = []
+    for match in re.finditer(r'^\+__version__ = "(\d+\.\d+\.\d+)"', log, re.MULTILINE):
+        if match.group(1) not in seen:
+            seen.append(match.group(1))
+    return seen
+
+
+def test_no_version_was_declared_and_then_quietly_skipped() -> None:
+    """A version number this package once called itself must be reachable, or be listed as skipped.
+
+    THE HOLE THIS FILLS, and it is a hole in the test directly above.
+    :func:`test_every_dated_changelog_version_has_a_tag` exempts the newest dated heading when it
+    names :data:`~provael.__version__`, because promoting the heading and pushing the tag cannot be
+    the same commit. Its docstring bounds the cost at "a one-commit blind spot in exchange for never
+    shipping two", and reasons that the drift will be caught as soon as a *second* dated heading
+    appears.
+
+    A second heading is not what happened. On 3 September 2026 the untagged ``## [0.39.2]`` heading
+    was **renamed** to ``## [0.39.3]`` and ``__version__`` bumped alongside it, so the exemption's
+    condition — newest dated heading equals ``__version__`` — stayed true through a second body of
+    work. The escape hatch renews itself under renaming, and can do so indefinitely: the repo spent
+    2 to 4 September advertising ``provael/provael@v0.39.3`` in a README snippet while the newest
+    tag was v0.39.1, and every check in this file was green.
+
+    This test asks the question the other one cannot: not "is the newest claim tagged" but "was any
+    version this package ever called itself left unreachable". A rename cannot hide from it, because
+    ``__init__.py``'s history remembers both numbers.
+
+    NOT A REPLACEMENT for the dated-heading check. That one guards the *claim*; this one guards the
+    *number*. 0.23.0 and 0.24.0 were never claimed and are still worth recording — one of them was
+    pinned by a reference workflow and could not resolve.
+    """
+    declared = _declared_versions()
+    if not declared:
+        # Same posture as every other git-backed check here: never pass vacuously where it matters.
+        assert not os.environ.get("CI"), (
+            "no version history available in CI — the checkout must set `fetch-depth: 0` or this "
+            "guard silently passes"
+        )
+        pytest.skip("no git history for src/provael/__init__.py; cannot verify")
+
+    assert len(declared) >= 10, (
+        f"the declared-version scan found only {len(declared)} values; it is not reading the "
+        f"file's history"
+    )
+
+    reachable = _released_versions() | {__version__} | set(_ABANDONED) | set(_UNTAGGABLE_HISTORY)
+    orphaned = [version for version in declared if version not in reachable]
+    assert not orphaned, (
+        "these versions were declared in src/provael/__init__.py and can be reached nowhere:\n  "
+        + "\n  ".join(f"{version} (no tag, not the current version)" for version in orphaned)
+        + "\n\n  Either cut the tag, or add the version to _ABANDONED with one line saying what "
+        "happened to it. A number the package once called itself and then dropped is history "
+        "someone will have to reconstruct; writing it down here is cheaper than that."
+    )
+
+
+def test_the_abandoned_list_stays_honest() -> None:
+    """An exemption for a version that IS tagged would quietly weaken the check above."""
+    released = _released_versions()
+    if not released:
+        pytest.skip("no git tags available; cannot verify")
+    wrongly_listed = sorted(set(_ABANDONED) & released)
+    assert not wrongly_listed, (
+        f"_ABANDONED lists {wrongly_listed}, which are tagged and therefore reachable. Remove "
+        f"them: an exemption list that covers things needing no exemption stops describing "
+        f"anything."
+    )
+    assert __version__ not in _ABANDONED, (
+        f"_ABANDONED lists {__version__}, the version this tree builds. A version cannot be both "
+        f"in flight and given up on."
+    )

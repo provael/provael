@@ -92,17 +92,42 @@ jobs:
         if: success()
         shell: bash
         run: |
-          set -o pipefail
-          report="$(find . -name report.json -newer gpu-scheduled-report.txt -print -quit 2>/dev/null || true)"
-          if [ -z "$report" ]; then
-            echo "::error::the run reported an ASR but produced no report.json on the runner, so"
-            echo "::error::nothing was recorded and the freshness badge keeps ageing. This is #181:"
-            echo "::error::check that examples/gpu-ci/modal_provael_gpu.py still RETURNS its artifacts."
+          set -euo pipefail
+          # READ the path the run declared. Do not search for it.
+          #
+          # THE SEARCH COULD NOT WORK, and it took a fourth failure of this lane to see it. This
+          # step used to run `find . -name report.json -newer gpu-scheduled-report.txt`, and that
+          # predicate is unsatisfiable by construction: the local entrypoint prints its closing
+          # line AFTER writing the artifacts, that line goes through the same `tee` that produces
+          # gpu-scheduled-report.txt, so the log is always newer than the report it announces.
+          # On 4 Sept 2026 — the first scheduled run after #181's fix landed — the lane reached a
+          # real policy, printed `Adversarial ASR: 33.3% (4/12)`, wrote three artifacts, and this
+          # step said it had produced none.
+          #
+          # #181 fixed the lane so it WRITES its measurement; this fixes the lane so it can be
+          # TOLD where. The filename below is mirrored from `OUT_DIR_FILE` in
+          # examples/gpu-ci/modal_provael_gpu.py and pinned by
+          # tests/test_modal_examples_are_runnable.py, so the two cannot drift apart silently.
+          outdir_file=gpu-scheduled-outdir.txt
+          if [ ! -f "$outdir_file" ]; then
+            echo "::error::the run did not declare an output directory ($outdir_file is absent),"
+            echo "::error::so nothing was recorded and the freshness badge keeps ageing. Either the"
+            echo "::error::local entrypoint failed before writing its artifacts, or it no longer"
+            echo "::error::writes OUT_DIR_FILE — see examples/gpu-ci/modal_provael_gpu.py."
+            exit 1
+          fi
+          outdir="$(cat "$outdir_file")"
+          if [ ! -f "$outdir/report.json" ]; then
+            echo "::error::the run declared $outdir but no report.json is there. The measurement"
+            echo "::error::was not recorded. This is #181's shape again: check that"
+            echo "::error::examples/gpu-ci/modal_provael_gpu.py still RETURNS its artifacts AND"
+            echo "::error::that the entrypoint writes them before declaring the path."
+            ls -la "$outdir" 2>/dev/null || echo "(the directory does not exist)"
             exit 1
           fi
           pip install --quiet -e .
-          provael watch --record "$(dirname "$report")" --dir watch
-          echo "recorded $report"
+          provael watch --record "$outdir" --dir watch
+          echo "recorded $outdir/report.json"
 
       - name: Upload the run artifact
         if: always()
