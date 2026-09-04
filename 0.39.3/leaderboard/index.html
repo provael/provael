@@ -1,0 +1,3021 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Provael™ — red-team open Vision-Language-Action (VLA) robot policies in simulation and report an Attack Success Rate (ASR).">
+      
+      
+      
+        <link rel="canonical" href="https://docs.provael.com/0.39.3/leaderboard/">
+      
+      
+        <link rel="prev" href="../defenses/">
+      
+      
+        <link rel="next" href="../leaderboard-disclosure/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>The board - Provael</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#the-public-asr-leaderboard" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Provael" class="md-header__button md-logo" aria-label="Provael" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Provael
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              The board
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/provael/provael" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    provael/provael
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Provael" class="md-nav__button md-logo" aria-label="Provael" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Provael
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/provael/provael" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    provael/provael
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../first-run-transcript/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    First run, timed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../attacks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Attack catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../defenses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Defenses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Leaderboard
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Leaderboard
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The board
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The board
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-each-row-carries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What each row carries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-first-real-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The first real result
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-published-board-does-not-cover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the published board does not cover
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#third-party-submissions-0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Third-party submissions: 0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provenance-and-reproducibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provenance and reproducibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-re-stamp-does-and-does-not-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What a re-stamp does and does not change
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What a re-stamp does and does not change">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#staleness-is-a-field-not-a-banner-schema-v6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Staleness is a field, not a banner (schema v6)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qualifiers-travel-with-the-row-schema-v5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Qualifiers travel with the row (schema v5)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signing-and-offline-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signing and offline verification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open-core
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leaderboard-disclosure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measuring someone else's policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Embodied AI Top 10
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Embodied AI Top 10
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../top10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The list
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../top10-rfc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RFC process (v0.2 → v0.3)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Compliance
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compliance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../attestation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Signed attestation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../checkpoint-integrity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checkpoint integrity (supply chain)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compliance/machinery-reg-2027/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machinery Regulation 2027
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compliance/machinery-annex-i-part-a/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machinery Annex I Part A dossier
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crosswalk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Per-persona cards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crosswalk/halos-integrator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Halos / ANAB integrator card
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../measure-2-7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NIST MEASURE 2.7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sim-predicts-real/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sim predicts real
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Standards (drafts)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Standards (drafts)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../standards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../standards/atlas-case-study/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MITRE ATLAS case study
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../standards/owasp-asi-embodied/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OWASP Agentic embodied annex
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crosswalk/robojailbench/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoboJailBench crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crosswalk/foresight-safety-vla/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ForesightSafety-VLA crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crosswalk/vla-arena/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VLA-Arena crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crosswalk/safevla-bench/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SafeVLA-Bench crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crosswalk/xpolicylab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    XPolicyLab crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crosswalk/libero-safety/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LIBERO-Safety crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crosswalk/bit-flip-vla/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bit-Flip VLA crosswalk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crosswalk/embodied-agent-attack-surfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Embodied-agent attack surfaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../standards/published-asr-baselines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Published ASR baselines
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../standards/listings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Listings & PRs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../python-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migration-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration (schema v2)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    vs. LLM red-team tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../handbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Handbook (outline)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accelerators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accelerators & TPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_17" >
+        
+          
+          <label class="md-nav__link" for="__nav_17" id="__nav_17_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Findings
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_17_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_17">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Findings
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../findings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../findings/2026-instruction-transfer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Instruction transfer — SmolVLA×LIBERO (2026)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../findings/2026-cross-arch-transfer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-architecture transfer (2026)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../studies/eai04-action-space-transfer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EAI04 action-space transfer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../studies/instruction-canonicalization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Instruction canonicalization (defense, measured)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../studies/action-envelope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Action envelope (defense, measured)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../studies/weight-integrity-stub/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Weight integrity on the stub (measured, stub-only)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_18" >
+        
+          
+          <label class="md-nav__link" for="__nav_18" id="__nav_18_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Studies (pre-registered)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_18_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_18">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Studies (pre-registered)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../studies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../studies/pi0-openpi-transfer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    π0 / openpi transfer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../studies/metaworld-transfer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meta-World transfer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../studies/sim-to-real-so101/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sim-to-real (SO-ARM101)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../studies/humanoid-locomotion-transfer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Humanoid locomotion (GR00T-N1)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Community
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adopters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adopters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../community/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community & discussions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Maintainers
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Maintainers
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../maintainers/github-security-settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GitHub security settings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../maintainers/hosted-production-requirements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hosted production requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../errata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../open-core-promise/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Open-core promise
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-each-row-carries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What each row carries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-first-real-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The first real result
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-published-board-does-not-cover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the published board does not cover
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#third-party-submissions-0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Third-party submissions: 0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provenance-and-reproducibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provenance and reproducibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-re-stamp-does-and-does-not-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What a re-stamp does and does not change
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What a re-stamp does and does not change">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#staleness-is-a-field-not-a-banner-schema-v6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Staleness is a field, not a banner (schema v6)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qualifiers-travel-with-the-row-schema-v5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Qualifiers travel with the row (schema v5)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signing-and-offline-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signing and offline verification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open-core
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="the-public-asr-leaderboard">The public ASR leaderboard</h1>
+<blockquote>
+<p><strong>Evidence, not certification.</strong> The leaderboard reports measured Attack Success Rates in
+simulation. It is not a safety rating and not a conformity statement.</p>
+</blockquote>
+<p>The <a href="https://huggingface.co/spaces/Sattyam/provael-leaderboard">leaderboard</a> aggregates
+<code>(policy × suite × family) → ASR</code> results into a ranked, reproducible, signable board. Lower ASR is
+more robust.</p>
+<p>Not every row is submitted by the policy's own authors. Where Provael measures a policy it did not
+train, the authors get the full artifact <strong>14 days before publication</strong> — see
+<a href="../leaderboard-disclosure/">Measuring someone else's policy</a>. That rule binds this project, not
+just the people submitting to it.</p>
+<h2 id="what-each-row-carries">What each row carries</h2>
+<p>Every row is honest about how strong its number is:</p>
+<ul>
+<li><strong>ASR with a 95% Wilson CI</strong> — the point estimate never travels without its interval.</li>
+<li><strong>The benign (<code>none</code>) control</strong> — the baseline family's rate for that policy × suite, so you read
+  lift, not a bare number.</li>
+<li><strong>A transfer-status label</strong> — <code>real-transfer</code> (a real policy in a real simulator) or
+  <code>stub-scaffolding</code> (the deterministic CPU stub, or a real policy on the stub suite). When any real
+  run is present the board is not a demo, and stub and real rows are <strong>never silently mixed</strong> — each
+  is labelled.</li>
+</ul>
+<h2 id="the-first-real-result">The first real result</h2>
+<p>On the real <strong>SmolVLA × LIBERO</strong> policy, only the <strong>instruction</strong> family transfers today
+(roleplay 100%, goal_substitution 60%, paraphrase 10%); <strong>visual and injection attacks are 0%</strong> on
+the real model, against a 0% benign control. That honesty is the point: the board shows what does
+and does not transfer, with intervals, rather than a single headline number.</p>
+<h2 id="what-the-published-board-does-not-cover">What the published board does <em>not</em> cover</h2>
+<p>The board is one run, and it is old. Stated plainly, because the rendered page now states it too:</p>
+<ul>
+<li><strong>Measured with <code>provael 0.1.0</code>.</strong> Every row on the published board came from that release. The
+  build stamp is current; the measurement is not. See <a href="#what-a-re-stamp-does-and-does-not-change">re-stamps</a>.</li>
+<li><strong>1 policy, 1 suite.</strong> <code>smolvla</code> × <code>libero_object/0</code>. Seven of the eight registered policy
+  backends have never produced a board row, and three of those (<code>groot</code>, <code>openvla</code>, <code>openpi</code>) have
+  never loaded a checkpoint at all — <code>provael list-policies</code> marks them <code>scaffolding</code>.</li>
+<li><strong>3 of 17 adversarial families measured</strong> (<code>instruction</code>, <code>injection</code>, <code>visual</code>). <strong>The other
+  twelve have no real-model measurement whatsoever.</strong> They are <em>absent</em> from the board, which is
+  not the same as scoring 0% — an absent family is <code>N/A</code>, and reading it as a pass is the single
+  most likely way to misuse this page.</li>
+<li><strong>No clean-task-success control.</strong> The underlying run predates <code>clean_task_success_rate</code>, so the
+  board shows no measured evidence that the policy completes its benign task unattacked. The
+  benign false-positive control <em>is</em> present and is 0%. The competence control is not, and is not
+  back-filled — see the run's own
+  <a href="https://github.com/provael/provael/blob/main/results/smolvla_libero_object/README.md">provenance note</a>.</li>
+</ul>
+<p>Closing these needs GPU time, not a rebuild: a re-stamp cannot add a family it never ran.</p>
+<h2 id="third-party-submissions-0">Third-party submissions: 0</h2>
+<p><strong>Every row on this board was produced by the maintainer.</strong> All four carry
+<code>provenance: maintainer-run</code> and <code>submitted_by: provael</code>. Nobody outside the project has reproduced
+or submitted a result.</p>
+<p>This is stated the same way <a href="https://github.com/provael/provael/tree/main/results/hardware"><code>results/hardware/README.md</code></a>
+states <strong>0</strong> hardware runs, and for the same reason: a board that does not distinguish self-reported
+rows from external ones is a changelog of our own runs wearing the word "leaderboard". Four rows from
+one maintainer and four rows from four independent labs are identical in every other column.</p>
+<p>The count renders on the board itself — an <code>Independence</code> line above the table, and a <strong><code>provenance</code>
+column per row</strong> so a single external entry is visible in place rather than only in an aggregate. The
+day a third-party row lands, both change without anyone editing this page.</p>
+<p><strong>The submission path is exercised, not just documented.</strong> Verified end to end on 12 August 2026
+against a dummy submission, which was then deleted:</p>
+<table>
+<thead>
+<tr>
+<th>step</th>
+<th>command</th>
+<th>result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. run</td>
+<td><code>provael attack --policy stub --suite stub …</code></td>
+<td><code>report.json</code> written</td>
+</tr>
+<tr>
+<td>2. validate</td>
+<td><code>python scripts/validate_submission.py &lt;dir&gt;</code></td>
+<td><code>all submissions valid (1 report(s) checked)</code></td>
+</tr>
+<tr>
+<td>3. build</td>
+<td><code>provael leaderboard build --runs … --submitted-by dummy-tester --provenance third-party-submission</code></td>
+<td>rows carry both fields</td>
+</tr>
+<tr>
+<td>4. promote</td>
+<td><code>provael leaderboard build --real &lt;stub dir&gt;</code></td>
+<td><strong>correctly refused</strong> — "no real (non-stub) runs found"</td>
+</tr>
+</tbody>
+</table>
+<p>Step 4 failing is the guard working: a stub run cannot reach the public real board. A submission
+process nobody has executed is a process that does not work, so this was run rather than assumed.</p>
+<h2 id="provenance-and-reproducibility">Provenance and reproducibility</h2>
+<p>A real board is stamped with a <strong>UTC build date</strong>, the <strong>source commit</strong>, and a <strong>SHA-256 digest of
+the aggregated input reports</strong> (the same digest approach as <a href="../attestation/">attestation</a>, so a board
+and an attestation speak one integrity language). The date and commit are a snapshot stamp; the
+<code>inputs_digest</code> and the row numbers are what reproduce.</p>
+<p>The source directory is <strong><code>results/smolvla_libero_object_suite</code></strong> — the ten-task suite. It is not
+<code>results/smolvla_libero_object</code>, which is an older single-task run measured with <strong>0.1.0</strong>;
+rebuilding from that one produces a different digest, different rows, and a board 31 minor versions
+behind the published one. Both directories are committed and their names differ by one word, which
+is why this says so rather than leaving it to be inferred.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Build the real board (stamps date + commit + inputs digest)</span>
+provael<span class="w"> </span>leaderboard<span class="w"> </span>build<span class="w"> </span>--real<span class="w"> </span>results/smolvla_libero_object_suite<span class="w"> </span>--out<span class="w"> </span>leaderboard/results
+
+<span class="c1"># Reproduce: rebuild and confirm the digest matches</span>
+provael<span class="w"> </span>leaderboard<span class="w"> </span>build<span class="w"> </span>--real<span class="w"> </span>results/smolvla_libero_object_suite<span class="w"> </span>--out<span class="w"> </span>/tmp/rebuild
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import json; a=json.load(open(&#39;leaderboard/results/leaderboard.json&#39;))[&#39;inputs_digest&#39;]; \</span>
+<span class="s2">b=json.load(open(&#39;/tmp/rebuild/leaderboard.json&#39;))[&#39;inputs_digest&#39;]; print(&#39;match:&#39;, a==b)&quot;</span>
+</code></pre></div>
+<h2 id="what-a-re-stamp-does-and-does-not-change">What a re-stamp does and does not change</h2>
+<p>A board is rebuilt by <strong>aggregating committed <code>report.json</code> files</strong> — it does not re-run a policy.
+So re-running the generator moves <code>generated_at</code> and <code>commit</code> to today while <strong>every row still
+carries the measurement it always did</strong>, possibly made by a much older release.</p>
+<p>That is a trap: a board carrying only <code>generated_at</code> reads as a fresh measurement. Schema v3 adds
+<strong><code>measured_with</code></strong> — the sorted <code>tool_version</code> values of the aggregated reports, i.e. the versions
+the <em>numbers</em> came from — and <code>Leaderboard.is_restamp()</code> answers the question directly. The
+published board reports <code>measured_with: ["0.32.0"]</code> against a build commit from the current release
+line: the provenance envelope is current, the measurement is the ten-task SmolVLA × LIBERO suite
+screen those shards recorded.</p>
+<h3 id="staleness-is-a-field-not-a-banner-schema-v6">Staleness is a field, not a banner (schema v6)</h3>
+<p><code>measured_with</code> and <code>is_restamp()</code> let a reader work it out. <strong>A consumer should not have to.</strong> The
+published board carried four rates, an Ed25519 signature, and nothing machine-readable saying the
+signature vouches for a <em>measurement</em> rather than for its <em>currency</em> — a distinction that only
+lived in prose the Space renders. So v6 records the verdict:</p>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>what it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tool_version</code></td>
+<td>the version that <strong>assembled</strong> the board — distinct from <code>measured_with</code>, which is what <strong>measured</strong> the rows. The gap between them is the staleness.</td>
+</tr>
+<tr>
+<td><code>stale</code></td>
+<td><code>true</code> when some row is more than <code>MAX_MINOR_LAG</code> (1) minor versions behind. <code>null</code> when it cannot be determined — never <code>false</code> by default.</td>
+</tr>
+<tr>
+<td><code>stale_reason</code></td>
+<td>why, naming both versions, so the verdict is re-derivable from its own text.</td>
+</tr>
+</tbody>
+</table>
+<p>The lag is counted on <code>(major, minor)</code> and ignores the patch, because a patch by definition changes
+no measured behaviour. Across a major bump it is not a subtraction: 0.40 → 1.0 is one release, not
+minus thirty-nine, so a differing major reports "too far" rather than a negative number that would
+read as fresh.</p>
+<p><strong><code>stale</code> sits outside the signature, on purpose.</strong> Staleness is a function of today, not of the
+board: a board that was current when signed becomes stale without a byte changing. Inside the
+signed subject it would need either a signature re-issued as time passes, or a flag frozen at a
+value that was true once. Being registered in <code>_FIELDS_ADDED_IN[6]</code> means it is stripped from the
+signing payload of any board declaring an earlier schema — which is exactly what lets the
+already-signed v5 board be annotated with <code>stale: true</code> and still verify against the committed
+public key.</p>
+<p>The verdict is also <strong>monotone</strong>: a row's measured version never changes and the release only moves
+forward, so a <code>true</code> can never become wrong. Only a <code>false</code> can decay, and
+<code>scripts/check_leaderboard_staleness.py</code> re-checks that single direction in CI. It fails on
+<strong>undeclared</strong> staleness only — a board past the limit that does not say so. Failing on staleness
+itself would be red until a GPU re-run nobody has scheduled, and a permanently-red detector reports
+nothing. Disclosed staleness is the honest state; silent staleness is the bug.</p>
+<h2 id="qualifiers-travel-with-the-row-schema-v5">Qualifiers travel with the row (schema v5)</h2>
+<p>A leaderboard is where a number travels furthest from its own report, and until v5 it arrived
+stripped: <code>report.json</code> recorded <code>calibrated</code> and <code>stochastic</code>, and the board dropped both. A row
+reading <code>41.3%</code> with no further context is a stronger claim than the run behind it ever made.</p>
+<p>Each row now carries three fields derived from the aggregated reports — never passed in, for the
+same reason <code>measured_with</code> is not:</p>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>reduction</th>
+<th>why that direction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>calibrated</code></td>
+<td>ALL</td>
+<td>one uncalibrated run makes the row uncalibrated</td>
+</tr>
+<tr>
+<td><code>stochastic</code></td>
+<td>ANY</td>
+<td>one unseeded sampler makes the row one draw</td>
+</tr>
+<tr>
+<td><code>checkpoint</code></td>
+<td>unanimous, else <code>None</code></td>
+<td>naming one of several would attribute the rate to a checkpoint that did not wholly earn it</td>
+</tr>
+</tbody>
+</table>
+<p>Each collapses toward the <em>weaker</em> claim on purpose: the reduction step is exactly where an
+aggregate is tempted to launder a qualifier.</p>
+<p>The board also carries <strong><code>not_applicable</code></strong> — attacks with episode records but zero applicable
+episodes. Scoring excludes them from every denominator, so without the list they vanish entirely
+and a reader counts one fewer null than was attempted. On the published board that is
+<code>mcp_tool_desc</code>: 50 records, 0 applicable. <em>Not measured</em> and <em>measured zero</em> are different claims.</p>
+<p><strong>Adding these fields did not invalidate older signatures.</strong> <code>_signing_payload</code> strips fields
+introduced after a board's own <code>schema_version</code> before canonicalising, so a v4 board still verifies
+against its v4 signature under the v5 model. Without that, adding any defaulted field would have
+silently broken every signature ever issued — and a correctly-signed older board would verify as
+INVALID, indistinguishable to the checker from a tampered one.</p>
+<p>Recording that in the JSON was only half the fix. Until 0.29.1 the <em>rendered</em> Space showed a fresh
+build date and an Ed25519 signature above rows measured many releases earlier, with nothing on the
+page saying so — and a signature over stale data is worse than no signature, because it reads as
+currency. The app in this repo (<code>leaderboard/app.py</code>) derives a staleness-and-coverage banner from
+<code>measured_with</code> and the rows themselves, and places it above the tables rather than below them.</p>
+<p>The <a href="https://huggingface.co/spaces/Sattyam/provael-leaderboard">published Space</a> is a <strong>mirror of
+this repo's <code>leaderboard/</code> directory with its own deploy state</strong>, and for a month it was the
+untreated version of the paragraph above: last deployed 30 June 2026, it served a schema-v1 board
+with <code>signature: null</code> and no <code>measured_with</code> — and no banner, because the app that renders the
+banner had never reached it. Space deployment is now driven from this repo whenever <code>leaderboard/</code>
+changes (see <code>.github/workflows/leaderboard-submission.yml</code>), and that path has now been <strong>verified
+live</strong>: the deployed Space serves the same <code>schema_version</code> 5 board this repo signed, same rows,
+same <code>keyid 8d62aa33ed5162f3</code>. This paragraph had been holding a softened claim until that check
+passed rather than after it. Two practical notes: <strong>the canonical, signed board is the one
+committed in this repo</strong> —
+verify that one, not a rendering of it — and the Space runs on the free tier, so it sleeps when
+idle and the first visitor after a quiet period waits through a cold start rather than getting an
+instant page.</p>
+<h2 id="signing-and-offline-verification">Signing and offline verification</h2>
+<p>The published board is <strong>Ed25519-signed</strong> (via the <code>provael[attest]</code> extra). The
+signature covers the whole board except the signature field, and verifies offline with no network.</p>
+<p><strong>Verify the published board in two commands</strong> — no network, no trust in this page:</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;provael[attest]&quot;</span>
+curl<span class="w"> </span>-fsSLO<span class="w"> </span>https://raw.githubusercontent.com/provael/provael/main/leaderboard/results/leaderboard.json
+curl<span class="w"> </span>-fsSLO<span class="w"> </span>https://raw.githubusercontent.com/provael/provael/main/leaderboard/results/leaderboard.pub
+provael<span class="w"> </span>leaderboard<span class="w"> </span>verify<span class="w"> </span>--in<span class="w"> </span>leaderboard.json<span class="w"> </span>--pubkey<span class="w"> </span>leaderboard.pub
+<span class="c1"># -&gt; leaderboard OK  keyid 8d62aa33ed5162f3</span>
+</code></pre></div>
+<p>A non-zero exit and <code>leaderboard signature INVALID</code> is the answer you should get if anything in the
+board was altered — including a single success count. That is the point: the numbers are covered by
+the signature, not merely published alongside it.</p>
+<p>The public key lives at <strong><code>leaderboard/results/leaderboard.pub</code></strong> (keyid <code>8d62aa33ed5162f3</code>) and is
+the only key the published board is signed with. The keyid shown above is not typed into this page
+— <code>scripts/render_keyid.py</code> derives it from that key file, and a repo-wide test fails the build on
+any keyid the key does not derive to (the id printed here was wrong for four days after the #74 key
+rotation; see the <a href="../errata/">errata register</a>). CI enforces four things so this cannot rot: the
+board is signed, the signature verifies <strong>against that published key</strong>, every documented keyid is
+derived from the key file, and the board's stamp lags the newest released tag by at most <strong>14
+days</strong> — re-stamping is a GPU-free one-command operation, so the cost of staying current is low.</p>
+<p>Rebuild and re-sign:</p>
+<div class="highlight"><pre><span></span><code>provael<span class="w"> </span>leaderboard<span class="w"> </span>build<span class="w"> </span>--real<span class="w"> </span>results/smolvla_libero_object_suite<span class="w"> </span>--sign<span class="w"> </span>--key<span class="w"> </span>provael-ed25519.pem<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--out<span class="w"> </span>leaderboard/results
+provael<span class="w"> </span>leaderboard<span class="w"> </span>verify<span class="w"> </span>--in<span class="w"> </span>leaderboard/results/leaderboard.json<span class="w"> </span>--pubkey<span class="w"> </span>leaderboard.pub
+</code></pre></div>
+<p>Signing with an omitted <code>--key</code> uses an ephemeral key (integrity, not identity) and writes the
+public half next to the board.</p>
+<h2 id="open-core">Open-core</h2>
+<p>The CLI builds and verifies boards for anyone, free and Apache-2.0. The <strong>hosted board</strong> — signed
+with Provael's published project key and backed by real-VLA (GPU) runs rather than the stub — is
+the paid surface. Submitting a result is a pull request; see
+<a href="https://github.com/provael/provael/blob/main/CONTRIBUTING-leaderboard.md">CONTRIBUTING-leaderboard.md</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Apache-2.0 · Independent project · evidence, not certification
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "navigation.instant", "content.code.copy", "search.suggest"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
