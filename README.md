@@ -906,9 +906,12 @@ same config + seed always produces a byte-identical `report.json`.
 ## Development
 
 ```bash
-uv run ruff check .      # lint
-uv run mypy src          # type-check (strict)
-uv run pytest -q         # tests (CPU only; LeRobot tests skip unless gated)
+make check               # lint + type-check + tests, exactly what CI runs
+
+# or the three separately:
+uv run ruff check .              # lint
+uv run mypy src scripts/action   # type-check (strict); scripts/action too, as CI does
+uv run pytest -q                 # tests (CPU only; LeRobot tests skip unless gated)
 ```
 
 ## Further reading

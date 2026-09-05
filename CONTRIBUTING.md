@@ -42,9 +42,12 @@ uv run provael --help
 ## The gate (must be green before you push)
 
 ```bash
-uv run ruff check .          # lint + import order
-uv run mypy src              # strict type-check
-uv run pytest -q             # tests (GPU/LIBERO tests auto-skip without the extra)
+make check                       # all three, exactly what CI runs
+
+# or separately:
+uv run ruff check .              # lint + import order
+uv run mypy src scripts/action   # strict type-check; scripts/action too, as CI does
+uv run pytest -q                 # tests (GPU/LIBERO tests auto-skip without the extra)
 ```
 
 The optional, GPU-gated integration tests:

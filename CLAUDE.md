@@ -27,7 +27,7 @@ uv run provael --help        # run the CLI
 
 # The gate — must be green before pushing (mirrors CI):
 uv run ruff check .          # lint + import order
-uv run mypy src              # strict type-check (pydantic plugin)
+uv run mypy src scripts/action   # strict type-check (pydantic plugin); scripts/action as CI does
 uv run pytest -q             # tests; GPU/LIBERO integration tests auto-skip
 
 # Focused test run:
