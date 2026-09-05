@@ -6,6 +6,29 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- **`provael.__all__`, derived from `docs/python-api.md` and enforced by a test.** The published
+  Python API and the package's export list had no relationship: `src/provael/__init__.py` declared
+  no `__all__` at all, so there was nothing for a rename to disagree with. A symbol could move, the
+  gate stays green, and the doc goes on describing an import that no longer resolves.
+  `tests/test_public_api.py` now fails in **both** directions — documented but not exported, and
+  exported but not documented — and the second direction matters as much as the first, because an
+  undocumented public name is a support burden nobody agreed to.
+
+  **The exports are lazy, and that is the interesting part.** Every documented name lives in a
+  submodule, and re-exporting all eight eagerly costs **~1.14 s** and pulls numpy in, against
+  **~1.1 ms** for the bare package: a ~1000x regression paid by every `import provael` and by every
+  CLI invocation, in exchange for a shorter import line. `__init__.py` resolves them through a
+  PEP 562 `__getattr__` instead, so the cost is paid only by a caller who touches the name. The
+  cheap way to undo that is a convenience import added at the top of the file later, so the test
+  asserts the laziness holds by checking `sys.modules` in a subprocess — an in-process check would
+  pass regardless, since the suite has already imported half the package by then.
+
+  The submodule paths in the docs are unchanged and keep working; this only adds the top-level
+  spelling.
+
+
 ## [0.39.3] — 2026-09-04
 
 ### Fixed
