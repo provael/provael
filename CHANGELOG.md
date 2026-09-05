@@ -6,6 +6,32 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- **`watch/measurements.json` — one ledger row per committed measurement.** `watch/freshness.json`
+  answers *when was anything last measured* and collapses every run into one instant for a badge;
+  `watch/registry.json` answers *how many attacks are registered*. Neither answers the question a
+  stranger actually arrives with, which is **how current is the specific number I am reading**.
+  That needs a row per measurement carrying the version it ran on and the artifact it came from,
+  and nothing published it.
+
+  The date cannot come from `report.json`, which carries no timestamp on purpose — the determinism
+  contract makes a report a pure function of its config. It comes from the execution manifest
+  beside it, via `provael.watch.measurements_from_results`, so the ledger and the badge cannot
+  drift into disagreeing about the project's own currency. `test_measurement_ledger.py` asserts
+  that agreement directly.
+
+  **Two honesty fields travel with every row.** `recorded: false` marks a reconstructed date (an
+  exact-midnight `ended_at`, or a legacy-unverified state) that must never render as a measurement
+  instant. `countsAsMeasurement: false` marks a fixture backend — a stub run executes real attacks
+  in under a second on CPU and would otherwise let a consumer refresh a freshness claim having
+  re-measured nothing. Today's ledger holds 26 rows, of which 20 are real-policy measurements and
+  one carries a reconstructed date.
+
+  The file says **when** and **on what**, never **where** a number is published. Only a consuming
+  site knows that, and encoding a site's information architecture into a repo artifact would put
+  the mapping in the one place a site author never looks.
+
 ### Fixed
 
 - **Four documents told a contributor to run a weaker type-check than CI runs.** `README.md`,
