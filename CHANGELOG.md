@@ -8,6 +8,18 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- **A `Makefile`, wrapping the gates that already existed.** Every recipe is the command CI
+  actually runs; nothing here gates anything that was not already gated. `make check` is the three
+  commands `ci.yml` runs, `make check-doc-counts` is the same `--check` that
+  `tests/test_counted_claims.py` already calls, and `make help` lists the rest. A Makefile that
+  quietly introduced a *new* rule would be the worst version of this file, because the rule would
+  then live somewhere no reviewer looks.
+
+  `check-doc-counts` also gets its own CI step, and it is deliberately redundant with the pytest
+  assertion rather than replacing it. The rule stays where it was; what the step adds is a legible
+  failure. A stale inventory line currently surfaces as one assertion inside a ~1300-test, ~25 s
+  run — as a named ~1 s step it says what is wrong in its own title. Same rule, better signal.
+
 - **`provael.__all__`, derived from `docs/python-api.md` and enforced by a test.** The published
   Python API and the package's export list had no relationship: `src/provael/__init__.py` declared
   no `__all__` at all, so there was nothing for a rename to disagree with. A symbol could move, the

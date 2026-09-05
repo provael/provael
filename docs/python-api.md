@@ -3,6 +3,16 @@
 Provael is model- and suite-agnostic via two tiny abstractions. Use it as a library, not just a
 CLI.
 
+The names below are also importable from the package root, if you prefer the shorter spelling:
+
+```python
+from provael import RunConfig
+from provael import run
+```
+
+They are resolved lazily, so `import provael` stays fast and pulls in nothing you do not touch.
+`provael.__all__` is the full list, and a test fails if it and this page ever disagree.
+
 ## Run a scan
 
 ```python
