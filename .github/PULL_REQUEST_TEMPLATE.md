@@ -5,7 +5,7 @@
 ## Test plan
 
 <!-- How did you verify it? For code changes: -->
-<!-- `uv run ruff check . && uv run mypy src && uv run pytest -q` -->
+<!-- `make check` -- lint + type-check + tests, exactly what CI runs -->
 
 ## Evidence & claims checklist
 

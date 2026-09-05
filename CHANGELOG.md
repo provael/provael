@@ -6,6 +6,20 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- **Four documents told a contributor to run a weaker type-check than CI runs.** `README.md`,
+  `CONTRIBUTING.md`, `.github/PULL_REQUEST_TEMPLATE.md` and `CLAUDE.md` all documented the gate as
+  `uv run mypy src`, while `.github/workflows/ci.yml` runs `uv run mypy src scripts/action` and
+  `pyproject.toml` pins `files = ["src"]`. So the documented command checked **105 files against
+  CI's 111**: a type error in `scripts/action` — the five scripts that decide whether a release
+  passes — passed locally and failed in CI, for anyone who followed the docs.
+
+  Both halves are fixed. The commands now name `scripts/action`, and the three contributor-facing
+  surfaces lead with `make check` so the gate has one definition instead of four transcriptions of
+  it. This is the same failure the repo already guards for restated *numbers*; it had simply never
+  been applied to a restated *command*.
+
 ### Added
 
 - **A `Makefile`, wrapping the gates that already existed.** Every recipe is the command CI
