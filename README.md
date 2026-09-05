@@ -72,6 +72,7 @@ Timed on a clean container: **20 s** from `pip install` to a written `report.jso
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
 [![coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprovael%2Fprovael%2Fmain%2Fwatch%2Fcoverage.json)](https://github.com/provael/provael/blob/main/watch/coverage.json)
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/provael/provael/blob/main/notebooks/01_provael_in_5_minutes.ipynb)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/provael/provael)
 [![Assessment](https://img.shields.io/badge/assessment-design%20partners-blue.svg)](https://www.provael.com/assessment)
 [![Leaderboard Space](https://img.shields.io/badge/%F0%9F%A4%97%20Space-ASR%20leaderboard-yellow.svg)](https://huggingface.co/spaces/Sattyam/provael-leaderboard)
 [![GitHub Marketplace](https://img.shields.io/badge/Marketplace-VLA%20red--team-blue.svg?logo=github)](https://github.com/marketplace/actions/provael-vla-red-team)
