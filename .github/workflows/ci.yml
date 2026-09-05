@@ -70,6 +70,15 @@ jobs:
         # actually run on them.
         run: uv run mypy src scripts/action
 
+      # The generated inventory lines must match the registries. This rule is ALREADY enforced,
+      # inside `tests/test_counted_claims.py`, and it stays enforced there — this step adds no new
+      # rule and is not a second source of truth. What it adds is a legible failure: a stale
+      # inventory line otherwise surfaces as one assertion inside a ~1300-test, ~25 s run, and here
+      # it is a named ~1 s step that says what is wrong in its own title. The incident it descends
+      # from is README.md annotating `list-attacks` with "19 families:" and then naming eighteen.
+      - name: Generated doc counts are current
+        run: make check-doc-counts
+
       # Case-exact relative-link check. It has to run HERE, on Linux, and not as a local pre-commit:
       # macOS and Windows are case-insensitive, so a link to docs/TOP10.md resolves fine on the
       # author's machine and 404s for every visitor on github.com. The author cannot see the bug

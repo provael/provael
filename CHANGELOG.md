@@ -6,6 +6,41 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- **A `Makefile`, wrapping the gates that already existed.** Every recipe is the command CI
+  actually runs; nothing here gates anything that was not already gated. `make check` is the three
+  commands `ci.yml` runs, `make check-doc-counts` is the same `--check` that
+  `tests/test_counted_claims.py` already calls, and `make help` lists the rest. A Makefile that
+  quietly introduced a *new* rule would be the worst version of this file, because the rule would
+  then live somewhere no reviewer looks.
+
+  `check-doc-counts` also gets its own CI step, and it is deliberately redundant with the pytest
+  assertion rather than replacing it. The rule stays where it was; what the step adds is a legible
+  failure. A stale inventory line currently surfaces as one assertion inside a ~1300-test, ~25 s
+  run — as a named ~1 s step it says what is wrong in its own title. Same rule, better signal.
+
+- **`provael.__all__`, derived from `docs/python-api.md` and enforced by a test.** The published
+  Python API and the package's export list had no relationship: `src/provael/__init__.py` declared
+  no `__all__` at all, so there was nothing for a rename to disagree with. A symbol could move, the
+  gate stays green, and the doc goes on describing an import that no longer resolves.
+  `tests/test_public_api.py` now fails in **both** directions — documented but not exported, and
+  exported but not documented — and the second direction matters as much as the first, because an
+  undocumented public name is a support burden nobody agreed to.
+
+  **The exports are lazy, and that is the interesting part.** Every documented name lives in a
+  submodule, and re-exporting all eight eagerly costs **~1.14 s** and pulls numpy in, against
+  **~1.1 ms** for the bare package: a ~1000x regression paid by every `import provael` and by every
+  CLI invocation, in exchange for a shorter import line. `__init__.py` resolves them through a
+  PEP 562 `__getattr__` instead, so the cost is paid only by a caller who touches the name. The
+  cheap way to undo that is a convenience import added at the top of the file later, so the test
+  asserts the laziness holds by checking `sys.modules` in a subprocess — an in-process check would
+  pass regardless, since the suite has already imported half the package by then.
+
+  The submodule paths in the docs are unchanged and keep working; this only adds the top-level
+  spelling.
+
+
 ## [0.39.3] — 2026-09-04
 
 ### Fixed
