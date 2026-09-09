@@ -75,7 +75,7 @@ In the Action, the step runs **before** the policy is instantiated — the check
 the load:
 
 ```yaml
-- uses: provael/provael@v0.41.1
+- uses: provael/provael@v0.41.2
   with:
     policy: smolvla
     suite: libero
