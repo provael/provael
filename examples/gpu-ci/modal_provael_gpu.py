@@ -75,7 +75,7 @@ OUT_DIR_FILE = "gpu-scheduled-outdir.txt"
 #: A canary's job is to be recent, which is an argument for tracking the newest release, not for
 #: tracking it implicitly. Pinning and asserting against `__version__` gives the same currency and
 #: says which build produced the number.
-PROVAEL_PIN = "0.41.1"
+PROVAEL_PIN = "0.41.2"
 PROVAEL = f"provael[lerobot]=={PROVAEL_PIN}"
 
 

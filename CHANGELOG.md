@@ -6,6 +6,52 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.41.2] — 2026-09-09
+
+### Added
+
+- **`watch/publish-freshness.json` — the release-drift window, published so a consumer reads the
+  answer rather than reimplementing the rule.** `watch/freshness.json` reports when *anything* was
+  last measured, and a one-episode timing probe satisfies it: on 8 September a $0.06 probe put that
+  badge at `today` while the published 44/50 headline was still measured with v0.32.0, nine minors
+  back. The window that catches that lived in `provael doctor` and nowhere readable, so anyone
+  wanting the same three numbers had to recompute them against `watch/measurements.json` — and a
+  reimplemented staleness rule drifts in the reassuring direction by default, because a widened
+  window looks exactly like a project keeping up.
+
+  Fields: `measuredWith`, `measuredAt`, `releasesBehind`, `staleAfterReleases`, `isStale`,
+  `currentVersion`. `measuredWith` is the version behind the **largest** real campaign rather than
+  the newest record, so a probe cannot displace a 350-episode run. An unmeasured project publishes
+  `null` for the gap and the verdict rather than `0` and `false` — zero is the reassuring answer and
+  must never be the fallback.
+
+  **This is not the cross-repo constant fix.** That was `staleAfterReleases` in `watch/release.json`
+  in 0.41.1; www.provael.com read its own `STALE_AFTER_RELEASES = 2` out of `src/lib/freshness.ts`
+  until then and now reads the product's. What is new here is the *result* of applying that window,
+  which nothing published before. The constant appears in both artifacts on purpose and cannot
+  drift: both render from `provael.watch.STALE_AFTER_RELEASES` and both are gated by
+  `make check-docs`. That is precisely the property the cross-repo copy lacked — no shared source,
+  and neither side able to see the other.
+
+  **No `generatedAt`, deliberately.** `gen_release_artifact.py` and `gen_measurement_ledger.py` both
+  refuse a wall-clock field, and `test_measurement_ledger.py` asserts it by name: one would make the
+  output differ on every run, so `--check` would stop meaning "current" and the new
+  `make check-publish-freshness` gate could never pass on a clean tree. `measuredAt` carries the
+  "when" a reader wants — the instant of the measurement being described, a fact about the run
+  rather than about the moment the script executed.
+
+- **`watch/README.md`** — the consumption surface had no prose documentation at all. Six generated
+  artifacts, what each answers, why the two freshness files disagree on purpose, and the two
+  properties every file holds: no wall-clock values, and no unverifiable fields.
+
+- **`make check-publish-freshness`**, wired into `check-docs` beside `check-release` and
+  `check-measurement-ledger`, plus `make gen-publish-freshness`.
+  `tests/test_publish_freshness_artifact.py` binds the artifact to the code rather than to a
+  literal, and was mutation-tested against a widened window in either file, a softened verdict and a
+  shrunken gap. One mutation initially escaped because `STALE_AFTER_RELEASES = 2` also appears in a
+  comment *above* the assignment, so the edit landed in prose — the same shape as a version guard
+  firing on a sentence that quotes the version it corrects.
+
 ## [0.41.1] — 2026-09-08
 
 ### Added

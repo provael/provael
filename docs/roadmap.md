@@ -6,6 +6,18 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
 
 - **Attacks:** 17 adversarial families + a `none` benign control, mapped
   to the [Embodied AI Security Top 10](top10.md).
+- **Publication freshness as a derivable artifact** (`watch/publish-freshness.json`), shipped in
+  **0.41.2**. `watch/freshness.json` answers when *anything* was last measured, and a one-episode
+  timing probe satisfies it — on 8 September 2026 a $0.06 probe put that badge at `today` while the
+  published 44/50 headline was still measured with v0.32.0, nine minors back. The second window
+  that catches this existed in `provael doctor` and nowhere a consumer could read, so anyone wanting
+  the same three numbers had to reimplement the rule against `watch/measurements.json` — and a
+  reimplemented staleness rule drifts in the reassuring direction by default. See
+  [`watch/README.md`](https://github.com/provael/provael/blob/main/watch/README.md) for the whole
+  consumption surface and why the two freshness files disagree on purpose.
+
+  This is **not** the cross-repo constant fix; that was `staleAfterReleases` in `watch/release.json`
+  in 0.41.1, which www.provael.com now reads instead of holding its own copy.
 - **White-box gradient attacks** (`gradient_patch`), shipped in **0.39.0, 1 September 2026**.
   Untargeted L-inf projected gradient ascent through the policy's own vision encoder, GPU-gated
   and sim-only. This was listed under Planned for two days after it shipped, and neither

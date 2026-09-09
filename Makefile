@@ -47,7 +47,7 @@ check: lint typecheck test ## The full pre-push gate
 
 # ── Documentation integrity ──────────────────────────────────────────────────
 
-check-docs: check-doc-counts check-measurement-ledger check-release check-links ## Every doc gate that runs offline
+check-docs: check-doc-counts check-measurement-ledger check-release check-publish-freshness check-links ## Every doc gate that runs offline
 
 check-doc-counts: ## Fail if a generated inventory line is stale
 	$(PY) scripts/gen_doc_counts.py --check
@@ -58,6 +58,9 @@ fix-doc-counts: ## Rewrite the generated inventory lines from the registries
 check-release: ## Fail if watch/release.json disagrees with provael.__version__
 	$(PY) scripts/gen_release_artifact.py --check
 
+check-publish-freshness: ## Fail if watch/publish-freshness.json is stale against the version or the ledger
+	$(PY) scripts/gen_publish_freshness_artifact.py --check
+
 check-cli-surface: ## Fail if `provael --help` differs from the committed snapshot
 	uv run python scripts/gen_cli_surface.py --check
 
@@ -66,6 +69,9 @@ gen-cli-surface: ## Rewrite the CLI surface snapshot (adopter-visible: say so in
 
 gen-release: ## Rewrite watch/release.json from provael.__version__
 	$(PY) scripts/gen_release_artifact.py
+
+gen-publish-freshness: ## Rewrite watch/publish-freshness.json from the version and the ledger
+	$(PY) scripts/gen_publish_freshness_artifact.py
 
 check-measurement-ledger: ## Fail if watch/measurements.json is stale
 	$(PY) scripts/gen_measurement_ledger.py --check

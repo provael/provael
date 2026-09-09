@@ -157,7 +157,7 @@ ATTACKS = "none,instruction,visual,injection"
 #: pushed registry, because the image was rebuilt from a layer that had resolved `@main` weeks
 #: earlier. That failure was loud. The same staleness on a code path that still RUNS is silent,
 #: and is exactly what happened to `calibrate`.
-PROVAEL_PIN = "0.41.1"
+PROVAEL_PIN = "0.41.2"
 PROVAEL = f"provael[lerobot]=={PROVAEL_PIN}"
 
 STAGES: dict[str, dict[str, str]] = {
