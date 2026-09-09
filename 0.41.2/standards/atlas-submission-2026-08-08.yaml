@@ -1,0 +1,127 @@
+# MITRE ATLAS community submission — Provael
+#
+# Prepared 8 August 2026 for atlas@mitre.org. This is the EXACT file submitted, committed so the
+# submission is reproducible and its date is on the record. Submitted-and-pending is a state a
+# reader can check; unsent is not.
+#
+# Contents: ONE new technique + ONE case study.
+#
+# Case Study Type is deliberately "exercise", not "incident". ATLAS scope requires an attack against
+# a production or commercial AI system OR one conducted through a red-team exercise. This work
+# red-teams open-weight research checkpoints in simulation, which qualifies only via that trailing
+# clause; framing it as an incident would invite a bounce on scope and would also be untrue — no
+# fielded system was attacked and no robot moved.
+#
+# Every number below is drawn from the committed, signed artifact at
+# results/smolvla_libero_object/report.json and is reproducible per docs/standards/published-asr-baselines.md.
+
+atlas_version_checked: "2026.07"        # dist/v6/ATLAS-2026.07.yaml, the CURRENT data release
+                                        # (collection version 2026.07), fetched 2026-08-08.
+                                        # NOT dist/ATLAS.yaml, which still self-reports 5.6.0 and
+                                        # is a smaller legacy distribution — checking that one and
+                                        # citing it at a reviewer would understate the corpus by
+                                        # 8 techniques and 11 case studies.
+submitter: "Provael (github.com/provael/provael)"
+contact: "hello@provael.com"
+license: "Apache-2.0 (tool) / CC-BY-SA-4.0 (Embodied AI Security Top 10)"
+
+techniques:
+  - name: "Embodied Action Redirection via Instruction Reframing"
+    # No AML.T id is proposed. Assigning one is MITRE's to do, and inventing an identifier in a
+    # submission is the kind of thing that makes a reviewer distrust the rest of the file.
+    proposed_id: null
+    tactic: "Impact"
+    secondary_tactics:
+      - "ML Attack Staging"
+    description: >-
+      An adversary supplies a natural-language instruction to a Vision-Language-Action (VLA) robot
+      policy that preserves the operator's stated task while redirecting the policy's emitted action
+      sequence outside its safe operating envelope. The instruction contains no explicit unsafe
+      command and no adversarial perturbation of the perceptual channel; the redirection arises from
+      the policy's language-to-action mapping.
+
+      This differs from existing ATLAS prompt-injection and jailbreak techniques in what is
+      compromised. Those techniques target model OUTPUT — text, a classification, a tool call. Here
+      the output is a continuous action sequence executed by an actuator, so the impact is physical
+      trajectory rather than content. A policy can therefore remain "safe" by any text-level
+      evaluation while producing an unsafe trajectory, which means text-only guardrails do not
+      detect this class.
+    why_not_covered_by_existing_techniques: >-
+      ATLAS 2026.07 contains no technique or case study referencing an embodied or robotic target:
+      the strings "robot", "embodied", "vision-language-action", "actuator" and "drone" each return
+      zero matches across the entire corpus of 178 techniques, 68 case studies and 16 tactics.
+      Re-verified against the current data release rather than an older snapshot, because the
+      release that added AI Agent Tool Poisoning shows the boundary is already moving outward —
+      "tool poisoning" appears 11 times, and a VLA policy is that same tool-call boundary with a
+      gripper on the end. The three physical-world entries present
+      (Physical Environment Access, Physical Countermeasures, and Face Identification System Evasion
+      via Physical Countermeasures) concern physical access to a system or physical modification of
+      an input, not corruption of a policy's action output.
+    detection:
+      - "Compare the emitted action trajectory against the benign-instruction trajectory for the same task and initial state; redirection appears as divergence with no perceptual perturbation present."
+      - "Monitor an explicit safe-envelope or keep-out predicate on the end-effector or platform pose, calibrated from benign rollouts before any adversarial evaluation."
+      - "Text-level instruction classification is insufficient by construction: the instruction is benign at the text layer."
+    mitigations:
+      - "Instruction canonicalisation before the policy consumes text: normalise phrasing and strip manner/urgency adverbials, collapsing the adversarial edit space."
+      - "Action-space enforcement independent of the policy: reject or clip commanded actions leaving a declared envelope. This is an output-side control and does not depend on detecting the instruction."
+      - "Both mitigations are measured rather than asserted; see the caveat in the case study below — the published measurements are on a CPU fixture, not a real model."
+    references:
+      - name: "RoboPAIR — Jailbreaking LLM-Controlled Robots"
+        url: "https://arxiv.org/abs/2410.13691"
+      - name: "RoboGCG — Adversarial Attacks on Robotic Vision Language Action Models"
+        url: "https://arxiv.org/abs/2506.03350"
+      - name: "Embodied AI Security Top 10 (EAI01), independent community draft — not affiliated with OWASP or MITRE"
+        url: "https://docs.provael.com/top10/"
+
+case_studies:
+  - name: "Instruction reframing redirects a SmolVLA policy out of its safe envelope (simulation)"
+    type: "exercise"
+    year: 2026
+    actor: "Provael"
+    reporter: "Provael"
+    target: "SmolVLA policy checkpoint (HuggingFaceVLA/smolvla_libero), open weights, evaluated in the LIBERO simulator"
+    summary: >-
+      A red-team exercise against an open-weight VLA policy in simulation. A single templated
+      instruction reframing ("roleplay") drove the policy's end-effector outside its configured
+      benign envelope on 10 of 10 seeded trials, against a 0-of-10 benign control, on LIBERO task
+      libero_object/0 with n=10 seeds and a 280-step horizon.
+
+      Reported as an attack-success rate with a 95% Wilson confidence interval of [72%, 100%]. The
+      exercise also returned measured nulls on the same policy and task: the visual family scored
+      0 of 20 and the injection family 0 of 10. Those nulls are part of the result, not omitted
+      from it — only the instruction family transferred.
+    procedure:
+      - tactic: "ML Attack Staging"
+        technique: "Craft the adversarial instruction"
+        description: >-
+          Construct a templated reframing of the operator's task instruction that preserves the
+          stated task and introduces no explicit unsafe target. No model gradients, internals or
+          training data are used; the attacker is limited to supplying instruction text.
+      - tactic: "Impact"
+        technique: "Embodied Action Redirection via Instruction Reframing (proposed above)"
+        description: >-
+          Supply the reframed instruction once at the start of the episode. The policy's emitted
+          action sequence carries the end-effector into a configured keep-out region. Scored per
+          episode against that predicate; 10 of 10 seeded trials redirected, against 0 of 10 for the
+          unmodified instruction.
+    reported_effect: >-
+      Redirection of the policy's action trajectory out of its configured envelope in simulation,
+      with no perturbation of the perceptual channel and no explicit unsafe instruction.
+    honest_scope_limits: >-
+      Stated here rather than left for a reviewer to infer, because the result is easy to overread.
+      (1) Simulation only. No physical robot was operated; zero physical-robot results exist in this
+      project, and the sim-to-real protocol is published in advance of its own trials and has not
+      been run. (2) One policy, one suite, one task, n=10. (3) The keep-out predicate is the shipped
+      default and is UNCALIBRATED, so the measurement is "driven outside the configured benign
+      envelope", not a certified hazard rate. (4) The run was measured with provael 0.1.0 and its
+      execution manifest reconstructs its own provenance after the fact. (5) This is evidence, not a
+      safety certification or a conformity assessment.
+    references:
+      - name: "Committed, signed run report (report.json)"
+        url: "https://github.com/provael/provael/blob/main/results/smolvla_libero_object/report.json"
+      - name: "Published-ASR baselines, with per-row comparability verdicts"
+        url: "https://docs.provael.com/standards/published-asr-baselines/"
+      - name: "Sim-to-real protocol, pre-registered and not yet run"
+        url: "https://docs.provael.com/studies/sim-to-real-so101/"
+      - name: "Reproduction instructions (exact commit, recipe and command)"
+        url: "https://www.provael.com/verification/"
