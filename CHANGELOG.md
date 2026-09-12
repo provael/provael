@@ -6,6 +6,53 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- **The Python versions this package claims, and the date its citation names, are now checked
+  rather than asserted.** Three surfaces stated something nothing verified (#220, #221, #222).
+
+  **The CPU gate runs on 3.13 as well as 3.12.** `requires-python = ">=3.12"` admits 3.13 and 3.14,
+  while `.github/workflows/ci.yml`'s `check` job pinned `python-version: "3.12"` and nothing else —
+  so "works on 3.13" was untested rather than merely unadvertised. `check` is now a matrix over
+  `["3.12", "3.13"]` with `fail-fast: false`, because a break on one interpreter is a fact *about*
+  that interpreter and the other leg's result is what says whether it is version-specific. Only that
+  job changed: `release`, `docs`, `freshness`, `coverage-badge`, `gpu-arm`, `gpu-scheduled` and
+  `leaderboard-submission` stay on 3.12, since each publishes an artifact and a matrix there
+  multiplies artifacts rather than coverage.
+
+  **`Programming Language :: Python :: 3.13` is added to the trove classifiers, on the strength of
+  that leg and nothing else.** PyPI's sidebar renders the classifier list rather than
+  `requires-python`, so the page read 3.12-only against an open floor — someone skimming it could
+  reasonably conclude 3.13 was unsupported.
+
+  **3.14 is in neither list, and not because provael fails on it.** The suite passes there — 1418
+  passed, 15 skipped on CPython 3.14.2 — but `uv.lock` pins `numpy==2.2.6`, which publishes a cp314
+  macOS wheel and **no cp314 manylinux wheel**, so `uv sync --locked` cannot install on
+  `ubuntu-latest` under 3.14. It is the only cp314 gap in the locked CPU set. The lane and the
+  classifier land together when the lock moves to a numpy that ships one (2.5.3 does), rather than
+  by loosening `--locked` and giving up the property that every lane installs the set a release is
+  built from. `requires-python` keeps its open upper bound for a separate reason: a cap is baked
+  into every published sdist and wheel permanently, so a `<3.14` added today would make v0.41.2
+  uninstallable on 3.14 even once 3.14 is verified — and `CITATION.cff` exists precisely so a
+  citation names a version a reader can still install.
+
+  **`CITATION.cff` said `date-released: "2026-09-06"`; the v0.41.2 tag was created 2026-09-09.** The
+  file's own comment already described this failure from the 0.25.0 release — a citation that "named
+  a date three days before the artifact existed" — and then concluded that the date "is not
+  machine-checkable against a tag, so it is on the release author". It recurred, by three days
+  again. It *is* checkable, because the tag carries its creation date.
+  `tests/test_version_consistency.py::test_citation_date_matches_its_tag` now compares
+  `date-released` against `git tag -l --format='%(creatordate:short)' v<version>`, and skips when
+  that tag is not in the clone so that neither a shallow checkout nor the release-prep commit —
+  where `version` names the release about to be cut — fails for the wrong reason.
+  `test_the_tag_date_lookup_actually_resolves` holds the other end, so a broken lookup goes red
+  instead of turning the skip permanent. The date is no longer guarded by the release author's
+  memory.
+
+  #220 reported the file at `0.29.1` / `2026-07-31`. That part was already fixed and has read
+  `0.41.2` since the 0.41.2 release; the date is what the report did not catch, and what the guard
+  it asked for now covers.
+
 ## [0.41.2] — 2026-09-09
 
 ### Added

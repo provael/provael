@@ -6,6 +6,12 @@ build-backend = "hatchling.build"
 name = "provael"
 description = "Provael — a model-agnostic tool to red-team open Vision-Language-Action (VLA) robot policies in simulation and report an Attack Success Rate (ASR)."
 readme = "README.md"
+# NO UPPER BOUND, and that is a decision rather than an omission. A cap is baked into every sdist
+# and wheel the moment it is published, so a `<3.14` added today would make v0.41.2 refuse to
+# install on 3.14 permanently — including once 3.14 is verified, and including for the reader who
+# arrived via CITATION.cff, which exists precisely so a citation names a version someone can still
+# install. What is actually TESTED is stated where it can be corrected after the fact: one trove
+# classifier below per interpreter a CI lane runs.
 requires-python = ">=3.12"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
@@ -34,7 +40,15 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
+    # ONE LINE PER INTERPRETER A CI LANE ACTUALLY RUNS, and no further. PyPI's sidebar renders this
+    # list rather than `requires-python`, so an entry here is a support claim, and an unproven one is
+    # the same shape of overclaim this tool exists to catch. 3.13 arrives with the matrix leg in
+    # ci.yml that proves it (#221, #222) — before that the page read 3.12-only against a >=3.12
+    # floor. 3.14 is deliberately absent: the suite passes on it, but uv.lock pins numpy 2.2.6,
+    # which publishes no cp314 manylinux wheel, so `uv sync --locked` cannot stand a lane up on
+    # ubuntu-latest. The classifier lands when the lane does, not before.
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Security",
     # src/provael/py.typed ships, so the package is checkable by a consumer's own mypy.

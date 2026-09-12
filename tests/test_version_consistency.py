@@ -108,6 +108,22 @@ def _released_versions() -> set[str]:
     return {line.lstrip("v").strip() for line in proc.stdout.splitlines() if line.strip()}
 
 
+def _tag_creation_date(version: str) -> str | None:
+    """The ``YYYY-MM-DD`` carried by ``vX.Y.Z``, or None when that tag is not in this clone.
+
+    ``creatordate`` is the annotated tag's own date where one exists and the tagged commit's
+    otherwise; this repo tags lightweight, so it is the latter. Either way it is a date belonging to
+    the object a reader checks out, which is what ``date-released`` claims to be.
+    """
+    proc = subprocess.run(
+        ["git", "tag", "-l", "--format=%(creatordate:short)", f"v{version}"],
+        cwd=REPO, capture_output=True, text=True, check=False,
+    )
+    if proc.returncode != 0:
+        return None
+    return proc.stdout.strip() or None
+
+
 def _pins_in_repo() -> list[tuple[Path, str, str]]:
     """Every ``(path, kind, version)`` git-ref pin in the tree."""
     found: list[tuple[Path, str, str]] = []
@@ -125,6 +141,63 @@ def test_citation_version_matches_the_package() -> None:
     """CITATION.cff is what a citing paper reproduces; a stale version misattributes the work."""
     cff = yaml.safe_load((REPO / "CITATION.cff").read_text(encoding="utf-8"))
     assert cff["version"] == __version__
+
+
+def test_citation_date_matches_its_tag() -> None:
+    """``date-released`` must name the day the version beside it was actually tagged.
+
+    THE FAILURE, TWICE — the second time straight through the comment warning about the first. The
+    0.25.0 release bumped ``version`` and left ``date-released`` on 0.22.0's date, so a citation to
+    0.25.0 named a day three days before the artifact existed. CITATION.cff absorbed that as prose
+    telling the release author to bump both fields, and 0.41.2 then shipped ``2026-09-06`` against a
+    v0.41.2 tag created 2026-09-09. Three days again.
+
+    That comment's own conclusion is what allowed the repeat: it said the date "is not
+    machine-checkable against a tag, so it is on the release author". A tag carries its creation
+    date, so it is checkable — and everywhere else this repo already refuses to let a published fact
+    depend on someone remembering to update it.
+
+    IT SKIPS RATHER THAN FAILS when the tag is absent, which covers two unrelated absences: a
+    shallow clone with no tags at all, and the release-prep commit, where ``version`` names the
+    release about to be cut and its tag cannot exist yet.
+    :func:`test_every_pin_names_a_tag_that_exists` is the guard that refuses to pass vacuously on a
+    tagless CI checkout; repeating that assertion here would turn every release PR red for the
+    second, entirely legitimate reason. :func:`test_the_tag_date_lookup_actually_resolves` holds the
+    other end, so the skip cannot become permanent in silence.
+    """
+    cff = yaml.safe_load((REPO / "CITATION.cff").read_text(encoding="utf-8"))
+    version, claimed = str(cff["version"]), str(cff["date-released"])
+
+    tagged = _tag_creation_date(version)
+    if tagged is None:
+        pytest.skip(f"v{version} is not in this clone (shallow checkout, or not tagged yet)")
+
+    assert claimed == tagged, (
+        f"CITATION.cff says v{version} was released {claimed}, but the v{version} tag was created "
+        f"{tagged}. GitHub's 'Cite this repository' button reads this file verbatim, so the "
+        f"mismatch ships as a citation naming a day on which the artifact did not exist."
+    )
+
+
+def test_the_tag_date_lookup_actually_resolves() -> None:
+    """Guard the guard: a lookup that always answers None makes the date check skip forever.
+
+    :func:`test_citation_date_matches_its_tag` skips on a missing tag, which is correct — but a
+    helper broken in any way that yields nothing (a mistyped ``--format``, a git that stops
+    answering) is indistinguishable from a shallow clone, so the check would go quiet rather than
+    red. Same shape as :func:`test_the_scan_actually_finds_pins`, and for the same reason.
+    """
+    released = _released_versions()
+    if not released:
+        pytest.skip("no git tags available; cannot verify")
+
+    version = sorted(released)[0]
+    resolved = _tag_creation_date(version)
+    assert resolved is not None, f"v{version} is tagged, but the creatordate lookup returned nothing"
+    assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", resolved), (
+        f"the creatordate lookup returned {resolved!r}, which is not an ISO date. The --format "
+        f"argument has drifted, and every date comparison resting on it is meaningless."
+    )
 
 
 def test_readme_bibtex_version_matches_the_package() -> None:
