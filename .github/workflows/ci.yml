@@ -34,9 +34,29 @@ concurrency:
 #                                     match, but it does not run the GPU integration tests.
 jobs:
   check:
-    name: ruff + mypy + pytest (CPU, no lerobot)
+    # The matrix value is in the name because GitHub renders a custom job name verbatim: without it
+    # both legs appear under one label and a red tick does not say which interpreter broke.
+    name: ruff + mypy + pytest (CPU, no lerobot, Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      # Both legs always run to completion. A break on one interpreter is a fact ABOUT that
+      # interpreter, and the fastest way to know whether it is version-specific is the other leg's
+      # result — which fail-fast throws away at exactly the moment it is worth most.
+      fail-fast: false
+      matrix:
+        # `requires-python = ">=3.12"` admits more than one interpreter, so more than one is run.
+        # Until this existed, "works on 3.13" was untested rather than merely unadvertised, and the
+        # trove classifiers named 3.12 alone against that open floor (#221, #222). The classifier
+        # list in pyproject.toml is this list, and the two move together.
+        #
+        # 3.14 IS DELIBERATELY ABSENT, and not because provael fails on it — the suite passes there.
+        # `uv.lock` pins numpy 2.2.6, which ships a cp314 macOS wheel and no cp314 manylinux one, so
+        # `uv sync --locked` below cannot install on ubuntu-latest under 3.14. It is the only cp314
+        # gap in the locked CPU set. The leg returns when the lock moves to a numpy that publishes
+        # one (2.5.3 does) — not by loosening `--locked`, which would make every lane stop
+        # reproducing the set the release is built from.
+        python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -49,12 +69,17 @@ jobs:
           # `fetch-depth: 0` and not `fetch-tags: true`: the latter was tried first and CI still
           # came up tagless on a PR's merge ref, which the guard caught. Full history is cheap on
           # a repo this size and is unambiguous.
+          #
+          # `test_citation_date_matches_its_tag` in the same module reads the tag list too, and it
+          # SKIPS rather than fails when the tag is missing — deliberately, since a release PR bumps
+          # `version` before the tag exists. That makes it the guard that goes quiet first if this
+          # line regresses, so it is worth knowing it rides on the same fetch.
           fetch-depth: 0
 
-      - name: Install uv (pinned Python 3.12)
+      - name: Install uv (Python ${{ matrix.python-version }})
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
           enable-cache: true
 
       - name: Sync core + dev (no extras)

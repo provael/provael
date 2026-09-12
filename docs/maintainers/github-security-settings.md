@@ -9,7 +9,10 @@ access — an unverified checklist is worse than none.
 ## Branch protection — `main`
 
 - [ ] Require a pull request before merging (no direct pushes)
-- [ ] Require the CI status check (ruff + mypy + pytest) to pass
+- [ ] Require **every** CI status check to pass. The `check` job is a matrix over the interpreters
+      `pyproject.toml` claims, so it reports one context per leg — `ruff + mypy + pytest (CPU, no
+      lerobot, Python 3.12)` and the same for 3.13. Requiring one leaves the other advisory, and
+      a leg added later is not required until someone comes back here.
 - [ ] Require the docs-strict + evidence-integrity checks to pass
 - [ ] Require branches to be up to date before merging
 - [ ] Require conversation resolution before merging
