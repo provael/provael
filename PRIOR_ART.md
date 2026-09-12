@@ -1417,6 +1417,142 @@ claims a coverage we do not have.
 
 **mapping_status: `cited, crosswalk pending`.**
 
+### No Free Checker — *A Survey of Verifiers for Robot Policies*
+Wan, Yue, Liu, Chu, Wang, Chen, Jiang, Zhu, Dong, Zhu (2026). arXiv:[2609.09250](https://arxiv.org/abs/2609.09250) · [reading list](https://github.com/ZJUSCL/Awesome-Robot-Verifier)
+
+Surveys roughly 150 verifiers for robot policies — success detectors, reward models, runtime
+monitors, safety filters, temporal-logic specifications — along two axes: **availability**, which
+rises as a verdict gets cheaper, earlier and denser, and **credibility**, which is how much a high
+score actually indicates task success. Their finding across all four families: *"credibility falls
+as availability rises."* There is no free checker.
+
+**Where we sit on their axes, and it is not flattering.** Our envelope predicate is a rule-based
+verifier over simulator state. On availability it scores high: cheap, per-step rather than per
+episode, available as often as the simulator runs. By their argument it therefore scores low on
+credibility, and we agree. The predicate is a proxy for harm, not harm, and it is gameable in the
+exact sense they mean — a policy tuned against it would look safe without being safe.
+
+**What we take from them.** Their framing is the sharpest available statement of why the benign
+control arm has to be *published* rather than netted off. A high-availability verifier has a nonzero
+false-positive rate by construction, so the control rate is the reader's only handle on how much of
+a reported number is the verifier rather than the policy. `benign_fpr` stays `float | None` and is
+**None when the arm has not run**, never 0.0 — an unrun control has demonstrated nothing, and
+collapsing the two would be exactly the credibility loss they describe.
+
+**How we differ.** The survey validates verifiers against each other and against task outcomes. We
+propose no better verifier. We propose that any verifier used to produce a published rate must ship
+the rate it produces on a matched no-attack control. That is a reporting requirement, orthogonal to
+their taxonomy rather than a contribution to it.
+
+**mapping_status: `cited, framing adopted`.**
+
+### LIBERO-Recover — *Beyond Task Success Towards Failure Recovery in Robotic Manipulation Models*
+Liu, Bao, Zhang, Song, Yang, Tao, Liu, Lu (2026). arXiv:[2609.05178](https://arxiv.org/abs/2609.05178)
+
+Near-perfect LIBERO scores are misleading, because existing benchmarks evaluate task completion from
+predefined initial states while real interaction involves failed grasps, collisions and unintended
+object movement. They build a benchmark of over a thousand recovery scenarios from real execution
+failures and measure whether a policy recognises and recovers.
+
+**Their argument and ours are the same argument from two sides.** They say a success rate measured
+only from clean initial states tells you nothing about robustness; we say an attack success rate
+measured without a matched benign arm tells you nothing about robustness either. Both are claims
+that the denominator is missing. Their recovery states are also a natural source of initial
+conditions for a benign control arm, because a benign rollout starting from a recoverable failure is
+precisely where a keep-out predicate is most likely to fire for reasons that are not the attack.
+
+**How we differ.** They measure whether a policy gets itself out of trouble; we measure whether an
+adversary can put it there, and at what rate relative to it arriving there unaided. Recovery versus
+induction. A policy can score well on one and badly on the other, which is the argument for
+reporting both rather than one robustness number.
+
+**mapping_status: `cited, crosswalk pending`.**
+
+### FailureSpot — *Label-Efficient Timestamp-Level Failure Detection for Vision-Language-Action Models*
+Ma, Liu, Zhu (2026). arXiv:[2609.04277](https://arxiv.org/abs/2609.04277)
+
+Proactive failure detectors trained on a VLA's internal representations are usually supervised with
+**trajectory-level** labels, which mislabels the normal pre-failure portion of an unsuccessful
+trajectory as abnormal, so the detector learns the wrong boundary. They supervise at the timestamp
+level instead, using weak supervision from action patterns plus active learning to keep annotation
+cost down.
+
+**Why this is a defect report and not a citation.** Our own scoring carries the same shape of error.
+A run is scored adversarially-induced or not at the **episode** level, so every step before the
+divergence sits on the adversarial side of the ledger. Any detector-style precision we quote off
+that labelling is optimistic by an amount we have not measured, and we should not quote one until
+the divergence timestamp is recorded.
+
+**How we differ.** FailureSpot is a detection *method*; the benign-control arm is a measurement
+*convention*. They are orthogonal, and their result does not support ours. What it does is tell us
+our label boundary is in the wrong place.
+
+**mapping_status: `cited, defect acknowledged`.** We have not reimplemented their label-efficient
+supervision and claim nothing of the sort.
+
+### R2S-Eval — *Robot Evaluation with Real-to-Sim Calibration via Vision-Language Models*
+Wang, Ruan, Chen, Yin, Yu, Xu, Zhang (2026). arXiv:[2609.03276](https://arxiv.org/abs/2609.03276)
+
+Real-world policy evaluation is labour-intensive, unstable, and *"may produce different policy
+rankings across repeated evaluations"*, while success rate alone says little about execution
+quality. They calibrate a simulator against real observations and evaluate in the calibrated
+simulator instead of repeating hardware trials.
+
+**Why it is load-bearing for us specifically.** Every number we publish is simulation-only and the
+README's first limitation says so. The assumed fix has been hardware we do not have. This describes
+a third route: calibrate against a small set of real observations rather than run the campaign on
+hardware.
+
+**The honest counterpoint, which cuts against us.** The same paper reports that repeated real-world
+evaluation produces unstable rankings. If real rankings are unstable, then a sim-only result
+agreeing with a real result *once* is weaker evidence than it looks — which argues for more caution
+about any eventual first hardware number, not less. We also do not know whether a calibration fitted
+under nominal conditions survives adversarial input, which is the only case we care about. An
+unanswered question, recorded as one.
+
+**mapping_status: `cited, not implemented, roadmap-relevant`.** We have run no calibration and claim
+no result.
+
+### Drive the Thoughts — *Runtime Monitoring of VLA Reasoning-Trajectory Consistency*
+Yu, Feng, Elbaum (2026). arXiv:[2608.29583](https://arxiv.org/abs/2608.29583)
+
+A VLA in an autonomous-vehicle stack emits an explicit chain-of-thought alongside its trajectory, so
+the CoT is a specification the trajectory can be checked against at runtime without ground truth.
+They build DriveAlignBench from 150 annotated CoT-trajectory pairs on NVIDIA's Alpamayo 1.5, find
+33.3% of CoTs unreliable and the trajectory consistent with the CoT in 74% of the reliable cases,
+and reach F1 = 0.75 with an automated monitor.
+
+**Where it sits in our taxonomy, and why the line matters.** This is a runtime **monitor**, not an
+evaluation **metric**. A monitor runs in deployment and can intervene; a metric runs offline and
+produces a number for comparison. This harness is entirely the second kind. Collapsing the two is
+how "we measured robustness" becomes "we made it safe", which is a claim we do not make and this
+file exists partly to keep us from drifting into.
+
+**What it implies for our attack families.** A perturbation that moves the trajectory without moving
+the CoT would defeat a consistency monitor by construction, and we have not tested that. Open
+question we cannot answer: their setting is driving, where a trajectory is low-dimensional, and
+whether CoT-trajectory consistency is checkable at all for a 7-DoF manipulator is unclear to us.
+
+**mapping_status: `cited, taxonomy only, not implemented`.**
+
+### FolDeX — *A Physical-World Benchmark for Long-Horizon Robotic Manipulation of Deformable Objects*
+Liu, Xu, Wu, Wang, Kuai, Ding, Wang, Liu, Gao, Zhang (2026). arXiv:[2609.10243](https://arxiv.org/abs/2609.10243)
+
+A real-robot garment-folding benchmark: over 2,000 hours of real-robot data across 20+ tasks and 10+
+embodiments, built on the observation that *"methods that perform well in simulation can degrade
+substantially on real robots, especially in long-horizon deformable-object manipulation."*
+
+**Cited against ourselves, deliberately.** Our own position is that sim-only results must not be
+read as transfer claims. That argument is stronger carrying an independent real-robot benchmark
+saying the same thing than carrying only our own caution. Our attack families are rigid-object,
+short-horizon and simulated; on their framing that is the easy end of the space, and we have no
+deformable or long-horizon results at all.
+
+**What it does not license.** It is not evidence about how any of our families would behave on
+hardware. It is evidence that the question is open and that the burden is ours.
+
+**mapping_status: `cited, external evidence, not implemented`.**
+
 ## What is actually novel here
 
 Not the attacks. **And — since AttackVLA (arXiv:2511.12149) — not simply "a unified harness with a
