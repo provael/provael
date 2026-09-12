@@ -160,6 +160,12 @@ backdoor forcing an attacker-specified multi-step action sequence. Its stated ga
 tend to induce untargeted failures or static action states, leaving targeted attacks that drive VLAs
 to perform precise long-horizon action sequences largely unexplored."
 
+They also name a reproducibility problem we hit from the other end: **differences in action
+tokenizers across VLA architectures "hinder reproducibility and fair comparison"**. That is the
+same seam *Same Weights, Different Robot* (below) opens at the deployment side, and the same one
+our action-space normalisation work keeps running into. If their taxonomy stabilises, ours should
+crosswalk onto it rather than compete with it.
+
 **How we differ — and where we do not.** Being honest here matters more than sounding novel:
 AttackVLA **already occupies** the "one harness, many attacks, comparable ASR" position, and it
 does so with **real-robot evaluation we do not have**. We do not claim to have originated a unified
@@ -1355,6 +1361,61 @@ done.
 
 **mapping_status: `complementary, listed for completeness`.** No crosswalk, and no claim of
 superiority in either direction: it detects, we elicit.
+
+### Same Weights, Different Robot — *A Deployment Safety View of VLA Policies*
+Tai (2026). arXiv:[2606.03724](https://arxiv.org/abs/2606.03724)
+
+**This one names a defect in our artifact, not a difference of view.** The argument is that a VLA
+policy is not defined by its checkpoint: the same normalised model output becomes a different
+physical action once action unnormalisation and controller conventions are applied, so two
+deployments agreeing on weights, prompt and benchmark suite can still be *executable-inequivalent*.
+The author formalises this as an **executable policy specification** problem — the policy is the
+model plus the action representation plus the metadata-selected unnormaliser plus the
+controller-facing conventions — and measures action-space drift without running inference. On
+LIBERO-Goal a metadata mismatch takes success from 28/28 to 2/28, which is the whole thesis in one
+number: nothing about the checkpoint changed.
+
+**How we differ — we do not, and that is the point.** We have been treating the checkpoint as the
+unit under test. `RunReport` identifies a policy by weights hash and config hash, and records
+neither the unnormaliser resolved at load time nor the controller convention. So two Provael reports
+on "the same policy" can be reports on two different executable policies, and nothing in our schema
+would detect it. The determinism contract does not help: both runs are internally deterministic, and
+byte-identical report generation says nothing about which unnormaliser was picked.
+
+**Action for us.** The resolved unnormaliser and controller convention belong in the report as
+first-class fields, bound by digest the way `ExecutionManifest` already binds runtime provenance.
+Until that ships, a Provael report identifies the **checkpoint**, not the deployed policy, and
+`/results` should say so rather than wait for someone else to find it. Tracked as
+[#227](https://github.com/provael/provael/issues/227), which also records that adding report
+fields moves the attestation subject digest and is therefore a schema migration.
+
+**mapping_status: `cited, adopted as a schema requirement`.** Not a crosswalk: we are taking the
+framing, and the credit for it is his.
+
+### SafeManip — *A Property-Driven Benchmark for Temporal Safety Evaluation in Robotic Manipulation*
+Huang, Huynh, Elbaum, Kira, Feng (2026). arXiv:[2605.12386](https://arxiv.org/abs/2605.12386)
+
+Task success does not imply safe execution, and a large share of manipulation safety failures are
+**temporal**: touching a clean surface after contamination, releasing an object before it is fully
+inside an enclosure. SafeManip defines reusable safety templates over finite executions using
+**Linear Temporal Logic over finite traces (LTLf)**, maps rollouts to symbolic predicate traces, and
+evaluates them with LTLf monitors across eight categories — collision and contact safety, grasp
+stability, release stability, cross-contamination, action onset, mechanism recovery, object
+containment, and enclosure access.
+
+**How we differ — by being blind to the category.** Our safety predicates are point-in-time. A
+keep-out predicate asks whether the end effector entered a region; it cannot ask whether it entered
+*after* a contaminating event, and ordering is exactly what their eight categories are about. Every
+temporal property in their suite is invisible to `workspace.py` as it stands. Their
+LTLf-over-finite-traces formulation is also a better-specified version of what our predicates are
+informally reaching for, so there is nothing to defend here.
+
+**Action for us.** The predicate layer should accept an LTLf monitor, and their eight categories are
+the right first target set. Until it does, our keep-out numbers cover the **state-based subset** of
+manipulation safety and must be described that way. Calling them "safety" without that qualifier
+claims a coverage we do not have.
+
+**mapping_status: `cited, crosswalk pending`.**
 
 ## What is actually novel here
 
