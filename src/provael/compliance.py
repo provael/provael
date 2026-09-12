@@ -8,7 +8,8 @@ EAI risks exercised, the per-task calibration metadata) onto the framework requi
 **ISO 10218-1/-2:2025** (cyber), **NIST AI 100-2 / AI RMF**, and **IEC 62443** — plus the
 functional-safety standards an accredited AI-safety inspection programme assesses robot software
 against (**IEC 61508**, **ISO 13849-1/-2**, **ISO/IEC TR 5469:2024**) and the in-development
-Type-C standard for dynamically stable robots (**ISO 25785-1**).
+Type-C standard for dynamically stable robots (**ISO 25785-1**), plus the first non-EU national
+statute in the catalogue, Korea's **AI Framework Act** (Act No. 20676, in force 22 January 2026).
 
 A boundary that holds across all of those: Provael supplies adversarial-robustness evidence as an
 **input** to a functional-safety argument. It computes **no SIL, no Performance Level, and makes no
@@ -131,6 +132,18 @@ _ISO_13849 = "ISO 13849"
 #: still a Committee Draft (ISO/CD, registered 8 May 2026). Named here as anticipatory
 #: positioning, never as a conformity claim.
 _ISO_25785 = "ISO 25785-1 (under development)"
+#: The first enforceable comprehensive AI statute outside the EU, and the first non-EU national
+#: statute in this catalogue. In force 22 January 2026 (promulgated 21 January 2025, commencing one
+#: year later under its own Addenda Art. 1). Article numbers below are the Act's own, read from the
+#: CSET English translation of Law No. 20676; the Enforcement Decree sets the numeric thresholds and
+#: is NOT the source of anything asserted here.
+#:
+#: SCOPE IS SECTORAL, NOT "ANY PHYSICAL MACHINE". Art. 2(4) enumerates the areas that make a system
+#: high-impact — energy, drinking water, health care, medical devices, nuclear, biometrics for
+#: criminal investigation, employment and loan assessment, transport, public decisions, school
+#: assessment. A VLA policy is inside this Act when it is deployed in one of those, not merely
+#: because it drives a robot. A general warehouse or factory arm is not enumerated.
+_KR_AI = "Korea AI Framework Act (Act No. 20676)"
 
 #: Ordered so the artifact (and tests) are deterministic.
 REQUIREMENTS: tuple[Requirement, ...] = (
@@ -436,6 +449,57 @@ REQUIREMENTS: tuple[Requirement, ...] = (
             "risk-assessment input to the AI risk-management process"
         ),
         evidence_refs=("report.json#/eai", "docs/top10.md"),
+        indicative=True,
+    ),
+    # Korea, Art. 34(1) — the duties on an operator "providing high-impact AI or AI-based products
+    # and services". Only the three subparagraphs a red-team result actually speaks to are mapped.
+    # Art. 34(1)2 (explainability), 34(1)3 (user protection) and 34(1)6 (Committee-resolved matters)
+    # are deliberately absent: Provael produces nothing on-point for them, and a row per
+    # subparagraph would read as coverage of the whole Article.
+    Requirement(
+        key="korea-ai-framework:art34-risk-management",
+        framework=_KR_AI, framework_id="korea-ai-framework",
+        control_id="Article 34(1)1",
+        control_title="Establishment and operation of a risk management plan",
+        provael_signal=(
+            "The EAI risk taxonomy as the threat catalogue for a high-impact system, with the "
+            "calibrated redirection rate + 95% CI per risk and the benign-FPR control as the "
+            "adversarial input to the operator's risk-management plan"
+        ),
+        evidence_refs=("report.json#/eai", "docs/top10.md"),
+        indicative=True,
+    ),
+    Requirement(
+        key="korea-ai-framework:art34-human-supervision",
+        framework=_KR_AI, framework_id="korea-ai-framework",
+        control_id="Article 34(1)4",
+        control_title="Human management and supervision of high-impact AI",
+        provael_signal=(
+            "Measured policy behaviour under adversarial instruction and observation, with "
+            "action-space integrity (EAI04) as the on-point evidence, showing WHAT a human "
+            "supervisor has to catch. It is not evidence of the supervisory arrangement itself, "
+            "and not of any stop, interruption or rollback mechanism: those are system-design "
+            "duties over the deployed system, and Provael exercises the policy, not the stop"
+        ),
+        evidence_refs=("report.json#/by_attack", "report.sarif"),
+        indicative=True,
+        required_eai=("EAI04",),
+    ),
+    Requirement(
+        key="korea-ai-framework:art34-documentation",
+        framework=_KR_AI, framework_id="korea-ai-framework",
+        control_id="Article 34(1)5",
+        control_title=(
+            "Preparation and storage of documents that demonstrate measures taken to ensure AI "
+            "safety and reliability"
+        ),
+        provael_signal=(
+            "report.json bound to its execution manifest by digest, plus the SARIF run, as one "
+            "such document for the adversarial-robustness measure and nothing wider. The "
+            "retention period, the rest of the document set and the storage duty are the "
+            "operator's"
+        ),
+        evidence_refs=("report.json", "report.json#/calibration", "report.sarif"),
         indicative=True,
     ),
 )

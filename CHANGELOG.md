@@ -6,6 +6,40 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- **Korea's AI Framework Act (Act No. 20676) enters the compliance catalogue — the first non-EU
+  national statute in it.** Three rows against Article 34(1), the duties on an operator "providing
+  high-impact AI or AI-based products and services": subparagraph 1 (risk management plan),
+  subparagraph 4 (human management and supervision) and subparagraph 5 (preparation and storage of
+  documents demonstrating safety and reliability measures). Article numbers are the Act's own, read
+  from the CSET English translation of Law No. 20676 (promulgated 21 January 2025, in force
+  22 January 2026 under its own Addenda Art. 1).
+
+  **Three of the six subparagraphs are deliberately absent.** 34(1)2 (explainability), 34(1)3 (user
+  protection) and 34(1)6 (matters the Committee resolves) have no on-point Provael signal, and a row
+  per subparagraph would read as coverage of the whole Article rather than of the part a red-team
+  result speaks to.
+
+  **34(1)4 carries `required_eai=("EAI04",)`, so it is a gap unless the action channel actually
+  ran.** A human-supervision duty is about the commanded motion a supervisor has to catch, so citing
+  it from a run that never touched the action channel would cite a measurement nobody made — the
+  same gate the functional-safety rows already use. Its `provael_signal` says in as many words that
+  the row evidences neither the supervisory arrangement itself nor any stop, interruption or
+  rollback mechanism: those are system-design duties over the deployed system, and Provael exercises
+  the policy, not the stop.
+
+  **Scope here is sectoral, not "any physical machine".** Art. 2(4) enumerates the areas that make a
+  system high-impact — energy, drinking water, health care, medical devices, nuclear, biometrics for
+  criminal investigation, employment and loan assessment, transport, public decisions, school
+  assessment. A VLA policy is inside this Act when it is deployed in one of those, not merely
+  because it drives a robot; a general warehouse or factory arm is not enumerated. The constant's
+  docstring in `compliance.py` says so, because the opposite reading is the easy one.
+
+  `results/smolvla_libero_object/attestation.insurer.json` is regenerated from the unchanged source
+  report: the assurance payload embeds the catalogue, so its `payloadSha256` moves. The subject
+  digest over `report.json` does not, and no attestation over a run report is invalidated.
+
 ### Fixed
 
 - **The Python versions this package claims, and the date its citation names, are now checked
