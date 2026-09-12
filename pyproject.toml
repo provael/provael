@@ -49,6 +49,9 @@ classifiers = [
     # ubuntu-latest. The classifier lands when the lane does, not before.
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    # Not a version claim: it says the package does not support Python 2, which is what stops an
+    # index rendering it as 2-and-3 compatible. Safe to state without a lane, unlike the two above.
+    "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Security",
     # src/provael/py.typed ships, so the package is checkable by a consumer's own mypy.
@@ -76,6 +79,9 @@ Changelog = "https://github.com/provael/provael/blob/main/CHANGELOG.md"
 # neither it nor the README, despite being the one artifact a visitor can click and immediately see
 # working.
 Leaderboard = "https://huggingface.co/spaces/Sattyam/provael-leaderboard"
+# deps.dev and the other supply-chain indexes ingest this block rather than accept edits, so a
+# missing security link there is fixed here or not at all.
+Security = "https://www.provael.com/security/"
 
 [project.scripts]
 provael = "provael.cli:app"
