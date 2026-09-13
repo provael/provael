@@ -14,7 +14,7 @@ Design pillars:
 - **Honesty**: measured transfers and honest nulls are both reported; stub-only results never masquerade as real-model claims (every attack carries threat-model metadata).
 - **Continuously measured, not point-in-time**: `results/` holds committed real-model run artifacts, and `watch.py` publishes a freshness signal over them. A standards body citing "Provael measured X" needs to know whether X was measured last night or last quarter, so staleness is a first-class output rather than something a reader has to infer.
 
-Five adopter surfaces ship from this repo, and a release moves all of them: the PyPI package, `action.yml` (GitHub Action, listed on the Marketplace), `.pre-commit-hooks.yaml`, the container image (`Dockerfile` → `docker-publish.yml`, multi-arch amd64 + arm64), and `leaderboard/` (public submissions, synced to a Hugging Face Space).
+Five adopter surfaces ship from this repo, and a release moves all of them: the PyPI package, `action.yml` (GitHub Action, listed on the Marketplace), `.pre-commit-hooks.yaml`, the container image (`Dockerfile` → `docker-publish.yml`, multi-arch amd64 + arm64, pushed to GHCR and mirrored to Docker Hub under a personal namespace because a `provael` organisation there is a paid plan), and `leaderboard/` (public submissions, synced to a Hugging Face Space).
 
 <!-- END AUTO-MANAGED -->
 
@@ -29,6 +29,9 @@ uv run provael --help        # run the CLI
 uv run ruff check .          # lint + import order
 uv run mypy src scripts/action   # strict type-check (pydantic plugin); scripts/action as CI does
 uv run pytest -q             # tests; GPU/LIBERO integration tests auto-skip
+make check                   # the same three commands, named — the Makefile wraps gates, never adds one
+make check-docs              # the offline doc gates: generated inventory lines, watch/ artifacts,
+                             # relative links — every one also enforced inside pytest
 
 # Focused test run:
 uv run pytest tests/test_attacks.py -q
@@ -43,7 +46,7 @@ uv build && uvx twine check dist/*
 PROVAEL_INTEGRATION=1 pytest tests/test_lerobot_adapter.py tests/test_libero_adapter.py -q
 ```
 
-CI (`.github/workflows/ci.yml`) is CPU-only by design and never installs GPU extras; `gpu-scheduled.yml` covers the real-model path. The rest of the wall: `checkpoint-security-gate.yml` (per-checkpoint regression + supply-chain integrity, emitting signed attestations), `docker-publish.yml` (multi-arch image), `freshness.yml` (refreshes the measurement-freshness badge), `coverage-badge.yml` (refreshes the published coverage and registry counts), `readme-quickstart.yml` (runs the README's own quickstart, so the docs are a test rather than a promise), `scorecard.yml`, `leaderboard-submission.yml`, `docs.yml`, `release.yml`. Use `uv sync --locked` to reproduce CI exactly.
+CI (`.github/workflows/ci.yml`) is CPU-only by design and never installs GPU extras; `gpu-scheduled.yml` covers the real-model path. The rest of the wall: `checkpoint-security-gate.yml` (per-checkpoint regression + supply-chain integrity, emitting signed attestations), `docker-publish.yml` (multi-arch image), `freshness.yml` (refreshes the measurement-freshness badge), `coverage-badge.yml` (refreshes the published coverage and registry counts), `readme-quickstart.yml` (runs the README's own quickstart, so the docs are a test rather than a promise), `changelog.yml` (refuses a PR that changes published behaviour without a changelog line — kept out of `ci.yml` so its red means exactly one thing), `gpu-arm.yml` (one named arm of the LIBERO suite on a Modal GPU, manual only, never scheduled), `leaderboard-restamp.yml` (re-stamps and re-signs the committed board without re-measuring anything), `scorecard.yml`, `leaderboard-submission.yml`, `docs.yml`, `release.yml`. Use `uv sync --locked` to reproduce CI exactly.
 
 `release.yml` refuses to cut a tag that `CHANGELOG.md` does not document (`scripts/check_changelog.py`), and the Action's gate logic lives in `scripts/action/` rather than inline in `action.yml` — lifted out specifically so it can be tested.
 
@@ -58,20 +61,26 @@ The CLI surface beyond `attack`: `reproduce`, `report`, `export`, `certify`, `at
 
 ```
 src/provael/
-├── cli.py            Typer app — the `provael` entry point
+├── cli/              Typer app (`provael.cli:app`), one module per command subject; _shared.py
+│                     holds the apps, and the import order in __init__.py IS the `provael --help`
+│                     order — tests/test_cli_surface.py snapshots it
 ├── runner.py         core loop: policy × suite × attacks → attack results
 ├── config.py         RunConfig — the deterministic input
 ├── types.py          Observation/State/Action aliases + pydantic result models
 ├── attacks/          attack families (instruction, visual, injection, backdoor,
 │                     sensor_spoof, humanoid, misalignment, confidentiality,
 │                     authorization, action / action_space, targeted_redirect,
-│                     baseline, optimized + optimized_patch / universal_patch)
+│                     weight_integrity, baseline, optimized + optimized_patch /
+│                     gradient_patch / universal_patch; controls.py is the benign arm)
 │                     + registry.py; base.py defines Attack / OptimizedAttack
 ├── defenses/         measured mitigations, held to the same evidential bar as attacks:
 │                     canonicalize, envelope, measure + registry.py
-├── policies/         adapters: lerobot (SmolVLA), openvla, openpi, groot (GR00T-N1),
-│                     stub (deterministic CPU) + registry.py; base.py is the ABC
-├── suites/           simulators: libero, metaworld, reach, humanoid, keepout_zones, stub
+├── policies/         adapters: lerobot (SmolVLA), stub (deterministic CPU), and three
+│                     DECLARED scaffolding — openvla, openpi, groot (GR00T-N1): implemented,
+│                     unit-tested, never run — + registry.py; base.py is the ABC
+├── suites/           simulators: libero, metaworld, reach, humanoid, keepout_zones, stub;
+│                     ai2_bridge is declared scaffolding; calibrations/ holds the committed
+│                     per-task keep-out calibrations
 ├── scoring/          per-family scorers, asr.py (ASR + Wilson CI), safety_cost.py
 │                     (risk-exposure time, cumulative cost, safe·unsafe × success·failure)
 ├── hosted/           FastAPI reference attestation server (open-core paid tier)
@@ -99,17 +108,17 @@ src/provael/
     crosswalk / avid / scorecard / leaderboard / calibration …  evidence emitters
 ```
 
-Repo top level beyond `src/`: `results/` (committed real-model run artifacts — the substrate `coverage.py` and the evidence manifest read), `watch/` (the published freshness, coverage and registry signals — `registry.json` exists for downstream consumers, not merely to colour a badge), `schemas/` (published, versioned JSON schemas for `report` and `leaderboard`, so a consumer can pin one), `notebooks/` (a five-minute intro), `PRIOR_ART.md` (the prior-art register), `Dockerfile`, `leaderboard/`, `studies/`, `examples/`, `docs/`, `scripts/`.
+Repo top level beyond `src/`: `results/` (committed real-model run artifacts — the substrate `coverage.py` and the evidence manifest read), `watch/` (the **consumption surface** — script-generated, pytest-gated artifacts a downstream derives a fact from instead of keeping its own copy: `registry.json`, `release.json`, `measurements.json`, `freshness.json`, `publish-freshness.json`, `coverage.json`; its README explains why the two freshness files disagree and are both right), `schemas/` (published, versioned JSON schemas for `report` and `leaderboard`, so a consumer can pin one), `notebooks/` (a numbered series from a five-minute intro to bring-your-own-policy; `binder/` runs them without a Google account), `paper/` (workshop submissions — one measurement, two venue framings), `Makefile` (one name per gate that already exists; it never adds enforcement), `PRIOR_ART.md` (the prior-art register), `Dockerfile`, `leaderboard/`, `studies/`, `examples/`, `docs/`, `scripts/`.
 
 - Attacks, defenses, policies, and suites self-register into registries; the runner resolves them by string key.
 - `attacks/base.py` carries threat-model metadata per attack: `eai_id`/`eai_name` (Embodied-AI Top-10 mapping), `attacker_access`, `action_head_class` — results are self-describing.
 - `attacks/controls.py` holds the benign-variation control arms (benign_reword, nonsense_text — LIBERO-PRO-style distribution-shift and encoder-degradation probes). They shipped tested-but-unregistered until `scoring/asr.py` grew a third "harmless-variation" role, because a control must be excluded from BOTH the adversarial ASR and the benign FPR; the scoring landed first, then registration. Both are now runnable via `--attacks control`. `harmless_variation_rate` returns `None` until the arm has actually run on that policy — an unrun control has not shown the reword is safe, and no site or doc may read it as 0%. The arm has since run, and `scoring/asr.py`'s `benign_control` is now the single resolver every emitter uses to pair a rate with its floor: an ASR is a difference against the benign rate, so a Wilson interval on the adversarial side and a bare percentage on the floor lets a reader believe the headline is separated from something firmer than it is. Both carry intervals, resolved in one place, so the pairing cannot drift between the Markdown report, the SARIF run, the ML-BOM, the OSCAL statement and the leaderboard row.
 - A result is not just a number: `evidence.py` records how far it was verified, `endpoints.py` separates the questions a run can answer, and `verdict.py` refuses to collapse them into one boolean. Preserve that separation — flattening it back into pass/fail is the failure mode these modules exist to prevent.
 - `tests/` mirrors modules 1:1 (`test_<module>.py`) with golden/drift-guard tests pinning the registry, manifest, and assurance schema.
-- `docs/` is the MkDocs-Material site (docs.provael.com); doc URLs are lowercase, and a retired URL gets a redirect, never a 404. `examples/` holds runnable scenario dirs. Besides the CLI, three adopter surfaces ship from this repo: `action.yml` (GitHub Action), `.pre-commit-hooks.yaml` (pre-commit hook), and `leaderboard/` (public submissions).
+- `docs/` is the MkDocs-Material site (docs.provael.com); doc URLs are lowercase, and a retired URL gets a redirect, never a 404. `examples/` holds runnable scenario dirs. The other adopter surfaces the Overview names — `action.yml`, `.pre-commit-hooks.yaml`, the container image, and `leaderboard/` — ship from this repo too.
 - `docs/standards/` and `docs/crosswalk/` map provael onto outside benchmarks and standards (RoboJailBench, SafeVLA-Bench, VLA-Arena, XPolicyLab). `tests/test_citations_resolvable.py` requires every row there to carry a globally resolvable identifier — an arXiv ID, a CVE, or a URL. Where an integration is planned rather than built, the crosswalk says so in those words.
-- **A ten-task LIBERO screen is ~15 GPU-hours and `provael attack` cannot resume** — `ledger.py` was built for exactly that and is not wired into the runner. So the suite runs one task per container (`examples/gpu-ci/modal_libero_suite.py`) and writes independent per-task `report.json` files, each a complete artifact of its own task. `combine.py` builds the cross-shard view those aggregate numbers come from. **That view must never be written to disk as `report.json`**: everywhere in this project a file by that name is an attestable artifact — `attest` signs one, the freshness badge dates one, the manifest digests one — and a combined view has no single execution behind it.
-- `coverage.py` exists because restated numbers drift: "fourteen families" survived a whole release after the registry moved to fifteen. The distinction it exists to protect: `len(ATTACKS)` counts registered *attacks*, not *families* — the registry holds adversarial attacks plus a benign control, and those group into a smaller number of adversarial families. Reading the dict length as a family count overstates coverage badly, and it is an easy mistake from the outside because the dict is keyed by attack name. Render both, each labelled; never retype either.
+- **A ten-task LIBERO screen is ~15 GPU-hours, so the suite runs one task per container** (`examples/gpu-ci/modal_libero_suite.py`) and writes independent per-task `report.json` files, each a complete artifact of its own task. `ledger.py` is wired into the runner now — `provael attack --resume <ledger.jsonl>` replays what a preempted container already measured instead of starting over — so sharding is no longer the only survivability mechanism, but it still earns its place: ten containers finish in a tenth the wall clock at identical GPU-seconds. `combine.py` builds the cross-shard view those aggregate numbers come from. **That view must never be written to disk as `report.json`**: everywhere in this project a file by that name is an attestable artifact — `attest` signs one, the freshness badge dates one, the manifest digests one — and a combined view has no single execution behind it.
+- `coverage.py` exists because restated numbers drift: "fourteen families" survived a whole release after the registry moved to fifteen. The distinction it exists to protect: `len(ATTACKS)` counts registered *attacks*, not *families* — the registry holds adversarial attacks plus a benign control, and those group into a smaller number of adversarial families. Reading the dict length as a family count overstates coverage badly, and it is an easy mistake from the outside because the dict is keyed by attack name. Render both, each labelled; never retype either. A third convention sits beside those two — *registered* vs *runnable*: three policy adapters and one suite are declared scaffolding, and `watch/registry.json` publishes both counts with the names, so a consumer can render the reason rather than only the shortfall. Reading the registered total as the runnable one is how the site once published 5 suites beside a registry that said 6.
 - `eai.py` lists **all ten** Top-10 risks, including the ones provael ships no attacks for, with an explicit coverage state per entry. They were once omitted, and the categories silently vanished from every crosswalk, scorecard and compliance report — which reads to a buyer as covered. "We do not test this, and here is why" is a legitimate answer; disappearing is not.
 - `watch.py` computes the badge colour at **refresh** time, not measurement time. The obvious design — have the nightly emit a green badge — fails in exactly the case the badge exists for: if the nightly dies, nothing regenerates the file and the badge freezes on its last green. A freshness indicator that cannot go stale-red is worse than none, because it asserts currency it is not checking.
 
@@ -119,7 +128,7 @@ Repo top level beyond `src/`: `results/` (committed real-model run artifacts —
 ## Code Conventions
 
 - Python 3.12+ only. `from __future__ import annotations` at the top of modules; PEP 695 `type` aliases for core types (e.g. `type Observation = dict[str, Any]`).
-- Ruff is the lint authority: line length 100, rules `E,F,I,B,UP,W,C4,SIM` (tests exempt from E501). Import order is ruff-managed.
+- Ruff is the lint authority: line length 100, rules `E,F,I,B,UP,W,C4,SIM,S` — `S` is the security lint, run on ourselves (tests exempt from E501 and from the S-rules an assert-based test legitimately trips). Import order is ruff-managed.
 - Mypy strict on `src/` with the pydantic plugin; every function signature is typed. Optional heavy deps (`lerobot`, `torch`, `transformers`, `cryptography`, `fastapi`, …) are `ignore_missing_imports` overrides and must be imported lazily behind guards — they are absent from the CPU build.
 - Value objects are frozen dataclasses; anything serialized into `report.json` is a pydantic `BaseModel`.
 - Docstrings are Sphinx-style with cross-references (`:class:`, `:mod:`, `:meth:`) and document contracts/invariants, not mechanics.
@@ -157,7 +166,8 @@ Repo top level beyond `src/`: `results/` (committed real-model run artifacts —
 ## Git Insights
 
 - Work lands via PR branches (`feat/…`, `docs/…`) merged to `main`; commits use conventional prefixes (`feat:`, `fix:`, `docs:`, `test:`, `chore:`) with scopes like `(policies)`, `(ci)`, `(attacks)`, `(defenses)`, `(compliance)`, `(crosswalk)`, `(standards)`, `(leaderboard)`.
-- Recent direction: the citation and prior-art surface — `PRIOR_ART.md`, `CITATION.cff`, a Zenodo-taggable release, a written-down JOSS decision, and crosswalks against peer benchmarks — layered on the standards-coverage work before it (safety-cost metrics borrowed in vocabulary but not units from ForesightSafety-VLA, functional-safety rows for the integrator certification path, the published-ASR-baselines table whose comparability column is the point of the table).
+- The September direction is derive-don't-retype: `watch/` became a six-file consumption surface after fourteen website pages rendered a version the repo had already moved past, the CLI split into a package with its `--help` order snapshotted, calibration picks the hazard face from data rather than a default argument, and the Korea AI Framework Act joined the compliance mappings.
+- Before that: the citation and prior-art surface — `PRIOR_ART.md`, `CITATION.cff`, a Zenodo-taggable release, a written-down JOSS decision, and crosswalks against peer benchmarks — layered on the standards-coverage work before it (safety-cost metrics borrowed in vocabulary but not units from ForesightSafety-VLA, functional-safety rows for the integrator certification path, the published-ASR-baselines table whose comparability column is the point of the table).
 - The first real-model suite result and the machinery that made it affordable landed together: a sharded GPU runner, the benign-reword control arm run against it, and a headline republished as a ten-task rate rather than a one-task existence proof. When a result is strengthened, the weaker phrasing is retired everywhere it was published — including on the website, which was still serving the superseded figure.
 - **A large share of `fix:`/`docs:` commits are self-corrections of the project's own claims** — a family count that was wrong, backends silently shown as run, a leaderboard signed/unsigned statement that contradicted its data, unresolvable Top-10 citations, a baseline figure taken from an abstract instead of the paper, a standard's name left truncated inside a quote, a superseded EU AI Act application date (now pattern-guarded by the regulatory-consistency test). The pattern to copy: correct the claim *and* land the guard that makes the error impossible to repeat.
 - A release moves more than the package version. `provael.__version__` is the source of truth (hatch reads it), but many adopter-facing files restate it — `CITATION.cff`, `action.yml`, `.pre-commit-hooks.yaml`, `README.md`, `docs/quickstart.md`, `examples/ci/*`, `leaderboard/app.py`, the reference security-gate workflow. `tests/test_version_consistency.py` fails on both a stale pin and a pin naming a tag that never existed, so a release is a search-and-replace the suite then confirms. `CHANGELOG.md` must document the tag or the release refuses to cut. Goldens and the manifest refresh in the same PR; downstream, the container image publishes, the leaderboard Space re-syncs, and the website re-pins its public-evidence manifest.
