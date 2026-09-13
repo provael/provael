@@ -87,6 +87,38 @@ All notable changes to this project are documented here. The format is based on
   `0.41.2` since the 0.41.2 release; the date is what the report did not catch, and what the guard
   it asked for now covers.
 
+### Fixed
+
+- **`provael submit` advised a command that does not exist.** The generated PR body told
+  reviewers to "verify the bundle offline with `provael verify …`"; the command is
+  `provael attest --verify`. `docs/errata.md`'s E-2026-01 carried the same phantom command
+  (`provael verify … --print-payload`) in its "how to tell whether a bundle is affected" block,
+  now replaced with the `jq | base64 -d` pipeline that actually reads the payload.
+- **Meta-World was listed as runnable with nothing saying it cannot complete a CLI run.**
+  `MetaworldSuiteAdapter` refuses LIBERO's default keep-out box (it lies behind the Sawyer arm),
+  the CLI has no zone option and no Meta-World calibration is committed, so `--suite metaworld`
+  raised at reset. `list-suites` and `doctor` now print the gating note beside the suite
+  (`suites.SUITE_GATING_NOTES`). Counts are unchanged: the suite is implemented and runnable from
+  the Python API with a zone derived from its own benign envelope.
+- **Execution manifests from the Modal GPU lanes recorded `commit: null`.** The container
+  pip-installs the pinned release and has no git checkout. The drivers now resolve the pinned
+  tag's commit on the runner and pass it as `PROVAEL_COMMIT`, which `_emit_execution_manifest`
+  honours when it is hex-shaped (`cli/_shared.py`); the two GPU workflows check out full history
+  so the tag resolves.
+- **`SECURITY.md` contradicted itself on when the CRA's open-source-steward duties start** (11
+  September 2026 in one paragraph, 11 December 2027 in another). 11 December 2027, per Article
+  71(2), throughout.
+- **`action.yml`'s Marketplace description was 172 characters against a 125-character cap.**
+  Shortened; `tests/test_action_scripts.py` now pins the cap.
+- **Errata ledger:** the numbering note claimed the ledger and the provael.com mirror agreed
+  entry-for-entry; the mirror had minted its own E-2026-05 on 3 September for a different
+  correction. That correction is now recorded here as E-2026-09, the collision is stated, and
+  E-2026-10 records the reword-arm mix-up in the site's methodology note. Next free ID: E-2026-11.
+- Stale docstrings that narrated a 29-attack / 15-family registry (`coverage.py`,
+  `tests/test_coverage.py`), "controls not wired into the registry yet" (`tests/test_controls.py`),
+  "90 test modules" (`ci.yml`) and "33 released versions" (`tests/test_changelog_gate.py`) now
+  describe the tree as it is; the assertions beneath them were already right.
+
 ## [0.41.2] — 2026-09-09
 
 ### Added

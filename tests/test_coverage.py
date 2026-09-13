@@ -1,9 +1,10 @@
 """The coverage counter: one source for every published count, with validation attached.
 
 THE MISTAKE THIS GUARDS AGAINST, WHICH HAS ALREADY BEEN MADE ONCE FROM THE OUTSIDE.
-`len(ATTACKS)` is 29 and it is tempting to read that as 29 families. It is not: 28 adversarial
-attacks plus one benign control, grouping into 15 adversarial families. A reader who takes the
-dict length as a family count overstates coverage by 14 — an error in the direction that flatters
+`len(ATTACKS)` is the attack count (42 today) and it is tempting to read it as a family count. It
+is not: 39 adversarial attacks plus the baseline and two controls, grouping into 17 adversarial
+families. A reader who takes the dict length as a family count overstates coverage by more than
+double — an error in the direction that flatters
 the project, which is the direction this repo is least willing to be wrong in. Both numbers are
 therefore published, each labelled, and asserted distinct below.
 

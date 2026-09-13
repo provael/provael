@@ -27,6 +27,8 @@ without modal bought nothing (no test asserted it) and cost the measurement the 
 
 from __future__ import annotations
 
+import subprocess
+
 import modal
 
 CKPT = "HuggingFaceVLA/smolvla_libero"
@@ -79,6 +81,28 @@ PROVAEL_PIN = "0.41.2"
 PROVAEL = f"provael[lerobot]=={PROVAEL_PIN}"
 
 
+def _pin_commit() -> str | None:
+    """Commit of the tag the container installs from PyPI, resolved on the driver machine.
+
+    The container has no git checkout (it pip-installs the pinned release), so without this the
+    execution manifest records `commit: null`. Resolved from `v{PROVAEL_PIN}` — the code that
+    actually runs — never from the driver's HEAD, which may be a different commit. None when the
+    driver's checkout has no tags; the manifest then records the gap rather than a guess.
+    """
+    try:
+        out = subprocess.run(  # noqa: S603,S607 - fixed argv, no user input
+            ["git", "rev-parse", "--verify", "--short", f"v{PROVAEL_PIN}^{{commit}}"],
+            capture_output=True, text=True, timeout=5, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    sha = out.stdout.strip()
+    return sha if out.returncode == 0 and sha else None
+
+
+PIN_COMMIT = _pin_commit()
+
+
 image = (
     modal.Image.debian_slim(python_version="3.12")
     # cmake/build-essential/git are load-bearing: lerobot[libero] pulls `egl_probe` and
@@ -90,7 +114,13 @@ image = (
         "build-essential", "libglib2.0-0", "libsm6", "libxrender1", "libfontconfig1",
     )
     .pip_install(PROVAEL, "lerobot[libero]==0.5.1")
-    .env({"MUJOCO_GL": "egl", "PYOPENGL_PLATFORM": "egl", "PROVAEL_INTEGRATION": "1"})
+    .env({
+        "MUJOCO_GL": "egl",
+        "PYOPENGL_PLATFORM": "egl",
+        "PROVAEL_INTEGRATION": "1",
+        # Provenance for execution-manifest.json: the pinned release's commit (see _pin_commit).
+        **({"PROVAEL_COMMIT": PIN_COMMIT} if PIN_COMMIT else {}),
+    })
 )
 app = modal.App("provael-gpu-ci", image=image)
 

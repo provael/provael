@@ -325,3 +325,20 @@ def test_both_failure_reasons_are_reported_together() -> None:
     })
     assert code == 1
     assert log.count("::error::") == 2
+
+
+#: GitHub Marketplace rejects an action whose `description` exceeds 125 characters at publish time —
+#: a failure that surfaces only when someone tries to list it, months after the edit that caused it.
+#: The description sat at 172 characters from July to September 2026 without anything noticing.
+MARKETPLACE_DESCRIPTION_MAX = 125
+
+
+def test_the_marketplace_description_fits_the_cap() -> None:
+    import yaml
+
+    action = yaml.safe_load(ACTION.read_text())
+    description = action["description"].strip()
+    assert len(description) <= MARKETPLACE_DESCRIPTION_MAX, (
+        f"action.yml description is {len(description)} characters; the Marketplace cap is "
+        f"{MARKETPLACE_DESCRIPTION_MAX}."
+    )

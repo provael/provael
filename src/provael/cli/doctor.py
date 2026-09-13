@@ -45,7 +45,7 @@ def doctor(
     """
 
     from provael.policies.registry import POLICIES, SCAFFOLDING_POLICIES
-    from provael.suites import SUITES, make_suite
+    from provael.suites import SUITES, make_suite, suite_gating_note
     from provael.suites.keepout_zones import (
         CALIBRATED_ZONES,
         REQUIRE_CALIBRATED_ENV,
@@ -102,7 +102,13 @@ def doctor(
     for name in sorted(SUITES):
         try:
             make_suite(name)
-            _out.print(f"  [green]importable[/green]   {name}")
+            gating = suite_gating_note(name)
+            if gating is not None:
+                # Importable is not runnable: say in the same row what still stands in the way,
+                # so "importable" is never read as "one command away".
+                _out.print(f"  [green]importable[/green]   {name:<10} [dim]{escape(gating)}[/dim]")
+            else:
+                _out.print(f"  [green]importable[/green]   {name}")
         except Exception as exc:  # noqa: BLE001 - reporting the failure IS the job here
             first = str(exc).strip().splitlines()[0][:78]
             # Same class: an exception message is arbitrary text, and any [...] in it would be

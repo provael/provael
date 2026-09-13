@@ -1,8 +1,8 @@
 """Unit tests for the diagnostic control arms (benign_reword, nonsense_text).
 
-These validate ``perturb`` in isolation. They deliberately do not exercise the scoring
-aggregation, because the controls are not wired into the registry/role model yet (see
-``provael.attacks.controls`` module docstring for the wiring decision).
+These validate ``perturb`` in isolation. The scoring side — the controls are registered as the
+``control`` family and carry the ``harmless-variation`` role, excluded from both the ASR and the
+benign FPR — is covered by ``tests/test_harmless_variation_arm.py``.
 """
 
 from __future__ import annotations

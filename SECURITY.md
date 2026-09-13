@@ -133,8 +133,9 @@ project gets to settle by asserting an answer in its own security policy.
 
 The **open-source software steward** route is cleaner, because it turns on a checkable fact
 rather than a judgement. A steward under Article 3(14) must be a *legal person*. There is no
-entity here, so the Article 24 steward obligations — which also begin on 11 September 2026 —
-do not attach on that basis. If an entity is incorporated, this section changes with it.
+entity here, so the Article 24 steward obligations — whose reporting duty under Article 24(3)
+begins on 11 December 2027, per Article 71(2), as stated above — do not attach on that basis. If
+an entity is incorporated, this section changes with it.
 
 ### Does the CRA place obligations on you, if you integrate Provael?
 

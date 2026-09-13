@@ -29,6 +29,7 @@ from provael.reproductions import available_reproductions, get_reproduction
 from provael.suites import (
     KIND_FIXTURE,
     available_suites,
+    suite_gating_note,
     suite_is_ready,
     suite_kind,
     suite_scaffolding_note,
@@ -105,6 +106,9 @@ def list_suites() -> None:
             note = "deterministic, in-process; no physics — never a real-episode measurement"
         else:
             note = escape("requires `provael[lerobot]` and a real simulator")
+        gating = suite_gating_note(name)
+        if gating is not None:
+            note = f"{note} — {escape(gating)}"
         mark = "[green]yes[/green]" if suite_is_ready(name) else "[yellow]no[/yellow]"
         colour = "yellow" if scaffold is not None else ("cyan" if fixture else "green")
         table.add_row(name, mark, f"[{colour}]{kind}[/]", note)

@@ -123,7 +123,7 @@ jobs:
       - name: Leaderboard staleness is declared, not implied
         run: uv run python scripts/check_leaderboard_staleness.py
 
-      # COVERAGE IS MEASURED AND PUBLISHED, not asserted. The repo had 90 test modules and no
+      # COVERAGE IS MEASURED AND PUBLISHED, not asserted. The repo had 90 test modules (122 now) and no
       # figure anywhere, which is exactly the shape of claim this project refuses to accept from
       # anyone else: "well tested" with no denominator.
       #

@@ -2,7 +2,7 @@
 
 A gate nobody has watched fail is a gate nobody knows works. These test both directions, and pin
 the heading format against the ACTUAL history rather than against the Keep a Changelog spec — this
-repo writes an em dash, and a hyphen-only rule would reject all 33 released versions.
+repo writes an em dash, and a hyphen-only rule would reject every released version (33 when this was written, 53 now).
 """
 
 from __future__ import annotations

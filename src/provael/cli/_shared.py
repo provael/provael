@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import re
 import subprocess
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -141,8 +142,23 @@ def _split_csv(value: str | None) -> list[str] | None:
     return items or None
 
 
+#: Explicit provenance override for containers that install provael from PyPI and have no git
+#: checkout — the Modal GPU lanes. Both scheduled-GPU manifests committed in September 2026 carried
+#: `commit: null` for exactly that reason. The driver resolves the pinned release tag's commit on
+#: the GitHub runner and passes it in; the value is validated as a hex SHA so a stray string cannot
+#: masquerade as provenance. Same variable the hosted server already reads.
+COMMIT_ENV = "PROVAEL_COMMIT"
+_SHA = re.compile(r"^[0-9a-f]{7,40}$")
+
+
 def _git_commit() -> str | None:
-    """Best-effort short commit SHA of the working tree, or None outside a git checkout."""
+    """Commit SHA for the manifest: ``PROVAEL_COMMIT`` if set and hex-shaped, else the checkout's.
+
+    Returns None outside a git checkout when no override is present — never a guess.
+    """
+    explicit = os.environ.get(COMMIT_ENV, "").strip().lower()
+    if _SHA.match(explicit):
+        return explicit
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],  # noqa: S607 - fixed argv, no user input; resolving git absolutely would break every non-standard install

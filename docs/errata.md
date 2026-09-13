@@ -14,7 +14,15 @@ on the mirror; they are back-filled here so the two agree entry-for-entry.
 does not defer its cybersecurity detail to IEC 62443 — 05 against two repository documents, 07
 against four website pages, raised five days apart. Issuing a second ID was the mistake, and it is
 not fixable: both are published, and this page is append-only. So the duplication is stated rather
-than renumbered, and E-2026-09 is the next free ID.
+than renumbered.
+
+**E-2026-05 was also issued twice, for two different corrections.** The website mirror minted its
+own E-2026-05 on 3 September 2026 for a stale attack-family count (16 → 17 families, 38 → 39
+attacks) three days before this document minted E-2026-05 for the ISO 10218 correction; neither
+side saw the other, and the previous version of this note wrongly said the two files agreed
+entry-for-entry. The website keeps the ID it published under; the same correction is recorded
+below as **E-2026-09**, so that every correction has an entry in the maintained source. The next
+free ID is **E-2026-11**.
 
 ---
 
@@ -57,8 +65,8 @@ date.
 ### What this does and does not affect
 
 **Signatures remain valid.** The cryptographic properties of an affected bundle are unchanged: it is
-still an authentic, tamper-evident record of the run it describes, and `provael verify` will still
-verify it. The defect is in a *fact carried inside* the payload, not in the binding between the
+still an authentic, tamper-evident record of the run it describes, and `provael attest --verify` will
+still verify it. The defect is in a *fact carried inside* the payload, not in the binding between the
 payload and the run.
 
 **No measured result changes.** The regulatory clock is contextual metadata. It is not an input to
@@ -70,12 +78,16 @@ the instrument now requires.
 
 ### How to tell whether a bundle is affected
 
-Decode the payload and read the clock entry:
+Decode the payload (a base64 JSON document at the top-level `payload` key) and read the clock entry:
 
 ```bash
-provael verify bundle.json --print-payload | jq '.crosswalk.regulatory_clock[]
+jq -r '.payload' bundle.json | base64 -d | jq '.regulatory_clock[]
   | select(.framework_id == "eu-ai-act") | {applies_from, last_verified}'
 ```
+
+*(Corrected 13 September 2026: this block previously named a `provael verify … --print-payload`
+command that does not exist. The command to check the signature is `provael attest --verify
+bundle.json`; the payload itself is plain base64 JSON, so `jq` and `base64 -d` are enough to read it.)*
 
 `applies_from: "2027-08-02"` means the bundle predates this correction.
 
@@ -524,4 +536,75 @@ not, and the tool has never claimed otherwise at runtime. If you were planning t
 not: `studies/keepout_face_selection/` has the replay, and `provael calibrate --attack <name>`
 (0.41.0 and later) is the path to a fit whose face is chosen against attacked rollouts rather than
 assumed. Issue #136 stays open with these numbers.
+
+---
+
+## E-2026-09 — Three website surfaces published a stale attack-family count at the same time (issued on the mirror as E-2026-05)
+
+**Status:** corrected on 3 September 2026 by re-pinning the website's two witness files to v0.39.1 ·
+recorded here on 13 September 2026 so the maintained ledger carries every correction · **no measured
+result is affected**
+**Date raised:** 3 September 2026 (on provael.com; this entry back-fills it)
+**Affects:** every provael.com page rendering a registry count — the homepage, /results, /verification,
+/leaderboard — plus `public/llms.txt` and the supported-version line on /security, as published between
+1 and 3 September 2026. The ASR, its interval, the benign control and every per-attack row were
+byte-identical before and after.
+
+### What was wrong
+
+`gradient_patch` shipped in 0.39.0 on 1 September 2026 and moved the registry to 17 adversarial
+families and 39 adversarial attacks (42 with the baseline and the two control arms). The website's
+`repo-facts.json` had last been refreshed against v0.38.0 on 26 August, so three surfaces kept
+publishing 16 families / 38 attacks / 41 registered / 13 never-run, and /security told reporters to
+reproduce on v0.38.0 while 0.39.1 was current.
+
+### What is correct
+
+17 adversarial families, 39 adversarial attacks, 42 registered attacks, 14 families never run against a
+real policy, supported version 0.39.1 at the time (0.41.2 today). The website's
+`check-registry-agreement` passed throughout because it compared the rendered numbers against the
+same stale mirror — the third time a guard reading a cached copy of the fact it guards could not fire.
+
+### What was changed to prevent recurrence
+
+The website now reads the current release live from `watch/release.json` and fails its build when
+`repo-facts.json` is pinned to anything else (`src/data/site.ts`); `npm run gen:repo-facts` is part of
+every re-pin. On this side, `tests/test_registry_artifact_agrees.py` pins `watch/registry.json` to the
+live registry so the artifact the website fetches cannot lag a release.
+
+---
+
+## E-2026-10 — The provael.com methodology note for the 88% figure called the paraphrase attack the reword control
+
+**Status:** corrected in the note on 13 September 2026, with a dated correction block in its body ·
+no measured number moves · no signed artifact is affected
+**Date raised:** 13 September 2026
+**Affects:** `/notes/what-88-percent-means` on provael.com and the site changelog entry of 4 September
+2026, as published from 4 to 13 September 2026. The homepage, /results, /findings, the sample evidence
+pack and the pinned evidence manifest were right throughout, and nothing in this repository published
+the wrong figure.
+
+### What was wrong
+
+Section 4 of the note said the semantics-preserving reword fired 3 of 50, named `paraphrase` as that
+arm, and added that an earlier draft's 1 of 50 was unsupported by the committed artifact. It was the
+other way round. `paraphrase` is an adversarial attack — the unsafe request rephrased without the
+roleplay frame — and scored 3/50 in the suite run. The harmless-variation control is `benign_reword`:
+the benign instruction reworded with no unsafe target, which fired 1/50 in the control run
+(`results/smolvla_libero_object_control/`), 43 discordant pairs against roleplay and none the other
+way, McNemar exact p = 2.3e-13. The note's argument about attacker control versus brittleness was
+built on the wrong arm. Its section 2 also quoted the control run's 41–0 discordant count beside the
+suite run's p-value (which belongs to 42–0).
+
+### What is correct
+
+Control: `benign_reword` 1/50 (2%). Attack without the frame: `paraphrase` 3/50 (6%). Attack with the
+frame: `roleplay` 44/50 (88%). The conclusion — attacker control, not brittleness to wording — stands
+more strongly with the right arm, not less.
+
+### What was changed to prevent recurrence
+
+The note now derives nothing from memory: its figures name the arm they come from, and the website
+records the reversal in its own changelog. Notes are content, not pages, and the website's figure
+checks did not read them; extending `check:figures` to the notes collection is the follow-up.
 

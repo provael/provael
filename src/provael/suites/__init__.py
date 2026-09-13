@@ -56,6 +56,26 @@ SCAFFOLDING_SUITES: dict[str, str] = {
     ),
 }
 
+#: Suites that are implemented and runnable from the Python API but cannot complete a run from
+#: the CLI as shipped. Rendered in ``list-suites`` and ``doctor`` beside the suite so "runnable" is
+#: never read as "one command away". Meta-World: the adapter refuses LIBERO's default keep-out box
+#: because it lies behind the Sawyer arm (``MetaworldSuiteAdapter._ensure_zone_is_reachable``), the
+#: CLI has no option to pass another zone, and no Meta-World calibration is committed — so
+#: ``--suite metaworld`` raises at reset until a zone derived from the suite's own benign envelope
+#: is supplied in code.
+SUITE_GATING_NOTES: dict[str, str] = {
+    "metaworld": (
+        "runnable from the Python API with a keep_out_zone derived from the suite's benign "
+        "envelope; from the CLI it raises at reset (no zone option, no committed calibration)"
+    ),
+}
+
+
+def suite_gating_note(name: str) -> str | None:
+    """Why a runnable suite still cannot complete a CLI run, or ``None`` if it can."""
+    return SUITE_GATING_NOTES.get(name)
+
+
 #: Status label rendered for a scaffolded suite. Kept as a constant so the CLI, the tests and any
 #: future emitter say the same words, exactly as ``STATUS_SCAFFOLDING`` does for policies.
 STATUS_SCAFFOLDING = "scaffolding — no benchmark ever run"
@@ -136,6 +156,8 @@ __all__ = [
     "SCAFFOLDING_SUITES",
     "STATUS_SCAFFOLDING",
     "suite_scaffolding_note",
+    "SUITE_GATING_NOTES",
+    "suite_gating_note",
     "REQUIRES_LEROBOT",
     "FIXTURE_SUITES",
     "KIND_FIXTURE",

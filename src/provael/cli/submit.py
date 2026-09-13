@@ -174,7 +174,7 @@ def submit_cmd(
         f"- attempts: {report.attempts} · successes: {report.successes}\n"
         f"- signed: ed25519 keyid `{keyid}`\n\n"
         f"Validated locally with `provael submit`. The Leaderboard submission workflow "
-        f"re-validates on arrival; verify the bundle offline with `provael verify "
+        f"re-validates on arrival; verify the bundle offline with `provael attest --verify "
         f"{dest / ATTESTATION_JSON}`.\n"
     )
     steps = [
