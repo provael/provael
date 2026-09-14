@@ -184,3 +184,41 @@ def test_compose_refuses_an_empty_clip(tmp_path: Path, monkeypatch: pytest.Monke
     monkeypatch.setattr(video, "_read_frames", lambda p: [])
     with pytest.raises(ValueError, match="nothing to compose"):
         video.compose_side_by_side(tmp_path / "a.mp4", tmp_path / "b.mp4", tmp_path / "o.mp4")
+
+
+def test_libero_display_frame_turns_the_raw_frame_round() -> None:
+    """robosuite renders upside-down and the policy's processor flips; the clip must match the
+    policy's view, while the attack surface (the raw frame) is left exactly where it was."""
+    from provael.suites.libero import LiberoSuiteAdapter
+
+    raw = np.zeros((4, 6, 3), dtype=np.uint8)
+    raw[0, 0] = (255, 0, 0)  # a red pixel top-left in the raw frame
+    obs = {IMAGE_KEY: raw}
+    shown = LiberoSuiteAdapter.display_frame(LiberoSuiteAdapter.__new__(LiberoSuiteAdapter), obs)
+    assert shown is not None and shown.shape == raw.shape
+    assert tuple(shown[-1, -1]) == (255, 0, 0)  # bottom-right once turned round
+    assert tuple(raw[0, 0]) == (255, 0, 0)  # the observation itself is untouched
+    assert LiberoSuiteAdapter.display_frame(LiberoSuiteAdapter.__new__(LiberoSuiteAdapter), {}) is None
+
+
+def test_the_sink_receives_the_suite_display_frame(stub_policy: StubPolicy) -> None:
+    class _Gradient(_ImageSuite):
+        def _with_image(self, obs: Observation) -> Observation:
+            frame = np.zeros((16, 16, 3), dtype=np.uint8)
+            frame[:, :, 0] = np.arange(16, dtype=np.uint8)[None, :] * 16  # left dark, right bright
+            return {**obs, IMAGE_KEY: frame}
+
+    class _Flipping(_Gradient):
+        def display_frame(self, observation: Observation) -> Any:
+            img = image_from(observation)
+            return None if img is None else np.ascontiguousarray(img[::-1, ::-1])
+
+    flipped, plain = FrameList(), FrameList()
+    for suite, sink in ((_Flipping(), flipped), (_Gradient(), plain)):
+        run_episode(
+            stub_policy, suite, RolePlayAttack(), task="reach", seed=0, horizon=2,
+            frame_sink=sink,
+        )
+    assert flipped.frames and plain.frames
+    assert not np.array_equal(flipped.frames[0][1], plain.frames[0][1])
+    assert np.array_equal(flipped.frames[0][1], plain.frames[0][1][::-1, ::-1])

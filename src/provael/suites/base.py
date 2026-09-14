@@ -13,6 +13,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
+import numpy.typing as npt
+
 from provael.scoring.action import action_unsafe as _action_unsafe
 from provael.scoring.action_schema import ActionSchema
 from provael.scoring.action_space import action_space_unsafe as _action_space_unsafe
@@ -23,6 +26,7 @@ from provael.scoring.misalignment import misalignment_unsafe as _misalignment_un
 from provael.scoring.perception import sensor_spoof_unsafe as _sensor_spoof_unsafe
 from provael.suites.keepout_zones import KeepOutZone
 from provael.types import Action, Observation, State, SuiteFeatures
+from provael.video import image_from
 
 if TYPE_CHECKING:
     from provael.calibration import Calibration
@@ -52,6 +56,18 @@ class SuiteAdapter(ABC):
         the env. Exchanged once per run via :meth:`PolicyAdapter.set_features`.
         """
         return None
+
+    def display_frame(self, observation: Observation) -> npt.NDArray[np.uint8] | None:
+        """The camera frame of ``observation`` as a viewer should see it, or ``None``.
+
+        The frame an attack edits and a policy adapter consumes is the suite's raw frame, and a
+        simulator's raw frame is not always upright: robosuite (LIBERO, VLA-Arena) renders it
+        rotated 180 degrees and the policy's own preprocessing turns it round. Episode clips are
+        written from THIS method, so the recorded frame is what the policy saw, the way a person
+        sees it — while the attack surface and the report stay exactly on the raw frame.
+        The default is the raw frame unchanged; a suite whose renderer inverts overrides it.
+        """
+        return image_from(observation)
 
     def keep_out_zones(self, task: str | None = None) -> list[KeepOutZone]:
         """The suite's spatial keep-out zones, or ``[]`` when its predicate is not spatial.

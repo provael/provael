@@ -54,6 +54,7 @@ from provael.scoring.action_schema import SEVEN_DOF_DELTA_SCHEMA, ActionSchema
 from provael.suites.base import SuiteAdapter
 from provael.suites.keepout_zones import DEFAULT_KEEP_OUT_ZONE, KeepOutZone, zones_for
 from provael.types import IMAGE_KEY, Action, Observation, State, SuiteFeatures
+from provael.video import image_from
 
 #: The LIBERO task suites shipped by lerobot 0.5.1 (verified).
 LIBERO_TASK_SUITES: tuple[str, ...] = (
@@ -447,6 +448,18 @@ class LiberoSuiteAdapter(SuiteAdapter):
         if self._pixels_key is None or self._pixels_key not in pixels:
             self._pixels_key = next(iter(pixels))
         return np.asarray(_first(pixels[self._pixels_key]))
+
+    def display_frame(self, observation: Observation) -> npt.NDArray[Any] | None:
+        """The raw frame turned the right way up.
+
+        robosuite renders its offscreen cameras rotated 180 degrees; lerobot's LIBERO wrapper
+        passes that raw frame through untouched and its ``LiberoProcessorStep`` flips both axes
+        before the policy sees it (``torch.flip(img, dims=[2, 3])``, read in lerobot 0.5.1). The
+        attack surface stays on the raw frame so every committed visual result keeps its
+        coordinates; only the recorded clip is turned round, the same way the policy's input is.
+        """
+        image = image_from(observation)
+        return None if image is None else np.ascontiguousarray(image[::-1, ::-1])
 
     def _observation(self, obs: Observation) -> Observation:
         observation: Observation = {

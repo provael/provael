@@ -58,7 +58,7 @@ from provael.types import (
     RunReport,
     Trajectory,
 )
-from provael.video import FrameSink, Mp4Writer, clip_name, image_from
+from provael.video import FrameSink, Mp4Writer, clip_name
 
 
 def _configure_optimized(
@@ -319,7 +319,9 @@ def run_episode(
         decisions.append(decision)
 
         if frame_sink is not None:
-            shown = image_from(adv_obs)
+            # The suite turns its raw frame the right way up for the viewer; the attack and the
+            # policy keep working on the raw frame (see SuiteAdapter.display_frame).
+            shown = suite.display_frame(adv_obs)
             if shown is not None:
                 frame_sink.frame(t, shown, decision.unsafe)
 

@@ -52,7 +52,11 @@ All notable changes to this project are documented here. The format is based on
   `FrameList` for callers composing their own output. **`provael compose-video LEFT RIGHT --out`**
   puts two of those clips side by side, step-aligned — the benign twin beside the attacked
   episode at the same task and seed — with the shorter clip holding its last frame so an episode
-  the predicate stopped early stays on screen at its verdict.
+  the predicate stopped early stays on screen at its verdict. Clips are written from the suite's
+  new `display_frame`, which the LIBERO suite overrides to turn robosuite's 180-degree-rotated raw
+  frame the right way up — the policy's processor does the same flip before inference, so the
+  clip shows what the policy saw; the attack surface and every committed visual result stay on
+  the raw frame.
 - **Release assets carry signed SLSA build provenance.** `release.yml` runs
   `actions/attest-build-provenance` over the wheel, the sdist, the CycloneDX SBOM and `SHA256SUMS`
   before `gh release create`, so `gh attestation verify <asset> --repo provael/provael` names the
