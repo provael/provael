@@ -20,8 +20,12 @@ hf repo create Sattyam/provael-libero-object-redteam --repo-type dataset
 hf upload Sattyam/provael-libero-object-redteam examples/hf-benchmark/provael-libero-object-redteam . --repo-type dataset
 ```
 
+Published 14 September 2026 as
+[`Sattyam/provael-libero-object-redteam`](https://huggingface.co/datasets/Sattyam/provael-libero-object-redteam)
+(Hub commit `9bf835f`, from provael `0ea4f57`); re-run the upload line after any regeneration.
+
 Two Hub-side steps remain outside this repo, and both are pull requests under a person's name:
 `provael` must be added to the `evaluation_framework` enum in `huggingface.js`
-(`packages/tasks/src/eval.ts`), and the Hugging Face team allow-lists the benchmark (the feature is
+(`packages/tasks/src/eval.ts` — [huggingface/huggingface.js#2492](https://github.com/huggingface/huggingface.js/pull/2492), opened 14 September 2026), and the Hugging Face team allow-lists the benchmark (the feature is
 in beta; their docs say "get in touch"). Until both land, the entries still display on the model
 page as community-provided results; only the benchmark leaderboard waits.
