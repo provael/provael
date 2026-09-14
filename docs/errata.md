@@ -390,7 +390,7 @@ deadline, no measured result and no signed artifact is affected.
 ### What is wrong
 
 The CRA Article 14 sub-deadlines were published citing the Commission's CRA summary as their source.
-That is the document [E-2026-04](#e-2026-04--the-cra-severe-incident-final-report-was-published-with-the-wrong-start-point)
+That is the document [E-2026-04](#e-2026-04-the-cra-severe-incident-final-report-was-published-with-the-wrong-start-point)
 moved them **off**, five days earlier, because its phrasing does not carry the distinction the four
 rows encode — the two final reports run from different events.
 
@@ -432,7 +432,7 @@ the instrument rather than the instrument.
 signed artifact is affected: the control identifiers, the `iec-62443` requirement key and the emitted
 `routes_to` field are a published contract and were never the thing that was wrong.
 
-**This is the same correction as [E-2026-05](#e-2026-05--two-documents-said-iso-102182025-defers-its-cyber-detail-to-iec-62443),
+**This is the same correction as [E-2026-05](#e-2026-05-two-documents-said-iso-102182025-defers-its-cyber-detail-to-iec-62443),
 under a second ID.** 05 records it against two repository documents; this records it against four
 website pages, raised five days later. Issuing a second ID was a mistake, and both are published on
 an append-only page, so it is recorded rather than renumbered.

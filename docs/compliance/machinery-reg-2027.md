@@ -42,6 +42,13 @@ how a policy behaved under red-team, with every rate carrying its 95% Wilson CI 
 | **Regulatory clock** (factual application dates, stamped in the statement) | all of the above | Names the instrument + date each artifact is measured against — no conformity claimed |
 | **Ed25519 signature** (optional; project-key on the operated hosted tier) | Machinery Reg — "prefer signed/attested weights" | An authoritative, offline-verifiable signer for a Notified Body / insurer |
 
+## The two EHSRs, verbatim and mapped
+
+Annex III §1.1.9 (*Protection against corruption*) and §1.2.1 (*Safety and reliability of control
+systems*) are quoted in full and mapped clause by clause — what a run contributes to each, and what it
+does not establish — on [the Annex III clause-map page](machinery-annex-iii-corruption.md). That page is
+the annex to attach beside `provael report --format test-report`.
+
 ## Honest scope
 
 - Provael measures **redirection / activation in simulation**, a robustness signal — not physical

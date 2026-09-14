@@ -252,7 +252,7 @@ carry to the next. Three failure sub-modes (BadRobot, ICLR 2025):
 - **World-knowledge flaws** — a *benign-looking* instruction yields an unsafe action because the agent's
   physical-world understanding is incomplete or wrong (e.g. it does not know an object is hazardous, fragile,
   or a person). Nothing looks unsafe at the language layer; the harm is in the world model.
-- **Instruction jailbreak → action** — the [EAI01](#eai01--policy--instruction-jailbreak-direct-command-channel)
+- **Instruction jailbreak → action** — the [EAI01](#eai01-policy-instruction-jailbreak-direct-command-channel)
   channel, viewed as the language→action leg of the same misalignment.
 **Evidence.** *[research]* **BadRobot** (ICLR 2025, arXiv 2407.20242) names cross-domain safety
 misalignment — including the world-knowledge failure mode — as a core embodied surface: safe
@@ -266,7 +266,7 @@ aside") or a euphemism ("tidy up quickly", "clear that out of the way") — whil
 consequence* that instruction carries, so the policy's commanded end-effector enters a keep-out zone.
 The reframed instruction carries **no** language-level unsafe token (the danger channel stays 0), so the
 violation is attributable to the language→action gap, not a jailbroken language goal (that is the
-separate [EAI01](#eai01--policy--instruction-jailbreak-direct-command-channel) `instruction` family).
+separate [EAI01](#eai01-policy-instruction-jailbreak-direct-command-channel) `instruction` family).
 Each is scored as a rate with a 95% Wilson CI against a benign-FPR control (the `none` baseline injects
 no cue and stays out of the zone → 0%). **Stub-validated scaffolding only** (the deterministic CPU
 `reach` keep-out suite drives the end-effector into the zone 100% [84–100%] vs a 0% benign baseline);
@@ -447,7 +447,7 @@ tell us. **No code required:**
 - **Full guide** — [Contributing to the Embodied AI Security Top 10](https://github.com/provael/provael/blob/main/CONTRIBUTING.md#contributing-to-the-embodied-ai-security-top-10).
 
 Contributors and the researchers behind each cited attack are credited (see
-[Maintainers & Contributors](#maintainers--contributors)). The aim is a living, community-owned,
+[Maintainers & Contributors](#maintainers-contributors)). The aim is a living, community-owned,
 vendor-neutral list, ideally routed into the **OWASP GenAI Agentic Security Initiative** over time.
 Licensed CC-BY-SA 4.0 so it can be donated/merged cleanly.
 

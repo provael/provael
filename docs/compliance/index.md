@@ -51,7 +51,7 @@ A calibrated Provael run (`provael calibrate` + `provael attack --calib`) yields
   ASR leaderboard.
 
 These are *behavioural-susceptibility* measurements via templated attacks — not worst-case
-certified bounds. See [Honest scope](#honest-scope--what-this-does-not-cover).
+certified bounds. See [Honest scope](#honest-scope-what-this-does-not-cover).
 
 ---
 

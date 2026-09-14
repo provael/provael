@@ -266,7 +266,15 @@ def _annex_clause_map(report: RunReport) -> list[str]:
             f"| {entry.framework} | {entry.control_id} — {entry.control_title} | "
             f"{entry.provael_signal} | {entry.status} | {gap} |"
         )
-    lines += ["", f"_{compliance.disclaimer}_"]
+    lines += [
+        "",
+        "For Regulation (EU) 2023/1230 Annex III §1.1.9 (protection against corruption) and "
+        "§1.2.1 (safety and reliability of control systems) clause by clause, with the verbatim "
+        "text and what each row does not establish, see "
+        "docs.provael.com/compliance/machinery-annex-iii-corruption/.",
+        "",
+        f"_{compliance.disclaimer}_",
+    ]
     for caveat in compliance.scope_caveats:
         lines.append(f"- **{caveat.id}:** {caveat.text}")
     return lines
