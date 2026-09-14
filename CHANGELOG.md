@@ -46,6 +46,14 @@ All notable changes to this project are documented here. The format is based on
   280) and Amendment 1: the first leg runs π0.5 through the native `pi05` adapter, with what that
   narrows and what it leaves open.
 
+### Changed
+
+- **The Modal LIBERO recipe reserves four CPU cores (`cpu=4`).** Modal's default reservation is
+  0.125 cores, and the pipeline is CPU-bound — MuJoCo, EGL rendering and tokenisation — so the ten
+  committed L4 shards averaged 0.77 s/step while a 24-core workstation with a slower GPU ran the
+  same stack at 0.39 s/step. The Modal effect is unmeasured until the `timing` stage re-runs; the
+  comment at the decorator says so, and no budget in the docs is re-sized on it yet.
+
 ### Fixed
 
 - **Three stale sentences in the compliance docs** (found by the 13 Sep regulatory re-read):

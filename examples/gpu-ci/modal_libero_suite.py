@@ -459,6 +459,16 @@ app = modal.App(f"provael-libero-{STAGE}", image=image)
 
 @app.function(
     gpu="L4",
+    # Four real cores, because the default is an eighth of one. Modal reserves 0.125 CPU cores and
+    # 128 MiB per container unless told otherwise (modal.com/docs/guide/resources), and this
+    # pipeline is not GPU-bound: MuJoCo physics, EGL rendering and tokenisation all run on the CPU
+    # while a 450M-parameter policy leaves the L4 mostly idle. The ten committed shards averaged
+    # 0.77 s/step gross on that default reservation (71,687 steps in 15.4 GPU-hours); a 24-core
+    # workstation with a SLOWER GPU (RTX 2000 Ada) ran the same stack at 0.39 s/step on 14 Sep
+    # 2026 with the GPU at 25-44 %. `cpu=4` costs about $0.19/h on top of the L4 and is the
+    # cheapest lever on that constant. Its effect on Modal is NOT yet measured: re-run the
+    # `timing` stage (same shape as the 174 s datum below) before sizing a budget from it.
+    cpu=4,
     timeout=int(CFG["timeout"]),
     volumes={"/runs": volume, "/cache": cache},
 )
