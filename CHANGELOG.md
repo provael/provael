@@ -86,6 +86,13 @@ All notable changes to this project are documented here. The format is based on
   the benchmark dataset and adding `provael` to `huggingface.js`'s `evaluation_framework` enum —
   is a pull request a person opens; the emitter only writes the file. Schema read from
   huggingface.co/docs/hub/eval-results on 14 September 2026 (a work-in-progress feature).
+- **`scripts/plot_keepout_paths.py` draws every episode's end-effector path against the task's
+  keep-out zone** (top-down and side panels, one SVG per task, no plotting dependency): benign
+  paths in blue, the chosen attack arm in red with a dot at the first unsafe step, the committed
+  calibration or the documented default box shaded. It reads the trajectories every episode
+  record has carried since 0.40, so a picture of forty benign paths against the box answers the
+  #136 question — does the default box sit inside the benign workspace — faster than any rate.
+  Reports written before 0.40 carry no trajectory; the script says so and draws nothing.
 - **`provael attack --video-dir DIR` writes one MP4 per episode**: the frames the policy actually
   saw (after the attack and any defense), red-bordered from the first step the suite's predicate
   fired. A runner argument, not a `RunConfig` field, so a run with recording on and off produce
