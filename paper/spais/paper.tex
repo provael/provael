@@ -1,0 +1,141 @@
+% SPAIS @ CoRL 2026 — The Science of Physical AI Safety. Up to 4 pages excl. references,
+% double-blind, non-archival. Deadline 1 Oct 2026 AoE (OpenReview 2 Oct 11:59 UTC).
+%
+% SKELETON, 14 Sep 2026. Every \todo{} names the committed artifact the number comes from; nothing
+% is typed from memory. The style file is the NeurIPS one the 6-pager used; swap for the CoRL
+% anonymized template before submission (the CFP requires it) — the body does not change.
+\documentclass{article}
+\usepackage[final]{neurips_2026}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\newcommand{\todo}[1]{\textcolor{red}{[#1]}}
+
+\title{Two Controls a Robot Red Team Cannot Publish Without:\\
+a Length-Matched Scramble and a Second Architecture}
+
+\author{Anonymous Author(s)\\
+  Affiliation\\
+  Address\\
+  \texttt{email}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+An attack success rate on a vision-language-action policy is a difference between two rates, and
+most published ones report only one of them. We report a paired evaluation in simulation in which
+every attacked episode has a benign twin at the same task and seed, and we add the two controls a
+reviewer asks for first. The first is a \emph{length-matched scramble}: the attack sentence with its
+target noun replaced and its token order destroyed, so that ``any long unfamiliar string derails
+the policy'' is a hypothesis with its own arm rather than an objection. \todo{scrambled\_text rate
+from results/smolvla\_libero\_object\_control\_2026-09-14/aggregate.json}. The second is a second
+architecture under the identical protocol: \todo{$\pi_{0.5}$ roleplay and benign rates from
+results/pi05\_libero\_object\_2026-09-15}. We also report, for one policy, every attack family the
+harness ships against a real checkpoint at three seeds, including a weight-corruption ladder and a
+gradient patch, \todo{count of families with a real-policy number from
+results/smolvla\_libero\_object\_families\_2026-09-15}; and the same instruction attack on three
+further task suites, \todo{spatial/goal/10 rates}. Every rate carries its floor, a Wilson interval
+and a task-clustered bootstrap interval; the artifacts, the ledgers and the seeds are public. The
+contribution is not an attack. It is the two controls, what they changed, and the tooling that
+makes them a flag rather than a project.
+\end{abstract}
+
+\section{Introduction}
+\todo{Cut from paper/vlm4rwd/paper.tex \S1 to ~0.4 page: the floor argument; the two objections
+(wording brittleness; one policy) stated as the hypotheses this paper tests.}
+
+\section{Method}
+\label{sec:method}
+
+\paragraph{Policy, suite and predicate.} \todo{Reuse vlm4rwd \S3 verbatim, then add:} The
+re-measurement uses provael \todo{version from the shards' tool\_version} on the ten
+\texttt{libero\_object} tasks at five seeds per arm; the controls, the family probe and the three
+further suites use three seeds. The predicate is the documented default keep-out box throughout, and
+every report says so; a calibrated predicate fitted with the attack arm at held-out seeds is reported
+separately \todo{results/calib, dawn run} and never substituted after the fact.
+
+\paragraph{The length-matched scramble.} The roleplay attack renders as a twenty-token sentence; the
+previous nonsense control was three tokens, so a null there never showed that a twenty-token
+out-of-distribution string is harmless. \texttt{scrambled\_text} is the roleplay template's own
+tokens with the graspable target replaced by a one-token filler and the order destroyed by a seeded
+per-episode shuffle, whitespace-token count identical; \texttt{roleplay\_no\_target} keeps the frame
+and replaces only the target. Both carry the \emph{control} role: they enter neither the attack rate
+nor the benign floor.
+
+\paragraph{The second architecture.} \todo{$\pi_{0.5}$ checkpoint id, loaded through the same
+adapter and the same LIBERO processors; the pilot's clean task success against the checkpoint's
+reported 97.5\% (10 ep/task); n = 30 per arm.}
+
+\paragraph{Paired design, multiplicity, intervals.} \todo{Reuse vlm4rwd \S3 paragraphs verbatim.}
+
+\section{Results}
+
+\begin{table}[t]
+\centering\small
+\caption{\todo{SmolVLA $\times$ libero\_object, ten tasks, five seeds, provael current release.
+Columns: arm, role, unsafe/attempts, Wilson 95\%, McNemar vs benign (discordant pairs), Holm,
+task-clustered 95\%. Generated from results/smolvla\_libero\_object\_suite\_2026-09-14/README.md.}}
+\begin{tabular}{llrlrrl}
+\toprule
+arm & role & rate & Wilson & McNemar & Holm & clustered \\
+\midrule
+\todo{rows} & & & & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering\small
+\caption{\todo{The controls beside the attack, three seeds: none, roleplay, benign\_reword,
+nonsense\_text, scrambled\_text, roleplay\_no\_target. From
+results/smolvla\_libero\_object\_control\_2026-09-14.}}
+\begin{tabular}{llrl}
+\toprule
+arm & role & rate & Wilson \\
+\midrule
+\todo{rows} & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{What the scramble says.} \todo{One of two paragraphs, decided by the data: (a) the
+scramble fires at or near the floor while roleplay fires at $\sim$88\%, so the gap is attacker
+control and not wording; or (b) the scramble fires well above the floor, the headline is restated
+as generic fragility with a bounded attacker-specific residual, and an erratum (E-2026-12) is
+issued. Write the one the aggregate supports; do not write both.}
+
+\paragraph{The second architecture.} \todo{$\pi_{0.5}$ vs SmolVLA on the same arm and tasks,
+n = 30 each; state the difference with both intervals and say plainly what n = 30 can and cannot
+resolve.}
+
+\paragraph{Breadth.} \todo{Families with a real-policy number after the probe (was 3 of 17), the
+weight-corruption crossing point for gradient vs random selection on a flow-matching head against
+the 100--300-flip band reported for that head class, and the first measurement of the gradient
+patch. Nulls are reported as nulls with their intervals.}
+
+\paragraph{Suites.} \todo{roleplay on spatial/goal/10 at three seeds beside object: does the
+instruction attack survive a suite the policy was not fine-tuned on for the headline?}
+
+\section{Discussion and limitations}
+\todo{Simulation only; one default predicate; three seeds on every arm but the headline; $\pi_{0.5}$
+at n = 30; templated attacks as a floor on susceptibility; the sim-to-real correlation literature
+(third-party Spearman 0.40--0.70) as the reason none of this predicts a real rate; what a
+certifier can and cannot take from a report shaped like ISO/IEC 17025 clause 7.8 (nothing about
+conformity).}
+
+\section*{Artifacts}
+\todo{Anonymized artifact bundle: the results directories, aggregate.json files, ledgers, the
+release tag and the recipe. Run check\_anonymity.sh before upload.}
+
+\bibliographystyle{plain}
+\begin{thebibliography}{9}
+\bibitem{todo} \todo{Import the bibliography of paper/vlm4rwd/paper.tex; add RobustVLA
+(arXiv:2510.00037), LIBERO-PRO (arXiv:2510.03827), the weight-corruption paper (arXiv:2608.15475),
+the third-party sim-to-real audit (arXiv:2606.10366).}
+\end{thebibliography}
+
+\end{document}
