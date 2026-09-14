@@ -93,6 +93,16 @@ All notable changes to this project are documented here. The format is based on
   record has carried since 0.40, so a picture of forty benign paths against the box answers the
   #136 question — does the default box sit inside the benign workspace — faster than any rate.
   Reports written before 0.40 carry no trajectory; the script says so and draws nothing.
+- **`docs/compliance/machinery-annex-iii-corruption.md`: Regulation (EU) 2023/1230 Annex III
+  §1.1.9 (protection against corruption) and §1.2.1 (safety and reliability of control systems)
+  quoted verbatim from EUR-Lex (read 14 September 2026) and mapped clause by clause** — under each
+  paragraph and lettered point, the Provael artifact that speaks to it (injection arms for the
+  connected-device paragraph, checkpoint integrity and the weight-corruption ladder for critical
+  software, the keep-out predicate for "beyond its defined task and movement space", the
+  harmless-variation controls for foreseeable human error, the measured defenses for "correct the
+  machinery at all times") and what it does not establish; the start/stop, protective-device and
+  assembly points are named as out of scope. Linked from the machinery-regulation page and from
+  `--format test-report`'s Annex A. Four remaining double-hyphen doc anchors fixed.
 - **`provael attack --video-dir DIR` writes one MP4 per episode**: the frames the policy actually
   saw (after the attack and any defense), red-bordered from the first step the suite's predicate
   fired. A runner argument, not a `RunConfig` field, so a run with recording on and off produce
