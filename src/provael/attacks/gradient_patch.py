@@ -27,6 +27,13 @@ policy. It is **not** a provael measurement on a VLA: no SmolVLA x LIBERO number
 and :meth:`applicable` keeps this arm out of the ASR denominator everywhere the gradient path is
 absent, so a CPU run can never report it as a null it did not test.
 
+THE PUSHT FIGURES ARE AN EXTERNAL SCRIPT'S, NOT THIS MODULE'S (E-2026-11, 14 Sep 2026). That script
+is not in the repository. The module as released through 0.41.2 started its search from a zero
+perturbation, where this objective's gradient is exactly zero, and so could not move a frame at all
+against a smooth encoder; it now starts from a seeded draw inside the eps-ball (see ``perturb``).
+The first measurement of the module itself is the SmolVLA x LIBERO run through
+:meth:`provael.policies.lerobot_adapter.LeRobotAdapter.input_gradient`.
+
 WHY THE POLICY SUPPLIES THE GRADIENT. ``torch`` is not in the default install and must never be
 imported here. The attack asks an attached oracle for ``d(loss)/d(image)`` and does the projection
 and step itself in numpy, so this module stays CPU-clean and framework-agnostic, exactly as
@@ -37,7 +44,7 @@ and step itself in numpy, so this module stays CPU-clean and framework-agnostic,
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 import numpy as np
 import numpy.typing as npt
@@ -53,6 +60,9 @@ _EAI = CATALOG["EAI02"]  # adversarial perception: the perturbation enters via t
 #: L-inf budget, as a fraction of full scale. 0.10 is the value the PushT result above was measured
 #: at; it is a *bound on the worst pixel*, not an average, which is what makes it a meaningful cap.
 DEFAULT_EPS = 0.10
+#: Salt for the random-start generator, so the draw is not the one any other seeded attack makes
+#: from the same (seed, step) pair.
+_START_SALT = 0x6A7D
 #: PGD refinement steps per frame. Measured cost on an Apple M4: one refinement through SmolVLA's
 #: vision tower is ~3.5 s (forward alone is 131 ms — backward is 27x forward), so this is the knob
 #: that decides whether a sweep is hours or days. Three is what the PushT result used.
@@ -69,6 +79,20 @@ class GradientOracle(Protocol):
     def __call__(
         self, instruction: str, observation: Observation, image: npt.NDArray[np.floating]
     ) -> npt.NDArray[np.floating] | None: ...
+
+
+@runtime_checkable
+class GradientOracleAttack(Protocol):
+    """An attack that takes its direction from a policy's input gradients.
+
+    The runner wires :meth:`attach_gradient_oracle` to a policy implementing
+    :class:`provael.policies.base.InputGradientProvider`, structurally, so a new gradient attack
+    opts in by exposing this method and nothing in the runner names it.
+    """
+
+    def attach_gradient_oracle(
+        self, oracle: GradientOracle, reset: Callable[[], None] | None = None
+    ) -> None: ...
 
 
 class GradientPatch(Attack):
@@ -125,7 +149,17 @@ class GradientPatch(Attack):
 
         x = np.asarray(img, dtype=np.float32) / 255.0
         eps = self.eps
-        delta = np.zeros_like(x)
+        # RANDOM START, and it is load-bearing. The objective is the feature distance to the clean
+        # frame, and its gradient at the clean frame is exactly zero — so a search that starts from
+        # delta = 0 receives sign(0) = 0 on its first step and never moves, then reports a
+        # white-box null it never attempted. Found on the real SmolVLA path on 14 Sep 2026: two
+        # refinements, L-inf 0. The standard remedy is the standard PGD one, a uniform draw inside
+        # the eps-ball. Seeded from the episode and the step so the perturbation is a function of
+        # the observation, never of process state, and the same run reproduces the same frames.
+        rng = np.random.default_rng(
+            [int(observation.get("seed", 0)), int(observation.get("step", 0)), _START_SALT]
+        )
+        delta = rng.uniform(-eps, eps, size=x.shape).astype(np.float32)
         # 2.5 * eps / steps is the standard PGD step size: enough to cross the ball in well under
         # the step count, so the budget is genuinely explored rather than nibbled at.
         alpha = 2.5 * eps / self.steps

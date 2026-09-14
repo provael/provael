@@ -9,6 +9,9 @@ add and so the rest of the engine never depends on a specific model framework.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Any, Protocol, runtime_checkable
+
+import numpy.typing as npt
 
 from provael.types import Action, Observation, SuiteFeatures
 
@@ -97,3 +100,26 @@ class PolicyAdapter(ABC):
         Returns:
             A 1-D ``numpy`` float array — the action vector.
         """
+
+
+@runtime_checkable
+class InputGradientProvider(Protocol):
+    """A policy that can backprop an image objective to its own camera input (a torch path).
+
+    Structural, like :class:`provael.attacks.weight_integrity.WeightAccessible`: the runner checks
+    for this shape after :meth:`PolicyAdapter.load` and hands :meth:`input_gradient` to every
+    attack that accepts a gradient oracle (:mod:`provael.attacks.gradient_patch`). A policy that
+    does not implement it — or whose :meth:`provides_input_gradient` is False on this path — gets
+    no oracle, and those attacks report themselves *not applicable* rather than scoring a
+    white-box null they never attempted.
+    """
+
+    def provides_input_gradient(self) -> bool:
+        """True only when a gradient can actually be taken on the loaded backend and path."""
+        ...
+
+    def input_gradient(
+        self, instruction: str, observation: Observation, image: npt.NDArray[Any]
+    ) -> npt.NDArray[Any] | None:
+        """``d(objective)/d(image)`` for a candidate frame, a float array of the image's shape."""
+        ...

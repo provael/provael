@@ -732,6 +732,16 @@ publishes. Until `gradient_patch` runs on the GPU lane, the correct summary is: 
 has the attack it was missing, and has not yet pointed it at the policy the nulls were measured
 on.**
 
+**Correction, 14 September 2026 (E-2026-11).** Two things above were overstated. The PushT figures
+came from a script outside this repository that is not committed and cannot be re-run from it;
+they are a dated report of that script's result, not a measurement of the shipped module. And the
+shipped module, as released from 0.39.1 to 0.41.2, could not have produced them: its search
+started from a zero perturbation, where the feature-distance objective's gradient is exactly zero,
+so against a smooth encoder it never left the clean frame — found the first time it was pointed at
+SmolVLA's vision tower. Fixed in 0.42.0 with a seeded random start; the first measurement of the
+module itself is the SmolVLA × LIBERO run, and it will be committed under `results/` before it is
+quoted. "The harness has the attack it was missing" is true as of that fix, not as of 1 September.
+
 **Their mechanism finding, kept because it is the transferable part.** The authors attribute the
 first-step result to a gradient conflict specific to input-space optimization, and note it is
 "exactly opposite to the training-time backdoor regime". That is a claim about where to spend a

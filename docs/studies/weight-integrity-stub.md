@@ -82,12 +82,19 @@ be used for this artifact.
 None of the following has been tested. They are the conditions, not a roadmap:
 
 1. **A real quantized policy exposing its parameters.** The family finds them through a structural
-   `WeightAccessible` protocol; no shipped real adapter implements it yet. Until one does, the
-   family cannot run against a real policy at all.
+   `WeightAccessible` protocol. *Since 14 September 2026 (unreleased at the time of writing):*
+   `LeRobotAdapter` implements it over the weight matrix of `model.action_out_proj` — the last
+   linear map before the action chunk on every flow-matching checkpoint it loads (SmolVLA: 15,360
+   parameters) — as a symmetric per-tensor INT8 view of the float weights, with each flip applied
+   as the delta an INT8 deployment would see and the clean vector restoring the floats exactly.
+   The checkpoint still runs in float; `emulated` stays True for that reason too. The run itself
+   has not happened; until it is committed under `results/` there is still no real-policy number.
 2. **A gradient that means something.** The stub returns a closed-form derivative at a documented
-   reference operating point. A real adapter would return autograd gradients over a calibration
-   batch, and whether a one-shot first-order ranking finds the same bits a progressive search finds
-   is unknown here.
+   reference operating point. The real adapter returns one autograd pass at one fixed point per
+   run — the benign first frame of the run's first task at the run seed — of a *proxy*: the
+   translation energy of the executed chunk in normalized action space. That is a ranking
+   heuristic, not the derivative of the suite's geometric predicate, and whether a one-shot
+   first-order ranking on it finds the bits a progressive search finds is unknown here.
 3. **A stronger search.** This implementation ranks once against the clean weights and does not
    re-rank after each flip. The cited work uses a progressive search, which is strictly stronger, so
    **any null from this family is a lower bound and never a finding that gradient selection fails.**
@@ -95,7 +102,7 @@ None of the following has been tested. They are the conditions, not a roadmap:
    architecture. Testing it requires at least one direct-regression or token head and one
    flow-matching head, measured under the same protocol.
 
-Until (1) is done there is no real-policy number to publish, and this page will keep saying so.
+Until the run behind (1) is committed there is no real-policy number to publish, and this page will keep saying so.
 
 ## Provenance
 

@@ -105,6 +105,24 @@ class WeightAccessible(Protocol):
         ...
 
 
+@runtime_checkable
+class SensitivityReferencePolicy(Protocol):
+    """A :class:`WeightAccessible` policy whose gradient needs an operating point handed to it.
+
+    The deterministic fixture has a closed-form derivative and needs nothing. A real adapter takes
+    ``d(danger)/d(weight)`` by autograd at ONE frame, and it cannot pick that frame itself: the
+    runner owns the suite. So the runner, before the first weight attack of a run, resets the
+    run's first task at the run seed and passes that benign observation, its instruction and the
+    seed here. One point for the whole run, which is what makes the gradient arm's ranking — and
+    therefore the bits it flips — a fixed function of the clean weights, as :class:`GradientBitFlip`
+    documents.
+    """
+
+    def set_sensitivity_reference(
+        self, observation: Observation, instruction: str, seed: int
+    ) -> None: ...
+
+
 def flat_bit_indices(parameter_count: int) -> int:
     """Total addressable bits for ``parameter_count`` INT8 parameters."""
     return parameter_count * BIT_WIDTH
@@ -337,6 +355,7 @@ __all__ = [
     "SCALE",
     "GradientBitFlip",
     "RandomBitFlip",
+    "SensitivityReferencePolicy",
     "WeightAccessible",
     "WeightIntegrityAttack",
     "apply_flips",

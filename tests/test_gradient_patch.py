@@ -156,3 +156,41 @@ def test_the_family_declares_why_it_skips_on_cpu() -> None:
     """A family that scores nothing must say why, or a reader cannot tell N/A from a zero."""
     assert FAMILY in CONDITIONAL_FAMILIES
     assert "gradient" in CONDITIONAL_FAMILIES[FAMILY]
+
+
+# ── the random start: the objective's gradient is zero at the clean frame ────
+def test_random_start_escapes_a_zero_gradient_at_the_clean_frame() -> None:
+    """The real objective, ``||enc(x) - enc(x_clean)||^2``, has a gradient of exactly zero at the
+    clean frame. A search that starts from delta = 0 therefore receives sign(0) = 0, never moves,
+    and reports a white-box null it never attempted — found on the real SmolVLA path on 14 Sep
+    2026 (two refinements, L-inf 0). This oracle reproduces that shape: the gradient vanishes at
+    the clean frame and grows with the distance from it, and the attack must still land a
+    perturbation of the full budget."""
+    obs = _obs()
+    base = np.asarray(obs[IMAGE_KEY], dtype=np.float32) / 255.0
+
+    def oracle(instruction, observation, image):  # noqa: ANN001, ARG001
+        return (np.asarray(image, dtype=np.float32) - base).astype(np.float32)
+
+    a = GradientPatch(eps=0.1, steps=3)
+    a.attach_gradient_oracle(oracle)
+    _, out = a.perturb("x", obs)
+    moved = np.abs(out[IMAGE_KEY].astype(int) - obs[IMAGE_KEY].astype(int))
+    assert a.last_steps_used == 3
+    assert moved.max() > 0, "the attack never left the clean frame"
+    assert moved.max() <= int(round(0.1 * 255)) + 1  # the budget still binds
+    # and on the interior, most pixels sit AT the budget: the ball was explored, not nibbled
+    interior = (base > 0.15) & (base < 0.85)
+    assert (moved[interior] >= int(round(0.1 * 255)) - 1).mean() > 0.9
+
+
+def test_the_random_start_is_a_function_of_the_observation() -> None:
+    """Seeded from (seed, step): the same frame draws the same start, a later step a different
+    one — the perturbation is a function of the observation, never of process state."""
+    a = GradientPatch(eps=0.1, steps=1)
+    a.attach_gradient_oracle(lambda i, o, img: np.zeros_like(np.asarray(img, dtype=np.float32)))
+    same = [a.perturb("x", _obs())[1][IMAGE_KEY] for _ in range(2)]
+    assert np.array_equal(same[0], same[1])
+    later = _obs()
+    later["step"] = 7
+    assert not np.array_equal(same[0], a.perturb("x", later)[1][IMAGE_KEY])

@@ -23,6 +23,26 @@ All notable changes to this project are documented here. The format is based on
   unchanged); `watch/registry.json`, the inventory lines and the checked-in evidence manifest are
   regenerated.
 
+- **The weight-integrity family and the gradient-patch attack can now run against a real policy.**
+  `LeRobotAdapter` implements `WeightAccessible` over the weight matrix of `model.action_out_proj`
+  — the last linear map before the action chunk on every flow-matching checkpoint lerobot 0.5.1
+  loads through it (SmolVLA: 15,360 parameters) — through a symmetric per-tensor INT8 view. A
+  flipped INT8 value is applied to the live float weights as the delta the same flip would make in
+  an INT8 deployment, and the clean vector restores the original floats bit-for-bit; the runner
+  hands the adapter its reference operating point (the benign first frame of the run's first task
+  at the run seed, via the new `SensitivityReferencePolicy` protocol) so `d(danger)/d(weight)` is
+  one autograd pass at one fixed point per run. The danger proxy — translation energy of the
+  executed chunk in normalized action space — is documented as a ranking heuristic, not the
+  predicate's derivative. `LeRobotAdapter.input_gradient` backpropagates
+  `||enc(x) − enc(x_clean)||²` through the backend's own vision tower to the suite-frame image, and
+  the runner attaches it to every attack exposing `attach_gradient_oracle` (the new
+  `InputGradientProvider` / `GradientOracleAttack` protocols) — without a reset callback, because
+  the oracle touches no per-episode state and a reset per refinement would make the attacked arm
+  re-plan every step. pi0-FAST has no `action_out_proj` and reports the family *not applicable*;
+  the deterministic stub enters neither path, so no CPU report moves. Verified on the real
+  `HuggingFaceVLA/smolvla_libero` checkpoint on a CPU with a synthetic frame (no simulator):
+  finite sensitivities, exact restore, finite input gradients, and the attack landing at its
+  budget. No rate is claimed until the GPU run is committed.
 - **`provael attack --video-dir DIR` writes one MP4 per episode**: the frames the policy actually
   saw (after the attack and any defense), red-bordered from the first step the suite's predicate
   fired. A runner argument, not a `RunConfig` field, so a run with recording on and off produce
@@ -48,6 +68,14 @@ All notable changes to this project are documented here. The format is based on
 
 ### Fixed
 
+- **`gradient_patch` could not move a frame (E-2026-11).** Its objective's gradient is exactly
+  zero at the clean frame and the search started from a zero perturbation, so against a smooth
+  encoder the released module (0.39.1–0.41.2) never left the clean frame — found the first time it
+  met a real vision tower. The loop now starts from a uniform draw inside the ε-ball, seeded from
+  the episode seed and the step; a regression test uses an oracle shaped like the real objective.
+  No published rate moves: the arm never ran against a VLA. The Diffusion Policy × PushT figures it
+  shipped with came from a script outside this repository and are now labelled as that script's
+  result, not this module's, in `PRIOR_ART.md` and the errata ledger.
 - **Three stale sentences in the compliance docs** (found by the 13 Sep regulatory re-read):
   `docs/compliance/index.md` called ISO 25785-1 a "Working Draft… expected 2026–2027" (it is a
   Committee Draft since 8 May 2026 with no committed date; trackers read ~2028) and opened the
