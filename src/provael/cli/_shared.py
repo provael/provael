@@ -170,6 +170,31 @@ def _git_commit() -> str | None:
     return sha if result.returncode == 0 and sha else None
 
 
+def _hardware_string() -> str | None:
+    """What the run executed on, as specifically as this process can honestly tell.
+
+    ``platform.machine()`` alone said ``x86_64`` for every run ever recorded, which names nothing:
+    the L4 that produced the published result and a laptop share it. The accelerator is what a
+    reader needs, so when torch is importable and a CUDA device is visible its name and memory are
+    appended, with the CPU count beside them (the simulator is CPU work and the throughput depends
+    on it). torch is imported lazily and every failure degrades to the plain machine string — the
+    CPU build must never grow a torch dependency to write a manifest.
+    """
+    parts = [platform.machine() or "unknown-arch"]
+    cpus = os.cpu_count()
+    if cpus:
+        parts.append(f"cpu={cpus}")
+    try:
+        import torch  # noqa: PLC0415 - optional, lazy by design
+
+        if torch.cuda.is_available():
+            props = torch.cuda.get_device_properties(0)
+            parts.append(f"gpu={props.name} ({props.total_memory // (1024 * 1024)} MiB)")
+    except Exception as exc:  # noqa: BLE001 - any torch/CUDA failure is "no accelerator known"
+        parts.append(f"gpu=unknown ({type(exc).__name__})")
+    return "; ".join(parts)
+
+
 def _emit_execution_manifest(
     report: RunReport, out_dir: Path, *, elapsed: float, defense: str | None = None
 ) -> None:
@@ -194,7 +219,7 @@ def _emit_execution_manifest(
         commit=_git_commit(),
         python_version=platform.python_version(),
         os_name=f"{platform.system()} {platform.release()}",
-        hardware=platform.machine() or None,
+        hardware=_hardware_string(),
         started_at=start.strftime(fmt),
         ended_at=end.strftime(fmt),
         env=dict(os.environ),
