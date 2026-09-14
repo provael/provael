@@ -361,20 +361,26 @@ def badge(record: MeasurementRecord | None, *, now: datetime | None = None) -> d
         }
     days = int(age)
     when = "today" if days == 0 else ("1 day ago" if days == 1 else f"{days} days ago")
+    # The colour is derived from the SAME whole-day count the message states, not from the
+    # fractional age. At age 2.3 the old rule wrote "2 days ago" in orange: a reader saw a day
+    # count inside the fresh window painted stale, and the guard that recomputes the badge at the
+    # age the message asserts (tests/test_watch.py) read 2 days as green and failed every PR for the
+    # ~17 hours until the count ticked over — observed 14 Sep 2026 on the badge committed 13 Sep.
+    # A badge whose two halves disagree is wrong whichever half a reader trusts.
     if record.recorded:
         message = when
-        color = "brightgreen" if age <= FRESH_DAYS else ("orange" if age <= STALE_DAYS else "red")
+        color = "brightgreen" if days <= FRESH_DAYS else ("orange" if days <= STALE_DAYS else "red")
     else:
         # The date is a reconstruction, so it is reported with its provenance and capped at amber.
         # A reader who sees a green badge is entitled to assume the timestamp was observed.
         message = f"{when} (date reconstructed)"
-        color = "orange" if age <= STALE_DAYS else "red"
+        color = "orange" if days <= STALE_DAYS else "red"
     return {
         "schemaVersion": SHIELDS_SCHEMA_VERSION,
         "label": "last measured",
         "message": message,
         "color": color,
-        "isError": age > STALE_DAYS,
+        "isError": days > STALE_DAYS,
         # Shields caches endpoint responses; 1h keeps the badge honest without hammering the host.
         "cacheSeconds": 3600,
         # Not for shields, which ignores unknown keys. `message` is a rendered human string

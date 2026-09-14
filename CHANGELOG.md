@@ -98,6 +98,13 @@ All notable changes to this project are documented here. The format is based on
 
 ### Fixed
 
+- **The freshness badge's colour comes from the day count it prints.** It came from the
+  fractional age, so at 2.3 days the badge read "2 days ago" in orange — a number inside the fresh
+  window painted stale — and the guard that recomputes the badge at the age its own message asserts
+  read 2 days as green and failed every pull request for the ~17 hours until the count ticked over
+  (observed 14 Sep 2026 on the badge committed 13 Sep). Message and colour now derive from the same
+  whole-day count; `watch/freshness.json` regenerated.
+
 - **The Python versions this package claims, and the date its citation names, are now checked
   rather than asserted.** Three surfaces stated something nothing verified (#220, #221, #222).
 
