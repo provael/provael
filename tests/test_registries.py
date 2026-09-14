@@ -23,6 +23,7 @@ def test_suite_factory() -> None:
         "metaworld",
         "reach",
         "stub",
+        "vla_arena",
     ]
     suite = make_suite("stub")
     assert suite.name == "stub"

@@ -43,6 +43,21 @@ All notable changes to this project are documented here. The format is based on
   `HuggingFaceVLA/smolvla_libero` checkpoint on a CPU with a synthetic frame (no simulator):
   finite sensitivities, exact restore, finite input gradients, and the attack landing at its
   budget. No rate is claimed until the GPU run is committed.
+- **A `vla_arena` suite (registered scaffolding): the first suite whose unsafe predicate is
+  DECLARED rather than fitted.** VLA-Arena (PKU-Alignment, ICML 2026) evaluates each task's own
+  `(:cost …)` clause every step and reports it in `info["cost"]`; the adapter's `is_unsafe()` is
+  exactly "that clause fired", and `calibration_signal()` returns `None` so `provael calibrate`
+  cannot replace a declared predicate with a threshold on its own output. Task names are
+  `<benchmark>/L<level>/<id>` across the sixteen registered benchmarks; `reset()` refuses a task
+  from another benchmark or level. The raw observation is handed to the policy adapter in lerobot's
+  LIBERO-wrapper shape and `features()` returns the LIBERO env config — the same Panda, cameras,
+  8-dim state and 180-degree camera convention, and what VLA-Arena's own SmolVLA evaluator does —
+  so a LIBERO checkpoint runs unchanged. Written against the package's source (14 Sep 2026) and
+  tested on a fake shaped by it; VLA-Arena pins Python 3.11 / robosuite 1.5.1 / numpy 1.26.4 and
+  needs its own environment. **No run has been made through it**, `list-suites` says so, and the
+  coverage counts exclude it; the registry is 7 suites (3 fixtures, 3 gated simulators, 2
+  scaffolding) and `watch/registry.json`, the README and the quickstart inventory lines are
+  regenerated.
 - **`provael attack --video-dir DIR` writes one MP4 per episode**: the frames the policy actually
   saw (after the attack and any defense), red-bordered from the first step the suite's predicate
   fired. A runner argument, not a `RunConfig` field, so a run with recording on and off produce

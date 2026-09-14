@@ -24,9 +24,10 @@
   "openvla"
  ],
  "scaffoldingSuiteNames": [
-  "ai2_bridge"
+  "ai2_bridge",
+  "vla_arena"
  ],
- "scaffoldingSuites": 1,
+ "scaffoldingSuites": 2,
  "stubOnlyFamilies": [
   "action",
   "action_space",
@@ -44,5 +45,5 @@
   "weight_integrity"
  ],
  "stubValidatedOnly": 14,
- "suites": 6
+ "suites": 7
 }

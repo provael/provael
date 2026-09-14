@@ -3,6 +3,10 @@
 > **Defensive, sim-only.** This is a taxonomy-comparability artifact. It runs no VLA-Arena harness,
 > makes no leaderboard submission, publishes no comparative score, and drives no physical robot.
 > See [SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md).
+>
+> *Since 14 September 2026 a `vla_arena` suite adapter exists in the tool* — it reads VLA-Arena's
+> declared `(:cost …)` predicate as `is_unsafe()` — but it is registered scaffolding with no run
+> committed, so nothing on this page is a measurement through it.
 
 **Source (pinned).** *VLA-Arena: An Open-Source Framework for Benchmarking Vision-Language-Action
 Models*, Zhang, Li, Shen, Zhang, Cai, Liu, Ji, Chen, Dai, Ji, Yang,

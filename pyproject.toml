@@ -265,6 +265,8 @@ module = [
     # Episode video (provael.video) writes MP4 through imageio's ffmpeg plugin, lazily; both ship
     # with the [lerobot] extra and neither with the CPU core.
     "imageio.*",
+    # VLA-Arena (provael.suites.vla_arena) lives in its own Python 3.11 venv; never in the CPU build.
+    "vla_arena.*",
 ]
 ignore_missing_imports = true
 

@@ -34,6 +34,28 @@ def _make_metaworld() -> SuiteAdapter:
     return MetaworldSuiteAdapter()
 
 
+def _make_vla_arena(tasks: Sequence[str] | None = None) -> SuiteAdapter:
+    # Task-aware for the same reason LIBERO is: one adapter serves sixteen benchmarks at three
+    # levels, and the run's task names are the only place the intended one is stated.
+    from provael.suites.vla_arena import VlaArenaSuiteAdapter, parse_vla_arena_task
+
+    if not tasks:
+        return VlaArenaSuiteAdapter()
+    parsed = [parse_vla_arena_task(t) for t in tasks]
+    benchmarks = {b for b, _, _ in parsed}
+    levels = {lv for _, lv, _ in parsed}
+    if len(benchmarks) != 1 or len(levels) != 1:
+        raise ValueError(
+            "a VLA-Arena run names exactly one benchmark at one level; got "
+            f"{sorted(benchmarks)} at levels {sorted(levels)}. Run them as separate runs so each "
+            "report is attributable to one suite."
+        )
+    (benchmark,), (level,) = benchmarks, levels
+    return VlaArenaSuiteAdapter(
+        benchmark=benchmark, level=level, task_ids=[tid for _, _, tid in parsed]
+    )
+
+
 #: Registry of suite factories keyed by name. ``stub`` (scalar), ``reach`` (spatial), and
 #: ``humanoid`` (whole-body / locomotion, spatial) are pure-CPU; ``libero`` and ``metaworld`` wrap
 #: real simulators behind the ``[lerobot]`` extra.
@@ -44,6 +66,7 @@ SUITES: dict[str, Callable[[], SuiteAdapter]] = {
     "libero": _make_libero,
     "metaworld": _make_metaworld,
     "ai2_bridge": Ai2BridgeSuite,
+    "vla_arena": _make_vla_arena,
 }
 
 #: suite name -> why it is scaffolding rather than a runnable suite. Mirrors
@@ -56,6 +79,11 @@ SCAFFOLDING_SUITES: dict[str, str] = {
     "ai2_bridge": (
         "scaffolding: the AI2 harness returns per-episode success only — no per-step state for "
         "is_unsafe() and no end-effector pose reaches a caller; no benchmark has been run here"
+    ),
+    "vla_arena": (
+        "scaffolding: adapter written against VLA-Arena's source (declared per-step cost "
+        "predicate, LIBERO-shaped policy path) and tested on a fake env; needs its own Python "
+        "3.11 venv, and no benchmark has been run here yet"
     ),
 }
 
@@ -83,8 +111,9 @@ def suite_gating_note(name: str) -> str | None:
 #: future emitter say the same words, exactly as ``STATUS_SCAFFOLDING`` does for policies.
 STATUS_SCAFFOLDING = "scaffolding — no benchmark ever run"
 
-#: Suites that require the optional ``[lerobot]`` extra (and a real simulator).
-REQUIRES_LEROBOT: frozenset[str] = frozenset({"libero", "metaworld"})
+#: Suites that require the optional ``[lerobot]`` extra (and a real simulator). ``vla_arena``
+#: needs it too — its policy path is lerobot's LIBERO processors — on top of VLA-Arena itself.
+REQUIRES_LEROBOT: frozenset[str] = frozenset({"libero", "metaworld", "vla_arena"})
 
 #: Suites that are deterministic in-process **fixtures**, not real simulators — declared by the
 #: suite classes themselves (``SuiteAdapter.is_fixture``) rather than name-matched here, so adding
@@ -150,6 +179,7 @@ def suite_is_ready(name: str) -> bool:
 #: intended suite is stated, so the factory reads them.
 _TASK_AWARE: dict[str, Callable[[Sequence[str] | None], SuiteAdapter]] = {
     "libero": _make_libero,
+    "vla_arena": _make_vla_arena,
 }
 
 
