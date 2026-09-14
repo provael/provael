@@ -138,13 +138,15 @@ def benchmark_eval_yaml(suite: str, attacks: list[str], *, name: str, descriptio
 
     ``attacks`` is the full list of arms the benchmark accepts results for — normally every
     registered attack plus the benign baseline — so the benchmark declares what provael can
-    measure rather than what one run measured.
+    measure rather than what one run measured. Arms are de-duplicated in order of first
+    appearance: the registry already carries ``none``, and a caller prepending it for
+    emphasis must not produce a benchmark that declares the same task twice.
     """
     document = {
         "name": name,
         "description": description,
         "evaluation_framework": EVALUATION_FRAMEWORK,
-        "tasks": [{"id": task_id(suite, attack)} for attack in attacks],
+        "tasks": [{"id": task_id(suite, attack)} for attack in dict.fromkeys(attacks)],
     }
     return yaml.safe_dump(document, sort_keys=False, allow_unicode=True)
 

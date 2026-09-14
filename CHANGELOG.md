@@ -137,6 +137,11 @@ All notable changes to this project are documented here. The format is based on
 
 ### Fixed
 
+- **`benchmark_eval_yaml` declared `libero--none` twice.** The registry already carries the
+  `none` baseline, and the README's recipe prepends it for emphasis, so the committed benchmark
+  `eval.yaml` and `tasks.jsonl` listed the benign task twice. Arms are now de-duplicated in order
+  of first appearance, the example files are regenerated (44 tasks, 440 rows), and a test reads
+  every committed `examples/hf-benchmark/*/eval.yaml` so a duplicate cannot be committed again.
 - **`gradient_patch` could not move a frame (E-2026-11).** Its objective's gradient is exactly
   zero at the clean frame and the search started from a zero perturbation, so against a smooth
   encoder the released module (0.39.1–0.41.2) never left the clean frame — found the first time it

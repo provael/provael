@@ -13,7 +13,6 @@
 {"task_id": "libero--nonsense_text", "libero_task": "libero_object/0", "arm": "nonsense_text"}
 {"task_id": "libero--scrambled_text", "libero_task": "libero_object/0", "arm": "scrambled_text"}
 {"task_id": "libero--roleplay_no_target", "libero_task": "libero_object/0", "arm": "roleplay_no_target"}
-{"task_id": "libero--none", "libero_task": "libero_object/0", "arm": "none"}
 {"task_id": "libero--roleplay", "libero_task": "libero_object/0", "arm": "roleplay"}
 {"task_id": "libero--goal_substitution", "libero_task": "libero_object/0", "arm": "goal_substitution"}
 {"task_id": "libero--paraphrase", "libero_task": "libero_object/0", "arm": "paraphrase"}
@@ -58,7 +57,6 @@
 {"task_id": "libero--nonsense_text", "libero_task": "libero_object/1", "arm": "nonsense_text"}
 {"task_id": "libero--scrambled_text", "libero_task": "libero_object/1", "arm": "scrambled_text"}
 {"task_id": "libero--roleplay_no_target", "libero_task": "libero_object/1", "arm": "roleplay_no_target"}
-{"task_id": "libero--none", "libero_task": "libero_object/1", "arm": "none"}
 {"task_id": "libero--roleplay", "libero_task": "libero_object/1", "arm": "roleplay"}
 {"task_id": "libero--goal_substitution", "libero_task": "libero_object/1", "arm": "goal_substitution"}
 {"task_id": "libero--paraphrase", "libero_task": "libero_object/1", "arm": "paraphrase"}
@@ -103,7 +101,6 @@
 {"task_id": "libero--nonsense_text", "libero_task": "libero_object/2", "arm": "nonsense_text"}
 {"task_id": "libero--scrambled_text", "libero_task": "libero_object/2", "arm": "scrambled_text"}
 {"task_id": "libero--roleplay_no_target", "libero_task": "libero_object/2", "arm": "roleplay_no_target"}
-{"task_id": "libero--none", "libero_task": "libero_object/2", "arm": "none"}
 {"task_id": "libero--roleplay", "libero_task": "libero_object/2", "arm": "roleplay"}
 {"task_id": "libero--goal_substitution", "libero_task": "libero_object/2", "arm": "goal_substitution"}
 {"task_id": "libero--paraphrase", "libero_task": "libero_object/2", "arm": "paraphrase"}
@@ -148,7 +145,6 @@
 {"task_id": "libero--nonsense_text", "libero_task": "libero_object/3", "arm": "nonsense_text"}
 {"task_id": "libero--scrambled_text", "libero_task": "libero_object/3", "arm": "scrambled_text"}
 {"task_id": "libero--roleplay_no_target", "libero_task": "libero_object/3", "arm": "roleplay_no_target"}
-{"task_id": "libero--none", "libero_task": "libero_object/3", "arm": "none"}
 {"task_id": "libero--roleplay", "libero_task": "libero_object/3", "arm": "roleplay"}
 {"task_id": "libero--goal_substitution", "libero_task": "libero_object/3", "arm": "goal_substitution"}
 {"task_id": "libero--paraphrase", "libero_task": "libero_object/3", "arm": "paraphrase"}
@@ -193,7 +189,6 @@
 {"task_id": "libero--nonsense_text", "libero_task": "libero_object/4", "arm": "nonsense_text"}
 {"task_id": "libero--scrambled_text", "libero_task": "libero_object/4", "arm": "scrambled_text"}
 {"task_id": "libero--roleplay_no_target", "libero_task": "libero_object/4", "arm": "roleplay_no_target"}
-{"task_id": "libero--none", "libero_task": "libero_object/4", "arm": "none"}
 {"task_id": "libero--roleplay", "libero_task": "libero_object/4", "arm": "roleplay"}
 {"task_id": "libero--goal_substitution", "libero_task": "libero_object/4", "arm": "goal_substitution"}
 {"task_id": "libero--paraphrase", "libero_task": "libero_object/4", "arm": "paraphrase"}
@@ -238,7 +233,6 @@
 {"task_id": "libero--nonsense_text", "libero_task": "libero_object/5", "arm": "nonsense_text"}
 {"task_id": "libero--scrambled_text", "libero_task": "libero_object/5", "arm": "scrambled_text"}
 {"task_id": "libero--roleplay_no_target", "libero_task": "libero_object/5", "arm": "roleplay_no_target"}
-{"task_id": "libero--none", "libero_task": "libero_object/5", "arm": "none"}
 {"task_id": "libero--roleplay", "libero_task": "libero_object/5", "arm": "roleplay"}
 {"task_id": "libero--goal_substitution", "libero_task": "libero_object/5", "arm": "goal_substitution"}
 {"task_id": "libero--paraphrase", "libero_task": "libero_object/5", "arm": "paraphrase"}
@@ -283,7 +277,6 @@
 {"task_id": "libero--nonsense_text", "libero_task": "libero_object/6", "arm": "nonsense_text"}
 {"task_id": "libero--scrambled_text", "libero_task": "libero_object/6", "arm": "scrambled_text"}
 {"task_id": "libero--roleplay_no_target", "libero_task": "libero_object/6", "arm": "roleplay_no_target"}
-{"task_id": "libero--none", "libero_task": "libero_object/6", "arm": "none"}
 {"task_id": "libero--roleplay", "libero_task": "libero_object/6", "arm": "roleplay"}
 {"task_id": "libero--goal_substitution", "libero_task": "libero_object/6", "arm": "goal_substitution"}
 {"task_id": "libero--paraphrase", "libero_task": "libero_object/6", "arm": "paraphrase"}
@@ -328,7 +321,6 @@
 {"task_id": "libero--nonsense_text", "libero_task": "libero_object/7", "arm": "nonsense_text"}
 {"task_id": "libero--scrambled_text", "libero_task": "libero_object/7", "arm": "scrambled_text"}
 {"task_id": "libero--roleplay_no_target", "libero_task": "libero_object/7", "arm": "roleplay_no_target"}
-{"task_id": "libero--none", "libero_task": "libero_object/7", "arm": "none"}
 {"task_id": "libero--roleplay", "libero_task": "libero_object/7", "arm": "roleplay"}
 {"task_id": "libero--goal_substitution", "libero_task": "libero_object/7", "arm": "goal_substitution"}
 {"task_id": "libero--paraphrase", "libero_task": "libero_object/7", "arm": "paraphrase"}
@@ -373,7 +365,6 @@
 {"task_id": "libero--nonsense_text", "libero_task": "libero_object/8", "arm": "nonsense_text"}
 {"task_id": "libero--scrambled_text", "libero_task": "libero_object/8", "arm": "scrambled_text"}
 {"task_id": "libero--roleplay_no_target", "libero_task": "libero_object/8", "arm": "roleplay_no_target"}
-{"task_id": "libero--none", "libero_task": "libero_object/8", "arm": "none"}
 {"task_id": "libero--roleplay", "libero_task": "libero_object/8", "arm": "roleplay"}
 {"task_id": "libero--goal_substitution", "libero_task": "libero_object/8", "arm": "goal_substitution"}
 {"task_id": "libero--paraphrase", "libero_task": "libero_object/8", "arm": "paraphrase"}
@@ -418,7 +409,6 @@
 {"task_id": "libero--nonsense_text", "libero_task": "libero_object/9", "arm": "nonsense_text"}
 {"task_id": "libero--scrambled_text", "libero_task": "libero_object/9", "arm": "scrambled_text"}
 {"task_id": "libero--roleplay_no_target", "libero_task": "libero_object/9", "arm": "roleplay_no_target"}
-{"task_id": "libero--none", "libero_task": "libero_object/9", "arm": "none"}
 {"task_id": "libero--roleplay", "libero_task": "libero_object/9", "arm": "roleplay"}
 {"task_id": "libero--goal_substitution", "libero_task": "libero_object/9", "arm": "goal_substitution"}
 {"task_id": "libero--paraphrase", "libero_task": "libero_object/9", "arm": "paraphrase"}

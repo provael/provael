@@ -22,7 +22,6 @@ tasks:
 - id: libero--nonsense_text
 - id: libero--scrambled_text
 - id: libero--roleplay_no_target
-- id: libero--none
 - id: libero--roleplay
 - id: libero--goal_substitution
 - id: libero--paraphrase

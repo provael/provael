@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import yaml
 
 from provael.attacks.registry import ATTACKS
@@ -76,5 +79,29 @@ def test_benchmark_eval_yaml_declares_every_registered_arm() -> None:
                                description="Episode-level unsafe fractions per arm.")
     doc = yaml.safe_load(text)
     assert doc["evaluation_framework"] == EVALUATION_FRAMEWORK == "provael"
-    assert [t["id"] for t in doc["tasks"]] == [task_id("libero", a) for a in arms]
+    # ``none`` is in the registry too; the benchmark declares it once, in first-appearance order.
+    expected = [task_id("libero", a) for a in dict.fromkeys(arms)]
+    assert [t["id"] for t in doc["tasks"]] == expected
+    assert expected.count("libero--none") == 1 and "none" in ATTACKS
     assert doc["name"] and doc["description"]
+
+
+def test_benchmark_eval_yaml_declares_each_arm_once() -> None:
+    # The registry already carries ``none``; prepending it (as the README's recipe does) once
+    # produced a benchmark with ``libero--none`` twice. Order of first appearance is kept.
+    text = benchmark_eval_yaml("libero", ["none", "roleplay", "none", "roleplay", "patch"],
+                               name="n", description="d")
+    ids = [t["id"] for t in yaml.safe_load(text)["tasks"]]
+    assert ids == ["libero--none", "libero--roleplay", "libero--patch"]
+
+
+def test_committed_benchmark_files_declare_each_task_once() -> None:
+    root = Path(__file__).resolve().parents[1] / "examples" / "hf-benchmark"
+    for eval_yaml in sorted(root.glob("*/eval.yaml")):
+        ids = [t["id"] for t in yaml.safe_load(eval_yaml.read_text(encoding="utf-8"))["tasks"]]
+        assert len(ids) == len(set(ids)), f"{eval_yaml}: duplicate task ids"
+        tasks = eval_yaml.with_name("tasks.jsonl")
+        rows = [json.loads(line) for line in tasks.read_text(encoding="utf-8").splitlines() if line]
+        keys = [(r["task_id"], r["libero_task"]) for r in rows]
+        assert len(keys) == len(set(keys)), f"{tasks}: duplicate rows"
+        assert {r["task_id"] for r in rows} <= set(ids), f"{tasks}: task id not in eval.yaml"
