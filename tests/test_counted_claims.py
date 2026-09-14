@@ -390,6 +390,11 @@ _NAMED_SUBSETS: dict[tuple[str, str], str] = {
         "E-2026-09 quotes the superseded count the website published between 1 and 3 September "
         "2026; an erratum must name the wrong number to record it. Historical, must not be updated"
     ),
+    ("docs/errata.md", "42 registered attacks"): (
+        "E-2026-09/E-2026-10 state the registry as it stood on 13 Sep 2026 (42 attacks, before "
+        "the scrambled_text and roleplay_no_target controls of 14 Sep); an erratum's numbers are "
+        "the numbers of its day"
+    ),
     ("docs/errata.md", "38 attacks"): (
         "E-2026-09 quotes the superseded count the website published between 1 and 3 September "
         "2026; an erratum must name the wrong number to record it. Historical, must not be updated"

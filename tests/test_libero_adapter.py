@@ -142,6 +142,55 @@ def test_unknown_suite_rejected() -> None:
         LiberoSuiteAdapter(task_suite="not_a_suite")
 
 
+# --- the suite the run asks for is the suite the adapter is built for (14 Sep 2026) ---------
+#
+# Two misattribution paths closed the same day. (1) `reset()` parsed the suite out of a
+# "<suite>/<id>" task name and threw it away, so `libero_spatial/3` rolled out libero_object task 3
+# under a spatial label. (2) A bare "3" fell through to task 0. Both produced a report whose task
+# labels described episodes that never ran. None of these tests needs the simulator: the guard
+# fires before the lerobot gate, and the factory reads only strings.
+
+
+def test_make_suite_builds_libero_for_the_suite_the_tasks_name() -> None:
+    from provael.suites import make_suite
+
+    adapter = make_suite("libero", tasks=["libero_spatial/3", "libero_spatial/7"])
+    assert isinstance(adapter, LiberoSuiteAdapter)
+    assert adapter.task_suite == "libero_spatial"
+    assert adapter.task_ids == (3, 7)
+    assert adapter.tasks() == ["libero_spatial/3", "libero_spatial/7"]
+    # no tasks -> the historical default, unchanged
+    default = make_suite("libero")
+    assert isinstance(default, LiberoSuiteAdapter)
+    assert default.task_suite == "libero_object" and default.task_ids == (0,)
+    # a non-task-aware suite ignores the hint
+    assert make_suite("stub", tasks=["anything"]).name == "stub"
+
+
+def test_make_suite_refuses_a_task_list_that_mixes_libero_suites() -> None:
+    from provael.suites import make_suite
+
+    with pytest.raises(ValueError, match="more than one LIBERO suite"):
+        make_suite("libero", tasks=["libero_object/0", "libero_spatial/0"])
+    with pytest.raises(ValueError, match="unknown LIBERO suite"):
+        make_suite("libero", tasks=["libero_nope/0"])
+
+
+def test_bare_integer_task_is_that_task_not_task_zero() -> None:
+    from provael.suites.libero import _parse_task, suite_and_ids_from_tasks
+
+    assert _parse_task("3", "libero_object") == ("libero_object", 3)
+    assert _parse_task("libero_goal/2", "libero_object") == ("libero_goal", 2)
+    assert suite_and_ids_from_tasks(["3", "libero_goal/2"]) == ("libero_goal", (3, 2))
+    assert suite_and_ids_from_tasks(["4", "5"]) == ("libero_object", (4, 5))
+
+
+def test_reset_refuses_a_task_from_another_suite_before_touching_the_simulator() -> None:
+    adapter = LiberoSuiteAdapter(task_suite="libero_object", task_ids=(3,))
+    with pytest.raises(ValueError, match="names suite 'libero_spatial'"):
+        adapter.reset("libero_spatial/3", seed=0)
+
+
 @pytest.mark.skipif(_LEROBOT_AVAILABLE, reason="asserts the lerobot-absent path")
 def test_reset_without_lerobot_raises_clear_error() -> None:
     adapter = LiberoSuiteAdapter(task_suite="libero_object")

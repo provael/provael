@@ -119,11 +119,46 @@ class LiberoRedTeamRules(BaseModel):
 
 
 def _parse_task(task: str, default_suite: str) -> tuple[str, int]:
-    """Parse a ``"<suite>/<task_id>"`` (or bare suite) task identifier."""
+    """Parse a ``"<suite>/<task_id>"``, bare-suite, or bare-integer task identifier.
+
+    A bare integer (``"3"``) is task 3 of ``default_suite``. It used to fall through to task 0 of
+    the default suite — a second, quieter way for a run to attribute one task's episodes to
+    another, closed on 14 September 2026 alongside the suite-prefix guard in :meth:`reset`.
+    """
     if "/" in task:
         suite, raw_id = task.rsplit("/", 1)
         return suite, int(raw_id)
+    if task.isdigit():
+        return default_suite, int(task)
     return (task if task in LIBERO_TASK_SUITES else default_suite), 0
+
+
+def suite_and_ids_from_tasks(tasks: Sequence[str]) -> tuple[str, tuple[int, ...]]:
+    """The one LIBERO task suite a task list names, and its task ids in request order.
+
+    Every entry must resolve to the same suite: an adapter is built for exactly one task suite
+    (its env config, features and calibration all carry it), so a list mixing ``libero_object/0``
+    with ``libero_spatial/0`` cannot be honoured by one adapter and is refused rather than
+    quietly served from whichever suite came first. Bare integers take the suite of the first
+    prefixed entry, or ``libero_object`` when none is prefixed.
+
+    Raises:
+        ValueError: on a mixed list, or a suite name LIBERO does not have.
+    """
+    prefixed = [t.rsplit("/", 1)[0] for t in tasks if "/" in t]
+    default_suite = prefixed[0] if prefixed else "libero_object"
+    suites = set(prefixed)
+    if len(suites) > 1:
+        raise ValueError(
+            f"tasks name more than one LIBERO suite ({sorted(suites)}); one run is one suite. "
+            "Run them as separate invocations."
+        )
+    if default_suite not in LIBERO_TASK_SUITES:
+        raise ValueError(
+            f"unknown LIBERO suite {default_suite!r}; choose from {LIBERO_TASK_SUITES}"
+        )
+    ids = tuple(_parse_task(t, default_suite)[1] for t in tasks)
+    return default_suite, ids
 
 
 def _ensure_libero_initialized() -> None:
@@ -295,8 +330,19 @@ class LiberoSuiteAdapter(SuiteAdapter):
             ) from None
 
     def reset(self, task: str, seed: int) -> Observation:
+        suite, task_id = _parse_task(task, self.task_suite)
+        # Checked BEFORE the lerobot gate so a misconfigured run fails on any machine, not only on
+        # one with the simulator. Until 14 September 2026 the parsed suite was discarded here and
+        # the environment came from `self.task_suite` regardless — `libero_spatial/3` rolled out
+        # libero_object task 3 under a spatial label, the suite-level twin of the task-level
+        # misattribution `_build_env` already refuses.
+        if suite != self.task_suite:
+            raise ValueError(
+                f"task {task!r} names suite {suite!r} but this adapter was built for "
+                f"{self.task_suite!r}. A LIBERO adapter serves one task suite; build it for "
+                f"{suite!r} (the runner does this from RunConfig.tasks) or fix the task name."
+            )
         self._ensure_lerobot()
-        _suite, task_id = _parse_task(task, self.task_suite)
         env = self._envs.get(task)
         if env is None:
             env = self._build_env(task_id)

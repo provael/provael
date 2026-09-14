@@ -49,8 +49,11 @@ def test_the_two_family_constants_agree() -> None:
 
 def test_the_control_arms_are_registered() -> None:
     """They shipped unregistered on purpose until scoring could hold a third role."""
-    assert {"benign_reword", "nonsense_text"} <= set(available_attacks())
-    assert [a.family for a in resolve_attacks(["control"])] == [CONTROL_FAMILY, CONTROL_FAMILY]
+    assert {
+        "benign_reword", "nonsense_text", "scrambled_text", "roleplay_no_target"
+    } <= set(available_attacks())
+    # Four arms since 14 Sep 2026 (length-matched and frame-only controls), all the control role.
+    assert [a.family for a in resolve_attacks(["control"])] == [CONTROL_FAMILY] * 4
 
 
 def test_a_control_is_neither_an_attack_nor_the_baseline() -> None:

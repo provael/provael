@@ -8,7 +8,7 @@ actionable error if the ``[lerobot]`` extra is absent).
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from provael.suites.ai2_bridge import Ai2BridgeSuite
 from provael.suites.base import SuiteAdapter
@@ -17,12 +17,15 @@ from provael.suites.reach import ReachSuite
 from provael.suites.stub import StubSuite
 
 
-def _make_libero() -> SuiteAdapter:
+def _make_libero(tasks: Sequence[str] | None = None) -> SuiteAdapter:
     # Imported here (not at module top) only for symmetry; the adapter module itself
     # imports no optional deps at module scope, so this stays CPU-safe either way.
-    from provael.suites.libero import LiberoSuiteAdapter
+    from provael.suites.libero import LiberoSuiteAdapter, suite_and_ids_from_tasks
 
-    return LiberoSuiteAdapter()
+    if not tasks:
+        return LiberoSuiteAdapter()
+    task_suite, task_ids = suite_and_ids_from_tasks(tasks)
+    return LiberoSuiteAdapter(task_suite=task_suite, task_ids=task_ids)
 
 
 def _make_metaworld() -> SuiteAdapter:
@@ -138,17 +141,35 @@ def suite_is_ready(name: str) -> bool:
     return name in SUITES
 
 
-def make_suite(name: str) -> SuiteAdapter:
+#: Suites whose construction depends on WHICH tasks a run asks for. LIBERO is four task suites
+#: behind one adapter (``libero_object``, ``libero_spatial``, ``libero_goal``, ``libero_10``), and
+#: the adapter is built for exactly one of them. Until 14 September 2026 the CLI always built the
+#: default (``libero_object``) and :meth:`~provael.suites.libero.LiberoSuiteAdapter.reset` then
+#: *discarded* the suite it parsed out of a ``"libero_spatial/3"`` task name — rolling out an
+#: object-suite environment under a spatial-suite label. The run's own tasks are the only place the
+#: intended suite is stated, so the factory reads them.
+_TASK_AWARE: dict[str, Callable[[Sequence[str] | None], SuiteAdapter]] = {
+    "libero": _make_libero,
+}
+
+
+def make_suite(name: str, *, tasks: Sequence[str] | None = None) -> SuiteAdapter:
     """Instantiate a suite by name.
+
+    ``tasks`` is the run's requested task list (``RunConfig.tasks``). A task-aware suite (see
+    :data:`_TASK_AWARE`) is built to match it — LIBERO derives its task suite and task ids from
+    the ``"<suite>/<id>"`` names — and every other suite ignores it.
 
     Raises:
         KeyError: if ``name`` is not a registered suite.
+        ValueError: if ``tasks`` name more than one LIBERO task suite, or a suite LIBERO lacks.
     """
-    try:
-        factory = SUITES[name]
-    except KeyError:
-        raise KeyError(f"unknown suite {name!r}; available: {available_suites()}") from None
-    return factory()
+    if name not in SUITES:
+        raise KeyError(f"unknown suite {name!r}; available: {available_suites()}")
+    task_aware = _TASK_AWARE.get(name)
+    if task_aware is not None:
+        return task_aware(tasks)
+    return SUITES[name]()
 
 
 __all__ = [

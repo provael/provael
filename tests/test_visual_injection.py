@@ -154,6 +154,8 @@ def test_registry_includes_new_families() -> None:
         # because it pins the whole registry, and excluded from every adversarial count by role.
         "benign_reword",
         "nonsense_text",
+        "scrambled_text",
+        "roleplay_no_target",
         "roleplay",
         "goal_substitution",
         "paraphrase",
@@ -208,7 +210,9 @@ def test_registry_includes_new_families() -> None:
         "optimized_instruction", "optimized_patch", "sensor_spoof", "universal_patch", "visual",
         "weight_integrity",
     ]
-    assert [a.name for a in resolve_attacks(["control"])] == ["benign_reword", "nonsense_text"]
+    assert [a.name for a in resolve_attacks(["control"])] == [
+        "benign_reword", "nonsense_text", "scrambled_text", "roleplay_no_target",
+    ]
     assert [a.name for a in resolve_attacks(["baseline"])] == ["none"]
     assert [a.name for a in resolve_attacks(["visual"])] == ["patch", "decoy_object"]
     assert [a.name for a in resolve_attacks(["injection"])] == ["scene_text", "mcp_tool_desc"]

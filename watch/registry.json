@@ -2,7 +2,7 @@
  "$schema": "provael-registry-counts/1",
  "adversarialAttacks": 39,
  "adversarialFamilies": 17,
- "attacksTotal": 42,
+ "attacksTotal": 44,
  "evidenceScanned": true,
  "familiesTotal": 19,
  "hardwareResults": 0,

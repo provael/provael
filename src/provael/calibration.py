@@ -720,7 +720,7 @@ def calibrate_suite(
         )
 
     policy = make_policy(policy_name, model=model)
-    suite = make_suite(suite_name)
+    suite = make_suite(suite_name, tasks=list(tasks) if tasks is not None else None)
     features = suite.features()
     if features is not None:
         policy.set_features(features)

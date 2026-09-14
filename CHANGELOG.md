@@ -8,6 +8,33 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- **Two more control arms, `scrambled_text` and `roleplay_no_target`, because the first two left
+  one objection standing.** `nonsense_text` is three tokens; `roleplay` renders as twenty. A 0/50
+  on three tokens never showed that a twenty-token out-of-distribution string is harmless, so the
+  44/50 headline was still consistent with "a long unfamiliar sentence derails SmolVLA" — the
+  generic fragility RobustVLA (arXiv:2510.00037) and LIBERO-PRO already document, not attacker
+  control. `scrambled_text` is the roleplay prompt's own tokens with the target noun replaced by a
+  one-token filler and the order destroyed, **whitespace-token count identical**, seeded per
+  episode. `roleplay_no_target` is the roleplay frame intact with only the graspable target
+  replaced by the same filler, so a firing there is the imperative frame driving the policy and
+  not the object. Both are built *from* `RolePlayAttack.TEMPLATE`, so the match survives a
+  template change; both carry the `control` role and enter neither the ASR nor the benign FPR.
+  `--attacks control` now resolves to four arms. The registry is 44 attacks (39 adversarial,
+  unchanged); `watch/registry.json`, the inventory lines and the checked-in evidence manifest are
+  regenerated.
+
+### Fixed
+
+- **A LIBERO run is built for the task suite its tasks name.** `LiberoSuiteAdapter.reset()`
+  parsed the suite out of a `"libero_spatial/3"` task name and then discarded it: the environment
+  came from the adapter's constructor default (`libero_object`) and the episode was recorded as
+  `libero_spatial/3` — the suite-level twin of the task-level misattribution `_build_env` already
+  refuses, and the CLI had no other way to ask for spatial, goal or 10. `make_suite()` now takes
+  the run's tasks and builds the adapter for the one suite they name (a list mixing suites is
+  refused), `reset()` raises on a prefix that does not match the adapter — before the lerobot
+  gate, so the failure reproduces on a machine without the simulator — and a bare `"3"` is task 3,
+  not task 0. `RunConfig` is unchanged, so no report or attestation digest moves.
+
 - **Korea's AI Framework Act (Act No. 20676) enters the compliance catalogue — the first non-EU
   national statute in it.** Three rows against Article 34(1), the duties on an operator "providing
   high-impact AI or AI-based products and services": subparagraph 1 (risk management plan),

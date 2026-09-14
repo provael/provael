@@ -431,7 +431,7 @@ Other commands:
 
 ```bash
 uv run provael list-policies            # stub (CPU); smolvla (needs the [lerobot] extra)
-uv run provael list-attacks             # 42 attacks across 19 families (17 adversarial + 2 benign control): action/action_space/authorization/backdoor/confidentiality/gradient_patch/humanoid/injection/instruction/misalignment/optimized/optimized_instruction/optimized_patch/sensor_spoof/universal_patch/visual/weight_integrity/baseline/control
+uv run provael list-attacks             # 44 attacks across 19 families (17 adversarial + 2 benign control): action/action_space/authorization/backdoor/confidentiality/gradient_patch/humanoid/injection/instruction/misalignment/optimized/optimized_instruction/optimized_patch/sensor_spoof/universal_patch/visual/weight_integrity/baseline/control
 uv run provael list-recipes             # named presets: quick / instruction-only / core-sweep / full-sweep / ci-gate
 uv run provael attack --recipe quick    # a recipe is the base config; explicit flags override it
 uv run provael report --in runs/stub/

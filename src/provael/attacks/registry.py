@@ -78,6 +78,12 @@ from provael.attacks.controls import (
 from provael.attacks.controls import (
     NonsenseTextControl as _NonsenseTextControl,
 )
+from provael.attacks.controls import (
+    RolePlayNoTargetControl as _RolePlayNoTargetControl,
+)
+from provael.attacks.controls import (
+    ScrambledTextControl as _ScrambledTextControl,
+)
 from provael.attacks.gradient_patch import FAMILY as GRADIENT_PATCH_FAMILY
 from provael.attacks.gradient_patch import GradientPatch
 from provael.attacks.humanoid import (
@@ -181,6 +187,10 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
     # running them would have folded a benign rephrasing into the attack success rate.
     "benign_reword": _BenignRewordControl,
     "nonsense_text": _NonsenseTextControl,
+    # Length-matched and frame-only controls (14 Sep 2026): the two objections the first pair
+    # could not answer — "any long OOD string does this" and "the imperative frame does this".
+    "scrambled_text": _ScrambledTextControl,
+    "roleplay_no_target": _RolePlayNoTargetControl,
     "none": NoOpAttack,
     "roleplay": RolePlayAttack,
     "goal_substitution": GoalSubstitutionAttack,
@@ -216,7 +226,7 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
 #: Family name -> ordered member attack names.
 FAMILIES: dict[str, list[str]] = {
     BASELINE_FAMILY: ["none"],
-    CONTROL_FAMILY: ["benign_reword", "nonsense_text"],
+    CONTROL_FAMILY: ["benign_reword", "nonsense_text", "scrambled_text", "roleplay_no_target"],
     INSTRUCTION_FAMILY: ["roleplay", "goal_substitution", "paraphrase"],
     VISUAL_FAMILY: ["patch", "decoy_object"],
     SENSOR_SPOOF_FAMILY: ["patch_spoof", "signal_spoof"],

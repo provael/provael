@@ -5,9 +5,9 @@ already checks that every restated count matches the registry, and it works — 
 repo has been wrong since it landed. What it cannot see is the LIST beside the count, because a
 list is not a number and no pattern was looking at it:
 
-* ``README.md`` annotated ``provael list-attacks`` with "42 attacks across 19 families:" followed
-  by an enumeration of **eighteen** family names. The 19 was checked and correct; the enumeration
-  had been missing ``control`` since that family was registered.
+* ``README.md`` annotated ``provael list-attacks`` with the then-current attack count and
+  "19 families:" followed by an enumeration of **eighteen** family names. The 19 was checked and
+  correct; the enumeration had been missing ``control`` since that family was registered.
 * ``docs/quickstart.md`` annotated the same command with "19 families (17 adversarial + the benign
   baseline)". 17 + 1 = 18. Every individual number in that sentence was right and the sentence did
   not add up.

@@ -354,7 +354,7 @@ def run(
     if config.accelerator is not None:
         policy_kwargs["device"] = config.accelerator
     policy = make_policy(config.policy, **policy_kwargs)
-    suite = make_suite(config.suite)
+    suite = make_suite(config.suite, tasks=config.tasks)
     if calibrations:
         suite.set_calibration(calibrations)
 

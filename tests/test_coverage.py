@@ -53,11 +53,16 @@ def test_attacks_and_families_are_not_the_same_number() -> None:
     """
     c = coverage()
     assert c.adversarial_attacks > c.adversarial_families
-    # THREE non-adversarial attacks now, not one: the benign `none` baseline plus the two
-    # harmless-variation controls (`benign_reword`, `nonsense_text`). Two non-adversarial FAMILIES,
-    # `baseline` and `control`. Hardcoding +1 was correct while `none` was the only control arm and
-    # became wrong the moment a second kind of control existed.
-    assert c.attacks_total == c.adversarial_attacks + 3
+    # FIVE non-adversarial attacks now, not one: the benign `none` baseline plus the four
+    # harmless-variation controls (`benign_reword`, `nonsense_text`, and since 14 Sep 2026 the
+    # length-matched `scrambled_text` and frame-only `roleplay_no_target`). Two non-adversarial
+    # FAMILIES, `baseline` and `control`. Hardcoding +1 was correct while `none` was the only
+    # control arm and became wrong the moment a second kind of control existed — so the count is
+    # read from the registry's own control family rather than typed again.
+    from provael.attacks.registry import FAMILIES
+
+    assert c.attacks_total == c.adversarial_attacks + 1 + len(FAMILIES["control"])
+    assert len(FAMILIES["control"]) == 4
     assert c.families_total == c.adversarial_families + len(NON_ADVERSARIAL_FAMILIES)
 
 
