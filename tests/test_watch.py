@@ -208,6 +208,23 @@ def _committed_age_days(message: str) -> int:
     return int(days)
 
 
+def test_badge_colour_agrees_with_the_day_count_it_prints(tmp_path: Path) -> None:
+    """At age 2.3 days the message says "2 days ago"; the colour must be the 2-day colour.
+
+    The colour used to come from the fractional age and the message from the truncated one, so
+    for the last ~17 hours of every fresh day the badge printed a number inside the window painted
+    stale. Observed on the badge committed 13 Sep 2026; it failed every PR until the count ticked.
+    """
+    measured = datetime(2026, 8, 1, tzinfo=UTC)
+    record = append_measurement(tmp_path, _report(), measured_at="2026-08-01T00:00:00Z")
+    at_2_3 = badge(record, now=measured + timedelta(days=FRESH_DAYS + 0.3))
+    assert at_2_3["message"] == f"{FRESH_DAYS} days ago"
+    assert at_2_3["color"] == badge(record, now=measured + timedelta(days=FRESH_DAYS))["color"]
+    at_7_9 = badge(record, now=measured + timedelta(days=STALE_DAYS + 0.9))
+    assert at_7_9["message"] == f"{STALE_DAYS} days ago"
+    assert at_7_9["color"] == "orange" and at_7_9["isError"] is False
+
+
 def test_committed_badge_matches_a_freshly_computed_one() -> None:
     """The committed file must be what the current code computes, modulo the age wording.
 
