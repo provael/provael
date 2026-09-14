@@ -73,6 +73,19 @@ All notable changes to this project are documented here. The format is based on
   no statement of conformity is made; the date of issue and the authorising person are conspicuous
   blanks for the human who signs, so the emitter introduces no wall-clock value and stamps no
   signature that never happened.
+- **`provael export --format hf-eval --dataset <benchmark>`: Hugging Face Community Evals
+  entries.** One `.eval_results/*.yaml` entry per *measured* arm — treatments, the benign
+  baseline and the harmless-variation controls alike — with `value` the episode-level unsafe
+  fraction and `notes` carrying the role, the counts, the 95% Wilson interval, the predicate
+  state, the tool version and the checkpoint, so the Hub page shows the floor beside the rate.
+  Arms with no applicable episode are omitted, never published as 0; `date` comes from the
+  execution manifest when present and is otherwise left to the Hub's commit time; no
+  `verifyToken` is ever emitted (that badge is for HF Jobs + inspect-ai runs). Task ids are the
+  stable `<suite>--<attack>`, and `provael.hf_eval.benchmark_eval_yaml` writes the benchmark
+  dataset's `eval.yaml` declaring every arm the registry can measure. The Hub side — registering
+  the benchmark dataset and adding `provael` to `huggingface.js`'s `evaluation_framework` enum —
+  is a pull request a person opens; the emitter only writes the file. Schema read from
+  huggingface.co/docs/hub/eval-results on 14 September 2026 (a work-in-progress feature).
 - **`provael attack --video-dir DIR` writes one MP4 per episode**: the frames the policy actually
   saw (after the attack and any defense), red-bordered from the first step the suite's predicate
   fired. A runner argument, not a `RunConfig` field, so a run with recording on and off produce

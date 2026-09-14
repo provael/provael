@@ -83,6 +83,7 @@ class ExportFormat(StrEnum):
     """Evidence-graph export formats for ``provael export``."""
 
     avid = "avid"
+    hf_eval = "hf-eval"
 
 
 class CrosswalkTarget(StrEnum):

@@ -549,7 +549,7 @@
    "short_help": null
   },
   {
-   "help": "Export a run into an evidence-graph format (AVID record) for a recognised database.\n\nSubmitting the record to AVID is an external action \u2014 this only produces the file.",
+   "help": "Export a run into an external database's format: an AVID record, or Hugging Face\nCommunity Evals entries (`.eval_results/*.yaml`, one per measured arm).\n\nSubmitting the file \u2014 to AVID, or as a pull request on the model's Hub repo \u2014 is an external\naction; this only produces it. Nothing here emits a `verifyToken`: that badge is reserved for\nHF Jobs runs with inspect-ai, which provael is not.",
    "name": "export",
    "params": [
     {
@@ -563,7 +563,7 @@
      "secondary_opts": []
     },
     {
-     "help": "Evidence-graph format (currently 'avid').",
+     "help": "'avid' (evidence-graph record) or 'hf-eval' (Hugging Face .eval_results YAML).",
      "is_flag": false,
      "name": "fmt",
      "opts": [
@@ -578,6 +578,26 @@
      "name": "out",
      "opts": [
       "--out"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "hf-eval only: the Hub dataset id registered as the benchmark (required).",
+     "is_flag": false,
+     "name": "dataset",
+     "opts": [
+      "--dataset"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "hf-eval only: URL of the committed results directory the entries point at.",
+     "is_flag": false,
+     "name": "source_url",
+     "opts": [
+      "--source-url"
      ],
      "required": false,
      "secondary_opts": []

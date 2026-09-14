@@ -238,15 +238,36 @@ def transfer_test_cmd(
 def export(
     in_dir: Annotated[Path, typer.Option("--in", help="Directory containing report.json.")],
     fmt: Annotated[
-        ExportFormat, typer.Option("--format", help="Evidence-graph format (currently 'avid').")
+        ExportFormat,
+        typer.Option(
+            "--format",
+            help="'avid' (evidence-graph record) or 'hf-eval' (Hugging Face .eval_results YAML).",
+        ),
     ] = ExportFormat.avid,
     out: Annotated[
         Path | None, typer.Option("--out", help="Write here instead of stdout.")
     ] = None,
+    dataset: Annotated[
+        str | None,
+        typer.Option(
+            "--dataset",
+            help="hf-eval only: the Hub dataset id registered as the benchmark (required).",
+        ),
+    ] = None,
+    source_url: Annotated[
+        str | None,
+        typer.Option(
+            "--source-url",
+            help="hf-eval only: URL of the committed results directory the entries point at.",
+        ),
+    ] = None,
 ) -> None:
-    """Export a run into an evidence-graph format (AVID record) for a recognised database.
+    """Export a run into an external database's format: an AVID record, or Hugging Face
+    Community Evals entries (`.eval_results/*.yaml`, one per measured arm).
 
-    Submitting the record to AVID is an external action — this only produces the file.
+    Submitting the file — to AVID, or as a pull request on the model's Hub repo — is an external
+    action; this only produces it. Nothing here emits a `verifyToken`: that badge is reserved for
+    HF Jobs runs with inspect-ai, which provael is not.
     """
     try:
         loaded = load_report(in_dir)
@@ -256,7 +277,20 @@ def export(
     except ValidationError:
         _fail(f"{in_dir} does not contain a valid Provael report.json")
         return
-    # fmt is ExportFormat.avid (the only member today).
+    if fmt is ExportFormat.hf_eval:
+        from provael.hf_eval import to_eval_results_yaml, write_eval_results
+        from provael.test_report import load_manifest
+
+        if not dataset:
+            _fail("--format hf-eval needs --dataset <hub dataset id> (the registered benchmark)")
+            return
+        manifest = load_manifest(in_dir)
+        if out is not None:
+            write_eval_results(loaded, dataset, out, manifest=manifest, source_url=source_url)
+            _out.print(f"Wrote [cyan]{out}[/cyan]  (Hugging Face .eval_results entries)")
+        else:
+            print(to_eval_results_yaml(loaded, dataset, manifest=manifest, source_url=source_url))
+        return
     if out is not None:
         write_avid(loaded, out)
         _out.print(f"Wrote [cyan]{out}[/cyan]  (AVID record)")
