@@ -144,7 +144,9 @@ jobs:
     needs: publish-pypi
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # to create the release
+      contents: write      # to create the release
+      id-token: write      # to sign the release assets' provenance (Sigstore, via OIDC)
+      attestations: write  # to store that provenance on the repository
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -182,6 +184,20 @@ jobs:
           uvx --from cyclonedx-bom cyclonedx-py environment .venv \
             --output-file dist/provael-sbom.cyclonedx.json
           ( cd dist && sha256sum *.whl *.tar.gz *.json > SHA256SUMS )
+      # Signed provenance for every release asset. PyPI already carries PEP 740 attestations for the
+      # wheel and sdist (publish-pypi above); the GitHub release assets — the same files plus the
+      # SBOM and SHA256SUMS — carried nothing, which is what OpenSSF Scorecard's Signed-Releases
+      # check scored 0 on (12 Sep 2026). A reader verifies any asset with
+      #   gh attestation verify <file> --repo provael/provael
+      # and the attestation names the workflow, the tag and the commit that built it.
+      - name: Attest release assets (SLSA build provenance)
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/provael-sbom.cyclonedx.json
+            dist/SHA256SUMS
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}

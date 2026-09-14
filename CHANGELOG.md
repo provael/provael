@@ -23,6 +23,21 @@ All notable changes to this project are documented here. The format is based on
   unchanged); `watch/registry.json`, the inventory lines and the checked-in evidence manifest are
   regenerated.
 
+- **Release assets carry signed SLSA build provenance.** `release.yml` runs
+  `actions/attest-build-provenance` over the wheel, the sdist, the CycloneDX SBOM and `SHA256SUMS`
+  before `gh release create`, so `gh attestation verify <asset> --repo provael/provael` names the
+  workflow, tag and commit that built it. PyPI already had PEP 740 attestations for the wheel and
+  sdist; the GitHub release assets carried nothing, which is what OpenSSF Scorecard's
+  Signed-Releases check scored 0 on.
+- **The execution manifest's `hardware` names the CPU count and the CUDA device**, not just the
+  ISA — `x86_64` described every run ever recorded and distinguished nothing.
+- **`examples/gpu-ci/local_libero_sweep.py`** — the sharded LIBERO screen on one machine (N
+  resumable shards, per-shard logs and timeouts, `--commit` provenance) with an `aggregate` that
+  reproduces the published cross-shard statistics from the committed shards.
+- **`docs/studies/pi0-openpi-transfer.md`** carries its design (n = 50 per arm, 5 seeds, horizon
+  280) and Amendment 1: the first leg runs π0.5 through the native `pi05` adapter, with what that
+  narrows and what it leaves open.
+
 ### Fixed
 
 - **A LIBERO run is built for the task suite its tasks name.** `LiberoSuiteAdapter.reset()`
