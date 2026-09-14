@@ -40,6 +40,12 @@ All notable changes to this project are documented here. The format is based on
 
 ### Fixed
 
+- **Three stale sentences in the compliance docs** (found by the 13 Sep regulatory re-read):
+  `docs/compliance/index.md` called ISO 25785-1 a "Working Draft… expected 2026–2027" (it is a
+  Committee Draft since 8 May 2026 with no committed date; trackers read ~2028) and opened the
+  routing box with the pre-adoption "political agreement May 2026" clause (it is Regulation (EU)
+  2026/1744, OJ 24 July 2026, in force 27 July); `machinery-reg-2027.md` said ISO 10218:2025 was
+  "in force" (a standard is published, not in force).
 - **A LIBERO run is built for the task suite its tasks name.** `LiberoSuiteAdapter.reset()`
   parsed the suite out of a `"libero_spatial/3"` task name and then discarded it: the environment
   came from the adapter's constructor default (`libero_object`) and the episode was recorded as

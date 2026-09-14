@@ -23,7 +23,8 @@ component of machinery**. Two clocks are running:
   (Digital Omnibus on AI), in the OJ on **24 July 2026** and in force **27 July 2026**, moved
   embedded Annex I application to **2 August 2028** — the operative date. Plan against 2028;
   2027 is the superseded baseline.
-- **ISO 10218-1/-2:2025** — **in force since 2025**; the revision adds cybersecurity requirements
+- **ISO 10218-1/-2:2025** — **published February 2025** (a standard is published, not "in
+  force"; it binds only where a regulation or contract cites it); the revision adds cybersecurity requirements
   for industrial robots, feeding the Machinery Regulation's cyber-risk assessment.
 
 A Provael attestation is **an input to** that assessment: a dated, digest-bound, signed record of

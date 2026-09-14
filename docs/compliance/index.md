@@ -14,8 +14,8 @@ AI layer is **robust against adversarial manipulation** — exactly the thing a 
 review skips and exactly what Provael measures. This document maps Provael's outputs to what each
 framework asks for, and specs the report Provael generates from them.
 
-> **Regulatory routing (2026 Digital Omnibus update).** Under the Digital Omnibus (political
-> agreement May 2026; effective on publication in the Official Journal), AI-enabled
+> **Regulatory routing (2026 Digital Omnibus update).** Under the Digital Omnibus on AI
+> (Regulation (EU) 2026/1744, OJ L 24 July 2026, in force 27 July 2026), AI-enabled
 > **machinery/robots** are routed out of EU AI Act **Chapter III** directly: the AI-specific
 > health-and-safety expectations — including **robustness against manipulation** — reach robots
 > through **delegated acts to the Machinery Regulation** (the Machinery Regulation applies from
@@ -83,7 +83,7 @@ Provael carries rows for them. **What the rows are is as important as that they 
 | **IEC 61508** (E/E/PE functional safety) | EAI04 action-channel ASR + 95% Wilson CI + benign-FPR control + the mitigation report — evidence of behaviour under adversarial input, as an **input** to the systematic-capability argument | **No SIL.** No determination, estimate, or implication of one |
 | **ISO 13849-1/-2** (safety-related parts of control systems) | The same evidence, filed as fault cases a Part 2 validation plan can cite | **No Performance Level.** No PL, PLr, MTTFd, diagnostic coverage, or CCF |
 | **ISO/IEC TR 5469:2024** (AI & functional safety) | ASR + benign-FPR control as one input to the AI-safety lifecycle | No AI-safety lifecycle conclusion |
-| **ISO 25785-1** (dynamically stable robots) | The humanoid family — `balance_spoof`, `whole_body_hijack`, `stride_freeze` — on the whole-body suite | **Nothing conformity-shaped: the standard is an ISO/TC 299 WG 12 Working Draft and is not published.** The row is anticipatory positioning, and the suite is stub-validated with no real-model transfer claimed |
+| **ISO 25785-1** (dynamically stable robots) | The humanoid family — `balance_spoof`, `whole_body_hijack`, `stride_freeze` — on the whole-body suite | **Nothing conformity-shaped: the standard is an ISO/TC 299 Committee Draft (CD registered 8 May 2026) and is not published.** The row is anticipatory positioning, and the suite is stub-validated with no real-model transfer claimed |
 
 A Performance Level is determined from architecture, MTTFd, diagnostic coverage and CCF by the
 designer and confirmed by validation. **An attack-success rate is none of those inputs and must
@@ -190,9 +190,10 @@ Verified anchors (read the full text for clause-level audit use):
   systematic-capability argument and determines **no SIL**.
 - **ISO 13849-1/-2** — safety-related parts of control systems (design; validation). Provael
   determines **no Performance Level**.
-- **ISO 25785-1** — industrial mobile robots, dynamically stable robots. **ISO/TC 299 WG 12
-  Working Draft; not published.** Publication is expected 2026–2027; the row is anticipatory and
-  cites no clause, because there is no stable clause to cite.
+- **ISO 25785-1** — industrial mobile robots, dynamically stable robots. **ISO/TC 299 Committee
+  Draft (CD registered 8 May 2026); not published.** No publication date is committed by ISO;
+  secondary trackers read the schedule as around 2028, not 2026–2027 as this page once said. The
+  row is anticipatory and cites no clause, because there is no stable clause to cite.
 
 See also [top10](../top10.md) (the risk taxonomy + OWASP/MITRE crosswalk) and
 [SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md) (responsible-use scope).
