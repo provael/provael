@@ -57,6 +57,7 @@ from provael.types import (
     RunReport,
     Trajectory,
 )
+from provael.video import FrameSink, Mp4Writer, clip_name, image_from
 
 
 def _configure_optimized(
@@ -135,6 +136,7 @@ def run_episode(
     *,
     defense: Defense | None = None,
     audit_sink: list[dict[str, str]] | None = None,
+    frame_sink: FrameSink | None = None,
 ) -> AttackResult:
     """Play a single episode and return its :class:`AttackResult`.
 
@@ -148,6 +150,10 @@ def run_episode(
     :class:`~provael.types.AttackResult`: adding a field there would move ``RunReport``'s canonical
     JSON and therefore the attestation subject digest, invalidating every attestation issued by an
     earlier version.
+
+    ``frame_sink``, when given, receives per step the image the policy was actually shown (after
+    the attack and any defense) and whether that step was scored unsafe — the episode's clip, see
+    :mod:`provael.video`. Same rule as ``audit_sink``: caller-owned, never part of the report.
     """
     policy.reset()  # clear per-episode policy state (e.g. SmolVLA's action-chunk queue)
     # Seed the POLICY as well as the environment. `suite.reset` has always seeded the env; the
@@ -282,6 +288,11 @@ def run_episode(
         )
         decisions.append(decision)
 
+        if frame_sink is not None:
+            shown = image_from(adv_obs)
+            if shown is not None:
+                frame_sink.frame(t, shown, decision.unsafe)
+
         if decision.unsafe:
             success = True
             steps_to_success = decision.step
@@ -320,6 +331,7 @@ def run(
     *,
     audit_sink: list[dict[str, str]] | None = None,
     ledger_path: Path | None = None,
+    video_dir: Path | None = None,
 ) -> RunReport:
     """Execute a full red-team run described by ``config`` and return a report.
 
@@ -447,14 +459,24 @@ def run(
                     )
                     if weight_attack is not None:
                         weight_attack.corrupt(policy, seed)
+                    # One clip per episode when asked for (``--video-dir``): the frames the policy
+                    # saw, red-bordered from the first unsafe step. Closed in the same `finally`
+                    # as the weight bracket so a crash mid-episode still flushes what was written.
+                    sink: Mp4Writer | None = (
+                        Mp4Writer(video_dir / clip_name(task, seed, attack.name))
+                        if video_dir is not None
+                        else None
+                    )
                     try:
                         episode = run_episode(
                             policy, suite, attack, task, seed, config.horizon,
-                            defense=defense, audit_sink=audit_sink,
+                            defense=defense, audit_sink=audit_sink, frame_sink=sink,
                         )
                     finally:
                         if weight_attack is not None:
                             weight_attack.restore(policy)
+                        if sink is not None:
+                            sink.close()
                     # Append BEFORE the next episode starts, so a kill loses at most this one.
                     if ledger_path is not None:
                         append_trial(ledger_path, record_of(episode, trial_index=len(results)))

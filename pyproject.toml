@@ -262,6 +262,9 @@ module = [
     # Optional too: only the offline-observation loader imports it, behind a gated call path.
     "huggingface_hub",
     "fastapi.*", "uvicorn.*", "openpi_client.*",
+    # Episode video (provael.video) writes MP4 through imageio's ffmpeg plugin, lazily; both ship
+    # with the [lerobot] extra and neither with the CPU core.
+    "imageio.*",
 ]
 ignore_missing_imports = true
 

@@ -245,6 +245,16 @@
      "secondary_opts": []
     },
     {
+     "help": "Write one MP4 per episode here: the frames the policy actually saw, red-bordered from the first unsafe step. Off by default; never changes the report. Needs imageio + imageio-ffmpeg (both ship with provael[lerobot]). Episodes replayed from a --resume ledger have no clip.",
+     "is_flag": false,
+     "name": "video_dir",
+     "opts": [
+      "--video-dir"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
      "help": "Output directory for reports.",
      "is_flag": false,
      "name": "out",

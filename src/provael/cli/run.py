@@ -98,6 +98,16 @@ def attack(
                  "the file if absent. Not usable with --episodes-per-seed > 1.",
         ),
     ] = None,
+    video_dir: Annotated[
+        Path | None,
+        typer.Option(
+            "--video-dir",
+            help="Write one MP4 per episode here: the frames the policy actually saw, "
+                 "red-bordered from the first unsafe step. Off by default; never changes the "
+                 "report. Needs imageio + imageio-ffmpeg (both ship with provael[lerobot]). "
+                 "Episodes replayed from a --resume ledger have no clip.",
+        ),
+    ] = None,
     out: Annotated[Path, typer.Option(help="Output directory for reports.")] = Path("runs/stub"),
     fmt: Annotated[
         OutputFormat,
@@ -241,7 +251,9 @@ def attack(
     # report.json — a field on RunReport would move the attestation subject digest.
     defense_audit: list[dict[str, str]] = []
     try:
-        report = run(config, calibrations, audit_sink=defense_audit, ledger_path=resume)
+        report = run(
+            config, calibrations, audit_sink=defense_audit, ledger_path=resume, video_dir=video_dir
+        )
     except (MissingLeRobotError, IncompatiblePolicyError) as exc:
         _fail(str(exc))
         return
