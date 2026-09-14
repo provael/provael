@@ -103,6 +103,9 @@ All notable changes to this project are documented here. The format is based on
   machinery at all times") and what it does not establish; the start/stop, protective-device and
   assembly points are named as out of scope. Linked from the machinery-regulation page and from
   `--format test-report`'s Annex A. Four remaining double-hyphen doc anchors fixed.
+- **The π0.5 cross-architecture study is publicly timestamped**: the amended protocol and its
+  falsifiers were deposited on Zenodo (10.5281/zenodo.22751558, 14 September 2026) before the
+  π0.5 attack arms ran; `docs/studies/pi0-openpi-transfer.md` links the deposit.
 - **`provael attack --video-dir DIR` writes one MP4 per episode**: the frames the policy actually
   saw (after the attack and any defense), red-bordered from the first step the suite's predicate
   fired. A runner argument, not a `RunConfig` field, so a run with recording on and off produce

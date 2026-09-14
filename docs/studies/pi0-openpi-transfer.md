@@ -7,6 +7,13 @@
 > Status: PRE-REGISTERED — protocol only, no results claimed. **Amended 14 September 2026, before
 > any attack arm ran** (see the amendment at the end): the first leg runs π0.5 through LeRobot's
 > native `pi05` adapter, not π0 through an openpi server, and the design fields below are filled.
+>
+> **Public timestamp.** The amended protocol and its falsifiers were deposited on Zenodo on
+> 14 September 2026 as [10.5281/zenodo.22751558](https://doi.org/10.5281/zenodo.22751558) (record
+> [22751558](https://zenodo.org/records/22751558)), before the π0.5 attack arms ran. The deposit
+> fixes the text at commit `e5141fd`; OSF's registration service was degraded that evening, so the
+> deposit stands in for an OSF registration and serves the same purpose — a dated, public record
+> that cannot be edited after the fact.
 
 This pre-registers the **π0 leg** of the
 [cross-architecture transfer study](../findings/2026-cross-arch-transfer.md): does the instruction
