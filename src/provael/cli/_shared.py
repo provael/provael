@@ -76,6 +76,7 @@ class OutputFormat(StrEnum):
     scorecard = "scorecard"
     oscal = "oscal"
     mlbom = "mlbom"
+    test_report = "test-report"
 
 
 class ExportFormat(StrEnum):

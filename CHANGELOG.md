@@ -58,6 +58,21 @@ All notable changes to this project are documented here. The format is based on
   coverage counts exclude it; the registry is 7 suites (3 fixtures, 3 gated simulators, 2
   scaffolding) and `watch/registry.json`, the README and the quickstart inventory lines are
   regenerated.
+- **`provael report --format test-report`: a test report in the shape of ISO/IEC 17025:2017
+  clause 7.8.** The 13 September regulatory re-read found that no certifier, notified body or
+  insurer publishes acceptance of SARIF, OSCAL or an ML-BOM; what an assessor of a machinery
+  technical file reads is a clause-7.8-shaped test report. The emitter lays a run out that way —
+  identification, item under test (checkpoint, revision, digest), method, dates and location,
+  conditions (hardware, precision, OS, lock digest), results with Wilson intervals and the benign
+  floor, uncertainty (per-seed spread, anytime interval, the stochastic-sampling caveat),
+  deviations (not-applicable arms, replayed episodes, skipped checks, missing manifest fields),
+  scope, external providers, evidence state and verdict, authorisation — and an Annex A clause
+  map rendered from `provael.compliance`, the single source of every framework mapping. It reads
+  `execution-manifest.json` beside `report.json` when present. The report says in its first line
+  that Provael is not an accredited laboratory, that this is not an ISO/IEC 17025 report and that
+  no statement of conformity is made; the date of issue and the authorising person are conspicuous
+  blanks for the human who signs, so the emitter introduces no wall-clock value and stamps no
+  signature that never happened.
 - **`provael attack --video-dir DIR` writes one MP4 per episode**: the frames the policy actually
   saw (after the attack and any defense), red-bordered from the first step the suite's predicate
   fired. A runner argument, not a `RunConfig` field, so a run with recording on and off produce

@@ -41,7 +41,10 @@ provael export --in runs/first-scan --format avid        # AVID record
 ## Outputs
 
 `report.json` (byte-deterministic), `report.md`, SARIF (`--format sarif`), a compliance evidence
-pack (`--format compliance`), an ASR scorecard (`--format scorecard`), OSCAL, and an AVID record.
+pack (`--format compliance`), an ASR scorecard (`--format scorecard`), OSCAL, an AVID record, and a
+test report laid out as ISO/IEC 17025 clause 7.8 (`provael report --format test-report`) — the
+shape an assessor reads, with the blanks a signatory fills; not an accredited report and no
+statement of conformity.
 
 ## Real models & simulators
 

@@ -429,7 +429,7 @@
      "secondary_opts": []
     },
     {
-     "help": "Output: 'table', 'sarif', 'compliance', 'scorecard', 'oscal', or 'mlbom'.",
+     "help": "Output: 'table', 'sarif', 'compliance', 'scorecard', 'oscal', 'mlbom', or 'test-report' (ISO/IEC 17025 clause-7.8-shaped Markdown; not accredited).",
      "is_flag": false,
      "name": "fmt",
      "opts": [

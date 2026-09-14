@@ -44,7 +44,10 @@ def report(
         OutputFormat,
         typer.Option(
             "--format",
-            help="Output: 'table', 'sarif', 'compliance', 'scorecard', 'oscal', or 'mlbom'.",
+            help=(
+                "Output: 'table', 'sarif', 'compliance', 'scorecard', 'oscal', 'mlbom', or "
+                "'test-report' (ISO/IEC 17025 clause-7.8-shaped Markdown; not accredited)."
+            ),
         ),
     ] = OutputFormat.table,
     threshold: Annotated[
@@ -147,6 +150,19 @@ def report(
             _out.print(f"Wrote [cyan]{out}[/cyan]  (OSCAL assessment-results)")
         else:
             print(to_oscal_json(loaded))  # machine-readable OSCAL to stdout
+        return
+    if fmt is OutputFormat.test_report:
+        from provael.test_report import load_manifest, to_test_report_markdown, write_test_report
+
+        manifest = load_manifest(in_dir)
+        if out is not None:
+            write_test_report(loaded, out, manifest)
+            note = "with" if manifest is not None else "WITHOUT"
+            _out.print(
+                f"Wrote [cyan]{out}[/cyan]  (clause-7.8-shaped test report, {note} manifest)"
+            )
+        else:
+            print(to_test_report_markdown(loaded, manifest))
         return
     if fmt is OutputFormat.mlbom:
         if out is not None:
