@@ -49,8 +49,10 @@ All notable changes to this project are documented here. The format is based on
   byte-identical reports and no attestation digest moves — the same rule `audit_sink` follows.
   `imageio` + `imageio-ffmpeg` (in the `[lerobot]` extra) are imported lazily; the CPU core gains
   no dependency. Episodes replayed from a `--resume` ledger have no clip. `provael.video` exposes
-  `FrameList` for callers composing their own output (an attacked-vs-benign side-by-side is a few
-  lines on top of it).
+  `FrameList` for callers composing their own output. **`provael compose-video LEFT RIGHT --out`**
+  puts two of those clips side by side, step-aligned — the benign twin beside the attacked
+  episode at the same task and seed — with the shorter clip holding its last frame so an episode
+  the predicate stopped early stays on screen at its verdict.
 - **Release assets carry signed SLSA build provenance.** `release.yml` runs
   `actions/attest-build-provenance` over the wheel, the sdist, the CycloneDX SBOM and `SHA256SUMS`
   before `gh release create`, so `gh attestation verify <asset> --repo provael/provael` names the

@@ -246,3 +246,27 @@ def export(
         _out.print(f"Wrote [cyan]{out}[/cyan]  (AVID record)")
     else:
         print(to_avid_json(loaded))
+
+
+@app.command("compose-video")
+def compose_video(
+    left: Annotated[Path, typer.Argument(help="Clip for the left half (e.g. the benign twin).")],
+    right: Annotated[
+        Path, typer.Argument(help="Clip for the right half (e.g. the attacked episode).")
+    ],
+    out: Annotated[Path, typer.Option("--out", help="Where to write the composed MP4.")],
+) -> None:
+    """Put two episode clips side by side, step-aligned, into one MP4.
+
+    The clips come from `provael attack --video-dir`; pair the benign and the attacked episode of
+    the same task and seed so the divergence is visible at the step it happens. Needs the
+    `[lerobot]` extra's imageio + ffmpeg; the CPU core does not ship them.
+    """
+    from provael.video import compose_side_by_side
+
+    try:
+        frames = compose_side_by_side(left, right, out)
+    except (FileNotFoundError, ValueError, ImportError) as exc:
+        _fail(str(exc))
+        return
+    _out.print(f"Wrote [cyan]{out}[/cyan]  ({frames} frames)")

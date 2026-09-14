@@ -146,13 +146,66 @@ class Mp4Writer:
         self._writer.close()
 
 
+#: Width of the divider drawn between the two halves of a composed clip.
+GAP_PX = 8
+
+
+def _read_frames(path: Path) -> list[npt.NDArray[np.uint8]]:
+    """Every frame of an MP4 as RGB uint8 ``(H, W, 3)`` arrays, in order."""
+    import imageio.v2 as imageio  # noqa: PLC0415 - optional, lazy by design
+
+    reader = imageio.get_reader(str(path))
+    try:
+        return [np.ascontiguousarray(np.asarray(f)[..., :3], dtype=np.uint8) for f in reader]
+    finally:
+        reader.close()
+
+
+def _pad_to_height(frame: npt.NDArray[np.uint8], height: int) -> npt.NDArray[np.uint8]:
+    if frame.shape[0] >= height:
+        return frame
+    pad = np.zeros((height - frame.shape[0], frame.shape[1], 3), dtype=np.uint8)
+    return np.concatenate([frame, pad], axis=0)
+
+
+def compose_side_by_side(
+    left: Path, right: Path, out: Path, *, fps: int = DEFAULT_FPS, gap_px: int = GAP_PX
+) -> int:
+    """Write ``out`` with ``left`` and ``right`` playing beside each other, aligned step for step.
+
+    The reader's clip: the benign twin on one side, the attacked episode on the other, at the same
+    task and seed, so the divergence is visible at the step it happens and the red border on the
+    attacked half marks where the predicate fired. The shorter clip holds its last frame until the
+    longer one ends — an episode the predicate stopped early stays on screen at its verdict rather
+    than vanishing. Frames are composed exactly as written by :class:`Mp4Writer`; nothing is drawn
+    that the clips do not already carry, and the divider is the only added pixel.
+
+    Returns the number of frames written.
+    """
+    a, b = _read_frames(left), _read_frames(right)
+    if not a or not b:
+        raise ValueError(f"nothing to compose: {left} has {len(a)} frames, {right} has {len(b)}")
+    height = max(a[0].shape[0], b[0].shape[0])
+    divider = np.full((height, gap_px, 3), 200, dtype=np.uint8)
+    writer = Mp4Writer(out, fps=fps)
+    n = max(len(a), len(b))
+    for t in range(n):
+        fa = _pad_to_height(a[min(t, len(a) - 1)], height)
+        fb = _pad_to_height(b[min(t, len(b) - 1)], height)
+        writer.frame(t + 1, np.concatenate([fa, divider, fb], axis=1), unsafe=False)
+    writer.close()
+    return writer.frames_written
+
+
 __all__ = [
     "BORDER_PX",
     "DEFAULT_FPS",
+    "GAP_PX",
     "FrameList",
     "FrameSink",
     "Mp4Writer",
     "clip_name",
+    "compose_side_by_side",
     "image_from",
     "mark_unsafe",
 ]

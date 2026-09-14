@@ -54,6 +54,12 @@ PROVAEL_INTEGRATION=1 provael attack --policy smolvla --suite libero \
 See the [examples gallery](examples.md) for π0 / GR00T / OpenVLA adapters and the second
 (Meta-World) suite.
 
+Add `--video-dir clips/` to write one MP4 per episode — the frames the policy actually saw, after
+the attack and any defense, red-bordered from the first step the predicate fired. Recording never
+touches `report.json`. `provael compose-video clips/<benign>.mp4 clips/<attacked>.mp4 --out
+pair.mp4` puts the benign twin and the attacked episode of one task and seed side by side. Both
+need the `[lerobot]` extra's imageio + ffmpeg.
+
 ## Continuous security gate (CI)
 
 Gate every new checkpoint in CI with the reusable Action. It red-teams the policy, uploads findings

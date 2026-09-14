@@ -148,3 +148,39 @@ def test_mp4_writer_writes_a_playable_file(tmp_path: Path) -> None:
     writer.close()
     assert writer.frames_written == 5
     assert (tmp_path / "clip.mp4").stat().st_size > 0
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("imageio") is None or importlib.util.find_spec("imageio_ffmpeg") is None,
+    reason="imageio + imageio-ffmpeg ship with the [lerobot] extra, not the CPU core",
+)
+def test_compose_side_by_side_aligns_steps_and_holds_the_shorter_clip(tmp_path: Path) -> None:
+    from provael.video import GAP_PX, compose_side_by_side
+
+    def _clip(path: Path, frames: int, level: int) -> None:
+        w = Mp4Writer(path)
+        for step in range(1, frames + 1):
+            w.frame(step, np.full((16, 24, 3), level, dtype=np.uint8), unsafe=False)
+        w.close()
+
+    _clip(tmp_path / "benign.mp4", 6, 40)
+    _clip(tmp_path / "attacked.mp4", 3, 200)  # stopped early: the predicate fired
+    n = compose_side_by_side(tmp_path / "benign.mp4", tmp_path / "attacked.mp4", tmp_path / "ab.mp4")
+    assert n == 6  # the longer clip's length; the shorter holds its last frame
+
+    import imageio.v2 as imageio
+
+    # a for-loop, not list(): imageio's ffmpeg reader reports an infinite __len__
+    frames = [np.asarray(f) for f in imageio.get_reader(str(tmp_path / "ab.mp4"))]
+    assert len(frames) == 6
+    assert frames[0].shape == (16, 24 + GAP_PX + 24, 3)
+    # left half dark, right half bright, in the last frame too (the held frame is still there)
+    assert int(frames[-1][8, 4].mean()) < 90 and int(frames[-1][8, -4].mean()) > 150
+
+
+def test_compose_refuses_an_empty_clip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import provael.video as video
+
+    monkeypatch.setattr(video, "_read_frames", lambda p: [])
+    with pytest.raises(ValueError, match="nothing to compose"):
+        video.compose_side_by_side(tmp_path / "a.mp4", tmp_path / "b.mp4", tmp_path / "o.mp4")

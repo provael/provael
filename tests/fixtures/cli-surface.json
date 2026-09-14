@@ -586,6 +586,43 @@
    "short_help": null
   },
   {
+   "help": "Put two episode clips side by side, step-aligned, into one MP4.\n\nThe clips come from `provael attack --video-dir`; pair the benign and the attacked episode of\nthe same task and seed so the divergence is visible at the step it happens. Needs the\n`[lerobot]` extra's imageio + ffmpeg; the CPU core does not ship them.",
+   "name": "compose-video",
+   "params": [
+    {
+     "help": "Clip for the left half (e.g. the benign twin).",
+     "is_flag": false,
+     "name": "left",
+     "opts": [
+      "left"
+     ],
+     "required": true,
+     "secondary_opts": []
+    },
+    {
+     "help": "Clip for the right half (e.g. the attacked episode).",
+     "is_flag": false,
+     "name": "right",
+     "opts": [
+      "right"
+     ],
+     "required": true,
+     "secondary_opts": []
+    },
+    {
+     "help": "Where to write the composed MP4.",
+     "is_flag": false,
+     "name": "out",
+     "opts": [
+      "--out"
+     ],
+     "required": true,
+     "secondary_opts": []
+    }
+   ],
+   "short_help": null
+  },
+  {
    "help": "Emit a Machinery Regulation conformity-assessment evidence dossier (JSON + OSCAL + HTML).\n\nThe dossier is EVIDENCE INPUT to a conformity assessment \u2014 it is NOT a conformity assessment,\nand Provael is not a notified body. `--profile annex-i-part-a` (default) targets the Annex I\nPart A route for ML self-evolving-behaviour safety components; `--profile annex-iii` emits the\nAnnex III EHSR pack. The HTML is the human artifact: open it and print / save as PDF.",
    "name": "certify",
    "params": [
