@@ -28,6 +28,9 @@
    "recorded": true,
    "successes": 4,
    "suite": "libero",
+   "tasks": [
+    "libero_object/0"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -42,6 +45,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_object/0"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -56,6 +62,9 @@
    "recorded": true,
    "successes": 4,
    "suite": "libero",
+   "tasks": [
+    "libero_object/0"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -70,6 +79,9 @@
    "recorded": true,
    "successes": 4,
    "suite": "libero",
+   "tasks": [
+    "libero_object/0"
+   ],
    "toolVersion": "0.39.1"
   },
   {
@@ -84,6 +96,9 @@
    "recorded": true,
    "successes": 53,
    "suite": "stub",
+   "tasks": [
+    "reach"
+   ],
    "toolVersion": "0.36.2"
   },
   {
@@ -98,6 +113,9 @@
    "recorded": true,
    "successes": 50,
    "suite": "stub",
+   "tasks": [
+    "reach"
+   ],
    "toolVersion": "0.36.2"
   },
   {
@@ -112,6 +130,9 @@
    "recorded": true,
    "successes": 50,
    "suite": "stub",
+   "tasks": [
+    "reach"
+   ],
    "toolVersion": "0.36.2"
   },
   {
@@ -126,6 +147,9 @@
    "recorded": true,
    "successes": 51,
    "suite": "stub",
+   "tasks": [
+    "reach"
+   ],
    "toolVersion": "0.36.2"
   },
   {
@@ -140,6 +164,9 @@
    "recorded": true,
    "successes": 50,
    "suite": "stub",
+   "tasks": [
+    "reach"
+   ],
    "toolVersion": "0.36.2"
   },
   {
@@ -154,6 +181,9 @@
    "recorded": true,
    "successes": 4,
    "suite": "libero",
+   "tasks": [
+    "libero_object/8"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -168,6 +198,9 @@
    "recorded": true,
    "successes": 5,
    "suite": "libero",
+   "tasks": [
+    "libero_object/0"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -182,6 +215,9 @@
    "recorded": true,
    "successes": 6,
    "suite": "libero",
+   "tasks": [
+    "libero_object/6"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -196,6 +232,9 @@
    "recorded": true,
    "successes": 6,
    "suite": "libero",
+   "tasks": [
+    "libero_object/4"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -210,6 +249,9 @@
    "recorded": true,
    "successes": 5,
    "suite": "libero",
+   "tasks": [
+    "libero_object/1"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -224,6 +266,9 @@
    "recorded": true,
    "successes": 5,
    "suite": "libero",
+   "tasks": [
+    "libero_object/3"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -238,6 +283,9 @@
    "recorded": true,
    "successes": 5,
    "suite": "libero",
+   "tasks": [
+    "libero_object/7"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -252,6 +300,9 @@
    "recorded": true,
    "successes": 7,
    "suite": "libero",
+   "tasks": [
+    "libero_object/5"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -266,6 +317,9 @@
    "recorded": true,
    "successes": 5,
    "suite": "libero",
+   "tasks": [
+    "libero_object/2"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -280,6 +334,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_object/9"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -294,6 +351,9 @@
    "recorded": true,
    "successes": 4,
    "suite": "libero",
+   "tasks": [
+    "libero_object/8"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -308,6 +368,9 @@
    "recorded": true,
    "successes": 1,
    "suite": "libero",
+   "tasks": [
+    "libero_object/9"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -322,6 +385,9 @@
    "recorded": true,
    "successes": 9,
    "suite": "libero",
+   "tasks": [
+    "libero_object/7"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -336,6 +402,9 @@
    "recorded": true,
    "successes": 6,
    "suite": "libero",
+   "tasks": [
+    "libero_object/3"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -350,6 +419,9 @@
    "recorded": true,
    "successes": 5,
    "suite": "libero",
+   "tasks": [
+    "libero_object/2"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -364,6 +436,9 @@
    "recorded": true,
    "successes": 11,
    "suite": "libero",
+   "tasks": [
+    "libero_object/4"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -378,6 +453,9 @@
    "recorded": true,
    "successes": 9,
    "suite": "libero",
+   "tasks": [
+    "libero_object/6"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -392,6 +470,9 @@
    "recorded": true,
    "successes": 5,
    "suite": "libero",
+   "tasks": [
+    "libero_object/5"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -406,6 +487,9 @@
    "recorded": true,
    "successes": 9,
    "suite": "libero",
+   "tasks": [
+    "libero_object/0"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -420,6 +504,9 @@
    "recorded": true,
    "successes": 5,
    "suite": "libero",
+   "tasks": [
+    "libero_object/1"
+   ],
    "toolVersion": "0.32.0"
   },
   {
@@ -434,6 +521,9 @@
    "recorded": false,
    "successes": 17,
    "suite": "libero",
+   "tasks": [
+    "libero_object/0"
+   ],
    "toolVersion": "0.15.0"
   }
  ],

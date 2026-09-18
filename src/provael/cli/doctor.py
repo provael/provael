@@ -18,6 +18,7 @@ from provael.watch import (
     STALE_AFTER_RELEASES,
     STALE_DAYS,
     age_days,
+    displacement,
     latest_measurement,
     published_measurement,
     releases_behind,
@@ -190,6 +191,22 @@ def doctor(
                 f"[/{'red' if stale else 'green'}]",
                 f"{gap} {plural} behind {__version__}; window is {STALE_AFTER_RELEASES}"
                 + (" — PAST IT" if stale else ""),
+            )
+        # What would move that row, and how far along it is. A reader who sees "9 releases behind"
+        # beside a lane that runs twice a week needs the third number: the body the lane is
+        # building, against the size and coverage it has to reach. Without it the two rows above
+        # read as a project that is not trying, when it is a lane that could not add up.
+        standing = displacement()
+        if standing is not None and standing.challenger is not None:
+            body = standing.challenger
+            covered = len(body.tasks or ())
+            total = len(standing.published.tasks or ())
+            row(
+                "re-measurement",
+                f"v{body.tool_version}: {body.attempts} of {standing.published.attempts} attempts",
+                f"covers {covered} of {total} task(s); needs {standing.attempts_needed} more "
+                f"attempt(s) and {len(standing.tasks_missing or ())} more task(s) to displace "
+                f"v{standing.published.tool_version}",
             )
 
     latest_run = latest_measurement(Path("watch"))

@@ -97,6 +97,11 @@ class MeasurementRecord(BaseModel):
     asr: float
     #: The run's own commit/id, so a badge can be traced back to the artifact behind it.
     commit: str | None = None
+    #: The task ids the run covered, from the report's own ``tasks`` field, sorted and
+    #: de-duplicated. ``None`` when no report could be read. Coverage is what a re-measurement has
+    #: to match before its size counts — see :func:`displacement` — so it travels with the record
+    #: rather than being re-derived by every consumer from ``report.json``.
+    tasks: tuple[str, ...] | None = None
 
 
 def _now() -> datetime:
@@ -125,6 +130,7 @@ def append_measurement(
         successes=report.successes,
         asr=report.asr,
         commit=commit,
+        tasks=tuple(sorted(set(report.tasks))),
     )
     line = json.dumps(record.model_dump(), sort_keys=True, separators=(",", ":"))
     with (watch_dir / WATCH_LOG).open("a", encoding="utf-8") as handle:
@@ -192,11 +198,15 @@ def measurements_from_results(results_dir: Path = RESULTS_DIR) -> list[Measureme
         report = path.parent / REPORT
         attempts = successes = 0
         asr = 0.0
+        tasks: tuple[str, ...] | None = None
         if report.is_file():
             try:
                 r = json.loads(report.read_text(encoding="utf-8"))
                 attempts, successes = int(r.get("attempts", 0)), int(r.get("successes", 0))
                 asr = float(r.get("asr", 0.0))
+                raw_tasks = r.get("tasks")
+                if isinstance(raw_tasks, list):
+                    tasks = tuple(sorted({str(t) for t in raw_tasks}))
             except (OSError, json.JSONDecodeError, TypeError, ValueError):  # pragma: no cover
                 pass
         out.append(
@@ -210,6 +220,7 @@ def measurements_from_results(results_dir: Path = RESULTS_DIR) -> list[Measureme
                 successes=successes,
                 asr=asr,
                 commit=m.get("commit") if isinstance(m.get("commit"), str) else None,
+                tasks=tasks,
             )
         )
     return out
@@ -251,12 +262,197 @@ def _minor(version: str) -> tuple[int, int] | None:
         return None
 
 
+def _semver(version: str) -> tuple[int, int, int]:
+    """``"0.41.2"`` -> ``(0, 41, 2)``; an unparseable version sorts oldest, never newest.
+
+    Oldest, because every rule below breaks ties toward the NEWER version and "newer" is the
+    reassuring answer. A version string nobody can parse must not win a tie by accident.
+    """
+    parts = version.split(".")
+    try:
+        nums = [int(x) for x in parts[:3]]
+    except ValueError:
+        return (0, 0, 0)
+    while len(nums) < 3:
+        nums.append(0)
+    return (nums[0], nums[1], nums[2])
+
+
+class Campaign(BaseModel):
+    """One body of measurement: every real recorded run at one policy, suite and tool version.
+
+    This is the unit the published-measurement rule reasons about, and it is a *version's* body
+    on purpose. :mod:`provael.combine` refuses to pool shards whose ``tool_version`` differs,
+    because a rate over two builds describes a run that never happened — so a body that could be
+    cited, re-pinned by www.provael.com, or turned into an evidence manifest is by construction
+    a body at one version. Accumulating across versions would produce a number nothing can stand
+    behind; accumulating at one version is a campaign, and that is what the scheduled lane builds.
+    """
+
+    policy: str
+    suite: str
+    tool_version: str
+    #: Summed over the body's runs. ``attempts`` is the report's own count of applicable episodes
+    #: across every arm, controls included — the same figure every run publishes about itself.
+    attempts: int
+    successes: int
+    #: How many runs (committed report directories) the body is made of.
+    runs: int
+    #: Sorted union of the task ids its runs covered; ``None`` when no run recorded any.
+    tasks: tuple[str, ...] | None
+    #: The instant of the body's newest run — the record that represents it.
+    measured_at: str
+
+    def covers(self, other: Campaign) -> bool:
+        """Whether this body re-measures what ``other`` measured.
+
+        Same policy, same suite, and every task ``other`` covered. A body whose tasks are unknown
+        cannot be shown to cover anything, and a body nothing is recorded for is covered by
+        anything at the same policy and suite — there is nothing to protect.
+        """
+        if (self.policy, self.suite) != (other.policy, other.suite):
+            return False
+        if not other.tasks:
+            return True
+        return self.tasks is not None and set(other.tasks) <= set(self.tasks)
+
+    def tasks_missing(self, other: Campaign) -> tuple[str, ...]:
+        """The tasks ``other`` covered that this body has not — what it still has to run."""
+        return tuple(t for t in (other.tasks or ()) if t not in set(self.tasks or ()))
+
+    def supersedes(self, other: Campaign) -> bool:
+        """Whether this body displaces ``other`` as the published measurement.
+
+        Covers it, and is at least as large — with an exact tie going to the newer version, since
+        two equally sized campaigns means the older one is no longer the only thing carrying the
+        claim. A probe cannot displace a campaign; neither can a larger run on fewer tasks, which
+        is the case the size-only rule got wrong: a single-task run of any length is a different
+        measurement from a ten-task one, not a bigger version of it.
+        """
+        if not self.covers(other) or self.attempts < other.attempts:
+            return False
+        return self.attempts > other.attempts or _semver(self.tool_version) > _semver(
+            other.tool_version
+        )
+
+
+class Displacement(BaseModel):
+    """The published measurement, the body closest to displacing it, and what that body lacks.
+
+    Published so the lane that produces the challenger can be read against the number it has to
+    reach. Before this, a reader could see that the published measurement was nine minors old and
+    that a canary ran twice a week, and had no way to learn that the canary was accumulating
+    fourteen attempts a run toward a body it structurally could not reach — its version bucket
+    reset on every release.
+    """
+
+    published: Campaign
+    #: The newer body at the published measurement's policy and suite that is nearest to
+    #: superseding it — covering bodies first, then the largest, then the newest. ``None`` when
+    #: nothing newer at that policy and suite has been measured.
+    challenger: Campaign | None
+    #: Attempts the challenger still needs before its size alone would displace the published
+    #: body (a tie displaces, because the challenger is newer). ``None`` without a challenger.
+    attempts_needed: int | None
+    #: Tasks the published body covered that the challenger has not yet run. ``None`` without a
+    #: challenger; empty when coverage is already met and only size remains.
+    tasks_missing: tuple[str, ...] | None
+
+
+def campaigns(records: Sequence[MeasurementRecord]) -> list[Campaign]:
+    """Real, recorded records grouped into bodies by (policy, suite, tool version), oldest first.
+
+    Fixture runs and reconstructed timestamps are excluded here, once, so no caller can build a
+    body out of a stub run or date one from a typed midnight.
+    """
+    groups: dict[tuple[str, str, str], list[MeasurementRecord]] = {}
+    for r in records:
+        if counts_as_measurement(r) and r.recorded:
+            groups.setdefault((r.policy, r.suite, r.tool_version), []).append(r)
+    bodies: list[Campaign] = []
+    for (policy, suite, version), runs in groups.items():
+        known = [r.tasks for r in runs if r.tasks is not None]
+        tasks = tuple(sorted({t for ts in known for t in ts})) if known else None
+        bodies.append(
+            Campaign(
+                policy=policy,
+                suite=suite,
+                tool_version=version,
+                attempts=sum(r.attempts for r in runs),
+                successes=sum(r.successes for r in runs),
+                runs=len(runs),
+                tasks=tasks,
+                measured_at=max(r.measured_at for r in runs),
+            )
+        )
+    bodies.sort(key=lambda b: (_semver(b.tool_version), b.policy, b.suite))
+    return bodies
+
+
+def displacement(
+    records: Sequence[MeasurementRecord] | None = None,
+    *,
+    results_dir: Path = RESULTS_DIR,
+) -> Displacement | None:
+    """What a reader is shown, and what it would take to replace it.
+
+    THE RULE. Among real recorded bodies (:func:`campaigns`), the published measurement is the
+    largest body that no other body supersedes (:meth:`Campaign.supersedes`): to supersede is to
+    re-measure the same policy and suite over every task the body covered, with at least as many
+    attempts. Where more than one body is unsuperseded — two measurements of different things —
+    the broadest wins, then the largest, then the newest.
+
+    WHAT CHANGED, AND IN WHICH DIRECTION. The rule used to sum attempts per exact version and take
+    the largest bucket. That was right about probes and wrong in two ways that only show up once a
+    lane runs on a schedule. A bucket keyed by exact version resets on every release, so a canary
+    that re-pins each release accumulates toward nothing; and a bucket counts a single-task run
+    and a ten-task run in the same unit, so a long enough run on one task would have displaced the
+    ten-task headline. The new rule is stricter, never looser: nothing that displaced under the
+    old rule fails to under this one except a body that does not cover what it would replace.
+
+    The first problem is not solved here and cannot be — see :class:`Campaign` for why a body is
+    one version's. It is solved by the lane holding its pin until the body at that pin supersedes
+    the published one (``examples/gpu-ci/modal_provael_gpu.py``), and this function publishes how
+    far along that is.
+
+    Returns ``None`` when nothing real has been measured, which is not the same as a gap of zero.
+    """
+    real = records if records is not None else measurements_from_results(results_dir)
+    bodies = campaigns(real)
+    if not bodies:
+        return None
+    standing = [b for b in bodies if not any(o is not b and o.supersedes(b) for o in bodies)]
+    published = max(
+        standing,
+        key=lambda b: (len(b.tasks or ()), b.attempts, _semver(b.tool_version)),
+    )
+    newer = [
+        b
+        for b in bodies
+        if (b.policy, b.suite) == (published.policy, published.suite)
+        and _semver(b.tool_version) > _semver(published.tool_version)
+    ]
+    challenger = (
+        max(newer, key=lambda b: (b.covers(published), b.attempts, _semver(b.tool_version)))
+        if newer
+        else None
+    )
+    return Displacement(
+        published=published,
+        challenger=challenger,
+        attempts_needed=(
+            None if challenger is None else max(0, published.attempts - challenger.attempts)
+        ),
+        tasks_missing=None if challenger is None else challenger.tasks_missing(published),
+    )
+
+
 def published_measurement(
     records: Sequence[MeasurementRecord] | None = None,
     *,
     results_dir: Path = RESULTS_DIR,
 ) -> MeasurementRecord | None:
-    """The real-model measurement a reader is actually shown — the largest campaign, not the newest.
+    """The real-model measurement a reader is actually shown — the published body, not the newest.
 
     WHY NOT THE NEWEST. :func:`latest_measurement` answers "when was anything last measured", and a
     one-episode timing probe answers it. On 8 September 2026 a $0.06 probe made the freshness badge
@@ -264,10 +460,10 @@ def published_measurement(
     earlier. Reporting the newest record's version would have said 0.40.0 and been useless — worse
     than useless, because it would have looked reassuring.
 
-    So: among real recorded measurements, the version behind the LARGEST body of episodes wins, and
-    the newest record at that version represents it. A campaign of 350 episodes is what a published
-    rate rests on; a probe cannot displace it, and a genuinely bigger run at a newer version closes
-    the gap on its own without anyone editing a threshold.
+    So: the newest record of the published body (:func:`displacement`) represents it. A campaign
+    of 350 episodes is what a published rate rests on; a probe cannot displace it, a longer run on
+    fewer tasks cannot displace it, and a genuinely bigger re-measurement of the same tasks at a
+    newer version closes the gap on its own without anyone editing a threshold.
 
     Returns ``None`` when nothing real has been measured, which is not the same as a gap of zero.
     """
@@ -276,15 +472,18 @@ def published_measurement(
         for r in (records if records is not None else measurements_from_results(results_dir))
         if counts_as_measurement(r) and r.recorded
     ]
-    if not real:
+    standing = displacement(real)
+    if standing is None:
         return None
-    weight: dict[str, int] = {}
-    for r in real:
-        weight[r.tool_version] = weight.get(r.tool_version, 0) + r.attempts
-    # Ties break toward the NEWER version: two equally sized campaigns means the older one is no
-    # longer the only thing carrying the claim.
-    best = max(weight, key=lambda v: (weight[v], _minor(v) or (0, 0)))
-    return max((r for r in real if r.tool_version == best), key=lambda r: r.measured_at)
+    body = standing.published
+    return max(
+        (
+            r
+            for r in real
+            if (r.policy, r.suite, r.tool_version) == (body.policy, body.suite, body.tool_version)
+        ),
+        key=lambda r: r.measured_at,
+    )
 
 
 def releases_behind(measured_with: str, current: str) -> int | None:
