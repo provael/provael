@@ -119,18 +119,33 @@ def test_the_window_matches_the_one_the_site_publishes() -> None:
     assert STALE_AFTER_RELEASES == 2
 
 
-def test_the_committed_ledger_is_past_the_window_today() -> None:
-    """The live state, asserted so a re-measurement that closes the gap is noticed rather than assumed."""
+def test_the_committed_ledger_is_inside_the_window_today() -> None:
+    """The live state, asserted so a change in it is noticed rather than assumed.
+
+    From 8 September to 18 September 2026 this test asserted the opposite: the published
+    measurement was v0.32.0, nine minors behind, and the assertion existed so that a real
+    re-measurement closing the gap would be noticed as news. On 14 September a workstation re-ran
+    the ten-task suite on 0.41.2 (`results/smolvla_libero_object_suite_2026-09-14`, roleplay 42/50
+    against the published 44/50) with its controls beside it, and the branch that landed them on
+    18 September moved the published measurement to 0.41.2. The gap is zero, the banner clears on
+    its own, and this test now guards the new state: a release that reopens the window past
+    STALE_AFTER_RELEASES without a re-measurement will fail here, which is the correct time to be
+    told.
+    """
     from provael import __version__
 
     got = published_measurement()
     assert got is not None, "no real measurement is committed"
+    assert got.tool_version == "0.41.2", (
+        f"the published measurement is v{got.tool_version}; if a larger real campaign landed at a "
+        "newer version, update this test and the CHANGELOG — the measurement moving is news"
+    )
     gap = releases_behind(got.tool_version, __version__)
     assert gap is not None
-    assert gap > STALE_AFTER_RELEASES, (
-        f"the published measurement (v{got.tool_version}) is now {gap} release(s) behind "
-        f"{__version__}, within the {STALE_AFTER_RELEASES}-release window. If a real re-measurement "
-        "landed, update this test and the CHANGELOG — the gap closing is news."
+    assert gap <= STALE_AFTER_RELEASES, (
+        f"the published measurement (v{got.tool_version}) is {gap} release(s) behind {__version__}, "
+        f"past the {STALE_AFTER_RELEASES}-release window again. Releases have outrun the "
+        "re-measurement; the scheduled campaign (studies/scheduled_campaign) is what closes it."
     )
 
 
