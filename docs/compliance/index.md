@@ -91,6 +91,25 @@ never be presented as one.** These rows exist because an integrator's file alrea
 standards — see the [Halos / ANAB integrator card](../crosswalk/halos-integrator.md) — not because
 Provael has an opinion about the determination.
 
+### Automotive cybersecurity — a type-approval regime with its own auditor
+
+A road vehicle with a learned component is already inside UN Regulation No. 155, which has applied in
+the EU to new vehicle types since 6 July 2022 and to all new registrations since 7 July 2024
+(Regulation (EU) 2019/2144, Annex II row D4). Its audit is a cycle rather than a date: the
+Certificate of Compliance for a Cyber Security Management System is valid for a maximum of three
+years (para. 6.7). ISO/SAE 21434:2021 is the engineering standard those audits lean on. Provael maps
+to neither as conformity.
+
+| Instrument | What Provael supplies | What Provael does **not** supply |
+|---|---|---|
+| **UN R155** para. 7.2.2.2(e), 7.3.3, 7.3.6 | A seeded, manifest-bound run as one record of a CSMS testing process; measured rates per risk, with interval and benign control, for the learned component's rows of the exhaustive risk assessment; one test among the set that verifies mitigations before approval | **No type approval and no CSMS certificate.** Both are granted by an Approval Authority. Nothing here is a vehicle-level test; every episode is a simulation rollout of the policy alone |
+| **ISO/SAE 21434:2021** Clause 15, Clause 10 | Attack-feasibility and impact evidence with a denominator for the TARA; verification evidence for a cybersecurity requirement placed on the learned component, re-run on every retrain | **Clause 11 (cybersecurity validation) is not mapped.** It validates an item at the vehicle level, and a simulated, component-level result does not reach it |
+
+Dates verified against the Official Journal text of R155 (CELEX 42021X0387), the consolidated text of
+Regulation (EU) 2019/2144 and the ISO catalogue on 18 September 2026. Where the regime and the
+Machinery Regulation could both apply, which one binds a given machine is a question for the
+manufacturer's regulatory counsel, not for a red-team tool.
+
 ---
 
 ## Evidence map — requirement → what to attach

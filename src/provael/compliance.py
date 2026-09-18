@@ -9,7 +9,10 @@ EAI risks exercised, the per-task calibration metadata) onto the framework requi
 functional-safety standards an accredited AI-safety inspection programme assesses robot software
 against (**IEC 61508**, **ISO 13849-1/-2**, **ISO/IEC TR 5469:2024**) and the in-development
 Type-C standard for dynamically stable robots (**ISO 25785-1**), plus the first non-EU national
-statute in the catalogue, Korea's **AI Framework Act** (Act No. 20676, in force 22 January 2026).
+statute in the catalogue, Korea's **AI Framework Act** (Act No. 20676, in force 22 January 2026),
+and the automotive cybersecurity regime a type-approved vehicle with a learned component already
+sits inside: **UN Regulation No. 155** (cybersecurity and the CSMS, in force 22 January 2021) and
+the engineering standard its audits lean on, **ISO/SAE 21434:2021**.
 
 A boundary that holds across all of those: Provael supplies adversarial-robustness evidence as an
 **input** to a functional-safety argument. It computes **no SIL, no Performance Level, and makes no
@@ -144,6 +147,25 @@ _ISO_25785 = "ISO 25785-1 (under development)"
 #: assessment. A VLA policy is inside this Act when it is deployed in one of those, not merely
 #: because it drives a robot. A general warehouse or factory arm is not enumerated.
 _KR_AI = "Korea AI Framework Act (Act No. 20676)"
+#: The automotive cybersecurity regime, in force since 22 January 2021 and applied in the EU through
+#: Regulation (EU) 2019/2144 Annex II row D4 (refusal of EU type-approval from 6 July 2022;
+#: registration prohibited from 7 July 2024). Paragraph numbers below are the Regulation's own, read
+#: from its publication in OJ L 82, 9.3.2021 (CELEX 42021X0387). R155 is a TYPE-APPROVAL regime with
+#: its own auditor: the Certificate of Compliance for a CSMS is granted by an Approval Authority and
+#: is valid for a maximum of three years (para. 6.7). Provael feeds nothing into that grant and
+#: determines nothing about it; the rows below are inputs a manufacturer's own processes can hold.
+#:
+#: SCOPE IS THE TYPE-APPROVED VEHICLE. Para. 1.1 applies the Regulation to categories M and N, to
+#: O where fitted with at least one electronic control unit, and to L6 and L7 with automated driving
+#: functionalities from level 3 onwards. A warehouse AGV that is machinery rather than a road
+#: vehicle is under the Machinery Regulation instead.
+_UN_R155 = "UN Regulation No. 155 (cybersecurity and CSMS)"
+#: The process standard a CSMS is audited against in practice: ISO/SAE 21434:2021, Edition 1,
+#: published August 2021 by ISO/TC 22/SC 32 with SAE, under systematic review (stage 90.20) as of
+#: 18 September 2026. Clause titles below are the standard's own, read from its published preview.
+#: Clause 11 (Cybersecurity validation) is deliberately NOT mapped: it validates an item at the
+#: vehicle level, and a simulation result about one learned component does not reach it.
+_ISO_SAE_21434 = "ISO/SAE 21434:2021"
 
 #: Ordered so the artifact (and tests) are deterministic.
 REQUIREMENTS: tuple[Requirement, ...] = (
@@ -500,6 +522,99 @@ REQUIREMENTS: tuple[Requirement, ...] = (
             "operator's"
         ),
         evidence_refs=("report.json", "report.json#/calibration", "report.sarif"),
+        indicative=True,
+    ),
+    # UN R155 — the three places a red-team result actually lands. Para. 7.2.2.2 lists the CSMS
+    # processes the manufacturer must demonstrate; (e) is the testing process, and a repeatable,
+    # seeded run with its ledger and execution manifest is one record such a process produces.
+    # Paras. 7.3.3 and 7.3.6 are the vehicle-type duties: the exhaustive risk assessment against
+    # Annex 5 Part A, and the testing that verifies the mitigations before approval. Not mapped:
+    # 7.3.4 (implementing mitigations), 7.3.7 (detection and forensics on the vehicle), 7.3.8
+    # (cryptography) — Provael produces nothing on-point for them, and a row per paragraph would
+    # read as coverage of the whole specification.
+    Requirement(
+        key="un-r155:csms-testing-process",
+        framework=_UN_R155, framework_id="un-r155",
+        control_id="Para. 7.2.2.2(e)",
+        control_title="The processes used for testing the cybersecurity of a vehicle type",
+        provael_signal=(
+            "A seeded, resumable red-team run whose report is bound to its execution manifest by "
+            "digest, with the attack catalogue and the benign control it was run against, as one "
+            "record a CSMS testing process can show an Approval Authority. It is a record of one "
+            "test on the learned component in simulation, not the process itself"
+        ),
+        evidence_refs=("report.json", "execution-manifest.json", "report.sarif"),
+        indicative=True,
+    ),
+    Requirement(
+        key="un-r155:risk-assessment",
+        framework=_UN_R155, framework_id="un-r155",
+        control_id="Para. 7.3.3",
+        control_title=(
+            "Exhaustive risk assessment for the vehicle type, considering the threats in Annex 5, "
+            "Part A"
+        ),
+        provael_signal=(
+            "For the learned policy's rows of that assessment: the EAI taxonomy as the threat list "
+            "beside Annex 5 Part A, and a measured redirection rate per risk with its 95% Wilson "
+            "interval and benign-FPR control as the likelihood column. Annex 5 lists manipulation "
+            "of vehicle parameters (threat 25) and malicious messages (threat 11); a learned "
+            "policy that changes behaviour under a reworded instruction is a threat the table does "
+            "not yet name, which is why the rate has to be measured rather than looked up"
+        ),
+        evidence_refs=("report.json#/eai", "report.json#/by_attack", "docs/top10.md"),
+        indicative=True,
+    ),
+    Requirement(
+        key="un-r155:testing-before-approval",
+        framework=_UN_R155, framework_id="un-r155",
+        control_id="Para. 7.3.6",
+        control_title=(
+            "Appropriate and sufficient testing to verify the effectiveness of the security "
+            "measures implemented"
+        ),
+        provael_signal=(
+            "An attack-success rate for the learned component under adversarial instruction and "
+            "perception, with its benign control and interval, as one test in the set the "
+            "manufacturer assembles before approval. Simulation only, on the policy alone: whether "
+            "the set is appropriate and sufficient is the Approval Authority's judgement, and a "
+            "single simulated rate does not settle it"
+        ),
+        evidence_refs=("report.json#/by_attack", "report.sarif"),
+        indicative=True,
+    ),
+    # ISO/SAE 21434 — the two clauses a component-level, simulated measurement can feed. Clause 15
+    # is the TARA method set, where the attack-feasibility and impact judgements live; Clause 10
+    # is product development, where cybersecurity requirements are implemented and verified.
+    # Clause 11 (validation at the vehicle level) is left out on purpose; see _ISO_SAE_21434.
+    Requirement(
+        key="iso-sae-21434:tara",
+        framework=_ISO_SAE_21434, framework_id="iso-sae-21434",
+        control_id="Clause 15",
+        control_title="Threat analysis and risk assessment methods",
+        provael_signal=(
+            "A measured attack-success rate with a denominator, per risk, as the "
+            "attack-feasibility and impact evidence for the learned component's threat "
+            "scenarios, in place of a "
+            "qualitative likelihood. The threat scenarios, the risk values and their treatment "
+            "remain the analyst's; Provael supplies the measurement, not the assessment"
+        ),
+        evidence_refs=("report.json#/eai", "report.json#/by_attack", "docs/top10.md"),
+        indicative=True,
+    ),
+    Requirement(
+        key="iso-sae-21434:product-development-verification",
+        framework=_ISO_SAE_21434, framework_id="iso-sae-21434",
+        control_id="Clause 10",
+        control_title="Product development",
+        provael_signal=(
+            "Verification evidence for a cybersecurity requirement placed on the learned "
+            "component, such as a bound on redirection under adversarial instruction: the rate, "
+            "its interval, its benign control and the reproducible trace behind each finding, "
+            "re-run in CI on every retrain. Component-level and in simulation; it does not reach "
+            "the vehicle-level validation of Clause 11"
+        ),
+        evidence_refs=("report.json#/by_attack", "report.sarif", "report.json#/results"),
         indicative=True,
     ),
 )
