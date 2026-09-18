@@ -137,7 +137,10 @@ ALL_TASKS = ",".join(f"libero_object/{i}" for i in range(10))
 ATTACKS = "none,instruction,visual,injection"
 
 #: The exact provael release every container installs. `tests/test_gpu_image_pin.py` asserts this
-#: equals `provael.__version__`, so a release bump that forgets this line fails CI.
+#: is a version the checkout can account for — the current one, or the campaign pin the scheduled
+#: lane is accumulating at (see `modal_provael_gpu.py`), and in every case the SAME pin as every
+#: other lane — so a release bump that forgets this line fails CI, and so does a bump that would
+#: split the lanes onto two builds again.
 #:
 #: PINNING IS NOT THE HARD PART — NOTICING A STALE PIN IS. This line already pinned, to a commit,
 #: with a comment saying to "bump this deliberately when a stage needs newer code". It stayed at
