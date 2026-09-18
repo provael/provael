@@ -1,0 +1,214 @@
+# Rebuild and re-sign the committed leaderboard FROM A NAMED RUN, without re-measuring anything.
+#
+# WHY A SECOND WORKFLOW BESIDE leaderboard-restamp.yml. A re-stamp re-aggregates the SAME committed
+# reports and its guard REFUSES a result whose `measured_with` moved, because a re-stamp that
+# laundered staleness would be worse than a blocked release. A rebuild is the opposite act: the
+# board's source run changes on purpose, to a newer committed run of the same policy and suite, and
+# `measured_with` is expected to move with it. On 18 September 2026 the ten-task SmolVLA x LIBERO
+# suite had been re-measured on 0.41.2 (`results/smolvla_libero_object_suite_2026-09-14`, #255)
+# while the board still aggregated the 0.32.0 run, so the board said "measured with 0.32.0, stale"
+# beside a README, a website and a publish-freshness artifact that said 0.41.2. Moving the board's
+# source needs the Ed25519 key, which lives only in the PROVAEL_SIGNING_KEY secret; hence a
+# workflow, hence this file rather than a loosened guard on the other one.
+#
+# WHAT IT REFUSES, so a rebuild cannot become a quiet substitution:
+#   * a run that is not a committed directory under results/ with at least one report.json;
+#   * a board whose `measured_with` is not exactly what the run's own shards say;
+#   * a source older than the current one (a rebuild moves the board forward, never back);
+#   * a board that drops a (policy, suite) the current board carries, or loses its attribution;
+#   * a signature that does not verify against the PUBLISHED leaderboard.pub.
+#
+# The commit lands on the ref the workflow was dispatched on, so the usual way to run this is on
+# a branch: dispatch, let it commit the signed board and its source pointer there, add the prose
+# that has to move with them (README, docs/leaderboard.md, method-equivalence.json) and merge the
+# lot as one PR. main never carries a board its own README contradicts.
+#
+# Dispatch-only, never automatic: changing what a signed, dated artifact measures is a deliberate
+# act, and the reason is recorded in the commit.
+name: Leaderboard rebuild
+
+on:
+  workflow_dispatch:
+    inputs:
+      run:
+        description: "Committed results directory to aggregate (e.g. results/smolvla_libero_object_suite_2026-09-14)"
+        required: true
+        type: string
+      reason:
+        description: "Why the board's source run is changing (recorded in the commit message)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: leaderboard-rebuild
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    name: rebuild and re-sign from a named run, without re-measuring
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write   # commits the rebuilt board and its source pointer to the dispatched ref
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Install (locked, CPU core + attest extra)
+        run: uv sync --locked --extra attest
+
+      - name: The run must be a committed results directory with reports
+        env:
+          RUN: ${{ inputs.run }}
+        run: |
+          set -euo pipefail
+          case "${RUN}" in
+            results/*) ;;
+            *) echo "::error::run must be a path under results/, got '${RUN}'"; exit 1 ;;
+          esac
+          if [ ! -d "${RUN}" ]; then
+            echo "::error::'${RUN}' is not a directory in this checkout"; exit 1
+          fi
+          n="$(find "${RUN}" -name report.json | wc -l | tr -d ' ')"
+          if [ "${n}" -lt 1 ]; then
+            echo "::error::'${RUN}' holds no report.json"; exit 1
+          fi
+          echo "run=${RUN} reports=${n}"
+
+      - name: Record the board's pre-state
+        id: before
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          d = json.load(open("leaderboard/results/leaderboard.json"))
+          print(f"measured_with={json.dumps(d.get('measured_with'))}")
+          print(f"pairs={json.dumps(sorted({f\"{r['policy']}/{r['suite']}\" for r in d['rows']}))}")
+          print(f"submitters={json.dumps(sorted({r.get('submitted_by') for r in d['rows'] if r.get('submitted_by')}))}")
+          print(f"generated_at={d.get('generated_at')}")
+          PY
+
+      - name: Rebuild and re-sign
+        env:
+          PROVAEL_SIGNING_KEY: ${{ secrets.PROVAEL_SIGNING_KEY }}
+          RUN: ${{ inputs.run }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PROVAEL_SIGNING_KEY}" ]; then
+            echo "::error::PROVAEL_SIGNING_KEY is not set; an ephemeral key would break every"
+            echo "::error::published verification against leaderboard.pub. Refusing."
+            exit 1
+          fi
+          KEY="${RUNNER_TEMP}/leaderboard.pem"
+          umask 077
+          printf '%s' "${PROVAEL_SIGNING_KEY}" > "${KEY}"
+          trap 'rm -f "${KEY}"' EXIT
+          # --submitted-by / --provenance are NOT optional: omitting them drops every row's
+          # attribution while the board still verifies (see leaderboard-restamp.yml).
+          uv run provael leaderboard build \
+            --real "${RUN}" \
+            --submitted-by provael --provenance maintainer-run \
+            --sign --key "${KEY}" \
+            --out leaderboard/results
+
+      - name: The signature must verify against the PUBLISHED public key
+        run: |
+          uv run provael leaderboard verify \
+            --in leaderboard/results/leaderboard.json \
+            --pubkey leaderboard/results/leaderboard.pub
+
+      - name: Refuse a rebuild that substitutes rather than advances
+        env:
+          RUN: ${{ inputs.run }}
+          BEFORE_MEASURED: ${{ steps.before.outputs.measured_with }}
+          BEFORE_PAIRS: ${{ steps.before.outputs.pairs }}
+          BEFORE_SUBMITTERS: ${{ steps.before.outputs.submitters }}
+        run: |
+          uv run python - <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          from provael.leaderboard import find_reports
+          from provael.watch import _semver
+
+          run = os.environ["RUN"]
+          d = json.load(open("leaderboard/results/leaderboard.json"))
+          before_measured = json.loads(os.environ["BEFORE_MEASURED"]) or []
+          before_pairs = json.loads(os.environ["BEFORE_PAIRS"])
+          before_subs = json.loads(os.environ["BEFORE_SUBMITTERS"])
+          bad = []
+          shard_versions = sorted({
+              json.loads(Path(p).read_text(encoding="utf-8"))["tool_version"]
+              for p in find_reports([run])
+          })
+          if sorted(d.get("measured_with") or []) != shard_versions:
+              bad.append(f"measured_with {d.get('measured_with')} is not what the run's shards say: {shard_versions}")
+          if before_measured and shard_versions and max(map(_semver, shard_versions)) < max(map(_semver, before_measured)):
+              bad.append(f"the new source ({shard_versions}) is older than the current board's ({before_measured}); a rebuild moves forward")
+          now_pairs = sorted({f"{r['policy']}/{r['suite']}" for r in d["rows"]})
+          missing = [p for p in before_pairs if p not in now_pairs]
+          if missing:
+              bad.append(f"the rebuilt board drops {missing}, which the current board carries")
+          now_subs = sorted({r.get("submitted_by") for r in d["rows"] if r.get("submitted_by")})
+          if before_subs and now_subs != before_subs:
+              bad.append(f"submitters changed {before_subs} -> {now_subs}")
+          if bad:
+              print("::error::a rebuild must advance the board's source, not substitute or strip it")
+              for b in bad:
+                  print(f"::error::{b}")
+              sys.exit(1)
+          print(f"OK  measured_with={d.get('measured_with')}  stale={d.get('stale')}  rows={len(d['rows'])}")
+          print(f"    generated_at -> {d.get('generated_at')}  tool_version -> {d.get('tool_version')}")
+          PY
+
+      - name: Write the source pointer the tests and docs read
+        env:
+          RUN: ${{ inputs.run }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          uv run python - <<'PY'
+          import json, os
+          d = json.load(open("leaderboard/results/leaderboard.json"))
+          pointer = {
+              "$schema": "provael-leaderboard-source/1",
+              "note": (
+                  "GENERATED by .github/workflows/leaderboard-rebuild.yml. Do not hand-edit. The committed "
+                  "results directory the signed board beside this file aggregates, so a reader (and "
+                  "tests/test_leaderboard_version_claim.py) can rebuild it and get the same inputs_digest "
+                  "back without guessing which run it was. `measuredWith` is copied from the board it "
+                  "points at and is asserted equal to it."
+              ),
+              "run": os.environ["RUN"],
+              "measuredWith": d.get("measured_with") or [],
+              "generatedAt": d.get("generated_at"),
+              "reason": os.environ["REASON"],
+          }
+          with open("leaderboard/results/source.json", "w", encoding="utf-8") as fh:
+              json.dump(pointer, fh, indent=1, sort_keys=True)
+              fh.write("\n")
+          PY
+
+      - name: Commit
+        env:
+          RUN: ${{ inputs.run }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- leaderboard/results/leaderboard.json leaderboard/results/source.json; then
+            echo "board unchanged; nothing to commit"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add leaderboard/results/leaderboard.json leaderboard/results/source.json
+          # No CI-skip token anywhere in this message, deliberately (see leaderboard-restamp.yml).
+          git commit -m "chore(leaderboard): rebuild the signed board from ${RUN} (no re-measurement)" \
+                     -m "Reason: ${REASON}" \
+                     -m "Aggregated from the committed reports under ${RUN}; measured_with is what those shards say and is asserted so by the workflow. The rows are the run's own counts, re-aggregated, not re-run."
+          git push

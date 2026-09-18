@@ -26,7 +26,26 @@ from provael.types import RunReport
 _ROOT = Path(__file__).resolve().parent.parent
 _BOARD = _ROOT / "leaderboard" / "results" / "leaderboard.json"
 _EQUIVALENCE = _ROOT / "leaderboard" / "method-equivalence.json"
-_SUITE = _ROOT / "results" / "smolvla_libero_object_suite"
+#: Which committed run the board aggregates, written beside it by leaderboard-rebuild.yml. The
+#: path used to be typed here; the day the source run changed, the test would have gone on
+#: rebuilding the OLD run and calling the mismatch a digest regression.
+_SOURCE = _ROOT / "leaderboard" / "results" / "source.json"
+_SUITE = _ROOT / json.loads(_SOURCE.read_text(encoding="utf-8"))["run"]
+
+
+def test_the_source_pointer_names_a_committed_run_and_agrees_with_the_board() -> None:
+    """`source.json` is the one place that says which run the board aggregates; it must be true."""
+    pointer = json.loads(_SOURCE.read_text(encoding="utf-8"))
+    assert pointer["run"].startswith("results/"), pointer["run"]
+    assert _SUITE.is_dir(), f"{pointer['run']} is not a committed directory"
+    board = load_leaderboard(_BOARD)
+    assert sorted(pointer["measuredWith"]) == sorted(board.measured_with), (
+        f"source.json says measuredWith {pointer['measuredWith']} but the board says "
+        f"{board.measured_with}; the pointer was not rewritten with the board"
+    )
+    assert pointer["generatedAt"] == json.loads(_BOARD.read_text(encoding="utf-8")).get(
+        "generated_at"
+    )
 
 
 def _entries() -> list[dict[str, object]]:
@@ -113,7 +132,7 @@ def test_the_committed_board_still_rebuilds_to_its_committed_digest() -> None:
     committed = board.get("inputs_digest")
     assert committed, "the committed board carries no inputs_digest to check against"
 
-    suite = _ROOT / "results" / "smolvla_libero_object_suite"
+    suite = _SUITE
     assert suite.is_dir(), f"{suite} is missing; the board's input run is not in this checkout"
 
     reports = [load_report(path) for path in find_reports([str(suite)])]
@@ -160,3 +179,19 @@ def test_the_readme_states_the_version_the_board_was_actually_measured_with() ->
         f"measured_with is {measured_with}. The README describes a different run than the one "
         f"published."
     )
+
+
+def test_the_rebuild_workflow_is_dispatch_only_and_verifies_against_the_published_key() -> None:
+    """The board's source moves only by a deliberate dispatch, and only if the result still verifies.
+
+    Read as text rather than YAML on purpose: what is asserted is that the file says these things
+    where a reader would look for them, not that a parser can reconstruct them.
+    """
+    text = (_ROOT / ".github" / "workflows" / "leaderboard-rebuild.yml").read_text(encoding="utf-8")
+    on_block = text.split("\non:\n", 1)[1].split("\npermissions:", 1)[0]
+    assert on_block.strip().startswith("workflow_dispatch:"), "the rebuild must be dispatch-only"
+    assert "schedule:" not in on_block and "push:" not in on_block and "pull_request:" not in on_block
+    assert "provael leaderboard verify" in text and "leaderboard/results/leaderboard.pub" in text
+    assert '--real "${RUN}"' in text, "the board must be built from the dispatched run, not a typed path"
+    assert "leaderboard/results/source.json" in text, "a rebuild must rewrite the source pointer"
+    assert "[skip ci]" not in text and "skip-checks" not in text

@@ -6,7 +6,22 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-Nothing pending. The next entry opens when the first post-0.42.0 change lands.
+### Added
+
+- **The committed leaderboard names the run it aggregates, and a workflow can move it to a newer
+  one.** `leaderboard/results/source.json` sits beside the signed board and says which committed
+  results directory produced it; `tests/test_leaderboard_version_claim.py` reads the run from
+  there instead of from a path typed into the test, and holds the pointer's `measuredWith` and
+  `generatedAt` to the board's own fields. `leaderboard-rebuild.yml` (dispatch-only, signs with the
+  repository secret, commits to the ref it is dispatched on) rebuilds the board from a named run
+  and writes the pointer with it. It is a different act from `leaderboard-restamp.yml`, which
+  re-aggregates the same run and refuses a moved `measured_with`: a rebuild expects
+  `measured_with` to move, and refuses instead a run that is not a committed directory, a board
+  whose `measured_with` is not what the run's shards say, a source older than the current one, a
+  board that drops a (policy, suite) or its attribution, and a signature that does not verify
+  against the published key. Written because the ten-task suite had been re-measured on 0.41.2
+  (#255) while the board still said 0.32.0, and the key that could move it lives only in the
+  secret.
 
 ## [0.42.0] — 2026-09-18
 

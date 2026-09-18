@@ -87,21 +87,38 @@ the aggregated input reports** (the same digest approach as [attestation](attest
 and an attestation speak one integrity language). The date and commit are a snapshot stamp; the
 `inputs_digest` and the row numbers are what reproduce.
 
-The source directory is **`results/smolvla_libero_object_suite`** — the ten-task suite. It is not
+The source directory is named beside the board, in **`leaderboard/results/source.json`** (`run`),
+and that pointer is the one place to read it from: it is written by the same workflow that writes
+the board, and `tests/test_leaderboard_version_claim.py` holds its `measuredWith` and `generatedAt`
+to the board's own fields. It names a ten-task suite directory, not
 `results/smolvla_libero_object`, which is an older single-task run measured with **0.1.0**;
-rebuilding from that one produces a different digest, different rows, and a board 31 minor versions
-behind the published one. Both directories are committed and their names differ by one word, which
-is why this says so rather than leaving it to be inferred.
+rebuilding from that one produces a different digest, different rows, and a board thirty-odd minor
+versions behind the published one. Several such directories are committed and their names differ
+by a word or a date, which is why the pointer exists rather than leaving it to be inferred.
 
 ```bash
+# Which run the committed board aggregates
+run="$(python -c "import json; print(json.load(open('leaderboard/results/source.json'))['run'])")"
+
 # Build the real board (stamps date + commit + inputs digest)
-provael leaderboard build --real results/smolvla_libero_object_suite --out leaderboard/results
+provael leaderboard build --real "$run" --out leaderboard/results
 
 # Reproduce: rebuild and confirm the digest matches
-provael leaderboard build --real results/smolvla_libero_object_suite --out /tmp/rebuild
+provael leaderboard build --real "$run" --out /tmp/rebuild
 python -c "import json; a=json.load(open('leaderboard/results/leaderboard.json'))['inputs_digest']; \
 b=json.load(open('/tmp/rebuild/leaderboard.json'))['inputs_digest']; print('match:', a==b)"
 ```
+
+Two dispatch-only workflows move the committed board, and they are different acts on purpose.
+`leaderboard-restamp.yml` re-aggregates the **same** run and refuses a result whose `measured_with`
+moved — it exists so a release tag never trips the stamp-lag gate, and it must not be able to
+launder staleness. `leaderboard-rebuild.yml` takes a **named** committed run as its input and
+expects `measured_with` to move with it; it refuses a run that is not a committed results directory,
+a board whose `measured_with` is not what that run's shards say, a source older than the current
+one, a board that drops a (policy, suite) or its attribution, and a signature that does not verify
+against the published `leaderboard.pub`. Both sign with the key that lives only in the repository
+secret, so the key reaches no workstation. The rebuild commits to the ref it was dispatched on, so
+it is run on a branch and merged with the prose that has to move with the board.
 
 ## What a re-stamp does and does not change
 
