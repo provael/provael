@@ -5,22 +5,41 @@
 # ci.yml: the CPU core CI never installs the [lerobot] extra, never touches a GPU, and stays free and
 # green regardless of this file.
 #
-# WHY WEEKLY, AND WHY THE RUN SHRANK. This was nightly at `--seeds 10`, advertised as ~$0.02/run.
-# That figure was never recomputed after the run grew. `none,instruction,visual,injection` expands
-# to EIGHT arms, and `task_ids` defaults to one task, so ten seeds is 80 episodes. This repo's own
-# measured anchor is 400 episodes in 15.4 L4-hours, i.e. ~139 s/episode — so 80 episodes is ~3
-# hours against a 1h Modal timeout. Every night it would have burned the full hour, been killed,
-# recorded nothing, and cost ~$0.80: about $24/month of a $30/month credit, for no measurement.
+# WHAT ONE RUN IS, SINCE 18 SEPTEMBER 2026: A SLICE OF A CAMPAIGN, NOT A CANARY. Each run used to
+# measure one task, eight arms, two seeds — sixteen episodes that kept watch/freshness.json fed and
+# could not move watch/publish-freshness.json at all. The published measurement is the largest body
+# of real runs at one policy, suite and version (550 attempts over ten tasks at 0.32.0), a canary
+# added fourteen attempts on ONE task per run, and its version bucket reset every time a release
+# re-pinned it. The arithmetic could not close: `provael doctor` now prints that row, and the
+# artifact carries it as `challenger`.
 #
-# The schedule was the expensive part, not the run. Two seeds is 16 episodes, ~37 min, ~$0.49/run,
-# and it finishes, which the nightly never could. The badge this feeds carries a timestamp and no
-# rate, so fewer seeds cannot weaken a published number.
+# So each run now measures the next few cells of the campaign that would actually displace the
+# published body — the same checkpoint and suite, all ten libero_object tasks over time, every arm
+# the published body ran plus the harmless-variation controls, one seed per cell, one container per
+# cell — at ONE pinned release, held until the body at that pin supersedes the published one. Which
+# cells are done is read from results/ (this workflow commits every run there), so a lost shard is
+# simply re-planned next time and a manual arm at the same pin is credited, not duplicated. The plan
+# and the derived cost are in examples/gpu-ci/modal_provael_gpu.py and are printed before spending.
 #
-# WHY TWICE A WEEK RATHER THAN WEEKLY. The cadence is derived from the badge, not chosen: watch.py
-# sets STALE_DAYS = 7, so a seven-day cadence sits exactly on the red boundary and one missed run
-# turns the badge red. Tuesday and Friday give gaps of three and four days, which holds the window
-# with margin, at ~$4.25/month of a $30/month credit. Green needs FRESH_DAYS = 2, i.e. a run every
-# other day at ~$7.40/month, which is not worth a quarter of the budget for a canary.
+# COST, DERIVED IN THE EXAMPLE AND HELD BY A TEST. Four cells a run, twelve episodes each, at the
+# measured ~134 s/episode plus ~174 s container setup: about $1.58 a run expected, $2.66 at the
+# 50-minute per-container ceiling; at Tuesday+Friday that is ~$13.75 a month expected and ~$23.15
+# worst case, of a $30/month credit shared with the manual arms in gpu-arm.yml.
+# tests/test_gpu_scheduled_plan.py recomputes those from the example's constants and fails if the
+# ceiling no longer fits — a cost figure in a comment is a claim like any other.
+#
+# WHY TWICE A WEEK. The cadence is derived from the badge, not chosen: watch.py sets STALE_DAYS = 7,
+# so a seven-day cadence sits exactly on the red boundary and one missed run turns the badge red.
+# Tuesday and Friday give gaps of three and four days, which holds the window with margin. Every
+# slice writes a real recorded manifest, so the campaign feeds the age badge as the canary did.
+#
+# WHAT THIS LANE CANNOT DO. A campaign of about five seeds over ten tasks is about thirteen runs,
+# six and a half weeks. Between v0.32.0 (8 Aug 2026) and v0.41.2 (9 Sep 2026) nine minor releases
+# shipped in thirty-two days; at that cadence the body that displaces the published measurement
+# lands roughly a dozen minors behind on the day it completes — past the two-release window it is
+# measured against. This lane makes the published measurement move, repeatedly, and publishes how
+# far along it is. It cannot make it current. What would: a slower release cadence while a campaign
+# runs, or a larger credit. Neither is a code change and neither is claimed here.
 #
 # This file is named for the fact that it is scheduled, not for its cadence, because the cadence is
 # a tuning parameter of STALE_DAYS and has already changed once.
@@ -28,9 +47,9 @@
 # COST SAFETY (handoff to enable):
 #   * Disabled unless the repo variable `ENABLE_GPU_SCHEDULED` is set to "true" (Settings -> Variables).
 #     Until then every run no-ops in seconds, so a fork or an unconfigured repo can never spend.
-#   * The GPU work runs inside Modal (examples/gpu-ci/modal_provael_gpu.py), which caps each run at
-#     one L4 for <=1h and shuts the container down — the budget cap lives with the job. That cap is
-#     now a backstop rather than the expected runtime, which is the point of the change above.
+#   * The GPU work runs inside Modal (examples/gpu-ci/modal_provael_gpu.py), which caps each
+#     container at one L4 for the example's SHARD_TIMEOUT_SECONDS and shuts it down — the budget cap
+#     lives with the job, and the ceiling above is that cap times the cells per run.
 #   * Requires the MODAL_TOKEN_ID / MODAL_TOKEN_SECRET secrets; without them the job cannot bill.
 name: GPU red-team (scheduled, Modal)
 
@@ -65,7 +84,8 @@ jobs:
         with:
           # Full history so the Modal driver can resolve the pinned release tag to its commit
           # and pass it into the container as PROVAEL_COMMIT (execution-manifest provenance;
-          # both September 2026 canary manifests recorded `commit: null`).
+          # both September 2026 canary manifests recorded `commit: null`). The driver also reads
+          # results/ to plan the slice, which needs the tree rather than the history.
           fetch-depth: 0
 
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
@@ -79,7 +99,7 @@ jobs:
       # status, so for 22 days this step stayed green while modal exited on "has no functions or
       # local entrypoints" and measured nothing. A lane that cannot fail is a lane that cannot
       # report, and the freshness badge was the only thing telling anyone.
-      - name: Run the real SmolVLA x LIBERO red-team on a Modal GPU
+      - name: Run the next slice of the SmolVLA x LIBERO campaign on Modal GPUs
         shell: bash
         run: |
           set -o pipefail
@@ -118,6 +138,11 @@ jobs:
           # TOLD where. The filename below is mirrored from `OUT_DIR_FILE` in
           # examples/gpu-ci/modal_provael_gpu.py and pinned by
           # tests/test_modal_examples_are_runnable.py, so the two cannot drift apart silently.
+          #
+          # ONE SHARD PER CELL since the lane became a campaign: the declared directory holds one
+          # sub-directory per task, each a complete run with its own report.json and manifest, and
+          # every one of them is recorded. A shard that raised in Modal is simply absent here (see
+          # "Report shards that failed" below); it is never a reason to skip the ones that landed.
           outdir_file=gpu-scheduled-outdir.txt
           if [ ! -f "$outdir_file" ]; then
             echo "::error::the run did not declare an output directory ($outdir_file is absent),"
@@ -127,17 +152,21 @@ jobs:
             exit 1
           fi
           outdir="$(cat "$outdir_file")"
-          if [ ! -f "$outdir/report.json" ]; then
-            echo "::error::the run declared $outdir but no report.json is there. The measurement"
-            echo "::error::was not recorded. This is #181's shape again: check that"
+          shards="$(find "$outdir" -mindepth 1 -maxdepth 2 -name report.json | sort)"
+          if [ -z "$shards" ]; then
+            echo "::error::the run declared $outdir but no shard under it has a report.json. The"
+            echo "::error::measurement was not recorded. This is #181's shape again: check that"
             echo "::error::examples/gpu-ci/modal_provael_gpu.py still RETURNS its artifacts AND"
             echo "::error::that the entrypoint writes them before declaring the path."
-            ls -la "$outdir" 2>/dev/null || echo "(the directory does not exist)"
+            ls -laR "$outdir" 2>/dev/null || echo "(the directory does not exist)"
             exit 1
           fi
           pip install --quiet -e .
-          provael watch --record "$outdir" --dir watch
-          echo "recorded $outdir/report.json"
+          for report in $shards; do
+            shard="$(dirname "$report")"
+            provael watch --record "$shard" --dir watch
+            echo "recorded $report"
+          done
           echo "OUTDIR=$outdir" >> "$GITHUB_ENV"
 
       # KEEP THE MEASUREMENT. The fifth failure of this lane, and the first where everything worked.
@@ -163,27 +192,35 @@ jobs:
       # the same tree. Simulated against a copy of results/ first: ledger row present with a real
       # artifactPath, badge and ledger agreeing on the instant.
       #
-      # WHAT THIS GROWS. Three small JSON/Markdown files twice a week, roughly 2 MB a year, and two
+      # WHAT THIS GROWS. Four small shard directories twice a week, a few MB a year, and four
       # ledger rows a week on /results. That is readable now and will not be forever; when it stops
-      # being readable the answer is pagination on the page, never pruning the record here.
+      # being readable the answer is pagination on the page, never pruning the record here. The
+      # plan for the NEXT run is read from exactly this tree, so pruning it would also re-measure
+      # cells that were already paid for.
       - name: Keep the measurement
         if: success()
         shell: bash
         run: |
           set -euo pipefail
-          ended="$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['ended_at'])" \
-            "$OUTDIR/execution-manifest.json")"
+          # The run is dated by its LAST shard to finish; each shard keeps its own manifest inside.
+          ended="$(python -c 'import json, pathlib, sys; print(max(json.loads(p.read_text())["ended_at"] for p in pathlib.Path(sys.argv[1]).glob("*/execution-manifest.json")))' "$OUTDIR")"
           dest="results/gpu-scheduled/$(echo "$ended" | tr -d ':-')"
           mkdir -p "$dest"
-          cp "$OUTDIR"/*.json "$OUTDIR"/*.md "$dest"/ 2>/dev/null || cp "$OUTDIR"/*.json "$dest"/
+          cp -R "$OUTDIR"/. "$dest"/
           echo "placed the run at $dest"
 
-          # Regenerate exactly the two artifacts derived from results/, so neither can disagree
-          # with the tree it is derived from. NOT watch/coverage.json or watch/registry.json:
-          # despite living in the same directory those are a shields.io TEST-coverage badge and a
-          # code-derived registry, both owned by coverage-badge.yml. Writing `provael coverage
-          # --json` over coverage.json would replace a badge with a different shape entirely.
+          # Regenerate exactly the artifacts derived from results/, so none can disagree with the
+          # tree it is derived from. NOT watch/coverage.json or watch/registry.json: despite living
+          # in the same directory those are a shields.io TEST-coverage badge and a code-derived
+          # registry, both owned by coverage-badge.yml. Writing `provael coverage --json` over
+          # coverage.json would replace a badge with a different shape entirely.
+          #
+          # publish-freshness.json JOINED THIS LIST on 18 September 2026. It now carries the
+          # challenger body — the attempts and tasks accumulated at the campaign pin — so every
+          # slice changes it, and test_publish_freshness_artifact.py::test_committed_artifact_is_current
+          # would go red on main the moment a slice landed without it.
           python scripts/gen_measurement_ledger.py
+          python scripts/gen_publish_freshness_artifact.py
 
           # DELETE THE LOG BEFORE REGENERATING THE BADGE. Not housekeeping — this is the bug the
           # first version of this step shipped, on its first real run.
@@ -209,7 +246,7 @@ jobs:
 
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$dest" watch/measurements.json watch/freshness.json
+          git add "$dest" watch/measurements.json watch/freshness.json watch/publish-freshness.json
           if git diff --cached --quiet; then
             echo "::error::the run produced $dest and git sees nothing to commit. The measurement"
             echo "::error::is about to be discarded again — this is the defect this step exists for."
@@ -234,6 +271,24 @@ jobs:
           echo "::error::could not push the measurement after 3 attempts. It exists in this runner"
           echo "::error::and nowhere else, which is exactly how the previous five were lost."
           exit 1
+
+      # AFTER the good shards are committed, and only then: a shard that raised in Modal fails the
+      # job. Before this step, a lane with one broken cell had two bad options — lose the three
+      # good cells with it, or stay green and let the missing cell show up only as a task that
+      # never fills in `publish-freshness.json`'s `tasksMissing`. The file is written by the
+      # example's entrypoint (FAILED_SHARDS_FILE) and is absent when every shard returned.
+      - name: Report shards that failed
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f gpu-scheduled-failed-shards.txt ]; then
+            echo "::error::the shards below raised in Modal. The others were recorded and committed;"
+            echo "::error::these cells stay unmeasured and the next run re-plans them."
+            cat gpu-scheduled-failed-shards.txt
+            exit 1
+          fi
+          echo "every shard returned"
 
       - name: Upload the run artifact
         if: always()

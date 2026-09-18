@@ -148,6 +148,49 @@ All notable changes to this project are documented here. The format is based on
   280) and Amendment 1: the first leg runs π0.5 through the native `pi05` adapter, with what that
   narrows and what it leaves open.
 
+### Changed
+
+- **The published measurement is displaced only by a re-measurement of the same thing, and the
+  artifact now says how close one is.** `provael.watch.published_measurement` summed attempts per
+  exact tool version and took the largest bucket. That was right about probes and wrong in two
+  ways that only show up once a lane runs on a schedule: a bucket keyed by exact version resets on
+  every release, so a canary that re-pinned each release accumulated toward nothing; and a bucket
+  counts a single-task run and a ten-task run in the same unit, so a long enough run on one task
+  would have replaced the ten-task headline. The rule is now `provael.watch.displacement`: bodies
+  are every real recorded run at one policy, suite and version (`Campaign`), and a body supersedes
+  the published one only by covering every task it covered with at least as many attempts, a tie
+  going to the newer version. Stricter, never looser. Bodies stay one version each on purpose:
+  `combine.py` refuses to pool shards across tool versions, so a body pooled across releases would
+  be a number no evidence manifest can be built over and no site can re-pin. `MeasurementRecord`
+  and `watch/measurements.json` rows carry the run's `tasks`; `watch/publish-freshness.json`
+  gains `published` (the body behind `measuredWith`) and `challenger` (the newer body nearest to
+  superseding it, with `attemptsNeeded` and `tasksMissing`); `provael doctor` prints the same as a
+  `re-measurement` row. On the committed tree the challenger is the 0.41.2 canary body: 29 of 550
+  attempts, one task of ten. Existing fields and their meanings are unchanged, so the site's
+  reader needs nothing.
+
+- **The scheduled GPU lane runs a slice of a like-for-like campaign instead of a canary.** Each
+  `gpu-scheduled.yml` run measured one task, eight arms, two seeds: sixteen episodes that fed the
+  age badge and could never move the published measurement, for the arithmetic above. Each run
+  now measures the next four cells of the campaign that would actually displace it: the same
+  checkpoint, all ten `libero_object` tasks over time, every arm the published body ran plus the
+  `control` family, one seed per cell, one Modal container per cell, at ONE pinned release. Which
+  cells are done is read from `results/` on the driver (the workflow commits every run there), so
+  a lost shard is re-planned next time and a manual arm at the same pin is credited rather than
+  duplicated; the plan and the cost are derived in `examples/gpu-ci/modal_provael_gpu.py` and
+  `tests/test_gpu_scheduled_plan.py` holds the ceiling under the $30/month credit (about $1.58 a
+  run expected, $2.66 worst case; about $13.75 a month, $23.15 worst case). Shards that raise no
+  longer take the run with them: the ones that landed are recorded and committed, then the job
+  fails naming the rest. The workflow also regenerates `watch/publish-freshness.json`, which
+  every slice now changes. `tests/test_gpu_image_pin.py` lets `PROVAEL_PIN` lag the release while
+  a campaign is accumulating at it (the artifact's `challenger`), or while the published
+  measurement is still inside the release window, and requires every lane to pin the same
+  version, which is the property the old equality rule was really protecting. Do not bump the
+  pin in a release PR while `publish-freshness.json` shows a challenger at it. What this cannot
+  do, stated in the workflow header: at the release cadence of August to September 2026 (nine
+  minors in thirty-two days) a campaign of about thirteen runs lands about a dozen minors behind on
+  the day it completes. The lane makes the published measurement move; it cannot make it current.
+
 ### Fixed
 
 - **`benchmark_eval_yaml` declared `libero--none` twice.** The registry already carries the

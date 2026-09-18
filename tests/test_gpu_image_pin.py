@@ -1,4 +1,4 @@
-"""Every Modal GPU image must install the provael release this checkout IS.
+"""Every Modal GPU image must install a provael release this checkout can account for.
 
 WHY THIS EXISTS. Both GPU lanes were wrong, in opposite directions, and both looked healthy:
 
@@ -17,9 +17,16 @@ WHAT IS ASSERTED, and why each line is a separate way this rots:
 
 1. Every lane declares `PROVAEL_PIN`. A lane that quietly drops the constant would pass a test
    that only checked the lanes it knows about.
-2. The pin equals `provael.__version__`. This is the release-blocking half: bumping
-   `src/provael/__init__.py` without bumping the lanes fails here, which is the failure the
-   `calibrate` arm needed and did not have.
+2. The pin names a version this checkout can account for. It used to have to EQUAL
+   `provael.__version__`, and that was the right rule for a canary and the wrong rule for a
+   campaign: the scheduled lane builds one body of measurement at one version until that body
+   supersedes the published measurement (see `provael.watch.displacement`), and bumping the pin
+   on every release reset the body before it could — the arithmetic that kept the published
+   measurement frozen at 0.32.0. So since 18 September 2026 a pin may be the current version, OR
+   the version of the re-measurement in progress (the artifact's `challenger`), OR the published
+   measurement's version while it is still inside the release window. Anything else fails, with
+   the reason and the number it was accumulating toward. `test_lanes_pin_the_same_version` holds
+   the property the old rule was really protecting: no two lanes on different builds.
 3. The pin is an exact version, never a range or a URL. `>=` in a GPU image is the unpinned bug
    with extra characters.
 4. No lane still installs `provael` unconstrained or from git. This is the mutation guard: the
@@ -40,6 +47,7 @@ from pathlib import Path
 import pytest
 
 from provael import __version__
+from provael.watch import STALE_AFTER_RELEASES, displacement, releases_behind
 
 REPO = Path(__file__).resolve().parents[1]
 GPU_CI = REPO / "examples" / "gpu-ci"
@@ -90,16 +98,80 @@ def test_pin_is_an_exact_version(lane: Path) -> None:
     )
 
 
+def allowed_pins() -> dict[str, str]:
+    """The versions a lane may pin right now, each with the reason it is allowed.
+
+    Derived from the committed ledger, never from a list: the current version is always allowed;
+    the challenger's version is allowed because a campaign is accumulating there and a bump would
+    abandon it; the published measurement's version is allowed only while it is inside the
+    release window, which is the grace a completed campaign gets before the pin has to move on.
+    """
+    allowed = {__version__: "this checkout's version"}
+    standing = displacement()
+    if standing is None:
+        return allowed
+    if standing.challenger is not None:
+        body = standing.challenger
+        allowed.setdefault(
+            body.tool_version,
+            f"the re-measurement in progress: {body.attempts} of {standing.published.attempts} "
+            f"attempts over {len(body.tasks or ())} of {len(standing.published.tasks or ())} "
+            "tasks, and a bump would abandon it",
+        )
+    gap = releases_behind(standing.published.tool_version, __version__)
+    if gap is not None and gap <= STALE_AFTER_RELEASES:
+        allowed.setdefault(
+            standing.published.tool_version,
+            f"the published measurement, {gap} release(s) behind and inside the "
+            f"{STALE_AFTER_RELEASES}-release window",
+        )
+    return allowed
+
+
 @pytest.mark.parametrize("lane", LANES, ids=lambda p: p.name)
-def test_pin_matches_this_checkout(lane: Path) -> None:
-    """The release-blocking assertion: bumping __version__ must bump the lanes."""
+def test_pin_is_a_version_this_checkout_can_account_for(lane: Path) -> None:
+    """The release-blocking assertion, with the campaign exception written in.
+
+    A pin at the current version is always right. A pin at the challenger's version is a campaign
+    in progress and must NOT be bumped by a release PR — the body it is building resets to nothing.
+    A pin at the published measurement's version is a campaign that just finished; it may stay
+    until the window closes, then it has to advance so the next campaign starts on current code.
+    """
     pin = _module_constants(lane)["PROVAEL_PIN"]
-    assert pin == __version__, (
-        f"{lane.name} pins provael {pin} but this checkout is {__version__}. A GPU arm run now "
-        f"would measure {pin} and its artifacts would say so, while everything around it claims "
-        f"{__version__}. Bump PROVAEL_PIN in {lane.name} to {__version__} — and note the pinned "
-        "version has to exist on PyPI before the image can build, so release first."
+    allowed = allowed_pins()
+    assert pin in allowed, (
+        f"{lane.name} pins provael {pin}, and this checkout can account for none of that: it is "
+        f"{__version__}, and the committed ledger allows "
+        + "; ".join(f"{v} ({why})" for v, why in allowed.items())
+        + f". A GPU arm run now would measure {pin} and its artifacts would say so, while "
+        f"everything around it claims {__version__}. Bump PROVAEL_PIN in {lane.name} to "
+        f"{__version__} — the pinned version has to exist on PyPI before the image can build, so "
+        "release first — unless a campaign is accumulating at the pin, in which case the ledger "
+        "would have listed it above."
     )
+
+
+def test_lanes_pin_the_same_version() -> None:
+    """Two lanes on two builds is the original incident, whatever each pin is allowed to be.
+
+    On 6 September 2026 the canary resolved 0.39.1 while the measurement arm fitted zones on
+    0.32.0, and both looked healthy. The campaign rule above lets a pin lag the release; it must
+    never let the lanes lag EACH OTHER, or a manual arm run against the campaign pin would land in
+    a different body from the slices it was meant to add to.
+    """
+    pins = {lane.name: _module_constants(lane)["PROVAEL_PIN"] for lane in LANES}
+    assert len(set(pins.values())) == 1, (
+        f"the GPU lanes pin different provael releases: {pins}. Every lane installs the same "
+        "build, so a manual arm and the scheduled slices measure one body, not two."
+    )
+
+
+def test_the_campaign_exception_is_not_a_blanket_one() -> None:
+    """Guard the guard: `allowed_pins` must be a short, derived list, never every version."""
+    allowed = allowed_pins()
+    assert __version__ in allowed
+    assert len(allowed) <= 3, f"allowed_pins() returned {allowed}; it should name at most three"
+    assert "0.0.0" not in allowed and "0.1.0" not in allowed
 
 
 def _pip_install_args(path: Path) -> list[tuple[int, ast.expr]]:
