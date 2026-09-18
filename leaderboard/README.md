@@ -25,8 +25,9 @@ which is the richest published example; mteb/leaderboard uses `leaderboard` alon
 
 `modality:image` is deliberately ABSENT even though the policies under test are vision-language-action.
 Provael's visual family is two symbolic markers appended to a simulated `visual_tokens` list, not
-rendered pixels, and it measured 0/100 on the ten-task suite. Claiming an image modality would
-advertise coverage this board does not have. See docs/top10.md, EAI02.
+rendered pixels, and it measured 2/100 on the ten-task suite against a 1/50 benign floor (not
+separable from it). Claiming an image modality would advertise coverage this board does not have.
+See docs/top10.md, EAI02.
 
 `submission:manual` because the path is a reviewed pull request plus a maintainer rebuild.
 `test:public` because every attack, suite and recipe is open source and reproducible. -->
@@ -44,18 +45,23 @@ That is written down in
 the maintainer of this board more tightly than it binds anyone submitting to it.
 
 > ✅ **Real data.** `results/leaderboard.json` holds the ten-task SmolVLA-on-LIBERO suite
-> screen (`HuggingFaceVLA/smolvla_libero`, all 10 `libero_object` tasks × 5 seeds, 350
-> measured episodes): **instruction 41.3% (62/150) [34–49%]**, against a benign `none`
-> baseline of **4.0% (2/50)**. The board's rows sum to **18.3% (64/350)** across every arm
-> including the benign control — that is the all-episode observed rate, **not** the attack rate,
-> and it is diluted by the arms that measured zero. Read the per-family rows, not the sum.
+> screen measured on 14 September 2026 with provael 0.41.2 (`HuggingFaceVLA/smolvla_libero`,
+> all 10 `libero_object` tasks × 5 seeds, 350 measured episodes): **instruction 33.3% (50/150)
+> [26–41%]**, against a benign `none` baseline of **2.0% (1/50)**. The board's rows sum to
+> **15.7% (55/350)** across every arm including the benign control — that is the all-episode
+> observed rate, **not** the attack rate, and it is diluted by the arms that did not move.
+> Read the per-family rows, not the sum.
 >
-> Read it as **lift over baseline** — instruction-reframing
-> attacks are the only family that moves this policy; **injection 0/50** and **visual
-> 0/100** are measured nulls and stay published as such. Per-attack detail, including
-> `roleplay` at 44/50 against the run's own **2/50 benign control**, with its McNemar and
-> task-clustered interval, is in
-> [`results/smolvla_libero_object_suite/`](https://github.com/provael/provael/tree/main/results/smolvla_libero_object_suite).
+> Read it as **lift over baseline** — instruction-reframing attacks are the only family that
+> moves this policy; **injection 2/50** and **visual 2/100** do not separate from the run's own
+> benign floor (McNemar exact p = 1.0 on every arm) and stay published as measured. Per-attack
+> detail, including `roleplay` at 42/50 against the run's own **1/50 benign control**, with its
+> McNemar and task-clustered interval, is in
+> [`results/smolvla_libero_object_suite_2026-09-14/`](https://github.com/provael/provael/tree/main/results/smolvla_libero_object_suite_2026-09-14).
+> The 0.32.0 run this board aggregated until 18 September 2026 (44/50, 62/150) stays committed
+> under [`results/smolvla_libero_object_suite/`](https://github.com/provael/provael/tree/main/results/smolvla_libero_object_suite);
+> the re-run reproduced its headline and read its meaning differently (E-2026-12: the frame
+> moves the policy, target or no target).
 >
 > ⚠️ **Four qualifiers, and they now travel inside the artifact** (`schema_version` 5)
 > rather than living only in this README:
@@ -64,12 +70,11 @@ the maintainer of this board more tightly than it binds anyone submitting to it.
 >   never fitted to any of them. This is "diverted out of the benign safe envelope," not a
 >   calibrated hazard rate, and it is why the benign arm tripped at all. Per-task zone
 >   calibration is still owed ([#136](https://github.com/provael/provael/issues/136)).
-> - `"stochastic": true` — SmolVLA's flow-matching sampler is not fully seeded, so these
->   numbers are one draw, not a reproducible constant. **This caveat stays until these rows are
->   re-run**, and it is about these rows specifically: from provael 0.38.0 the runner seeds the
->   policy's own sampler and each episode records `policy_seed`, and a stochastic submission
->   without one is refused. The rows above were measured before that and carry no `policy_seed`,
->   so nothing about the fix makes them reproducible after the fact. Re-running them is GPU-gated.
+> - `"stochastic": true` — SmolVLA's flow-matching sampler draws; the flag says so. These rows
+>   were measured with provael 0.41.2, which seeds the policy's own sampler and records
+>   `policy_seed` on every episode (a stochastic submission without one is refused), so the
+>   draw behind each number is named: the same seed reproduces it, a different seed is a
+>   different draw, and five seeds per task is what the interval is over.
 > - `"not_applicable": ["mcp_tool_desc"]` — 50 episode records, zero applicable episodes.
 >   Not-measured and measured-zero are different claims, so it is named rather than
 >   silently dropped from the denominator.

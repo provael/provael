@@ -129,9 +129,10 @@ carries the measurement it always did**, possibly made by a much older release.
 That is a trap: a board carrying only `generated_at` reads as a fresh measurement. Schema v3 adds
 **`measured_with`** — the sorted `tool_version` values of the aggregated reports, i.e. the versions
 the *numbers* came from — and `Leaderboard.is_restamp()` answers the question directly. The
-published board reports `measured_with: ["0.32.0"]` against a build commit from the current release
+published board reports `measured_with: ["0.41.2"]` against a build commit from the current release
 line: the provenance envelope is current, the measurement is the ten-task SmolVLA × LIBERO suite
-screen those shards recorded.
+screen those shards recorded on 14 September 2026 (until 18 September 2026 it read `["0.32.0"]`,
+the run of 9 August, which the re-run reproduced).
 
 ### Staleness is a field, not a banner (schema v6)
 
@@ -170,7 +171,7 @@ nothing. Disclosed staleness is the honest state; silent staleness is the bug.
 
 A leaderboard is where a number travels furthest from its own report, and until v5 it arrived
 stripped: `report.json` recorded `calibrated` and `stochastic`, and the board dropped both. A row
-reading `41.3%` with no further context is a stronger claim than the run behind it ever made.
+reading `33.3%` with no further context is a stronger claim than the run behind it ever made.
 
 Each row now carries three fields derived from the aggregated reports — never passed in, for the
 same reason `measured_with` is not:

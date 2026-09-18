@@ -497,21 +497,24 @@ The free core builds and verifies boards; a hosted, operator-signed board is the
 surface (experimental today). See [docs/leaderboard.md](docs/leaderboard.md).
 **Evidence, not certification.**
 
-**What the published board does not cover.** It is one run and it is old: measured with
-**`provael 0.32.0`**, covering **1 policy on 1 suite** and **3 of the 17 adversarial families**. The
-other **fourteen families are absent from the board**, which is not the same as scoring 0%: nine of
-them have no real-model measurement anywhere in this repository, and five have only the
-three-episode breadth probe of 14 September 2026
-(`results/smolvla_libero_object_families_2026-09-14`), a result and not a rate. That run also
-predates the clean-task-success control, so it
-carries a benign false-positive control but no measured competence baseline. The Space states all
-of this above its own tables; rebuilding cannot fix it, because a re-stamp re-aggregates committed
-reports and never re-runs a policy. Closing the gap needs GPU time.
+**What the published board does not cover.** It is one run: measured with
+**`provael 0.41.2`** on 14 September 2026 (`results/smolvla_libero_object_suite_2026-09-14`, the
+directory named in `leaderboard/results/source.json`), covering **1 policy on 1 suite** and **3 of
+the 17 adversarial families**. The other **fourteen families are absent from the board**, which is
+not the same as scoring 0%: nine of them have no real-model measurement anywhere in this repository,
+and five have only the three-episode breadth probe of the same night
+(`results/smolvla_libero_object_families_2026-09-14`), a result and not a rate. The run carries a
+benign false-positive control (1/50) and a clean-task-success baseline (48/50), so its rates are
+read against a measured competence, not assumed one. The Space states all of this above its own
+tables; rebuilding cannot fix it, because a rebuild re-aggregates committed reports and never
+re-runs a policy. Closing the gap needs GPU time.
 
-The board is now several minor versions behind the shipping tool. That gap is bridged by
+The board is one minor version behind the shipping tool. That gap is bridged by
 [`leaderboard/method-equivalence.json`](leaderboard/method-equivalence.json), whose own
 `what_this_is_not` field says it plainly: **"This is a code-inspection argument, NOT a
-re-measurement."** Nothing has re-run 0.32.0's numbers on the current tool.
+re-measurement."** Its previous entry, for 0.32.0, was settled the only way such an entry can be:
+the suite was re-run on 0.41.2 and the family moved (62/150 to 50/150). The re-run moved the board;
+the argument never could.
 
 ## What runs on CPU vs. what needs a GPU
 

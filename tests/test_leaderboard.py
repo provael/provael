@@ -548,19 +548,25 @@ def test_staleness_is_decided_by_the_oldest_row() -> None:
 
 
 def test_the_published_board_declares_its_own_staleness() -> None:
-    """The board's rows are older than the tool; that must be a FIELD, not a banner.
+    """The board's currency must be a FIELD, not a banner, whichever way it currently reads.
 
     Asserts the live board, and deliberately says nothing about which version assembled it —
-    that moves with every re-stamp. What must never move is that the staleness is declared in
-    machine-readable form, because a consumer reading JSON cannot see a banner.
+    that moves with every re-stamp — nor about whether it is stale today: the board read
+    `stale: true` against 0.32.0 rows for a month and reads `stale: false` since the 0.41.2
+    rebuild of 18 September 2026, and both are honest. What must never move is that the verdict
+    is declared (never `None`), that its reason names the version that measured the rows, and that
+    `measured_with` is what the source pointer beside the board says it aggregated.
     """
     import json as _json
 
     board = _json.loads(_BOARD.read_text(encoding="utf-8"))
-    assert board["stale"] is True
-    assert "0.32.0" in board["stale_reason"], "the reason must name the version that measured it"
-    assert board["measured_with"] == ["0.32.0"], (
-        "a re-stamp must never change what measured the rows — only when it was assembled"
+    assert board["stale"] in (True, False), "the verdict must be declared, never left undetermined"
+    for version in board["measured_with"]:
+        assert version in board["stale_reason"], "the reason must name the version that measured it"
+    source = _json.loads((_BOARD.parent / "source.json").read_text(encoding="utf-8"))
+    assert board["measured_with"] == source["measuredWith"], (
+        "the board's measured_with must be the one its source pointer records — a re-stamp never "
+        "changes what measured the rows, and a rebuild rewrites both together"
     )
 
 
@@ -611,9 +617,12 @@ def test_the_staleness_gate_fails_on_undeclared_staleness_only() -> None:
     gate = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(gate)
 
-    board = _json.loads(_BOARD.read_text(encoding="utf-8"))
     assert gate.check(_BOARD, fix=False) == [], "the committed board declares its staleness"
 
+    # The mutation needs a board that IS stale: the frozen v5 fixture's rows were measured with
+    # 0.32.0, many minors behind any tool that runs this test. The live board may or may not be
+    # stale on a given day, and the gate is silent on a current board whatever its flag says.
+    board = _json.loads(_V5_FIXTURE.read_text(encoding="utf-8"))
     undeclared = _BOARD.parent / "_undeclared.json"
     board["stale"] = None
     undeclared.write_text(_json.dumps(board, indent=2, sort_keys=True) + "\n", encoding="utf-8")

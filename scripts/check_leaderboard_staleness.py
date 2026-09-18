@@ -95,7 +95,13 @@ def main() -> int:
     parser.add_argument("--fix", action="store_true", help="rewrite the flag instead of failing")
     args = parser.parse_args()
 
-    boards = sorted(BOARDS.glob("*.json"))
+    # A board carries rows. `source.json` beside the board is its source pointer
+    # (leaderboard-rebuild.yml), not a board, and is not judged here.
+    boards = [
+        p
+        for p in sorted(BOARDS.glob("*.json"))
+        if "rows" in json.loads(p.read_text(encoding="utf-8"))
+    ]
     if not boards:
         print(f"no published boards under {BOARDS.relative_to(ROOT)}", file=sys.stderr)
         return 1

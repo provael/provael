@@ -23,6 +23,24 @@ All notable changes to this project are documented here. The format is based on
   (#255) while the board still said 0.32.0, and the key that could move it lives only in the
   secret.
 
+### Changed
+
+- **The published leaderboard aggregates the 14 September 2026 run.** `leaderboard-rebuild.yml`
+  rebuilt and re-signed `leaderboard/results/leaderboard.json` from
+  `results/smolvla_libero_object_suite_2026-09-14`: `measured_with ["0.41.2"]`, `stale: false`
+  against 0.42.0, rows instruction 50/150, injection 2/50, visual 2/100, baseline 1/50
+  (`not_applicable: mcp_tool_desc`), attribution unchanged, signature verified against the
+  published key. The 0.32.0 board's rows (62/150, 44/50) stay committed under their own run.
+  `leaderboard/method-equivalence.json` records the 0.32.0 entry as settled by that re-run and
+  argues, from the diff between the tags, why 0.41.2 → 0.42.0 moves none of these rows; the
+  README's published-board paragraph and the Space card describe the board as it is now. The
+  staleness gate and its tests judge the board by whether its verdict is declared and names its
+  measuring version, not by which way it currently reads. Two sentences the results made false are
+  corrected: the EAI03 coverage note no longer says `weight_integrity` has never met a real
+  policy (the breadth probe ran it at n = 3), which moves the committed crosswalk, manifest and
+  assurance goldens; and the control run's notes cite the reframe erratum by its number,
+  E-2026-12.
+
 ## [0.42.0] — 2026-09-18
 
 The first release since 0.41.2 on 9 September, and the first whose published measurement was made
