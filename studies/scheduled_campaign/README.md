@@ -6,8 +6,8 @@ measurement on its own.
 
 ## Why it exists
 
-The published measurement is the largest body of real runs at one policy, suite and version that
-nothing supersedes (`provael.watch.displacement`). On 18 September 2026 that body was 550 attempts
+The published measurement is the largest body of real runs at one lineage (policy, suite and task
+suite) and one version that nothing supersedes (`provael.watch.displacement`). On 18 September 2026 that body was 550 attempts
 over ten `libero_object` tasks at v0.32.0, nine minor releases back. The lane meant to refresh it
 measured one task, eight arms and two seeds twice a week: fourteen attempts a run, under a version
 that changed every time a release re-pinned it. It measured on the current release twice a week and

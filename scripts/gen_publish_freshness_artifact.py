@@ -65,12 +65,14 @@ NOTE = (
     "measurement's drift against the current release — a different question from "
     "watch/freshness.json, which reports when anything was last measured and is satisfied by a "
     "one-episode probe. `measuredWith` is the version behind the published measurement: the "
-    "largest body of real recorded runs at one policy, suite and version that no other body "
-    "supersedes, where superseding means re-measuring the same policy and suite over every task "
-    "it covered with at least as many attempts (a tie goes to the newer version). A probe cannot "
-    "displace a campaign, and neither can a longer run on fewer tasks; see "
-    "provael.watch.displacement. `published` describes that body. `challenger` is the newer body "
-    "at the same policy and suite nearest to superseding it, with `attemptsNeeded` and "
+    "largest body of real recorded runs at one lineage (policy, suite and, where the task ids "
+    "carry one, task suite — `taskSuite`, e.g. libero_object) and one version that no other body "
+    "supersedes, where superseding means re-measuring the same lineage over every task it covered "
+    "with at least as many attempts (a tie goes to the newer version). A probe cannot displace a "
+    "campaign, neither can a longer run on fewer tasks, and a run on a different LIBERO task suite "
+    "is a different measurement rather than part of this one; see provael.watch.displacement. "
+    "`published` describes that body. `challenger` is the newer body "
+    "at the same lineage nearest to superseding it, with `attemptsNeeded` and "
     "`tasksMissing` stating exactly what it still lacks — so the lane producing it can be read "
     "against the number it has to reach, rather than against a badge that a probe can turn green. "
     "`isStale` is releasesBehind > staleAfterReleases, precomputed so a consumer rendering a "
@@ -87,6 +89,7 @@ def _body(campaign: Campaign) -> dict[str, object]:
     return {
         "policy": campaign.policy,
         "suite": campaign.suite,
+        "taskSuite": campaign.task_suite,
         "toolVersion": campaign.tool_version,
         "attempts": campaign.attempts,
         "successes": campaign.successes,

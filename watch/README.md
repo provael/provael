@@ -36,10 +36,14 @@ A green `freshness.json` therefore does **not** mean the headline is current. Re
 ## What displaces the published measurement, and how far along the replacement is
 
 The rule is `provael.watch.displacement`, and it is stricter than the size-only rule it replaced.
-A **body** is every real, recorded run at one policy, one suite and one tool version. A body
-**supersedes** the published one only by re-measuring what it measured: the same policy and suite,
-every task it covered, with at least as many attempts (a tie goes to the newer version). A probe
-cannot displace a campaign; neither can a longer run on fewer tasks, which the old rule allowed.
+A **body** is every real, recorded run at one lineage and one tool version, where a lineage is the
+policy, the suite and, where the task ids carry one, the task suite (`smolvla` x `libero` x
+`libero_object`; the artifact calls it `taskSuite`). A body **supersedes** the published one only by
+re-measuring what it measured: the same lineage, every task it covered, with at least as many
+attempts (a tie goes to the newer version). A probe cannot displace a campaign; neither can a longer
+run on fewer tasks, which the old rule allowed; and a run on another LIBERO task suite is another
+measurement altogether, the way the adapter already treats it ("one run is one suite"), so a Spatial
+null does not join the Object body or raise the bar for re-measuring it.
 
 Bodies are one version each on purpose. `provael.combine` refuses to pool shards whose tool version
 differs, because a rate over two builds describes a run that never happened, so a body pooled across
@@ -50,7 +54,7 @@ campaign supersedes the published body (`examples/gpu-ci/modal_provael_gpu.py`).
 `publish-freshness.json` therefore carries two more blocks:
 
 - `published`: the body behind `measuredWith`: its attempts, its runs, and the tasks it covered.
-- `challenger`: the newer body at the same policy and suite nearest to superseding it, with
+- `challenger`: the newer body at the same lineage nearest to superseding it, with
   `attemptsNeeded` and `tasksMissing` stating exactly what it still lacks. `null` when nothing newer
   has been measured, which is not the same as a deficit of zero.
 

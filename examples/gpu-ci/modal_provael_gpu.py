@@ -7,10 +7,11 @@ shuts down. `.github/workflows/gpu-scheduled.yml` runs this twice a week.
 WHAT THIS LANE IS FOR, AND WHAT IT USED TO BE. Until 18 September 2026 each run was a probe: one
 task, eight arms, two seeds, sixteen episodes. It kept `watch/freshness.json` fed and it could never
 move `watch/publish-freshness.json`. The published measurement is the largest body of real runs at
-one policy, suite and version that nothing supersedes (:func:`provael.watch.displacement`) — 550
-attempts over ten tasks at 0.32.0 — and the probe added fourteen attempts on ONE task per run, under
-a version bucket that reset every time a release re-pinned it. Twice a week for ever would have
-reached nothing, and the header of its own workflow priced that at a seventh of the credit.
+one lineage (policy, suite, task suite) and version that nothing supersedes
+(:func:`provael.watch.displacement`) — 550 attempts over ten tasks at 0.32.0 — and the probe
+added fourteen attempts on ONE task per run, under a version bucket that reset every time a release
+re-pinned it. Twice a week for ever would have reached nothing, and the header of its own workflow
+priced that at a seventh of the credit.
 
 So each run now measures the next shards of a **declared campaign**: `studies/scheduled_campaign/
 plan.json` names the checkpoint, the suite, the ten tasks, the arms and the seed count, modelled on

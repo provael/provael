@@ -3,11 +3,11 @@
 WHY A CAMPAIGN AND NOT A PROBE. Until 18 September 2026 the scheduled GPU lane measured one task,
 eight arms, two seeds — sixteen episodes twice a week. It kept the age badge fed and it could not
 move the published measurement: :func:`provael.watch.displacement` publishes the largest body of
-real runs at one policy, suite and version that nothing supersedes, and that body is 550 attempts
-over ten tasks at v0.32.0. The probe added fourteen attempts on one task per run, under a version
-that changed every time a release re-pinned it. At that rate it would not have displaced the
-published campaign this decade, and its own workflow header said it was spending a seventh of the
-credit to do so.
+real runs at one lineage (policy, suite, task suite) and version that nothing supersedes, and that
+body is 550 attempts over ten tasks at v0.32.0. The probe added fourteen attempts on one task per
+run, under a version that changed every time a release re-pinned it. At that rate it would not have
+displaced the published campaign this decade, and its own workflow header said it was spending a
+seventh of the credit to do so.
 
 So the lane now measures a **plan** (``studies/scheduled_campaign/plan.json``): the checkpoint, the
 suite, the ten tasks, the arms and the seed count, declared before the first shard ran and modelled

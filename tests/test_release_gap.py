@@ -21,6 +21,7 @@ from provael.watch import (
     displacement,
     published_measurement,
     releases_behind,
+    task_suite_of,
 )
 
 TEN_TASKS = tuple(f"libero_object/{i}" for i in range(10))
@@ -255,6 +256,50 @@ def test_a_different_policy_is_a_different_lineage() -> None:
     # The 0.42.0 smolvla body is short one shard (nine tasks); the pi05 record is another lineage.
     assert standing.published.tool_version == "0.32.0"
     assert standing.challenger is not None and standing.challenger.policy == "smolvla"
+
+
+SPATIAL_TASKS = tuple(f"libero_spatial/{i}" for i in range(10))
+
+
+def test_a_different_libero_task_suite_is_a_different_lineage() -> None:
+    """LIBERO Spatial, Goal and 10 runs at 0.41.2 neither join nor raise the Object body.
+
+    The 14 September 2026 ledger: the ten-task Object suite plus its control at 0.41.2, and ten
+    Spatial nulls the same night. Pooled by (policy, suite, version) alone those would have made
+    one 33-task body that every future Object re-measurement had to re-run in full. The adapter
+    refuses to run two task suites as one job ("one run is one suite"), so the body is keyed the
+    same way: Spatial is its own lineage, the Object body supersedes the 0.32.0 Object body on its
+    own, and the Spatial body's attempts appear in neither.
+    """
+    records = [
+        *_campaign("0.32.0", 55, "2026-08-09"),
+        *_campaign("0.41.2", 56, "2026-09-14"),
+        *_campaign("0.41.2", 6, "2026-09-14", tasks=SPATIAL_TASKS),
+    ]
+    bodies = campaigns(records)
+    assert {(b.task_suite, b.tool_version, b.attempts) for b in bodies} == {
+        ("libero_object", "0.32.0", 550),
+        ("libero_object", "0.41.2", 560),
+        ("libero_spatial", "0.41.2", 60),
+    }
+    standing = displacement(records)
+    assert standing is not None
+    assert standing.published.task_suite == "libero_object"
+    assert standing.published.tool_version == "0.41.2"
+    assert standing.published.attempts == 560
+    assert standing.published.tasks == TEN_TASKS
+    assert standing.challenger is None
+
+
+def test_a_task_suite_is_read_off_the_task_ids() -> None:
+    assert task_suite_of(("libero_object/0", "libero_object/7")) == "libero_object"
+    assert task_suite_of(("libero_10/2",)) == "libero_10"
+    assert task_suite_of(None) is None
+    assert task_suite_of(()) is None
+    # Bare ids carry no task suite; a list that mixes two is not one run's, and gets none either.
+    assert task_suite_of(("3", "4")) is None
+    assert task_suite_of(("libero_object/0", "libero_spatial/0")) is None
+    assert task_suite_of(("libero_object/0", "3")) is None
 
 
 def test_the_committed_ledger_has_a_challenger_that_cannot_yet_displace() -> None:

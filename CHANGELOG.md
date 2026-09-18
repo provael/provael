@@ -186,16 +186,21 @@ All notable changes to this project are documented here. The format is based on
   every release, so a canary that re-pinned each release accumulated toward nothing; and a bucket
   counts a single-task run and a ten-task run in the same unit, so a long enough run on one task
   would have replaced the ten-task headline. The rule is now `provael.watch.displacement`: bodies
-  are every real recorded run at one policy, suite and version (`Campaign`), and a body supersedes
-  the published one only by covering every task it covered with at least as many attempts, a tie
-  going to the newer version. Stricter, never looser. Bodies stay one version each on purpose:
+  are every real recorded run at one lineage and version (`Campaign`; a lineage is the policy,
+  the suite and, where the task ids carry one, the task suite — `smolvla` x `libero` x
+  `libero_object`), and a body supersedes the published one only by covering every task it
+  covered with at least as many attempts, a tie going to the newer version. Stricter, never
+  looser. The task suite is part of the key because the LIBERO adapter itself refuses to run two
+  of them as one job ("one run is one suite"): a Spatial or Goal null measured the same night is a
+  different measurement, not part of the Object campaign, and does not raise the bar for
+  re-measuring it. Bodies stay one version each on purpose:
   `combine.py` refuses to pool shards across tool versions, so a body pooled across releases would
   be a number no evidence manifest can be built over and no site can re-pin. `MeasurementRecord`
   and `watch/measurements.json` rows carry the run's `tasks`; `watch/publish-freshness.json`
-  gains `published` (the body behind `measuredWith`) and `challenger` (the newer body nearest to
-  superseding it, with `attemptsNeeded` and `tasksMissing`); `provael doctor` prints the same as a
-  `re-measurement` row. On the committed tree the challenger is the 0.41.2 canary body: 29 of 550
-  attempts, one task of ten. Existing fields and their meanings are unchanged, so the site's
+  gains `published` (the body behind `measuredWith`, with its `taskSuite`) and `challenger` (the
+  newer body nearest to superseding it, with `attemptsNeeded` and `tasksMissing`); `provael
+  doctor` prints the same as a `re-measurement` row. On the committed tree the challenger is the
+  0.41.2 canary body: 43 of 550 attempts, one task of ten. Existing fields and their meanings are unchanged, so the site's
   reader needs nothing.
 
 - **The scheduled GPU lane measures a declared campaign, shard by shard, instead of a probe.** Each

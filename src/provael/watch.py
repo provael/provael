@@ -278,19 +278,49 @@ def _semver(version: str) -> tuple[int, int, int]:
     return (nums[0], nums[1], nums[2])
 
 
-class Campaign(BaseModel):
-    """One body of measurement: every real recorded run at one policy, suite and tool version.
+def task_suite_of(tasks: Sequence[str] | None) -> str | None:
+    """The one ``<task suite>/`` prefix a run's tasks share — ``"libero_object"`` — or ``None``.
 
-    This is the unit the published-measurement rule reasons about, and it is a *version's* body
-    on purpose. :mod:`provael.combine` refuses to pool shards whose ``tool_version`` differs,
-    because a rate over two builds describes a run that never happened — so a body that could be
-    cited, re-pinned by www.provael.com, or turned into an evidence manifest is by construction
-    a body at one version. Accumulating across versions would produce a number nothing can stand
-    behind; accumulating at one version is a campaign, and that is what the scheduled lane builds.
+    LIBERO is four benchmarks behind one adapter, and the adapter refuses a task list that names
+    more than one of them (:func:`provael.suites.libero.suite_and_ids_from_tasks`: "one run is one
+    suite"). The task id carries which one, so a body of runs carries it too. ``None`` when the
+    tasks are unknown, carry no prefix (``stub``, ``reach``), or — against the adapter's own rule —
+    mix prefixes; a ``None`` lineage is compared only with other ``None`` lineages.
+    """
+    if not tasks:
+        return None
+    prefixes = {t.rsplit("/", 1)[0] for t in tasks if "/" in t}
+    if len(prefixes) != 1 or any("/" not in t for t in tasks):
+        return None
+    return prefixes.pop()
+
+
+class Campaign(BaseModel):
+    """One body of measurement: every real recorded run at one lineage and tool version.
+
+    A lineage is a policy, a suite and — where the task ids carry one — a task suite:
+    ``smolvla`` x ``libero`` x ``libero_object``. This is the unit the published-measurement rule
+    reasons about, and it is a *version's* body on purpose. :mod:`provael.combine` refuses to pool
+    shards whose ``tool_version`` differs, because a rate over two builds describes a run that
+    never happened — so a body that could be cited, re-pinned by www.provael.com, or turned into
+    an evidence manifest is by construction a body at one version. Accumulating across versions
+    would produce a number nothing can stand behind; accumulating at one version is a campaign,
+    and that is what the scheduled lane builds.
+
+    WHY THE TASK SUITE IS PART OF THE KEY. On 14 September 2026 SmolVLA was measured on LIBERO
+    Object, Spatial, Goal and 10 in one night, all at 0.41.2. Keyed by (policy, suite, version)
+    alone, those four benchmarks pooled into one 794-attempt body over 33 tasks at four horizons,
+    and every future re-measurement of the ten-task Object headline would have had to re-run all
+    33 to supersede it — a bar no plan could state a horizon for, and one the LIBERO adapter
+    itself refuses to run as one job. The adapter's rule ("one run is one suite") is the honest
+    unit: a Spatial null is not part of the Object campaign, and does not raise its bar.
     """
 
     policy: str
     suite: str
+    #: The ``<task suite>/`` prefix every task of the body shares (:func:`task_suite_of`), or
+    #: ``None`` when the suite's task ids carry none.
+    task_suite: str | None = None
     tool_version: str
     #: Summed over the body's runs. ``attempts`` is the report's own count of applicable episodes
     #: across every arm, controls included — the same figure every run publishes about itself.
@@ -303,14 +333,19 @@ class Campaign(BaseModel):
     #: The instant of the body's newest run — the record that represents it.
     measured_at: str
 
+    @property
+    def lineage(self) -> tuple[str, str, str | None]:
+        """What a body is a measurement *of*: policy, suite, task suite."""
+        return (self.policy, self.suite, self.task_suite)
+
     def covers(self, other: Campaign) -> bool:
         """Whether this body re-measures what ``other`` measured.
 
-        Same policy, same suite, and every task ``other`` covered. A body whose tasks are unknown
-        cannot be shown to cover anything, and a body nothing is recorded for is covered by
-        anything at the same policy and suite — there is nothing to protect.
+        Same lineage, and every task ``other`` covered. A body whose tasks are unknown cannot be
+        shown to cover anything, and a body nothing is recorded for is covered by anything at the
+        same lineage — there is nothing to protect.
         """
-        if (self.policy, self.suite) != (other.policy, other.suite):
+        if self.lineage != other.lineage:
             return False
         if not other.tasks:
             return True
@@ -347,9 +382,9 @@ class Displacement(BaseModel):
     """
 
     published: Campaign
-    #: The newer body at the published measurement's policy and suite that is nearest to
-    #: superseding it — covering bodies first, then the largest, then the newest. ``None`` when
-    #: nothing newer at that policy and suite has been measured.
+    #: The newer body at the published measurement's lineage that is nearest to superseding it —
+    #: covering bodies first, then the largest, then the newest. ``None`` when nothing newer at
+    #: that lineage has been measured.
     challenger: Campaign | None
     #: Attempts the challenger still needs before its size alone would displace the published
     #: body (a tie displaces, because the challenger is newer). ``None`` without a challenger.
@@ -360,23 +395,25 @@ class Displacement(BaseModel):
 
 
 def campaigns(records: Sequence[MeasurementRecord]) -> list[Campaign]:
-    """Real, recorded records grouped into bodies by (policy, suite, tool version), oldest first.
+    """Real, recorded records grouped into bodies by (lineage, tool version), oldest first.
 
     Fixture runs and reconstructed timestamps are excluded here, once, so no caller can build a
     body out of a stub run or date one from a typed midnight.
     """
-    groups: dict[tuple[str, str, str], list[MeasurementRecord]] = {}
+    groups: dict[tuple[str, str, str | None, str], list[MeasurementRecord]] = {}
     for r in records:
         if counts_as_measurement(r) and r.recorded:
-            groups.setdefault((r.policy, r.suite, r.tool_version), []).append(r)
+            key = (r.policy, r.suite, task_suite_of(r.tasks), r.tool_version)
+            groups.setdefault(key, []).append(r)
     bodies: list[Campaign] = []
-    for (policy, suite, version), runs in groups.items():
+    for (policy, suite, task_suite, version), runs in groups.items():
         known = [r.tasks for r in runs if r.tasks is not None]
         tasks = tuple(sorted({t for ts in known for t in ts})) if known else None
         bodies.append(
             Campaign(
                 policy=policy,
                 suite=suite,
+                task_suite=task_suite,
                 tool_version=version,
                 attempts=sum(r.attempts for r in runs),
                 successes=sum(r.successes for r in runs),
@@ -385,7 +422,7 @@ def campaigns(records: Sequence[MeasurementRecord]) -> list[Campaign]:
                 measured_at=max(r.measured_at for r in runs),
             )
         )
-    bodies.sort(key=lambda b: (_semver(b.tool_version), b.policy, b.suite))
+    bodies.sort(key=lambda b: (_semver(b.tool_version), b.policy, b.suite, b.task_suite or ""))
     return bodies
 
 
@@ -398,9 +435,9 @@ def displacement(
 
     THE RULE. Among real recorded bodies (:func:`campaigns`), the published measurement is the
     largest body that no other body supersedes (:meth:`Campaign.supersedes`): to supersede is to
-    re-measure the same policy and suite over every task the body covered, with at least as many
-    attempts. Where more than one body is unsuperseded — two measurements of different things —
-    the broadest wins, then the largest, then the newest.
+    re-measure the same lineage (policy, suite, task suite) over every task the body covered,
+    with at least as many attempts. Where more than one body is unsuperseded — two measurements
+    of different things — the broadest wins, then the largest, then the newest.
 
     WHAT CHANGED, AND IN WHICH DIRECTION. The rule used to sum attempts per exact version and take
     the largest bucket. That was right about probes and wrong in two ways that only show up once a
@@ -429,7 +466,7 @@ def displacement(
     newer = [
         b
         for b in bodies
-        if (b.policy, b.suite) == (published.policy, published.suite)
+        if b.lineage == published.lineage
         and _semver(b.tool_version) > _semver(published.tool_version)
     ]
     challenger = (

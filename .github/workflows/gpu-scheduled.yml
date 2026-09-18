@@ -8,8 +8,8 @@
 # WHAT ONE RUN IS, SINCE 18 SEPTEMBER 2026: THE NEXT SHARDS OF A DECLARED CAMPAIGN, NOT A PROBE.
 # Each run used to measure one task, eight arms, two seeds — sixteen episodes that kept
 # watch/freshness.json fed and could not move watch/publish-freshness.json at all. The published
-# measurement is the largest body of real runs at one policy, suite and version (550 attempts over
-# ten tasks at 0.32.0); the probe added fourteen attempts on ONE task per run, under a version
+# measurement is the largest body of real runs at one lineage (policy, suite, task suite) and one
+# version (550 attempts over ten libero_object tasks at 0.32.0); the probe added fourteen attempts on ONE task per run, under a version
 # bucket that reset every time a release re-pinned it. It measured on the current release twice a
 # week and could not have displaced the published campaign this decade.
 #
