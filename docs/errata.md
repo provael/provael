@@ -22,7 +22,7 @@ attacks) three days before this document minted E-2026-05 for the ISO 10218 corr
 side saw the other, and the previous version of this note wrongly said the two files agreed
 entry-for-entry. The website keeps the ID it published under; the same correction is recorded
 below as **E-2026-09**, so that every correction has an entry in the maintained source. The next
-free ID is **E-2026-13**.
+free ID is **E-2026-14**.
 
 ---
 
@@ -724,3 +724,35 @@ clause too narrowly to catch this is part of the error.
   `scripts/gen_results_readme.py`, so the number and its interpretation travel together.
 - The website's `errata.ts` mirrors this entry under the same ID in the same sweep; the pitch deck
   and the Manifund proposal are regenerated from the corrected sentences.
+
+## E-2026-13 — www.provael.com: the measurement meta block contradicted itself on every page, and two surfaces paired an inclusive attack count with an exclusive family count
+
+**Status:** raised and corrected on the website on 18 September 2026 (provael/website PR "Make the
+machine-readable surfaces say what the pages say"); recorded here so the shared ID space stays
+entry-for-entry · no measured number moves · no signed artifact is affected
+**Date raised:** 18 September 2026
+**Affects:** website surfaces only — the `provael:measurement-*` meta block in every page's
+`<head>`, and the registry sentence on the homepage's Markdown twin and in `/llms.txt`. Nothing in
+this repository's artifacts.
+
+### What was wrong
+
+Every page served `measurement-age-days="0"` beside `measurement-stale="true"` and a status string
+reading "0 days old … past this project's own 7-day window and 2-release window". Zero days is not
+past a seven-day window; only the release window had fired. The visible banner had been corrected
+to say exactly that on 6 September 2026; the meta was built from a second copy of the sentence and
+kept the old wording for twelve days under the corrected banner — a regression of a published
+correction. Separately, the homepage twin and `/llms.txt` put the total attack count of the pinned
+release inside the parenthesis after the adversarial family count, the mix `watch/registry.json`'s
+own note warns "is how a coverage claim inflates by one family".
+
+### What is correct
+
+One sentence, built once, rendered in the banner and written into the meta, naming only the window
+that fired; no day count in the head (the measured-at date is the fact; a consumer subtracts). The
+counts are stated as matched pairs of one convention. The website's build now fails if the meta and
+the banner differ, if the stale flag disagrees with the facts the page publishes, or if an attack
+count is stated without the family count of its own convention. The same sweep corrected three
+more machine-readable surfaces without an erratum of their own: `/llms.txt`'s adoption figures now
+derive from the file `/adopters/` renders, `/404` answers 404, and `/pricing`'s JSON-LD no longer
+publishes the design-partner rate as the assessment's base price. The website changelog records them.
