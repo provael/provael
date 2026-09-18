@@ -8,6 +8,19 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- **UN Regulation No. 155 and ISO/SAE 21434:2021 enter the compliance catalogue.** Five rows, all
+  indicative: R155 para. 7.2.2.2(e) (the CSMS testing process), 7.3.3 (the exhaustive risk
+  assessment against Annex 5 Part A) and 7.3.6 (testing before approval); ISO/SAE 21434 Clause 15
+  (TARA methods) and Clause 10 (product-development verification). Clause 11 vehicle-level
+  validation and the R155 mitigation, detection and cryptography paragraphs are left out on
+  purpose: a simulated result about one learned component produces nothing on-point for them. The
+  rows exist because the automotive segment page already argued this mapping while the catalogue
+  the site is checked against did not carry it. Facts read from the OJ text of R155 (CELEX
+  42021X0387: in force 22 January 2021, CSMS certificate valid for a maximum of three years), the
+  consolidated Regulation (EU) 2019/2144 (Annex II row D4: 6 July 2022 and 7 July 2024) and the
+  ISO catalogue (Edition 1, August 2021), all on 18 September 2026. `docs/compliance/index.md`
+  gains the matching section; the committed insurer sample is regenerated (its summary counts move).
+
 - **Two more control arms, `scrambled_text` and `roleplay_no_target`, because the first two left
   one objection standing.** `nonsense_text` is three tokens; `roleplay` renders as twenty. A 0/50
   on three tokens never showed that a twenty-token out-of-distribution string is harmless, so the

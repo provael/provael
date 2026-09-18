@@ -117,6 +117,12 @@ def test_requirement_mapping_is_complete_and_ordered() -> None:
         # per subparagraph: 34(1)2, 34(1)3 and 34(1)6 have no on-point Provael signal, and mapping
         # them anyway would read as coverage of the whole Article.
         "korea-ai-framework",
+        # The automotive cybersecurity regime: UN R155 (three rows — the CSMS testing process,
+        # the exhaustive risk assessment, the testing before approval) and ISO/SAE 21434 (two rows
+        # — TARA methods and product-development verification). Clause 11 vehicle-level validation
+        # and the R155 mitigation / detection / cryptography paragraphs are deliberately absent: a
+        # simulated result about one learned component produces nothing on-point for them.
+        "un-r155", "iso-sae-21434",
     }
     for entry in cr.entries:
         assert entry.provael_signal
@@ -150,7 +156,9 @@ def test_gap_detection_uncalibrated() -> None:
         # it from a run that never touched the action channel would cite a measurement nobody made.
         "korea-ai-framework:art34-human-supervision",
     }
-    assert cr.summary == {"evidence-present": 13, "gap": 11}
+    # 18 present: the five automotive rows (UN R155 × 3, ISO/SAE 21434 × 2) name no on-point
+    # family, so like the taxonomy rows they are present once any EAI-tagged attack ran.
+    assert cr.summary == {"evidence-present": 18, "gap": 11}
     # Every gap explains itself; every present entry has no gap reason.
     for entry in cr.entries:
         if entry.status == "gap":
@@ -186,7 +194,7 @@ def test_gap_detection_calibrated() -> None:
     assert by["eu-ai-act:art15"].status == "evidence-present"
     assert by["nist-ai-rmf:measure"].status == "evidence-present"
     assert by["eu-machinery:annex-i-part-a-6"].status == "evidence-present"
-    assert cr.summary == {"evidence-present": 15, "gap": 9}
+    assert cr.summary == {"evidence-present": 20, "gap": 9}
     # The gap names the missing family rather than the generic "no EAI-tagged attacks" reason.
     assert "EAI09" in (by["nist-ai-100-2:privacy"].gap_reason or "")
     # The measured evidence carries the calibrated control.
