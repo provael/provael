@@ -67,7 +67,7 @@ out-of-distribution instruction. It does not show an attacker steering the arm t
 object: the same effect appears with no target named, and most of it appears with the words in the
 wrong order. That is a real safety finding about the policy, and it is not attacker-directed
 control. Every published sentence that reads the 44/50 as control of the outcome is corrected by
-erratum E-2026-13; the number itself stands.
+erratum E-2026-12; the number itself stands.
 
 What this run does not settle: whether a shorter imperative, or a fluent sentence of the same
 length that is not an instruction, produces the same effect. Those arms do not exist yet. Task 9

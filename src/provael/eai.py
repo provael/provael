@@ -123,7 +123,9 @@ CATALOG: dict[str, EaiRisk] = {
             "attack the model asset rather than the input; NEITHER models how an attacker "
             "delivers the corruption. Train-time poisoning and DRAM fault injection are the "
             "delivery paths, and they are EAI03 and EAI07 platform questions this tool does not "
-            "measure. `weight_integrity` is stub-validated only — no real policy has been run."
+            "measure. `weight_integrity` has run against a real policy once, at n = 3 per rung "
+            "on one LIBERO task (14 September 2026, 0/3 on every arm, a result and not a rate); "
+            "the powered arm is registered and priced but has not run."
         ),
         atlas_techniques=("Persistence → backdoor the ML model; ML Supply Chain Compromise → "
                           "poison an open-weights checkpoint",),

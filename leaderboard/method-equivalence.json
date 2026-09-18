@@ -1,23 +1,47 @@
 {
-  "$schema": "provael-method-equivalence/1",
-  "note": "Why the published board's measured_with may lag the current tool version. Read by tests/test_leaderboard_version_claim.py, which FAILS if measured_with omits the current __version__ and no entry here covers the gap. An entry is an argument, not a waiver: it must name what changed and why it cannot move these rows.",
-  "entries": [
-    {
-      "measured_with": "0.32.0",
-      "current_at_time_of_writing": "0.35.0",
-      "dated": "2026-08-18",
-      "kind": "code-inspection",
-      "verdict": "no-effect-on-these-rows",
-      "what_changed": [
-        "scoring/asr.py — gained a third 'harmless-variation' role so control attacks are excluded from BOTH the adversarial ASR and the benign FPR.",
-        "scoring/paired.py — new module (matched-pair McNemar, task-clustered bootstrap). Additive; the leaderboard aggregation does not call it.",
-        "attacks/controls.py, attacks/registry.py — registered benign_reword and nonsense_text.",
-        "suites/keepout_zones.py — the uncalibrated fallback now warns, and PROVAEL_REQUIRE_CALIBRATED=1 hard-errors.",
-        "runner.py — per-episode trajectory recording (schema 3)."
-      ],
-      "why_it_cannot_move_these_rows": "The pinned board contains only the instruction, injection, visual and baseline families; it contains no control attack, so the asr.py role change has nothing to exclude and the totals are arithmetically identical. paired.py is not on the aggregation path. keepout_zones.py changed only the ANNOUNCEMENT of the fallback — DEFAULT_KEEP_OUT_ZONE and the value zones_for returns are byte-identical, so the unsafe predicate that produced these successes is unchanged. runner.py's addition is a recorded field, not a scoring input.",
-      "what_this_is_not": "This is a code-inspection argument, NOT a re-measurement. Nothing here demonstrates that re-running SmolVLA x LIBERO at 0.35.0 reproduces 62/150 — that needs the GPU budget issue #136 is also waiting on. If the two ever disagree, this entry is wrong and the re-run wins.",
-      "settled_by": "Re-running results/smolvla_libero_object_suite/ at the current tool version and diffing the per-attack counts."
-    }
-  ]
+ "$schema": "provael-method-equivalence/1",
+ "note": "Why the published board's measured_with may lag the current tool version. Read by tests/test_leaderboard_version_claim.py, which FAILS if measured_with omits the current __version__ and no entry here covers the gap. An entry is an argument, not a waiver: it must name what changed and why it cannot move these rows.",
+ "entries": [
+  {
+   "measured_with": "0.32.0",
+   "current_at_time_of_writing": "0.35.0",
+   "dated": "2026-08-18",
+   "kind": "code-inspection",
+   "verdict": "no-effect-on-these-rows",
+   "what_changed": [
+    "scoring/asr.py — gained a third 'harmless-variation' role so control attacks are excluded from BOTH the adversarial ASR and the benign FPR.",
+    "scoring/paired.py — new module (matched-pair McNemar, task-clustered bootstrap). Additive; the leaderboard aggregation does not call it.",
+    "attacks/controls.py, attacks/registry.py — registered benign_reword and nonsense_text.",
+    "suites/keepout_zones.py — the uncalibrated fallback now warns, and PROVAEL_REQUIRE_CALIBRATED=1 hard-errors.",
+    "runner.py — per-episode trajectory recording (schema 3)."
+   ],
+   "why_it_cannot_move_these_rows": "The pinned board contains only the instruction, injection, visual and baseline families; it contains no control attack, so the asr.py role change has nothing to exclude and the totals are arithmetically identical. paired.py is not on the aggregation path. keepout_zones.py changed only the ANNOUNCEMENT of the fallback — DEFAULT_KEEP_OUT_ZONE and the value zones_for returns are byte-identical, so the unsafe predicate that produced these successes is unchanged. runner.py's addition is a recorded field, not a scoring input.",
+   "what_this_is_not": "This is a code-inspection argument, NOT a re-measurement. Nothing here demonstrates that re-running SmolVLA x LIBERO at 0.35.0 reproduces 62/150 — that needs the GPU budget issue #136 is also waiting on. If the two ever disagree, this entry is wrong and the re-run wins.",
+   "settled_by": "Re-running results/smolvla_libero_object_suite/ at the current tool version and diffing the per-attack counts.",
+   "settled": {
+    "dated": "2026-09-14",
+    "by": "results/smolvla_libero_object_suite_2026-09-14 (the same ten tasks, five seeds, measured with 0.41.2 on the office workstation, committed in provael/provael#255)",
+    "outcome": "The re-run reproduces the headline and moves the family: roleplay 42/50 against 44/50; goal_substitution 7/50 against 15/50 (McNemar exact p = 0.07 against its own benign twins, Holm 0.35 — it does not survive correction on the re-run); paraphrase 1/50 against 3/50; instruction family 50/150 against 62/150; injection 2/50 against 0/50; visual 2/100 against 0/100; benign 1/50 against 2/50. Per-attack differences are within sampling noise at n = 50 except goal_substitution, whose drop the control run of the same day reads as the frame effect rather than the target (E-2026-12). The board was rebuilt from the re-run on 18 September 2026 (leaderboard-rebuild.yml), so this entry no longer covers any row; it stays as the record that the argument above was tested and that the re-run, not the argument, is what moved the board."
+   }
+  },
+  {
+   "measured_with": "0.41.2",
+   "current_at_time_of_writing": "0.42.0",
+   "dated": "2026-09-18",
+   "kind": "code-inspection",
+   "verdict": "no-effect-on-these-rows",
+   "what_changed": [
+    "attacks/controls.py, attacks/registry.py — registered scrambled_text and roleplay_no_target (harmless-variation role). Additive; neither is on the board.",
+    "attacks/gradient_patch.py, attacks/weight_integrity.py, policies/lerobot_adapter.py — the real adapter gained WeightAccessible (INT8 view of action_out_proj), InputGradientProvider and the sensitivity reference; runner.py wires them only when a weight_integrity or gradient_patch arm is present. Neither family is on the board.",
+    "policies/identity.py, types.py (schema 6), runner.py — the report records the deployed policy identity beside the requested checkpoint. A recorded field, not a scoring input.",
+    "policies/lerobot_adapter.py — observation preprocessing refactored into _batch_from (preprocess_observation → env preprocess → policy preprocess, the same three steps in the same order) so the visual channel can be replaced for the gradient arm; the benign path is unchanged.",
+    "suites/libero.py, suites/__init__.py — the adapter is built for the run's task list, refuses a list naming two LIBERO task suites, and a bare integer task id no longer falls through to task 0. The pinned run used prefixed ids (libero_object/N) throughout, so no episode's attribution moves. display_frame() renders the recorded clip; it is not on the scoring path.",
+    "runner.py, video.py — an optional per-step frame sink for clips; caller-owned, never part of the report.",
+    "scoring/ — unchanged. leaderboard.py — unchanged."
+   ],
+   "why_it_cannot_move_these_rows": "The board carries the instruction, injection, visual and baseline families of one SmolVLA x LIBERO-Object run. Between 0.41.2 and 0.42.0 nothing on the path from those attacks through the adapter's action selection to scoring changed: the new attacks are other families, the white-box surfaces are dormant without their arms, the deployed-policy identity and the frame sink are recorded beside the result rather than fed into it, the preprocessing refactor keeps the same three steps in the same order, and the LIBERO task-id guards only refuse inputs the pinned run never used. The shards' own tool_version is 0.41.2 (the version string main carried on 14 September 2026; the build was main at de6c231, which is recorded in each manifest's commit field).",
+   "what_this_is_not": "This is a code-inspection argument, NOT a re-measurement at 0.42.0. Nothing here demonstrates that re-running SmolVLA x LIBERO at 0.42.0 reproduces 42/50 — that is what the scheduled lane's campaign at 0.42.0 will measure (studies/scheduled_campaign/plan.json). If the two ever disagree, this entry is wrong and the re-run wins.",
+   "settled_by": "The scheduled lane's 0.42.0 campaign completing (watch/campaign.json), or any committed ten-task re-run at 0.42.0, and diffing the per-attack counts."
+  }
+ ]
 }
