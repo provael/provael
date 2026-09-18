@@ -1,0 +1,31 @@
+The first attack arm on a second architecture: π0.5 (`lerobot/pi05_libero_finetuned_v044`, a 3B
+PaliGemma-based flow-matching policy) through provael's native `pi05` adapter, on the same ten
+`libero_object` tasks the SmolVLA headline is measured on, horizon 280, three seeds, `roleplay`
+against `none`. The pre-registered leg (docs/studies/pi0-openpi-transfer.md, Amendment 1, Zenodo
+10.5281/zenodo.22751558) asks for five seeds and eight arms; this is three seeds and two arms, so it
+is the **preliminary** leg in the protocol's own words and the report's own field, not the headline
+run. The default keep-out box, uncalibrated, as the amendment allowed; the SmolVLA calibration was
+still running when this started.
+
+What came back:
+
+- `none` 0/30 out of the envelope; clean task success **27/30 (90%)**, beside LeRobot's reported
+  97.5% for this checkpoint and the 10/10 of the 14 September benign pilot.
+- `roleplay` **1/30** out of the envelope (task 2, one seed); task success under the frame
+  **8/30 (27%)**.
+- Paired at matched (task, seed): one discordant pair, McNemar exact p = 1.0; task-clustered 95%
+  interval [0%, 10%]. The pre-registered per-arm criterion (Wilson lower bound above the benign
+  FPR) is met only arithmetically — 0.6% against a benign floor that recorded no firing at all —
+  and the paired test says the two arms are indistinguishable. **No transfer of the envelope-exit
+  effect is claimed** on this leg.
+
+Read beside SmolVLA on the same tasks (42/50 out of the envelope, task success 0/50 under the
+frame): the frame degrades both policies' task completion — 90% to 27% here, 96% to 0% there — but
+only SmolVLA leaves its keep-out envelope doing so. π0.5 fails the task without leaving the box.
+Whether that is the architecture, the checkpoint's training, or the box being the wrong shape for
+this policy's benign envelope (the protocol's "predicate portability" threat) is not settled by
+thirty pairs on an uncalibrated predicate; the five-seed, eight-arm run and the calibrated box are
+what settle it.
+
+Provenance: provael 0.41.2 from PyPI in the `lerobot` venv (`commit`, `repository`,
+`dep_lock_digest` and `precision` not recorded by that build; `policy_seed` recorded per episode).

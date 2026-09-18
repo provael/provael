@@ -513,11 +513,16 @@ def published_measurement(
     if standing is None:
         return None
     body = standing.published
+    # The full lineage, not (policy, suite, version): the LIBERO-10 shards that finished on the
+    # morning of 18 September 2026 were newer than the Object body's newest run and shared its
+    # policy, suite and version, and would have been returned as the record representing a body
+    # they are not part of.
     return max(
         (
             r
             for r in real
-            if (r.policy, r.suite, r.tool_version) == (body.policy, body.suite, body.tool_version)
+            if (r.policy, r.suite, task_suite_of(r.tasks), r.tool_version)
+            == (body.policy, body.suite, body.task_suite, body.tool_version)
         ),
         key=lambda r: r.measured_at,
     )

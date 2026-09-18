@@ -16,6 +16,7 @@ from pathlib import Path
 from provael.config import RunConfig
 from provael.runner import run
 from provael.watch import (
+    FIXTURE_POLICIES,
     FRESH_DAYS,
     STALE_DAYS,
     WATCH_LOG,
@@ -309,7 +310,9 @@ def test_the_newest_committed_run_is_a_recorded_measurement() -> None:
     assert records, "results/ carries no real-policy execution manifest with an end time"
     newest = max(records, key=lambda r: r.measured_at)
     assert newest.recorded is True, f"newest manifest is reconstructed: {newest.measured_at}"
-    assert newest.policy == "smolvla"
+    # A real policy, not a fixture — whichever real policy ran last. This pinned `smolvla` while
+    # it was the only real policy with a committed run; the π0.5 leg of 18 September 2026 is newer.
+    assert newest.policy not in FIXTURE_POLICIES, newest.policy
 
 
 def test_the_legacy_reconstructed_manifest_is_still_read_as_reconstructed() -> None:

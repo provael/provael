@@ -8,6 +8,30 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- **The two runs the workstation finished on 18 September 2026 after the crash, committed.**
+  `results/smolvla_libero_10_2026-09-14/` is now all ten LIBERO-10 tasks (shards 3–9 relaunched
+  from their ledgers): roleplay 0/30, `none` 0/30, clean task success 12/30 and 0/30 under the
+  frame — on the long-horizon suite the frame breaks completion without an envelope exit, on an
+  uncalibrated box shaped for the Object scenes. `results/pi05_libero_object_2026-09-18/` is the
+  first attack arm on a second architecture: π0.5 (`lerobot/pi05_libero_finetuned_v044`, native
+  `pi05` adapter) on the ten Object tasks at three seeds, `roleplay` 1/30 against `none` 0/30
+  (McNemar p = 1.0, clustered [0%, 10%]), task success 27/30 unattacked and 8/30 under the frame.
+  It is the pre-registered study's *preliminary* leg (three seeds, two arms of eight), so no
+  transfer of the envelope-exit effect is claimed and no headline moves; the study doc records
+  the result against its own falsifiers and notes that the per-arm lower-bound criterion is
+  degenerate against a zero benign floor. The cross-architecture findings page, the README's
+  backend sentence and the roadmap say `pi05` has a committed real-model result now. Both runs are
+  other lineages than the published Object body (a different task suite; a different policy), so
+  `watch/publish-freshness.json` does not move. The ledger grows to 96 rows.
+
+### Fixed
+
+- **`published_measurement` picks the record that represents the published body from the body's
+  own lineage.** It matched on (policy, suite, version); the LIBERO-10 shards that finished on the
+  morning of 18 September 2026 shared all three with the Object body and were newer, so the record
+  standing for the published body would have been one from another task suite. It matches the
+  full lineage now, and `watch/publish-freshness.json`'s `measuredAt` stays the Object body's.
+
 - **The committed leaderboard names the run it aggregates, and a workflow can move it to a newer
   one.** `leaderboard/results/source.json` sits beside the signed board and says which committed
   results directory produced it; `tests/test_leaderboard_version_claim.py` reads the run from

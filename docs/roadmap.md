@@ -53,7 +53,8 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
   (HF transformers); `openpi` (websocket client to a π0 policy *server*). Bring-your-own via the
   `PolicyAdapter` ABC. **`groot`, `openvla` and `openpi` are registered scaffolding** — no
   checkpoint has been loaded through any of them here, and `provael list-policies` says so per
-  backend. Only `smolvla` has produced a committed real-model result.
+  backend. `smolvla` (the ten-task suite) and `pi05` (a three-seed preliminary leg on the same
+  tasks, 18 September 2026) have committed real-model results.
 - **Suites:** `stub` (scalar, CPU), `reach` (spatial, CPU), `humanoid` (whole-body, CPU),
   `libero` + `metaworld` (real simulators, gated); `vla_arena` (VLA-Arena's declared per-step
   cost predicate as `is_unsafe()`, LIBERO-shaped policy path — **registered scaffolding** until its

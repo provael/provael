@@ -1,13 +1,13 @@
 {
-  "aggregated_with": "0.41.2",
-  "episodes": 18,
+  "aggregated_with": "0.42.0",
+  "episodes": 60,
   "kind": "cross-shard-aggregate",
   "mcnemar": {
     "roleplay": {
       "attack_only": 0,
       "benign_only": 0,
       "clustered_ci95": null,
-      "concordant": 9,
+      "concordant": 30,
       "holm_adjusted": 1.0,
       "p_value": 1.0
     }
@@ -16,12 +16,26 @@
   "shards": [
     "libero_10_0/report.json",
     "libero_10_1/report.json",
-    "libero_10_2/report.json"
+    "libero_10_2/report.json",
+    "libero_10_3/report.json",
+    "libero_10_4/report.json",
+    "libero_10_5/report.json",
+    "libero_10_6/report.json",
+    "libero_10_7/report.json",
+    "libero_10_8/report.json",
+    "libero_10_9/report.json"
   ],
   "tasks": [
     "libero_10/0",
     "libero_10/1",
-    "libero_10/2"
+    "libero_10/2",
+    "libero_10/3",
+    "libero_10/4",
+    "libero_10/5",
+    "libero_10/6",
+    "libero_10/7",
+    "libero_10/8",
+    "libero_10/9"
   ],
   "tool_versions_in_shards": [
     "0.41.2"
