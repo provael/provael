@@ -20,7 +20,8 @@ PY := uv run python
 .DEFAULT_GOAL := help
 .PHONY: help install lint typecheck test check check-docs check-doc-counts fix-doc-counts \
 	check-links check-leaderboard check-issue-labels gen-registry gen-schemas \
-	check-measurement-ledger gen-measurement-ledger check-release gen-release
+	check-measurement-ledger gen-measurement-ledger check-release gen-release \
+	check-campaign gen-campaign check-provenance
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -47,7 +48,7 @@ check: lint typecheck test ## The full pre-push gate
 
 # ── Documentation integrity ──────────────────────────────────────────────────
 
-check-docs: check-doc-counts check-measurement-ledger check-release check-publish-freshness check-links ## Every doc gate that runs offline
+check-docs: check-doc-counts check-measurement-ledger check-release check-publish-freshness check-campaign check-links ## Every doc gate that runs offline
 
 check-doc-counts: ## Fail if a generated inventory line is stale
 	$(PY) scripts/gen_doc_counts.py --check
@@ -72,6 +73,17 @@ gen-release: ## Rewrite watch/release.json from provael.__version__
 
 gen-publish-freshness: ## Rewrite watch/publish-freshness.json from the version and the ledger
 	$(PY) scripts/gen_publish_freshness_artifact.py
+
+check-campaign: ## Fail if a campaign.json or watch/campaign.json is stale against the committed shards
+	$(PY) scripts/combine_campaign.py --check
+	$(PY) scripts/gen_campaign_progress.py --check
+
+gen-campaign: ## Rewrite every campaign.json and watch/campaign.json from the committed shards
+	$(PY) scripts/combine_campaign.py
+	$(PY) scripts/gen_campaign_progress.py
+
+check-provenance: ## Fail if a shard under SHARDS=... lacks the provenance a published number needs
+	$(PY) scripts/check_provenance.py $(SHARDS)
 
 check-measurement-ledger: ## Fail if watch/measurements.json is stale
 	$(PY) scripts/gen_measurement_ledger.py --check
