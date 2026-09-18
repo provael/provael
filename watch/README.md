@@ -15,7 +15,8 @@ simply not re-typed a number.
 | `release.json` | which version is current, its tag, its PyPI string, and the project's release-drift window | `scripts/gen_release_artifact.py` |
 | `measurements.json` | one row per committed measurement: when, on what version, with what result, and whether it counts | `scripts/gen_measurement_ledger.py` |
 | `freshness.json` | when **anything** was last measured, as a shields.io badge | `provael watch` |
-| `publish-freshness.json` | how far the **published** measurement has drifted from the current release | `scripts/gen_publish_freshness_artifact.py` |
+| `publish-freshness.json` | how far the **published** measurement has drifted from the current release, and which newer body is nearest to replacing it | `scripts/gen_publish_freshness_artifact.py` |
+| `campaign.json` | how far the scheduled re-measurement campaign has got: its plan, its pinned release, the attempts it has to exceed, what is banked, and the completion its cadence projects | `scripts/gen_campaign_progress.py` |
 | `coverage.json` | the test-coverage badge | `.github/workflows/coverage-badge.yml` |
 
 ## The two freshness files answer different questions
@@ -61,6 +62,30 @@ every release. `provael doctor` prints the same as a `re-measurement` row.
 `measurements.json` rows carry `tasks` for the same reason: a fourteen-attempt canary and a
 ten-shard campaign are not the same kind of row, and a reader should not have to open either report
 to tell them apart.
+
+## The campaign, and what `campaign.json` says about it
+
+The scheduled lane no longer probes; it measures the next shards of a declared campaign
+(`studies/scheduled_campaign/plan.json`: the published body's checkpoint, suite, ten tasks and
+horizon, every arm it ran plus the harmless-variation controls, six seeds) at one held release, and
+`watch/campaign.json` publishes where that stands:
+
+- `plan`: the shape and size of the grid, and `shardsTotal`.
+- `toolVersion`: the release the campaign is pinned at (read from the lane's own `PROVAEL_PIN`).
+- `target.attemptsToDisplace` and `target.publishedWith`: the body it has to exceed, from the same
+  rule `publish-freshness.json` applies.
+- `banked`: attempts and shards committed so far, and the newest shard's `ended_at`.
+- `cadence`: the workflow's own cron, as runs per week, and shards per run.
+- `projected.completion`: the newest shard's date plus the runs still needed at that cadence. Null
+  until the first shard lands; before that the only anchor would be the clock, and no file here
+  carries a wall-clock value.
+
+This is the field a page can render in place of a flat STALE banner: a re-measurement in progress,
+with a denominator. It is not a rate, and it does not become one; the rate lives in the shards and in
+the campaign's own combined view, `results/gpu-scheduled/campaign-<version>/campaign.json`, which
+is written continuously and says `complete: false` in its own words until every planned shard is
+present. That combined view is never `report.json` and never a ledger row: a combined view has no
+single execution behind it, so the rows stay the shards, exactly as the 0.32.0 campaign is recorded.
 
 ## Two properties every file here holds
 
