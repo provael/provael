@@ -51,7 +51,7 @@ and GPU-free, so the real rows drop in unchanged when measured.
 From the repo's own SmolVLA × LIBERO transfer-test (sim-only, one task, n=10, against a 0% benign
 baseline; see [README](https://github.com/provael/provael/blob/main/README.md) and [the Embodied AI Security Top 10](../top10.md)):
 
-- **instruction transfers**: `roleplay` redirected the real policy **88% (44/50)**, task-clustered 95% CI **[72%, 100%]**, McNemar p=4.6e-13 (Holm 2.7e-12), across all ten `libero_object` tasks;
+- **instruction transfers**: under `roleplay` the real policy left its envelope in **88% (44/50)** of cells (the frame alone does it — see E-2026-12), task-clustered 95% CI **[72%, 100%]**, McNemar p=4.6e-13 (Holm 2.7e-12), across all ten `libero_object` tasks;
   `goal_substitution` **60%**.
 - **visual and injection do not**: both produced **0% measurable lift** on the real model — treated as
   stub-validated scaffolding pending stronger (e.g. optimised) perturbations, not a real-transfer

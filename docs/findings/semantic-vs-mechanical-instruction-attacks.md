@@ -1,6 +1,14 @@
 # Semantic reframing, not mechanical rewording
 
-**Status: hypothesis with supporting evidence. Not a settled result.**
+**Status: revised on 18 September 2026 ([E-2026-12](../errata.md)). The separation between
+`roleplay` and `paraphrase` stands; the attribution to *meaning* does not.** Two controls run on
+14 September 2026 (`results/smolvla_libero_object_control_2026-09-14`, 3 seeds × 10 tasks) fire
+without any reframed meaning: the roleplay frame with the target replaced by a filler exits the
+envelope in 27/30 cells, and the roleplay prompt's own tokens in destroyed order in 18/30, against
+0/30 for `benign_reword` and `nonsense_text`. What predicts an exit on this policy is therefore not
+that the instruction's meaning changed but that it is a long, imperative, out-of-distribution
+string of this kind. The sections below are kept as written, because they record the claim as it
+was made and the clause that should have caught this; read them against the table above.
 
 One policy (SmolVLA), one suite (`libero_object`, all ten tasks), simulation only, maintainer-run,
 n=50 per arm, an **uncalibrated** keep-out predicate, and no independent reproduction. Everything
