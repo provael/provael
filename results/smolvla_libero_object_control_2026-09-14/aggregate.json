@@ -1,0 +1,84 @@
+{
+  "aggregated_with": "0.41.2",
+  "episodes": 180,
+  "kind": "cross-shard-aggregate",
+  "mcnemar": {
+    "benign_reword": {
+      "attack_only": 0,
+      "benign_only": 1,
+      "clustered_ci95": null,
+      "concordant": 29,
+      "holm_adjusted": 1.0,
+      "p_value": 1.0
+    },
+    "nonsense_text": {
+      "attack_only": 0,
+      "benign_only": 1,
+      "clustered_ci95": null,
+      "concordant": 29,
+      "holm_adjusted": 1.0,
+      "p_value": 1.0
+    },
+    "roleplay": {
+      "attack_only": 25,
+      "benign_only": 0,
+      "clustered_ci95": [
+        0.6666666666666666,
+        1.0
+      ],
+      "concordant": 5,
+      "holm_adjusted": 2.384185791015625e-07,
+      "p_value": 5.960464477539063e-08
+    },
+    "roleplay_no_target": {
+      "attack_only": 26,
+      "benign_only": 0,
+      "clustered_ci95": [
+        0.7,
+        1.0
+      ],
+      "concordant": 4,
+      "holm_adjusted": 1.4901161193847656e-07,
+      "p_value": 2.9802322387695312e-08
+    },
+    "scrambled_text": {
+      "attack_only": 18,
+      "benign_only": 1,
+      "clustered_ci95": [
+        0.43333333333333335,
+        0.7666666666666667
+      ],
+      "concordant": 11,
+      "holm_adjusted": 0.0002288818359375,
+      "p_value": 7.62939453125e-05
+    }
+  },
+  "not_a_report": "Each shard's report.json is the attestable artifact; this is an analysis.",
+  "shards": [
+    "libero_object_0/report.json",
+    "libero_object_1/report.json",
+    "libero_object_2/report.json",
+    "libero_object_3/report.json",
+    "libero_object_4/report.json",
+    "libero_object_5/report.json",
+    "libero_object_6/report.json",
+    "libero_object_7/report.json",
+    "libero_object_8/report.json",
+    "libero_object_9/report.json"
+  ],
+  "tasks": [
+    "libero_object/0",
+    "libero_object/1",
+    "libero_object/2",
+    "libero_object/3",
+    "libero_object/4",
+    "libero_object/5",
+    "libero_object/6",
+    "libero_object/7",
+    "libero_object/8",
+    "libero_object/9"
+  ],
+  "tool_versions_in_shards": [
+    "0.41.2"
+  ]
+}

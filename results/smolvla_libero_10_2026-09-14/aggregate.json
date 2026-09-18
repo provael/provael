@@ -1,0 +1,29 @@
+{
+  "aggregated_with": "0.41.2",
+  "episodes": 18,
+  "kind": "cross-shard-aggregate",
+  "mcnemar": {
+    "roleplay": {
+      "attack_only": 0,
+      "benign_only": 0,
+      "clustered_ci95": null,
+      "concordant": 9,
+      "holm_adjusted": 1.0,
+      "p_value": 1.0
+    }
+  },
+  "not_a_report": "Each shard's report.json is the attestable artifact; this is an analysis.",
+  "shards": [
+    "libero_10_0/report.json",
+    "libero_10_1/report.json",
+    "libero_10_2/report.json"
+  ],
+  "tasks": [
+    "libero_10/0",
+    "libero_10/1",
+    "libero_10/2"
+  ],
+  "tool_versions_in_shards": [
+    "0.41.2"
+  ]
+}
