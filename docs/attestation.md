@@ -71,6 +71,24 @@ array. The payload decodes to a statement with:
   transfer is GPU-gated).
 - `regulatory_clock`, `issued_at`, `commit`, `ruleset`, `tool_version`.
 
+### The deployed policy, not only the checkpoint (schema 6)
+
+Since 0.42.0 the signed `report.json` carries `deployed_policy` beside `model`. `model` is the
+checkpoint that was **requested**; `deployed_policy` is what the adapter **resolved at load**: the
+concrete policy class, the checkpoint it loaded and that checkpoint's Hub revision (read from the
+local cache, never the network), the action unnormaliser it actually applied (mode plus a digest
+over the exact statistics), the controller convention (action dimension, chunk length, executed
+steps per chunk, clamp, post-processing pipeline), and one digest over all of them. The reason is
+Tai (2026, arXiv:2606.03724): the same normalised model output becomes a different physical action
+under a different unnormaliser, and on LIBERO-Goal a metadata mismatch takes success from 28/28 to
+2/28 with nothing about the checkpoint changed. Two reports that agree on `model` and differ on
+`deployed_policy.digest` are reports on two executable policies, and `combine` refuses to pool them.
+
+The field is optional and registered under schema 6, so an older `report.json` still loads and
+still digests to its own bytes — an attestation issued before 0.42.0 keeps verifying. Where an
+adapter cannot resolve a part it records `null`, never a guess; the three scaffolding adapters
+(`openvla`, `openpi`, `groot`) have never run and record nothing.
+
 ### The regulatory clock
 
 Factual application dates, carried so the evidence is legible against the calendar buyers care

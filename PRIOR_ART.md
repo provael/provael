@@ -1392,12 +1392,21 @@ on "the same policy" can be reports on two different executable policies, and no
 would detect it. The determinism contract does not help: both runs are internally deterministic, and
 byte-identical report generation says nothing about which unnormaliser was picked.
 
-**Action for us.** The resolved unnormaliser and controller convention belong in the report as
-first-class fields, bound by digest the way `ExecutionManifest` already binds runtime provenance.
-Until that ships, a Provael report identifies the **checkpoint**, not the deployed policy, and
-`/results` should say so rather than wait for someone else to find it. Tracked as
-[#227](https://github.com/provael/provael/issues/227), which also records that adding report
-fields moves the attestation subject digest and is therefore a schema migration.
+**What we did about it (0.42.0, report schema 6).** `RunReport.deployed_policy` records the
+policy that executed, resolved by the adapter at load rather than copied from the request: the
+concrete class, the checkpoint loaded and its Hub revision read from the local cache, the action
+unnormaliser actually applied (its mode and a digest over the exact statistics, read off the live
+LeRobot post-processing pipeline), the controller convention (action dimension, chunk, executed
+steps, clamp, post-processing pipeline), and one digest over all of it. `model` stays exactly what
+it was, the request, so the two can be read side by side and can differ. The field is top-level,
+so it is registered in `attest._REPORT_FIELDS_ADDED_IN[6]` (the top-level twin of the per-result
+table) and stripped from any report declaring an older schema before digesting; every attestation
+issued before schema 6 still verifies, which is what made it a migration rather than an addition.
+`combine` refuses to pool shards whose deployed digests differ, and the 17025-shaped test report
+names the deployed policy as the item under test. The runnable adapters all populate it (the
+LeRobot-native ones from the live objects, the stub from its fixed identity); the three scaffolding
+adapters record nothing, and nothing is the honest value for an adapter that has never run.
+Closed by [#227](https://github.com/provael/provael/issues/227).
 
 **mapping_status: `cited, adopted as a schema requirement`.** Not a crosswalk: we are taking the
 framing, and the credit for it is his.
