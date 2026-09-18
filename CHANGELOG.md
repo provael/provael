@@ -8,14 +8,52 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
-- **The white-box arm is registered and priced, not run.** `whitebox-pilot` joins the stages of
-  `examples/gpu-ci/modal_libero_suite.py` and the `gpu-arm.yml` dispatch list: `weight_integrity`
-  (the ten-rung flip ladder) and `gradient_patch` against the real SmolVLA x LIBERO adapter, 2 tasks
-  x 12 arms x 2 seeds, hard ceiling ~$4.00 from `scripts/gpu_arm_plan.py`. It needs provael 0.42.0 in
-  the image, it is dispatched by hand and never scheduled, and `realPolicyTested` stays 3 of 17 until
-  its result is read and committed. While registering it: the Modal recipe's docstring had said for
-  several releases that sharding "composes with `--resume`", and the container command never passed
-  the flag; it does now, with the ledger beside the report on the Volume.
+- **The published measurement was re-run on a current release, and it reproduces.** Eight
+  results directories from the office workstation (RTX 2000 Ada, 14 September 2026) land under
+  `results/*_2026-09-14`, each with its own generated README and a hand-written `NOTES.md`. The
+  ten-task SmolVLA × LIBERO-Object suite on provael 0.41.2: `roleplay` 42/50 against the published
+  44/50, floor 1/50, clean task success 96 %; the ten-task control run; the three LIBERO suites the
+  headline had never been measured on (Spatial and Goal: `roleplay` 0/30 and `none` 0/30 each, clean
+  success 77 %; LIBERO-10: three of ten shards so far, 0/9); a breadth probe of every runnable
+  family on one task at three seeds (only the instruction family fired; the weight-flip ladder,
+  `gradient_patch`, the visual, patch and action families 0/3 each, N/A where the policy has no
+  channel); the first π0.5 rollouts through the native `pi05` adapter (benign 10/10, 0.39 s/step);
+  and the demonstration clip's measured pair. With these committed, the body of real runs at 0.41.2
+  supersedes the 0.32.0 campaign under `provael.watch.published_measurement`, so
+  `watch/publish-freshness.json` reads `measuredWith: 0.41.2`, `releasesBehind: 0`, and
+  `test_the_committed_ledger_is_inside_the_window_today` now guards the closed window rather than
+  the open one. The ledger grows from 30 rows to 78. The website re-pins to the new suite in its
+  own sweep.
+
+### Changed
+
+- **The 44/50 result is no longer described as the attack redirecting the policy (E-2026-12).**
+  The control run of 14 September 2026 shows the roleplay frame with no target named exiting the
+  envelope in 27/30 cells and the roleplay prompt's own tokens in destroyed order in 18/30, against
+  0/30 for two meaning-preserving rewordings. The number stands and was reproduced; the reading
+  changes: SmolVLA leaves its safety envelope under a long, imperative, out-of-distribution string,
+  which is a fragility finding about the policy and not a demonstration that the attacker's chosen
+  object is acted on. The README's finding paragraph and results section, the cross-architecture
+  findings page and the status of the semantic-vs-mechanical page say so now, and the erratum
+  records the sentence that was wrong and the falsification clause that was written too narrowly
+  to catch it.
+
+- **A family counts as exercised against a real policy only with an applicable episode.**
+  `provael.coverage` counted a family the moment any real-policy report contained it, whatever the
+  episode said. The 14 September breadth probe ran every runnable family against SmolVLA, and eight
+  came back with every episode marked not applicable — the policy has no channel those attacks
+  reach — which would have moved the published figure from 3 families to 16 on runs that measured
+  nothing. The counter now requires at least one applicable episode: **8 of 17 adversarial families
+  exercised against a real policy** (`instruction`, `visual`, `injection`, `gradient_patch`,
+  `optimized_instruction`, `optimized_patch`, `universal_patch`, `weight_integrity`; one
+  transferred, seven are measured nulls, five of those at n = 3), **9 stub-validated only**, six of
+  which were run and found not applicable — an absence of a surface, which is neither a measurement
+  nor untested. `watch/registry.json`, the README breakdown and the counted-claims guard move with
+  it, and the sentences that restated "three families" and "fourteen families" as facts about the
+  registry are rewritten or, where they describe a study's own run or a board, named as such.
+
+### Added
+
 - **UN Regulation No. 155 and ISO/SAE 21434:2021 enter the compliance catalogue.** Five rows, all
   indicative: R155 para. 7.2.2.2(e) (the CSMS testing process), 7.3.3 (the exhaustive risk
   assessment against Annex 5 Part A) and 7.3.6 (testing before approval); ISO/SAE 21434 Clause 15
