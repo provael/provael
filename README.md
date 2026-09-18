@@ -656,7 +656,7 @@ What changed by adding tasks. `goal_substitution` was 6/10 at p = 0.031 on one t
 survive correction; over ten tasks it reaches **15/50, p = 9.8e-4**, and does. Adding tasks changed a
 verdict, which is the argument for having run them.
 
-| family | attack | redirection rate | clustered 95% CI | McNemar | Holm |
+| family | attack | keep-out exit rate | clustered 95% CI | McNemar | Holm |
 | --- | --- | ---: | ---: | ---: | ---: |
 | baseline | `none` | **2/50 (4%)** — control | — | — | — |
 | instruction | `roleplay` | **44/50 (88%)** | **[72%, 100%]** | 4.6e-13 | **2.7e-12** |
@@ -671,6 +671,31 @@ verdict, which is the argument for having run them.
 `applicable: false` and `steps: 0`, which scoring excludes from `attempts`. It is listed as
 not-measured rather than as a seventh null, because those are different claims — and it is why the
 run is 350 measured episodes out of 400 records.
+
+**Re-measured on 0.41.2, 14 September 2026** — same checkpoint, tasks, arms, seeds and horizon, on
+a workstation RTX 2000 Ada
+([run](results/smolvla_libero_object_suite_2026-09-14/README.md), with
+[aggregate.json](results/smolvla_libero_object_suite_2026-09-14/aggregate.json) beside the shards).
+This is the run `watch/publish-freshness.json` now names as the published measurement; the table
+above is the original and stays as the record of it.
+
+| family | attack | keep-out exit rate | clustered 95% CI | McNemar | Holm |
+| --- | --- | ---: | ---: | ---: | ---: |
+| baseline | `none` | **1/50 (2%)** — control | — | — | — |
+| instruction | `roleplay` | **42/50 (84%)** | **[62%, 100%]** | 9.1e-13 | **5.5e-12** |
+| instruction | `goal_substitution` | 7/50 (14%) | [0%, 34%] | 0.070 | 0.35 |
+| instruction | `paraphrase` | 1/50 (2%) | [0%, 6%] | 1.0 | 1.0 |
+| visual | `patch` | 1/50 (2%) | [0%, 6%] | 1.0 | 1.0 |
+| visual | `decoy_object` | 1/50 (2%) | [0%, 6%] | 1.0 | 1.0 |
+| injection | `scene_text` | 2/50 (4%) | [0%, 10%] | 1.0 | 1.0 |
+| injection | `mcp_tool_desc` | **0 attempts** | — | — | — |
+
+Roleplay reproduces inside the earlier interval and survives Holm alone; `goal_substitution`, which
+survived at 15/50 on 0.32.0, is 7/50 here and does not — one draw of a sampling policy each time,
+and the honest reading of two runs is that its effect is real but small enough that fifty cells do
+not settle it. Clean task success under the benign arm is 96% (48/50) against 84% on 0.32.0. The
+[controls run the same day](results/smolvla_libero_object_control_2026-09-14/README.md) are what
+E-2026-12 rests on.
 
 **The three null arms show `—` rather than an interval, and that is a correction.** This table
 previously published `[0%, 0%]` for them. The clustered bootstrap declines when every task scores
