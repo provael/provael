@@ -31,6 +31,11 @@ from provael.hosted.report import (
 from provael.runner import run
 
 _HAS_FASTAPI = importlib.util.find_spec("fastapi") is not None
+# TestClient needs an HTTP client too; a half-installed extra (fastapi without httpx) must
+# skip, not fail — CI never installs either, so this only ever bites a local env.
+_HAS_TESTCLIENT = _HAS_FASTAPI and any(
+    importlib.util.find_spec(name) is not None for name in ("httpx", "httpx2")
+)
 
 
 def _report():
@@ -175,7 +180,7 @@ def test_server_builds_with_expected_routes(monkeypatch: pytest.MonkeyPatch) -> 
     assert "/insurer-report" not in paths
 
 
-@pytest.mark.skipif(not _HAS_FASTAPI, reason="requires the `hosted` extra")
+@pytest.mark.skipif(not _HAS_TESTCLIENT, reason="requires the `hosted` extra and an HTTP client")
 def test_attest_refuses_to_sign_with_a_throwaway_ephemeral_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

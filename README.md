@@ -846,6 +846,11 @@ pip install 'provael[hosted]'
 PROVAEL_ENABLE_EXPERIMENTAL_HOSTED=1 provael serve   # experimental reference server (operator-key, untrusted)
 ```
 
+It binds **loopback only** (`--host 127.0.0.1`); any wider bind needs the explicit `--allow-remote`
+opt-in, because the server has no authentication layer. Request bodies are capped at 16 MiB and
+refused with 413 rather than buffered, and an internal failure answers with a stable error shape and
+a request id — the traceback goes to the operator's log, never the response.
+
 The experimental endpoint is behind a **local feature flag** (`PROVAEL_HOSTED_LICENSE`) that is
 **not** authentication and lives **only** on the reference server — it never touches the free core.
 The assurance-report draft maps a `provael attest` bundle to the **EU Machinery Regulation

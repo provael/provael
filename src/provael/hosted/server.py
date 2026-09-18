@@ -22,7 +22,9 @@ is deliberately outside the deterministic ``report.json`` path, which never embe
 
 from __future__ import annotations
 
+import logging
 import os
+import uuid
 from datetime import UTC, datetime
 from typing import Any
 
@@ -36,8 +38,19 @@ from provael.hosted import (
     experimental_hosted_enabled,
     require_entitlement,
 )
+from provael.hosted.bounds import (
+    MAX_BODY_BYTES,
+    PAYLOAD_TOO_LARGE,
+    BodyLimit,
+    BodyTooLarge,
+    error_body,
+)
 from provael.hosted.report import build_insurer_report
 from provael.types import RunReport
+
+#: Where an internal failure's traceback goes: the operator's log, never the response body. A
+#: caller gets a stable error shape and a request id to quote; the operator greps the id.
+log = logging.getLogger("provael.hosted")
 
 
 class MissingHostedExtraError(RuntimeError):
@@ -72,8 +85,11 @@ def _signing_key_pem() -> bytes | None:
     return None
 
 
-def create_app() -> Any:
+def create_app(*, max_body_bytes: int = MAX_BODY_BYTES) -> Any:
     """Build the FastAPI app. EXPERIMENTAL and disabled by default; requires the ``[hosted]`` extra.
+
+    ``max_body_bytes`` is the largest request body the app will read (issue #229); the default is
+    :data:`provael.hosted.bounds.MAX_BODY_BYTES` and a smaller value exists for tests.
 
     Refuses to start unless ``PROVAEL_ENABLE_EXPERIMENTAL_HOSTED`` is set — this is a reference
     surface, not a production, authenticated signing service. It does not authenticate callers or
@@ -97,7 +113,9 @@ def create_app() -> Any:
             f"{ENABLE_HOSTED_ENV}=1 to run it locally at your own risk."
         )
     try:
-        from fastapi import FastAPI, HTTPException, Query
+        from fastapi import FastAPI, HTTPException, Query, Request
+        from fastapi.exceptions import RequestValidationError
+        from fastapi.responses import JSONResponse
     except ImportError as exc:  # pragma: no cover - exercised via the CLI/import error path
         raise MissingHostedExtraError(
             "The hosted server needs the `hosted` extra: pip install 'provael[hosted]'."
@@ -109,6 +127,45 @@ def create_app() -> Any:
         summary="Experimental reference server. Signatures are the operator's own key and are "
         "untrusted until a verifier adds them to its own trust store.",
     )
+
+    # -- serving-layer bounds (issue #229) ------------------------------------------------------ #
+    # 1. Bounded body: refused at 413 before it is read when Content-Length says so, and at the
+    #    first byte over the limit when it is streamed. The middleware is outermost, so nothing
+    #    below it ever sees an oversized body.
+    app.add_middleware(BodyLimit, max_bytes=max_body_bytes)
+
+    @app.exception_handler(BodyTooLarge)
+    async def _too_large(_request: Request, exc: BodyTooLarge) -> JSONResponse:
+        return JSONResponse(status_code=PAYLOAD_TOO_LARGE, content=exc.body())
+
+    # 3. No internal detail in a response body. Validation errors carry only the location, message
+    #    and type of each problem — FastAPI's default also echoes the offending input and the
+    #    exception context, which for a 16 MB body is a 16 MB reflection. Unhandled exceptions go
+    #    to the log with their traceback and to the caller as a stable shape with a request id.
+    @app.exception_handler(RequestValidationError)
+    async def _invalid(_request: Request, exc: RequestValidationError) -> JSONResponse:
+        problems = [
+            {"loc": [str(part) for part in err.get("loc", ())], "msg": str(err.get("msg", "")),
+             "type": str(err.get("type", ""))}
+            for err in exc.errors()
+        ]
+        return JSONResponse(
+            status_code=422,
+            content=error_body("invalid_request", "request body failed validation",
+                               errors=problems),
+        )
+
+    @app.exception_handler(Exception)
+    async def _internal(_request: Request, exc: Exception) -> JSONResponse:
+        request_id = uuid.uuid4().hex
+        log.exception("request %s failed", request_id, exc_info=exc)
+        return JSONResponse(
+            status_code=500,
+            content=error_body("internal_error",
+                               "the request failed inside the server; the operator's log has "
+                               "the details under the request id",
+                               request_id=request_id),
+        )
 
     @app.get("/healthz")
     def healthz() -> dict[str, str]:

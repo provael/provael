@@ -780,11 +780,11 @@
    "short_help": null
   },
   {
-   "help": "Run the EXPERIMENTAL reference hosted server (needs the `hosted` extra).\n\nNot a production signing service: it does not authenticate callers or bind ownership, and every\nsignature it produces is the operator's OWN key \u2014 untrusted until a verifier adds it to a trust\nstore. Disabled by default; set `PROVAEL_ENABLE_EXPERIMENTAL_HOSTED=1` to run it. The free CLI,\nattacks, ASR, SARIF, the Action and local `attest` are never gated.",
+   "help": "Run the EXPERIMENTAL reference hosted server (needs the `hosted` extra).\n\nNot a production signing service: it does not authenticate callers or bind ownership, and every\nsignature it produces is the operator's OWN key \u2014 untrusted until a verifier adds it to a trust\nstore. Disabled by default; set `PROVAEL_ENABLE_EXPERIMENTAL_HOSTED=1` to run it. The free CLI,\nattacks, ASR, SARIF, the Action and local `attest` are never gated.\n\nServing-layer bounds (issue #229): binds loopback unless `--allow-remote` is given, reads at\nmost MAX_BODY_BYTES per request, and never puts a traceback in a response body.",
    "name": "serve",
    "params": [
     {
-     "help": "Bind host.",
+     "help": "Bind host. Loopback only unless --allow-remote is given.",
      "is_flag": false,
      "name": "host",
      "opts": [
@@ -799,6 +799,16 @@
      "name": "port",
      "opts": [
       "--port"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Permit a bind host other than loopback. The server has no authentication layer, so a wider bind exposes it to everything that can reach the interface; opt in only behind something that authenticates.",
+     "is_flag": true,
+     "name": "allow_remote",
+     "opts": [
+      "--allow-remote"
      ],
      "required": false,
      "secondary_opts": []
