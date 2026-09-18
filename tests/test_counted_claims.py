@@ -386,6 +386,30 @@ _NAMED_SUBSETS: dict[tuple[str, str], str] = {
     ("docs/studies/eai04-action-space-transfer.md", "four EAI04 attacks"): (
         "the EAI04 subset, not the registry"
     ),
+    ("README.md", "**fourteen families"): (
+        "how many of the 17 are absent from the published BOARD (17 - the 3 it covers); a fact "
+        "about the board, not the registry's real-policy partition, which the same sentence now "
+        "breaks down as nine unmeasured and five probed"
+    ),
+    ("docs/errata.md", "14 families"): (
+        "E-2026-09/E-2026-10 state the real-policy partition as it stood on 13 Sep 2026 (3 measured, "
+        "14 not); the 14 Sep breadth probe moved it to 8 and 9. An erratum's numbers are the numbers "
+        "of its day"
+    ),
+    ("docs/errata.md", "three families"): (
+        "E-2026-08 describes the keep-out face-selection study's own run (six attacks across three "
+        "families on one task); a fact about that run, not the registry"
+    ),
+    ("docs/attacks.md", "Three sim-only attacks"): "the humanoid subset, not the registry",
+    ("docs/studies/humanoid-locomotion-transfer.md", "three attacks"): (
+        "the humanoid subset, not the registry"
+    ),
+    ("docs/studies/humanoid-locomotion-transfer.md", "three humanoid attacks"): (
+        "the humanoid subset, not the registry"
+    ),
+    ("docs/crosswalk/foresight-safety-vla.md", "three families"): (
+        "ForesightSafety-VLA's OWN taxonomy (Safe-Core, Safe-Lang, ...), not provael's registry"
+    ),
     ("docs/errata.md", "16 families"): (
         "E-2026-09 quotes the superseded count the website published between 1 and 3 September "
         "2026; an erratum must name the wrong number to record it. Historical, must not be updated"

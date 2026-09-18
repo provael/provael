@@ -141,11 +141,21 @@ class Coverage:
 
 
 def _real_policy_families(results_dir: Path = RESULTS_DIR) -> set[str]:
-    """Adversarial families that appear in a committed run whose policy AND suite are both real.
+    """Adversarial families with an APPLICABLE episode against a real policy on a real suite.
 
     Derived rather than declared. A family counts here if it was *exercised* against a real
     policy, whatever the outcome — a measured 0% is a measurement and this project publishes
     nulls as results, so excluding them would undercount the evidence that exists.
+
+    APPLICABLE, since the 14 September 2026 breadth probe, and the distinction is the one
+    :mod:`provael.eai` already draws: *untested* is not *no attack surface*. That probe ran every
+    runnable family against SmolVLA, and eight of them (``action``, ``authorization``,
+    ``backdoor``, ...) came back with every episode marked not applicable — the policy has no
+    channel the attack can reach, so nothing was measured. Counting those as "exercised against a
+    real policy" would have moved the published figure from 3 families to 16 on the strength of
+    runs that measured nothing, which is the overstatement this counter exists to prevent. An
+    episode that was not applicable is an absence of a surface, and it stays in the stub-only
+    bucket until a real policy actually receives the attack.
     """
     found: set[str] = set()
     if not results_dir.is_dir():
@@ -159,7 +169,11 @@ def _real_policy_families(results_dir: Path = RESULTS_DIR) -> set[str]:
             continue
         for result in data.get("results", []):
             family = result.get("family")
-            if family and family not in NON_ADVERSARIAL_FAMILIES:
+            if (
+                family
+                and family not in NON_ADVERSARIAL_FAMILIES
+                and result.get("applicable", True) is not False
+            ):
                 found.add(family)
     return found
 

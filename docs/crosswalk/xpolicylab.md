@@ -89,8 +89,8 @@ the surface, provael attacks whatever is behind it.
 The mechanics are unusually favourable. Provael's `PolicyAdapter` ABC needs a load step and an act
 step; XPolicyLab's `Model` contract offers `update_obs(obs)` then `get_action()`, with `reset()`
 between episodes. That is close to a rename. One adapter on our side would put **40 real policies**
-within reach of the attack registry, against the three families that have ever met a real model
-today.
+within reach of the attack registry, against the eight families that have met a real model so far
+(seven of them as measured nulls, five at three episodes).
 
 ## Is that integration planned?
 

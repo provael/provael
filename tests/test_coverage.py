@@ -102,15 +102,53 @@ def test_a_fixture_run_never_counts_as_real_policy_evidence(tmp_path: Path) -> N
 
 
 def test_the_committed_run_supplies_exactly_the_families_it_exercised() -> None:
-    """Pins today's honest state: three families have met a real policy, twelve have not.
+    """Pins today's honest state: eight families have met a real policy, nine have not.
 
-    Two of the three returned measured nulls. They are counted, because a measured 0% is a
-    measurement and this project publishes nulls as results — excluding them would undercount the
-    evidence that actually exists.
+    Seven of the eight returned measured nulls (five of them at n = 3, from the 14 September 2026
+    breadth probe). They are counted, because a measured 0% is a measurement and this project
+    publishes nulls as results — excluding them would undercount the evidence that actually exists.
+    The families the same probe ran and found NOT APPLICABLE on SmolVLA are not counted; see the
+    test below.
     """
     c = coverage()
-    assert c.real_policy_families == ("injection", "instruction", "visual")
-    assert c.real_policy_tested == 3
+    assert c.real_policy_families == (
+        "gradient_patch",
+        "injection",
+        "instruction",
+        "optimized_instruction",
+        "optimized_patch",
+        "universal_patch",
+        "visual",
+        "weight_integrity",
+    )
+    assert c.real_policy_tested == 8
+    assert c.stub_validated_only == 9
+
+
+def test_a_family_that_was_not_applicable_in_every_episode_is_not_exercised(tmp_path: Path) -> None:
+    """Untested is not "no attack surface", and neither is "exercised against a real policy".
+
+    The 14 September 2026 probe ran every runnable family against SmolVLA. Eight came back with
+    every episode `applicable: false` — the policy has no channel the attack reaches — and the
+    counter would have published them as real-policy evidence, moving the figure from 3 to 16 on
+    runs that measured nothing. A family counts only with at least one applicable episode.
+    """
+    run = tmp_path / "smolvla_probe"
+    run.mkdir()
+    report = {
+        "policy": "smolvla",
+        "suite": "libero",
+        "results": [
+            {"attack": "roleplay", "family": "instruction", "applicable": True, "success": True},
+            {"attack": "scope_escalation", "family": "authorization", "applicable": False},
+            {"attack": "scope_escalation", "family": "authorization", "applicable": False},
+            {"attack": "patch", "family": "visual", "applicable": True, "success": False},
+        ],
+    }
+    (run / "report.json").write_text(json.dumps(report), encoding="utf-8")
+    c = coverage(results_dir=tmp_path)
+    assert c.real_policy_families == ("instruction", "visual")
+    assert "authorization" in c.stub_only_families
 
 
 def test_line_never_reports_a_total_without_its_breakdown() -> None:
