@@ -158,17 +158,23 @@ ten `libero_object` tasks at v0.32.0, nine minor releases back. The scheduled la
 attempts on one task per run, and its version bucket reset every time a release re-pinned it. Twice
 a week for ever would have reached nothing. The arithmetic was the problem, not the cadence.
 
-Two things changed. The rule now requires a re-measurement to *cover* what it replaces (every task,
-at least as many attempts) before its size counts, which closes the opposite hole too: a long enough
-single-task run could previously have displaced the ten-task headline. And each scheduled run is now
-a slice of the campaign that would actually displace it: the next four (task, seed) cells of the
-same protocol on the same checkpoint, at one pinned release held until the body at that pin
-supersedes the published one. Which cells are done is read from `results/`; the artifact publishes
-the body in progress as `challenger`, with what it still lacks. `provael doctor` prints it.
+Three things changed. The rule now requires a re-measurement to *cover* what it replaces (every
+task, at least as many attempts) before its size counts, which closes the opposite hole too: a long
+enough single-task run could previously have displaced the ten-task headline. Each scheduled run is
+now the next shards of a declared campaign (`studies/scheduled_campaign/plan.json`: the same
+checkpoint, ten tasks, every arm the published body ran plus the controls, six seeds) at one pinned
+release held until the campaign supersedes the published body; which shards are done is read from
+`results/gpu-scheduled/campaign-<version>/`, the shards are combined beside themselves into a
+`campaign.json` that says `complete: false` until the plan is covered, and `watch/campaign.json`
+publishes the progress with a denominator. And a shard is recorded only if its manifest carries the
+repository, the commit, the dependency-lock digest and the precision — every scheduled-lane manifest
+ever committed admitted all four were missing, and the lane recorded them anyway. That gate refuses
+shards from any release that predates the fields, so the lane records nothing until its pin moves to
+one that carries them, and says so.
 
 What this does not do, stated here because the lane looks like a fix for it: at the release cadence
-of August to September 2026 (nine minors in thirty-two days) a campaign of about thirteen runs lands
-about a dozen minors behind on the day it completes, past the two-release window it is measured
+of August to September 2026 (nine minors in thirty-two days) a campaign of twelve runs lands about
+a dozen minors behind on the day it completes, past the two-release window it is measured
 against. The lane makes the published measurement move, repeatedly, and publishes how far along it
 is. It cannot make it current. What would: a slower release cadence while a campaign runs, or a
 larger credit. Neither is a code change.

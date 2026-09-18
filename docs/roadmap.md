@@ -23,11 +23,13 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
   newer body nearest to displacing it (`published`, `challenger`, with `attemptsNeeded` and
   `tasksMissing`), because the lane meant to refresh it could not add up: a canary re-pinned on
   every release, so its version bucket reset before it accumulated, and it ran one task of ten. The
-  scheduled lane now runs slices of a like-for-like campaign at one held pin, and the rule requires a
-  re-measurement to cover what it replaces before its size counts. What the lane cannot do is stated
-  in its own header: at the August-to-September release cadence the campaign that displaces the
-  published measurement completes about a dozen minors behind. It moves the number; it does not make
-  it current.
+  scheduled lane now measures a declared campaign (`studies/scheduled_campaign/plan.json`) shard by
+  shard at one held pin, records a shard only with complete provenance, combines the shards into a
+  `campaign.json` that says how complete it is, and publishes its progress as `watch/campaign.json`;
+  the rule requires a re-measurement to cover what it replaces before its size counts. What the lane
+  cannot do is stated in its own header: at the August-to-September release cadence the campaign
+  that displaces the published measurement completes about a dozen minors behind. It moves the
+  number; it does not make it current.
 - **White-box gradient attacks** (`gradient_patch`), shipped in **0.39.0, 1 September 2026**.
   Untargeted L-inf projected gradient ascent through the policy's own vision encoder, GPU-gated
   and sim-only. This was listed under Planned for two days after it shipped, and neither
