@@ -24,6 +24,17 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
   `SAFETY.md` nor this file knew — SAFETY.md still said the registry used no gradients or model
   internals, which by then was false. Corrected in 0.39.3, along with the roadmap-honesty test
   that could not have caught it because an attack family registers no CLI command.
+
+  **Measured status, and the next transfer arm.** Since the 0.42.0 release, `weight_integrity` and
+  `gradient_patch` can run against the real SmolVLA x LIBERO adapter (`LeRobotAdapter` exposes the
+  `action_out_proj` weights through an INT8 view and backpropagates through its own vision tower),
+  and the arm is registered
+  and priced as the `whitebox-pilot` stage of
+  [`examples/gpu-ci/modal_libero_suite.py`](https://github.com/provael/provael/blob/main/examples/gpu-ci/modal_libero_suite.py)
+  (2 tasks x 12 arms x 2 seeds, hard ceiling ~$4, dispatched by hand through `gpu-arm.yml`, never
+  scheduled). It has not run. Until its result is committed under `results/`, `realPolicyTested`
+  in `watch/registry.json` is **3 of 17** adversarial families, `weight_integrity` and
+  `gradient_patch` stay under `stubOnlyFamilies`, and no rate is stated here before then.
 - **Policies:** `stub` (CPU); `smolvla`, `pi0`, `pi05`, `pi0fast`, `groot` (LeRobot); `openvla`
   (HF transformers); `openpi` (websocket client to a π0 policy *server*). Bring-your-own via the
   `PolicyAdapter` ABC. **`groot`, `openvla` and `openpi` are registered scaffolding** — no

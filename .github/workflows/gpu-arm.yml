@@ -45,6 +45,7 @@ on:
           - control         # ~$6  [~$12] the falsification arm for the roleplay headline
           - suite           # ~$2.55      10 tasks x {none, roleplay}
           - probe           # ~$6.11      direction check across all ten tasks
+          - whitebox-pilot  # ~$2 [~$4]   weight_integrity ladder + gradient_patch on the real adapter, 2 tasks x 2 seeds; needs provael >= 0.42.0 in the image
         default: timing
       confirm_spend:
         description: 'Type the stage name again to confirm the spend'

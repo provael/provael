@@ -8,6 +8,14 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- **The white-box arm is registered and priced, not run.** `whitebox-pilot` joins the stages of
+  `examples/gpu-ci/modal_libero_suite.py` and the `gpu-arm.yml` dispatch list: `weight_integrity`
+  (the ten-rung flip ladder) and `gradient_patch` against the real SmolVLA x LIBERO adapter, 2 tasks
+  x 12 arms x 2 seeds, hard ceiling ~$4.00 from `scripts/gpu_arm_plan.py`. It needs provael 0.42.0 in
+  the image, it is dispatched by hand and never scheduled, and `realPolicyTested` stays 3 of 17 until
+  its result is read and committed. While registering it: the Modal recipe's docstring had said for
+  several releases that sharding "composes with `--resume`", and the container command never passed
+  the flag; it does now, with the ledger beside the report on the Volume.
 - **UN Regulation No. 155 and ISO/SAE 21434:2021 enter the compliance catalogue.** Five rows, all
   indicative: R155 para. 7.2.2.2(e) (the CSMS testing process), 7.3.3 (the exhaustive risk
   assessment against Annex 5 Part A) and 7.3.6 (testing before approval); ISO/SAE 21434 Clause 15
