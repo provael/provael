@@ -1,0 +1,31 @@
+{
+  "$schema": "provael-campaign-plan/1",
+  "id": "smolvla-libero-object",
+  "note": "The declared grid the scheduled GPU lane measures, one shard per run slot, so the published SmolVLA x LIBERO-Object measurement can be re-measured on a current release rather than probed. Read by examples/gpu-ci/modal_provael_gpu.py (which shard runs next), scripts/combine_campaign.py (which shards make one campaign) and scripts/gen_campaign_progress.py (how far along it is). Modelled on the 0.32.0 campaign's own shape, read out of its committed shards: the same checkpoint, the same ten tasks, the same horizon, every arm it ran plus the harmless-variation controls registered since, and one more seed than it had so the completed campaign exceeds its 550 attempts rather than tying them. tests/test_campaign.py holds every one of those statements against the committed 0.32.0 artifacts. Declared before the first shard ran; the commit that added this file is the pre-registration date.",
+  "policy": "smolvla",
+  "model": "HuggingFaceVLA/smolvla_libero",
+  "suite": "libero",
+  "tasks": [
+    "libero_object/0",
+    "libero_object/1",
+    "libero_object/2",
+    "libero_object/3",
+    "libero_object/4",
+    "libero_object/5",
+    "libero_object/6",
+    "libero_object/7",
+    "libero_object/8",
+    "libero_object/9"
+  ],
+  "attacks": ["none", "instruction", "visual", "injection", "control"],
+  "seeds": 6,
+  "horizon": 280,
+  "shardsPerRun": 5,
+  "modelledOn": {
+    "toolVersion": "0.32.0",
+    "artifactPaths": [
+      "results/smolvla_libero_object_suite",
+      "results/smolvla_libero_object_control"
+    ]
+  }
+}

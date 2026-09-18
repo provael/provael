@@ -1,29 +1,31 @@
-"""The scheduled lane's plan and budget, exercised on the CPU lane before Modal spends anything.
+"""The scheduled lane's shape and budget, exercised on the CPU lane before Modal spends anything.
 
-WHY THIS EXISTS. `examples/gpu-ci/modal_provael_gpu.py` used to be a canary whose arithmetic could
+WHY THIS EXISTS. `examples/gpu-ci/modal_provael_gpu.py` used to be a probe whose arithmetic could
 not close: fourteen attempts a run on one task, in a version bucket that reset on every release,
 toward a published body of 550 attempts over ten tasks. Nothing tested the arithmetic because
-there was no arithmetic — a canary has none. Now the lane plans a slice of a campaign from the
-committed tree, and every piece of that plan is a pure function that can be wrong on a laptop
-before it is wrong at $0.80 an hour:
+there was no arithmetic — a probe has none. Now the lane measures the next shards of a declared
+plan (`provael.campaign`, tested in `test_campaign.py`), and what is left to hold here is the
+lane's own contract:
 
-1. Which cells are already measured, read from `report.json` files at the campaign pin.
-2. Which cells come next — seed-major, so a partial campaign is the first k seeds over all ten
-   tasks, the shape `provael.combine` can pool and an evidence manifest can be built over.
-3. What a run costs, derived from the constants, and whether the ceiling fits the credit.
-4. That `ARMS` — the episodes-per-cell figure the cost rests on — equals what the registry
-   actually expands `ATTACKS` to, so a new control arm moves the bill instead of hiding in it.
+1. Its cost, derived from the constants and the plan's shard shape, and whether the ceiling fits
+   the credit — hung containers bill until their timeout, so the ceiling is the number that counts.
+2. That its rate equals the one `scripts/gpu_arm_plan.py` prices the manual arms with.
+3. That the workflow header quotes the derived figures, keeps the good shards before failing on the
+   bad ones, regenerates every artifact a shard changes, gates on provenance, and keeps the opt-in
+   variable and the concurrency group.
 
 LOADED WITH THE INERT MODAL STUB `scripts/gpu_arm_plan.py` already uses. The example builds its
 Modal app at import (it must — `modal run` finds the app by scanning global scope), and modal is
 not a test dependency. The stub absorbs the app, the image chain and the decorators, and leaves the
-plan functions and constants as plain Python.
+constants and cost functions as plain Python. Nothing from `provael` is imported at the example's
+module scope, and a test below holds that: the container re-imports the file against the PINNED
+wheel, not this checkout.
 """
 
 from __future__ import annotations
 
+import ast
 import importlib.util
-import json
 import sys
 import types
 from pathlib import Path
@@ -33,10 +35,12 @@ import pytest
 import yaml
 
 from provael.attacks.registry import resolve_attacks
+from provael.campaign import load_plan, shards
 
 REPO = Path(__file__).resolve().parents[1]
 EXAMPLE = REPO / "examples" / "gpu-ci" / "modal_provael_gpu.py"
 WORKFLOW = REPO / ".github" / "workflows" / "gpu-scheduled.yml"
+ARM_PLAN = REPO / "scripts" / "gpu_arm_plan.py"
 
 
 class _Inert:
@@ -69,222 +73,189 @@ def lane() -> Any:
     return module
 
 
-def _report(lane: Any, tasks: list[str], seed: int, seeds: int, **over: Any) -> dict[str, Any]:
-    base = {
-        "tool_version": lane.PROVAEL_PIN,
-        "model": lane.CKPT,
-        "policy": "smolvla",
-        "suite": "libero",
-        "tasks": tasks,
-        "seed": seed,
-        "seeds": seeds,
-    }
-    base.update(over)
-    return base
+@pytest.fixture(scope="module")
+def plan():
+    return load_plan()
 
 
-# --------------------------------------------------------------------------- #
-# 1. which cells are already measured
-# --------------------------------------------------------------------------- #
+@pytest.fixture(scope="module")
+def arms(plan) -> int:
+    return len(resolve_attacks(list(plan.attacks)))
 
 
-def test_cells_are_read_per_task_and_per_seed(lane: Any) -> None:
-    """`seed` is the base and episode i used seed + i, so `seeds` widens the cell range."""
-    used = lane.cells_measured([_report(lane, ["libero_object/0"], seed=0, seeds=2)])
-    assert used == {("libero_object/0", 0), ("libero_object/0", 1)}
+def _workflow_steps() -> list[dict]:
+    return yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))["jobs"]["gpu-redteam"]["steps"]
 
 
-def test_only_this_pin_this_checkpoint_this_suite_counts(lane: Any) -> None:
-    """The body rule sums per version, policy and suite; a cell elsewhere is another body."""
-    reports = [
-        _report(lane, ["libero_object/3"], 0, 1, tool_version="0.32.0"),
-        _report(lane, ["libero_object/4"], 0, 1, model="lerobot/smolvla_base"),
-        _report(lane, ["libero_object/5"], 0, 1, policy="pi05"),
-        _report(lane, ["libero_object/6"], 0, 1, suite="metaworld"),
-        _report(lane, ["libero_object/7"], 0, 1),
-    ]
-    assert lane.cells_measured(reports) == {("libero_object/7", 0)}
-
-
-def test_a_manual_arm_at_the_pin_is_credited_not_duplicated(lane: Any) -> None:
-    """A ten-task `full` stage at the campaign pin already measured seeds 0-4 of every task."""
-    reports = [_report(lane, [task], 0, 5) for task in lane.TASKS]
-    used = lane.cells_measured(reports)
-    assert len(used) == 50
-    assert lane.next_cells(used)[0] == ("libero_object/0", 5)
-
-
-def test_malformed_reports_are_skipped_rather_than_fatal(lane: Any) -> None:
-    tasks_not_a_list = {**_report(lane, ["libero_object/0"], 0, 1), "tasks": "libero_object/0"}
-    seed_not_an_int = {**_report(lane, ["libero_object/1"], 0, 1), "seed": "0"}
-    reports = [
-        tasks_not_a_list,
-        seed_not_an_int,
-        {"tool_version": lane.PROVAEL_PIN},
-        _report(lane, ["libero_object/2"], 0, 1),
-    ]
-    assert lane.cells_measured(reports) == {("libero_object/2", 0)}
-
-
-def test_the_committed_tree_is_read_the_way_the_ledger_reads_it(lane: Any) -> None:
-    """Every committed report is readable by the driver, and cells at the pin are found there."""
-    reports = lane.committed_reports(REPO / "results")
-    assert reports, "no report.json under results/ — the plan would start every campaign from zero"
-    assert all(isinstance(r, dict) for r in reports)
-    used = lane.cells_measured(reports)
-    at_pin = [r for r in reports if r.get("tool_version") == lane.PROVAEL_PIN]
-    assert bool(used) == bool(
-        [r for r in at_pin if r.get("model") == lane.CKPT and r.get("suite") == "libero"]
+def _shell(step: dict) -> str:
+    """A step's shell with comment lines stripped, so the incident record cannot satisfy a guard."""
+    return "\n".join(
+        line for line in str(step.get("run", "")).splitlines() if not line.lstrip().startswith("#")
     )
 
 
-def test_an_absent_results_dir_plans_from_zero(lane: Any, tmp_path: Path) -> None:
-    assert lane.committed_reports(tmp_path / "nowhere") == []
-    assert lane.plan(tmp_path / "nowhere") == [(task, 0) for task in lane.TASKS[: lane.TASKS_PER_RUN]]
-
-
 # --------------------------------------------------------------------------- #
-# 2. which cells come next
+# 1. cost
 # --------------------------------------------------------------------------- #
 
 
-def test_the_grid_is_walked_seed_major(lane: Any) -> None:
-    """Finish seed 0 across all ten tasks before touching seed 1."""
-    used = {(task, 0) for task in lane.TASKS[:7]}
-    assert lane.next_cells(used) == [
-        ("libero_object/7", 0),
-        ("libero_object/8", 0),
-        ("libero_object/9", 0),
-        ("libero_object/0", 1),
-    ]
-
-
-def test_a_lost_shard_is_re_planned_next_time(lane: Any) -> None:
-    """A cell that never landed is the first thing the next run does — no resume file needed."""
-    used = {(task, 0) for task in lane.TASKS} - {("libero_object/4", 0)}
-    assert lane.next_cells(used)[0] == ("libero_object/4", 0)
-
-
-def test_the_plan_is_a_pure_function_of_the_tree(lane: Any, tmp_path: Path) -> None:
-    """Same tree, same plan — the property that lets the committed tree be the only ledger."""
-    for i, task in enumerate(lane.TASKS[:3]):
-        shard = tmp_path / f"run{i}"
-        shard.mkdir()
-        (shard / "report.json").write_text(json.dumps(_report(lane, [task], 0, 1)))
-    first = lane.plan(tmp_path)
-    assert first == lane.plan(tmp_path)
-    assert first[0] == ("libero_object/3", 0)
-    assert len(first) == lane.TASKS_PER_RUN
-
-
-def test_the_committed_tree_plans_a_full_slice_today(lane: Any) -> None:
-    """The live plan: exactly TASKS_PER_RUN cells, none of them already measured at the pin."""
-    used = lane.cells_measured(lane.committed_reports(REPO / "results"))
-    cells = lane.next_cells(used)
-    assert len(cells) == lane.TASKS_PER_RUN
-    assert not set(cells) & used
-    assert all(task in lane.TASKS for task, _ in cells)
-
-
-# --------------------------------------------------------------------------- #
-# 3. what it costs, and 4. the arm count the cost rests on
-# --------------------------------------------------------------------------- #
-
-
-def test_arms_equals_what_the_registry_expands_attacks_to(lane: Any) -> None:
-    """The bill is ARMS x cells; a control arm added to the registry must move it, not hide in it."""
-    expanded = resolve_attacks(lane.ATTACKS.split(","))
-    assert len(expanded) == lane.ARMS, (
-        f"ATTACKS={lane.ATTACKS!r} expands to {len(expanded)} arms "
-        f"({[a.name for a in expanded]}) but ARMS is {lane.ARMS}; the cost table is wrong by "
-        f"the difference on every cell"
+def test_a_shard_fits_one_l4_hour_with_margin(lane: Any, arms: int) -> None:
+    """The order the campaign was sized to: expected well inside the hour, ceiling under it."""
+    expected = lane.shard_seconds(arms)
+    assert expected < 3600 / 1.5, f"a {arms}-arm shard is expected to take {expected}s"
+    assert lane.SHARD_TIMEOUT_SECONDS <= 3600
+    assert 1.5 * expected <= lane.SHARD_TIMEOUT_SECONDS, (
+        f"the timeout ({lane.SHARD_TIMEOUT_SECONDS}s) leaves less than 1.5x over the expected "
+        f"{expected}s; one slow episode kills the shard and the money is spent for nothing"
     )
+    # Even a shard whose every episode runs the full horizon fits: 0.694 s/step measured on L4.
+    worst = lane.SETUP_SECONDS + arms * 280 * 0.694
+    assert worst < lane.SHARD_TIMEOUT_SECONDS, f"a full-horizon shard ({worst:.0f}s) would be killed"
 
 
-def test_the_campaign_covers_what_the_published_body_covers(lane: Any) -> None:
-    """A slice of the wrong tasks or arms accumulates toward a body that can never supersede."""
-    from provael.watch import displacement
-
-    standing = displacement()
-    assert standing is not None
-    assert set(standing.published.tasks or ()) <= set(lane.TASKS)
-    # Every arm the published body ran is in the campaign's arm set (the campaign may add arms).
-    published_arms: set[str] = set()
-    for report in lane.committed_reports(REPO / "results"):
-        if report.get("tool_version") == standing.published.tool_version and report.get(
-            "policy"
-        ) == standing.published.policy:
-            published_arms.update(str(a) for a in report.get("attacks", []))
-    campaign_arms = {a.name for a in resolve_attacks(lane.ATTACKS.split(","))}
-    assert published_arms <= campaign_arms, (
-        f"the published body ran {sorted(published_arms - campaign_arms)} and the campaign does not"
-    )
-
-
-def test_the_ceiling_fits_the_credit(lane: Any) -> None:
+def test_the_ceiling_fits_the_credit(lane: Any, plan) -> None:
     """Hung containers bill until their timeout; that worst case must fit the monthly credit."""
-    assert lane.CEILING_USD_PER_MONTH <= lane.MONTHLY_CREDIT_USD, (
-        f"{lane.TASKS_PER_RUN} cells x {lane.SHARD_TIMEOUT_SECONDS}s x {lane.RUNS_PER_MONTH:.2f} "
-        f"runs is ${lane.CEILING_USD_PER_MONTH:.2f}/month against a ${lane.MONTHLY_CREDIT_USD} "
-        "credit; cut TASKS_PER_RUN or the timeout"
-    )
-    assert lane.EXPECTED_USD_PER_MONTH < lane.CEILING_USD_PER_MONTH
-
-
-def test_the_timeout_holds_the_expected_shard_with_headroom(lane: Any) -> None:
-    """A truncated shard writes no report.json, so a timeout set at the expectation records nothing."""
-    assert lane.SHARD_TIMEOUT_SECONDS >= 1.5 * lane.SHARD_SECONDS, (
-        f"a shard is expected to take {lane.SHARD_SECONDS}s and the timeout is "
-        f"{lane.SHARD_TIMEOUT_SECONDS}s; one slow episode kills the cell and the money is spent"
+    ceiling = lane.ceiling_usd_per_run(plan.shards_per_run) * lane.RUNS_PER_MONTH
+    assert ceiling <= lane.MONTHLY_CREDIT_USD, (
+        f"{plan.shards_per_run} shards x {lane.SHARD_TIMEOUT_SECONDS}s x {lane.RUNS_PER_MONTH:.2f} "
+        f"runs is ${ceiling:.2f}/month against a ${lane.MONTHLY_CREDIT_USD} credit; cut "
+        "shardsPerRun in the plan or the timeout"
     )
 
 
-def test_the_cost_table_is_derived_from_the_constants(lane: Any) -> None:
-    table = lane.cost_table()
-    assert f"${lane.EXPECTED_USD_PER_RUN:.2f}" in table
-    assert f"${lane.CEILING_USD_PER_MONTH:.2f}" in table
-    assert str(lane.TASKS_PER_RUN) in table
+def test_the_expected_spend_is_under_the_ceiling(lane: Any, plan, arms: int) -> None:
+    assert lane.expected_usd_per_run(arms, plan.shards_per_run) < lane.ceiling_usd_per_run(
+        plan.shards_per_run
+    )
 
 
-def test_the_workflow_header_quotes_the_derived_figures(lane: Any) -> None:
+def test_the_campaign_completes_in_a_bounded_number_of_runs(plan) -> None:
+    total = len(shards(plan))
+    runs = -(-total // plan.shards_per_run)
+    assert runs <= 13, f"{total} shards at {plan.shards_per_run} a run is {runs} runs"
+
+
+def test_the_rate_is_the_one_the_arm_planner_prices_with(lane: Any) -> None:
+    """One L4 rate, quoted in two files on purpose and held equal here."""
+    tree = ast.parse(ARM_PLAN.read_text(encoding="utf-8"))
+    rates = [
+        node.value.value
+        for node in tree.body
+        if isinstance(node, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id == "L4_USD_PER_HOUR" for t in node.targets)
+        and isinstance(node.value, ast.Constant)
+    ]
+    assert rates == [lane.L4_USD_PER_HOUR]
+
+
+def test_the_cost_table_is_derived_from_the_constants(lane: Any, plan, arms: int) -> None:
+    table = lane.cost_table(arms, plan.shards_per_run)
+    assert f"${lane.expected_usd_per_run(arms, plan.shards_per_run):.2f}" in table
+    assert f"${lane.ceiling_usd_per_run(plan.shards_per_run) * lane.RUNS_PER_MONTH:.2f}" in table
+    assert f"{plan.shards_per_run} (one container each, {arms} episodes per shard)" in table
+
+
+def test_the_workflow_header_quotes_the_derived_figures(lane: Any, plan, arms: int) -> None:
     """A cost figure in a comment is a claim like any other: the header must match the constants."""
     header = WORKFLOW.read_text(encoding="utf-8")
+    expected = lane.expected_usd_per_run(arms, plan.shards_per_run)
+    ceiling = lane.ceiling_usd_per_run(plan.shards_per_run)
     for figure in (
-        f"${lane.EXPECTED_USD_PER_RUN:.2f} a run",
-        f"${lane.CEILING_USD_PER_RUN:.2f} at the",
-        f"${lane.EXPECTED_USD_PER_MONTH:.2f} a month",
-        f"${lane.CEILING_USD_PER_MONTH:.2f}",
+        f"${expected:.2f} a run",
+        f"${ceiling:.2f} at the",
+        f"${expected * lane.RUNS_PER_MONTH:.2f} a month",
+        f"${ceiling * lane.RUNS_PER_MONTH:.2f}",
         f"${lane.MONTHLY_CREDIT_USD:.0f}/month credit",
+        f"{plan.shards_per_run} shards a run" if plan.shards_per_run != 5 else "Five shards a run",
     ):
         assert figure in header, f"gpu-scheduled.yml no longer quotes {figure!r}; regenerate it"
 
 
 # --------------------------------------------------------------------------- #
-# the contract with the workflow
+# 2. the container never depends on this checkout
 # --------------------------------------------------------------------------- #
+
+
+def test_nothing_from_provael_is_imported_at_module_scope() -> None:
+    """The container re-imports the lane against the pinned wheel; the plan lives in main()."""
+    tree = ast.parse(EXAMPLE.read_text(encoding="utf-8"))
+    offenders = [
+        node.lineno
+        for node in tree.body
+        if (isinstance(node, ast.ImportFrom) and (node.module or "").startswith("provael"))
+        or (isinstance(node, ast.Import) and any(a.name.startswith("provael") for a in node.names))
+    ]
+    assert not offenders, f"module-scope provael import at line(s) {offenders}"
+
+
+def test_the_container_is_told_everything_it_runs() -> None:
+    """`redteam` takes the shard's arguments; it reads no plan and no checkout."""
+    tree = ast.parse(EXAMPLE.read_text(encoding="utf-8"))
+    fn = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "redteam")
+    assert [a.arg for a in fn.args.args] == ["shard", "task", "seed", "model", "attacks", "horizon"]
+
+
+def test_the_image_states_the_repository_for_the_manifest(lane: Any) -> None:
+    src = EXAMPLE.read_text(encoding="utf-8")
+    assert lane.REPOSITORY == "provael/provael"
+    assert '"PROVAEL_REPOSITORY": REPOSITORY' in src
+
+
+# --------------------------------------------------------------------------- #
+# 3. the contract with the workflow
+# --------------------------------------------------------------------------- #
+
+
+def test_the_opt_in_gate_and_the_concurrency_group_stay() -> None:
+    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    assert workflow["jobs"]["gpu-redteam"]["if"] == "${{ vars.ENABLE_GPU_SCHEDULED == 'true' }}"
+    assert workflow["concurrency"] == {"group": "gpu-scheduled", "cancel-in-progress": True}
+    triggers = workflow.get(True) or workflow.get("on")
+    assert [s["cron"] for s in triggers["schedule"]] == ["17 4 * * 2,5"]
+
+
+def test_the_driver_installs_this_checkout_before_reading_the_plan() -> None:
+    steps = _workflow_steps()
+    install = next(i for i, s in enumerate(steps) if "pip install --quiet -e ." in _shell(s))
+    run = next(i for i, s in enumerate(steps) if "modal run" in _shell(s))
+    assert install < run
+
+
+def test_the_ledger_step_gates_on_provenance_before_recording() -> None:
+    step = next(s for s in _workflow_steps() if "ledger" in str(s.get("name", "")).lower())
+    shell = _shell(step)
+    gate = shell.index("scripts/check_provenance.py")
+    record = shell.index("provael watch --record")
+    assert gate < record, "provenance must be checked BEFORE a shard is recorded"
+    assert "for shard in" in shell
 
 
 def test_the_workflow_keeps_good_shards_and_fails_on_the_bad_ones(lane: Any) -> None:
     """Order matters: commit what landed, THEN fail on what did not."""
-    steps = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))["jobs"]["gpu-redteam"]["steps"]
+    steps = _workflow_steps()
     names = [str(s.get("name", "")) for s in steps]
-    keep = next(i for i, n in enumerate(names) if n == "Keep the measurement")
+    keep = names.index("Keep the measurement")
     report = next(i for i, n in enumerate(names) if "failed" in n.lower())
-    assert keep < report, "the failure step must run after the good shards are committed"
+    assert keep < report
     assert lane.FAILED_SHARDS_FILE in steps[report]["run"]
 
 
-def test_the_workflow_regenerates_the_artifact_every_slice_changes() -> None:
-    """publish-freshness.json now carries the challenger; a slice that skips it reds main."""
-    steps = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))["jobs"]["gpu-redteam"]["steps"]
-    keep = next(s for s in steps if s.get("name") == "Keep the measurement")["run"]
-    shell = "\n".join(line for line in keep.splitlines() if not line.lstrip().startswith("#"))
-    assert "gen_publish_freshness_artifact.py" in shell
-    assert "watch/publish-freshness.json" in shell.split("git add", 1)[1].splitlines()[0]
-
-
-def test_the_ledger_step_records_every_shard() -> None:
-    steps = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))["jobs"]["gpu-redteam"]["steps"]
-    ledger = next(s for s in steps if "ledger" in str(s.get("name", "")).lower())["run"]
-    shell = "\n".join(line for line in ledger.splitlines() if not line.lstrip().startswith("#"))
-    assert "for report in" in shell and "provael watch --record" in shell
+def test_the_keep_step_regenerates_every_artifact_a_shard_changes() -> None:
+    step = next(s for s in _workflow_steps() if s.get("name") == "Keep the measurement")
+    shell = _shell(step)
+    order = [
+        shell.index("scripts/combine_campaign.py"),
+        shell.index("scripts/gen_measurement_ledger.py"),
+        shell.index("make gen-publish-freshness"),
+        shell.index("scripts/gen_campaign_progress.py"),
+    ]
+    assert order == sorted(order), "combine, then ledger, then freshness, then progress"
+    added = shell.split("git add", 1)[1].splitlines()[0]
+    for artifact in (
+        "watch/measurements.json",
+        "watch/freshness.json",
+        "watch/publish-freshness.json",
+        "watch/campaign.json",
+    ):
+        assert artifact in added, f"{artifact} is regenerated but not committed"
+    assert "results/gpu-scheduled/campaign-$version" in shell
