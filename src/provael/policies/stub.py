@@ -251,6 +251,10 @@ class StubPolicy(PolicyAdapter):
         # corruption from an earlier run must not survive it — the runner already restores in a
         # `finally`, and this is the second line of defence for anyone driving the adapter directly.
         self._params = clean_parameters()
+        # Every action this adapter emits is float32 arithmetic (see :meth:`act`), so that is the
+        # compute precision the report and the execution manifest record. It was None, which read
+        # as "unrecorded" on a fixture whose precision is the one thing about it that is certain.
+        self.resolved_precision = "fp32"
         self._loaded = True
         # What executed, as this adapter can state it: a scripted policy with no unnormaliser
         # (its actions are emitted in controller units) and no post-processing pipeline.

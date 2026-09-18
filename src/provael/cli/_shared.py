@@ -15,6 +15,7 @@ reason it happened would not be obvious from the diff.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import platform
@@ -172,6 +173,94 @@ def _git_commit() -> str | None:
     return sha if result.returncode == 0 and sha else None
 
 
+#: Explicit repository override for the same containers. A wheel installed from PyPI has no remote
+#: to read, so the driver states which repository's release it is running.
+REPOSITORY_ENV = "PROVAEL_REPOSITORY"
+_REPO_SLUG = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+#: Explicit dependency-lock digest override; the value is recorded verbatim after a shape check.
+DEP_LOCK_ENV = "PROVAEL_DEP_LOCK_DIGEST"
+_DEP_LOCK = re.compile(r"^[a-z0-9_.+-]+:sha256:[0-9a-f]{64}$")
+
+
+def _repository() -> str | None:
+    """``owner/name`` of the code that ran: ``PROVAEL_REPOSITORY`` if set, else the git origin.
+
+    THIS WAS NEVER POPULATED, by any version, in any lane. `execution.py` listed ``repository`` as
+    provenance the caller should supply and no caller did, so every manifest ever committed reports
+    it under ``missing_fields`` — including the scheduled GPU lane's, whose shards this project now
+    promotes into a published number. Read from the same two places ``commit`` is: an explicit
+    variable for containers that install from PyPI, else the git checkout. None when neither can
+    say, never a guess.
+    """
+    explicit = os.environ.get(REPOSITORY_ENV, "").strip()
+    if _REPO_SLUG.match(explicit):
+        return explicit
+    try:
+        result = subprocess.run(
+            ["git", "remote", "get-url", "origin"],  # noqa: S607 - fixed argv, no user input
+            capture_output=True, text=True, timeout=5, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    return _repository_slug(result.stdout.strip())
+
+
+def _repository_slug(remote_url: str) -> str | None:
+    """``git@github.com:owner/name.git`` or ``https://host/owner/name(.git)`` -> ``owner/name``."""
+    tail = remote_url.rstrip("/")
+    if tail.endswith(".git"):
+        tail = tail[:-4]
+    tail = tail.split(":")[-1] if "@" in tail and "://" not in tail else tail
+    parts = [part for part in tail.replace("\\", "/").split("/") if part]
+    if len(parts) < 2:
+        return None
+    slug = f"{parts[-2]}/{parts[-1]}"
+    return slug if _REPO_SLUG.match(slug) else None
+
+
+def _dep_lock_digest() -> str | None:
+    """A digest of the dependency set that ran, labelled with what it digests.
+
+    Three sources, in order, and the label says which so a reader is never left to guess:
+
+    * ``PROVAEL_DEP_LOCK_DIGEST`` — an explicit ``<source>:sha256:<hex>`` value, taken verbatim
+      after a shape check.
+    * ``uv.lock:sha256:<hex>`` — the lock file of the checkout this process runs from, when there
+      is one. A committed lock is the strongest statement of what was resolved.
+    * ``installed:sha256:<hex>`` — the sorted ``name==version`` list of every distribution the
+      running interpreter can see. This is what a container that pip-installed a release actually
+      ran, and it is the case the scheduled GPU lane is in: no checkout, no lock file, and a
+      reproducibility claim that was going unrecorded.
+
+    ``installed`` is a digest of a fact about this process, not a guess, so the field is never left
+    empty on a working interpreter — and two runs that share it ran the same package set.
+    """
+    explicit = os.environ.get(DEP_LOCK_ENV, "").strip().lower()
+    if _DEP_LOCK.match(explicit):
+        return explicit
+    for base in (Path.cwd(), *Path.cwd().parents):
+        lock = base / "uv.lock"
+        if lock.is_file():
+            return f"uv.lock:sha256:{hashlib.sha256(lock.read_bytes()).hexdigest()}"
+        if (base / ".git").exists():
+            break  # the checkout root without a lock file: fall through to the installed set
+    try:
+        from importlib import metadata
+
+        pins = sorted(
+            f"{(d.metadata['Name'] or '').strip().lower()}=={d.version}"
+            for d in metadata.distributions()
+            if d.metadata["Name"]
+        )
+    except Exception:  # noqa: BLE001 - a broken metadata walk is "unknown", never invented
+        return None
+    if not pins:
+        return None
+    return f"installed:sha256:{hashlib.sha256('\n'.join(pins).encode('utf-8')).hexdigest()}"
+
+
 def _hardware_string() -> str | None:
     """What the run executed on, as specifically as this process can honestly tell.
 
@@ -222,9 +311,11 @@ def _emit_execution_manifest(
         package_version=__version__,
         protocol_version="provael-redteam/v1",
         defense=defense,
+        repository=_repository(),
         checkpoint_repo=deployed.checkpoint if deployed is not None else None,
         checkpoint_revision=deployed.checkpoint_revision if deployed is not None else None,
         commit=_git_commit(),
+        dep_lock_digest=_dep_lock_digest(),
         python_version=platform.python_version(),
         os_name=f"{platform.system()} {platform.release()}",
         hardware=_hardware_string(),

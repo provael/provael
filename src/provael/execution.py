@@ -85,7 +85,13 @@ class ExecutionManifest(BaseModel):
     # platform
     os: str | None = None
     python_version: str | None = None
-    dep_lock_digest: str | None = None
+    dep_lock_digest: str | None = Field(
+        None,
+        description="`<source>:sha256:<hex>` — a digest of the dependency set that ran, labelled "
+        "with what was digested: `uv.lock` for a checkout's lock file, `installed` for the "
+        "sorted name==version list of the running interpreter (a container that pip-installed a "
+        "release has no lock file). Never a bare hash, so a reader knows which it is.",
+    )
     hardware: str | None = None
     accelerator: str | None = None
     precision: str | None = None

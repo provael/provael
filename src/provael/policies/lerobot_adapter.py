@@ -162,6 +162,23 @@ def clamp_action(action: object, action_dim: int, low: float = -1.0, high: float
     return result
 
 
+_PRECISION_NAMES = {"float32": "fp32", "bfloat16": "bf16", "float16": "fp16", "float64": "fp64"}
+
+
+def _precision_of(policy: Any) -> str | None:
+    """``fp32`` / ``bf16`` / ``fp16`` from the loaded parameters' dtype; None when it cannot tell.
+
+    The first parameter's dtype, which is what every mixed-precision recipe in lerobot keys on. A
+    dtype outside the table (an integer-quantised checkpoint, say) is reported as None rather than
+    coerced into the nearest float name.
+    """
+    try:
+        dtype = str(next(policy.parameters()).dtype)
+    except Exception:  # noqa: BLE001 - a policy with no parameters records no precision
+        return None
+    return _PRECISION_NAMES.get(dtype.removeprefix("torch."))
+
+
 class LeRobotAdapter(PolicyAdapter):
     """Loads a LeRobot policy (default ``lerobot/smolvla_base``) and runs it on real obs.
 
@@ -295,6 +312,11 @@ class LeRobotAdapter(PolicyAdapter):
             ) from exc
         policy.eval()
         self._policy = policy
+        # The precision the checkpoint actually loaded at, read off its parameters rather than
+        # assumed from a flag: report.precision and the execution manifest's `precision` were None
+        # on every committed real-model run, which `missing_fields` reported truthfully and which
+        # the scheduled lane's provenance gate now refuses.
+        self.resolved_precision = _precision_of(policy)
 
         preprocessor_overrides: dict[str, Any] = {"device_processor": {"device": str(device)}}
         if self.rename_map is not None:
