@@ -14,6 +14,9 @@
    "recorded": true,
    "successes": 3,
    "suite": "libero",
+   "tasks": [
+    "libero_object/0"
+   ],
    "toolVersion": "0.41.2"
   },
   {

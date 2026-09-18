@@ -1,12 +1,12 @@
 {
  "$schema": "provael-publish-freshness/1",
  "challenger": {
-  "attempts": 29,
-  "attemptsNeeded": 521,
-  "measuredAt": "2026-09-15T10:06:35Z",
+  "attempts": 43,
+  "attemptsNeeded": 507,
+  "measuredAt": "2026-09-18T09:28:46Z",
   "policy": "smolvla",
-  "runs": 3,
-  "successes": 8,
+  "runs": 4,
+  "successes": 11,
   "suite": "libero",
   "tasks": [
    "libero_object/0"
