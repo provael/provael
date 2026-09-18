@@ -71,7 +71,7 @@ to tell them apart.
 
 The scheduled lane no longer probes; it measures the next shards of a declared campaign
 (`studies/scheduled_campaign/plan.json`: the published body's checkpoint, suite, ten tasks and
-horizon, every arm it ran plus the harmless-variation controls, six seeds) at one held release, and
+horizon, every arm it ran plus the harmless-variation controls, eight seeds) at one held release, and
 `watch/campaign.json` publishes where that stands:
 
 - `plan`: the shape and size of the grid, and `shardsTotal`.
@@ -89,7 +89,8 @@ with a denominator. It is not a rate, and it does not become one; the rate lives
 the campaign's own combined view, `results/gpu-scheduled/campaign-<version>/campaign.json`, which
 is written continuously and says `complete: false` in its own words until every planned shard is
 present. That combined view is never `report.json` and never a ledger row: a combined view has no
-single execution behind it, so the rows stay the shards, exactly as the 0.32.0 campaign is recorded.
+single execution behind it, so the rows stay the shards, exactly as the 0.32.0 and 0.41.2 campaigns
+are recorded.
 
 ## Two properties every file here holds
 

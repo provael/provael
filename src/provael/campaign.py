@@ -11,8 +11,10 @@ seventh of the credit to do so.
 
 So the lane now measures a **plan** (``studies/scheduled_campaign/plan.json``): the checkpoint, the
 suite, the ten tasks, the arms and the seed count, declared before the first shard ran and modelled
-on the 0.32.0 campaign's own shape so the two are comparable. The plan splits into **shards** — one
-(task, seed) cell each, every arm, so a shard fits one Modal L4 hour with margin — and each
+on the published campaign's own shape so the two are comparable (the 0.32.0 campaign when it was
+declared; the 0.41.2 Object body since the evening of 18 September 2026, when that landed). The
+plan splits into **shards** — one (task, seed) cell each, every arm, so a shard fits one Modal L4
+hour with margin — and each
 scheduled run measures the next few shards the committed tree does not yet hold. The tree IS the
 ledger: a missed run costs a week and not correctness, and re-running a shard that already landed
 selects the next one instead of writing a duplicate row.

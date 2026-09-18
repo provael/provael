@@ -4,7 +4,7 @@
   "attempts": 0,
   "lastShardEndedAt": null,
   "shardsDone": 0,
-  "shardsRemaining": 60
+  "shardsRemaining": 80
  },
  "cadence": {
   "cron": "17 4 * * 2,5",
@@ -25,18 +25,18 @@
   "id": "smolvla-libero-object",
   "model": "HuggingFaceVLA/smolvla_libero",
   "policy": "smolvla",
-  "seeds": 6,
-  "shardsTotal": 60,
+  "seeds": 8,
+  "shardsTotal": 80,
   "suite": "libero",
   "tasks": 10
  },
  "projected": {
   "completion": null,
-  "runsRemaining": 12
+  "runsRemaining": 16
  },
  "target": {
-  "attemptsToDisplace": 550,
-  "publishedWith": "0.32.0"
+  "attemptsToDisplace": 656,
+  "publishedWith": "0.41.2"
  },
  "toolVersion": "0.41.2"
 }

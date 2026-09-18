@@ -130,9 +130,12 @@ def test_the_expected_spend_is_under_the_ceiling(lane: Any, plan, arms: int) -> 
 
 
 def test_the_campaign_completes_in_a_bounded_number_of_runs(plan) -> None:
+    """Sixteen runs is eight weeks at Tuesday+Friday, the figure the workflow header and the plan's
+    README quote. The bound exists so a seed bump cannot quietly turn the campaign into a half-year;
+    raising it is a decision to be written down in both places, not a side effect."""
     total = len(shards(plan))
     runs = -(-total // plan.shards_per_run)
-    assert runs <= 13, f"{total} shards at {plan.shards_per_run} a run is {runs} runs"
+    assert runs <= 16, f"{total} shards at {plan.shards_per_run} a run is {runs} runs"
 
 
 def test_the_rate_is_the_one_the_arm_planner_prices_with(lane: Any) -> None:

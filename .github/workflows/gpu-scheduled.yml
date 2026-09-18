@@ -15,8 +15,9 @@
 #
 # So each run now measures the next shards of studies/scheduled_campaign/plan.json: the same
 # checkpoint and suite, all ten libero_object tasks, every arm the published body ran plus the
-# harmless-variation controls, six seeds — sixty (task, seed) shards, one container each, at ONE
-# pinned release held until the campaign supersedes the published body. Which shards are done is
+# harmless-variation controls, eight seeds — eighty (task, seed) shards, one container each, at ONE
+# pinned release held until the campaign supersedes the published body (the 0.41.2 Object body of
+# 14 September 2026, 656 attempts over the same ten tasks, since the evening of 18 September). Which shards are done is
 # read from results/gpu-scheduled/campaign-<pin>/ (this workflow commits every shard there), so a
 # missed run costs a week and not correctness, and a re-run of a slot that already landed selects
 # the shards after it rather than writing a duplicate row. After each run the shards are combined
@@ -26,8 +27,8 @@
 # COST, DERIVED IN THE EXAMPLE AND HELD BY A TEST. Five shards a run, twelve episodes each, at the
 # measured ~134 s/episode plus ~174 s container setup: about $1.98 a run expected, $3.00 at the
 # 45-minute per-container ceiling; at Tuesday+Friday that is ~$17.19 a month expected and ~$26.05
-# worst case, of a $30/month credit shared with the manual arms in gpu-arm.yml. Twelve runs, six
-# weeks, about $24 for the whole campaign. tests/test_gpu_scheduled_plan.py recomputes those from
+# worst case, of a $30/month credit shared with the manual arms in gpu-arm.yml. Sixteen runs, eight
+# weeks, about $32 for the whole campaign. tests/test_gpu_scheduled_plan.py recomputes those from
 # the example's constants and the plan and fails if the ceiling no longer fits — a cost figure in a
 # comment is a claim like any other.
 #

@@ -392,9 +392,9 @@ STAGES: dict[str, dict[str, str]] = {
     # implements WeightAccessible over `model.action_out_proj` (a symmetric per-tensor INT8 view,
     # delta applied to the floats, exact restore) and provides `input_gradient` through the
     # backend's own vision tower, so `weight_integrity` and `gradient_patch` can run against
-    # SmolVLA x LIBERO instead of against the stub. Nothing has run yet: watch/registry.json lists
-    # both under stubOnlyFamilies and realPolicyTested stays 3 of 17 until a result is committed
-    # under results/. This stage registers and prices the arm; it does not claim a rate.
+    # SmolVLA x LIBERO instead of against the stub. The only real-policy evidence so far is the
+    # 14 Sep 2026 breadth probe (one task, three seeds, 0/3 each, under results/); this stage is
+    # the powered version. It registers and prices the arm; it does not claim a rate.
     #
     # NEEDS provael >= 0.42.0 IN THE IMAGE. On 0.41.2 (the PROVAEL_PIN before that release) the
     # adapter has neither surface, every episode of both families reports itself not applicable,

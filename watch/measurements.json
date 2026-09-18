@@ -48,6 +48,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_10/2"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -62,6 +65,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_10/1"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -76,6 +82,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_10/0"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -90,6 +99,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_goal/9"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -104,6 +116,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_goal/8"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -118,6 +133,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_goal/6"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -132,6 +150,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_goal/7"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -146,6 +167,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_goal/3"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -160,6 +184,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_goal/5"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -174,6 +201,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_goal/4"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -188,6 +218,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_goal/0"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -202,6 +235,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_goal/1"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -216,6 +252,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_goal/2"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -230,6 +269,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_spatial/9"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -244,6 +286,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_spatial/8"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -258,6 +303,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_spatial/7"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -272,6 +320,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_spatial/6"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -286,6 +337,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_spatial/5"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -300,6 +354,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_spatial/4"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -314,6 +371,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_spatial/3"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -328,6 +388,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_spatial/1"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -342,6 +405,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_spatial/2"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -356,6 +422,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_spatial/0"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -370,6 +439,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_object/0"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -384,6 +456,9 @@
    "recorded": true,
    "successes": 10,
    "suite": "libero",
+   "tasks": [
+    "libero_object/0"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -398,6 +473,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_object/0"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -412,6 +490,9 @@
    "recorded": true,
    "successes": 1,
    "suite": "libero",
+   "tasks": [
+    "libero_object/0"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -426,6 +507,10 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_object/0",
+    "libero_object/1"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -440,6 +525,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_object/9"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -454,6 +542,9 @@
    "recorded": true,
    "successes": 6,
    "suite": "libero",
+   "tasks": [
+    "libero_object/8"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -468,6 +559,9 @@
    "recorded": true,
    "successes": 8,
    "suite": "libero",
+   "tasks": [
+    "libero_object/7"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -482,6 +576,9 @@
    "recorded": true,
    "successes": 8,
    "suite": "libero",
+   "tasks": [
+    "libero_object/6"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -496,6 +593,9 @@
    "recorded": true,
    "successes": 8,
    "suite": "libero",
+   "tasks": [
+    "libero_object/4"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -510,6 +610,9 @@
    "recorded": true,
    "successes": 9,
    "suite": "libero",
+   "tasks": [
+    "libero_object/5"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -524,6 +627,9 @@
    "recorded": true,
    "successes": 7,
    "suite": "libero",
+   "tasks": [
+    "libero_object/3"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -538,6 +644,9 @@
    "recorded": true,
    "successes": 9,
    "suite": "libero",
+   "tasks": [
+    "libero_object/0"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -552,6 +661,9 @@
    "recorded": true,
    "successes": 8,
    "suite": "libero",
+   "tasks": [
+    "libero_object/2"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -566,6 +678,9 @@
    "recorded": true,
    "successes": 9,
    "suite": "libero",
+   "tasks": [
+    "libero_object/1"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -580,6 +695,9 @@
    "recorded": true,
    "successes": 0,
    "suite": "libero",
+   "tasks": [
+    "libero_object/9"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -594,6 +712,9 @@
    "recorded": true,
    "successes": 4,
    "suite": "libero",
+   "tasks": [
+    "libero_object/8"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -608,6 +729,9 @@
    "recorded": true,
    "successes": 6,
    "suite": "libero",
+   "tasks": [
+    "libero_object/7"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -622,6 +746,9 @@
    "recorded": true,
    "successes": 3,
    "suite": "libero",
+   "tasks": [
+    "libero_object/6"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -636,6 +763,9 @@
    "recorded": true,
    "successes": 5,
    "suite": "libero",
+   "tasks": [
+    "libero_object/3"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -650,6 +780,9 @@
    "recorded": true,
    "successes": 9,
    "suite": "libero",
+   "tasks": [
+    "libero_object/5"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -664,6 +797,9 @@
    "recorded": true,
    "successes": 11,
    "suite": "libero",
+   "tasks": [
+    "libero_object/4"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -678,6 +814,9 @@
    "recorded": true,
    "successes": 5,
    "suite": "libero",
+   "tasks": [
+    "libero_object/2"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -692,6 +831,9 @@
    "recorded": true,
    "successes": 5,
    "suite": "libero",
+   "tasks": [
+    "libero_object/1"
+   ],
    "toolVersion": "0.41.2"
   },
   {
@@ -706,6 +848,9 @@
    "recorded": true,
    "successes": 7,
    "suite": "libero",
+   "tasks": [
+    "libero_object/0"
+   ],
    "toolVersion": "0.41.2"
   },
   {

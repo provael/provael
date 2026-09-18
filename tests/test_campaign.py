@@ -2,8 +2,10 @@
 
 WHAT THIS PINS, in the order `provael.campaign`'s docstring states it:
 
-1. The plan is modelled on the 0.32.0 campaign's own shape — read out of the committed shards the
-   plan names, never guessed — and sized so the completed campaign exceeds its attempts.
+1. The plan is modelled on the published campaign's own shape — read out of the committed shards
+   the plan names, never guessed — and sized so the completed campaign exceeds the published body's
+   attempts. A results PR that grows that body past the plan fails here; the remedy is a seed bump
+   in the same PR.
 2. Shards are seed-major, selection is a pure function of the committed tree, a re-run of a slot
    that already landed selects the shards after it, and a complete campaign selects nothing.
 3. The combined artifact is never `report.json`, never a ledger row, says `complete: false` in its
@@ -63,7 +65,7 @@ runner = CliRunner()
 
 
 # --------------------------------------------------------------------------- #
-# 1. the plan is the 0.32.0 campaign's shape, read from its artifacts
+# 1. the plan is the published campaign's shape, read from its artifacts
 # --------------------------------------------------------------------------- #
 
 
@@ -130,7 +132,10 @@ def test_the_completed_campaign_exceeds_the_published_body() -> None:
     planned_attempts = attempts_per_cell * len(plan.tasks) * plan.seeds
     assert planned_attempts > standing.published.attempts, (
         f"{planned_attempts} planned attempts ({attempts_per_cell} per cell x {len(plan.tasks)} "
-        f"tasks x {plan.seeds} seeds) do not exceed the published {standing.published.attempts}"
+        f"tasks x {plan.seeds} seeds) do not exceed the published {standing.published.attempts} "
+        f"(v{standing.published.tool_version}). If new runs at that version grew the body, raise "
+        "`seeds` in studies/scheduled_campaign/plan.json in the same PR and say so in its note; a "
+        "campaign that cannot supersede is a probe with a plan."
     )
 
 

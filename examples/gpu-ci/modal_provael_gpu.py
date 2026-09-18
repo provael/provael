@@ -15,8 +15,10 @@ priced that at a seventh of the credit.
 
 So each run now measures the next shards of a **declared campaign**: `studies/scheduled_campaign/
 plan.json` names the checkpoint, the suite, the ten tasks, the arms and the seed count, modelled on
-the 0.32.0 campaign's own shape so the two are comparable and sized so the completed campaign
-exceeds its 550 attempts. A shard is one (task, seed) cell with every arm — small enough to fit one
+the published campaign's own shape so the two are comparable and sized so the completed campaign
+exceeds its attempts (the 0.41.2 Object body of 14 September 2026, 656 attempts, since the evening
+of 18 September; the plan's note is its amendment record). A shard is one (task, seed) cell with
+every arm — small enough to fit one
 L4 hour with margin — and :mod:`provael.campaign` decides which shards come next from what is
 already committed under `results/gpu-scheduled/campaign-<PROVAEL_PIN>/`. The committed tree is the
 ledger: a missed run costs a week and not correctness, a re-run of a slot that already landed
@@ -44,11 +46,11 @@ episodes in 15.4 L4-hours across ten 40-episode containers, this lane's probe ra
 for the plan's shard shape, and `tests/test_gpu_scheduled_plan.py` holds the ceiling under the
 credit. `scripts/gpu_arm_plan.py` prices the manual arms the same way from the same rate.
 
-WHAT THIS CANNOT DO, STATED HERE SO NOBODY READS THE LANE AS A FIX FOR IT. Sixty shards at five a
-run is twelve runs, six weeks. Between v0.32.0 (8 August 2026) and v0.41.2 (9 September 2026) this
-project shipped nine minor releases in thirty-two days. At that cadence the body that displaces
-the published measurement lands roughly a dozen minors behind the current release on the day it
-completes — past the two-release window it is measured against. The lane makes the published
+WHAT THIS CANNOT DO, STATED HERE SO NOBODY READS THE LANE AS A FIX FOR IT. Eighty shards at five a
+run is sixteen runs, eight weeks. Between v0.32.0 (8 August 2026) and v0.41.2 (9 September 2026)
+this project shipped nine minor releases in thirty-two days. At that cadence the body that
+displaces the published measurement lands a dozen or more minors behind the current release on the
+day it completes — past the two-release window it is measured against. The lane makes the published
 measurement MOVE, repeatedly, and `watch/campaign.json` publishes how far along it is; it cannot
 make it current. What would: a slower release cadence while a campaign runs, or a larger credit.
 Neither is a code change, and neither is claimed here.

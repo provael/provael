@@ -44,9 +44,11 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
   and priced as the `whitebox-pilot` stage of
   [`examples/gpu-ci/modal_libero_suite.py`](https://github.com/provael/provael/blob/main/examples/gpu-ci/modal_libero_suite.py)
   (2 tasks x 12 arms x 2 seeds, hard ceiling ~$4, dispatched by hand through `gpu-arm.yml`, never
-  scheduled). It has not run. Until its result is committed under `results/`, `realPolicyTested`
-  in `watch/registry.json` is **3 of 17** adversarial families, `weight_integrity` and
-  `gradient_patch` stay under `stubOnlyFamilies`, and no rate is stated here before then.
+  scheduled). It has not run. The workstation breadth probe of 14 September already exercised
+  `weight_integrity` and `gradient_patch` against SmolVLA on one task at three seeds (0/3 each,
+  with applicable episodes, which is why `realPolicyTested` in `watch/registry.json` already
+  counts them: **8 of 17**); this arm is the powered version of that probe, and no rate is stated
+  here before its result is committed under `results/`.
 - **Policies:** `stub` (CPU); `smolvla`, `pi0`, `pi05`, `pi0fast`, `groot` (LeRobot); `openvla`
   (HF transformers); `openpi` (websocket client to a π0 policy *server*). Bring-your-own via the
   `PolicyAdapter` ABC. **`groot`, `openvla` and `openpi` are registered scaffolding** — no
