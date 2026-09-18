@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.42.0] — 2026-09-18
+
+The first release since 0.41.2 on 9 September. It carries everything merged in between: the two
+extra control arms, the white-box surfaces on the real LeRobot adapter, the `vla_arena`
+scaffolding suite, the 17025-shaped test report, the Hugging Face Community Evals export, the
+clip and side-by-side video tooling, the keep-out path figures, the Machinery Regulation Annex III
+page, the Korea AI Framework Act crosswalk (#226), which the published tool had been missing since
+it reached `main` and the website on 12 September, and the UN R155 / ISO/SAE 21434 rows (#251).
+The published measurement posture does not change: the headline result is still the one measured
+with v0.32.0, and its stale banner stays until the re-measurement lands (issue #136).
+
 ### Added
 
 - **The published measurement was re-run on a current release, and it reproduces.** Eight

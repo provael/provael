@@ -428,6 +428,42 @@ def test_cli_report_compliance_json_to_file(tmp_path: Path) -> None:
     assert {e["framework_id"] for e in data["entries"]} >= {"eu-ai-act", "nist"}
 
 
+def test_korea_rows_reach_the_written_compliance_artifacts(tmp_path: Path) -> None:
+    """The statute has to be in the ARTEFACT a reader opens, not only in the source table.
+
+    The table-level tests above prove the mapping exists in `REQUIREMENTS`; this one drives the
+    CLI end to end and reads the JSON and Markdown it writes, so a regression anywhere between the
+    table and the file (a dropped framework in the emitter, a filtered entry, a renderer that skips
+    a row) fails here rather than in a user's evidence pack. The same three assertions are what the
+    post-publish smoke test runs against the installed wheel.
+    """
+    out = tmp_path / "run"
+    assert runner.invoke(app, ["attack", "--episodes", "2", "--out", str(out)]).exit_code == 0
+    json_target = tmp_path / "report.compliance.json"
+    md_target = tmp_path / "report.compliance.md"
+    for target in (json_target, md_target):
+        res = runner.invoke(
+            app, ["report", "--in", str(out), "--format", "compliance", "--out", str(target)]
+        )
+        assert res.exit_code == 0, res.output
+
+    data = json.loads(json_target.read_text(encoding="utf-8"))
+    korea = [e for e in data["entries"] if e["framework_id"] == "korea-ai-framework"]
+    assert [e["key"] for e in korea] == [
+        "korea-ai-framework:art34-risk-management",
+        "korea-ai-framework:art34-human-supervision",
+        "korea-ai-framework:art34-documentation",
+    ]
+    assert [e["control_id"] for e in korea] == ["Article 34(1)1", "Article 34(1)4", "Article 34(1)5"]
+    assert {e["framework"] for e in korea} == {"Korea AI Framework Act (Act No. 20676)"}
+    assert all(e["indicative"] is True for e in korea), "the statute rows are indicative, never determinative"
+
+    markdown = md_target.read_text(encoding="utf-8")
+    assert "Korea AI Framework Act (Act No. 20676)" in markdown
+    for control_id in ("Article 34(1)1", "Article 34(1)4", "Article 34(1)5"):
+        assert control_id in markdown, f"{control_id} missing from the rendered Markdown"
+
+
 def test_cli_report_compliance_md_to_file(tmp_path: Path) -> None:
     out = tmp_path / "run"
     assert runner.invoke(app, ["attack", "--episodes", "2", "--out", str(out)]).exit_code == 0

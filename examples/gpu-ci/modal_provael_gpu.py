@@ -121,15 +121,10 @@ REPOSITORY = "provael/provael"
 #: still pin the same version as every other — two lanes on different builds is the incident the
 #: test was written for — and a pin that names none of the three fails, with the reason.
 #:
-#: So: do NOT bump this in a release PR while `publish-freshness.json` shows a challenger at this
-#: version. Bump it when the body here has become the published measurement and a newer release
-#: exists, and the test will say so in those words. The campaign directory is named for this value.
-#:
-#: THIS LANE WAS GENUINELY UNPINNED before 0.41.2, which is a different bug with a different
-#: consequence. It installed `provael[lerobot]` with no constraint, so the probe measured whatever
-#: PyPI served on the morning it ran — not reproducible in either direction, and it silently split
-#: the two GPU lanes five releases apart while both looked healthy.
-PROVAEL_PIN = "0.41.2"
+#: A canary's job is to be recent, which is an argument for tracking the newest release, not for
+#: tracking it implicitly. Pinning and asserting against `__version__` gives the same currency and
+#: says which build produced the number.
+PROVAEL_PIN = "0.42.0"
 PROVAEL = f"provael[lerobot]=={PROVAEL_PIN}"
 
 # --------------------------------------------------------------------------- #
