@@ -122,6 +122,9 @@ def build() -> dict[str, object]:
                 "recorded": record.recorded,
                 "successes": record.successes,
                 "suite": record.suite,
+                # What the run covered, so a reader can see that a fourteen-attempt canary and a
+                # ten-shard campaign are not the same kind of row without opening either report.
+                "tasks": list(record.tasks) if record.tasks is not None else None,
                 "toolVersion": record.tool_version,
             }
         )

@@ -28,7 +28,12 @@ from pathlib import Path
 import pytest
 
 from provael import __version__
-from provael.watch import STALE_AFTER_RELEASES, published_measurement, releases_behind
+from provael.watch import (
+    STALE_AFTER_RELEASES,
+    displacement,
+    published_measurement,
+    releases_behind,
+)
 
 REPO = Path(__file__).resolve().parents[1]
 ARTIFACT = REPO / "watch" / "publish-freshness.json"
@@ -80,6 +85,43 @@ def test_the_gap_and_the_verdict_are_what_the_code_computes(artifact: dict) -> N
     assert artifact["isStale"] == (None if expected is None else expected > STALE_AFTER_RELEASES)
 
 
+def test_the_published_body_is_the_one_the_rule_computes(artifact: dict) -> None:
+    """`published` is the body behind `measuredWith`, summed by the code — never a typed count."""
+    standing = displacement()
+    assert standing is not None
+    body = artifact["published"]
+    assert body["toolVersion"] == artifact["measuredWith"]
+    assert body["attempts"] == standing.published.attempts
+    assert body["runs"] == standing.published.runs
+    assert body["tasks"] == list(standing.published.tasks or ())
+    assert body["measuredAt"] == artifact["measuredAt"]
+
+
+def test_the_challenger_states_both_deficits(artifact: dict) -> None:
+    """What the lane is building, against what it has to reach — size AND coverage, separately.
+
+    A consumer that saw only `attemptsNeeded` would read a 600-attempt single-task run as one attempt
+    short. The task deficit is the one the size-only rule could not express, so it is published as a
+    list a reader can count, not folded into a boolean.
+    """
+    standing = displacement()
+    assert standing is not None
+    challenger = artifact["challenger"]
+    if standing.challenger is None:
+        assert challenger is None
+        return
+    assert challenger["toolVersion"] == standing.challenger.tool_version
+    assert challenger["attempts"] == standing.challenger.attempts
+    assert challenger["attemptsNeeded"] == standing.attempts_needed
+    assert challenger["tasksMissing"] == list(standing.tasks_missing or ())
+    assert challenger["attemptsNeeded"] == max(
+        0, artifact["published"]["attempts"] - challenger["attempts"]
+    )
+    assert set(challenger["tasksMissing"]) == set(artifact["published"]["tasks"]) - set(
+        challenger["tasks"]
+    )
+
+
 def test_it_names_the_version_it_was_measured_against(artifact: dict) -> None:
     """`releasesBehind` is meaningless without the version it counts back from."""
     assert artifact["currentVersion"] == __version__
@@ -111,10 +153,12 @@ def test_a_missing_measurement_reports_null_rather_than_a_zero_gap(monkeypatch) 
     """
     gen = _generator()
     monkeypatch.setattr(gen, "published_measurement", lambda: None)
+    monkeypatch.setattr(gen, "displacement", lambda: None)
     built = gen.build()
     assert built["measuredWith"] is None
     assert built["releasesBehind"] is None
     assert built["isStale"] is None, "an unmeasured project must not publish isStale: false"
+    assert built["published"] is None and built["challenger"] is None
     assert built["staleAfterReleases"] == STALE_AFTER_RELEASES, (
         "the window is a property of the project, not of whether a measurement exists"
     )

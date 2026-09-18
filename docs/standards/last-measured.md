@@ -150,6 +150,29 @@ Green would need `FRESH_DAYS = 2`, a run every other day at ~$7.40/month, which 
 quarter of the budget for a canary. **The seven-day window is, for the first time, held by something
 that can actually run.**
 
+**Update, 18 September 2026: the lane that held the seven-day window could not move the other
+one.** `watch/publish-freshness.json` measures a second thing: whether the *published* number was
+measured against code that still exists. It is the largest body of real recorded runs at one policy,
+suite and version (`provael.watch.displacement`), and on this date that body is 550 attempts over
+ten `libero_object` tasks at v0.32.0, nine minor releases back. The scheduled lane added fourteen
+attempts on one task per run, and its version bucket reset every time a release re-pinned it. Twice
+a week for ever would have reached nothing. The arithmetic was the problem, not the cadence.
+
+Two things changed. The rule now requires a re-measurement to *cover* what it replaces (every task,
+at least as many attempts) before its size counts, which closes the opposite hole too: a long enough
+single-task run could previously have displaced the ten-task headline. And each scheduled run is now
+a slice of the campaign that would actually displace it: the next four (task, seed) cells of the
+same protocol on the same checkpoint, at one pinned release held until the body at that pin
+supersedes the published one. Which cells are done is read from `results/`; the artifact publishes
+the body in progress as `challenger`, with what it still lacks. `provael doctor` prints it.
+
+What this does not do, stated here because the lane looks like a fix for it: at the release cadence
+of August to September 2026 (nine minors in thirty-two days) a campaign of about thirteen runs lands
+about a dozen minors behind on the day it completes, past the two-release window it is measured
+against. The lane makes the published measurement move, repeatedly, and publishes how far along it
+is. It cannot make it current. What would: a slower release cadence while a campaign runs, or a
+larger credit. Neither is a code change.
+
 ### What changed instead
 
 The **claim** moved, not the threshold. `STALE_DAYS` is still 7, because seven days genuinely is old

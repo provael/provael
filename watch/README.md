@@ -28,9 +28,39 @@ On 8 September 2026 a $0.06 probe put that badge at `today`.
 `publish-freshness.json` asks **whether the number a reader is shown was measured against code that
 still exists**. The same day, it said the published 44/50 headline was measured with v0.32.0, nine
 minor releases back, past this project's own two-release window. A probe cannot move it: the version
-it reports is the one behind the *largest* real campaign, not the newest record.
+it reports is the one behind the published *body* of measurement, not the newest record.
 
 A green `freshness.json` therefore does **not** mean the headline is current. Read both.
+
+## What displaces the published measurement, and how far along the replacement is
+
+The rule is `provael.watch.displacement`, and it is stricter than the size-only rule it replaced.
+A **body** is every real, recorded run at one policy, one suite and one tool version. A body
+**supersedes** the published one only by re-measuring what it measured: the same policy and suite,
+every task it covered, with at least as many attempts (a tie goes to the newer version). A probe
+cannot displace a campaign; neither can a longer run on fewer tasks, which the old rule allowed.
+
+Bodies are one version each on purpose. `provael.combine` refuses to pool shards whose tool version
+differs, because a rate over two builds describes a run that never happened, so a body pooled across
+releases would be a number no evidence manifest can be built over and no site can re-pin. What
+accumulates is a campaign at one pinned release, and the scheduled lane holds its pin until that
+campaign supersedes the published body (`examples/gpu-ci/modal_provael_gpu.py`).
+
+`publish-freshness.json` therefore carries two more blocks:
+
+- `published`: the body behind `measuredWith`: its attempts, its runs, and the tasks it covered.
+- `challenger`: the newer body at the same policy and suite nearest to superseding it, with
+  `attemptsNeeded` and `tasksMissing` stating exactly what it still lacks. `null` when nothing newer
+  has been measured, which is not the same as a deficit of zero.
+
+Before these existed a reader could see that the published measurement was nine minors old and that
+a GPU lane ran twice a week, and had no way to learn that the lane was accumulating fourteen attempts
+a run on one task toward a body of five hundred and fifty over ten, in a version bucket that reset on
+every release. `provael doctor` prints the same as a `re-measurement` row.
+
+`measurements.json` rows carry `tasks` for the same reason: a fourteen-attempt canary and a
+ten-shard campaign are not the same kind of row, and a reader should not have to open either report
+to tell them apart.
 
 ## Two properties every file here holds
 
