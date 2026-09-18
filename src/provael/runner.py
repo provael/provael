@@ -548,11 +548,16 @@ def run(
         # emitting the field — a report that declares 3 while carrying a 4 field has that
         # field stripped by attest.report_projection before the digest, i.e. signed around
         # rather than signed over, and the corruption parameters would sit outside the
-        # signature that is supposed to cover them.
-        schema_version=5,
+        # signature that is supposed to cover them. 6: the report carries `deployed_policy`,
+        # the executed policy as the adapter resolved it (issue #227); same rule, same reason.
+        schema_version=6,
         evidence_state=classify_run(config.policy, config.suite).value,
         policy=config.policy,
         model=config.model,
+        # What was requested (`model`) beside what ran (`deployed_policy`): the adapter resolves
+        # the class, revision, unnormaliser and controller convention at load, and None means it
+        # resolved nothing — never that the request was honoured.
+        deployed_policy=policy.resolved_identity,
         suite=config.suite,
         attacks=[a.name for a in attacks],
         tasks=list(tasks),

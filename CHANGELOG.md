@@ -134,6 +134,17 @@ All notable changes to this project are documented here. The format is based on
 - **`docs/studies/pi0-openpi-transfer.md`** carries its design (n = 50 per arm, 5 seeds, horizon
   280) and Amendment 1: the first leg runs π0.5 through the native `pi05` adapter, with what that
   narrows and what it leaves open.
+- **A report now names the policy that executed, not only the checkpoint that was requested
+  (report schema 6; closes #227).** `RunReport.deployed_policy` is resolved by the adapter at load
+  — concrete class, the checkpoint loaded and its Hub revision read from the local cache, the
+  action unnormaliser actually applied (mode plus a digest over its statistics), the controller
+  convention (action dim, chunk, executed steps, clamp, post-processing pipeline) — under one
+  digest, beside `model`, which stays exactly what it was. Two deployments can agree on `model`
+  and be executable-inequivalent (Tai 2026, arXiv:2606.03724); now the report shows it, `combine`
+  refuses to pool shards whose deployed digests differ, the execution manifest's
+  `checkpoint_repo` / `checkpoint_revision` are filled from it, and the 17025-shaped test report
+  lists it as the item under test. Registered in `attest._REPORT_FIELDS_ADDED_IN[6]`, so every
+  attestation issued before schema 6 still verifies; `schemas/report.v6.schema.json` published.
 
 ### Fixed
 

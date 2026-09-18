@@ -212,12 +212,18 @@ def _emit_execution_manifest(
     end = datetime.now(UTC)
     start = end - timedelta(seconds=elapsed)
     fmt = "%Y-%m-%dT%H:%M:%SZ"
+    # The manifest's checkpoint fields come from the DEPLOYED identity the adapter resolved
+    # (issue #227), not from the request — they were never filled before, because nothing
+    # resolved them.
+    deployed = report.deployed_policy
     manifest = build_execution_manifest(
         report,
         run_id=f"{report.policy}-{report.suite}-{end.strftime(fmt)}",
         package_version=__version__,
         protocol_version="provael-redteam/v1",
         defense=defense,
+        checkpoint_repo=deployed.checkpoint if deployed is not None else None,
+        checkpoint_revision=deployed.checkpoint_revision if deployed is not None else None,
         commit=_git_commit(),
         python_version=platform.python_version(),
         os_name=f"{platform.system()} {platform.release()}",

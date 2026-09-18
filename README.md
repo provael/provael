@@ -426,7 +426,10 @@ Adversarial ASR: 67.1% (47/70) · all-episode observed-unsafe 67.1% (47/70)
 
 This writes `runs/stub/report.json` (machine-readable, byte-deterministic) and
 `runs/stub/report.md`. Per family, seed-0 ASR is **instruction 21/30**, **visual 14/20**,
-**injection 12/20** — exact, asserted numbers.
+**injection 12/20** — exact, asserted numbers. Since report schema 6 the report also carries
+`deployed_policy` — the policy that actually executed, as the adapter resolved it at load (class,
+checkpoint revision, action unnormaliser, controller convention, one digest) — beside `model`, the
+checkpoint that was requested; the two can differ, and a report now shows when they do.
 
 Other commands:
 

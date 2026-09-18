@@ -79,7 +79,13 @@ from provael.scoring.backdoor import ACTIVATION_CHANNEL, stub_activates
 from provael.scoring.confidentiality import LEAK_CHANNEL, stub_leaks
 from provael.scoring.misalignment import MISALIGN_CHANNEL, parse_embodied_reach
 from provael.scoring.perception import SPOOF_CHANNEL, parse_spoof_reach
-from provael.types import Action, Observation
+from provael.types import (
+    Action,
+    ActionUnnormaliser,
+    ControllerConvention,
+    DeployedPolicy,
+    Observation,
+)
 
 #: Substrings that, if present in an attackable channel, raise the stub's "aggression".
 #: Weights are summed (then clipped to 1.0). Chosen so the shipped attacks land on
@@ -116,6 +122,14 @@ ATTACKABLE_OBS_FIELDS: tuple[str, ...] = (
 #: EAI09 confidentiality leak flag (like channels 4-6 carry the backdoor / authorization fixture
 #: flags). Real policies keep their own action_dim; stub only.
 ACTION_DIM = 11
+
+#: The stub's "checkpoint": a fixed, versioned label for the scripted policy, recorded as the
+#: DEPLOYED identity (:attr:`~provael.policies.base.PolicyAdapter.resolved_identity`). It is not
+#: a file — the stub has no weights to load — and it deliberately ignores ``--model``: the stub
+#: cannot execute a requested checkpoint, so its report must say what actually ran rather than
+#: echo the request. That gap between ``RunReport.model`` and this value is issue #227 in
+#: miniature, and the CPU test for the field relies on it.
+STUB_CHECKPOINT = "provael-stub/scripted-v1"
 
 #: Decimal places to round aggression to, killing binary-float drift
 #: (e.g. 0.6 + 0.3 -> 0.8999999999999999) at the 0.1 weight granularity.
@@ -238,6 +252,21 @@ class StubPolicy(PolicyAdapter):
         # `finally`, and this is the second line of defence for anyone driving the adapter directly.
         self._params = clean_parameters()
         self._loaded = True
+        # What executed, as this adapter can state it: a scripted policy with no unnormaliser
+        # (its actions are emitted in controller units) and no post-processing pipeline.
+        self.resolved_identity = DeployedPolicy.build(
+            adapter=self.name,
+            policy_class=type(self).__name__,
+            checkpoint=STUB_CHECKPOINT,
+            checkpoint_revision=None,
+            action_unnormaliser=ActionUnnormaliser(
+                mode="IDENTITY", stats_digest=None, source="adapter-constant"
+            ),
+            controller_convention=ControllerConvention(
+                action_dim=self.action_dim, chunk_size=1, n_action_steps=1, action_bounds=None,
+                pipeline=[],
+            ),
+        )
 
     # -- provael.attacks.weight_integrity.WeightAccessible ------------------------------------- #
 

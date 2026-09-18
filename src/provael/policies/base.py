@@ -13,7 +13,7 @@ from typing import Any, Protocol, runtime_checkable
 
 import numpy.typing as npt
 
-from provael.types import Action, Observation, SuiteFeatures
+from provael.types import Action, DeployedPolicy, Observation, SuiteFeatures
 
 
 class PolicyAdapter(ABC):
@@ -35,6 +35,14 @@ class PolicyAdapter(ABC):
     resolved_device: str | None = None
     #: The compute precision this adapter actually used (e.g. ``"bf16"``), set during :meth:`load`.
     resolved_precision: str | None = None
+    #: The policy that ACTUALLY EXECUTED, resolved during :meth:`load` (issue #227): the concrete
+    #: class, the checkpoint loaded and its resolved revision, the action unnormaliser applied and
+    #: the controller convention, under one digest. Same discipline as :attr:`resolved_device` —
+    #: it records what the adapter resolved, never what was requested, and ``None`` means "not
+    #: resolved". :func:`provael.runner.run` copies it into ``RunReport.deployed_policy`` beside
+    #: ``RunReport.model`` (the request), so a report identifies the deployed policy and not only
+    #: the checkpoint string.
+    resolved_identity: DeployedPolicy | None = None
     #: INV-4 threat-model metadata: this policy's action-head class — ``"token"`` (discrete
     #: autoregressive) or ``"flow"`` (flow-matching). ``None`` where not asserted.
     #:

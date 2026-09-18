@@ -43,7 +43,19 @@ import numpy as np
 import numpy.typing as npt
 
 from provael.policies.base import PolicyAdapter
-from provael.types import IMAGE_KEY, Action, Observation, SuiteFeatures
+from provael.policies.identity import (
+    resolve_hub_revision,
+    step_names,
+    unnormaliser_from_pipeline,
+)
+from provael.types import (
+    IMAGE_KEY,
+    Action,
+    ControllerConvention,
+    DeployedPolicy,
+    Observation,
+    SuiteFeatures,
+)
 
 _INSTALL_HINT = (
     "The '{name}' policy requires the optional LeRobot dependency, which is not "
@@ -131,6 +143,11 @@ class MissingLeRobotError(RuntimeError):
 
 class IncompatiblePolicyError(RuntimeError):
     """Raised when a checkpoint's features don't match the env (needs fine-tuning/rename)."""
+
+
+def _int_or_none(value: object) -> int | None:
+    """An int for a config field that is one, ``None`` for anything else (absent, None, odd)."""
+    return int(value) if isinstance(value, int) and not isinstance(value, bool) else None
 
 
 def clamp_action(action: object, action_dim: int, low: float = -1.0, high: float = 1.0) -> Action:
@@ -294,6 +311,37 @@ class LeRobotAdapter(PolicyAdapter):
                 env_cfg=env_cfg, policy_cfg=policy_cfg
             )
         self._loaded = True
+        self.resolved_identity = self._resolve_identity(policy, policy_cfg)
+
+    def _resolve_identity(self, policy: Any, policy_cfg: Any) -> DeployedPolicy:
+        """What executed, read off the live objects rather than the request (issue #227).
+
+        Each part is resolved independently and records ``None`` where it cannot be read: the
+        revision comes from the Hub cache path the config was loaded from (no network, ``None`` for
+        a local checkout); the unnormaliser and its statistics from the post-processing pipeline
+        that :meth:`act` really applies; the controller convention from the policy config and the
+        env post-processor between the policy and the simulator. The clamp is the one this adapter
+        applies itself in :meth:`act`, so it is recorded as part of the convention.
+        """
+        pipeline = step_names(self._postprocess) + step_names(self._env_postprocess)
+        cfg = policy_cfg
+        convention = ControllerConvention(
+            action_dim=self._features.action_dim if self._features is not None else None,
+            chunk_size=_int_or_none(getattr(cfg, "chunk_size", None)),
+            n_action_steps=_int_or_none(getattr(cfg, "n_action_steps", None)),
+            action_bounds=(-1.0, 1.0),
+            pipeline=pipeline,
+        )
+        return DeployedPolicy.build(
+            adapter=self.name,
+            policy_class=type(policy).__name__,
+            checkpoint=self.model_id,
+            checkpoint_revision=resolve_hub_revision(self.model_id),
+            action_unnormaliser=unnormaliser_from_pipeline(
+                self._postprocess, source="lerobot-postprocessor"
+            ),
+            controller_convention=convention,
+        )
 
     def reset(self) -> None:
         """Clear the policy's internal action queue between episodes (verified eval call)."""

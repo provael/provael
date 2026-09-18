@@ -405,6 +405,15 @@ _RESULT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     5: ("policy_seed",),
 }
 
+#: TOP-LEVEL report fields introduced by each schema version — the same contract as
+#: `_RESULT_FIELDS_ADDED_IN`, one level up. `deployed_policy` (schema 6, issue #227) is the first
+#: field added at the top of the report since the projection landed; without this table an old
+#: report would dump it as `null`, its canonical bytes would move, and every attestation issued
+#: before schema 6 would verify as TAMPERED.
+_REPORT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
+    6: ("deployed_policy",),
+}
+
 
 def report_projection(report: RunReport | dict[str, Any]) -> dict[str, Any]:
     """The exact object every report digest is taken over, schema-aware.
@@ -424,6 +433,10 @@ def report_projection(report: RunReport | dict[str, Any]) -> dict[str, Any]:
             for result in obj.get("results", []):
                 for name in names:
                     result.pop(name, None)
+    for version, names in _REPORT_FIELDS_ADDED_IN.items():
+        if declared < version:
+            for name in names:
+                obj.pop(name, None)
     return obj
 
 

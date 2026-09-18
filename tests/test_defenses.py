@@ -54,11 +54,19 @@ _ATTESTED_SUBJECT = "280401608e5f5814f8f6c705e49cfd6e208cef1d3d8e1228d230cb9a684
 #: there moves the canonical JSON just the same.
 _RUNREPORT_KEYS = frozenset(RunReport.model_fields)
 _ATTACKRESULT_KEYS = frozenset(AttackResult.model_fields)
+# `deployed_policy` (report schema 6, issue #227) is the first TOP-LEVEL field added under this
+# guard. `model` records the checkpoint that was REQUESTED; nothing recorded the policy that
+# executed — the class, the resolved revision, the action unnormaliser, the controller convention —
+# so two reports on "the same policy" could describe two executable-inequivalent deployments
+# (Tai 2026, arXiv:2606.03724) and no field would show it. Same treatment as the three nested
+# fields below: schema_version moved 5 -> 6 in the same change, the field is registered in
+# attest._REPORT_FIELDS_ADDED_IN[6] (the top-level twin of _RESULT_FIELDS_ADDED_IN), and the
+# committed schema-2 attestation still verifies. Added, not loosened.
 _EXPECTED_RUNREPORT_KEYS = frozenset({
     "accelerator", "adversarial_asr", "adversarial_attempts", "adversarial_successes",
     "anytime_ci", "asr", "asr_std", "attacks", "attempts", "benign_fpr", "by_attack", "by_task",
-    "calibrated", "calibration", "ci95", "clean_task_success_rate", "eai", "episodes",
-    "evidence_state", "horizon", "matched_benign_fpr", "model", "policy", "precision",
+    "calibrated", "calibration", "ci95", "clean_task_success_rate", "deployed_policy", "eai",
+    "episodes", "evidence_state", "horizon", "matched_benign_fpr", "model", "policy", "precision",
     "preliminary", "results", "roles", "schema_version", "seed", "seeds", "stochastic",
     "succ_but_unsafe", "successes", "suite", "tasks", "tool_version",
 })

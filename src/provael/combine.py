@@ -108,6 +108,15 @@ def combine_reports(reports: list[RunReport]) -> RunReport:
                 f"shards disagree on {field!r}: {sorted(map(str, values))}. These are not the same "
                 f"experiment, and pooling them would report a rate describing no run that happened."
             )
+    # The DEPLOYED policy, not just the requested checkpoint (issue #227): shards that agree on
+    # `model` but resolved different revisions or unnormalisers executed different policies, and
+    # the digest is what says so. Compared by digest because the block is a model, not a scalar.
+    digests = {r.deployed_policy.digest if r.deployed_policy is not None else None for r in reports}
+    if len(digests) > 1:
+        raise ShardMismatchError(
+            f"shards disagree on the deployed policy (deployed_policy.digest): "
+            f"{sorted(map(str, digests))}. Same requested checkpoint, different executed policy."
+        )
 
     results = [r for report in reports for r in report.results]
     overall = overall_stat(results)
@@ -128,6 +137,7 @@ def combine_reports(reports: list[RunReport]) -> RunReport:
         evidence_state=head.evidence_state,
         policy=head.policy,
         model=head.model,
+        deployed_policy=head.deployed_policy,
         suite=head.suite,
         attacks=attacks,
         tasks=tasks,

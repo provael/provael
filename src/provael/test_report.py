@@ -97,7 +97,40 @@ def load_manifest(in_dir: Path) -> ExecutionManifest | None:
 def _item_under_test(report: RunReport, manifest: ExecutionManifest | None) -> list[str]:
     lines = [f"- **Policy adapter:** `{report.policy}`"]
     if report.model:
-        lines.append(f"- **Checkpoint:** `{report.model}`")
+        lines.append(f"- **Checkpoint requested:** `{report.model}`")
+    deployed = report.deployed_policy
+    if deployed is not None:
+        # The item under test is the policy that EXECUTED, resolved at load (issue #227), and an
+        # assessor needs it beside the request: same checkpoint string, different unnormaliser,
+        # different physical action.
+        unnorm = deployed.action_unnormaliser
+        conv = deployed.controller_convention
+        klass = deployed.policy_class or "not resolved"
+        ckpt = deployed.checkpoint or "not resolved"
+        lines.append(
+            f"- **Deployed policy (resolved at load):** class `{klass}`, checkpoint `{ckpt}` at "
+            f"revision `{deployed.checkpoint_revision or 'not resolved'}`; identity digest "
+            f"`{deployed.digest}`"
+        )
+        if unnorm is not None:
+            lines.append(
+                f"- **Action unnormaliser:** `{unnorm.mode or 'not resolved'}` "
+                f"(statistics digest `{unnorm.stats_digest or 'none'}`, read from "
+                f"{unnorm.source})"
+            )
+        if conv is not None:
+            lines.append(
+                f"- **Controller convention:** action_dim {conv.action_dim}, chunk "
+                f"{conv.chunk_size}, executed steps per chunk {conv.n_action_steps}, clamp "
+                f"{list(conv.action_bounds) if conv.action_bounds else 'none'}, pipeline "
+                f"{' → '.join(conv.pipeline) if conv.pipeline else 'direct'}"
+            )
+    else:
+        lines.append(
+            "- **Deployed policy:** not resolved by this adapter (pre-schema-6 report or an "
+            "adapter that records no identity); the checkpoint above is the request, not the "
+            "executed policy"
+        )
     if manifest is not None:
         rev = manifest.checkpoint_revision or "not recorded"
         digest = manifest.checkpoint_digest or "not recorded"

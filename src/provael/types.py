@@ -14,6 +14,8 @@ produces a byte-identical report.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -349,6 +351,133 @@ class CalibrationMeta(BaseModel):
     n_benign: int | None = Field(None, description="Benign rollouts used to calibrate.")
 
 
+class ActionUnnormaliser(BaseModel):
+    """How the policy's normalised action output was mapped back into controller units.
+
+    Resolved from the stack that EXECUTED, never copied from a model card. Tai (2026,
+    arXiv:2606.03724) shows the same normalised output becomes a different physical action once a
+    different unnormaliser is applied, so this is part of the policy's identity, not a detail.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    mode: str | None = Field(
+        None,
+        description="Normalisation mode applied to ACTION on the way out (e.g. 'MEAN_STD', "
+        "'MIN_MAX', 'IDENTITY'). None when the adapter could not resolve it.",
+    )
+    stats_digest: str | None = Field(
+        None,
+        description="sha256 over the canonical action statistics the unnormaliser actually "
+        "applied (the mean/std or min/max tensors, exactly as loaded). None when the mode uses "
+        "no statistics or they could not be read — never a placeholder value.",
+    )
+    source: str = Field(
+        ...,
+        description="Where the mode and statistics were read from: e.g. 'lerobot-postprocessor' "
+        "(the live post-processing pipeline), 'adapter-constant' (an adapter with a fixed, "
+        "documented convention).",
+    )
+
+
+class ControllerConvention(BaseModel):
+    """What the controller receives: the action layout the executing stack committed to."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    action_dim: int | None = Field(None, description="Length of one action vector handed on.")
+    chunk_size: int | None = Field(
+        None, description="Action-chunk length the policy predicts per inference, if chunked."
+    )
+    n_action_steps: int | None = Field(
+        None, description="How many steps of each chunk are executed before re-planning."
+    )
+    action_bounds: tuple[float, float] | None = Field(
+        None, description="Clamp applied to every action before the controller, if any."
+    )
+    pipeline: list[str] = Field(
+        default_factory=list,
+        description="Processing steps between the policy's raw output and the controller, in "
+        "order, by class name (e.g. the env post-processor). Empty when the adapter hands the "
+        "output on directly.",
+    )
+
+
+def _canonical_sha256(obj: Any) -> str:
+    """sha256 of the canonical JSON (sorted keys, no whitespace) of ``obj``."""
+    text = json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+class DeployedPolicy(BaseModel):
+    """The policy that ACTUALLY EXECUTED, resolved by the adapter at load time (issue #227).
+
+    :attr:`RunReport.model` records the checkpoint that was REQUESTED. Two deployments can agree
+    on that string, the prompt and the suite, and still be executable-inequivalent: a different
+    resolved revision, a different action unnormaliser, a different controller convention. This
+    block records what the adapter resolved, so a report identifies the deployed policy and not
+    only the checkpoint — and so two reports can be compared by one digest.
+
+    Built through :meth:`build`, which derives :attr:`digest` from every other field; a hand-set
+    digest that disagrees with its fields is a forgery, and :meth:`build` cannot produce one.
+    Every field except ``adapter`` may be ``None``: an adapter records what it could resolve and
+    nothing it could not — ``None`` is "not resolved", never a guess.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    adapter: str = Field(
+        ..., description="Registry key of the adapter that ran (RunReport.policy)."
+    )
+    policy_class: str | None = Field(
+        None, description="Concrete class that produced actions, e.g. 'SmolVLAPolicy'."
+    )
+    checkpoint: str | None = Field(
+        None,
+        description="Checkpoint identifier the adapter actually loaded (a Hub repo id or a local "
+        "path). May differ from RunReport.model, which is what was requested.",
+    )
+    checkpoint_revision: str | None = Field(
+        None,
+        description="Resolved Hub commit for the loaded checkpoint, read from the local cache "
+        "after loading. None for a local path or when the cache did not record one.",
+    )
+    action_unnormaliser: ActionUnnormaliser | None = None
+    controller_convention: ControllerConvention | None = None
+    digest: str = Field(
+        ...,
+        description="sha256 over the canonical JSON of every other field. Equal digests mean the "
+        "same deployed policy as far as the adapter could resolve it; the ExecutionManifest binds "
+        "the report (and so this block) by the report digest.",
+    )
+
+    @classmethod
+    def build(
+        cls,
+        *,
+        adapter: str,
+        policy_class: str | None = None,
+        checkpoint: str | None = None,
+        checkpoint_revision: str | None = None,
+        action_unnormaliser: ActionUnnormaliser | None = None,
+        controller_convention: ControllerConvention | None = None,
+    ) -> DeployedPolicy:
+        """Construct with the digest derived from the fields — the only way to get a true one."""
+        body: dict[str, Any] = {
+            "adapter": adapter,
+            "policy_class": policy_class,
+            "checkpoint": checkpoint,
+            "checkpoint_revision": checkpoint_revision,
+            "action_unnormaliser": (
+                action_unnormaliser.model_dump() if action_unnormaliser is not None else None
+            ),
+            "controller_convention": (
+                controller_convention.model_dump() if controller_convention is not None else None
+            ),
+        }
+        return cls(**body, digest=_canonical_sha256(body))
+
+
 class OperatingEnvelope(BaseModel):
     """Operator-declared operating envelope / operational-design-domain of the machine.
 
@@ -449,6 +578,14 @@ class RunReport(BaseModel):
         "without it, two different checkpoints yield reports distinguishable only by their ASR and "
         "an attestation cannot state what it attests to. None when the adapter's default was used.",
     )
+    deployed_policy: DeployedPolicy | None = Field(
+        None,
+        description="The policy that ACTUALLY EXECUTED, as the adapter resolved it at load time "
+        "(schema >= 6): concrete class, loaded checkpoint and its resolved revision, the action "
+        "unnormaliser applied, the controller convention, and one digest over all of them. Read "
+        "beside `model` (what was requested): the two can differ, and issue #227 is that nothing "
+        "recorded when they did. None on an older report or when an adapter resolved nothing.",
+    )
     suite: str
     attacks: list[str] = Field(..., description="Resolved attack names that were run.")
     tasks: list[str] = Field(..., description="Tasks that were run.")
@@ -465,7 +602,9 @@ class RunReport(BaseModel):
         "every run used to discard). >=4 records `weight_corruption`, the bit-flip budget and "
         "selection rule in force for the episode. >=5 records `policy_seed`, the seed the "
         "POLICY's own sampler was set to — the environment seed has always been recorded and the "
-        "policy's never was, which is why two rows at the same commit were not comparable. "
+        "policy's never was, which is why two rows at the same commit were not comparable. >=6 "
+        "records `deployed_policy`, the executed policy as the adapter resolved it (class, "
+        "revision, unnormaliser, controller convention) beside the requested `model`. "
         "Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed "
         "a calibration, because its trajectories do not exist.",
     )
