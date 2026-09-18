@@ -89,10 +89,12 @@ jobs:
           python - <<'PY' >> "$GITHUB_OUTPUT"
           import json
           d = json.load(open("leaderboard/results/leaderboard.json"))
-          print(f"measured_with={json.dumps(d.get('measured_with'))}")
-          print(f"pairs={json.dumps(sorted({f\"{r['policy']}/{r['suite']}\" for r in d['rows']}))}")
-          print(f"submitters={json.dumps(sorted({r.get('submitted_by') for r in d['rows'] if r.get('submitted_by')}))}")
-          print(f"generated_at={d.get('generated_at')}")
+          pairs = sorted({r["policy"] + "/" + r["suite"] for r in d["rows"]})
+          submitters = sorted({r.get("submitted_by") for r in d["rows"] if r.get("submitted_by")})
+          print("measured_with=" + json.dumps(d.get("measured_with")))
+          print("pairs=" + json.dumps(pairs))
+          print("submitters=" + json.dumps(submitters))
+          print("generated_at=" + str(d.get("generated_at")))
           PY
 
       - name: Rebuild and re-sign
@@ -151,7 +153,7 @@ jobs:
               bad.append(f"measured_with {d.get('measured_with')} is not what the run's shards say: {shard_versions}")
           if before_measured and shard_versions and max(map(_semver, shard_versions)) < max(map(_semver, before_measured)):
               bad.append(f"the new source ({shard_versions}) is older than the current board's ({before_measured}); a rebuild moves forward")
-          now_pairs = sorted({f"{r['policy']}/{r['suite']}" for r in d["rows"]})
+          now_pairs = sorted({r["policy"] + "/" + r["suite"] for r in d["rows"]})
           missing = [p for p in before_pairs if p not in now_pairs]
           if missing:
               bad.append(f"the rebuilt board drops {missing}, which the current board carries")
