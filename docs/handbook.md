@@ -1,8 +1,16 @@
 # The VLA Red-Teaming Handbook (outline)
 
+!!! warning "Not started"
+    This page is a chapter outline and nothing more: no chapter has been written, none is scheduled,
+    and none will be until the three proofs on the [roadmap](roadmap.md) exist. It stays published
+    because the URL is cited and an old URL stays old here; it is not a promise of a handbook. The
+    practice it would teach is, for now, spread across the [quickstart](quickstart.md), the
+    [attack catalogue](attacks.md), the [findings](findings/index.md) and the
+    [compliance crosswalk](compliance/index.md).
+
 A standalone guide that teaches the *practice* of red-teaming Vision-Language-Action policies —
 the Trail-of-Bits-Testing-Handbook model that drove tool adoption. This is the chapter outline;
-each chapter expands into a docs page.
+each chapter would expand into a docs page.
 
 1. **Why red-team a VLA?** — the action-space is the new attack surface; the incident record
    (RoboPAIR on a deployed Go2, FreezeVLA, BadVLA, the Unitree CVEs); what sim measurement does and
