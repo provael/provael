@@ -2,8 +2,18 @@
 
 A worked example of turning one Provael run into the **adversarial-robustness testing evidence**
 Article 15 expects, mapped clause-by-clause. Read [docs/compliance/index.md](../../../docs/compliance/index.md)
-first for the regulatory routing (post-Digital-Omnibus, robots route via the Machinery Regulation
-+ ISO 10218:2025; Art. 15 remains the measurement anchor).
+for the regulatory routing before citing this pack.
+
+> **What changed on 27 July 2026.** Regulation (EU) 2026/1744 (Digital Omnibus on AI) entered into
+> force and moved the Machinery Regulation to AI Act Annex I **Section B**. For a robot — machinery
+> — Article 15 therefore no longer applies **directly**: the AI-specific robustness, accuracy and
+> cybersecurity requirements reach machinery through the Machinery Regulation's own Annex III, by
+> delegated act under its new Art. 8, third paragraph, **applying by 2 August 2028**, and those
+> requirements are to *reflect* Article 15. Article 15 still applies directly to Annex I Section A
+> products (2 August 2028) and stand-alone Annex III high-risk systems (2 December 2027). So this
+> pack is the **measurement anchor** an assessor will still read — the clause map below is what
+> the delegated acts are written to reflect — and it is filed under the Machinery route, not as
+> AI Act compliance evidence for a robot. Evidence, not certification.
 
 ## Generate it
 

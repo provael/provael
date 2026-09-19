@@ -1,5 +1,7 @@
 # Provael ↔ XPolicyLab crosswalk
 
+> **Reference crosswalk — a proposed mapping, not a feature.** This page maps Provael's vocabulary onto someone else's; the authors of the other side have not reviewed or endorsed it, nothing here is a comparable performance figure, and under the 20 September 2026 freeze ([roadmap](../roadmap.md)) crosswalks are kept and checked but not extended. Read the other side's own paper or standard before relying on a row.
+
 > **Defensive, sim-only.** A comparability and composition artifact. It runs no XPolicyLab harness,
 > makes no RoboDojo leaderboard submission, publishes no comparative score, and drives no physical
 > robot. See [SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md).

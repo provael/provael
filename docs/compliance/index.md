@@ -30,7 +30,11 @@ framework asks for, and specs the report Provael generates from them.
 > **Article 15** robustness/cybersecurity language remains the substantive *measurement* anchor
 > (and still applies directly to non-machinery high-risk AI systems); for a robot, treat the
 > Machinery Regulation + ISO 10218:2025 cyber-risk assessment as the *operative route* and Art. 15
-> as the methodology it pulls in. Dates/routing are *indicative* — confirm against the final OJ text.
+> as the methodology it pulls in. Confirmed on 19 September 2026 against the consolidated Machinery
+> Regulation (CELEX 02023R1230-20260727): the route is **Art. 8, third paragraph** (delegated acts
+> adding AI requirements to Annex III, applying by 2 August 2028) and **Art. 20(10)** (presumption of
+> conformity via AI Act harmonised standards meanwhile); the Machinery Regulation sits in AI Act
+> Annex I **Section B** (Reg. 2026/1744, point (41)(b)). Not legal advice; the primary text governs.
 
 ---
 

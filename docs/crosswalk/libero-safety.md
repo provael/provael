@@ -1,5 +1,7 @@
 # Crosswalk: LIBERO-Safety
 
+> **Reference crosswalk — a proposed mapping, not a feature.** This page maps Provael's vocabulary onto someone else's; the authors of the other side have not reviewed or endorsed it, nothing here is a comparable performance figure, and under the 20 September 2026 freeze ([roadmap](../roadmap.md)) crosswalks are kept and checked but not extended. Read the other side's own paper or standard before relying on a row.
+
 > **Defensive, sim-only.** This is a taxonomy-comparability artifact. It runs no LIBERO-Safety
 > harness, makes no submission to their benchmark, publishes no comparative score, and drives no
 > physical robot. See [SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md).

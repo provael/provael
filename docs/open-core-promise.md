@@ -116,9 +116,9 @@ a request id — the traceback goes to the operator's log, never the response.
 The experimental endpoint is behind a **local feature flag** (`PROVAEL_HOSTED_LICENSE`) that is
 **not** authentication and lives **only** on the reference server — it never touches the free core.
 The assurance-report draft maps a `provael attest` bundle to the **EU Machinery Regulation
-2023/1230** (applies **2027-01-20**), the **AI Act** Annex-I machinery route (applies
-**2028-08-02**, deferred from a statutory **2027-08-02** by Regulation (EU) 2026/1744, the Digital
-Omnibus, in force 27 Jul 2026), and **ISO 10218:2025** —
+2023/1230** (applies **2027-01-20**; its AI-specific Annex III requirements, added by delegated act
+under Art. 8 third paragraph as amended by Regulation (EU) 2026/1744, apply by **2028-08-02** and
+reflect AI Act Art. 15 — the AI Act does not apply to machinery directly), and **ISO 10218:2025** —
 see
 [docs/compliance/machinery-reg-2027.md](https://github.com/provael/provael/blob/main/docs/compliance/machinery-reg-2027.md).
 **Evidence, not certification.**

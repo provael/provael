@@ -1,5 +1,7 @@
 # Embodied AI Security Top 10 ↔ ForesightSafety-VLA crosswalk
 
+> **Reference crosswalk — a proposed mapping, not a feature.** This page maps Provael's vocabulary onto someone else's; the authors of the other side have not reviewed or endorsed it, nothing here is a comparable performance figure, and under the 20 September 2026 freeze ([roadmap](../roadmap.md)) crosswalks are kept and checked but not extended. Read the other side's own paper or standard before relying on a row.
+
 > **Defensive, sim-only.** This is a taxonomy-comparability artifact and provael's own measured
 > coverage. It runs no ForesightSafety-VLA harness, publishes no comparative scores against their
 > numbers, and drives no physical robot. See

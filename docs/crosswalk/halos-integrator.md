@@ -1,5 +1,7 @@
 # Halos / ANAB integrator card
 
+> **Reference crosswalk — a proposed mapping, not a feature.** This page maps Provael's vocabulary onto someone else's; the authors of the other side have not reviewed or endorsed it, nothing here is a comparable performance figure, and under the 20 September 2026 freeze ([roadmap](../roadmap.md)) crosswalks are kept and checked but not extended. Read the other side's own paper or standard before relying on a row.
+
 > **Independent project. Not affiliated with or endorsed by NVIDIA, ANAB, ISO, IEC, or any of the
 > certification bodies named below. Not legal advice.** Provael produces adversarial-robustness
 > **evidence**. It is not an inspection, not an accreditation, and not a functional-safety

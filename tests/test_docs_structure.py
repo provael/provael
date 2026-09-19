@@ -244,3 +244,20 @@ def test_every_nav_target_exists() -> None:
     walk(nav)
     missing = [t for t in targets if t.endswith(".md") and not (DOCS / t).is_file()]
     assert not missing, f"nav names file(s) that do not exist: {missing}"
+
+
+def test_every_crosswalk_page_says_it_is_a_reference_mapping() -> None:
+    """Each docs/crosswalk page opens with the reference-crosswalk note (20 September 2026).
+
+    A crosswalk maps Provael's vocabulary onto a paper's or a standard's; adjacency reads as
+    endorsement and as comparability unless the page says otherwise, and the freeze keeps these as
+    reference material. One identical sentence on every page, asserted here because a new crosswalk
+    file would otherwise arrive without it.
+    """
+    pages = sorted((DOCS / "crosswalk").glob("*.md"))
+    assert len(pages) >= 9, "the crosswalk directory looks empty — is the checkout complete?"
+    for page in pages:
+        head = page.read_text(encoding="utf-8").split("\n", 4)
+        assert any("Reference crosswalk — a proposed mapping, not a feature." in line for line in head), (
+            f"{page.relative_to(DOCS.parent)} does not open with the reference-crosswalk note"
+        )

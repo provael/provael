@@ -95,12 +95,20 @@ Factual application dates, carried so the evidence is legible against the calend
 about. Dates only — no claim of conformity:
 
 - **EU Machinery Regulation (EU) 2023/1230** — applies **20 January 2027**. AI-enabled safety
-  functions need a cyber-risk assessment against corruption; this is the operative route for
-  AI-enabled robots.
-- **EU AI Act (EU) 2024/1689, Annex I machinery** — high-risk obligations were statutory from
-  **2 August 2027**. Regulation (EU) 2026/1744 (Digital Omnibus on AI), in the OJ on
-  **24 July 2026** and in force **27 July 2026**, moved embedded Annex I application to
-  **2 August 2028** — the operative date. Plan against 2028; 2027 is the superseded baseline.
+  functions need a cyber-risk assessment against corruption (Annex III 1.1.9 and 1.2.1); this is
+  the operative route for AI-enabled robots. Regulation (EU) 2026/1744 inserted Art. 8, third
+  paragraph: the Commission adds AI-specific health and safety requirements to Annex III by
+  delegated act, reflecting AI Act Chapter III Section 2 and Arts 17/19/72/73, **applying by
+  2 August 2028**; until then Art. 20(10) presumes conformity through the AI Act's harmonised
+  standards.
+- **EU AI Act (EU) 2024/1689, as amended by Regulation (EU) 2026/1744** — for machinery the AI
+  Act's Chapter III, Art. 15 included, does **not** apply directly: the Omnibus (OJ 24 July 2026,
+  in force 27 July 2026) moved the Machinery Regulation to Annex I **Section B**, and the
+  AI-specific requirements reach a robot through the Machinery Regulation route above, by
+  **2 August 2028**. Art. 15 applies directly to Annex I Section A products from 2 August 2028
+  and to stand-alone Annex III systems from 2 December 2027; the statutory 2 August 2027 is
+  superseded. Art. 15's robustness and cybersecurity language remains the measurement anchor the
+  Machinery-side requirements are to reflect.
 - **ISO 10218-1/-2:2025** — in force since 2025; the revision adds cybersecurity requirements for
   industrial robots, feeding the Machinery Regulation cyber-risk assessment.
 - **NIST AI 100-2e2025** — adversarial-ML taxonomy; guidance, not a compliance deadline.

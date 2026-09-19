@@ -18,11 +18,20 @@ component of machinery**. Two clocks are running:
 - **EU Machinery Regulation (EU) 2023/1230** — **applies 20 January 2027**. It brings AI-enabled
   safety functions and "self-evolving behaviour" in scope, requires protection against corruption of
   safety functions, and routes AI safety components toward third-party conformity assessment.
-- **EU AI Act (EU) 2024/1689, Annex I machinery** — high-risk obligations (robustness, accuracy,
-  cybersecurity under **Art. 15**) were **statutory from 2 August 2027**. Regulation (EU) 2026/1744
-  (Digital Omnibus on AI), in the OJ on **24 July 2026** and in force **27 July 2026**, moved
-  embedded Annex I application to **2 August 2028** — the operative date. Plan against 2028;
-  2027 is the superseded baseline.
+- **The AI-specific requirements, through the Machinery Regulation itself, by 2 August 2028.**
+  Regulation (EU) 2026/1744 (Digital Omnibus on AI; OJ **24 July 2026**, in force **27 July 2026**)
+  moved the Machinery Regulation to AI Act Annex I **Section B**, so the AI Act's Chapter III —
+  **Art. 15** robustness, accuracy and cybersecurity included — does **not** apply to machinery
+  directly. Instead the Machinery Regulation's new **Art. 8, third paragraph** has the Commission
+  add AI-specific health and safety requirements to **Annex III** by delegated act, reflecting AI
+  Act Chapter III Section 2 and Arts 17, 19, 72 and 73, **applying by 2 August 2028**; the new
+  **Art. 20(10)** presumes conformity through the AI Act's harmonised standards and common
+  specifications until Machinery-specific ones exist (consolidated text CELEX 02023R1230-20260727).
+  The statutory 2 August 2027 is superseded. Two instruments an assessor will also name: the
+  **Product Liability Directive (EU) 2024/2853** (transposition by 9 December 2026) makes software
+  and AI systems products for defect liability, which is what an evidence trail is kept against;
+  **ISO/IEC TS 22440** (AI functional-safety guidance, draft) is the technical-specification route
+  the delegated acts are expected to lean on. Neither is a crosswalk row here; both are cited.
 - **ISO 10218-1/-2:2025** — **published February 2025** (a standard is published, not "in
   force"; it binds only where a regulation or contract cites it); the revision adds cybersecurity requirements
   for industrial robots, feeding the Machinery Regulation's cyber-risk assessment.
@@ -35,7 +44,7 @@ how a policy behaved under red-team, with every rate carrying its 95% Wilson CI 
 | Attestation evidence (in the bundle) | Instrument · date | How it is used |
 | --- | --- | --- |
 | **Subject digest** — SHA-256 of the canonical `report.json` binding the run | Machinery Reg 2023/1230 · **2027-01-20** | Tamper-evident identity of the tested configuration for the technical file |
-| **Per-EAI ASR + 95% Wilson CI + benign-FPR control** (the compliance predicate) | AI Act Annex-I machinery, **Art. 15** · **2028-08-02** (deferred from 2027-08-02 by Reg (EU) 2026/1744, in force 2026-07-27) | Robustness / accuracy evidence against the adversarial threat classes |
+| **Per-EAI ASR + 95% Wilson CI + benign-FPR control** (the compliance predicate) | Machinery Reg Annex III, the AI-specific requirements added by delegated act under **Art. 8 ¶3** (Reg (EU) 2026/1744) reflecting AI Act **Art. 15** · **applies by 2028-08-02** | Robustness / accuracy evidence against the adversarial threat classes |
 | **Per-family transfer-test** (rate + CI + benign control + `real-transfer`/`stub-scaffolding`) | AI Act **Art. 15** robustness | Honest scope: what was measured on a real policy vs the deterministic stub |
 | **EAI04 action-integrity + EAI03 backdoor-screen** evidence | ISO 10218-1/-2:2025 (monitored stop / cyber) · **2025** | Action sanity-bounds + supply-chain / backdoor screening inputs |
 | **EAI08 authorization / excessive-agency** evidence (self-authorization + scope-escalation rate vs a benign control) | ISO 10218-1/-2:2025 (monitored standstill / least-agency) · **2025** · OWASP **ASI03** | Evidence that guarded actions require an operator token; input to least-privilege / human-in-the-loop controls |
