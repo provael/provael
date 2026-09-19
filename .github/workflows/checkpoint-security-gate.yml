@@ -35,9 +35,11 @@ on:
   schedule:
     - cron: "23 6 * * 1"   # weekly, Monday 06:23 UTC (off the :00 mark)
 
+# Least privilege at the top; the one job that uploads SARIF opts into `security-events: write`
+# below. A top-level write scope is inherited by every job in the file, which is what OpenSSF
+# Scorecard's Token-Permissions check scored 0 on (19 Sep 2026) — see tests/test_workflow_permissions.py.
 permissions:
   contents: read
-  security-events: write   # upload SARIF to code scanning
 
 concurrency:
   group: checkpoint-gate-${{ github.ref }}
@@ -47,6 +49,9 @@ jobs:
   gate:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write   # upload SARIF to code scanning
     env:
       POLICY: ${{ github.event.inputs.policy || 'stub' }}
       SUITE: ${{ github.event.inputs.suite || 'stub' }}
