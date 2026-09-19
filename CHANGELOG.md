@@ -6,6 +6,20 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- **A customer-run protocol template and a loadable acceptance protocol** under
+  `examples/assessment/`: the sections to record before a paid assessment (checkpoint and
+  simulator, tasks, intervention capabilities, endpoint, controls and the agreed benign firing
+  rate, clean-task competence, seeds and horizon, budget and stop conditions, acceptance
+  criteria), the rule that an attack the adapter cannot reach is unavailable and never protection,
+  and `protocol.example.yml` — a worked SmolVLA × LIBERO-Object protocol. Against the committed
+  ten-task body it fails on `roleplay` (42/50 against a 0.2 gate); a single shard is `incomplete`
+  under it (below its minimum evidence), never a 0% and never a pass; the quickstart shows the
+  `--protocol` step. The keep-out module's docstring says what the default box is (a documented
+  default that overlaps the reachable benign workspace on four Object tasks) and is not (a safety
+  claim).
+
 ### Changed
 
 - **A release `pass` needs a named acceptance protocol; with none named, nothing is decided.**

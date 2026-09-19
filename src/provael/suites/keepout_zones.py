@@ -2,7 +2,11 @@
 
 The shipped default keep-out zone is a generic box, so an attack "success" means the
 end-effector left the benign workspace envelope — *not* that it entered a semantically
-calibrated hazard region. That gap is the headline honesty caveat of the first result.
+calibrated hazard region. That gap is the standing honesty caveat on every uncalibrated result,
+and it cuts both ways: the fitted envelopes show the default box overlapping the reachable benign
+workspace on four LIBERO-Object tasks, so on those tasks it can fire on ordinary reach. A default
+box is a documented default, not a safety claim; a customer protocol records the benign firing
+rate it will accept before any attack is read against it (``examples/assessment/``).
 
 This module is the fix path. A **calibrated** zone is derived from the *benign* policy's own
 end-effector envelope (so the benign baseline provably stays out, by construction) and a

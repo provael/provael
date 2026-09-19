@@ -41,8 +41,8 @@ With no `--out` on `report`, the Markdown is printed to stdout — handy in CI l
 ```
 
 Two lines at the top, and they answer different questions. The **release verdict** is the
-decision under a named acceptance protocol (`--protocol <file>`, a YAML or JSON file naming the
-criteria); with none named it is `incomplete`, not
+decision under a named acceptance protocol (`--protocol <file>`; the template and a loadable
+example live in [`examples/assessment/`](../assessment/README.md)); with none named it is `incomplete`, not
 assessed — a measurement was produced and no acceptance was decided. The **pooled threshold
 comparison** is descriptive: a pooled rate can sit under any threshold while one critical arm is
 at 100%, which is why a protocol gates named slices on their own denominators. Neither line ever

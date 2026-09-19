@@ -63,6 +63,23 @@ touches `report.json`. `provael compose-video clips/<benign>.mp4 clips/<attacked
 pair.mp4` puts the benign twin and the attacked episode of one task and seed side by side. Both
 need the `[lerobot]` extra's imageio + ffmpeg.
 
+## Name the acceptance protocol before you read the number
+
+A run is a measurement; whether it is *acceptable* is a separate statement, made only against
+criteria written down and named beforehand. Pass an acceptance protocol (YAML or JSON) and every
+export renders the same decision under its name:
+
+```bash
+provael attack --recipe ci-gate --protocol examples/assessment/protocol.example.yml --out runs/gated
+provael report --in runs/gated --format scorecard      # reads runs/gated/report.decision.json
+```
+
+Without `--protocol` the run is a diagnostic: measured, and its acceptance **not assessed** —
+`report.md`, the scorecard, the SARIF and the manifest all say so, and none of them says `pass`.
+Critical attacks and tasks are gated on their own denominators, so a pooled rate cannot hide one
+arm at 100%; a slice that did not run is `incomplete`, never 0%. The template a customer fills in
+before a paid assessment is [`examples/assessment/`](https://github.com/provael/provael/tree/main/examples/assessment).
+
 ## Continuous security gate (CI)
 
 Gate every new checkpoint in CI with the reusable Action. It red-teams the policy, uploads findings
