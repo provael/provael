@@ -20,10 +20,15 @@ A count of registered families says what code exists, not what has been measured
 that actually ships:
 
 * **Real-policy tested** — families exercised against a real VLA policy in a real simulator. That
-  is 3 (``instruction``, ``visual``, ``injection``), from one committed SmolVLA x LIBERO run — and
-  two of those three returned **honest nulls**, which is a measurement, not a gap.
+  was 3 (``instruction``, ``visual``, ``injection``) from one committed SmolVLA x LIBERO run when
+  this module was written, and is 8 since the 14 September 2026 breadth probe — most of them
+  measured nulls, which is a measurement, not a gap.
 * **Stub-validated only** — the remaining families run on the deterministic CPU fixture and have
   never met a real policy. Registered, runnable, unmeasured against a real model.
+* **Real policies tested** — distinct real policies with a committed applicable adversarial
+  episode (``realPoliciesTested`` / ``realPolicyNames``). Two since 18 September 2026: SmolVLA and
+  π0.5, the latter a three-seed preliminary leg. A policy is not an architecture, and one
+  checkpoint is not a survey; the count says how many adapters have a committed arm, nothing more.
 
 A consumer that prints only "15 families" invites a reader to assume 15 measured families. So
 :func:`coverage` returns the breakdown and :func:`coverage_line` renders all of it on one line.
@@ -77,6 +82,12 @@ class Coverage:
     suites: int
     #: Families exercised against a real policy in a real simulator, sorted.
     real_policy_families: tuple[str, ...] = ()
+    #: Distinct real policies that received at least one applicable adversarial episode in a
+    #: committed run, sorted by adapter name. Derived from the same scan as
+    #: :attr:`real_policy_families`, for the same reason: the day a second architecture lands a
+    #: committed arm (18 September 2026, ``pi05`` on LIBERO-Object) the count must rise on its
+    #: own, and it must not rise for an adapter that is merely registered.
+    real_policy_names: tuple[str, ...] = ()
     #: Registered adversarial families never run against a real policy, sorted.
     stub_only_families: tuple[str, ...] = field(default_factory=tuple)
     #: Registered policy adapters DECLARED as scaffolding, sorted. Read from
@@ -112,6 +123,16 @@ class Coverage:
     @property
     def real_policy_tested(self) -> int:
         return len(self.real_policy_families)
+
+    @property
+    def real_policies_tested(self) -> int:
+        """How many distinct real policies have received an applicable adversarial episode.
+
+        A policy is not an architecture, and one checkpoint is not a survey: two counts here means
+        two adapters each ran at least one committed arm, which says nothing about how many seeds,
+        arms or tasks either ran. The per-run artifacts carry that.
+        """
+        return len(self.real_policy_names)
 
     @property
     def stub_validated_only(self) -> int:
@@ -178,6 +199,39 @@ def _real_policy_families(results_dir: Path = RESULTS_DIR) -> set[str]:
     return found
 
 
+def _real_policy_names(results_dir: Path = RESULTS_DIR) -> set[str]:
+    """Policies with at least one APPLICABLE adversarial episode against a real suite.
+
+    The same scan as :func:`_real_policy_families`, the same exclusions and the same applicability
+    test, collecting the report's ``policy`` instead of each episode's ``family``. Derived, never
+    declared, for the same reason: a count of "policies measured" that lived in a constant would
+    be edited the day an adapter was registered rather than the day it was run. A scaffolding
+    adapter with no committed run does not appear here; a policy whose every committed episode
+    was not applicable does not either, because nothing was measured on it.
+    """
+    found: set[str] = set()
+    if not results_dir.is_dir():
+        return found
+    for report_path in sorted(results_dir.rglob("report.json")):
+        try:
+            data = json.loads(report_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):  # pragma: no cover - a malformed committed report
+            continue
+        policy = data.get("policy")
+        if not policy or policy in FIXTURE_POLICIES or data.get("suite") in FIXTURE_SUITES:
+            continue
+        for result in data.get("results", []):
+            family = result.get("family")
+            if (
+                family
+                and family not in NON_ADVERSARIAL_FAMILIES
+                and result.get("applicable", True) is not False
+            ):
+                found.add(str(policy))
+                break
+    return found
+
+
 def _hardware_runs(results_dir: Path = RESULTS_DIR) -> int:
     """Count committed runs under ``results/hardware/``.
 
@@ -208,6 +262,7 @@ def coverage(results_dir: Path = RESULTS_DIR) -> Coverage:
         policies=len(POLICIES),
         suites=len(SUITES),
         real_policy_families=tuple(sorted(real)),
+        real_policy_names=tuple(sorted(_real_policy_names(results_dir))),
         stub_only_families=tuple(sorted(adversarial_families - real)),
         scaffolding_policy_names=tuple(sorted(SCAFFOLDING_POLICIES)),
         scaffolding_suite_names=tuple(sorted(SCAFFOLDING_SUITES)),
@@ -258,6 +313,8 @@ def coverage_json(cov: Coverage | None = None) -> str:
             "attacksTotal": c.attacks_total,
             "realPolicyTested": c.real_policy_tested,
             "realPolicyFamilies": list(c.real_policy_families),
+            "realPoliciesTested": c.real_policies_tested,
+            "realPolicyNames": list(c.real_policy_names),
             "stubValidatedOnly": c.stub_validated_only,
             "stubOnlyFamilies": list(c.stub_only_families),
             "hardwareResults": c.hardware_results,
@@ -271,7 +328,13 @@ def coverage_json(cov: Coverage | None = None) -> str:
                 "Registered is not validated. policies/suites count what is REGISTERED; "
                 "runnablePolicies/runnableSuites exclude the adapters and suites DECLARED as "
                 "scaffolding, which are implemented and unit-tested but have never been run. "
-                "Those two conventions are not interchangeable."
+                "Those two conventions are not interchangeable. realPoliciesTested is a FOURTH "
+                "count and is neither of those: it counts distinct real policies that received at "
+                "least one applicable adversarial episode in a committed run (realPolicyNames says "
+                "which). A scaffolding adapter that has never been run does not count, and a "
+                "registered adapter is not a measured one. A policy is not an architecture, and "
+                "one checkpoint is not a survey: the per-run artifacts say how many seeds, arms "
+                "and tasks each policy actually received."
             ),
         },
         indent=2,

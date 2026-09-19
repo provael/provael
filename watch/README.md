@@ -11,7 +11,7 @@ simply not re-typed a number.
 
 | file | answers | written by |
 | --- | --- | --- |
-| `registry.json` | how many attacks, families, policies and suites are registered, and how many of each are runnable rather than scaffolding | `scripts/gen_registry_artifact.py` |
+| `registry.json` | how many attacks, families, policies and suites are registered, how many of each are runnable rather than scaffolding, how many adversarial families have met a real policy (`realPolicyTested`), and how many distinct real policies have a committed applicable adversarial episode (`realPoliciesTested`, with the names) | `scripts/gen_registry_artifact.py` |
 | `release.json` | which version is current, its tag, its PyPI string, and the project's release-drift window | `scripts/gen_release_artifact.py` |
 | `measurements.json` | one row per committed measurement: when, on what version, with what result, and whether it counts | `scripts/gen_measurement_ledger.py` |
 | `freshness.json` | when **anything** was last measured, as a shields.io badge | `provael watch` |

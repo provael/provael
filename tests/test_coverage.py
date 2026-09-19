@@ -151,6 +151,81 @@ def test_a_family_that_was_not_applicable_in_every_episode_is_not_exercised(tmp_
     assert "authorization" in c.stub_only_families
 
 
+def _real_run(root: Path, name: str, policy: str, results: list[dict], suite: str = "libero") -> None:
+    run = root / name
+    run.mkdir()
+    (run / "report.json").write_text(
+        json.dumps({"policy": policy, "suite": suite, "results": results}), encoding="utf-8"
+    )
+
+
+def test_a_fixture_policy_never_counts_as_a_measured_policy(tmp_path: Path) -> None:
+    """The stub is a registered policy and a run against it exercises real attacks. It is not a
+    real policy, and the policy count must not rise for it any more than the family count does."""
+    _real_run(tmp_path, "fixture", "stub", [{"family": "instruction", "applicable": True, "success": True}], suite="stub")
+    # A real policy on a fixture suite is scaffolding too (the suite computes its state).
+    _real_run(tmp_path, "real-on-fixture", "smolvla", [{"family": "instruction", "applicable": True, "success": True}], suite="reach")
+    c = coverage(results_dir=tmp_path)
+    assert c.real_policy_names == ()
+    assert c.real_policies_tested == 0
+
+
+def test_a_policy_whose_every_episode_was_not_applicable_is_not_a_measured_policy(tmp_path: Path) -> None:
+    """Untested is not measured. Eight families came back all-N/A on SmolVLA in the 14 September
+    2026 probe; a policy that receives ONLY such episodes has had nothing measured on it, and a
+    benign-only run (the π0.5 pilot of the same day) measured no attack either."""
+    _real_run(tmp_path, "openvla_probe", "openvla", [
+        {"attack": "scope_escalation", "family": "authorization", "applicable": False},
+        {"attack": "freeze", "family": "action", "applicable": False},
+    ])
+    _real_run(tmp_path, "pi05_pilot", "pi05", [
+        {"attack": "none", "family": "baseline", "applicable": True, "success": False},
+    ])
+    c = coverage(results_dir=tmp_path)
+    assert c.real_policy_names == ()
+    assert c.real_policies_tested == 0
+
+
+def test_two_committed_runs_on_two_policies_count_two(tmp_path: Path) -> None:
+    """Two adapters, each with at least one applicable adversarial episode, regardless of how many
+    runs, seeds or arms each had — one shard on π0.5 counts the same as ten on SmolVLA."""
+    for t in range(3):
+        _real_run(tmp_path, f"smolvla_{t}", "smolvla", [
+            {"attack": "roleplay", "family": "instruction", "applicable": True, "success": True},
+            {"attack": "mcp_tool_desc", "family": "injection", "applicable": False},
+        ])
+    _real_run(tmp_path, "pi05_leg", "pi05", [
+        {"attack": "roleplay", "family": "instruction", "applicable": True, "success": False},
+    ])
+    c = coverage(results_dir=tmp_path)
+    assert c.real_policy_names == ("pi05", "smolvla")
+    assert c.real_policies_tested == 2
+    # And the family count is unmoved by the second policy: it is a different question.
+    assert c.real_policy_families == ("instruction",)
+
+
+def test_the_committed_tree_counts_two_measured_policies() -> None:
+    """Pins today's honest state: SmolVLA and, since 18 September 2026, π0.5 (a three-seed
+    preliminary leg on LIBERO-Object — a committed arm, not a transfer claim)."""
+    c = coverage()
+    assert c.real_policy_names == ("pi05", "smolvla")
+    assert c.real_policies_tested == 2
+
+
+def test_the_registry_artifact_on_disk_is_the_counter_output() -> None:
+    """watch/registry.json is coverage_json() plus its schema and note, byte for byte in content.
+
+    The file says "do not hand-edit" and www.provael.com fetches it; a key added here and not
+    regenerated there is a downstream reader that never learns the count exists.
+    """
+    root = Path(__file__).resolve().parent.parent
+    on_disk = json.loads((root / "watch" / "registry.json").read_text(encoding="utf-8"))
+    generated = json.loads(coverage_json())
+    assert {k: v for k, v in on_disk.items() if k not in ("$schema", "note")} == generated
+    assert on_disk["$schema"] == "provael-registry-counts/1"
+    assert "realPoliciesTested" in on_disk and "realPolicyNames" in on_disk
+
+
 def test_line_never_reports_a_total_without_its_breakdown() -> None:
     """A total alone reads as a measured total. The pair must be in the same string."""
     line = coverage_line()
