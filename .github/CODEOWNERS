@@ -10,6 +10,17 @@
 /src/provael/compliance.py    @sattyamjjain
 /src/provael/hosted/          @sattyamjjain
 
+# The signing and supply-chain paths (added 20 Sep 2026): an attestation binds a source commit and
+# a regulatory clock into a signed payload, a checkpoint-integrity verdict decides whether weights
+# load at all, the leaderboard key signs the public board, and its public key is what a verifier
+# trusts. One owner adds no review today — GitHub asks an owner other than the author — so these
+# lines change nothing yet; they state which paths must not move on one person's say-so and make
+# the day a second qualified maintainer joins a one-line change here plus one ruleset toggle
+# (docs/maintainers/github-security-settings.md, "Require review from CODEOWNERS").
+/src/provael/integrity.py     @sattyamjjain
+/src/provael/leaderboard.py   @sattyamjjain
+/leaderboard/results/leaderboard.pub @sattyamjjain
+
 # Release + CI infrastructure.
 /.github/                     @sattyamjjain
 /pyproject.toml               @sattyamjjain
