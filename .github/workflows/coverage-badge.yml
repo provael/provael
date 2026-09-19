@@ -34,8 +34,31 @@ jobs:
     permissions:
       contents: write # commits the regenerated badge JSON
     steps:
+      # MAIN IS PROTECTED, and GITHUB_TOKEN cannot cross a ruleset. Since 20 September 2026 `main`
+      # requires a pull request and passing checks (docs/maintainers/github-security-settings.md);
+      # the only bypass actor is the repository's own GitHub App, so this job pushes with a
+      # short-lived installation token of that App instead of the workflow token. Absent secrets
+      # FAIL here, on purpose: a fallback to GITHUB_TOKEN would be refused at push time after the
+      # work was done, or — worse — pass quietly if the ruleset were ever loosened.
+      - name: The bot App secrets must exist (main is protected)
+        env:
+          APP_ID: ${{ secrets.PROVAEL_BOT_APP_ID }}
+          APP_KEY: ${{ secrets.PROVAEL_BOT_PRIVATE_KEY }}
+        run: |
+          if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
+            echo "::error title=bot App token missing::main is protected by a ruleset that GITHUB_TOKEN cannot bypass. Create the repository's GitHub App and set PROVAEL_BOT_APP_ID and PROVAEL_BOT_PRIVATE_KEY (docs/maintainers/github-security-settings.md)."
+            exit 1
+          fi
+      - name: Mint the bot App token
+        id: bot
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.PROVAEL_BOT_APP_ID }}
+          private-key: ${{ secrets.PROVAEL_BOT_PRIVATE_KEY }}
+
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          token: ${{ steps.bot.outputs.token }}  # the App token; see the steps above
           persist-credentials: true # the commit below pushes; same pattern as freshness.yml
 
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -113,10 +136,11 @@ jobs:
           # [skip ci] is belt-and-braces, and the braces matter more than they look.
           # This job writes watch/coverage.json, which sits inside freshness.yml's
           # `paths: ["watch/**"]` trigger — so this commit would fire THAT workflow, and
-          # freshness.yml's own commit would fire itself. Neither happens today only because
-          # GitHub does not trigger workflows from GITHUB_TOKEN pushes. That protection is
-          # implicit and evaporates the day someone swaps in a PAT or deploy key to make bot
-          # commits visible to CI, which is a normal thing to want. The paths allow-list above
-          # already stops THIS workflow retriggering itself; this stops the cross-trigger too.
+          # freshness.yml's own commit would fire itself. Until 20 September 2026 neither
+          # happened only because GitHub does not trigger workflows from GITHUB_TOKEN pushes;
+          # this job now pushes with the bot App token (main is protected), and an App push DOES
+          # trigger workflows — so [skip ci] is the protection now, not belt-and-braces. The
+          # paths allow-list above stops THIS workflow retriggering itself; this stops the
+          # cross-trigger too.
           git commit -m "chore(ci): refresh the coverage badge, registry counts and release artifact [skip ci]"
           git push

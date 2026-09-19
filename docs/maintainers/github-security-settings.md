@@ -6,6 +6,40 @@ access — an unverified checklist is worse than none.
 
 > Status legend: `[ ]` not verified · `[x] (verified <handle> <date>)` confirmed in the admin UI.
 
+## The bot App — how automation writes to a protected `main`
+
+Six scheduled or dispatched workflows commit to `main` (`freshness.yml`, `coverage-badge.yml`,
+`leaderboard-restamp.yml`, `leaderboard-rebuild.yml`, `gpu-scheduled.yml`, `gpu-arm.yml`). A
+ruleset that requires a pull request and passing checks blocks a direct push from `GITHUB_TOKEN`,
+and `GITHUB_TOKEN` cannot be a bypass actor. Since 20 September 2026 those six jobs mint a
+short-lived installation token of the repository's own GitHub App
+(`actions/create-github-app-token`, SHA-pinned) and check out and push with it; the App is the
+ruleset's **only** bypass actor — no human role is on the list, so the maintainer goes through a
+pull request like anyone else. The jobs fail loudly when the two secrets are absent; there is no
+fallback to `GITHUB_TOKEN`, because a fallback that pushes nothing and exits green is how a badge
+goes stale unnoticed.
+
+Set up once, by an org owner (UI only — none of this can be done from a workflow):
+
+1. Settings → Developer settings → GitHub Apps → **New GitHub App**. Name it after the repository
+   (the bot's commits keep `github-actions[bot]` as author; the App is the pusher). Webhook off.
+   Repository permissions: **Contents: read and write**, **Metadata: read**. Nothing else — no
+   workflows, no administration, no secrets.
+2. Generate a private key; note the **App ID**.
+3. Install the App on **`provael/provael` only**.
+4. Repository secrets: `PROVAEL_BOT_APP_ID` (the App ID) and `PROVAEL_BOT_PRIVATE_KEY` (the PEM,
+   whole file).
+5. Add the App as a bypass actor on the `main` ruleset (actor type *Integration*, bypass mode
+   *always*).
+
+An App push **does** trigger `push` workflows, unlike a `GITHUB_TOKEN` push. The four commits
+that land in `watch/**` or `results/` carry `[skip ci]` (each would otherwise re-trigger the
+freshness refresh); the two leaderboard commits deliberately do not, so CI checks the board that
+was just rebuilt or re-stamped. The comment beside each `git commit` says which and why.
+
+- [ ] App created, installed on this repository only, secrets set
+- [ ] App is the ruleset's only bypass actor
+
 ## Branch protection — `main`
 
 - [ ] Require a pull request before merging (no direct pushes)

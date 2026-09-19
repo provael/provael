@@ -37,8 +37,31 @@ jobs:
     permissions:
       contents: write  # commits the recomputed badge JSON
     steps:
+      # MAIN IS PROTECTED, and GITHUB_TOKEN cannot cross a ruleset. Since 20 September 2026 `main`
+      # requires a pull request and passing checks (docs/maintainers/github-security-settings.md);
+      # the only bypass actor is the repository's own GitHub App, so this job pushes with a
+      # short-lived installation token of that App instead of the workflow token. Absent secrets
+      # FAIL here, on purpose: a fallback to GITHUB_TOKEN would be refused at push time after the
+      # work was done, or — worse — pass quietly if the ruleset were ever loosened.
+      - name: The bot App secrets must exist (main is protected)
+        env:
+          APP_ID: ${{ secrets.PROVAEL_BOT_APP_ID }}
+          APP_KEY: ${{ secrets.PROVAEL_BOT_PRIVATE_KEY }}
+        run: |
+          if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
+            echo "::error title=bot App token missing::main is protected by a ruleset that GITHUB_TOKEN cannot bypass. Create the repository's GitHub App and set PROVAEL_BOT_APP_ID and PROVAEL_BOT_PRIVATE_KEY (docs/maintainers/github-security-settings.md)."
+            exit 1
+          fi
+      - name: Mint the bot App token
+        id: bot
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.PROVAEL_BOT_APP_ID }}
+          private-key: ${{ secrets.PROVAEL_BOT_PRIVATE_KEY }}
+
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          token: ${{ steps.bot.outputs.token }}  # the App token; see the steps above
           persist-credentials: true  # the commit below pushes; see docs.yml for the same pattern
 
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -76,7 +99,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add watch/freshness.json
           # [skip ci]: this commit lands in watch/**, which is this workflow's own trigger
-          # path — a self-retrigger loop, currently masked only by GitHub declining to run
-          # workflows on GITHUB_TOKEN pushes. Do not rely on that alone.
+          # path — a self-retrigger loop. Until 20 September 2026 it was masked by GitHub
+          # declining to run workflows on GITHUB_TOKEN pushes; the push now uses the bot App
+          # token (main is protected) and App pushes DO trigger workflows, so this marker is
+          # the only thing between the job and a loop. Keep it.
           git commit -m "chore(watch): refresh the measurement-freshness badge [skip ci]"
           git push

@@ -99,11 +99,34 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
+      # MAIN IS PROTECTED, and GITHUB_TOKEN cannot cross a ruleset. Since 20 September 2026 `main`
+      # requires a pull request and passing checks (docs/maintainers/github-security-settings.md);
+      # the only bypass actor is the repository's own GitHub App, so this job pushes with a
+      # short-lived installation token of that App instead of the workflow token. Absent secrets
+      # FAIL here, on purpose: a fallback to GITHUB_TOKEN would be refused at push time after the
+      # work was done, or — worse — pass quietly if the ruleset were ever loosened.
+      - name: The bot App secrets must exist (main is protected)
+        env:
+          APP_ID: ${{ secrets.PROVAEL_BOT_APP_ID }}
+          APP_KEY: ${{ secrets.PROVAEL_BOT_PRIVATE_KEY }}
+        run: |
+          if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
+            echo "::error title=bot App token missing::main is protected by a ruleset that GITHUB_TOKEN cannot bypass. Create the repository's GitHub App and set PROVAEL_BOT_APP_ID and PROVAEL_BOT_PRIVATE_KEY (docs/maintainers/github-security-settings.md)."
+            exit 1
+          fi
+      - name: Mint the bot App token
+        id: bot
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.PROVAEL_BOT_APP_ID }}
+          private-key: ${{ secrets.PROVAEL_BOT_PRIVATE_KEY }}
+
       # persist-credentials: true, deliberately. This was false, which is the right default for a
       # lane that only reads — and this one has to push the measurement it produces or the whole
       # run is discarded. Scoped by `permissions: contents: write` on the job above.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          token: ${{ steps.bot.outputs.token }}  # the App token; see the steps above
           # Full history so the Modal driver can resolve the pinned release tag to its commit
           # and pass it into the container as PROVAEL_COMMIT (execution-manifest provenance;
           # both September 2026 canary manifests recorded `commit: null`). The driver also reads
@@ -291,9 +314,9 @@ jobs:
             echo "::error::is about to be discarded again — this is the defect this step exists for."
             exit 1
           fi
-          # [skip ci]: this lands in watch/**, which triggers freshness.yml — a self-retrigger loop
-          # masked only by GitHub declining to run workflows on GITHUB_TOKEN pushes. Same note as
-          # freshness.yml carries; do not rely on that alone.
+          # [skip ci]: this lands in watch/**, which triggers freshness.yml — a self-retrigger loop.
+          # The push uses the bot App token (main is protected) and App pushes DO trigger
+          # workflows, so this marker is the protection. Same note as freshness.yml carries.
           git commit -m "chore(results): keep the scheduled campaign shards [skip ci]"
 
           # Rebase-and-retry rather than fail: freshness.yml and coverage-badge.yml also push to

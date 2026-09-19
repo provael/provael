@@ -54,8 +54,31 @@ jobs:
     permissions:
       contents: write   # commits the rebuilt board and its source pointer to the dispatched ref
     steps:
+      # MAIN IS PROTECTED, and GITHUB_TOKEN cannot cross a ruleset. Since 20 September 2026 `main`
+      # requires a pull request and passing checks (docs/maintainers/github-security-settings.md);
+      # the only bypass actor is the repository's own GitHub App, so this job pushes with a
+      # short-lived installation token of that App instead of the workflow token. Absent secrets
+      # FAIL here, on purpose: a fallback to GITHUB_TOKEN would be refused at push time after the
+      # work was done, or — worse — pass quietly if the ruleset were ever loosened.
+      - name: The bot App secrets must exist (main is protected)
+        env:
+          APP_ID: ${{ secrets.PROVAEL_BOT_APP_ID }}
+          APP_KEY: ${{ secrets.PROVAEL_BOT_PRIVATE_KEY }}
+        run: |
+          if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
+            echo "::error title=bot App token missing::main is protected by a ruleset that GITHUB_TOKEN cannot bypass. Create the repository's GitHub App and set PROVAEL_BOT_APP_ID and PROVAEL_BOT_PRIVATE_KEY (docs/maintainers/github-security-settings.md)."
+            exit 1
+          fi
+      - name: Mint the bot App token
+        id: bot
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.PROVAEL_BOT_APP_ID }}
+          private-key: ${{ secrets.PROVAEL_BOT_PRIVATE_KEY }}
+
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          token: ${{ steps.bot.outputs.token }}  # the App token; see the steps above
           persist-credentials: true
           fetch-depth: 0
 
@@ -210,6 +233,11 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add leaderboard/results/leaderboard.json leaderboard/results/source.json
           # No CI-skip token anywhere in this message, deliberately (see leaderboard-restamp.yml).
+          # No skip marker on this commit, deliberately (tests/test_leaderboard_version_claim.py
+          # refuses one): the push uses the bot App token (main is protected), and an App push triggers the
+          # push-to-main workflows that a GITHUB_TOKEN push never did — so from 20 September 2026
+          # CI runs on the rebuilt board and its own tests check the commit that changed it. None
+          # of the triggered workflows pushes back, so there is no loop to break.
           git commit -m "chore(leaderboard): rebuild the signed board from ${RUN} (no re-measurement)" \
                      -m "Reason: ${REASON}" \
                      -m "Aggregated from the committed reports under ${RUN}; measured_with is what those shards say and is asserted so by the workflow. The rows are the run's own counts, re-aggregated, not re-run."
