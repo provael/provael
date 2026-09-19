@@ -7,6 +7,15 @@ Two kinds of page live here, and they are not interchangeable.
 — so that a null result is a result, not an embarrassment to be reframed. A pre-registered study
 with no numbers in it has not been run yet. That is the intended state, not an oversight.
 
+**Reproduce one before you cite any.** The [reproduction request](../reproduction-request.md) points
+at the corrected sample — the delivery pack generated from the published body — and keeps three
+levels apart: verify the digests, regenerate the derived artifacts from the committed shards, or
+re-execute the policy with the pinned inputs and compare. Level 3 needs a Linux GPU box and the
+`[lerobot]` extra; levels 1 and 2 need neither. Report the outcome, whichever way it comes out, with
+the [reproduction result form](https://github.com/provael/provael/issues/new?template=reproduction-result.yml);
+it lands in the [reproduction register](../errata.md#reproduction-register), which counts nothing
+until someone does. The counters further down this page are honest and they are not the point of it.
+
 ## Measured
 
 | Study | Kind |
@@ -56,12 +65,29 @@ time, not a design decision. **By 31 October 2026 this page states one of two th
 trial count with its measured sim-to-real correlation, or the specific blocker and its cost.**
 Whichever it is, it is written here on that date rather than left to be inferred from silence.
 
+*Stated early, 20 September 2026:* the trial count is **0** and the blocker is known and costed.
+The arm (about ₹40,000 landed) has not been bought; the protocol's 1 September amendment added two
+hardware prerequisites no kit ships — a physically operated inline cut on the DC supply, and a
+per-trial servo-bus voltage trace — because the servos' own over-current protection re-arms on the
+next command and a brown-out is indistinguishable from a redirection in the direction that flatters
+the hypothesis ([roadmap](../roadmap.md#blocked-on-hardware--sim-to-real-so-arm101)). The
+[roadmap](../roadmap.md) now carries the outcome date: **published by 31 December 2026, even if
+null.** The 31 October line above is kept because it was the commitment; this paragraph is what it
+resolves to.
+
 ### 2. Zero results against any flow-matching policy. DRIFT just published several.
 
-Provael has produced **no measurement against a flow-matching policy of any kind**. The `pi0`,
-`pi05` and `pi0fast` adapters are registered and `provael list-policies` marks them scaffolding:
-none has loaded a checkpoint. The cross-architecture protocol at
-[π0 (openpi) transfer](pi0-openpi-transfer.md) is pre-registered and unrun.
+*As written on 6 August 2026:* Provael has produced **no measurement against a flow-matching policy
+of any kind**; the `pi0`, `pi05` and `pi0fast` adapters were registered with no checkpoint ever
+loaded. *Updated 20 September 2026:* that is no longer true of **π0.5** — its preliminary leg on
+LIBERO-Object (three seeds, two of eight arms) was committed on 18 September
+([results](https://github.com/provael/provael/blob/main/results/pi05_libero_object_2026-09-18/README.md),
+[finding](../findings/2026-cross-arch-transfer.md)): `roleplay` 1/30 against `none` 0/30, McNemar
+p = 1.0, task success 27/30 unattacked and 8/30 under the frame. The frame breaks the task on both
+policies; only SmolVLA leaves its envelope doing so, and **no transfer of the envelope-exit effect
+is claimed**. `provael list-policies` now marks `pi05` *measured — preliminary*; `pi0` and `pi0fast`
+have no run committed here. The **π0-via-openpi** leg — the framework question, at
+[π0 (openpi) transfer](pi0-openpi-transfer.md) — is still pre-registered and unrun.
 
 [DRIFT](https://arxiv.org/abs/2608.03207) (submitted 4 August 2026) reports a universal patch
 against **π0 and π0.5 across four LIBERO suites**, and argues the robustness those policies were
@@ -74,6 +100,14 @@ gap.
 against a GPU policy server, so it needs a served checkpoint rather than new code.
 **By 30 September 2026 this page carries either the first Provael instruction-family rate against
 π0 with its Wilson interval and benign control, or the reason the served path did not come up.**
+
+*Stated early, 20 September 2026:* the served π0 path has not come up, and the reason is scheduling,
+not a defect: the one GPU box is running the π0.5 arms and the LIBERO-10 body, `[openpi]` and
+`[lerobot]` pin conflicting numpy majors so the leg needs its own environment, and the calibrated
+predicate ([roadmap](../roadmap.md)) now comes before any further architecture leg — a rate
+measured under the box that is about to be replaced would be re-measured within weeks. The
+flow-matching question itself got its preliminary answer from π0.5 above. The framework question
+stays open, dated on the roadmap under the second-architecture item (October–December 2026).
 
 ### 3. Zero third-party submissions and zero forks.
 

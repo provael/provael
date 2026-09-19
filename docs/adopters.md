@@ -26,9 +26,25 @@ compliance-evidence workflow.
 > entry is a statement by the adopter, not an endorsement by Provael, and carries no measured
 > Attack Success Rate or transfer claim.
 
+## Reproduce a result — the statement this project is short of
+
 Ran one of the published results yourself? That is a different and stronger statement than using
-the tool, and it has its own place: the [reproduction request](reproduction-request.md) and the
-reproduction register on the [errata page](errata.md#reproduction-register).
+the tool, and it is the one this project needs: the reproduction register on the
+[errata page](errata.md#reproduction-register) holds **zero third-party reproductions**, and the
+sign-up sheet below is empty. The [reproduction request](reproduction-request.md) points at one
+result — the delivery pack generated from the published body — with everything needed to attempt it
+at three levels. Level 1 needs no GPU:
+
+```bash
+git clone https://github.com/provael/provael && cd provael && git checkout v0.43.0
+sha256sum -c examples/delivery-pack/smolvla-libero-object-2026-09-14/shards.txt   # level 1: verify
+```
+
+Level 2 regenerates the derived artifacts from the committed shards (`make check-delivery-pack`);
+level 3 re-executes the policy with the pinned inputs (`REPRODUCE.md` in the pack; Linux, GPU,
+`[lerobot]`). Whichever level you reach, and whichever way it comes out, report it with the
+[reproduction result form](https://github.com/provael/provael/issues/new?template=reproduction-result.yml)
+— a failed reproduction is published the same way as a successful one.
 
 ## Add yourself
 
