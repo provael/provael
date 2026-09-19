@@ -73,7 +73,7 @@ fails on either the absolute threshold or a regression. A complete consumer work
 [regression-gate.yml](regression-gate.yml):
 
 ```yaml
-- uses: provael/provael@v0.42.1
+- uses: provael/provael@v0.43.0
   with:
     protocol: .provael/protocol.yml            # the named criteria; critical attacks gate their own slices
     baseline: .provael/baseline.report.json   # the last known-good report.json

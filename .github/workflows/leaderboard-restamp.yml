@@ -89,8 +89,15 @@ jobs:
           # declared its staleness, so nothing downstream complained — it just stopped recording
           # who ran it, which is the one field that separates a maintainer board from an
           # anonymous submission.
+          # The run the board aggregates is the one leaderboard/results/source.json names — never
+          # a path typed here. This step used to say `results/smolvla_libero_object_suite` (the
+          # 0.32.0 run); after leaderboard-rebuild.yml moved the board to the 14 September 2026
+          # re-measurement (#257) that literal would have rebuilt the OLD run and the guard below
+          # would have refused it as "measured_with moved". Read the pointer.
+          RUN="$(python -c 'import json; print(json.load(open("leaderboard/results/source.json"))["run"])')"
+          echo "re-stamping from ${RUN}"
           uv run provael leaderboard build \
-            --real results/smolvla_libero_object_suite \
+            --real "${RUN}" \
             --submitted-by provael --provenance maintainer-run \
             --sign --key "${KEY}" \
             --out leaderboard/results
@@ -150,5 +157,5 @@ jobs:
           # workflow for it, including the release tag. This commit SHOULD run CI.
           git commit -m "chore(leaderboard): re-stamp the signed board (no re-measurement)" \
                      -m "Reason: ${REASON}" \
-                     -m "Re-aggregated from the same committed reports. measured_with and stale are unchanged and asserted so by the workflow; only generated_at, commit and tool_version move."
+                     -m "Re-aggregated from the committed run leaderboard/results/source.json names. measured_with is unchanged and asserted so by the workflow; stale may only move false -> true (the release moved past the board); generated_at, commit and tool_version move."
           git push

@@ -6,6 +6,31 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+Nothing pending. The next entry opens when a post-0.43.0 change lands.
+
+## [0.43.0] — 2026-09-19
+
+A correction release, cut the same day as 0.42.1, and a minor rather than a patch because the
+wheel's behaviour changes: a release verdict is now made only under a named acceptance protocol,
+and every emitter says `incomplete — not assessed` when none is named where it used to render a
+default gate's `pass`; the evidence manifest is format v2 with the manifest's registry counts in
+`coverage.py`'s convention (17 families, 39 attacks); the packaged policy status names π0.5 as
+measured (preliminary). The fourteen items are the 19 September 2026 correction backlog, worked
+in order: decision correctness (R01–R03), calibration and scope (R04–R05), evidence consistency
+(R06–R08), delivery and usability (R09–R11), release readiness (R12–R14). No measured number
+moves; the published measurement posture is unchanged (measured with 0.41.2, now two releases
+behind, at this project's own window). Deferred with reasons, on the roadmap: wiring the three-way
+calibration split into the CLI and runner (conditional on selling or publishing validated
+calibration), and moving the LeRobot pin (needs a validated GPU run).
+
+The signed board's staleness flag moves with this release: its rows were measured with 0.41.2,
+which is two minors behind 0.43.0 (limit one), so `stale` must read `true`. That field sits inside
+the signed payload of a schema-6 board, so the flag is re-stamped and re-signed by the
+`leaderboard-restamp` workflow with the published key rather than edited by hand — and that
+workflow now reads the run it re-aggregates from `leaderboard/results/source.json` instead of a
+typed path (it still said `results/smolvla_libero_object_suite`, the 0.32.0 run the board no longer
+aggregates, and would have refused its own output as "measured_with moved").
+
 ### Added
 
 - **A customer-run protocol template and a loadable acceptance protocol** under

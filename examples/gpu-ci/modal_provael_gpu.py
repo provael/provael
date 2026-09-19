@@ -136,8 +136,10 @@ REPOSITORY = "provael/provael"
 #: at 0.41.2 is the published measurement (the workstation's 14 September runs) and that was the
 #: newer release — exactly the case the paragraph above allows — and moved with the 0.42.1 patch
 #: the next day, before any shard had run at 0.42.0, so the campaign directory names the release
-#: the containers actually install.
-PROVAEL_PIN = "0.42.1"
+#: the containers actually install; and to 0.43.0 on 19 September 2026, again before any shard had
+#: run (0/80 banked), so the lane records under the release that decides under a named protocol
+#: and carries the corrected counts.
+PROVAEL_PIN = "0.43.0"
 PROVAEL = f"provael[lerobot]=={PROVAEL_PIN}"
 
 # --------------------------------------------------------------------------- #

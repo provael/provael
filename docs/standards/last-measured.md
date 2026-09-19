@@ -194,6 +194,16 @@ eight seeds, 880 planned attempts against 656, the margin left for the 0.41.2 ru
 from that machine. The window is closed today by a machine in an office, not by the lane; the lane
 is what keeps it closed when 0.42.0 and the releases after it ship.
 
+**Update, 19 September 2026: two releases behind, at the window, and the lane pinned to 0.43.0.**
+0.42.0 and 0.42.1 shipped on 18 and 19 September; 0.43.0 followed the same day as a correction
+release (the release verdict now needs a named protocol, the manifest counts in one convention, the
+packaged status names π0.5). None of the three re-measured anything, so `measuredWith` still reads
+0.41.2 and `releasesBehind` reads 2 — the window's own width, and `isStale` stays false until a
+third release ships without the body moving. The lane's pin moved to 0.43.0 before any campaign
+shard ran (0 of 80 banked), so the campaign that closes the gap records under the release that
+carries the corrected counts and complete provenance. The next release without a shard banked turns
+`publish-freshness.json` stale on its own; nothing here is edited to prevent that.
+
 ### What changed instead
 
 The **claim** moved, not the threshold. `STALE_DAYS` is still 7, because seven days genuinely is old
