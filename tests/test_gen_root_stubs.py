@@ -83,12 +83,53 @@ def test_it_is_idempotent(tmp_path: Path) -> None:
     assert plan(root, "latest") == [], "a second deploy would rewrite stubs and churn the branch"
 
 
-def test_an_existing_root_page_is_never_overwritten(tmp_path: Path) -> None:
+def test_a_pre_versioning_page_at_the_root_is_replaced_by_a_stub(tmp_path: Path) -> None:
+    """The reversal of 20 September 2026 — see the script's docstring for the incident.
+
+    The previous contract ("an existing root page is never overwritten") described the whole
+    pre-versioning tree, so no cited URL ever became a stub and docs.provael.com/errata/ served a
+    corrections register frozen before five errata existed. A root page that is not already the
+    right stub is rewritten; mike's own root files are still never touched.
+    """
     root = _pages(tmp_path)
     _tree(root, ["top10/index.html"])
-    (root / "top10" / "index.html").write_text("HAND WRITTEN", encoding="utf-8")
-    write_stubs(root, "latest", plan(root, "latest"))
-    assert (root / "top10" / "index.html").read_text() == "HAND WRITTEN"
+    (root / "top10" / "index.html").write_text("<html>the 2026-08 full page: 88%</html>", encoding="utf-8")
+    todo = plan(root, "latest")
+    assert "top10/" in todo
+    write_stubs(root, "latest", todo)
+    body = (root / "top10" / "index.html").read_text()
+    assert "88%" not in body and "/latest/top10/" in body
+    assert (root / "index.html").read_text() == "x", "mike's root redirect must survive"
+
+
+def test_a_stub_with_a_stale_target_is_rewritten(tmp_path: Path) -> None:
+    root = _pages(tmp_path)
+    _tree(root, ["top10/index.html"])
+    (root / "top10" / "index.html").write_text(
+        '<meta http-equiv="refresh" content="0; url=/0.39.1/top10/">', encoding="utf-8"
+    )
+    assert "top10/" in plan(root, "latest")
+
+
+def test_an_alias_redirect_stub_resolves_to_its_target_in_one_hop(tmp_path: Path) -> None:
+    """`latest/TOP10/` is an mkdocs-redirects stub to `../top10/`; the root stub names /latest/top10/.
+
+    The smoke job asserts the lowercase target string in the body of the uppercase URL. Uses a
+    mixed-case-safe name so the assertion runs on a case-insensitive filesystem too.
+    """
+    root = _pages(tmp_path)
+    _tree(root, ["latest/OLD_NAME/index.html"])
+    (root / "latest" / "OLD_NAME" / "index.html").write_text(
+        '<!doctype html><html><head><meta charset="utf-8"><title>Redirecting...</title>'
+        '<link rel="canonical" href="../top10/">'
+        '<meta http-equiv="refresh" content="0; url=../top10/"></head><body></body></html>',
+        encoding="utf-8",
+    )
+    todo = plan(root, "latest")
+    assert "OLD_NAME/" in todo
+    write_stubs(root, "latest", todo)
+    body = (root / "OLD_NAME" / "index.html").read_text()
+    assert 'url=/latest/top10/"' in body and "/latest/OLD_NAME/" not in body
 
 
 def test_a_missing_alias_is_an_error_not_a_silent_no_op(tmp_path: Path) -> None:

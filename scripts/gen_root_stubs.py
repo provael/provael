@@ -17,11 +17,28 @@ renamed path — the same mechanism, and the same limitation, as `mkdocs-redirec
 
 Two properties are load-bearing:
 
-* **Never overwrite.** Anything mike owns at the root (`index.html`, `versions.json`, `.nojekyll`,
-  the version directories) is left exactly as found. A stub that clobbered mike's root redirect
-  would break the site's front door to save a deep link.
+* **Never touch what mike owns.** `index.html`, `versions.json`, `.nojekyll`, `CNAME` and the
+  version directories at the root are left exactly as found. A stub that clobbered mike's root
+  redirect would break the site's front door to save a deep link.
 * **Idempotent.** Re-running after a later release rewrites nothing and adds only genuinely new
   paths, so this can run on every deploy without churning the branch.
+
+WHAT IT DOES OVERWRITE, AND THE INCIDENT THAT DECIDED IT. Until 20 September 2026 this script also
+refused to touch any root path that already had an `index.html` — which described the ENTIRE
+pre-versioning tree. `gh-pages` still held every page from the last unversioned deploy (`top10/`,
+`errata/`, `changelog/`, `compliance/`, the retired uppercase redirect stubs …), so not one cited
+root URL ever became a stub: `docs.provael.com/errata/` served a corrections register frozen before
+E-2026-10 to E-2026-14 existed, `/top10/` still said 88%, and every docs link on provael.com landed
+on that frozen copy. The `smoke` job in docs.yml asserted the stubs and went red on every tag from
+v0.42.0 on; a red that is always red reports nothing, and nobody read it. So: a root path that is
+NOT already a stub into the alias — a pre-versioning full page, or an old `mkdocs-redirects` stub
+pointing at a root sibling — is replaced by the stub. "An old URL stays old" means the URL keeps
+resolving, not that it keeps serving the content of the day versioning began.
+
+For an alias path that is itself a redirect stub (the retired uppercase URLs, written by
+`mkdocs-redirects` into `latest/TOP10/`), the root stub points straight at the resolved lowercase
+target (`/latest/top10/`) rather than hopping through `/latest/TOP10/`: one hop, and the target
+string the smoke asserts is in the body.
 
     python scripts/gen_root_stubs.py --root <gh-pages worktree> [--alias latest] [--check]
 """
@@ -29,6 +46,8 @@ Two properties are load-bearing:
 from __future__ import annotations
 
 import argparse
+import posixpath
+import re
 import sys
 from pathlib import Path
 
@@ -67,8 +86,41 @@ def published_paths(alias_dir: Path) -> list[str]:
     return out
 
 
+_REDIRECT_TARGET = re.compile(
+    r"""http-equiv=["']refresh["'][^>]*url=([^"'>\s]+)""", re.IGNORECASE
+)
+
+
+def stub_target(alias_dir: Path, alias: str, rel: str) -> str:
+    """The absolute alias URL a root stub for ``rel`` should name.
+
+    Normally ``/<alias>/<rel>``. When the alias page at ``rel`` is itself a meta-refresh redirect
+    (an ``mkdocs-redirects`` stub for a retired URL), resolve its relative target so the root stub
+    points at the final page in one hop.
+    """
+    page = alias_dir / rel / "index.html"
+    text = page.read_text(encoding="utf-8", errors="replace") if page.is_file() else ""
+    m = _REDIRECT_TARGET.search(text)
+    if m and len(text) < 4096:  # a stub is tiny; a real page carrying a refresh tag is not one
+        target = m.group(1)
+        if target.startswith("/"):
+            return target
+        resolved = posixpath.normpath(posixpath.join(f"/{alias}/{rel}", target))
+        return resolved if resolved.endswith("/") else resolved + "/"
+    return f"/{alias}/{rel}"
+
+
+def expected_stub(alias_dir: Path, alias: str, rel: str) -> str:
+    return _TEMPLATE.format(target=stub_target(alias_dir, alias, rel))
+
+
 def plan(root: Path, alias: str) -> list[str]:
-    """Paths needing a root stub: published under the alias, absent at the root."""
+    """Paths needing a root stub: published under the alias, and not already the right stub.
+
+    "Not already the right stub" covers three states, all rewritten: no file at the root, a
+    pre-versioning full page, and a stub naming a stale target. A byte-identical stub is left
+    alone, which is what keeps a re-run from churning the branch.
+    """
     alias_dir = root / alias
     if not alias_dir.is_dir():
         raise SystemExit(f"no alias directory at {alias_dir} — did `mike deploy ... {alias}` run?")
@@ -76,7 +128,10 @@ def plan(root: Path, alias: str) -> list[str]:
     for rel in published_paths(alias_dir):
         if _mike_owns(rel.split("/", 1)[0], alias):
             continue
-        if (root / rel / "index.html").exists():
+        current = root / rel / "index.html"
+        if current.is_file() and current.read_text(encoding="utf-8", errors="replace") == (
+            expected_stub(alias_dir, alias, rel)
+        ):
             continue
         todo.append(rel)
     return todo
@@ -95,11 +150,11 @@ def _mike_owns(top: str, alias: str) -> bool:
 
 
 def write_stubs(root: Path, alias: str, paths: list[str]) -> None:
+    alias_dir = root / alias
     for rel in paths:
-        target = f"/{alias}/{rel}"
         dest = root / rel / "index.html"
         dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_text(_TEMPLATE.format(target=target), encoding="utf-8")
+        dest.write_text(expected_stub(alias_dir, alias, rel), encoding="utf-8")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -114,9 +169,13 @@ def main(argv: list[str] | None = None) -> int:
     todo = plan(args.root, args.alias)
     if args.check:
         if todo:
-            print(f"{len(todo)} root URL(s) would 404: {', '.join(todo[:10])}", file=sys.stderr)
+            print(
+                f"{len(todo)} root URL(s) would 404 or serve a pre-versioning page: "
+                f"{', '.join(todo[:10])}",
+                file=sys.stderr,
+            )
             return 1
-        print("every published root URL has a stub")
+        print("every published root URL is a stub into the alias")
         return 0
 
     write_stubs(args.root, args.alias, todo)
