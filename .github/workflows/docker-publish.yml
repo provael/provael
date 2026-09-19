@@ -8,15 +8,24 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+# Least privilege at the top; the one job that pushes an image opts into `packages: write`.
 permissions:
   contents: read
-  packages: write
 
+# GHCR IS THE ONLY REGISTRY. A Docker Hub mirror used to sit beside it under a personal namespace
+# (docker.io/mndfreek/provael), because a Docker Hub organisation named `provael` costs a Team plan
+# ($180/year) to make one string match another string. The mirror's secrets were never set, so the
+# step had only ever printed a warning: a half-configured publishing path that read as a second
+# image to a stranger and as a smell to a diligence reader. Removed on 20 September 2026; the
+# decision is one registry, ghcr.io/provael/provael, matching the GitHub org that builds it.
 jobs:
   publish:
-    name: build and push ghcr.io/provael/provael + docker.io/mndfreek/provael
+    name: build and push ghcr.io/provael/provael
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -33,50 +42,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # THE TWO REGISTRIES USE DIFFERENT NAMESPACES, and that is not a typo. GHCR is
-      # ghcr.io/provael/provael, matching the GitHub org. Docker Hub is docker.io/mndfreek/provael,
-      # a personal namespace, because a Docker Hub ORGANISATION named `provael` requires a Docker
-      # Team plan at $15/seat/month — $180/year to make one string match another string. The image
-      # bits are identical; only the coordinate differs. If the org is ever bought, this is a
-      # four-line change and the old name keeps resolving.
-      #
-      # DOCKER HUB IS OPTIONAL AND FAILS SOFT, deliberately. GHCR authenticates with the built-in
-      # GITHUB_TOKEN and always works; Docker Hub needs an org access token that is configured out
-      # of band. If it is missing, this job must still publish to GHCR rather than turning the whole
-      # release red — the two registries are independent promises and one being unconfigured is not
-      # a reason to withhold the other.
-      #
-      # The consequence is stated loudly at the end of the job rather than swallowed, because a
-      # SILENT skip would leave the README advertising a Docker Hub image that does not exist, which
-      # is worse than shipping no image at all.
-      - id: hub
-        name: Is Docker Hub configured?
-        env:
-          HUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
-          HUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-        run: |
-          if [ -n "$HUB_USER" ] && [ -n "$HUB_TOKEN" ]; then
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - if: steps.hub.outputs.configured == 'true'
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
-          # BOTH REGISTRIES FROM ONE BUILD. metadata-action fans the same tag set across every image
-          # listed here, and build-push-action pushes one manifest to each — so ghcr and Docker Hub
-          # cannot drift to different bits under the same version, which a second build step could
-          # not guarantee. Docker Hub drops out of the list when unconfigured.
-          images: |
-            ghcr.io/provael/provael
-            ${{ steps.hub.outputs.configured == 'true' && 'docker.io/mndfreek/provael' || '' }}
+          images: ghcr.io/provael/provael
           tags: |
             type=semver,pattern={{version}}
             type=raw,value=latest
@@ -99,17 +68,6 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Say plainly whether Docker Hub was published
-        run: |
-          if [ "${{ steps.hub.outputs.configured }}" = "true" ]; then
-            echo "::notice title=Docker Hub::pushed docker.io/mndfreek/provael (0.x + latest)"
-          else
-            echo "::warning title=Docker Hub NOT published::DOCKERHUB_USERNAME / DOCKERHUB_TOKEN"\
-            " are not set, so only ghcr.io was pushed. README and docs must not tell users to"\
-            " 'docker pull mndfreek/provael' until this is configured — set the secrets at"\
-            " github.com/provael/provael/settings/secrets/actions and re-run this workflow."
-          fi
 
       # The first push creates the package PRIVATE. A private package makes the README's
       # `docker run` line fail with an auth error for every stranger, which is worse than shipping
