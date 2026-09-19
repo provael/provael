@@ -411,6 +411,26 @@ def test_progress_of_a_complete_campaign_dates_its_completion(tmp_path: Path) ->
     assert state["projected"] == {"runsRemaining": 0, "completion": "2026-09-22"}
 
 
+def test_a_paused_lane_projects_nothing_and_says_so(tmp_path: Path) -> None:
+    """cron=None is the paused lane (no schedule in the workflow): the artifact records the pause
+    and refuses to project a completion from a cadence nobody runs."""
+    plan = _plan(tmp_path, tasks=["a", "b", "c", "d"], seeds=1, shardsPerRun=1)
+    directory = campaign_dir("0.0.0", tmp_path)
+    _fake_shard(directory, "a__seed0", {"attempts": 7}, {"ended_at": "2026-09-22T05:10:00Z"})
+    state = progress(
+        plan, "0.0.0", cron=None, attempts_to_displace=550, published_with="0.32.0",
+        results_dir=tmp_path,
+    )
+    assert state["cadence"] == {"cron": None, "paused": True, "runsPerWeek": 0, "shardsPerRun": 1}
+    assert state["projected"] == {"runsRemaining": 3, "completion": None}
+    running = progress(
+        plan, "0.0.0", cron="17 4 * * 2,5", attempts_to_displace=550, published_with="0.32.0",
+        results_dir=tmp_path,
+    )
+    assert running["cadence"]["paused"] is False
+    assert running["projected"]["completion"] is not None
+
+
 # --------------------------------------------------------------------------- #
 # the end-to-end smoke on the CPU stub path
 # --------------------------------------------------------------------------- #

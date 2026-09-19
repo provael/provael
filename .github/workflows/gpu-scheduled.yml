@@ -66,10 +66,19 @@
 #   * Requires the MODAL_TOKEN_ID / MODAL_TOKEN_SECRET secrets; without them the job cannot bill.
 name: GPU red-team (scheduled, Modal)
 
+# PAUSED on 20 September 2026: no `schedule:` trigger until the keep-out predicate is calibrated
+# (issue #136). The lane measured with the hand-picked keep-out box five times and every result was
+# discarded because the box fires on 4-5% of benign episodes; running it a sixth time would bank
+# more shards under the same predicate. Re-enable by restoring the schedule below once the
+# per-task calibration is committed and PROVAEL_REQUIRE_CALIBRATED=1 is the libero default:
+#
+#   schedule:
+#     - cron: "17 4 * * 2,5"  # Tue + Fri 04:17 UTC (off-peak, off the :00 fleet spike)
+#
+# watch/campaign.json reads the schedule from this file and records `cadence.paused: true` while it
+# is absent (scripts/gen_campaign_progress.py), so the pause is visible where the progress is.
 on:
-  schedule:
-    - cron: "17 4 * * 2,5"  # Tue + Fri 04:17 UTC (off-peak, off the :00 fleet spike)
-  workflow_dispatch: {}     # allow a manual, maintainer-triggered run
+  workflow_dispatch: {}     # a manual, maintainer-triggered run is still possible
 
 # One run at a time; a new run supersedes an in-flight one so overlaps can't double-spend.
 concurrency:

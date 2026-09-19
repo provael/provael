@@ -340,7 +340,7 @@ def progress(
     plan: CampaignPlan,
     version: str,
     *,
-    cron: str,
+    cron: str | None,
     attempts_to_displace: int | None,
     published_with: str | None,
     results_dir: Path = RESULTS_DIR,
@@ -351,6 +351,13 @@ def progress(
     ``projectedCompletion`` is dated from the NEWEST SHARD's ``ended_at`` plus the runs still
     needed at the committed cadence — a fact about the run, not about when this was rendered — and
     is null until the first shard lands, because before that the only anchor would be the clock.
+
+    ``cron=None`` means the lane is PAUSED (the workflow declares no schedule): ``cadence`` says so,
+    ``runsPerWeek`` is 0 and no completion is projected, because a projection from a cadence that
+    is not running would be the wall-clock guess this artifact exists to avoid. The lane was
+    paused on 20 September 2026 until the keep-out predicate is calibrated (#136): every shard it
+    measured with the uncalibrated box was discarded, and the pause is what stops it measuring a
+    sixth time with the same box.
     """
     directory = campaign_dir(version, results_dir)
     all_shards = shards(plan)
@@ -366,11 +373,12 @@ def progress(
             if isinstance(value, str) and value:
                 ended.append(value)
     remaining = len(all_shards) - len(done)
-    per_week = runs_per_week(cron)
+    paused = cron is None
+    per_week = 0 if cron is None else runs_per_week(cron)
     runs_remaining = math.ceil(remaining / plan.shards_per_run) if remaining else 0
     last_ended = max(ended) if ended else None
     completion: str | None = None
-    if last_ended is not None and runs_remaining:
+    if last_ended is not None and runs_remaining and per_week:
         anchor = datetime.fromisoformat(last_ended.replace("Z", "+00:00"))
         completion = (anchor + timedelta(days=runs_remaining * 7 / per_week)).date().isoformat()
     elif last_ended is not None and not remaining:
@@ -400,6 +408,7 @@ def progress(
         },
         "cadence": {
             "cron": cron,
+            "paused": paused,
             "runsPerWeek": per_week,
             "shardsPerRun": plan.shards_per_run,
         },

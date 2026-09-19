@@ -73,13 +73,20 @@ def lane_pin(path: Path = LANE) -> str:
     raise SystemExit(f"{path} declares no string PROVAEL_PIN")
 
 
-def lane_cron(path: Path = WORKFLOW) -> str:
-    """The workflow's schedule, read from the workflow so the cadence here is the cadence run."""
+def lane_cron(path: Path = WORKFLOW) -> str | None:
+    """The workflow's schedule, read from the workflow so the cadence here is the cadence run.
+
+    ``None`` when the workflow declares no ``schedule`` at all: the lane is paused (dispatch-only),
+    and the artifact records the pause instead of a cadence nobody runs. Two schedules is still an
+    error — a cadence this file cannot express is not a cadence it should project from.
+    """
     workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
     triggers = workflow.get(True) or workflow.get("on") or {}
     crons = [entry["cron"] for entry in triggers.get("schedule", []) if "cron" in entry]
+    if not crons:
+        return None
     if len(crons) != 1:
-        raise SystemExit(f"{path} declares {len(crons)} cron schedules; expected exactly one")
+        raise SystemExit(f"{path} declares {len(crons)} cron schedules; expected at most one")
     return str(crons[0])
 
 

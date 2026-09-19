@@ -216,7 +216,13 @@ def test_the_opt_in_gate_and_the_concurrency_group_stay() -> None:
     assert workflow["jobs"]["gpu-redteam"]["if"] == "${{ vars.ENABLE_GPU_SCHEDULED == 'true' }}"
     assert workflow["concurrency"] == {"group": "gpu-scheduled", "cancel-in-progress": True}
     triggers = workflow.get(True) or workflow.get("on")
-    assert [s["cron"] for s in triggers["schedule"]] == ["17 4 * * 2,5"]
+    # Paused 20 Sep 2026 until #136 (calibrated predicate): dispatch-only, no schedule. The pause is
+    # a decision recorded in the workflow header and mirrored by watch/campaign.json; restoring the
+    # cron is the deliberate act that ends it, and this assertion is what makes that act visible.
+    assert "schedule" not in triggers, "the scheduled lane was re-enabled; is the predicate calibrated?"
+    assert "workflow_dispatch" in triggers
+    header = WORKFLOW.read_text(encoding="utf-8")
+    assert "PAUSED on 20 September 2026" in header and "#136" in header
 
 
 def test_the_driver_installs_this_checkout_before_reading_the_plan() -> None:
