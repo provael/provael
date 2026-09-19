@@ -269,10 +269,21 @@ jobs:
       # The GPU extras are not what `pip install provael` resolves, and torch advisories routinely
       # have no fixed version, so this lane reports without gating. `lerobot` and `openpi` are
       # declared conflicts and cannot be exported together.
+      #
+      # ALLOW-LIST, with the justification beside the id (4.9, 20 September 2026):
+      #   GHSA-f7vj-73pm-m822 / CVE-2026-25874 — LeRobot PolicyServer pickle RCE. Unreachable
+      #   through Provael: the [lerobot] extra is used in-process for policy loading and the LIBERO
+      #   simulator; no gRPC/PolicyServer is ever started. No released lerobot carries a fix (PR
+      #   #3048 open, the advisory lists no patched version), and the 0.5.1 pin is a bounded
+      #   exception documented in SECURITY.md and pyproject.toml. Re-examine when the pin moves.
+      # Ignoring it here keeps this lane's output legible for anything NEW; the lane still does not
+      # gate, because torch advisories without a fixed version would make it chronically red, and a
+      # detector that is always red reports nothing.
       - name: Audit GPU extras (informational)
         continue-on-error: true
         run: |
           uv export --extra lerobot --extra openvla --extra attest --extra hosted \
             --no-emit-project --no-hashes --no-annotate --quiet \
             --format requirements-txt -o audit-extras.txt
-          uvx pip-audit --progress-spinner off -r audit-extras.txt
+          uvx pip-audit --progress-spinner off -r audit-extras.txt \
+            --ignore-vuln GHSA-f7vj-73pm-m822

@@ -145,14 +145,18 @@ vulnerabilities in Provael**, and the core install (6 deps, no GPU/ML stack) is 
   endpoint** — it uses LeRobot only for **in-process** policy loading and the LIBERO simulator,
   behind the `[lerobot]` extra and the `PROVAEL_INTEGRATION=1` gate. So the vulnerable code path is
   not reachable through Provael, on CPU or GPU. If you **separately** run LeRobot's async inference,
-  follow the upstream advisory (fixed in LeRobot PR #3048, which replaces pickle with
-  safetensors + JSON) — require auth/mTLS on the PolicyServer and upgrade once a fixed release is
-  verified against the `smolvla_libero` path. **Pinning Provael's extra to that fixed release is a
-  bounded, explicit exception, not a forgotten one:** the pin stays at `0.5.1` until a fixed
-  release has been validated against the supported checkpoint on a GPU (the adapter's per-step
-  rollout was read off this version's evaluator, and 0.6.x moved import paths and raised the torch
-  floor — `pyproject.toml` records why), and it moves by a validated run, never by a version-string
-  edit. Enabling LeRobot's separate inference server is not a shortcut to that and is not done.
+  require auth/mTLS on the PolicyServer. **No released LeRobot carries a fix as of 19 September
+  2026:** a fix is *proposed* in [LeRobot PR #3048](https://github.com/huggingface/lerobot/pull/3048)
+  (replacing pickle with safetensors + JSON), which is still open, and the advisory
+  ([GHSA-f7vj-73pm-m822](https://github.com/advisories/GHSA-f7vj-73pm-m822)) lists no patched
+  version — this note used to say "fixed in PR #3048", which overstated it. **The pin is a bounded,
+  explicit exception, not a forgotten one:** it stays at `0.5.1` until a release that carries the
+  fix has been validated against the supported checkpoint on a GPU (the adapter's per-step rollout
+  was read off this version's evaluator, and 0.6.x moved import paths and raised the torch floor —
+  `pyproject.toml` records why), and it moves by a validated run, never by a version-string edit.
+  CI's dependency audit of the GPU extras names this advisory in an `--ignore-vuln` allow-list with
+  this justification (`.github/workflows/ci.yml`), so the audit stays legible for anything new.
+  Enabling LeRobot's separate inference server is not a shortcut to that and is not done.
 
 ## Scope under the EU Cyber Resilience Act
 
