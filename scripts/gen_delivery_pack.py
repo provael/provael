@@ -351,6 +351,18 @@ def main(argv: list[str] | None = None) -> int:
                 f"{OUT.relative_to(ROOT)} is stale: {', '.join(stale)}; rerun without --check",
                 file=sys.stderr,
             )
+            # Say WHAT differs, not only which file: a stale pack in CI with no diff in its log is
+            # a failure nobody can act on from the log alone.
+            import difflib
+
+            for name in stale:
+                target = OUT / name
+                committed = target.read_text(encoding="utf-8") if target.is_file() else ""
+                diff = difflib.unified_diff(
+                    committed.splitlines(), files[name].splitlines(),
+                    fromfile=f"committed/{name}", tofile=f"regenerated/{name}", lineterm="", n=1,
+                )
+                sys.stderr.write("\n".join(list(diff)[:60]) + "\n")
             return 1
         print(f"ok       {OUT.relative_to(ROOT)}")
         return 0
