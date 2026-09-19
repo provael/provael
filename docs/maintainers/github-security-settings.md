@@ -42,18 +42,22 @@ was just rebuilt or re-stamped. The comment beside each `git commit` says which 
 
 ## Branch protection — `main`
 
-- [ ] Require a pull request before merging (no direct pushes)
+- [ ] Require a pull request before merging (no direct pushes) — *waits for the bot App below; the
+      six pushing workflows fail on a protected main until its secrets exist*
 - [ ] Require **every** CI status check to pass. The `check` job is a matrix over the interpreters
       `pyproject.toml` claims, so it reports one context per leg — `ruff + mypy + pytest (CPU, no
       lerobot, Python 3.12)` and the same for 3.13. Requiring one leaves the other advisory, and
       a leg added later is not required until someone comes back here.
 - [ ] Require the docs-strict + evidence-integrity checks to pass
-- [ ] Require branches to be up to date before merging
+- [x] Require linear history (verified sattyamjjain 2026-09-20 — ruleset `main`, `required_linear_history`, active;
+      merge commits are not accepted, rebase/squash only)
+- [ ] Require branches to be up to date before merging — *with the required checks, once the App exists*
 - [ ] Require conversation resolution before merging
 - [ ] Require review from CODEOWNERS (when a second qualified maintainer exists)
-- [ ] Block force pushes
-- [ ] Block branch deletion
-- [ ] Include administrators in the above
+- [x] Block force pushes (verified sattyamjjain 2026-09-20 — ruleset `main` id 19765152, `non_fast_forward`, active)
+- [x] Block branch deletion (verified sattyamjjain 2026-09-20 — ruleset `main`, `deletion`, active)
+- [x] Include administrators in the above (verified sattyamjjain 2026-09-20 — the ruleset has no bypass actor;
+      the bot App becomes the only one when it is created)
 
 ## Tags & releases
 
@@ -68,7 +72,9 @@ was just rebuilt or re-stamped. The comment beside each `git commit` says which 
 - [ ] Secret scanning push protection enabled
 - [ ] Dependabot alerts enabled (see `.github/dependabot.yml` for update PRs)
 - [ ] Dependabot security updates enabled
-- [ ] CodeQL / OpenSSF Scorecard reviewed (see `.github/workflows/scorecard.yml`)
+- [x] CodeQL default setup enabled for this repository (verified sattyamjjain 2026-09-20 —
+      `code-scanning/default-setup` state `configured`, default suite); Scorecard runs weekly
+      (`.github/workflows/scorecard.yml`) — re-read after the ruleset gains the PR and checks rules
 
 ## Repository presentation (UI only)
 
@@ -79,9 +85,12 @@ topics and labels are set by API in the same pass, the two items below cannot be
       General → Social preview → Edit → Upload
 - [ ] Discussions categories **Top-10 RFC** and **Results** created beside the default six
       (Discussions → categories → New category); the RFC page and the community page link to them
-- [ ] Repository topics include `eu-ai-act` and `machinery-regulation` beside the existing set
-      (`gh repo edit --add-topic`)
-- [ ] Labels `attack-family` and `assessment` exist for the issue forms (`gh label list`)
+- [x] Repository topics include `eu-ai-act` and `machinery-regulation` beside the existing set
+      (verified sattyamjjain 2026-09-20 via `gh repo edit --add-topic`; 20 topics)
+- [x] Labels `attack-family` and `assessment` exist for the issue forms (verified sattyamjjain
+      2026-09-20, `gh label list`)
+- [x] Merged head branches are deleted automatically (`delete_branch_on_merge`, verified sattyamjjain
+      2026-09-20); the 22 merged branches that predated it were deleted the same day
 
 ## Access & apps
 

@@ -159,7 +159,11 @@ jobs:
           REDIRECTS="/TOP10/=/latest/top10/ /TOP10_RFC/=/latest/top10-rfc/ /DEFENSES/=/latest/defenses/ /COMPLIANCE/=/latest/compliance/ /ATTESTATION/=/latest/attestation/ /SIM_PREDICTS_REAL/=/latest/sim-predicts-real/ /ADOPTERS/=/latest/adopters/ /COMMUNITY/=/latest/community/ /MEASURE-2-7/=/latest/measure-2-7/"
 
           # The front door must redirect into the alias, or docs.provael.com itself is a dead end.
-          ROOTINDEX="/=/latest/"
+          # mike writes its root redirect with a RELATIVE target (`url=latest/`, no leading slash),
+          # so the body is asserted to name `latest/`, not `/latest/`. Asserting the absolute form
+          # made this probe the one red line left on the v0.44.0 tag after the root stubs were fixed
+          # — a probe asking for a string the generator never writes is red forever and says nothing.
+          ROOTINDEX="/=latest/"
 
           fail=0
           probe() {  # $1 = path; $2 = required body substring ("" = none). 12 tries x 15s.
