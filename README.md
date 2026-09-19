@@ -1009,6 +1009,10 @@ uv run mypy src scripts/action   # type-check (strict); scripts/action too, as C
 uv run pytest -q                 # tests (CPU only; LeRobot tests skip unless gated)
 ```
 
+**How it is made.** Much of this codebase was written with AI assistance (Claude Code); every
+published number, calibration and security-relevant path is human-reviewed before it ships.
+Co-author trailers are in git: `git log --grep=Co-Authored-By`.
+
 ## Further reading
 
 - **[SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md)** — responsible use, sim-only default, scope.

@@ -66,6 +66,10 @@ PROVAEL_INTEGRATION=1 pytest tests/test_lerobot_adapter.py tests/test_libero_ada
   `SuiteAdapter`, new attacks `Attack`; register them in the relevant registry and add a
   CPU test (use the stub) plus a gated test if a GPU/sim is required.
 - Keep optional dependencies imported **only inside methods**, never at module scope.
+- **AI assistance is used and disclosed.** Much of this codebase was written with AI assistance
+  (Claude Code); every published number, calibration and security-relevant path is human-reviewed.
+  Co-author trailers stay in the commit (`git log --grep=Co-Authored-By`). If you use an assistant,
+  keep the trailer and review what it wrote as if a stranger had — the DCO sign-off is yours.
 
 ## Pull requests
 
