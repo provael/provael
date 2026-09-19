@@ -59,6 +59,20 @@ certified bounds. See [Honest scope](#honest-scope-what-this-does-not-cover).
 
 ---
 
+## Two tiers: operative and reference (20 September 2026)
+
+Every row below, and every row `provael report --format compliance` emits, carries a `tier`.
+**Operative** is the route a machinery assessor reads this evidence through, and the one this
+project develops: the **Machinery Regulation 2023/1230**, **ISO 10218:2025**, and the three
+implemented safety/security standards asked for beside it — **ISO 13849**, **IEC 61508**,
+**IEC 62443**. **Reference** is every other mapping on this page: the EU AI Act rows (see the
+routing note above), the CRA, NIST, ISO/IEC 42001, 23894 and TR 5469, ISO 25785-1, the Korea AI
+Framework Act, UN R155 and ISO/SAE 21434 — kept, emitted and checked, but reference material,
+not developed further until the three proofs on the [roadmap](../roadmap.md) and a paid
+engagement exist. ISO 12100 (risk assessment) and ISO/IEC TS 22440 (draft) belong to the
+operative conversation and are cited on the Machinery pages; neither is implemented, and the tier
+is not a licence to add rows.
+
 ## Crosswalk — Provael evidence → frameworks
 
 | Provael signal (EAI / metric) | EU AI Act (Reg. 2024/1689) | ISO 10218:2025 | NIST AI 100-2 / AI RMF | IEC 62443 |

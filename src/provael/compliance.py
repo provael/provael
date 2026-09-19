@@ -109,6 +109,29 @@ _ENTRY_CAVEATS: tuple[str, ...] = ("adversarial-only", "evidence-not-certificati
 # control.
 # --------------------------------------------------------------------------------------------
 
+#: The two tiers a mapped framework can sit in, decided on 20 September 2026 when the compliance
+#: layer was frozen (docs/roadmap.md, "The freeze"). ``operative`` = the route a machinery
+#: assessor actually reads a robot's adversarial-robustness evidence through, and the one this
+#: project keeps developing: the Machinery Regulation (the legal instrument), ISO 10218:2025 (the
+#: robot type-C standard whose cybersecurity risk assessment that route is written against), and
+#: the three implemented safety/security standards an assessor asks for beside them — ISO 13849,
+#: IEC 61508, IEC 62443. ``reference`` = every other mapping in this catalogue: kept, emitted,
+#: checked, but reference material — no new rows, crosswalks or emitters for them until the three
+#: proofs and a paid engagement exist. ISO 12100 and ISO/IEC TS 22440 belong to the operative
+#: conversation and are NOT rows here: neither is implemented, and a tier is not a licence to add
+#: crosswalks.
+TIER_OPERATIVE = "operative"
+TIER_REFERENCE = "reference"
+OPERATIVE_FRAMEWORKS: frozenset[str] = frozenset(
+    {"eu-machinery", "iso-10218", "iso-13849", "iec-61508", "iec-62443"}
+)
+
+
+def framework_tier(framework_id: str) -> str:
+    """``operative`` for the assessor-read route, ``reference`` for every other mapping."""
+    return TIER_OPERATIVE if framework_id in OPERATIVE_FRAMEWORKS else TIER_REFERENCE
+
+
 @dataclass(frozen=True)
 class Requirement:
     """One framework control Provael evidence maps onto (a crosswalk row)."""
@@ -127,6 +150,20 @@ class Requirement:
     #: empty for rows satisfied by adversarial evidence generally (e.g. the taxonomy mapping, which
     #: maps risks rather than claiming all of them were exercised).
     required_eai: tuple[str, ...] = ()
+    #: ``operative`` or ``reference`` — a property of the FRAMEWORK, filled from
+    #: :func:`framework_tier` so no row can carry a tier its framework does not. Declared as a
+    #: field rather than a property so ``dataclasses.asdict`` (the website's mirror recipe) and the
+    #: emitted :class:`ComplianceEntry` carry it.
+    tier: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.tier:
+            object.__setattr__(self, "tier", framework_tier(self.framework_id))
+        elif self.tier != framework_tier(self.framework_id):
+            raise ValueError(
+                f"{self.key}: tier {self.tier!r} disagrees with its framework's "
+                f"{framework_tier(self.framework_id)!r}; the tier is decided per framework"
+            )
 
 
 _EU = "EU AI Act (Regulation (EU) 2024/1689)"
@@ -743,6 +780,13 @@ class ComplianceEntry(BaseModel):
         "'default (uncalibrated)'. Carried per row so no row can describe evidence the run did not "
         "produce.",
     )
+    tier: str = Field(
+        TIER_REFERENCE,
+        description="'operative' — the Machinery Regulation route and the three implemented "
+        "safety/security standards an assessor reads beside it (ISO 13849, IEC 61508, IEC 62443) "
+        "— or 'reference' for every other mapping, kept and checked but not developed further "
+        "(the 20 September 2026 freeze).",
+    )
 
 
 class Acceptance(BaseModel):
@@ -942,6 +986,7 @@ def _entry(req: Requirement, ev: EvidenceResult, predicate: str) -> ComplianceEn
         evidence_refs=list(req.evidence_refs),
         caveats=list(_ENTRY_CAVEATS),
         predicate=predicate,
+        tier=req.tier,
     )
 
 
@@ -1105,14 +1150,22 @@ def to_compliance_markdown(report: RunReport, decision: ReleaseDecision | None =
                  "satisfied; the `predicate` column says what each rate was scored under, and a "
                  f"row scored under the {cr.predicate} predicate is exactly that.")
     lines.append("")
-    lines.append("| framework | control | status | predicate | Provael signal |")
-    lines.append("| --- | --- | --- | --- | --- |")
+    lines.append("| framework | tier | control | status | predicate | Provael signal |")
+    lines.append("| --- | --- | --- | --- | --- | --- |")
     for entry in cr.entries:
         flag = " *(indicative)*" if entry.indicative else ""
         lines.append(
-            f"| {entry.framework_id} | {entry.control_id}{flag} | "
+            f"| {entry.framework_id} | {entry.tier} | {entry.control_id}{flag} | "
             f"{_STATUS_GLYPH[entry.status]} | {entry.predicate} | {entry.provael_signal} |"
         )
+    lines.append("")
+    lines.append(
+        "`tier`: **operative** rows are the route a machinery assessor reads this evidence "
+        "through — the Machinery Regulation, ISO 10218:2025, ISO 13849, IEC 61508, IEC 62443 — "
+        "and the one this project develops; **reference** rows are kept, emitted and checked, but "
+        "are reference material and are not developed further until the three proofs and a paid "
+        "engagement exist (docs/roadmap.md, 20 September 2026)."
+    )
     lines.append("")
 
     lines.append("## Detail")
@@ -1129,6 +1182,7 @@ def to_compliance_markdown(report: RunReport, decision: ReleaseDecision | None =
                      f"{_STATUS_GLYPH[entry.status]}{indicative}")
         lines.append("")
         lines.append(f"- **Provael signal:** {entry.provael_signal}")
+        lines.append(f"- **Tier:** {entry.tier}")
         lines.append(f"- **Predicate:** {entry.predicate}")
         lines.append(f"- **Evidence:** {', '.join(f'`{ref}`' for ref in entry.evidence_refs)}")
         if entry.gap_reason is not None:

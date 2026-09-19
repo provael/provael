@@ -4,6 +4,12 @@ name: Release
 # PUBLISHING (no API token stored anywhere), then cut a GitHub Release from the
 # CHANGELOG.
 #
+# CADENCE (decided 20 September 2026, docs/roadmap.md "The freeze"): one minor every two to four
+# weeks, patch releases only for correctness. Fifty-seven releases in fourteen weeks made every
+# tag a version-drift risk — CITATION.cff wrong three times, a non-existent Action tag advertised
+# twice — and read as churn to a buyer. Nothing here enforces a calendar; the changelog gate below
+# enforces that whatever is cut is documented.
+#
 # ────────────────────────────────────────────────────────────────────────────
 # ONE-TIME MAINTAINER SETUP (PyPI trusted publisher — no secrets in the repo):
 #   1. Create the project owner account on https://pypi.org.

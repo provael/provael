@@ -5,27 +5,78 @@ Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked. S
 claims, and work a customer triggers. Nothing below is a promise of a capability that does not
 exist.
 
-## Now: reliability, on what is already published
+## Now: the three proofs, with dates
 
-- **Re-measure the published body at the pinned release.** The scheduled campaign
-  (`studies/scheduled_campaign/plan.json`, progress in `watch/campaign.json`) accumulates the
-  shards that displace the 0.41.2 Object body; `publish-freshness.json` says how far it is.
-- **Complete provenance on every new committed run.** From 20 September 2026
-  `tests/test_results_provenance.py` refuses a run whose shards lack `repository`, `commit`,
-  `dep_lock_digest` or `precision`; the box and the Modal lane both set them.
-- **The keep-out calibration question** ([#136](https://github.com/provael/provael/issues/136)):
-  ten per-task fits are withheld rather than adopted, and a benign-only fit cannot choose the face
-  an attack leaves through. What is owed is a GPU run of `calibrate --attack` across all ten tasks.
-- **One decision, everywhere.** Every export renders the release verdict under a named acceptance
-  protocol (0.43.0); the remaining work is a customer protocol agreed before a paid run.
+Nothing else gets built until these exist, unless a named prospect asks for it on a call. Each
+removes an objection that blocks every sale — "your unsafe definition is arbitrary", "zero hardware
+runs", "no peer review" — and each has a date this page will keep or publicly miss.
+
+1. **A calibrated predicate — target 24 October 2026** ([#136](https://github.com/provael/provael/issues/136)).
+   The hand-picked keep-out box fires on 4–5% of benign episodes; ten per-task fits are withheld
+   rather than adopted, and a benign-only fit cannot choose the face an attack leaves through. What
+   is owed: fit the keep-out zone per task from the benign reachable bounds at a target FPR of 1%
+   or less with the face chosen from data, commit the ten calibration JSONs, make
+   `PROVAEL_REQUIRE_CALIBRATED=1` the `libero` default, re-run the headline (roleplay plus the four
+   controls) and the π0.5 leg under the calibrated predicate, and publish whatever comes out — with
+   an erratum, a README and a site change the same day if the headline moves. Beside it, **a
+   second predicate a safety engineer recognises**: a contact / joint-torque event from the
+   simulator's contact API, reported as a second column next to the envelope exit, never in its
+   place. The scheduled GPU campaign is **paused** until this lands (`.github/workflows/gpu-scheduled.yml`;
+   `watch/campaign.json` says `cadence.paused: true`), because it would re-measure with the box.
+2. **One real-arm run — published by 31 December 2026, even if null.** The protocol is
+   pre-registered ([sim-to-real, SO-ARM101](studies/sim-to-real-so101.md)); the two hardware
+   blockers below stand until the arm, the inline supply cut and the voltage trace exist. Then the
+   n = 5 protocol with SmolVLA, then 30 trials, per-trial logs and video committed, the result
+   published whichever way it comes out.
+3. **Peer review — the SPAIS@CoRL 4-pager by 1 October 2026 AoE**, around the measurement
+   discipline (benign controls, Wilson and task-clustered intervals, published nulls, errata, the
+   π0.5 null); arXiv in November regardless of the decision, the ID into `CITATION.cff` and the
+   README. After the calibrated predicate: **the second architecture, properly** — the full π0.5
+   leg (50 episodes × the four LIBERO suites with controls) and OpenVLA-OFT or GR00T N1.7 through
+   the allenai harness path, October–December, nulls published as nulls.
+
+Still owed alongside them, from what is already published: **complete provenance on every new
+committed run** (`tests/test_results_provenance.py` refuses a shard without `repository`, `commit`,
+`dep_lock_digest` or `precision` since 20 September 2026) and **one decision, everywhere** (every
+export renders the release verdict under a named acceptance protocol since 0.43.0; the remaining
+work is a customer protocol agreed before a paid run).
+
+## The freeze (20 September 2026)
+
+- **No new attack families, crosswalks, output formats, recipes or suites** until the three proofs
+  and a paid engagement exist. The registry holds 17 adversarial families and 8 have met a real
+  policy; the compliance layer already outruns the measurement. A named prospect asking for a
+  specific missing capability on a call is the one exception, and it is recorded here when it
+  happens.
+- **The compliance layer is split into two tiers**, carried on every emitted row (`tier` in
+  `provael report --format compliance`, in the dossier, and in the catalogue the website mirrors).
+  **Operative** — the route a machinery assessor reads this evidence through, and the one this
+  project develops: the **Machinery Regulation 2023/1230**, **ISO 10218:2025**, and the three
+  implemented safety/security standards asked for beside it, **ISO 13849**, **IEC 61508**,
+  **IEC 62443**. **Reference** — every other mapping (EU AI Act, CRA, NIST, ISO/IEC 42001, 23894,
+  TR 5469, ISO 25785-1, Korea, UN R155, ISO/SAE 21434): kept, emitted and checked, not developed
+  further. ISO 12100 (risk assessment) and ISO/IEC TS 22440 (draft) belong to the operative
+  conversation and are cited in the Machinery pages as references; neither is implemented and
+  neither becomes a row under this freeze.
+- **Release cadence: one minor every two to four weeks; patch releases only for correctness.**
+  Fifty-seven releases in fourteen weeks meant a version-drift risk on every one of them
+  (`CITATION.cff` wrong three times, a non-existent Action tag advertised twice) and read as churn.
+  Changelog entries are batched into the minor; an incident narrative goes to
+  [errata](errata.md), not the changelog.
+- **Integration after the hardware run, not before**: the model-server proxy for the allenai
+  evaluation harness, an Inspect task, a reimplementation of Trajectory-Level Redirection from its
+  released code, and the Isaac Lab-Arena, ROS 2 and planner-level adapters start only once the
+  calibrated predicate and the real-arm run exist — they turn this from a rival harness into an
+  evidence layer on top of the harnesses that already have models and hardware, and they are
+  worth nothing on top of an uncalibrated predicate.
 
 ## Customer-triggered (starts when a qualified engagement needs it)
 
 - More attack families and adapters — when a customer's configuration needs the specific missing
-  capability, not before.
+  capability, not before (and recorded under the freeze above when it happens).
 - A hosted, multi-tenant operated surface with billing — when repeated buyers require hosted
   operation and will pay for its controls; the in-repo server stays an experimental reference.
-- Hardware and sim-to-real — a funded partner and a facility; see the blocked section below.
+- Hardware and sim-to-real beyond the one pre-registered run — a funded partner and a facility.
 - A certification or insurer-shaped product — a named relying party that specifies and accepts a
   scoped evidence use.
 - A full calibration platform — repeated engagements showing the narrow corrected workflow is

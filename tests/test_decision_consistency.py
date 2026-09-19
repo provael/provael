@@ -194,5 +194,5 @@ def test_the_compliance_rows_name_the_predicate_they_were_scored_under() -> None
     measure = next(e for e in compliance.entries if e.key == "nist-ai-rmf:measure")
     assert measure.status == "gap"  # MEASURE still needs the calibrated predicate
     md = to_compliance_markdown(REPORT)
-    assert "| framework | control | status | predicate | Provael signal |" in md
+    assert "| framework | tier | control | status | predicate | Provael signal |" in md
     assert "does not mean the whole standard or regulation is satisfied" in md

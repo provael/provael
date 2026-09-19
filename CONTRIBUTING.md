@@ -71,6 +71,17 @@ PROVAEL_INTEGRATION=1 pytest tests/test_lerobot_adapter.py tests/test_libero_ada
   Co-author trailers stay in the commit (`git log --grep=Co-Authored-By`). If you use an assistant,
   keep the trailer and review what it wrote as if a stranger had — the DCO sign-off is yours.
 
+## What is frozen, and why (20 September 2026)
+
+Until the three proofs on the [roadmap](docs/roadmap.md) and a paid engagement exist, **no new
+attack families, crosswalks, output formats, recipes or suites** land — the registry already holds
+more families than have met a real policy, and the compliance layer outruns the measurement. A PR
+that adds one will be closed with a pointer here unless a named prospect asked for it. Reproductions,
+corrections, measurements of what is already registered, and reliability work are the contributions
+that move the project. **Releases** are one minor every two to four weeks with patches only for
+correctness; changelog entries are batched into the minor, and an incident narrative goes to
+`docs/errata.md`, not the changelog.
+
 ## Pull requests
 
 1. Branch (`feature/…`, `fix/…`), make the change, keep the gate green.
