@@ -23,7 +23,7 @@ and `PROVAEL_INTEGRATION=1`.
 | — | [ci/](ci/) | CI gates: GitHub / GitLab / Azure + regression-gate | — | — |
 | — | [mlops/](mlops/) | Log ASR to MLflow / W&B (track + gate promotion) | < 1 s | CPU |
 | — | [hf/](hf/) | Push ASR onto a HF model card (eval-results) | < 1 s | CPU |
-| — | [gpu-ci/](gpu-ci/) | Fork-safe real-model GPU CI via Modal (~$0.02/run) | minutes | GPU |
+| — | [gpu-ci/](gpu-ci/) | Fork-safe real-model GPU CI via Modal (measured ~$0.49 for a 16-episode run — [CHANGELOG 0.38.1](../CHANGELOG.md#0381--2026-08-31)) | ~40 min | GPU |
 | — | [supply-chain/](supply-chain/) | Verify the model (safetensors/Sigstore) + emit an ML-BOM | < 1 s | CPU |
 | — | [evidence/eu-ai-act-art15/](evidence/eu-ai-act-art15/) | Worked EU AI Act Art. 15 robustness evidence pack | < 1 s | CPU |
 | — | [runtime/](runtime/) | Action-stream firewall (defense) — ASR with vs. without | < 1 s | CPU |

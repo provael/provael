@@ -2,16 +2,20 @@
 
 Provael's core is CPU-tested in CI. The credibility move is a **real-model** job that's cheap and
 can't be abused by fork PRs. [`modal_provael_gpu.py`](modal_provael_gpu.py) +
-[`modal-gpu-tests.yml`](modal-gpu-tests.yml) run the real SmolVLA × LIBERO path on a Modal GPU
-(~$0.01–0.02/run), triggered **only** when a maintainer adds the `gpu-tests` label to a PR.
+[`modal-gpu-tests.yml`](modal-gpu-tests.yml) run the real SmolVLA × LIBERO path on a Modal GPU,
+triggered **only** when a maintainer adds the `gpu-tests` label to a PR. **Cost, measured, not
+estimated:** the lane's canary (16 episodes at `--seeds 2`) runs about 37 minutes on one L4 and
+costs about **$0.49** — the "~$0.02/run" this page and two others advertised until 0.38.1 was an
+estimate that had never been run, corrected the day the lane was enabled
+([CHANGELOG 0.38.1](../../CHANGELOG.md#0381--2026-08-31)). Scale it by episodes: the repo's own
+anchor is ~139 s per LIBERO episode on an L4.
 
 ```bash
 pip install modal
 modal run examples/gpu-ci/modal_provael_gpu.py
 ```
 
-Set `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` as repo secrets for the Action. Nobody else in VLA
-red-teaming ships a fork-safe real-model CI job at this price point.
+Set `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` as repo secrets for the Action.
 
 ## Same protocol on one machine you already have
 
