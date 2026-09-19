@@ -92,6 +92,12 @@ class Coverage:
     real_policy_names: tuple[str, ...] = ()
     #: Registered adversarial families never run against a real policy, sorted.
     stub_only_families: tuple[str, ...] = field(default_factory=tuple)
+    #: Real (non-fixture) suites that received at least one applicable adversarial episode from a
+    #: real policy in a committed run, sorted. The suite-side twin of :attr:`real_policy_names`:
+    #: `libero` and `metaworld` are registered behind the same extra, and only one of them has a
+    #: committed episode. Declared beside it as ``provael.suites.MEASURED_SUITES``, which the tests
+    #: hold to this derived set.
+    real_suite_names: tuple[str, ...] = field(default_factory=tuple)
     #: Registered policy adapters DECLARED as scaffolding, sorted. Read from
     #: :data:`~provael.policies.registry.SCAFFOLDING_POLICIES` rather than probed: the note on
     #: :data:`~provael.suites.SCAFFOLDING_SUITES` records why a filesystem probe answers
@@ -245,6 +251,34 @@ def _real_policy_names(results_dir: Path = RESULTS_DIR) -> set[str]:
     return found
 
 
+def _real_suite_names(results_dir: Path = RESULTS_DIR) -> set[str]:
+    """Real suites with at least one APPLICABLE adversarial episode from a real policy.
+
+    The same scan and exclusions as :func:`_real_policy_names`, collecting the report's ``suite``.
+    """
+    found: set[str] = set()
+    if not results_dir.is_dir():
+        return found
+    for report_path in sorted(results_dir.rglob("report.json")):
+        try:
+            data = json.loads(report_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):  # pragma: no cover - a malformed committed report
+            continue
+        suite = data.get("suite")
+        if not suite or suite in FIXTURE_SUITES or data.get("policy") in FIXTURE_POLICIES:
+            continue
+        for result in data.get("results", []):
+            family = result.get("family")
+            if (
+                family
+                and family not in NON_ADVERSARIAL_FAMILIES
+                and result.get("applicable", True) is not False
+            ):
+                found.add(str(suite))
+                break
+    return found
+
+
 def _real_policy_defenses(results_dir: Path = RESULTS_DIR) -> set[str]:
     """Defenses applied on a real policy in a committed run, read from the execution manifests.
 
@@ -341,6 +375,7 @@ def coverage(results_dir: Path = RESULTS_DIR) -> Coverage:
         real_policy_families=tuple(sorted(real)),
         real_policy_names=tuple(sorted(_real_policy_names(results_dir))),
         stub_only_families=tuple(sorted(adversarial_families - real)),
+        real_suite_names=tuple(sorted(_real_suite_names(results_dir))),
         scaffolding_policy_names=tuple(sorted(SCAFFOLDING_POLICIES)),
         scaffolding_suite_names=tuple(sorted(SCAFFOLDING_SUITES)),
         real_policy_defense_names=tuple(sorted(_real_policy_defenses(results_dir))),

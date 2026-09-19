@@ -34,11 +34,15 @@ from provael.recipes import RECIPES, available_recipes
 from provael.reproductions import available_reproductions, get_reproduction
 from provael.suites import (
     KIND_FIXTURE,
+    SUITE_STATUS_FIXTURE,
+    SUITE_STATUS_MEASURED,
+    SUITE_STATUS_UNRUN,
     available_suites,
     suite_gating_note,
     suite_is_ready,
     suite_kind,
     suite_scaffolding_note,
+    suite_status,
 )
 from provael.suites import (
     STATUS_SCAFFOLDING as SUITE_STATUS_SCAFFOLDING,
@@ -92,8 +96,13 @@ def list_suites() -> None:
     table = Table(title="Suites")
     table.add_column("name", style="cyan", no_wrap=True)
     table.add_column("ready here", justify="center")
-    table.add_column("kind", no_wrap=True)
-    table.add_column("notes")
+    table.add_column("kind")
+    # `status` answers the evidence question the other columns do not: has a committed run driven
+    # a real policy through this simulator? `libero` and `metaworld` sit behind the same extra and
+    # rendered identically until 20 September 2026; one holds the published body, the other has
+    # never produced a committed episode (and cannot yet complete a CLI run — see its note).
+    table.add_column("status")
+    table.add_column("notes", min_width=24)
     for name in available_suites():
         kind = suite_kind(name)
         fixture = kind == KIND_FIXTURE
@@ -117,14 +126,28 @@ def list_suites() -> None:
             note = f"{note} — {escape(gating)}"
         mark = "[green]yes[/green]" if suite_is_ready(name) else "[yellow]no[/yellow]"
         colour = "yellow" if scaffold is not None else ("cyan" if fixture else "green")
-        table.add_row(name, mark, f"[{colour}]{kind}[/]", note)
+        status = suite_status(name)
+        # The scaffolding label already fills the `kind` column in its long form; the status
+        # column says the one word so the row does not carry the sentence twice.
+        shown = "scaffolding" if status == SUITE_STATUS_SCAFFOLDING else status
+        table.add_row(
+            name, mark, f"[{colour}]{kind}[/]", f"[{_SUITE_STATUS_STYLE[status]}]{shown}[/]", note
+        )
     _out.print(table)
     _out.print(
         "[dim]A CPU fixture is reproducible scaffolding, not evidence about a robot. Only a real "
-        "simulator produces a `real-episode` run.[/dim]"
+        "simulator produces a `real-episode` run; `status` says whether one has been committed "
+        "through this suite.[/dim]"
     )
 
 
+
+_SUITE_STATUS_STYLE: dict[str, str] = {
+    SUITE_STATUS_MEASURED: "green",
+    SUITE_STATUS_FIXTURE: "cyan",
+    SUITE_STATUS_SCAFFOLDING: "yellow",
+    SUITE_STATUS_UNRUN: "yellow",
+}
 
 _FAMILY_STATUS_STYLE: dict[str, str] = {
     FAMILY_STATUS_MEASURED: "green",

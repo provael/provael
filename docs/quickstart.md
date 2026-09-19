@@ -60,8 +60,13 @@ The suite is `libero`; `libero_object` is a **task filter** inside it, spelled `
 published body is exactly those ten tasks; `libero_spatial/*`, `libero_goal/*` and `libero_10/*`
 select the other LIBERO task suites through the same adapter.
 
-See the [examples gallery](examples.md) for π0 / GR00T / OpenVLA adapters and the second
-(Meta-World) suite.
+See the [examples gallery](examples.md) for the π0 / GR00T / OpenVLA adapters and the second real
+simulator, Meta-World. Read the status before pointing a run at either: `provael list-policies` and
+`provael list-suites` say, per adapter and per suite, whether a committed run has ever driven a real
+policy through it. Meta-World's is **no run committed here** — the adapter is implemented and
+unit-tested, its simulator wiring has never been introspected against an installed package, and the
+CLI cannot yet complete a run on it (its `notes` say why); `groot`, `openvla` and `openpi` are
+**scaffolding**. Only `libero` × `smolvla` (and π0.5's preliminary leg) is `measured`.
 
 Add `--video-dir clips/` to write one MP4 per episode — the frames the policy actually saw, after
 the attack and any defense, red-bordered from the first step the predicate fired. Recording never

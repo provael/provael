@@ -162,7 +162,9 @@ def test_list_policies_marks_each_scaffolding_backend_inline() -> None:
 
 
 def test_list_suites_marks_fixtures_apart_from_simulators() -> None:
-    result = runner.invoke(app, ["list-suites"])
+    # A wide terminal: the assertions are about the words, and Rich wraps a phrase across cells at
+    # 80 columns now that the table carries a fifth (status) column.
+    result = runner.invoke(app, ["list-suites"], env={"COLUMNS": "200"})
     assert result.exit_code == 0
     out = _plain(result.output)
     for name in available_suites():
@@ -176,3 +178,66 @@ def test_suite_kind_follows_what_the_suite_classes_declare() -> None:
     """Derived from `SuiteAdapter.is_fixture`, so a new fixture cannot default to 'real'."""
     assert {n for n in available_suites() if suite_kind(n) == KIND_FIXTURE} == set(FIXTURE_SUITES)
     assert set(FIXTURE_SUITES) == {"stub", "reach", "humanoid"}
+
+
+# --------------------------------------------------------------------------- #
+# suites carry the same four-way status (20 September 2026)
+# --------------------------------------------------------------------------- #
+
+
+def test_every_registered_suite_gets_exactly_one_known_status() -> None:
+    from provael.suites import (
+        STATUS_SCAFFOLDING,
+        SUITE_STATUS_FIXTURE,
+        SUITE_STATUS_MEASURED,
+        SUITE_STATUS_UNRUN,
+        available_suites,
+        suite_status,
+    )
+
+    known = {SUITE_STATUS_MEASURED, SUITE_STATUS_FIXTURE, STATUS_SCAFFOLDING, SUITE_STATUS_UNRUN}
+    for name in available_suites():
+        assert suite_status(name) in known, name
+
+
+def test_libero_is_measured_and_metaworld_is_not() -> None:
+    """The two real simulators behind the same extra rendered identically until 20 Sep 2026.
+
+    `libero` holds the published body; `metaworld` has never produced a committed episode, its
+    simulator wiring has never been introspected against an installed package (its docstring says
+    so), and it cannot complete a CLI run (`suite_gating_note`). One is a measurement surface and
+    one is not, and `list-suites` now says which.
+    """
+    from provael.suites import SUITE_STATUS_MEASURED, SUITE_STATUS_UNRUN, suite_status
+
+    assert suite_status("libero") == SUITE_STATUS_MEASURED
+    assert suite_status("metaworld") == SUITE_STATUS_UNRUN
+    assert suite_status("stub") == "fixture"
+    assert suite_status("ai2_bridge").startswith("scaffolding")
+
+
+def test_the_packaged_measured_suites_match_the_derived_set_and_name_real_runs() -> None:
+    """`MEASURED_SUITES` is declared (a wheel has no results/); coverage() derives the same set."""
+    from provael.coverage import coverage
+    from provael.suites import MEASURED_SUITES
+
+    cov = coverage()
+    if not cov.evidence_scanned:  # a wheel: nothing to compare against
+        return
+    assert set(MEASURED_SUITES) == set(cov.real_suite_names)
+    root = Path(__file__).resolve().parents[1]
+    for name, evidence in MEASURED_SUITES.items():
+        dirs = [t for t in (tok.strip("(),;") for tok in evidence.split()) if t.startswith("results/")]
+        assert dirs, f"{name}: the evidence string names no results/ directory"
+        for d in dirs:
+            assert (root / d).is_dir(), f"{name}: {d} does not exist"
+
+
+def test_list_suites_prints_the_status_column() -> None:
+    from typer.testing import CliRunner
+
+    from provael.cli import app
+
+    res = CliRunner().invoke(app, ["list-suites"], env={"COLUMNS": "160"})
+    assert res.exit_code == 0, res.stdout
+    assert "no run committed here" in res.stdout and "measured" in res.stdout

@@ -66,9 +66,8 @@ was named. Timed on a clean container: **20 s** from `pip install` to a written 
 
 `libero_object` is a **task filter, not a suite**: the suite is `libero`, the ten Object tasks are
 `--tasks libero_object/0,…,9`. The real rows need a GPU, Linux and `[lerobot]`. Every other registered
-adapter (`pi0`, `pi0fast`, `groot`, `openvla`, `openpi`) and suite (Meta-World, `ai2_bridge`,
-`vla_arena`) has **no run committed here** or is **scaffolding**; `provael list-policies` /
-`list-suites` print each one's status.
+adapter (`pi0`, `pi0fast`, `groot`, `openvla`, `openpi`) and suite (Meta-World, `ai2_bridge`, `vla_arena`)
+is **scaffolding** or has **no run committed here** — `provael list-policies` / `list-suites` print each status.
 
 ## The measured result
 
