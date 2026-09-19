@@ -1,6 +1,35 @@
 # Roadmap
 
-Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked.
+Provael is CPU-first and model-agnostic. Shipped vs. planned, honestly marked. Since 19 September
+2026 the roadmap is deliberately short: reliability work the project owes on what it already
+claims, and work a customer triggers. Nothing below is a promise of a capability that does not
+exist.
+
+## Now: reliability, on what is already published
+
+- **Re-measure the published body at the pinned release.** The scheduled campaign
+  (`studies/scheduled_campaign/plan.json`, progress in `watch/campaign.json`) accumulates the
+  shards that displace the 0.41.2 Object body; `publish-freshness.json` says how far it is.
+- **Complete provenance on every new committed run.** From 20 September 2026
+  `tests/test_results_provenance.py` refuses a run whose shards lack `repository`, `commit`,
+  `dep_lock_digest` or `precision`; the box and the Modal lane both set them.
+- **The keep-out calibration question** ([#136](https://github.com/provael/provael/issues/136)):
+  ten per-task fits are withheld rather than adopted, and a benign-only fit cannot choose the face
+  an attack leaves through. What is owed is a GPU run of `calibrate --attack` across all ten tasks.
+- **One decision, everywhere.** Every export renders the release verdict under a named acceptance
+  protocol (0.43.0); the remaining work is a customer protocol agreed before a paid run.
+
+## Customer-triggered (starts when a qualified engagement needs it)
+
+- More attack families and adapters — when a customer's configuration needs the specific missing
+  capability, not before.
+- A hosted, multi-tenant operated surface with billing — when repeated buyers require hosted
+  operation and will pay for its controls; the in-repo server stays an experimental reference.
+- Hardware and sim-to-real — a funded partner and a facility; see the blocked section below.
+- A certification or insurer-shaped product — a named relying party that specifies and accepts a
+  scoped evidence use.
+- A full calibration platform — repeated engagements showing the narrow corrected workflow is
+  insufficient.
 
 ## Shipped
 
@@ -138,7 +167,7 @@ Neither is a software task, so neither can be closed by anything in this reposit
 in place, the honest state of the real-robot arm of this work is zero trials, and any sim/real
 comparison here would be reporting a hardware fault as a finding.
 
-## Planned (contributions welcome)
+## Planned (contributions welcome) — every item conditional
 
 - **Validated calibration (conditional — before any "validated calibration" is sold or
   published).** The shipped calibration command splits benign rollouts two ways and selects
@@ -152,7 +181,7 @@ comparison here would be reporting a hardware fault as a finding.
   real-policy calibration run before any real-policy calibration validity is claimed. Until then
   the honest offer is the explicitly uncalibrated robustness diagnostic, or a calibration described
   as tuned to a disclosed target.
-- **Suites:** RoboCasa, CALVIN, SimplerEnv, and the AI2 vla-evaluation-harness bridge (one adapter
+- **Suites (conditional on a customer needing one):** RoboCasa, CALVIN, SimplerEnv, and the AI2 vla-evaluation-harness bridge (one adapter
   → ~18 benchmarks at the harness's v0.4.0; v0.5.0 exposes 20). See
   [examples/suites](https://github.com/provael/provael/tree/main/examples/suites).
 
@@ -165,9 +194,9 @@ comparison here would be reporting a hardware fault as a finding.
     calibration signal and the EAI02/04/06 predicates. The benign control arm, by contrast, **is**
     expressible. Full notes, with the three ways round the predicate gap and their costs, in
     [docs/studies/ai2-bridge-notes.md](studies/ai2-bridge-notes.md).
-- **Standards:** MITRE ATLAS case study, OWASP Agentic embodied annex, OECD.AI listing (drafts in
+- **Standards (submissions and proposals until a body accepts them):** MITRE ATLAS case study, OWASP Agentic embodied annex, OECD.AI listing (drafts in
   [docs/standards](https://github.com/provael/provael/tree/main/docs/standards)).
-- **Stronger attacks:** gradient-based adversarial **suffixes** (GCG-style) and a real-model
+- **Stronger attacks (conditional on a customer or a funded study):** gradient-based adversarial **suffixes** (GCG-style) and a real-model
   transfer of the `optimized` family beyond the stub. The white-box *patch* half of this line
   shipped in 0.39.0 and has moved to Shipped above; what is left here is the text-side white-box
   work, which is not implemented.

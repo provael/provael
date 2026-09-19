@@ -70,6 +70,24 @@ All notable changes to this project are documented here. The format is based on
 
 ### Changed
 
+- **The README opens with what a new reader needs, and the history moved to the pages that hold
+  it.** The first two screens are now: what the tool is and who it is for, the one CPU command with
+  its output (labelled as fixture numbers, with the not-assessed verdict explained), the limits, a
+  supported-configuration table, the one dated real-policy result (14 September 2026, with its
+  control, both intervals named, the competence control and the decision under the example
+  protocol), an interpretation guide, one contribution route and one link to the assessment offer.
+  The long opening narrative and the results section's commentary moved verbatim to
+  `docs/findings/2026-instruction-transfer.md` ("The README narrative, retired 19 September
+  2026"), every link intact; the registry-vs-evidence paragraphs sit under their own "Coverage:
+  registered is not validated" heading; the cross-architecture section states today's status
+  (SmolVLA measured, π0.5 preliminary at the floor, π0-via-openpi still pending) in place of a
+  paragraph that still said the π0 leg was pending with no second architecture measured; two stale
+  limitation bullets (the n=10 "roleplay 100%" figures; "one policy, one suite") are reconciled with
+  E-2026-12 and the derived policy count; the README roadmap is a short list pointing at
+  `docs/roadmap.md`, which itself now leads with reliability work and customer-triggered work and
+  labels every planned item conditional. Every guarded phrase (`tests/test_counted_claims.py`, the
+  coverage breakdown, the quickstart the workflow runs, the board's measured-with claim) is
+  unchanged.
 - **A checkpoint comparison says what changed, and refuses what is not like-for-like.**
   `RegressionDiff.changed` records the checkpoint id and resolved revision, tool version, episodes
   and seeds that differ (allowed in a checkpoint comparison, on the record — a diff naming no

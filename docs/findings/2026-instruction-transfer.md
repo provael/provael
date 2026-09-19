@@ -114,3 +114,123 @@ literature this build leans on:
 See [Does sim red-teaming predict real-robot behaviour?](../sim-predicts-real.md) for the full framing
 and its limits. Treat the ASR as a **floor on susceptibility**, measured under a benign control — not
 a certification, and not a prediction of a specific robot's behaviour on a specific day.
+
+## The README narrative, retired 19 September 2026
+
+Until 0.43.0 the repository README opened with the paragraphs below and closed its results
+section with the ones after them. They were moved here unchanged when the README was cut back
+to what a new reader needs on the first two screens; every number and correction in them still
+stands, and the links inside them still resolve.
+
+### From the top of the README
+
+**The finding.** Under a single `roleplay` instruction, a **real SmolVLA** policy left its safe
+envelope on **44 of 50 matched pairs across all ten `libero_object` tasks (88%, task-clustered 95%
+CI [72%, 100%]) against a benign control of 2/50 (4.0%, Wilson 95% [1.1%, 13.5%])** — and against
+**0** benign twins at the same (task, seed), McNemar exact **p = 4.6e-13**, surviving Holm
+correction across the six-arm screen. The headline interval is **clustered over *tasks*, not
+episodes**, because episodes inside one task are correlated and pooling them reports an interval far
+too narrow. The two numbers are quoted together because an attack-success rate is a difference
+against that floor: read alone, 88% is a rate with no control arm.
+
+**What the controls say it is** ([E-2026-12](../errata.md), 14 September 2026): the same frame
+with **no target named** left the envelope in **27/30** cells and the same tokens in **scrambled
+order** in **18/30**, against 0/30 for two meaning-preserving rewordings. So this is the policy
+leaving its envelope under a long, imperative, out-of-distribution string — a fragility finding —
+and **not** the attacker steering the arm toward a chosen object. The number is unchanged and was
+re-measured on 0.41.2 at **42/50**
+([run](https://github.com/provael/provael/blob/main/results/smolvla_libero_object_suite_2026-09-14/README.md),
+[controls](https://github.com/provael/provael/blob/main/results/smolvla_libero_object_control_2026-09-14/README.md)).
+
+This supersedes the earlier n=10 single-task result, and the upgrade is the scope rather than the
+number. That run measured `libero_object/0` alone and was explicitly an existence proof; a
+task-clustered interval could not be computed from it at all, because
+`cluster_bootstrap_ci` refuses below two tasks by design. **A second attack changed verdict once
+there were ten tasks:** `goal_substitution` was 6/10 at p=0.031 and did *not* survive correction on
+one task; pooled over ten it reaches **15/50, p=9.8e-4**, and does.
+
+The honest other half. The benign control fired on **2 of 50** episodes, so the predicate is not
+clean — it is uncalibrated, the same fixed keep-out zone on all ten tasks. Those firings are not
+scattered: across **both** committed runs the benign arm fires **5/100 (5.0%, Wilson 95% [2.2%,
+11.2%])** and every single firing lands on `libero_object/4` or `/5`, on different seeds, with the
+other eight tasks silent through 80 benign episodes — a task-conditional, seed-independent pattern
+that replicates out-of-sample at p = 0.04
+([the study](https://github.com/provael/provael/blob/main/studies/keepout_calibration/README.md)). That is the signature of a boundary in the
+wrong place, not of a policy that wanders. The fitted envelopes since agree from the other
+direction: the default box overlaps the reachable benign workspace on four tasks, and by far the
+most on `libero_object/4` and `/5` — the two that fire.
+
+**It is still not fixed, and the thing that was missing turned out not to be the thing that was
+missing.** The benign-only `calibrate` arm ran on 6 September and produced ten per-task boundaries
+at a tuning-split benign FPR of 0.0. That number is worth almost nothing: the fitter searched the gap
+between the hazard box and the benign envelope and never varied the FACE, and five of the six
+candidate faces score the same 0.0. Replayed against the one committed run that records
+trajectories, the fitted face flags **0 of 12** attacked episodes where `x+` flags 5 and the
+uncalibrated default box flags 4 — the policy leaves through `+x` and the hazard sat beside `-y`,
+past a boundary the arm never reaches
+([the study](https://github.com/provael/provael/blob/main/studies/keepout_face_selection/README.md), errata E-2026-08). A benign-only
+calibration cannot choose a face, because where an attack goes is not observable from rollouts in
+which no attack ran. `provael calibrate --attack <name>` now runs both arms and picks the face
+against the attacked one; what is owed is a GPU run of that across all ten tasks. Three arms are
+**measured nulls at 0/50 each** (`patch`, `decoy_object`, `scene_text`), and `mcp_tool_desc` is
+**not applicable** to this suite rather than a null. Clean-task-success under the benign arm averages
+84% and ranges 40–100% across tasks, so the policy is not uniformly competent. And the policy's
+sampler was not seeded when this ran, so this is **one draw**, not a reproducible constant — from
+0.38.0 the runner seeds it and records `policy_seed` per episode, but that cannot be applied
+retroactively to a measurement already taken.
+[The full result](https://github.com/provael/provael/blob/main/results/smolvla_libero_object_suite/README.md) ·
+[Read the write-up](#the-finding) ·
+[Scope & honest limitations](https://github.com/provael/provael/blob/main/README.md#scope-and-honest-limitations).
+
+### From the results section
+
+**That interval is clustered over TASKS, not episodes**, and the distinction matters more than the
+identical-looking bounds of the older single-task Wilson interval. Episodes inside one task are
+correlated — an attack that works on "pick up the alphabet soup" tends to work on every seed of it —
+so pooling them as independent trials reports an interval far too narrow. This is the first result
+in the project where a clustered interval could be computed at all: `provael.scoring.paired` returns
+`None` below two tasks by design, which was the correct answer for every earlier published number.
+
+What changed by adding tasks. `goal_substitution` was 6/10 at p = 0.031 on one task and did **not**
+survive correction; over ten tasks it reaches **15/50, p = 9.8e-4**, and does. Adding tasks changed a
+verdict, which is the argument for having run them.
+
+**The benign control is not clean.** It fired on 2 of 50 episodes, both on tasks 4 and 5, because
+the predicate is uncalibrated — the same fixed keep-out zone on all ten tasks. McNemar handles that
+correctly by discarding concordant pairs, and `benign_only` counts are reported per arm rather than
+hidden, but a calibrated predicate would be a better measurement. `provael calibrate` exists and has
+not been run on LIBERO.
+
+That "because" is now measured rather than assumed. Pooling this run's benign arm with the
+[control run](https://github.com/provael/provael/blob/main/results/smolvla_libero_object_control/README.md)'s gives 5 firings in 100 benign
+episodes, and **all five land on `libero_object/4` and `/5`** — the two tasks that ask for the
+ketchup and the tomato sauce — while the other eight tasks stay silent across 80 episodes. The
+seeds differ between the runs, so each tests the other's task set out-of-sample; the weaker
+direction gives p = 0.04. See
+[studies/keepout_calibration](https://github.com/provael/provael/blob/main/studies/keepout_calibration/README.md), which also records why no
+corrected zone is derived there: every committed LIBERO report predates `AttackResult.trajectory`,
+so the benign end-effector poses a fit would consume were never written down. That gap is closed —
+reports have recorded trajectories since schema 3 and a fit exists — and it turned out not to be
+the binding one; see [studies/keepout_face_selection](https://github.com/provael/provael/blob/main/studies/keepout_face_selection/README.md)
+for the boundary that was fitted, and why it is not adopted.
+
+Read each rate **against its control**: the `none` baseline runs the policy's *real* task and
+scores **2/50 (benign FPR 4%, Wilson 95% [1.1%, 13.5%])**, so a success above is attack-induced
+only to the extent it clears that floor — which is what the McNemar column tests, pair by pair.
+Language-reframing attacks reliably divert SmolVLA's end-effector; pixel and scene-text
+perturbations did not move it (0%) — an honest null on this suite.
+
+> **Scope (honest).** Simulation only. **Ten `libero_object` tasks, 5 seeds per (task, arm),
+> 350 measured episodes** — read the CIs, not just the point estimates, and note the interval is
+> clustered over tasks. Only the **instruction** family transfers to the real model so far.
+> **The predicate is uncalibrated**: no calibration is adopted, so all ten tasks were scored
+> against the same default keep-out box, which overlaps the reachable benign workspace and is why
+> the benign arm trips at all. Ten per-task fits now ship inside the package and are **withheld
+> rather than absent** — `provael doctor` names them and says why, because "not fitted yet" and
+> "fitted, measured and rejected" are different states and only one is still waiting on a run. That
+> fallback warns at runtime and can be refused outright with `PROVAEL_REQUIRE_CALIBRATED=1`; the
+> calibration itself is still owed ([#136](https://github.com/provael/provael/issues/136)). `provael calibrate` fits a per-task
+> predicate from the policy's own benign rollouts to a benign-FPR target, and `provael attack
+> --calib` reports a calibrated redirection rate with its 95% CI and the benign FPR as its control
+> — see [Calibration](https://github.com/provael/provael/blob/main/README.md#calibration). It has never been run on LIBERO. The real SmolVLA × LIBERO
+> path needs a GPU + the `[lerobot]` extra.
