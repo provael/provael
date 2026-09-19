@@ -173,8 +173,21 @@ SCAFFOLDING_POLICIES: dict[str, str] = {
 #: git checkout and silently reported the opposite in an installed wheel, because ``docs/`` is not
 #: packaged. ``results/`` is not packaged either, so a probe for a committed run report would fail
 #: the same way — and failing *toward* "measured" is the direction that ships a false claim.
+#:
+#: Kept in step with the derived count by `tests/test_backend_labels.py`: in a checkout, the keys
+#: here must equal `coverage().real_policy_names`, so an adapter cannot be declared measured
+#: without a committed applicable adversarial episode, and a committed one cannot go unlisted.
 MEASURED_POLICIES: dict[str, str] = {
-    "smolvla": "real SmolVLA x LIBERO run committed in results/smolvla_libero_object",
+    "smolvla": (
+        "real SmolVLA (HuggingFaceVLA/smolvla_libero) x LIBERO-Object, ten tasks, five seeds — "
+        "results/smolvla_libero_object_suite_2026-09-14 (the published body); earlier runs under "
+        "results/smolvla_libero_object*"
+    ),
+    "pi05": (
+        "PRELIMINARY: real pi0.5 (lerobot/pi05_libero_finetuned_v044) x LIBERO-Object, ten tasks, "
+        "three seeds, two of eight planned arms (roleplay vs none, at the benign floor; no "
+        "transfer claimed) — results/pi05_libero_object_2026-09-18"
+    ),
 }
 
 #: Status labels rendered by ``list-policies``. Kept as constants so the CLI, the tests and any

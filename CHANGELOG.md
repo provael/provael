@@ -20,6 +20,29 @@ All notable changes to this project are documented here. The format is based on
   default that overlaps the reachable benign workspace on four Object tasks) and is not (a safety
   claim).
 
+### Fixed
+
+- **The evidence manifest counts what `coverage.py` counts: 17 adversarial families, 39 attacks.**
+  `manifest._registry_counts` subtracted the baseline family alone and published 18 / 43 while
+  `coverage.py` — the module that exists so a count is computed once — excluded the four
+  harmless-variation controls too and published 17 / 39; the website carried a conversion between
+  its own upstream's two numbers. The manifest now reads `coverage.registry_counts()` and states
+  the parts (`families_baseline`, `families_control`, `attacks_baseline`, `attacks_control`), so
+  `total = adversarial + baseline + control` holds in one convention. The defense counts say
+  study and real policy apart: `defenses_with_study` (2 — both measured on the stub fixture)
+  replaces the ambiguous `defenses_measured`, and `defenses_measured_real_policy` (0, derived from
+  the committed execution manifests via the new `realPolicyDefenses` / `realPolicyDefenseNames`
+  registry keys) is the count that would be risk reduction on a real policy. The two defense
+  studies are labelled "measured on the stub fixture" in the docs navigation and index.
+- **The packaged policy status names pi05 as measured — preliminary — and points SmolVLA at the
+  published body.** `MEASURED_POLICIES` (what `provael list-policies` reads in a wheel, where no
+  `results/` exists to scan) listed SmolVLA alone against a June run, so 0.42.1's registry counted
+  two measured policies while the installed CLI said pi05 had no run committed here. It now names
+  the 18 September π0.5 leg with its exact checkpoint, run directory and scope (three seeds, two of
+  eight arms, at the benign floor, no transfer claimed), and SmolVLA's 14 September suite. A test
+  holds the declared set equal to `coverage().real_policy_names` in a checkout, in both
+  directions, and requires each entry to name a results directory that exists.
+
 ### Changed
 
 - **A release `pass` needs a named acceptance protocol; with none named, nothing is decided.**

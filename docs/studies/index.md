@@ -11,8 +11,8 @@ with no numbers in it has not been run yet. That is the intended state, not an o
 
 | Study | Kind |
 | --- | --- |
-| [Instruction canonicalization](instruction-canonicalization.md) | Defense — measured |
-| [Action envelope](action-envelope.md) | Defense — measured |
+| [Instruction canonicalization](instruction-canonicalization.md) | Defense — measured on the stub fixture only (no real-policy defended arm committed) |
+| [Action envelope](action-envelope.md) | Defense — measured on the stub fixture only (no real-policy defended arm committed) |
 | [EAI04 action-space-integrity transfer](eai04-action-space-transfer.md) | Attack transfer |
 | [Offline real-observation (recorded SO-101 frames)](offline-real-observation.md) | Attack on real recorded frames — **open-loop**, measured null |
 

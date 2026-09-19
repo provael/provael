@@ -58,11 +58,35 @@ def test_committed_artifact_manifest_is_honest() -> None:
     assert mcp["applicable"] is False and mcp["rate"] is None and mcp["wilson_ci95"] is None
 
 
-def test_registry_counts_are_baseline_aware() -> None:
+def test_registry_counts_use_coverages_convention() -> None:
+    """One convention: adversarial = registered minus the baseline AND the control family.
+
+    The manifest used to subtract the baseline alone (18 families / 43 attacks) while
+    `coverage.py` subtracted both (17 / 39); the website carried a conversion between its own
+    upstream's two numbers. The manifest now reads `coverage.registry_counts()`.
+    """
+    from provael.coverage import coverage
+
     reg = _manifest(load_report(_REAL))["registry"]
-    assert reg["attacks_total"] == reg["attacks_adversarial"] + reg["attacks_baseline"]
+    cov = coverage()
+    assert reg["attacks_total"] == (
+        reg["attacks_adversarial"] + reg["attacks_baseline"] + reg["attacks_control"]
+    )
     assert reg["attacks_baseline"] == 1  # exactly one benign baseline
-    assert reg["families_adversarial"] == reg["families_total"] - 1
+    assert reg["attacks_control"] == 4  # the harmless-variation arms
+    assert reg["families_adversarial"] == reg["families_total"] - 2
+    assert (reg["families_adversarial"], reg["attacks_adversarial"]) == (
+        cov.adversarial_families, cov.adversarial_attacks
+    )
+    assert (reg["families_adversarial"], reg["attacks_adversarial"]) == (17, 39)
+
+
+def test_defense_counts_say_study_and_real_policy_apart() -> None:
+    """Two shipped defenses carry a study; both studies ran on the stub fixture."""
+    reg = _manifest(load_report(_REAL))["registry"]
+    assert reg["defenses_total"] == 2 and reg["defenses_with_study"] == 2
+    assert reg["defenses_measured_real_policy"] == 0  # until a real-policy defended arm lands
+    assert "defenses_measured" not in reg  # the ambiguous key is gone
 
 
 def test_manifest_makes_no_unearned_claim() -> None:

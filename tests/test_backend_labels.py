@@ -19,6 +19,9 @@ enforces internally when it refuses to call a fixture run `real-episode`.
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 from typer.testing import CliRunner
 
 from provael.cli import app
@@ -69,9 +72,37 @@ def test_only_a_backend_with_committed_evidence_reads_measured() -> None:
     """`measured` is the strongest label on the table; it must require committed evidence."""
     measured = {n for n in available_policies() if policy_status(n) == STATUS_MEASURED}
     assert measured == set(MEASURED_POLICIES)
-    # Today that is smolvla alone. Asserted explicitly: if a second backend earns the label, that
-    # is a real event that should require editing this line, not something that happens silently.
-    assert measured == {"smolvla"}
+    # smolvla since June 2026; pi05 since the 18 September 2026 preliminary leg. Asserted
+    # explicitly: a third backend earning the label is a real event that should require editing
+    # this line, not something that happens silently.
+    assert measured == {"smolvla", "pi05"}
+
+
+def test_the_packaged_measured_set_matches_the_derived_one_and_names_real_runs() -> None:
+    """The packaged status and the derived count must agree, in both directions.
+
+    `MEASURED_POLICIES` is declared (a wheel has no `results/` to scan); `coverage()` derives the
+    same set from the committed runs. 0.42.1 shipped with the derived count at two and the declared
+    set at one, so `provael list-policies` in the wheel said pi05 had no run committed here while
+    `watch/registry.json` counted it. Each entry must also name a results directory that exists,
+    and the pi05 entry must say it is preliminary — three seeds, two arms — because the label
+    `measured` alone would read as more than the leg delivered.
+    """
+    from provael.coverage import coverage
+
+    cov = coverage()
+    if not cov.evidence_scanned:  # a wheel: nothing to compare against
+        return
+    assert set(MEASURED_POLICIES) == set(cov.real_policy_names)
+    root = Path(__file__).resolve().parents[1]
+    for name, evidence in MEASURED_POLICIES.items():
+        dirs = re.findall(r"results/[A-Za-z0-9_./-]+", evidence)
+        assert dirs, f"{name}: the evidence string names no results directory"
+        for d in dirs:
+            assert list(root.glob(d.rstrip(".") + "*")), f"{name}: {d} does not exist"
+    assert "PRELIMINARY" in MEASURED_POLICIES["pi05"]
+    assert "no transfer claimed" in MEASURED_POLICIES["pi05"]
+    assert "lerobot/pi05_libero_finetuned_v044" in MEASURED_POLICIES["pi05"]
 
 
 def test_scaffolding_backends_never_read_measured() -> None:
@@ -86,13 +117,14 @@ def test_scaffolding_backends_never_read_measured() -> None:
 
 
 def test_the_provisioned_but_unrun_backends_are_neither_measured_nor_scaffolding() -> None:
-    """`pi0`/`pi05`/`pi0fast` are a real third category and flattening them would be a lie.
+    """`pi0`/`pi0fast` are a real third category and flattening them would be a lie.
 
     They are genuinely provisioned by `provael[lerobot]` (unlike `groot`), so calling them
     scaffolding understates them; no checkpoint has been run here, so calling them measured
-    overstates them. The honest label is the boring one.
+    overstates them. The honest label is the boring one. `pi05` left this category on
+    18 September 2026 with a committed (preliminary) arm.
     """
-    for name in ("pi0", "pi05", "pi0fast"):
+    for name in ("pi0", "pi0fast"):
         assert policy_status(name) == STATUS_UNRUN
 
 

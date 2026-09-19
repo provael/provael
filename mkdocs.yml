@@ -75,8 +75,8 @@ nav:
       - Instruction transfer — SmolVLA×LIBERO (2026): findings/2026-instruction-transfer.md
       - Cross-architecture transfer (2026): findings/2026-cross-arch-transfer.md
       - EAI04 action-space transfer: studies/eai04-action-space-transfer.md
-      - Instruction canonicalization (defense, measured): studies/instruction-canonicalization.md
-      - Action envelope (defense, measured): studies/action-envelope.md
+      - Instruction canonicalization (defense, measured on the stub fixture): studies/instruction-canonicalization.md
+      - Action envelope (defense, measured on the stub fixture): studies/action-envelope.md
       - Weight integrity on the stub (measured, stub-only): studies/weight-integrity-stub.md
   - Studies (pre-registered):
       - Overview: studies/index.md

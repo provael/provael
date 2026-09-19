@@ -29,7 +29,6 @@ from provael.eai import CATALOG, all_ids, coverage_counts, coverage_headline
 from provael.endpoints import ENDPOINT_DEFINITIONS, ENDPOINT_ORACLES, UNSAFE_ENVELOPE
 from provael.evidence import evidence_state_of
 from provael.scoring.asr import (
-    BASELINE_FAMILY,
     adversarial_asr,
     all_episode_observed_unsafe_rate,
     benign_unsafe_rate,
@@ -46,27 +45,35 @@ INTERVAL_METHOD = "wilson-score-95 (episode-level)"
 
 
 def _registry_counts() -> dict[str, int]:
-    # Imported here rather than at module scope, matching the existing deferral for FAMILIES.
-    from provael.attacks.registry import FAMILIES
+    # Imported here rather than at module scope: the registries are heavy and the manifest is not
+    # always what a caller wants from this module.
+    from provael.coverage import coverage, registry_counts
     from provael.defenses.registry import DEFENSES, make_defense
 
-    baseline = len(FAMILIES.get(BASELINE_FAMILY, []))
-    total = sum(len(names) for names in FAMILIES.values())
-    # Defense counts, DERIVED so they cannot drift from the code. `defenses_measured` reads each
-    # Defense.study — the same class attribute `provael list-defenses` uses for its status column —
-    # so a defense registered without a published study raises the total and NOT the measured
-    # count. The manifest is what a buyer reads; now that the tool files a measured mitigation as
-    # conformity evidence, a manifest that could not say how many mitigations exist, or how many are
-    # actually measured, was materially incomplete.
-    measured = sum(1 for name in DEFENSES if make_defense(name).study)
+    # ONE convention, read from provael.coverage. This function used to subtract the baseline
+    # family alone and publish a family count one higher (and an attack count four higher) than
+    # `coverage.py` — the module that exists so a count is computed once — which excludes the
+    # harmless-variation controls too. Both were "right" under their own definition, which is how
+    # the website came to carry a conversion between its own upstream's numbers.
+    counts = registry_counts()
+    # Defense counts, DERIVED so they cannot drift from the code. `defenses_with_study` reads each
+    # Defense.study — the same class attribute `provael list-defenses` uses for its status column.
+    # It is NOT a measured-risk-reduction count: both shipped studies were measured on the stub
+    # fixture. `defenses_measured_real_policy` is the count that would be, read from the committed
+    # execution manifests; zero until a real-policy defended arm is committed.
+    with_study = sum(1 for name in DEFENSES if make_defense(name).study)
     return {
-        "families_total": len(FAMILIES),
-        "families_adversarial": len(FAMILIES) - (1 if baseline else 0),
-        "attacks_total": total,
-        "attacks_adversarial": total - baseline,
-        "attacks_baseline": baseline,
+        "families_total": counts.families_total,
+        "families_adversarial": counts.adversarial_families,
+        "families_baseline": counts.families_baseline,
+        "families_control": counts.families_control,
+        "attacks_total": counts.attacks_total,
+        "attacks_adversarial": counts.adversarial_attacks,
+        "attacks_baseline": counts.attacks_baseline,
+        "attacks_control": counts.attacks_control,
         "defenses_total": len(DEFENSES),
-        "defenses_measured": measured,
+        "defenses_with_study": with_study,
+        "defenses_measured_real_policy": coverage().real_policy_defenses,
     }
 
 
