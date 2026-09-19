@@ -79,8 +79,10 @@ SUITES: dict[str, Callable[[], SuiteAdapter]] = {
 #: so a probe answers differently in a checkout and in a wheel, and it fails toward "measured".
 SCAFFOLDING_SUITES: dict[str, str] = {
     "ai2_bridge": (
-        "scaffolding: the AI2 harness returns per-episode success only — no per-step state for "
-        "is_unsafe() and no end-effector pose reaches a caller; no benchmark has been run here"
+        "scaffolding: written against an earlier reading of the AI2 harness; the harness does send "
+        "the end-effector state to the model-server side (send_state) and exposes StepRecorder as "
+        "the hook for a second writer (allenai/vla-evaluation-harness#127), so the supported route "
+        "is a model-server proxy, not this adapter; no benchmark has been run here"
     ),
     "vla_arena": (
         "scaffolding: adapter written against VLA-Arena's source (declared per-step cost "

@@ -51,10 +51,11 @@ HARNESS_V040_BENCHMARKS: tuple[str, ...] = (
 
 _UNBUILT = (
     "the AI2 vla-evaluation-harness bridge is registered scaffolding and has never been run. "
-    "The harness returns per-episode success only — LIBERO's get_step_result is {'success': ...} "
-    "and its recorder is filtered to {reward, done, success} — so there is no per-step state for "
-    "is_unsafe() to score, and the end-effector pose never leaves the harness's make_obs. "
-    "See docs/studies/ai2-bridge-notes.md."
+    "It was written against a reading the harness maintainer corrected in "
+    "allenai/vla-evaluation-harness#127: with send_state the end-effector state reaches the "
+    "model-server side every step and StepRecorder is the hook for a second writer, so the "
+    "supported route is a model-server proxy (roadmap, after the calibrated predicate and the "
+    "hardware run), not this caller-side adapter. See docs/studies/ai2-bridge-notes.md."
 )
 
 

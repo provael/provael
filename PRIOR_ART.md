@@ -13,6 +13,37 @@ below).
 > published VLA attack results measure *task-success degradation*; a Provael ASR measures
 > *envelope breach*. They are not one column.
 
+## The ten entries that matter, and what each has that we do not
+
+Added 20 September 2026 so a newcomer does not have to read 1,600 lines to find the comparisons
+that constrain this project's claims. Every row summarises the fuller entry below it (or, for the
+last three, a short entry added the same day); the "what they have" column is the register's own
+assessment, stated in plain words because a register that only cites what flatters the project is
+not evidence.
+
+| work | identifier | what they have that we do not |
+| --- | --- | --- |
+| **Trajectory-Level Redirection** (UIUC, 2026) | arXiv:[2606.12978](https://arxiv.org/abs/2606.12978) | The same threat class and suite, run on nine architectures incl. SmolVLA and π₀.₅ with 7 of 9 above 90% ASR, in simulation **and on hardware**, with released code; our `targeted_redirect` scored 0/3 on this threat class on SmolVLA. It beats us on nearly every axis. |
+| **AttackVLA** (2025) | arXiv:[2511.12149](https://arxiv.org/abs/2511.12149) | A unified adversarial + backdoor evaluation framework already occupying the "one harness, many attacks, comparable ASR" position, evaluated in simulation **and on real robots**. What remains different here is a deterministic CPU core and the evidence/compliance layer. |
+| **RedVLA** (2026) | arXiv:[2604.22591](https://arxiv.org/abs/2604.22591) | Physical red-teaming over the *scene* half of the environment–instruction joint space (we take the instruction half), typed safety costs, and a shipped defense (SimpleVLA-Guard). The complement to this project rather than the competitor. |
+| **VLA-Arena** (2025–26) | arXiv:[2512.22539](https://arxiv.org/abs/2512.22539) | A public leaderboard with a safety axis — 11 suites, 170 tasks, 75 of them safety — and a task-definition language; its safety suites are non-adversarial, so a Provael number is not a comparable entry ([crosswalk](docs/crosswalk/vla-arena.md)). |
+| **DRIFT** (2026) | arXiv:[2608.03207](https://arxiv.org/abs/2608.03207) | A universal gripper patch that breaks essentially all solvable tasks on π0/π0.5 across four LIBERO suites by attacking the denoising ODE; our `patch` arm sits at the benign floor. The sharpest of three published patch attacks that beat ours. |
+| **Q-DIG** (USC, 2026) | arXiv:[2603.12510](https://arxiv.org/abs/2603.12510) | Quality-diversity *search* over adversarial instructions with a naturalness user study and a closed loop (fine-tuning on found prompts); our instruction bank is hand-written and fixed. The sharpest methodological criticism of provael in this file. |
+| **SABER** (2026) | arXiv:[2603.24935](https://arxiv.org/abs/2603.24935) | A black-box agentic attacker (GRPO/ReAct) over bounded instruction edits, with released code; our `optimized_instruction` family is a from-scratch greedy reimplementation of the idea, and the real-policy number is a 0/3 probe. |
+| **SafeVLA-Bench** (Notre Dame / UPenn, 2026) | arXiv:[2606.00773](https://arxiv.org/abs/2606.00773) | STL-specified, task-aware safety requirements and the Succ-But-Unsafe / Violation Severity metrics (post-hoc, non-adversarial); our predicate is a keep-out box, currently uncalibrated. We borrow their metric name and cite them for it. |
+| **LIBERO-Plus** (2025) | arXiv:[2510.13626](https://arxiv.org/abs/2510.13626) | A systematic robustness analysis of VLA models on LIBERO across perturbation factors, at a scale of episodes this project has not run; our perturbations are a small set of templated attacks and four bounded searches, on one policy at scale. |
+| **RoboJailBench** (Purdue, 2026) | arXiv:[2605.19328](https://arxiv.org/abs/2605.19328) | An evolving public repository with standardised metrics, four integrated attacks, two defenses and an external leaderboard — against VLM planners, a different quantity from our closed-loop policies ([crosswalk](docs/crosswalk/robojailbench.md)). Ours has zero third-party submissions. |
+
+Not a paper but the harness this project intends to plug into rather than compete with:
+[`allenai/vla-evaluation-harness`](https://github.com/allenai/vla-evaluation-harness) (Apache-2.0)
+— 18 benchmarks at v0.4.0, 20 at v0.5.0, a model-server interface the policies plug into, and
+`StepRecorder`, which its maintainer named as the intended hook for external tooling
+([#127](https://github.com/allenai/vla-evaluation-harness/issues/127)); what it has that we do not
+is benchmarks, models and users. A model-server proxy that perturbs what the policy sees and scores
+the end-effector state the harness already sends is the supported route
+([interface notes](docs/studies/ai2-bridge-notes.md), correction on top), and it is on the roadmap
+after the calibrated predicate and the hardware run.
+
 ## The works we build on
 
 ### RoboPAIR — *Jailbreaking LLM-Controlled Robots*
@@ -1571,6 +1602,35 @@ deformable or long-horizon results at all.
 hardware. It is evidence that the question is open and that the burden is ours.
 
 **mapping_status: `cited, external evidence, not implemented`.**
+
+### VLA-Arena — *An Open-Source Framework for Benchmarking Vision-Language-Action Models*
+Zhang, Li, Shen, Zhang, Cai, Liu, Ji, Chen, Dai, Ji, Yang (2025–26).
+arXiv:[2512.22539](https://arxiv.org/abs/2512.22539) · [vla-arena.github.io](https://vla-arena.github.io/)
+
+A benchmarking framework with a public leaderboard that carries a **safety axis**: 11 suites and
+170 tasks, of which 5 suites and 75 tasks are safety tasks, declared in a constrained behaviour
+domain definition language. It was crosswalked in [docs/crosswalk/vla-arena.md](docs/crosswalk/vla-arena.md)
+before it was catalogued here, which is the wrong order for a prior-art register.
+
+**How we differ:** posture. VLA-Arena's safety suites ask whether a policy is safe *by default*, with
+a hazard placed in the scene and the instruction untouched; Provael asks whether a policy can be
+*made* unsafe by perturbing the instruction with the envelope fixed. The two numbers do not share a
+column, and the crosswalk says so at length. The `vla_arena` suite adapter in this repository is
+registered scaffolding — no benchmark has been run through it.
+
+### LIBERO-Plus — *In-depth Robustness Analysis of Vision-Language-Action Models*
+(2025). arXiv:[2510.13626](https://arxiv.org/abs/2510.13626)
+
+A systematic robustness analysis of VLA models on LIBERO across perturbation factors, run at a
+scale of episodes this project has not. It appears in this file only as the evaluation environment
+of TOWN-VLA (above) until 20 September 2026, which understated it.
+
+**How we differ:** breadth versus depth on one axis. LIBERO-Plus sweeps perturbation factors
+across models; Provael measures a small set of templated attacks and four bounded searches against
+one policy at scale, with a benign control and a release decision attached. A reader who wants to
+know how robust VLA models are in general should read LIBERO-Plus; a reader who wants to know
+whether *this checkpoint* leaves its envelope under *this frame*, with the control beside it, is
+who Provael is for.
 
 ## What is actually novel here
 

@@ -4,6 +4,21 @@
 > measurement, and `src/provael/suites/ai2_bridge.py` is registered scaffolding, not a working
 > suite. Read at v0.5.0 (`4aeb436`); the roadmap's "~18 benchmarks" is a v0.4.0 figure.
 
+> **Correction, 20 September 2026 — the premise of "The finding" below was wrong, and the
+> maintainer said so.** In [allenai/vla-evaluation-harness#127](https://github.com/allenai/vla-evaluation-harness/issues/127)
+> the harness maintainer answered on 8 September 2026 that per-step state *does* reach a caller
+> today: with `send_state: true` LIBERO sends the end-effector position, axis-angle and gripper to
+> the model server as `states` every step, the model server receives the recording database path
+> in `SessionContext`, and `vla_eval.recording.StepRecorder` is a public second writer — "the
+> intended hook for external tooling", with the step-row schema built for a multi-writer field
+> union. No new API is planned. This project's author checked it at `main` and agreed on
+> 12 September (`benchmark.py:263-268`, `recording.py:592`, the `json_patch` upsert at `:352`);
+> `_ALL_RECORD_FIELDS` constrains the benchmark's own recorder, not a second writer. So workaround
+> 3 below — the model-server proxy — is the **supported path**, not a dead end: the proxy sees the
+> pose it needs to score a keep-out predicate and can record its own per-step rows. The sections
+> below are kept as written so the mistake is visible; read them with this box on top. The proxy is
+> roadmap item 6.1, after the calibrated predicate and the hardware run.
+
 ## What was read
 
 [`allenai/vla-evaluation-harness`](https://github.com/allenai/vla-evaluation-harness), Apache-2.0.

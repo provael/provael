@@ -237,14 +237,15 @@ comparison here would be reporting a hardware fault as a finding.
   [examples/suites](https://github.com/provael/provael/tree/main/examples/suites).
 
     **Scaffolding exists, and it is not a bridge yet.** The `ai2_bridge` suite is registered and
-    listed as *scaffolding — no benchmark ever run*; every contract method raises. The interface was read at
-    v0.5.0 and the blocker is in the harness's public surface, not in the effort: it returns
-    per-episode success only (LIBERO's `get_step_result` is `{"success": ...}`, its recorder filtered
-    to `{reward, done, success}`), and the end-effector pose flows outward to the model server rather
-    than back to a caller. So `is_unsafe()` has no state to score, and with it the keep-out zone, the
-    calibration signal and the EAI02/04/06 predicates. The benign control arm, by contrast, **is**
-    expressible. Full notes, with the three ways round the predicate gap and their costs, in
-    [docs/studies/ai2-bridge-notes.md](studies/ai2-bridge-notes.md).
+    listed as *scaffolding — no benchmark ever run*; every contract method raises. It was written
+    against a reading of the harness that its maintainer corrected in
+    [allenai/vla-evaluation-harness#127](https://github.com/allenai/vla-evaluation-harness/issues/127)
+    (8 September 2026): the end-effector state **does** reach the model-server side with
+    `send_state: true`, and `StepRecorder` is the intended hook for a second writer. So the
+    supported route is a **model-server proxy** that perturbs what the policy sees and scores the
+    pose it receives — the plugin work above, after the calibrated predicate and the hardware run —
+    not a suite adapter on the caller side. The benign control arm is expressible either way. Full
+    notes, with the correction on top, in [docs/studies/ai2-bridge-notes.md](studies/ai2-bridge-notes.md).
 - **Standards (submissions and proposals until a body accepts them):** MITRE ATLAS case study, OWASP Agentic embodied annex, OECD.AI listing (drafts in
   [docs/standards](https://github.com/provael/provael/tree/main/docs/standards)).
 - **Stronger attacks (conditional on a customer or a funded study):** gradient-based adversarial **suffixes** (GCG-style) and a real-model
