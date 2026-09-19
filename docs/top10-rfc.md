@@ -9,6 +9,11 @@ The Top 10 is a **community draft, licensed CC-BY-SA 4.0**, deliberately unbrand
 process for reaching **v0.3**: how to propose a new risk, dispute an existing one, and how a change
 gets reviewed and merged.
 
+**The ordering is the weakest part of v0.2, and this process exists because of that.** The ten
+risks were scored by one maintainer against an adapted risk rubric with no independent second
+rating; the set of risks is the contribution, the rank is a proposal. A dispute of a rank with one
+referenceable source is a valid RFC on its own.
+
 ## How a change happens
 
 1. **Open an issue.** Use the

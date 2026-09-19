@@ -52,6 +52,11 @@ physical/irreversible harm using the Robot Vulnerability Scoring System (RVSS)**
 OWASP Agentic, OWASP LLM, MITRE ATLAS, and NIST AI 100-2 for traceability. **Ordering will change** as a
 real corpus matures. Disagree with the rank? That's the point — open a PR.
 
+**Who did the scoring.** One maintainer, with one co-author on the EAI01 and EAI06 framing (see the
+acknowledgements). No second scorer has independently rated the list yet, so the ordering is the
+weakest part of this document: treat the *set* of risks as the contribution and the *rank* as a
+proposal pending contributors. The [RFC process](top10-rfc.md) is how a rank changes.
+
 ---
 
 ## The Top 10 at a glance
@@ -121,9 +126,11 @@ executability, cf. RoboGuard); embodied-harm refusal training; red-team each rel
 **What.** Crafted perturbations in what the policy *sees/senses* — adversarial patches, stickers, 3D
 textures, or sensor spoofing — that flip behavior while looking benign to humans.
 **Evidence.** *[research]* "Adversarial vulnerabilities of VLA models" (arXiv 2411.13587); action-aware
-patch attacks. *(Honest note: in Provael's SmolVLA×LIBERO run the `visual` family did NOT transfer —
-0% (0/100 — `patch` and `decoy_object`, 50 each), 95% CI [0–3.7%], against a 2/50 (4%) benign control; real-world robustness of perception
-attacks is unsettled, which is exactly why you test rather than assume. Read that null narrowly: it is
+patch attacks. *(Honest note: in Provael's SmolVLA×LIBERO runs the `visual` family is **not separated from the
+benign floor** — 2/100 on 0.41.2 (`patch` 1/50, `decoy_object` 1/50) against a 1/50 benign control,
+McNemar p = 1.0; 0/100 against 2/50 on the August run — so no rate is claimed for it, only that the
+templated perturbations did not move this policy. Real-world robustness of perception attacks is
+unsettled, which is exactly why you test rather than assume. Read that null narrowly: it is
 evidence about the templated attacks Provael shipped, not about perception robustness in general —
 see the [published baselines](standards/published-asr-baselines.md) and the
 [ForesightSafety-VLA crosswalk](crosswalk/foresight-safety-vla.md), whose authors report the opposite
