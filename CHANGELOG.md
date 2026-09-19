@@ -22,6 +22,20 @@ All notable changes to this project are documented here. The format is based on
 
 ### Fixed
 
+- **SECURITY.md no longer contradicts itself about what the project is.** It opened with
+  "published by an open-source steward" and explained ninety lines later that a steward under
+  Article 3(14) of the Cyber Resilience Act must be a legal person and that there is no entity.
+  The regulatory context is now one dated statement of the facts (19 September 2026: Apache-2.0
+  software maintained by one natural person, no legal entity, paid services offered and none sold,
+  no legal advice taken, the steward route unavailable, the manufacturer question open and
+  counsel's to settle — claiming neither scope nor exemption); the later scope section refers to
+  it rather than restating it; the disclosure route, the 3-day / 90-day timings and the 24-hour
+  `REPORTABLE` commitment are unchanged. `tests/test_security_policy_consistency.py` holds the file
+  to that. A licence register for the supported pilot's dependencies
+  (`docs/maintainers/paid-run-dependency-licences.md`) records each row as checked from metadata,
+  stated by the upstream project, or unverified — the two checkpoints' model-card licences and the
+  LIBERO asset terms are unverified until read at the resolved revision — and states that
+  employment/IP provenance is recorded outside the repository.
 - **The evidence manifest counts what `coverage.py` counts: 17 adversarial families, 39 attacks.**
   `manifest._registry_counts` subtracted the baseline family alone and published 18 / 43 while
   `coverage.py` — the module that exists so a count is computed once — excluded the four

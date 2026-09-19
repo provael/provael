@@ -48,24 +48,36 @@ A machine-readable **security.txt** ([RFC 9116](https://www.rfc-editor.org/rfc/r
 
 ## Regulatory context, stated so you know what we are and are not
 
-Provael is open-source software published by an open-source steward. It is not a product with
-digital elements placed on the EU market by a manufacturer.
+One dated statement of the facts, and no scope conclusion this project is not in a position to draw.
+As of **19 September 2026**:
 
-Under the EU Cyber Resilience Act, the reporting obligations for manufacturers apply **from
-11 September 2026**: an early warning within 24 hours of becoming aware of an actively exploited
-vulnerability or severe incident, a full notification within 72 hours, and a final report no later
-than 14 days after a corrective measure is available, or within a month of the 72-hour notification
-for a severe incident. Reporting runs through the ENISA Single Reporting Platform.
+- `provael` is Apache-2.0 software, published free on PyPI and GitHub, and maintained by **one
+  natural person**. There is **no legal entity** behind it.
+- Paid assessment services are offered against it at listed prices. Nothing has sold: zero customers,
+  zero revenue.
+- **No legal advice has been taken** on whether the EU Cyber Resilience Act (Regulation (EU)
+  2024/2847) places manufacturer obligations on this project. The test is whether a product with
+  digital elements is made available on the EU market *in the course of a commercial activity*;
+  whether offering paid services beside freely-licensed software meets it is the open question, and
+  it is counsel's to settle, not this file's. Until it is settled this project claims **neither**
+  that it is in scope **nor** that it is exempt.
+- The Act's **open-source software steward** route (Article 3(14)) is available only to a *legal
+  person*. There is no entity here, so the project is **not** a steward and does not claim the
+  steward obligations or their later reporting date. If an entity is incorporated, this section
+  changes with it — and counsel is asked before it does.
+- What the timetable would mean if the project were in scope: manufacturer reporting under Article 14
+  applies from 11 September 2026 (early warning within 24 hours of awareness of an actively exploited
+  vulnerability or severe incident, notification within 72 hours, a final report within 14 days of a
+  corrective measure being available, or within a month of the 72-hour notification for a severe
+  incident, through the ENISA Single Reporting Platform); steward reporting under Article 24(3)
+  applies from 11 December 2027, per Article 71(2). Source: [European Commission, Cyber Resilience
+  Act reporting obligations](https://digital-strategy.ec.europa.eu/en/policies/cra-reporting),
+  verified 12 September 2026.
 
-Open-source software stewards are subject to their own reporting obligation under **Article 24(3)
-only from 11 December 2027**, per Article 71(2). Source: [European Commission, Cyber Resilience Act
-reporting obligations](https://digital-strategy.ec.europa.eu/en/policies/cra-reporting), verified
-12 September 2026.
-
-So the 24-hour early-warning duty **does not bind this project today**. The timeline above is
-published now anyway, for two reasons: a disclosure policy written under deadline pressure is worse
-than one written without it, and anyone integrating this harness into a product that *is* in scope
-needs to know what they can expect from upstream.
+The disclosure route and the response timings above are published now, whichever way the scope
+question lands: a disclosure policy written under deadline pressure is worse than one written
+without it, and anyone integrating this harness into a product that *is* in scope needs to know what
+they can expect from upstream.
 
 ### If you are a manufacturer in scope
 
@@ -113,29 +125,10 @@ Two different questions get asked here, and they have different answers.
 
 ### Does the CRA place obligations on this repository?
 
-We have not taken legal advice, and we are not going to publish a scope conclusion we cannot
-back. What we can state is the test and the facts.
-
-The test for manufacturer obligations is whether a product with digital elements is made
-available on the EU market **in the course of a commercial activity**. Free and open-source
-software supplied outside a commercial activity is not in scope.
-
-The facts, as of 5 September 2026:
-
-- `provael` is Apache-2.0 and published free on PyPI and GitHub.
-- Paid assessment services are offered against it, at listed prices.
-- Nothing has sold. Zero customers, zero revenue.
-- There is no legal entity. The project is maintained by one natural person.
-
-Whether offering paid services alongside freely-licensed software makes that software
-"supplied in the course of a commercial activity" is the open question, and it is not one this
-project gets to settle by asserting an answer in its own security policy.
-
-The **open-source software steward** route is cleaner, because it turns on a checkable fact
-rather than a judgement. A steward under Article 3(14) must be a *legal person*. There is no
-entity here, so the Article 24 steward obligations — whose reporting duty under Article 24(3)
-begins on 11 December 2027, per Article 71(2), as stated above — do not attach on that basis. If
-an entity is incorporated, this section changes with it.
+The facts are the dated statement under *Regulatory context* above, and they are not repeated here
+so that the two sections cannot drift apart: no entity, no counsel taken, the steward route
+unavailable to a natural person, the manufacturer question open. This project does not settle that
+question by asserting an answer in its own security policy.
 
 ### Does the CRA place obligations on you, if you integrate Provael?
 
