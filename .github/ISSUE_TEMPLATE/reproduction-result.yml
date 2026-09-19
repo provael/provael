@@ -1,0 +1,76 @@
+name: Reproduction result
+description: Report an attempted rerun of a published result — agreement, disagreement or null, at the level you actually did
+title: "[reproduction] <run> at level <1|2|3>"
+labels: ["reproduction"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        **Do not upload private material here.** Private checkpoints, credentials, customer traces
+        and confidential findings never go into a public issue, pull request or gist — a public
+        commit is indexed within minutes. Use the monitored private contact, hello@provael.com
+        (see `docs/maintainers/private-assessment-procedure.md`).
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. A disagreement or a null is as useful as an agreement and gets the same
+        investigation. Read [docs/reproduction-request.md](../blob/main/docs/reproduction-request.md)
+        for the three levels; report the one you did, not the one you intended.
+  - type: dropdown
+    id: level
+    attributes:
+      label: Level
+      description: Three different activities; only level 3 re-executes the policy.
+      options:
+        - "1 — verified digests / signature of the committed artifacts"
+        - "2 — regenerated the derived artifacts from the committed shards (no model run)"
+        - "3 — re-executed the policy in the simulator with the pinned inputs"
+    validations:
+      required: true
+  - type: input
+    id: run
+    attributes:
+      label: Which published run
+      description: e.g. `results/smolvla_libero_object_suite_2026-09-14` (the delivery-pack sample) — one run per issue.
+    validations:
+      required: true
+  - type: dropdown
+    id: reading
+    attributes:
+      label: Your reading
+      options:
+        - "agrees — within the published intervals"
+        - "disagrees — outside the published intervals"
+        - "null — the effect did not appear"
+        - "could not complete — say why below"
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Exact environment
+      description: >
+        provael version, lerobot version, torch version, simulator build, OS, GPU model, checkpoint
+        id **and resolved revision**, seeds, horizon, episodes per cell, and any difference from the
+        pack's REPRODUCE.md. The environment diff is the first thing compared.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: counts
+    attributes:
+      label: Per-arm counts
+      description: unsafe / applicable per arm, the benign `none` arm included, and the clean task success on the benign arm. Paste the report.md table or the numbers.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: artifacts
+    attributes:
+      label: Artifacts
+      description: Links to your report.json / execution manifests / aggregate (a public gist, a fork, a release asset). Level 1 — the digests you checked and the tool you used.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: What was hard, what the page did not tell you, what you would change.

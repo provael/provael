@@ -99,6 +99,7 @@ nav:
       - Paid-run dependency licences: maintainers/paid-run-dependency-licences.md
       - Real-policy validation trigger: maintainers/real-policy-validation.md
   - Changelog: changelog.md
+  - Reproduce a result: reproduction-request.md
   - Errata: errata.md
   - FAQ: faq.md
   - Open-core promise: open-core-promise.md

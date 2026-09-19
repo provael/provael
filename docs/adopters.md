@@ -26,6 +26,10 @@ compliance-evidence workflow.
 > entry is a statement by the adopter, not an endorsement by Provael, and carries no measured
 > Attack Success Rate or transfer claim.
 
+Ran one of the published results yourself? That is a different and stronger statement than using
+the tool, and it has its own place: the [reproduction request](reproduction-request.md) and the
+reproduction register on the [errata page](errata.md#reproduction-register).
+
 ## Add yourself
 
 Open a pull request that adds one row to the table below. Keep it plain text — **no logos, no

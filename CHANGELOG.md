@@ -59,6 +59,18 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- **A reproduction request, a result template, and a register that counts nothing until it
+  arrives.** `docs/reproduction-request.md` points at the delivery-pack sample and its pinned
+  environment, states the expected qualitative behaviour with its uncertainty (the two committed
+  runs' spread), the hardware and time, and the known limits — and keeps three activities apart:
+  verifying digests, regenerating derived artifacts from the shards, and re-executing the policy.
+  `.github/ISSUE_TEMPLATE/reproduction-result.yml` asks for the level actually done, the exact
+  environment including the resolved checkpoint revision, per-arm counts with the benign arm, and
+  a reading of agrees / disagrees / null / could not complete. The errata page gains a reproduction
+  register with states `requested` · `attempted` · `completed` · `agrees` / `disagrees` / `null`;
+  its one row is `requested`, and the page says no entry above that exists on 19 September 2026.
+  A prepared request is never counted as an external validation; the adopters page links here and
+  claims nothing.
 - **A private-assessment procedure, dry-run once with dummy data.**
   `docs/maintainers/private-assessment-procedure.md` records, for one engagement at a time:
   authorisation and the named access owner and operator before any input moves; the allowed-inputs

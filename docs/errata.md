@@ -756,3 +756,24 @@ count is stated without the family count of its own convention. The same sweep c
 more machine-readable surfaces without an erratum of their own: `/llms.txt`'s adoption figures now
 derive from the file `/adopters/` renders, `/404` answers 404, and `/pricing`'s JSON-LD no longer
 publishes the design-partner rate as the assessment's base price. The website changelog records them.
+
+---
+
+## Reproduction register
+
+Independent reruns of published results, recorded as they arrive through the
+[reproduction request](reproduction-request.md) and its issue template. Each entry names the run,
+the level the reporter did (1 verify · 2 regenerate · 3 re-execute), the state, and the reading. A
+prepared request is not a validation; an attempted rerun is not a completed one; a completed one
+agrees, disagrees or is null — and every state is recorded, not only the flattering one.
+
+| run | level | state | reading | reporter · issue | date |
+| --- | --- | --- | --- | --- | --- |
+| `results/smolvla_libero_object_suite_2026-09-14` (the delivery-pack sample) | — | **requested** (page and template published 19 September 2026) | — | — | 2026-09-19 |
+
+States: `requested` (the page exists; nobody outside the project has attempted it) · `attempted`
+(an issue is open and the run is in progress or incomplete) · `completed` (the reporter finished
+the level they named) · `agrees` / `disagrees` / `null` (a completed level 3, by the reporter's
+reading, with the environment diff recorded in the issue). No entry above `requested` exists on
+19 September 2026, and this table says so rather than implying otherwise.
+
