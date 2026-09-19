@@ -136,3 +136,32 @@ pip install 'provael[openpi]'   # π0 env (+ a running openpi server)
 PROVAEL_INTEGRATION=1 provael attack --policy openpi --suite <lerobot-free image source> \
     --attacks none,instruction,visual,injection --seeds 10
 ```
+
+## Summary
+
+> *Moved here from the repository README on 20 September 2026, when the README was cut to what a new reader needs. The text is as it stood there; links were re-pointed.*
+
+
+Does the *same* attack move *different* VLA architectures, or is a redirection an artifact of one
+codebase's glue? The **cross-architecture transfer study** runs the shared instruction/visual/injection
+battery against multiple backends through the same runner + scoring, and reports per-(family ×
+architecture) ASR with a 95% Wilson CI and the benign-FPR control:
+
+```bash
+provael study cross-arch                      # deterministic CPU-stub table (no GPU/network)
+python studies/cross_arch_transfer/run.py     # + writes results/cross_arch_transfer/
+```
+
+On CPU it runs the deterministic stub battery and marks the real backends **`pending`**. **Honest
+status, 19 September 2026.** Two real architectures have a committed arm. On **SmolVLA** the
+instruction family clears the benign floor (42/50 `roleplay` against 1/50, above) and the visual
+and injection arms sit at it. On **π0.5** (`lerobot/pi05_libero_finetuned_v044`, the native `pi05`
+adapter, the same ten Object tasks) the pre-registered study's **preliminary leg** ran on
+18 September 2026 — three seeds, two of eight arms — and `roleplay` came back **1/30 against
+`none` 0/30** (McNemar p = 1.0, clustered [0%, 10%]), with task success 27/30 unattacked and 8/30
+under the frame: the frame breaks the task on both policies, and only SmolVLA leaves its envelope
+doing so. **No transfer of the envelope-exit effect is claimed.** The **π0-via-openpi** leg — the
+framework question — is still **run pending**, and `[openpi]`/`[lerobot]` pin conflicting numpy
+majors, so it runs in a separate environment when it runs. Full write-up:
+[docs/findings/2026-cross-arch-transfer.md](../findings/2026-cross-arch-transfer.md);
+the π0.5 run: [results/pi05_libero_object_2026-09-18](https://github.com/provael/provael/blob/main/results/pi05_libero_object_2026-09-18/README.md).

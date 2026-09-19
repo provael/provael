@@ -261,3 +261,63 @@ The CLI builds and verifies boards for anyone, free and Apache-2.0. The **hosted
 with Provael's published project key and backed by real-VLA (GPU) runs rather than the stub — is
 the paid surface. Submitting a result is a pull request; see
 [CONTRIBUTING-leaderboard.md](https://github.com/provael/provael/blob/main/CONTRIBUTING-leaderboard.md).
+
+## The board, as the README described it
+
+> *Moved here from the repository README on 20 September 2026, when the README was cut to what a new reader needs. The text is as it stood there; links were re-pointed.*
+
+
+`provael leaderboard build --real <results-dir>` builds the public board from real-model runs. Every
+row carries its **95% Wilson CI**, the benign (`none`) control, and a **transfer-status** label
+(`real-transfer` vs `stub-scaffolding`), so a stub run is never silently mixed with a real one. The
+board is stamped with a UTC date, the source commit, and a **SHA-256 digest of the aggregated
+inputs** — rebuild it and check the digest matches to reproduce. Add `--sign` (needs the
+`provael[attest]` extra) to Ed25519-sign it, and verify offline:
+
+```bash
+uv run provael leaderboard verify --in leaderboard/results/leaderboard.json \
+  --pubkey leaderboard/results/leaderboard.pub   # -> leaderboard OK  keyid 8d62aa33ed5162f3
+```
+
+The published board is the **ten-task `libero_object` suite screen**: on the real
+**SmolVLA × LIBERO** policy only the **instruction** family transfers, at **41.3% (62/150)
+[34–49%]** against a **4.0% (2/50, Wilson 95% [1.1%, 13.5%])** benign control; **injection is 0/50 and visual 0/100** —
+measured nulls, published as such.
+
+Since `schema_version` 5 each row also carries the qualifiers its report always had —
+`calibrated` (false here: the keep-out predicate is the default box, see
+[#136](https://github.com/provael/provael/issues/136)), `stochastic` (true: one draw, not a
+reproducible constant — these rows predate `policy_seed`), and `checkpoint` — plus a board-level
+`not_applicable`
+(`mcp_tool_desc`, which produced records but zero applicable episodes). A rate that outlives its
+qualifiers is the overclaim this board exists not to make, and the board was the one artifact
+where they were being dropped.
+
+The board is also **live as a Hugging Face Space** —
+[huggingface.co/spaces/Sattyam/provael-leaderboard](https://huggingface.co/spaces/Sattyam/provael-leaderboard)
+— rendering the same signed `leaderboard.json` this repo commits, with an open submission queue.
+The Space is a *rendering*; the canonical artifact is the signed JSON in this repository, so verify
+that one rather than a view of it.
+
+The free core builds and verifies boards; a hosted, operator-signed board is the intended operated
+surface (experimental today). See [docs/leaderboard.md](leaderboard.md).
+**Evidence, not certification.**
+
+**What the published board does not cover.** It is one run: measured with
+**`provael 0.41.2`** on 14 September 2026 (`results/smolvla_libero_object_suite_2026-09-14`, the
+directory named in `leaderboard/results/source.json`), covering **1 policy on 1 suite** and **3 of
+the 17 adversarial families**. The other **fourteen families are absent from the board**, which is
+not the same as scoring 0%: nine of them have no real-model measurement anywhere in this repository,
+and five have only the three-episode breadth probe of the same night
+(`results/smolvla_libero_object_families_2026-09-14`), a result and not a rate. The run carries a
+benign false-positive control (1/50) and a clean-task-success baseline (48/50), so its rates are
+read against a measured competence, not assumed one. The Space states all of this above its own
+tables; rebuilding cannot fix it, because a rebuild re-aggregates committed reports and never
+re-runs a policy. Closing the gap needs GPU time.
+
+The board is one minor version behind the shipping tool. That gap is bridged by
+[`leaderboard/method-equivalence.json`](https://github.com/provael/provael/blob/main/leaderboard/method-equivalence.json), whose own
+`what_this_is_not` field says it plainly: **"This is a code-inspection argument, NOT a
+re-measurement."** Its previous entry, for 0.32.0, was settled the only way such an entry can be:
+the suite was re-run on 0.41.2 and the family moved (62/150 to 50/150). The re-run moved the board;
+the argument never could.

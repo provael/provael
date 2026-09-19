@@ -84,3 +84,50 @@ print(to_scorecard_markdown(report, threshold=0.5, decision=decision))  # thresh
 open("report.oscal.json", "w").write(to_oscal_json(report))
 open("report.avid.json", "w").write(to_avid_json(report))
 ```
+
+## How it works
+
+> *Moved here from the repository README on 20 September 2026, when the README was cut to what a new reader needs. The text is as it stood there; links were re-pointed.*
+
+
+```
+        ┌───────────┐   instruction   ┌──────────┐  adversarial  ┌─────────┐        ┌──────────┐
+ task → │ SuiteAdapter│ ──────────────→ │  Attack  │ ─instruction→ │ Defense │ ─────→ │ Policy   │
+        │  reset/step │                  │ perturb()│               │ apply() │ canon. │  Adapter │
+        │  is_unsafe()│ ←──── action ────┴──────────┘               │ (opt-in)│        │  act()   │
+        └─────┬───────┘                                             └────┬────┘        └────┬─────┘
+              │  for t in horizon: if is_unsafe(state) → success          │                 │
+              └───────────────────────── runner ───────────────────────────────────────────┘
+                                          │                               │
+                                          ▼                               ▼
+              scoring (ASR) → RunReport → report.json / report.md    defense-log.jsonl
+                                          │
+                                          ▼
+                    mitigation report (pre/post ASR + Wilson CI + controls)
+```
+
+The **Defense** step is opt-in (`--defense`) and sits in the *deployment position* — after the
+attack, before the policy — so what is measured is what an operator would actually install. It
+never sees the policy, the scorer, or the danger predicate. An **action-side** measure runs at one
+further point — after the policy commits to a command and after the non-finite-action rejection, so a
+clamp cannot launder a NaN into a finite value and hide a diverged head — and before the suite
+executes it. Its raw → canonical and raw → filtered trails go to a `defense-log.jsonl` sidecar and its
+identity to the execution manifest: **nothing is added to `RunReport`**, so the attestation subject
+digest is unmoved and attestations issued by earlier versions still verify.
+
+- **`PolicyAdapter`** — `load()`, `act(observation, instruction) -> np.ndarray`.
+- **`SuiteAdapter`** — `tasks()`, `reset(task, seed)`, `step(action)`, `is_unsafe(state)`.
+- **`Attack`** — `perturb(instruction, observation) -> (instruction, observation)`.
+- **`Defense`** — `apply(instruction, observation) -> (instruction, observation)` on the way in, and
+  `filter_action(action, observation) -> action` on the way out; neither changes policy weights, and
+  neither is given the policy, the suite or the danger predicate. `position` records which side a
+  measure acts on, because a text pre-filter and an output clamp are different protective measures
+  with different failure modes. `provael list-defenses`.
+- **`verify-checkpoint`** — a supply-chain control run BEFORE a policy loads: pinned-digest match
+  and a refusal to load pickle-format weights, both fail-closed. It emits a **verdict, not a rate**,
+  and does not reduce attack success. See [docs/checkpoint-integrity.md](checkpoint-integrity.md).
+- **`runner`** — runs every `(task, attack, seed)` episode and aggregates.
+- **ASR** — `successes / attempts`, with `by_attack` and `by_task` breakdowns.
+
+**Determinism.** A `RunReport` embeds no wall-clock time or process-varying values, so the
+same config + seed always produces a byte-identical `report.json`.

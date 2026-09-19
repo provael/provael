@@ -102,20 +102,21 @@ class _Claim:
 #: Every adopter-facing restatement of a registry count. Adding a new one here is cheap; the sweep
 #: below is what catches the ones nobody added.
 _CLAIMS: tuple[_Claim, ...] = (
-    _Claim("README.md", r"It ships \*\*(\w+) adversarial families", "adversarial families"),
-    _Claim("README.md", r"runs every one of the (\w+);", "adversarial families"),
+    # The coverage prose moved from README.md to docs/attacks.md on 20 September 2026, when the
+    # README was cut to 200 lines; the sentences and their guards moved together.
+    _Claim("docs/attacks.md", r"It ships \*\*(\w+) adversarial families", "adversarial families"),
+    _Claim("docs/attacks.md", r"runs every one of the (\w+);", "adversarial families"),
     _Claim("SAFETY.md", r"registry ships \*\*(\w+) adversarial families\*\*", "adversarial families"),
     _Claim("docs/roadmap.md", r"\*\*Attacks:\*\* (\w+) adversarial families", "adversarial families"),
     _Claim("docs/index.md", r"all (\w+) adversarial families", "adversarial families"),
     _Claim("docs/quickstart.md", r"# (\w+) attacks across", "total attacks"),
     _Claim("docs/quickstart.md", r"attacks across (\w+) families", "total families"),
     _Claim("docs/quickstart.md", r"families \((\w+) adversarial", "adversarial families"),
-    # README's `list-attacks` comment. It said "28 attacks" for two releases while
+    # README's `list-attacks` comment said "28 attacks" for two releases while
     # `docs/quickstart.md` — the same claim, one directory away — was corrected in 0.29.1,
-    # because the enumerated list below only ever named quickstart. This pair is the fix for
-    # that specific miss; the sweep is the fix for the class of it.
-    _Claim("README.md", r"# (\w+) attacks across", "total attacks"),
-    _Claim("README.md", r"attacks across (\w+) families", "total families"),
+    # because the enumerated list above only ever named quickstart. The README line itself left
+    # with the 200-line cut (20 September 2026); quickstart's pair above is the surviving claim,
+    # and the sweep below is the fix for the class of miss.
     # The leaderboard Space renders a coverage line but installs no `provael` (see its
     # requirements.txt), so it cannot import the registry and must hardcode the denominator.
     # That makes it exactly the kind of claim this guard exists for.
@@ -126,7 +127,7 @@ _CLAIMS: tuple[_Claim, ...] = (
     # overloaded word here: LIBERO has ten task suites, VLA-Arena eleven benchmark suites, and a
     # sweep for "N suites" flags every one of them. A narrow guard that holds beats a broad one
     # that gets reverted.
-    _Claim("README.md", r"Suites: \*\*(\w+)\*\*", "suites"),
+    _Claim("docs/attacks.md", r"Suites: \*\*(\w+)\*\*", "suites"),
 )
 
 
@@ -374,9 +375,15 @@ def _derived_values() -> dict[int, str]:
 
 #: `(file, exact matched text)` → why this number is not a whole-registry count.
 _NAMED_SUBSETS: dict[tuple[str, str], str] = {
-    ("README.md", "four **optimized** search families"): "the optimized* subset, not the registry",
-    ("README.md", "four optimized search families"): "the optimized* subset, not the registry",
-    ("README.md", "Four **optimized** families"): "the optimized* subset, not the registry",
+    # The phrases moved with their sections in the 20 September 2026 README cut: the coverage
+    # prose to docs/attacks.md, the scope-and-limitations list to docs/index.md; the README keeps
+    # one short limits list of its own.
+    ("README.md", "four bounded search families"): "the optimized* subset, not the registry",
+    ("docs/attacks.md", "four **optimized** search families"): (
+        "the optimized* subset, not the registry"
+    ),
+    ("docs/index.md", "four optimized search families"): "the optimized* subset, not the registry",
+    ("docs/index.md", "Four **optimized** families"): "the optimized* subset, not the registry",
     ("README.md", "3 attack families"): "a v0.1.0 changelog line; historical, must not be updated",
     ("docs/examples.md", "four core attack families"): "the core-sweep subset, not the registry",
     ("docs/findings/2026-instruction-transfer.md", "six attacks"): (
@@ -388,7 +395,7 @@ _NAMED_SUBSETS: dict[tuple[str, str], str] = {
     ("docs/studies/eai04-action-space-transfer.md", "four EAI04 attacks"): (
         "the EAI04 subset, not the registry"
     ),
-    ("README.md", "**fourteen families"): (
+    ("docs/leaderboard.md", "**fourteen families"): (
         "how many of the 17 are absent from the published BOARD (17 - the 3 it covers); a fact "
         "about the board, not the registry's real-policy partition, which the same sentence now "
         "breaks down as nine unmeasured and five probed"

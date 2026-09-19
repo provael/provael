@@ -165,7 +165,9 @@ def test_the_readme_states_the_version_the_board_was_actually_measured_with() ->
     measured_with = board.get("measured_with") or []
     assert measured_with, "the board carries no measured_with to check the README against"
 
-    readme = (_ROOT / "README.md").read_text(encoding="utf-8")
+    # The board prose moved from README.md to docs/leaderboard.md with the 200-line README cut
+    # (20 September 2026); the claim and its guard moved together.
+    readme = (_ROOT / "docs" / "leaderboard.md").read_text(encoding="utf-8")
     stated = re.search(
         r"published board does not cover.*?measured with\s*\n?\*\*`provael ([0-9][^`]*)`\*\*",
         readme,

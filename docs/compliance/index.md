@@ -230,3 +230,33 @@ See also [top10](../top10.md) (the risk taxonomy + OWASP/MITRE crosswalk) and
 
 *Independent · not legal advice · evidence, not certification. PRs and corrections welcome via
 the [Top 10 issue form](https://github.com/provael/provael/issues/new?template=top10-feedback.yml).*
+
+## From a run to the evidence artifact
+
+> *Moved here from the repository README on 20 September 2026, when the README was cut to what a new reader needs. The text is as it stood there; links were re-pointed.*
+
+
+Turn a run into an **auditor-readable evidence artifact** — it maps the measured signals (the
+redirection rate + 95% CI under the run's predicate, which every row names; the benign-FPR
+control; the EAI risks covered; the calibration metadata where a calibration ran; the release
+decision under its named protocol) onto **EU AI Act** (Art. 9 / 15 / 72), **ISO 10218-1/-2:2025**
+(cyber), **NIST AI 100-2 / AI RMF**, and **IEC 62443**:
+
+```bash
+uv run provael report --in runs/calib --format compliance --out report.compliance.json  # evidence JSON
+uv run provael report --in runs/calib --format compliance --out report.compliance.md    # auditor-readable
+```
+
+Each mapped requirement carries the Provael artifacts that evidence it, an `evidence-present` /
+`gap` status (with a reason — e.g. an uncalibrated run flags the metrics that need calibration as
+gaps), and the honest-scope caveats. It reuses `report.json` (no attacks re-run) and is
+**evidence, not certification** — see
+[docs/compliance/index.md](https://github.com/provael/provael/blob/main/docs/compliance/index.md) for the full
+crosswalk and schema.
+
+For an assessor-facing pack, `provael certify` emits an EU Machinery Regulation Annex I Part A (or
+`--profile annex-iii`) conformity-assessment evidence dossier — per-family ASR with both intervals,
+an honest per-family real-policy transfer statement, a residual-risk statement, a clause crosswalk,
+and references to the ML-BOM + attestation — as OSCAL plus a single print-to-PDF HTML; it is
+evidence input to a conformity assessment, not certification (see
+[docs/compliance/machinery-annex-i-part-a.md](https://github.com/provael/provael/blob/main/docs/compliance/machinery-annex-i-part-a.md)).
