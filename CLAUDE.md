@@ -179,6 +179,9 @@ Repo top level beyond `src/`: `results/` (committed real-model run artifacts —
 <!-- MANUAL -->
 ## Custom Notes
 
-Add project-specific notes here. This section is never auto-modified.
+This file is a **tooling file**: guidance for an AI coding assistant working in this checkout. It
+is not product documentation, it is not published on docs.provael.com, and nothing in it is a
+claim about what Provael measures — the documentation is `README.md` and `docs/`, and the claims
+live where the tests can see them.
 
 <!-- END MANUAL -->
