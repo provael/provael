@@ -6,7 +6,32 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-Nothing pending. The next entry opens when a post-0.42.1 change lands.
+### Changed
+
+- **A release `pass` needs a named acceptance protocol; with none named, nothing is decided.**
+  `provael.verdict.release_verdict` used to apply a default gate — a real policy plus a benign
+  control, no threshold on anything — and every emitter rendered its answer as *the* release
+  verdict. The committed task-0 shard of the 14 September 2026 suite (`roleplay` 5/5, 7/30 pooled)
+  therefore carried `release verdict: pass` in its Markdown report, SARIF, OSCAL, evidence manifest
+  and execution manifest. It now carries `incomplete` with `assessed: false` and the reason "no
+  acceptance protocol named — release acceptance not assessed". A decision is made only against an
+  `AcceptanceProtocol` — a named YAML/JSON file (or object) carrying the requirements — and a
+  `pass` means exactly that the named protocol was satisfied; there is no built-in safe ASR. The
+  decision carries the protocol's name and content digest, per-criterion outcomes, and a
+  `report.decision.json` sidecar writer/loader (`report.json` itself is unchanged, so no attestation
+  digest moves). `ReleaseRequirements` is now the body of a protocol rather than a decision on its
+  own; the positional `requirements` and `conditional=` arguments of `release_verdict` are gone.
+- **Exceptions expire and are scoped.** `ConditionalException.expires` is a timezone-aware
+  datetime (a naive or malformed value is rejected when the protocol loads — it used to be an
+  unvalidated string, and an exception that expired in 2000 returned `conditional`), and `covers`
+  names the requirement keys it may soften. At decision time the caller passes `as_of`: an expired
+  exception is refused and says so, an uncovered gap stays `incomplete`, an exception with no
+  decision time is not applied, and a failed threshold is never softened.
+- **The scorecard leads with the protocol's release verdict, not its own.** `--threshold` still
+  compares the pooled adversarial ASR, on a line now labelled "Pooled threshold comparison
+  (descriptive; not the release decision)"; the release verdict above it is the same
+  `release_verdict` every other emitter renders, passed in by the caller so the page cannot disagree
+  with the report, the SARIF or the manifest about the same run.
 
 ## [0.42.1] — 2026-09-19
 
