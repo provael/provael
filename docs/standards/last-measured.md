@@ -204,6 +204,18 @@ shard ran (0 of 80 banked), so the campaign that closes the gap records under th
 carries the corrected counts and complete provenance. The next release without a shard banked turns
 `publish-freshness.json` stale on its own; nothing here is edited to prevent that.
 
+**Update, 20 September 2026: it did. Three behind, past the window, `isStale: true`, and the
+lane paused on purpose.** 0.44.0 is the hygiene-and-scope release (licence appendix, NOTICE, SPDX,
+DCO, family and suite statuses, `dossier`, the machinery route in the signed clock); it re-measured
+nothing, so `measuredWith` still reads 0.41.2, `releasesBehind` reads 3 against a window of 2, and
+`publish-freshness.json` says `isStale: true` — the artifact doing exactly what it was built to do.
+The scheduled campaign that would close the gap is **paused** (`.github/workflows/gpu-scheduled.yml`
+has no schedule; `watch/campaign.json` reads `cadence.paused: true`) until the keep-out predicate is
+calibrated ([#136](https://github.com/provael/provael/issues/136)): another shard under the
+hand-picked box would be a sixth measurement to discard, not a refresh. The lane's pin moved to
+0.44.0 with 0 of 80 banked, so on resumption it records under the release whose defaults match what
+it measures. The staleness stands, and this page says so rather than arranging for it not to.
+
 ### What changed instead
 
 The **claim** moved, not the threshold. `STALE_DAYS` is still 7, because seven days genuinely is old

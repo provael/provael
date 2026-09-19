@@ -126,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.43.0
+      - uses: provael/provael@v0.44.0
         with:
           attacks: none,instruction,visual,injection,action   # `none` is the benign control
           episodes: "10"
@@ -181,7 +181,7 @@ disclosure). Contributions: [CONTRIBUTING.md](CONTRIBUTING.md) — the green gat
 @software{jain_provael_2026,
   author  = {Jain, Sattyam},
   title   = {Provael: red-teaming Vision-Language-Action robot policies in simulation},
-  version = {0.43.0},
+  version = {0.44.0},
   year    = {2026},
   doi     = {10.5281/zenodo.21984184},
   url     = {https://doi.org/10.5281/zenodo.21984184},

@@ -16,6 +16,8 @@ newest one is the obvious choice and it is the wrong one, for exactly the reason
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from provael.watch import (
     STALE_AFTER_RELEASES,
     MeasurementRecord,
@@ -26,6 +28,8 @@ from provael.watch import (
     releases_behind,
     task_suite_of,
 )
+
+_ROOT = Path(__file__).resolve().parents[1]
 
 TEN_TASKS = tuple(f"libero_object/{i}" for i in range(10))
 
@@ -122,19 +126,23 @@ def test_the_window_matches_the_one_the_site_publishes() -> None:
     assert STALE_AFTER_RELEASES == 2
 
 
-def test_the_committed_ledger_is_inside_the_window_today() -> None:
+def test_the_committed_ledger_is_past_the_window_today_and_says_so() -> None:
     """The live state, asserted so a change in it is noticed rather than assumed.
 
-    From 8 September to 18 September 2026 this test asserted the opposite: the published
-    measurement was v0.32.0, nine minors behind, and the assertion existed so that a real
-    re-measurement closing the gap would be noticed as news. On 14 September a workstation re-ran
-    the ten-task suite on 0.41.2 (`results/smolvla_libero_object_suite_2026-09-14`, roleplay 42/50
-    against the published 44/50) with its controls beside it, and the branch that landed them on
-    18 September moved the published measurement to 0.41.2. The gap is zero, the banner clears on
-    its own, and this test now guards the new state: a release that reopens the window past
-    STALE_AFTER_RELEASES without a re-measurement will fail here, which is the correct time to be
-    told.
+    From 8 September to 18 September 2026 this test asserted the published measurement was nine
+    minors behind; from 18 September it asserted the gap was inside the window, so that a release
+    reopening the window without a re-measurement would fail here — "the correct time to be told".
+    0.44.0 (20 September 2026) is that release, and the telling happened: it is the hygiene-and-scope
+    release, it re-measured nothing, the scheduled campaign is PAUSED until the keep-out predicate is
+    calibrated (#136) because another shard under the hand-picked box would be a sixth discarded
+    measurement, and the CHANGELOG, docs/standards/last-measured.md and watch/publish-freshness.json
+    (`isStale: true`) all say so. So this test now guards THAT state — three behind, disclosed —
+    and fails the day either half changes: a real campaign moving the measurement (news; update the
+    version below and the CHANGELOG), or a release shipping while the freshness artifact still says
+    the window is closed (a lie by omission the artifact exists to prevent).
     """
+    import json
+
     from provael import __version__
 
     got = published_measurement()
@@ -145,10 +153,19 @@ def test_the_committed_ledger_is_inside_the_window_today() -> None:
     )
     gap = releases_behind(got.tool_version, __version__)
     assert gap is not None
-    assert gap <= STALE_AFTER_RELEASES, (
+    assert gap > STALE_AFTER_RELEASES, (
         f"the published measurement (v{got.tool_version}) is {gap} release(s) behind {__version__}, "
-        f"past the {STALE_AFTER_RELEASES}-release window again. Releases have outrun the "
-        "re-measurement; the scheduled campaign (studies/scheduled_campaign) is what closes it."
+        f"inside the {STALE_AFTER_RELEASES}-release window again. If a re-measurement landed, that "
+        "is news: update this test, the CHANGELOG and docs/standards/last-measured.md."
+    )
+    freshness = json.loads((_ROOT / "watch" / "publish-freshness.json").read_text(encoding="utf-8"))
+    assert freshness["isStale"] is True and freshness["releasesBehind"] == gap, (
+        "watch/publish-freshness.json must disclose the reopened window; regenerate it "
+        "(make gen-publish-freshness or scripts/gen_publish_freshness_artifact.py)"
+    )
+    last_measured = (_ROOT / "docs" / "standards" / "last-measured.md").read_text(encoding="utf-8")
+    assert "isStale: true" in last_measured and "20 September 2026" in last_measured, (
+        "docs/standards/last-measured.md must carry the dated update that the window reopened"
     )
 
 
