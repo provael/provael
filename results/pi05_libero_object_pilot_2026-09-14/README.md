@@ -43,7 +43,10 @@ arm follows from this timing.
 - Tool version(s) in the shards: 0.41.2
 - Dates (UTC, execution manifests): 2026-09-14
 - OS / Python: Linux 6.6.87.2-microsoft-standard-WSL2 / 3.12.14
-- Evidence state: real-episode · release verdict: pass
+- Evidence state: real-episode · release verdict as recorded by the run: pass (a verdict recorded by a run before 0.43.0 was a default gate's answer, not a decision under a named protocol)
+- Required provenance (repository, commit, dep_lock_digest, precision): complete on 0 of 1 shard(s); the gaps stay unknown
+  - `.` (manifest sha256 `e7177933ba7b002e`): missing repository, commit, dep_lock_digest, precision — recorded as unknown, not backfilled
+- Every aggregate number above is derived from these shards; each shard keeps its own execution manifest, and no combined report.json exists or is attested.
 
 ## What this does not establish
 

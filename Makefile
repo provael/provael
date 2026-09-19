@@ -21,7 +21,7 @@ PY := uv run python
 .PHONY: help install lint typecheck test check check-docs check-doc-counts fix-doc-counts \
 	check-links check-leaderboard check-issue-labels gen-registry gen-schemas \
 	check-measurement-ledger gen-measurement-ledger check-release gen-release \
-	check-campaign gen-campaign check-provenance
+	check-campaign gen-campaign check-provenance check-delivery-pack gen-delivery-pack
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -48,7 +48,13 @@ check: lint typecheck test ## The full pre-push gate
 
 # ── Documentation integrity ──────────────────────────────────────────────────
 
-check-docs: check-doc-counts check-measurement-ledger check-release check-publish-freshness check-campaign check-links ## Every doc gate that runs offline
+check-docs: check-doc-counts check-measurement-ledger check-release check-publish-freshness check-campaign check-delivery-pack check-links ## Every doc gate that runs offline
+
+check-delivery-pack: ## Fail if the reference delivery pack would change when regenerated
+	$(PY) scripts/gen_delivery_pack.py --check
+
+gen-delivery-pack: ## Regenerate examples/delivery-pack from the published body
+	$(PY) scripts/gen_delivery_pack.py
 
 check-doc-counts: ## Fail if a generated inventory line is stale
 	$(PY) scripts/gen_doc_counts.py --check

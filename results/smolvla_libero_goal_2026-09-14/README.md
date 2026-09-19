@@ -54,7 +54,19 @@ may not be one this box measures. Read as "not observed", never as "safe".
 - Tool version(s) in the shards: 0.41.2; aggregated with 0.41.2
 - Dates (UTC, execution manifests): 2026-09-14
 - OS / Python: Linux 6.6.87.2-microsoft-standard-WSL2 / 3.12.14
-- Evidence state: real-episode · release verdict: pass
+- Evidence state: real-episode · release verdict as recorded by the run: pass (a verdict recorded by a run before 0.43.0 was a default gate's answer, not a decision under a named protocol)
+- Required provenance (repository, commit, dep_lock_digest, precision): complete on 0 of 10 shard(s); the gaps stay unknown
+  - `libero_goal_0` (manifest sha256 `77a2bc11fb99dce3`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_goal_1` (manifest sha256 `fbd3fe2d6188763f`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_goal_2` (manifest sha256 `cf68c0bd224c9ee1`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_goal_3` (manifest sha256 `94d6fac14cc0ef31`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_goal_4` (manifest sha256 `ecc56bab14711458`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_goal_5` (manifest sha256 `6df7be98b47e57b5`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_goal_6` (manifest sha256 `e6690eaeb6d03196`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_goal_7` (manifest sha256 `12e07e576a3c4516`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_goal_8` (manifest sha256 `794ad4ea3b723981`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_goal_9` (manifest sha256 `c86f5bfef3ad0547`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+- Every aggregate number above is derived from these shards; each shard keeps its own execution manifest, and no combined report.json exists or is attested.
 
 ## What this does not establish
 

@@ -28,6 +28,7 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from collections import defaultdict
@@ -38,6 +39,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from provael.calibration import wilson_ci  # noqa: E402
+from provael.campaign import REQUIRED_PROVENANCE, provenance_gaps  # noqa: E402
 from provael.scoring.asr import semantic_role  # noqa: E402
 from provael.scoring.paired import (  # noqa: E402
     cluster_bootstrap_ci,
@@ -252,6 +254,33 @@ def render(run_dir: Path) -> str:
     if notes.exists():
         lines += ["", "## Notes (hand-written)", "", notes.read_text(encoding="utf-8").strip()]
 
+    # Required provenance, per shard, by value. Gaps are stated and labelled unknown — never
+    # backfilled from what the operator remembers — and the aggregate is named as derived from
+    # the shards, each of which keeps its own manifest and digest.
+    gap_lines: list[str] = []
+    complete = 0
+    for shard, _, manifest in shards:
+        rel = shard.relative_to(run_dir) if shard != run_dir else Path(".")
+        manifest_path = shard / "execution-manifest.json"
+        if manifest is None:
+            gap_lines.append(f"  - `{rel}`: no execution manifest (unknown; not backfilled)")
+            continue
+        digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()[:16]
+        gaps = provenance_gaps(manifest)
+        if gaps:
+            gap_lines.append(
+                f"  - `{rel}` (manifest sha256 `{digest}`): missing {', '.join(gaps)} — recorded "
+                "as unknown, not backfilled"
+            )
+        else:
+            complete += 1
+            gap_lines.append(f"  - `{rel}` (manifest sha256 `{digest}`): complete")
+    provenance_state = (
+        "complete on every shard"
+        if complete == len(shards)
+        else f"complete on {complete} of {len(shards)} shard(s); the gaps stay unknown"
+    )
+
     lines += [
         "",
         "## Provenance",
@@ -260,8 +289,13 @@ def render(run_dir: Path) -> str:
         f"- Tool version(s) in the shards: {', '.join(versions)}{aggregated_with}",
         f"- Dates (UTC, execution manifests): {_dates(shards)}",
         f"- OS / Python: {_field(shards, 'os')} / {_field(shards, 'python_version')}",
-        f"- Evidence state: {_field(shards, 'evidence_state')} · release verdict: "
-        f"{_field(shards, 'release_verdict')}",
+        f"- Evidence state: {_field(shards, 'evidence_state')} · release verdict as recorded by "
+        f"the run: {_field(shards, 'release_verdict')} (a verdict recorded by a run before 0.43.0 "
+        "was a default gate's answer, not a decision under a named protocol)",
+        f"- Required provenance ({', '.join(REQUIRED_PROVENANCE)}): {provenance_state}",
+        *gap_lines,
+        "- Every aggregate number above is derived from these shards; each shard keeps its own "
+        "execution manifest, and no combined report.json exists or is attested.",
         "",
         "## What this does not establish",
         "",

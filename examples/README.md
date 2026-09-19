@@ -17,6 +17,7 @@ and `PROVAEL_INTEGRATION=1`.
 | — | [python-api/](python-api/) | Runnable BYO policy & BYO suite in ~30–40 lines | < 1 s | CPU |
 | — | [scorecard/](scorecard/) | One-page pre-deployment ASR scorecard (release verdict + heatmap) | < 1 s | CPU |
 | — | [assessment/](assessment/) | The customer-run protocol template + a loadable acceptance protocol (`--protocol`) | < 1 s | CPU |
+| — | [delivery-pack/](delivery-pack/smolvla-libero-object-2026-09-14/) | The reference delivery pack, generated from the published body: findings, decision, manifest, digests, reproduction, retest | < 1 s | CPU |
 | — | [recipes/](recipes/) | Named run presets (`provael list-recipes` / `--recipe`) | < 1 s | CPU |
 | — | [integrations/](integrations/) | promptfoo / garak / PyRIT + SARIF aggregators | varies | — |
 | — | [ci/](ci/) | CI gates: GitHub / GitLab / Azure + regression-gate | — | — |

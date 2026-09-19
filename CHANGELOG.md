@@ -43,6 +43,31 @@ All notable changes to this project are documented here. The format is based on
   holds the declared set equal to `coverage().real_policy_names` in a checkout, in both
   directions, and requires each entry to name a results directory that exists.
 
+### Added
+
+- **A reference delivery pack, generated from the published body.** `scripts/gen_delivery_pack.py`
+  renders `examples/delivery-pack/smolvla-libero-object-2026-09-14/` from the ten 14 September
+  shards using the same emitters the CLI uses: findings with every rate beside its control and
+  both interval kinds named apart, the decision under `examples/assessment/protocol.example.yml`
+  (a FAIL on `roleplay`, stated), the v2 evidence manifest with every shard's schema-aware digest,
+  the scorecard and test report under the same decision, `shards.txt` (raw sha256 of every shard's
+  report and manifest — a changed byte and the pack disagree), `REPRODUCE.md` (the pinned inputs,
+  the expected qualitative behaviour with its uncertainty, the known limits) and `retest.md` (the
+  regression diff against the earlier run of the same configuration, caveats first: 0.32.0 vs
+  0.41.2, no resolved checkpoint revision on either side). It states its own provenance gaps — the
+  shards ran on 0.41.2 and record no repository, commit, lock digest or precision — as unknown and
+  leaves them unknown. `make check-delivery-pack` is part of `check-docs`; `tests/test_delivery_pack.py`
+  holds the pack current, every digest to its file, and every aggregate number to the sum of its
+  shards.
+- **A provenance gate on committed runs, with a cut-over.** `tests/test_results_provenance.py`:
+  any run whose newest `ended_at` is on or after 2026-09-20 must pass `campaign.check_provenance`
+  on every shard (`repository`, `commit`, `dep_lock_digest`, `precision`), with no exemption list
+  for new runs; every earlier run is listed with its exact gaps and the test fails if a gap
+  disappears — a historical manifest changes only by a new measurement, never by a filled-in value
+  nobody recorded. The generated run READMEs now render the same state per shard (manifest digest,
+  complete or the missing fields "recorded as unknown, not backfilled") and say the aggregate is
+  derived from the shards; the local sweep driver warns when `PROVAEL_REPOSITORY` is unset.
+
 ### Changed
 
 - **The measurement ledger carries what a consumer used to re-derive.** Each

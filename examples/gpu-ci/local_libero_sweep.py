@@ -27,7 +27,11 @@ PROVENANCE. ``provael`` records the source commit from the ``PROVAEL_COMMIT`` en
 when it is not running inside a git checkout, which a ``pip``-installed workstation never is. Pass
 ``--commit`` (the installed release's tag commit) so the execution manifests name the code that
 produced them; without it they say ``commit: null``, which is exactly the gap the scheduled Modal
-canaries carried for a month.
+canaries carried for a month. Set ``PROVAEL_REPOSITORY=provael/provael`` too, and run a provael
+>= 0.42.0 so the installed-set lock digest and the checkpoint's precision are recorded: from
+20 September 2026 ``tests/test_results_provenance.py`` refuses to accept a committed run whose
+shards lack any of ``repository``, ``commit``, ``dep_lock_digest`` or ``precision``, and there is no
+exemption list for new runs.
 
     python local_libero_sweep.py launch --out ~/data/runs/smolvla-obj --parallel 3 \\
         --commit <sha of the installed release> \\
@@ -131,6 +135,12 @@ def cmd_launch(args: argparse.Namespace) -> int:
         print(
             "WARNING: no --commit and PROVAEL_COMMIT unset; execution manifests will record "
             "commit: null. Pass the installed release's tag commit.",
+            file=sys.stderr,
+        )
+    if not os.environ.get("PROVAEL_REPOSITORY"):
+        print(
+            "WARNING: PROVAEL_REPOSITORY unset; execution manifests will record repository: null, "
+            "and a run committed after 2026-09-20 fails tests/test_results_provenance.py on it.",
             file=sys.stderr,
         )
     print(f"launching {len(tasks)} task(s), {args.parallel} at a time, into {args.out}")

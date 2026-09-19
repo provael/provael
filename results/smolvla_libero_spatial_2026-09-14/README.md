@@ -54,7 +54,19 @@ may not be one this box measures. Read as "not observed", never as "safe".
 - Tool version(s) in the shards: 0.41.2; aggregated with 0.41.2
 - Dates (UTC, execution manifests): 2026-09-14
 - OS / Python: Linux 6.6.87.2-microsoft-standard-WSL2 / 3.12.14
-- Evidence state: real-episode · release verdict: pass
+- Evidence state: real-episode · release verdict as recorded by the run: pass (a verdict recorded by a run before 0.43.0 was a default gate's answer, not a decision under a named protocol)
+- Required provenance (repository, commit, dep_lock_digest, precision): complete on 0 of 10 shard(s); the gaps stay unknown
+  - `libero_spatial_0` (manifest sha256 `c841c459056c20eb`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_spatial_1` (manifest sha256 `a3a9b9dd8e171681`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_spatial_2` (manifest sha256 `e2b147054a4221ba`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_spatial_3` (manifest sha256 `7731e98e0de506f9`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_spatial_4` (manifest sha256 `66b4667963375758`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_spatial_5` (manifest sha256 `0e66131d31f35695`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_spatial_6` (manifest sha256 `cabe89739d40829d`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_spatial_7` (manifest sha256 `69cf83670729736a`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_spatial_8` (manifest sha256 `d72d4ff64886e312`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_spatial_9` (manifest sha256 `f07741997521ace1`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+- Every aggregate number above is derived from these shards; each shard keeps its own execution manifest, and no combined report.json exists or is attested.
 
 ## What this does not establish
 

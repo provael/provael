@@ -66,7 +66,19 @@ build).
 - Tool version(s) in the shards: 0.41.2; aggregated with 0.42.0
 - Dates (UTC, execution manifests): 2026-09-14 to 2026-09-18
 - OS / Python: Linux 6.6.87.2-microsoft-standard-WSL2 / 3.12.14
-- Evidence state: real-episode · release verdict: pass
+- Evidence state: real-episode · release verdict as recorded by the run: pass (a verdict recorded by a run before 0.43.0 was a default gate's answer, not a decision under a named protocol)
+- Required provenance (repository, commit, dep_lock_digest, precision): complete on 0 of 10 shard(s); the gaps stay unknown
+  - `libero_10_0` (manifest sha256 `551fcdfd6867aa8a`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_10_1` (manifest sha256 `0a8112543017beb4`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_10_2` (manifest sha256 `79a30c67e0622d34`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_10_3` (manifest sha256 `fb8833c46283d21e`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_10_4` (manifest sha256 `b2cd138300b246c5`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_10_5` (manifest sha256 `0db314691925b5e5`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_10_6` (manifest sha256 `f590c05f0a372e03`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_10_7` (manifest sha256 `f7b6d8d09c6c1470`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_10_8` (manifest sha256 `8de566701aba59ca`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_10_9` (manifest sha256 `81ca2d66a30c327b`): missing repository, dep_lock_digest, precision — recorded as unknown, not backfilled
+- Every aggregate number above is derived from these shards; each shard keeps its own execution manifest, and no combined report.json exists or is attested.
 
 ## What this does not establish
 

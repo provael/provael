@@ -78,7 +78,19 @@ Provenance: provael 0.41.2 from PyPI in the `lerobot` venv (`commit`, `repositor
 - Tool version(s) in the shards: 0.41.2; aggregated with 0.42.0
 - Dates (UTC, execution manifests): 2026-09-18
 - OS / Python: Linux 6.6.87.2-microsoft-standard-WSL2 / 3.12.14
-- Evidence state: real-episode · release verdict: pass
+- Evidence state: real-episode · release verdict as recorded by the run: pass (a verdict recorded by a run before 0.43.0 was a default gate's answer, not a decision under a named protocol)
+- Required provenance (repository, commit, dep_lock_digest, precision): complete on 0 of 10 shard(s); the gaps stay unknown
+  - `libero_object_0` (manifest sha256 `ee9a8773f99fca0e`): missing repository, commit, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_object_1` (manifest sha256 `a82b8d833ca969e7`): missing repository, commit, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_object_2` (manifest sha256 `f4d1b1231b2c41d8`): missing repository, commit, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_object_3` (manifest sha256 `265fa4bc07d751a6`): missing repository, commit, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_object_4` (manifest sha256 `6cc7e046cf3e4acf`): missing repository, commit, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_object_5` (manifest sha256 `d7d62ee52abbdbf8`): missing repository, commit, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_object_6` (manifest sha256 `89cf025b0a96d585`): missing repository, commit, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_object_7` (manifest sha256 `803c1a9954bbda21`): missing repository, commit, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_object_8` (manifest sha256 `a0cf0952faf94a16`): missing repository, commit, dep_lock_digest, precision — recorded as unknown, not backfilled
+  - `libero_object_9` (manifest sha256 `9720427af6b37d3c`): missing repository, commit, dep_lock_digest, precision — recorded as unknown, not backfilled
+- Every aggregate number above is derived from these shards; each shard keeps its own execution manifest, and no combined report.json exists or is attested.
 
 ## What this does not establish
 
