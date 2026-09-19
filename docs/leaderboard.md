@@ -24,31 +24,52 @@ Every row is honest about how strong its number is:
   run is present the board is not a demo, and stub and real rows are **never silently mixed** — each
   is labelled.
 
-## The first real result
+## The published result
 
-On the real **SmolVLA × LIBERO** policy, only the **instruction** family transfers today
-(roleplay 100%, goal_substitution 60%, paraphrase 10%); **visual and injection attacks are 0%** on
-the real model, against a 0% benign control. That honesty is the point: the board shows what does
-and does not transfer, with intervals, rather than a single headline number.
+The board aggregates one run — **`results/smolvla_libero_object_suite_2026-09-14`**, the ten
+`libero_object` tasks on the real **SmolVLA × LIBERO** policy, **measured with `provael 0.41.2`** on
+14 September 2026 — into four family rows. The figures below are copied from
+`leaderboard/results/leaderboard.json` and a test holds the page to the file
+(`tests/test_leaderboard_version_claim.py`):
+
+| family | rate on the board | Wilson 95% CI | benign control | transfer status |
+| --- | ---: | ---: | ---: | --- |
+| `instruction` | **50/150 (33.3%)** | [26%, 41%] | 1/50 | `real-transfer` |
+| `injection` | 2/50 (4.0%) | [1%, 13%] | 1/50 | `real-transfer` — at the floor |
+| `visual` | 2/100 (2.0%) | [1%, 7%] | 1/50 | `real-transfer` — at the floor |
+| `baseline` (`none`) | 1/50 (2.0%) | [0%, 10%] | — | the control itself |
+
+Only the **instruction** family separates from the benign floor, and a family row is a coarser
+quantity than the per-attack result the run's own README leads with (`roleplay` 42/50; the family
+row pools it with `goal_substitution` 7/50 and `paraphrase` 1/50 — 50/150). `mcp_tool_desc` is
+listed as **not applicable** (zero applicable episodes), never as a null. The honesty is the point:
+the board shows what does and does not move this policy, with intervals, rather than a single
+headline number.
 
 ## What the published board does *not* cover
 
-The board is one run, and it is old. Stated plainly, because the rendered page now states it too:
+The published board does not cover what its one run did not run. Stated plainly, because the
+rendered page states it too:
 
-- **Measured with `provael 0.1.0`.** Every row on the published board came from that release. The
-  build stamp is current; the measurement is not. See [re-stamps](#what-a-re-stamp-does-and-does-not-change).
-- **1 policy, 1 suite.** `smolvla` × `libero_object/0`. Seven of the eight registered policy
-  backends have never produced a board row, and three of those (`groot`, `openvla`, `openpi`) have
-  never loaded a checkpoint at all — `provael list-policies` marks them `scaffolding`.
-- **3 of 17 adversarial families measured** (`instruction`, `injection`, `visual`). **The other
-  twelve have no real-model measurement whatsoever.** They are *absent* from the board, which is
-  not the same as scoring 0% — an absent family is `N/A`, and reading it as a pass is the single
-  most likely way to misuse this page.
-- **No clean-task-success control.** The underlying run predates `clean_task_success_rate`, so the
-  board shows no measured evidence that the policy completes its benign task unattacked. The
-  benign false-positive control *is* present and is 0%. The competence control is not, and is not
-  back-filled — see the run's own
-  [provenance note](https://github.com/provael/provael/blob/main/results/smolvla_libero_object/README.md).
+- **Every row was measured with **`provael 0.41.2`** — and with nothing newer.** The board's
+  `stale: true` says why that matters: 0.41.2 is two minor versions behind the tool that assembled
+  the board (0.43.0), past the one-version limit, so the rows are disclosed as stale until a re-run
+  — see [staleness](#staleness-is-a-field-not-a-banner-schema-v6). The build stamp is current; the
+  measurement is dated.
+- **1 policy, 1 suite.** `smolvla` × the ten `libero_object` tasks. Seven of the eight registered
+  policy backends have never produced a board row, and three of those (`groot`, `openvla`,
+  `openpi`) have never loaded a checkpoint at all — `provael list-policies` marks them
+  `scaffolding`. The π0.5 preliminary leg is committed as a run, not as board rows.
+- **3 of 17 adversarial families measured** (`instruction`, `injection`, `visual`). The other
+  **fourteen** are absent from the board, which is not the same as scoring 0%: nine have no
+  real-model measurement anywhere in this repository, and five have only the three-episode breadth
+  probe of the same night (`results/smolvla_libero_object_families_2026-09-14`), a result and not a
+  rate. An absent family is `N/A`, and reading it as a pass is the single most likely way to misuse
+  this page.
+- **The competence control is in the run, not on the board.** The run's benign arm completes the
+  task 48/50 (96%) unattacked; the board schema carries the benign false-positive control (1/50)
+  but no clean-task-success field, so read the competence figure from the
+  [run README](https://github.com/provael/provael/blob/main/results/smolvla_libero_object_suite_2026-09-14/README.md).
 
 Closing these needs GPU time, not a rebuild: a re-stamp cannot add a family it never ran.
 
@@ -91,9 +112,9 @@ The source directory is named beside the board, in **`leaderboard/results/source
 and that pointer is the one place to read it from: it is written by the same workflow that writes
 the board, and `tests/test_leaderboard_version_claim.py` holds its `measuredWith` and `generatedAt`
 to the board's own fields. It names a ten-task suite directory, not
-`results/smolvla_libero_object`, which is an older single-task run measured with **0.1.0**;
-rebuilding from that one produces a different digest, different rows, and a board thirty-odd minor
-versions behind the published one. Several such directories are committed and their names differ
+`results/smolvla_libero_object`, which is the superseded June 2026 single-task run (measured with
+**0.1.0**); rebuilding from that one produces a different digest, different rows, and a board forty
+minor versions behind the published one. Several such directories are committed and their names differ
 by a word or a date, which is why the pointer exists rather than leaving it to be inferred.
 
 ```bash
@@ -279,11 +300,6 @@ uv run provael leaderboard verify --in leaderboard/results/leaderboard.json \
   --pubkey leaderboard/results/leaderboard.pub   # -> leaderboard OK  keyid 8d62aa33ed5162f3
 ```
 
-The published board is the **ten-task `libero_object` suite screen**: on the real
-**SmolVLA × LIBERO** policy only the **instruction** family transfers, at **41.3% (62/150)
-[34–49%]** against a **4.0% (2/50, Wilson 95% [1.1%, 13.5%])** benign control; **injection is 0/50 and visual 0/100** —
-measured nulls, published as such.
-
 Since `schema_version` 5 each row also carries the qualifiers its report always had —
 `calibrated` (false here: the keep-out predicate is the default box, see
 [#136](https://github.com/provael/provael/issues/136)), `stochastic` (true: one draw, not a
@@ -303,21 +319,3 @@ The free core builds and verifies boards; a hosted, operator-signed board is the
 surface (experimental today). See [docs/leaderboard.md](leaderboard.md).
 **Evidence, not certification.**
 
-**What the published board does not cover.** It is one run: measured with
-**`provael 0.41.2`** on 14 September 2026 (`results/smolvla_libero_object_suite_2026-09-14`, the
-directory named in `leaderboard/results/source.json`), covering **1 policy on 1 suite** and **3 of
-the 17 adversarial families**. The other **fourteen families are absent from the board**, which is
-not the same as scoring 0%: nine of them have no real-model measurement anywhere in this repository,
-and five have only the three-episode breadth probe of the same night
-(`results/smolvla_libero_object_families_2026-09-14`), a result and not a rate. The run carries a
-benign false-positive control (1/50) and a clean-task-success baseline (48/50), so its rates are
-read against a measured competence, not assumed one. The Space states all of this above its own
-tables; rebuilding cannot fix it, because a rebuild re-aggregates committed reports and never
-re-runs a policy. Closing the gap needs GPU time.
-
-The board is one minor version behind the shipping tool. That gap is bridged by
-[`leaderboard/method-equivalence.json`](https://github.com/provael/provael/blob/main/leaderboard/method-equivalence.json), whose own
-`what_this_is_not` field says it plainly: **"This is a code-inspection argument, NOT a
-re-measurement."** Its previous entry, for 0.32.0, was settled the only way such an entry can be:
-the suite was re-run on 0.41.2 and the family moved (62/150 to 50/150). The re-run moved the board;
-the argument never could.

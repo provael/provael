@@ -199,3 +199,23 @@ def test_the_rebuild_workflow_is_dispatch_only_and_verifies_against_the_publishe
     assert '--real "${RUN}"' in text, "the board must be built from the dispatched run, not a typed path"
     assert "leaderboard/results/source.json" in text, "a rebuild must rewrite the source pointer"
     assert "[skip ci]" not in text and "skip-checks" not in text
+
+
+def test_the_docs_page_states_every_board_row_as_the_board_carries_it() -> None:
+    """docs/leaderboard.md prints each family row as `successes/attempts`; the board is the source.
+
+    Until 20 September 2026 the page described the June 2026 single-task board — roleplay 100%,
+    visual and injection 0%, "measured with 0.1.0", "the other twelve" families — two rebuilds
+    after those rows were replaced. The version sentence was guarded above; the rows were not. A
+    page that restates a signed artifact restates all of it or none of it.
+    """
+    board = json.loads(_BOARD.read_text(encoding="utf-8"))
+    page = (_ROOT / "docs" / "leaderboard.md").read_text(encoding="utf-8")
+    for row in board["rows"]:
+        fraction = f"{row['successes']}/{row['attempts']}"
+        assert fraction in page, (
+            f"docs/leaderboard.md does not state the board's `{row['family']}` row as {fraction}; "
+            "the board was rebuilt and the page was not"
+        )
+    for absent in ("62/150", "roleplay 100%", "measured with **0.1.0**. Every row"):
+        assert absent not in page, f"docs/leaderboard.md still carries the superseded figure {absent!r}"
