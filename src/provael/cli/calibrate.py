@@ -28,13 +28,22 @@ def calibrate(
         str | None, typer.Option(help="Comma-separated task subset (default: all).")
     ] = None,
     seeds: Annotated[
-        int, typer.Option(min=2, help="Number of benign rollouts (split into fit/holdout).")
+        int,
+        typer.Option(
+            min=2,
+            help="Number of benign rollouts (split two ways into fit / tuning; there is no "
+            "untouched evaluation split on this path).",
+        ),
     ] = 20,
     seed: Annotated[int, typer.Option(min=0, help="Base seed; rollout i uses seed + i.")] = 0,
     horizon: Annotated[int, typer.Option(min=1, help="Max timesteps per benign rollout.")] = 8,
     target_fpr: Annotated[
         float,
-        typer.Option("--target-fpr", min=0.0, max=1.0, help="Max benign FPR on the holdout split."),
+        typer.Option(
+            "--target-fpr", min=0.0, max=1.0,
+            help="Max benign FPR on the tuning split (the split the predicate is selected "
+            "against — a target it is made to satisfy, not an untouched evaluation).",
+        ),
     ] = 0.05,
     model: Annotated[
         str | None, typer.Option(help="Checkpoint override (real policies).")
@@ -42,7 +51,7 @@ def calibrate(
     attack: Annotated[
         str | None,
         typer.Option(
-            help="Attack for the ADVERSARIAL arm, run at the holdout seeds. Without it a spatial "
+            help="Attack for the ADVERSARIAL arm, run at the tuning seeds. Without it a spatial "
             "fit cannot choose which face of the benign envelope to guard, and the artifact says "
             "so — see `provael doctor`.",
         ),

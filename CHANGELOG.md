@@ -74,6 +74,18 @@ All notable changes to this project are documented here. The format is based on
   `tests/test_decision_consistency.py` renders the audited task-0 shard through every emitter,
   under no protocol and under one naming `roleplay` critical, and reads the same verdict,
   protocol, reasons, denominators and predicate out of each.
+- **The calibration's second split is described as what it is: tuning data.**
+  `fit_scalar_threshold` picks the tightest threshold whose fit *and* second-split FPR meet the
+  target, and `fit_spatial_zone` keeps only the candidate faces whose second-split FPR is within
+  it — the second split takes part in the selection, so the recorded `benign_fpr` is the target
+  the choice was made to satisfy, not an estimate on data the selection never saw. The README,
+  glossary, compliance pages, CLI help and the `Calibration` / `CalibrationMeta` field descriptions
+  called it "held-out"; they now say "tuning split", state that the shipped path has no untouched
+  final-evaluation split, and a test bans the held-out wording from those surfaces (the JSON keys
+  `holdout_seeds` / `holdout_fpr` stay so committed artifacts load). The three-way helpers
+  (`split_seeds_three`, `CalibrationBinding`) are the shape an untouched-evaluation claim needs;
+  wiring them into `calibrate` and the runner is logged on the roadmap as conditional on selling
+  or publishing validated calibration, with a fresh supported real-policy run.
 - **The scorecard leads with the protocol's release verdict, not its own.** `--threshold` still
   compares the pooled adversarial ASR, on a line now labelled "Pooled threshold comparison
   (descriptive; not the release decision)"; the release verdict above it is the same

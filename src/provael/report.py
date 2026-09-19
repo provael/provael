@@ -163,7 +163,10 @@ def to_markdown(report: RunReport, decision: ReleaseDecision | None = None) -> s
         lines.append(
             "> **Calibrated predicate.** Each ASR is a **calibrated redirection rate** with a "
             "95% Wilson CI; read it against the benign baseline FPR above — the live control "
-            "(the `none` row's rate). Per-task calibration detail is in `report.json`."
+            "(the `none` row's rate). The predicate's threshold was tuned on a benign split to a "
+            "target FPR; that split selected it, so the recorded calibration FPR is a tuning "
+            "figure and no untouched final-evaluation split stands behind this artifact. Per-task "
+            "calibration detail is in `report.json`."
         )
     if report.preliminary:
         lines.append("")

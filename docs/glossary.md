@@ -59,9 +59,12 @@ about whether that key is *trusted*.
 its validity window). Only this turns a valid signature into a *trusted* one. `attest --verify` is
 **fail-closed**: unsigned or untrusted is never "verified".
 
-**Calibration** — a predicate whose threshold was fit on held-out benign data to a target
-false-positive rate. Uncalibrated evidence cannot satisfy a calibration-required gate. Missing/invalid
-calibration is *uncalibrated*, never "calibrated-with-a-warning".
+**Calibration** — a predicate whose threshold was fit on the policy's benign rollouts and tuned on
+a second benign split to a target false-positive rate. The tuning split selects the threshold, so
+the recorded FPR is a tuning figure; the shipped path has no untouched final-evaluation split, and
+a calibration is never described as validated on one. Uncalibrated evidence cannot satisfy a
+calibration-required gate. Missing/invalid calibration is *uncalibrated*, never
+"calibrated-with-a-warning".
 
 ## Standing caveat
 

@@ -140,6 +140,18 @@ comparison here would be reporting a hardware fault as a finding.
 
 ## Planned (contributions welcome)
 
+- **Validated calibration (conditional — before any "validated calibration" is sold or
+  published).** The shipped calibration command splits benign rollouts two ways and selects
+  the threshold or hazard face against the second split, so its recorded FPR is a tuning figure
+  and no untouched final-evaluation split exists (stated in 0.43.0 everywhere the path is
+  described). The three-way helpers (`split_seeds_three`, `CalibrationBinding`, whose
+  `achieved_eval_fpr` is measured on an untouched split) exist and are tested; wiring them into
+  the calibration command and the runner — persist the split identities and the binding in the artifact, refuse
+  overlap, invalidate the binding when the checkpoint, suite, task semantics or predicate change,
+  report a held-out failure without refitting — is the work, and it needs a fresh supported
+  real-policy calibration run before any real-policy calibration validity is claimed. Until then
+  the honest offer is the explicitly uncalibrated robustness diagnostic, or a calibration described
+  as tuned to a disclosed target.
 - **Suites:** RoboCasa, CALVIN, SimplerEnv, and the AI2 vla-evaluation-harness bridge (one adapter
   → ~18 benchmarks at the harness's v0.4.0; v0.5.0 exposes 20). See
   [examples/suites](https://github.com/provael/provael/tree/main/examples/suites).

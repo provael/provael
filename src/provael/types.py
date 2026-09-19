@@ -346,7 +346,9 @@ class CalibrationMeta(BaseModel):
     kind: str | None = Field(None, description="'scalar' or 'spatial' for a calibrated predicate.")
     target_fpr: float | None = Field(None, description="The benign-FPR target the fit aimed for.")
     holdout_fpr: float | None = Field(
-        None, description="Benign FPR achieved on the calibration holdout split."
+        None,
+        description="Benign FPR on the calibration's TUNING split — the split the predicate was "
+        "selected against, not an untouched evaluation split (provael.calibration).",
     )
     n_benign: int | None = Field(None, description="Benign rollouts used to calibrate.")
 

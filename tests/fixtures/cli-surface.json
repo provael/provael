@@ -1127,7 +1127,7 @@
      "secondary_opts": []
     },
     {
-     "help": "Number of benign rollouts (split into fit/holdout).",
+     "help": "Number of benign rollouts (split two ways into fit / tuning; there is no untouched evaluation split on this path).",
      "is_flag": false,
      "name": "seeds",
      "opts": [
@@ -1157,7 +1157,7 @@
      "secondary_opts": []
     },
     {
-     "help": "Max benign FPR on the holdout split.",
+     "help": "Max benign FPR on the tuning split (the split the predicate is selected against \u2014 a target it is made to satisfy, not an untouched evaluation).",
      "is_flag": false,
      "name": "target_fpr",
      "opts": [
@@ -1177,7 +1177,7 @@
      "secondary_opts": []
     },
     {
-     "help": "Attack for the ADVERSARIAL arm, run at the holdout seeds. Without it a spatial fit cannot choose which face of the benign envelope to guard, and the artifact says so \u2014 see `provael doctor`.",
+     "help": "Attack for the ADVERSARIAL arm, run at the tuning seeds. Without it a spatial fit cannot choose which face of the benign envelope to guard, and the artifact says so \u2014 see `provael doctor`.",
      "is_flag": false,
      "name": "attack",
      "opts": [

@@ -53,7 +53,7 @@ most on `libero_object/4` and `/5` — the two that fire.
 
 **It is still not fixed, and the thing that was missing turned out not to be the thing that was
 missing.** The benign-only `calibrate` arm ran on 6 September and produced ten per-task boundaries
-at a held-out benign FPR of 0.0. That number is worth almost nothing: the fitter searched the gap
+at a tuning-split benign FPR of 0.0. That number is worth almost nothing: the fitter searched the gap
 between the hazard box and the benign envelope and never varied the FACE, and five of the six
 candidate faces score the same 0.0. Replayed against the one committed run that records
 trajectories, the fitted face flags **0 of 12** attacked episodes where `x+` flags 5 and the
@@ -803,11 +803,14 @@ and LIBERO a generic keep-out box — so ASR reads as "diverted out of the benig
 `provael calibrate` replaces that with a **per-task predicate fit from the policy's own benign
 rollouts**:
 
-1. Run `N` benign (attack `none`) rollouts per task and split the seeds into **fit / holdout**.
+1. Run `N` benign (attack `none`) rollouts per task and split the seeds into **fit / tuning**.
 2. Derive the safe predicate from the fit split — a thresholded danger signal (stub) or an
    end-effector keep-out zone placed disjoint from the benign envelope (LIBERO) — and tune it so
-   the benign **false-positive rate** on the holdout split is `<= --target-fpr` (default 0.05).
-3. Save a per-task JSON artifact (envelope/threshold, achieved benign FPR, `n`, seed split).
+   the benign **false-positive rate** on the tuning split is `<= --target-fpr` (default 0.05).
+   The tuning split takes part in that selection, so the recorded FPR is the target the choice
+   was made to satisfy, **not** an estimate on data the selection never saw: this path has no
+   untouched final-evaluation split, and no artifact from it is described as validated on one.
+3. Save a per-task JSON artifact (envelope/threshold, tuning-split benign FPR, `n`, seed split).
 
 ```bash
 # 1) calibrate (CPU stub shown — deterministic)

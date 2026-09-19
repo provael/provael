@@ -380,3 +380,63 @@ def test_nothing_clearing_the_benign_target_is_reported_as_unselected() -> None:
         "would hide that this zone was checked and caught nothing"
     )
     assert len(zones) == 1
+
+
+# ── The tuning split is not described as an untouched evaluation ─────────────────────────────
+
+_ROOT = Path(__file__).resolve().parents[1]
+#: Prose surfaces a reader learns the calibration's meaning from. Dated records (errata, studies,
+#: findings, the changelog) describe what past artifacts CLAIMED at the time and are left alone.
+_CURRENT_PROSE = [
+    _ROOT / "README.md",
+    _ROOT / "docs/glossary.md",
+    _ROOT / "docs/quickstart.md",
+    _ROOT / "docs/compliance/index.md",
+    _ROOT / "docs/compliance/machinery-annex-iii-corruption.md",
+    _ROOT / "docs/handbook.md",
+    _ROOT / "src/provael/calibration.py",
+    _ROOT / "src/provael/cli/calibrate.py",
+    _ROOT / "src/provael/report.py",
+    _ROOT / "src/provael/compliance.py",
+    _ROOT / "src/provael/types.py",
+]
+#: Wording that presents the two-way split as data the selection never touched.
+_HELD_OUT = ("held-out", "held out", "hold-out", "holdout split", "holdout fpr", "holdout benign")
+#: "untouched" is allowed only when negated, or when it names the three-way binding that IS.
+_NEGATIONS = ("no ", "not ", "never ", "nor ", "without an ")
+_UNTOUCHED_OK = ("calibrationbinding", "split_seeds_three", "achieved_eval_fpr", "eval split",
+                 "eval set", "three-way", "three seed splits")
+
+
+def test_the_two_way_split_is_never_described_as_held_out() -> None:
+    """R04 (19 Sep 2026): `fit_scalar_threshold` and `fit_spatial_zone` SELECT on the second split.
+
+    That makes it tuning data, and README, glossary, CLI help and field descriptions all called it
+    held-out. The words are banned from the surfaces a reader learns the meaning from; the JSON
+    keys (`holdout_seeds`, `holdout_fpr`) stay for artifact compatibility and are exempt as
+    identifiers.
+    """
+    offenders: list[str] = []
+    for path in _CURRENT_PROSE:
+        text = path.read_text(encoding="utf-8")
+        for lineno, line in enumerate(text.splitlines(), 1):
+            if any(phrase in line.lower() for phrase in _HELD_OUT):
+                offenders.append(f"{path.relative_to(_ROOT)}:{lineno}: {line.strip()}")
+        # "untouched" is judged in context, since the negation usually sits on the line before.
+        low = " ".join(text.lower().split())
+        start = 0
+        while (i := low.find("untouched", start)) != -1:
+            start = i + 1
+            window, before = low[max(0, i - 160): i + 160], low[max(0, i - 70): i]
+            about_calibration = any(w in window for w in ("split", "evaluat", "calibrat"))
+            negated = any(neg in before for neg in _NEGATIONS)
+            names_the_binding = any(ok in window for ok in _UNTOUCHED_OK)
+            if about_calibration and not negated and not names_the_binding:
+                offenders.append(f"{path.relative_to(_ROOT)}: ...{low[i - 60: i + 60]}...")
+    assert not offenders, "the two-way calibration split is tuning data:\n" + "\n".join(offenders)
+
+
+def test_the_calibration_artifact_says_its_fpr_is_a_tuning_figure() -> None:
+    field = Calibration.model_fields["benign_fpr"]
+    assert "TUNING split" in (field.description or "")
+    assert "not an estimate on untouched data" in (field.description or "")

@@ -126,7 +126,7 @@ manufacturer's regulatory counsel, not for a red-team tool.
 | EU Machinery Regulation 2023/1230 — "protection against corruption" + safety-function AI (conformity input) | Measured redirection rate per EAI risk as input to the mandatory cyber-risk assessment; SARIF for the security file *(indicative)* |
 | EU AI Act Art. 72 — post-market monitoring | Re-run on each model/checkpoint update; track redirection rate over time (leaderboard) |
 | NIST AI RMF MEASURE | Calibrated rate + CI + benign FPR (a measured, controlled metric, not a vibe) |
-| Auditor wants reproducibility | Seed, config, and per-task calibration artifact (target vs achieved FPR, fit/holdout split) |
+| Auditor wants reproducibility | Seed, config, and per-task calibration artifact (target vs tuning-split FPR, fit/tuning seed split — no untouched evaluation split) |
 
 ---
 

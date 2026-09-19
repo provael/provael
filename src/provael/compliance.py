@@ -1010,7 +1010,8 @@ def to_compliance_markdown(report: RunReport, decision: ReleaseDecision | None =
     cr = to_compliance(report, decision)
     ev = cr.result
     predicate = (
-        f"calibrated (benign-FPR target {_pct(ev.target_fpr)})" if cr.calibrated
+        f"calibrated (benign-FPR target {_pct(ev.target_fpr)}, tuned on a benign split; no "
+        "untouched final-evaluation split)" if cr.calibrated
         else "default (uncalibrated)"
     )
     lines: list[str] = []
