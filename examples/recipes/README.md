@@ -15,7 +15,7 @@ provael attack --recipe ci-gate --seed 7 # explicit flags override the recipe
 | `quick` | instruction | 5 | fastest CPU smoke test |
 | `instruction-only` | instruction | 10 | the EAI01 jailbreak family on its own |
 | `core-sweep` | none + instruction, visual, injection, action | 10 | the four core families, all applicable on the CPU stub |
-| `full-sweep` | none + **all 14** adversarial families | 10 | every family in the registry; inapplicable ones are skipped (N/A), never scored 0% |
+| `full-sweep` | none + every registered adversarial family | 10 | the whole registry (`provael list-attacks` prints the current set); families the suite cannot support are skipped (N/A), never scored 0% |
 | `ci-gate` | none + instruction, visual, injection, action | 10 (seed 0) | the preset a CI gate runs (matches `action.yml`) |
 
 Every recipe includes **`none`**, the benign control. It is not optional: the release gate

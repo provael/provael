@@ -200,9 +200,12 @@ def test_the_claim_scan_is_not_vacuous() -> None:
 _HISTORICAL = frozenset({
     "CHANGELOG.md",
     "docs/studies/action-envelope.md",
-    "examples/recipes/README.md",
     "examples/recipes/core-sweep.yml",
     "src/provael/recipes.py",
+    # Quotes the four disagreeing surfaces of its incident ("… across 15\nadversarial families")
+    # verbatim in its docstring; the sweep reads across line breaks since 20 September 2026, which
+    # is right for prose and wrong for a quotation of the numbers of that day.
+    "scripts/gen_registry_artifact.py",
 })
 
 #: Any phrasing that states a family count. The count token must be digits or a number word this
@@ -210,7 +213,13 @@ _HISTORICAL = frozenset({
 #: adversarial families were run", which states no count at all. Building the alternation from
 #: :data:`_WORDS` keeps the two in step: a stale count is always *some* number, so narrowing the
 #: token to numbers loses no real claim while dropping the prose false positives.
-_SWEEP = re.compile(r"\b(\d+|" + "|".join(_WORDS) + r") adversarial families", re.IGNORECASE)
+#: ``\**`` between the number and the noun phrase: `examples/recipes/README.md` said "all **14**
+#: adversarial families" for six releases past the count, because the bold markers sat between the
+#: digits and the words this pattern keyed on (and the file was on the historical allow-list for a
+#: different sentence). Emphasis is not a different claim.
+_SWEEP = re.compile(
+    r"\b(\d+|" + "|".join(_WORDS) + r")\**\s+adversarial families", re.IGNORECASE
+)
 
 
 def _tracked_text_files() -> list[Path]:
