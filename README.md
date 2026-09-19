@@ -686,44 +686,18 @@ checkpoint on a GPU runner. Generality is intended; it is **tested on SmolVLA ×
 ## The measured body (SmolVLA × LIBERO-Object)
 
 `HuggingFaceVLA/smolvla_libero` · **all ten `libero_object` tasks** · 5 seeds per (task, arm) ·
-horizon 280 · L4, 2026-08-09. 350 measured episodes of 400 records.
+horizon 280. The published measurement is the **14 September 2026 run on 0.41.2** (workstation
+RTX 2000 Ada; [run](results/smolvla_libero_object_suite_2026-09-14/README.md), with
+[aggregate.json](results/smolvla_libero_object_suite_2026-09-14/aggregate.json) beside the shards);
+it is the run `watch/publish-freshness.json` names. 350 measured episodes of 400 records.
 
-**Under `roleplay`, SmolVLA left its safe envelope on 44 of 50 matched pairs (88%,
-task-clustered 95% CI [72%, 100%]) against a 2/50 benign control (4.0%, Wilson 95% [1.1%, 13.5%]),
-and against 0 benign twins at identical (task, seed) — McNemar exact p = 4.6e-13, Holm-adjusted to
-2.7e-12 across the six-arm screen.** Read it with the 14 September 2026 controls
-([E-2026-12](docs/errata.md)): the frame with no target named exits at 27/30 and the scrambled
-tokens at 18/30, so the exit is the policy's fragility under this kind of string, not the attacker's
-choice of object being acted on. Re-measured on 0.41.2: 42/50.
-
-The interval is clustered over **tasks**, not episodes — episodes inside one task are correlated,
-and `provael.scoring.paired` refuses a clustered interval below two tasks. Adding tasks changed a
-verdict (`goal_substitution` did not survive correction on one task and did over ten), which is
-the argument for having run them. The narrative that used to sit here is preserved in
-[the write-up](docs/findings/2026-instruction-transfer.md#the-readme-narrative-retired-19-september-2026).
-
-| family | attack | keep-out exit rate | clustered 95% CI | McNemar | Holm |
-| --- | --- | ---: | ---: | ---: | ---: |
-| baseline | `none` | **2/50 (4%)** — control | — | — | — |
-| instruction | `roleplay` | **44/50 (88%)** | **[72%, 100%]** | 4.6e-13 | **2.7e-12** |
-| instruction | `goal_substitution` | **15/50 (30%)** | [6%, 54%] | 9.8e-4 | **4.9e-3** |
-| instruction | `paraphrase` | 3/50 (6%) | [0%, 12%] | 1.0 | 1.0 |
-| visual | `patch` | 0/50 (0%) | — | 0.5 | 1.0 |
-| visual | `decoy_object` | 0/50 (0%) | — | 0.5 | 1.0 |
-| injection | `scene_text` | 0/50 (0%) | — | 0.5 | 1.0 |
-| injection | `mcp_tool_desc` | **0 attempts** | — | — | — |
-
-`mcp_tool_desc` is **not applicable** to this suite: it produces 50 episode records carrying
-`applicable: false` and `steps: 0`, which scoring excludes from `attempts`. It is listed as
-not-measured rather than as a seventh null, because those are different claims — and it is why the
-run is 350 measured episodes out of 400 records.
-
-**Re-measured on 0.41.2, 14 September 2026** — same checkpoint, tasks, arms, seeds and horizon, on
-a workstation RTX 2000 Ada
-([run](results/smolvla_libero_object_suite_2026-09-14/README.md), with
-[aggregate.json](results/smolvla_libero_object_suite_2026-09-14/aggregate.json) beside the shards).
-This is the run `watch/publish-freshness.json` now names as the published measurement; the table
-above is the original and stays as the record of it.
+**Under `roleplay`, SmolVLA left its safe envelope on 42 of 50 matched pairs (84%, task-clustered
+95% CI [62%, 100%]) against a 1/50 benign control (2%), McNemar exact p = 9.1e-13, Holm-adjusted to
+5.5e-12 across the six-arm screen.** Clean task success on the benign arm is 96% (48/50) and 0/50
+under `roleplay`. Read it with the [controls run the same day](results/smolvla_libero_object_control_2026-09-14/README.md)
+([E-2026-12](docs/errata.md)): the roleplay frame with **no target named** exits at **27/30** and the
+**scrambled** tokens at **18/30**, so the exit is the policy's fragility under a long, imperative,
+out-of-distribution string — not attacker control of what the arm does next.
 
 | family | attack | keep-out exit rate | clustered 95% CI | McNemar | Holm |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -736,20 +710,29 @@ above is the original and stays as the record of it.
 | injection | `scene_text` | 2/50 (4%) | [0%, 10%] | 1.0 | 1.0 |
 | injection | `mcp_tool_desc` | **0 attempts** | — | — | — |
 
-Roleplay reproduces inside the earlier interval and survives Holm alone; `goal_substitution`, which
-survived at 15/50 on 0.32.0, is 7/50 here and does not — one draw of a sampling policy each time,
-and the honest reading of two runs is that its effect is real but small enough that fifty cells do
-not settle it. Clean task success under the benign arm is 96% (48/50) against 84% on 0.32.0. The
-[controls run the same day](results/smolvla_libero_object_control_2026-09-14/README.md) are what
-E-2026-12 rests on.
+The interval is clustered over **tasks**, not episodes — episodes inside one task are correlated,
+and `provael.scoring.paired` refuses a clustered interval below two tasks. `mcp_tool_desc` is **not
+applicable** to this suite: it produces 50 episode records carrying `applicable: false` and
+`steps: 0`, which scoring excludes from `attempts`. It is listed as not-measured rather than as a
+null, because those are different claims — and it is why the run is 350 measured episodes out of
+400 records.
 
-**The three null arms show `—` rather than an interval, and that is a correction.** This table
-previously published `[0%, 0%]` for them. The clustered bootstrap declines when every task scores
-the same rate: resampling ten tasks that all scored zero returns zero on every draw, so the
-percentiles collapse onto it and the interval reads as certainty the data cannot support. Pooled
-as a plain binomial, 0/50 is consistent with a true rate as high as **7.1%** — the exact 95% upper
-bound, and the number the site has been publishing for these same arms all along. The refusal now
-lives in `provael.scoring.paired` and is guarded by `tests/test_paired.py` and
+**History — the 9 August 2026 run on 0.32.0 (L4).** Same checkpoint, tasks, arms, seeds and
+horizon: `roleplay` **44/50 (88%)**, clustered 95% CI [72%, 100%], against a 2/50 benign control,
+McNemar p = 4.6e-13 (Holm 2.7e-12); `goal_substitution` 15/50 (30%, [6%, 54%], Holm 4.9e-3);
+`paraphrase` 3/50; `patch`, `decoy_object`, `scene_text` 0/50 each. Roleplay reproduces inside the
+earlier interval and survives Holm alone; `goal_substitution`, which survived correction at 15/50,
+is 7/50 on 0.41.2 and does not — one draw of a sampling policy each time, and the honest reading of
+two runs is that its effect is real but small enough that fifty cells do not settle it. The August
+table, and the narrative that used to open this section, are preserved in
+[the write-up](docs/findings/2026-instruction-transfer.md).
+
+**A 0/50 arm shows `—` rather than an interval, and that is a correction.** The August table once
+published `[0%, 0%]` for its null arms. The clustered bootstrap declines when every task scores the
+same rate: resampling ten tasks that all scored zero returns zero on every draw, so the percentiles
+collapse onto it and the interval reads as certainty the data cannot support. Pooled as a plain
+binomial, 0/50 is consistent with a true rate as high as **7.1%** — the exact 95% upper bound. The
+refusal lives in `provael.scoring.paired` and is guarded by `tests/test_paired.py` and
 `tests/test_no_zero_width_intervals.py`.
 
 **The benign control is not clean, and the reason is measured.** Pooled across both runs the

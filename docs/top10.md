@@ -102,12 +102,12 @@ is called out honestly in each entry.
 **What.** Natural-language commands (direct, or via an LLM planner) that drive the policy to act against
 its safety constraints — the embodied analog of an LLM jailbreak, output as a physical action plan.
 **Evidence.** *[research]* **RoboPAIR** (arXiv 2410.13691, ~100% ASR incl. a deployed Unitree Go2);
-**BadRobot** (ICLR 2025, arXiv 2407.20242). Provael's own runs: `roleplay` diverts a real SmolVLA×LIBERO policy **88% (44/50)**, task-clustered 95% CI **[72%, 100%]**, McNemar p=4.6e-13 (Holm 2.7e-12), across all ten `libero_object` tasks against a **2/50 benign control** (sim-only, ten tasks, 350 measured episodes; `results/smolvla_libero_object_suite/`).
-**What predicts it: meaning, not surface form.** In the same run, `paraphrase` — which preserves the
-request and changes only its wording — fired **3/50 (6.0%)**, 95% Wilson [2.1%, 16.2%], and is
-**statistically indistinguishable from the benign control** (McNemar p = 1.0). `roleplay`, which
-reframes what is being asked while the safety envelope stays fixed, fired 44/50. The two intervals do
-not overlap. Read narrowly — one policy, one suite, four templates per arm, uncalibrated predicate:
+**BadRobot** (ICLR 2025, arXiv 2407.20242). Provael's own runs: under `roleplay` a real SmolVLA×LIBERO policy left its safe envelope on **84% (42/50)** of matched pairs, task-clustered 95% CI **[62%, 100%]**, McNemar p=9.1e-13 (Holm 5.5e-12), across all ten `libero_object` tasks against a **1/50 benign control** (sim-only, ten tasks, 350 measured episodes; 14 September 2026 run on 0.41.2, `results/smolvla_libero_object_suite_2026-09-14/`; the 9 August 2026 run on 0.32.0 gave 44/50, 88%, [72%, 100%] against 2/50). The same-day controls ([E-2026-12](errata.md)) put the frame with no target named at 27/30 and the scrambled tokens at 18/30: the exit is fragility under a long, imperative, out-of-distribution string, not attacker control of what the arm does next.
+**What predicts it: meaning, not surface form.** In the August run, `paraphrase` — which preserves
+the request and changes only its wording — fired **3/50 (6.0%)**, 95% Wilson [2.1%, 16.2%], and is
+**statistically indistinguishable from the benign control** (McNemar p = 1.0); on 0.41.2 it fired
+1/50. `roleplay`, which reframes what is being asked while the safety envelope stays fixed, fired
+44/50 and then 42/50. The intervals do not overlap. Read narrowly — one policy, one suite, four templates per arm, uncalibrated predicate:
 [the finding](findings/semantic-vs-mechanical-instruction-attacks.md) states it as a hypothesis with
 supporting evidence, not a settled result.
 

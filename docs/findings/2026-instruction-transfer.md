@@ -4,7 +4,34 @@
 > ships no real-world-harm payload — the battery perturbs only the instruction/observation a policy
 > receives inside a simulator. See [SAFETY.md](https://github.com/provael/provael/blob/main/SAFETY.md).
 
-## The finding
+> **The current measurement (read this before the history below).** The published body is the
+> **14 September 2026 run on provael 0.41.2** — same checkpoint, ten `libero_object` tasks, 5 seeds
+> per (task, arm), horizon 280, workstation RTX 2000 Ada
+> ([run](https://github.com/provael/provael/blob/main/results/smolvla_libero_object_suite_2026-09-14/README.md)).
+> Under `roleplay` the policy left its safe envelope on **42 of 50 matched pairs (84%, task-clustered
+> 95% CI [62%, 100%])** against a **1/50 (2%) benign control**, McNemar exact p = 9.1e-13, Holm
+> 5.5e-12; clean task success on the benign arm 48/50 (96%) and 0/50 under `roleplay`. The
+> [controls run the same day](https://github.com/provael/provael/blob/main/results/smolvla_libero_object_control_2026-09-14/README.md)
+> ([E-2026-12](../errata.md)) give the reading: the roleplay frame with **no target named** exits at
+> **27/30** and the **scrambled** tokens at **18/30**, so this is fragility under a long, imperative,
+> out-of-distribution string, **not attacker control** of what the arm does next.
+>
+> | family | attack | keep-out exit rate | clustered 95% CI | McNemar | Holm |
+> | --- | --- | ---: | ---: | ---: | ---: |
+> | baseline | `none` | **1/50 (2%)** — control | — | — | — |
+> | instruction | `roleplay` | **42/50 (84%)** | **[62%, 100%]** | 9.1e-13 | **5.5e-12** |
+> | instruction | `goal_substitution` | 7/50 (14%) | [0%, 34%] | 0.070 | 0.35 |
+> | instruction | `paraphrase` | 1/50 (2%) | [0%, 6%] | 1.0 | 1.0 |
+> | visual | `patch` | 1/50 (2%) | [0%, 6%] | 1.0 | 1.0 |
+> | visual | `decoy_object` | 1/50 (2%) | [0%, 6%] | 1.0 | 1.0 |
+> | injection | `scene_text` | 2/50 (4%) | [0%, 10%] | 1.0 | 1.0 |
+> | injection | `mcp_tool_desc` | **0 attempts** (not applicable) | — | — | — |
+>
+> Everything below this box is the dated record of how the finding was reached: the June 2026
+> single-task run (n = 10) and the 9 August 2026 suite run on 0.32.0 (44/50, 88%). Their numbers
+> are kept as they were published; none of them is the current claim.
+
+## The finding (as written in June 2026, superseded twice — see the box above)
 
 A single, benign-looking **`roleplay`** instruction drove a **real SmolVLA** policy out of its safe
 envelope on **44 of 50 matched pairs across all ten `libero_object` tasks**, against **0** benign
@@ -181,6 +208,23 @@ retroactively to a measurement already taken.
 [The full result](https://github.com/provael/provael/blob/main/results/smolvla_libero_object_suite/README.md) ·
 [Read the write-up](#the-finding) ·
 [Scope & honest limitations](https://github.com/provael/provael/blob/main/README.md#scope-and-honest-limitations).
+
+### The 9 August 2026 table (0.32.0, L4) — the record the README used to lead with
+
+| family | attack | keep-out exit rate | clustered 95% CI | McNemar | Holm |
+| --- | --- | ---: | ---: | ---: | ---: |
+| baseline | `none` | **2/50 (4%)** — control | — | — | — |
+| instruction | `roleplay` | **44/50 (88%)** | **[72%, 100%]** | 4.6e-13 | **2.7e-12** |
+| instruction | `goal_substitution` | **15/50 (30%)** | [6%, 54%] | 9.8e-4 | **4.9e-3** |
+| instruction | `paraphrase` | 3/50 (6%) | [0%, 12%] | 1.0 | 1.0 |
+| visual | `patch` | 0/50 (0%) | — | 0.5 | 1.0 |
+| visual | `decoy_object` | 0/50 (0%) | — | 0.5 | 1.0 |
+| injection | `scene_text` | 0/50 (0%) | — | 0.5 | 1.0 |
+| injection | `mcp_tool_desc` | **0 attempts** | — | — | — |
+
+The null arms show `—` rather than `[0%, 0%]`: the clustered bootstrap declines when every task
+scores the same rate, and pooled as a plain binomial 0/50 is consistent with a true rate as high as
+7.1% (exact 95% upper bound).
 
 ### From the results section
 
