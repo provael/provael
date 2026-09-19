@@ -229,6 +229,76 @@ def test_cli_report_baseline_gates_the_protocols_critical_attacks(tmp_path: Path
 
 
 # --------------------------------------------------------------------------------------------
+# like-for-like, or say why not (R09)
+# --------------------------------------------------------------------------------------------
+
+
+def _calibrated(report: RunReport, **meta: object) -> RunReport:
+    from provael.types import CalibrationMeta
+
+    base = {"predicate": "calibrated", "kind": "scalar", "target_fpr": 0.05, "holdout_fpr": 0.0,
+            "n_benign": 20}
+    base.update(meta)
+    return report.model_copy(
+        update={"calibrated": True, "calibration": {"reach": CalibrationMeta(**base)}}  # type: ignore[arg-type]
+    )
+
+
+def test_a_changed_calibration_is_incomparable_even_with_the_same_flag() -> None:
+    """The calibrated boolean matched on both sides; the predicate behind it did not."""
+    baseline = _calibrated(_report(2, 30), target_fpr=0.05)
+    candidate = _calibrated(_report(27, 30), target_fpr=0.10)
+    diff = diff_reports(candidate, baseline)
+    assert any("predicate identity differs" in reason for reason in diff.incomparable)
+    assert "NOT LIKE-FOR-LIKE" in to_markdown(diff)
+    same = diff_reports(_calibrated(_report(27, 30)), _calibrated(_report(2, 30)))
+    assert not any("predicate identity" in r for r in same.incomparable)
+
+
+def test_a_checkpoint_only_change_compares_and_is_on_the_record() -> None:
+    from provael.types import ActionUnnormaliser, ControllerConvention, DeployedPolicy
+
+    unnorm = ActionUnnormaliser(mode="MEAN_STD", source="lerobot-postprocessor", stats_digest="abc")
+    convention = ControllerConvention(action_dim=7, pipeline=["clip"])
+
+    def deployed(checkpoint: str, revision: str) -> DeployedPolicy:
+        return DeployedPolicy.build(
+            adapter="smolvla", policy_class="SmolVLAPolicy", checkpoint=checkpoint,
+            checkpoint_revision=revision, action_unnormaliser=unnorm,
+            controller_convention=convention,
+        )
+
+    baseline = _report(2, 30).model_copy(
+        update={"model": "org/ckpt-v1", "deployed_policy": deployed("org/ckpt-v1", "aaa")}
+    )
+    candidate = _report(27, 30).model_copy(
+        update={"model": "org/ckpt-v2", "deployed_policy": deployed("org/ckpt-v2", "bbb")}
+    )
+    diff = diff_reports(candidate, baseline)
+    assert diff.incomparable == []  # same suite, horizon, tasks, predicate, action pipeline
+    assert any(c.startswith("checkpoint:") for c in diff.changed)
+    assert any(c.startswith("resolved checkpoint:") for c in diff.changed)
+    assert diff.regressed is True  # 2/30 -> 27/30 is a regression under the same protocol
+    md = to_markdown(diff)
+    assert "What changed between the runs" in md and "Next investigation" in md
+
+
+def test_a_different_action_pipeline_is_incomparable() -> None:
+    from provael.types import ActionUnnormaliser, DeployedPolicy
+
+    def deployed(mode: str) -> DeployedPolicy:
+        return DeployedPolicy.build(
+            adapter="smolvla", checkpoint="org/ckpt",
+            action_unnormaliser=ActionUnnormaliser(mode=mode, source="lerobot-postprocessor"),
+        )
+
+    baseline = _report(2, 30).model_copy(update={"deployed_policy": deployed("MEAN_STD")})
+    candidate = _report(27, 30).model_copy(update={"deployed_policy": deployed("MIN_MAX")})
+    diff = diff_reports(candidate, baseline)
+    assert any("action unnormaliser differs" in r for r in diff.incomparable)
+
+
+# --------------------------------------------------------------------------------------------
 # the signed regression attestation
 # --------------------------------------------------------------------------------------------
 

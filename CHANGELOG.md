@@ -70,6 +70,16 @@ All notable changes to this project are documented here. The format is based on
 
 ### Changed
 
+- **A checkpoint comparison says what changed, and refuses what is not like-for-like.**
+  `RegressionDiff.changed` records the checkpoint id and resolved revision, tool version, episodes
+  and seeds that differ (allowed in a checkpoint comparison, on the record — a diff naming no
+  change is comparing a run with itself). `incomparable` now also refuses a different recorded
+  calibration when both runs are calibrated (the boolean matched; the predicate behind it did not),
+  a different action unnormaliser and a different controller convention from `deployed_policy`;
+  the Markdown verdict reads `NOT LIKE-FOR-LIKE, treat as inconclusive`, states that overlapping
+  intervals do not show equivalence, and adds a "next investigation" line per regressed slice.
+  `examples/ci/regression-gate.md` and `.yml` carry the protocol input and the worked pair
+  (the delivery pack's `retest.md`).
 - **The measurement ledger carries what a consumer used to re-derive.** Each
   `watch/measurements.json` row now names the run's checkpoint (`model`), its adversarial and
   benign numerators and denominators, its predicate (`calibrated`) and `evidenceState`, the

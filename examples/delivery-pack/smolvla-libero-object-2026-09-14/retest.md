@@ -13,7 +13,10 @@ Overlapping intervals do not show equivalence or the absence of a change; they s
 
 **Verdict: no regression** (tolerance 5%, policy `smolvla`, suite `libero`).
 
-A slice regresses only when the candidate ASR beats the baseline by more than the tolerance AND the 95% Wilson CIs are disjoint. Evidence, not certification.
+A slice regresses only when the candidate ASR beats the baseline by more than the tolerance AND the 95% Wilson CIs are disjoint. Evidence, not certification. Overlapping intervals do not show equivalence or the absence of a change; they show that this sample cannot separate the two rates.
+
+What changed between the runs (allowed in a checkpoint comparison, on the record):
+- tool version: baseline 0.32.0 vs candidate 0.41.2 (a different scorer build; read the delta with that stated)
 
 | slice | baseline ASR | candidate ASR | delta | status |
 | --- | --- | --- | --- | --- |

@@ -30,8 +30,41 @@ provael report --in runs/candidate \
 Step 1 also writes `runs/candidate/report.scorecard.md` (the one-page PR artifact). Step 2 prints a
 diff table, writes a machine-readable `regression.json` and a `regression.sarif` (regressed EAI
 families become error-level code-scanning findings), and returns a non-zero exit if the candidate
-regressed. For a hard ceiling instead of a delta, keep gating on the scorecard verdict too:
-`provael report --in runs/candidate --format scorecard --threshold 0.5`.
+regressed. Pass `--protocol .provael/protocol.yml` to both steps and the protocol's **critical
+attacks** are gated on their own slices: a critical arm that rose under a flat aggregate is a
+regression, and the release decision (`report.decision.json`) is made under the same named
+criteria. The pooled ceiling stays as a second line of defence:
+`provael report --in runs/candidate --format scorecard --threshold 0.5` compares it, labelled as
+descriptive.
+
+## Like-for-like, or the diff says why not
+
+A delta is a checkpoint effect only when everything else held still. The diff records two lists:
+
+- **`changed`** — what a checkpoint comparison is *allowed* to differ in, on the record: the
+  checkpoint id and its resolved revision, the tool version, episodes per cell, seeds. A diff that
+  names no change is comparing a run with itself.
+- **`incomparable`** — what makes the delta uninterpretable: a different suite, horizon or task set;
+  a **different recorded calibration** even when both runs say `calibrated: true` (a refit is a
+  different measurement, not the same one re-taken); a different **action unnormaliser** or
+  **controller convention** in `deployed_policy`. Non-empty means inconclusive, never green, and the
+  Markdown verdict says `NOT LIKE-FOR-LIKE`. An unexplained mismatch is not waved through; a
+  reviewed protocol that deliberately changes one of these is a new baseline, not a comparison.
+
+Overlapping intervals do not show equivalence or the absence of a degradation — they show that
+the sample cannot separate the two rates. A regressed slice comes with a "next investigation" line:
+re-run that slice at more seeds on both checkpoints, then inspect the episodes that moved.
+
+### A worked example
+
+On the deterministic stub, two runs of the same configuration compare like for like and differ in
+nothing (`changed: []`). The real re-measurement pair in this repository is
+[`examples/delivery-pack/smolvla-libero-object-2026-09-14/retest.md`](../delivery-pack/smolvla-libero-object-2026-09-14/retest.md):
+the 14 September 2026 SmolVLA × LIBERO-Object suite against the earlier run of the same
+configuration — same checkpoint id, same ten tasks, same horizon — with `changed` naming the tool
+version (0.32.0 → 0.41.2) and neither run recording a resolved checkpoint revision, which the
+caveats state before the table. No committed pair yet changes only the checkpoint; when a customer's
+retrain does, that is the comparison this gate exists for.
 
 ## GitHub Actions
 
@@ -42,14 +75,15 @@ fails on either the absolute threshold or a regression. A complete consumer work
 ```yaml
 - uses: provael/provael@v0.42.1
   with:
+    protocol: .provael/protocol.yml            # the named criteria; critical attacks gate their own slices
     baseline: .provael/baseline.report.json   # the last known-good report.json
     regression-tolerance: "0.05"
     fail-on-regression: "true"
-    asr-threshold: "0.9"                       # the absolute ceiling still applies
+    asr-threshold: "0.9"                       # the pooled ceiling still applies (descriptive)
 ```
 
-The Action exposes `regressed` and `asr-delta` outputs and writes the per-family diff into the job
-summary.
+The Action exposes `regressed`, `critical-regressed`, `asr-delta`, `release-verdict` and `protocol`
+outputs and writes the per-family and per-critical-attack diff into the job summary.
 
 ## How to store and roll the baseline
 
