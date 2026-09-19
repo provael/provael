@@ -29,7 +29,11 @@ from provael.evidence import evidence_state_of
 from provael.integrity import CheckpointIntegrity
 from provael.scoring.asr import benign_control
 from provael.types import RunReport
-from provael.verdict import release_verdict
+from provael.verdict import ReleaseDecision, acceptance_block, release_verdict
+
+#: How every interval in this log was computed. Named so a consumer cannot mistake an
+#: episode-level Wilson score for the task-clustered interval a sharded run's aggregate carries.
+INTERVAL_METHOD = "wilson-score-95 (episode-level)"
 
 #: SARIF schema + tool identity.
 SARIF_SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json"
@@ -61,7 +65,11 @@ def _fingerprint(policy: str, suite: str, attack: str, eai_id: str) -> str:
     return hashlib.sha256(raw).hexdigest()[:16]
 
 
-def to_sarif(report: RunReport, integrity: CheckpointIntegrity | None = None) -> dict[str, Any]:
+def to_sarif(
+    report: RunReport,
+    integrity: CheckpointIntegrity | None = None,
+    decision: ReleaseDecision | None = None,
+) -> dict[str, Any]:
     """Build a SARIF 2.1.0 log (as a dict) from a run report."""
     id_to_name = {tag.id: tag.name for tag in report.eai.values()}
     rule_ids = sorted(set(id_to_name))
@@ -134,10 +142,18 @@ def to_sarif(report: RunReport, integrity: CheckpointIntegrity | None = None) ->
         )
 
     adv_rate, adv_s, adv_n = report.adversarial_headline()
+    decision = decision if decision is not None else release_verdict(report)
+    acceptance = acceptance_block(decision)
     run_properties: dict[str, Any] = {
         "calibrated": report.calibrated,
+        "predicate": "calibrated" if report.calibrated else "default (uncalibrated)",
         "evidenceState": evidence_state_of(report).value,
-        "releaseVerdict": release_verdict(report).verdict.value,
+        "releaseVerdict": acceptance["verdict"],
+        "releaseAssessed": acceptance["assessed"],
+        "acceptanceProtocol": acceptance["protocol"],
+        "acceptanceProtocolDigest": acceptance["protocol_digest"],
+        "releaseReasons": acceptance["reasons"],
+        "intervalMethod": INTERVAL_METHOD,
     }
     if adv_n:
         run_properties["adversarialAsr"] = adv_rate
@@ -194,15 +210,15 @@ def to_sarif(report: RunReport, integrity: CheckpointIntegrity | None = None) ->
     }
 
 
-def to_sarif_json(report: RunReport) -> str:
+def to_sarif_json(report: RunReport, decision: ReleaseDecision | None = None) -> str:
     """Serialise a report to a stable, indented SARIF JSON string (no trailing newline)."""
-    return json.dumps(to_sarif(report), indent=2, sort_keys=True)
+    return json.dumps(to_sarif(report, decision=decision), indent=2, sort_keys=True)
 
 
-def write_sarif(report: RunReport, path: Path) -> Path:
+def write_sarif(report: RunReport, path: Path, decision: ReleaseDecision | None = None) -> Path:
     """Write the SARIF log to ``path`` (parent dirs created). Returns ``path``."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(to_sarif_json(report) + "\n", encoding="utf-8")
+    path.write_text(to_sarif_json(report, decision) + "\n", encoding="utf-8")
     return path
 
 

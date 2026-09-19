@@ -829,10 +829,11 @@ are recorded in `report.json`, `report.md`, the CLI table, and the SARIF output.
 
 ## Compliance evidence
 
-Turn a run into an **auditor-readable evidence artifact** — it maps the measured signals
-(calibrated redirection rate + 95% CI, the benign-FPR control, the EAI risks covered, the
-calibration metadata) onto **EU AI Act** (Art. 9 / 15 / 72), **ISO 10218-1/-2:2025** (cyber),
-**NIST AI 100-2 / AI RMF**, and **IEC 62443**:
+Turn a run into an **auditor-readable evidence artifact** — it maps the measured signals (the
+redirection rate + 95% CI under the run's predicate, which every row names; the benign-FPR
+control; the EAI risks covered; the calibration metadata where a calibration ran; the release
+decision under its named protocol) onto **EU AI Act** (Art. 9 / 15 / 72), **ISO 10218-1/-2:2025**
+(cyber), **NIST AI 100-2 / AI RMF**, and **IEC 62443**:
 
 ```bash
 uv run provael report --in runs/calib --format compliance --out report.compliance.json  # evidence JSON

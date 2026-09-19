@@ -294,7 +294,12 @@ def _hardware_string() -> str | None:
 
 
 def _emit_execution_manifest(
-    report: RunReport, out_dir: Path, *, elapsed: float, defense: str | None = None
+    report: RunReport,
+    out_dir: Path,
+    *,
+    elapsed: float,
+    defense: str | None = None,
+    decision: ReleaseDecision | None = None,
 ) -> None:
     """Write execution-manifest.json (runtime provenance) beside the deterministic report.json.
 
@@ -329,6 +334,7 @@ def _emit_execution_manifest(
         started_at=start.strftime(fmt),
         ended_at=end.strftime(fmt),
         env=dict(os.environ),
+        decision=decision,
     )
     # Name from provael.watch, not a literal: the freshness badge reads this exact file, and a
     # drift between the two halves makes every future measurement invisible to it.

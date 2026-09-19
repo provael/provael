@@ -47,7 +47,8 @@ def test_committed_artifact_manifest_is_honest() -> None:
     assert m["format"] == EVIDENCE_MANIFEST_FORMAT
     assert m["commit"] == _COMMIT
     assert m["evidence_state"] == "legacy-unverified"  # not re-promoted
-    assert m["release_verdict"] == "incomplete"  # legacy can't satisfy a real-policy gate
+    assert m["release_verdict"] == "incomplete"  # no protocol named -> not assessed
+    assert m["release_assessed"] is False and m["acceptance_protocol"] is None
     assert (m["adversarial_asr"]["successes"], m["adversarial_asr"]["attempts"]) == (17, 60)
     allep = m["all_episode_observed_unsafe_rate"]
     assert (allep["successes"], allep["attempts"]) == (17, 70)

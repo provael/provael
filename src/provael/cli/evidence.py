@@ -28,7 +28,17 @@ from provael.calibration import (
     load_calibrations,
     wilson_ci,
 )
-from provael.cli._shared import _err, _fail, _git_commit, _out, _split_csv, app
+from provael.cli._shared import (
+    _decide,
+    _decision_for,
+    _err,
+    _fail,
+    _git_commit,
+    _load_protocol,
+    _out,
+    _split_csv,
+    app,
+)
 from provael.compliance import write_compliance_markdown
 from provael.config import RunConfig
 from provael.manifest import to_evidence_manifest_json
@@ -57,6 +67,15 @@ def evidence_manifest(
     out: Annotated[
         Path, typer.Option("--out", help="Output path for the manifest JSON.")
     ] = Path("artifacts/public-evidence-manifest.json"),
+    protocol: Annotated[
+        Path | None,
+        typer.Option(
+            "--protocol",
+            help="Acceptance protocol (YAML/JSON) the manifest's release decision is made against. "
+            "Without it the run's report.decision.json is used when present, else the manifest "
+            "says the run was not assessed.",
+        ),
+    ] = None,
 ) -> None:
     """Build the deterministic public evidence manifest a website can consume.
 
@@ -97,10 +116,11 @@ def evidence_manifest(
         except (FileNotFoundError, ValidationError):
             _fail(f"{in_dir} contains neither a report.json nor */report.json shards")
             return
+    decision = _decision_for(in_dir, report, protocol)
     try:
         text = to_evidence_manifest_json(
             report, repository=repo, commit=commit, regulatory_clock_version=RULESET_VERSION,
-            source_reports=source_reports,
+            source_reports=source_reports, decision=decision,
         )
     except ValueError as exc:
         _fail(str(exc))
@@ -180,6 +200,15 @@ def attest(
     out: Annotated[
         Path, typer.Option(help="Output directory for the bundle.")
     ] = Path("runs/attest"),
+    protocol: Annotated[
+        Path | None,
+        typer.Option(
+            "--protocol",
+            help="Acceptance protocol (YAML/JSON) the attested release decision is made against. "
+            "Without it a prior run's report.decision.json is used when present, else the bundle "
+            "states the run was not assessed.",
+        ),
+    ] = None,
 ) -> None:
     """Issue (or verify) a signed, dated, standards-crosswalked ASR evidence bundle.
 
@@ -250,7 +279,9 @@ def attest(
         except ValidationError:
             _fail(f"{in_dir} does not contain a valid Provael report.json")
             return
+        decision = _decision_for(in_dir, report, protocol)
     else:
+        acceptance = _load_protocol(protocol)
         calibrations = load_calibrations(calib, policy, suite) if calib is not None else None
         try:
             config = RunConfig(
@@ -264,7 +295,8 @@ def attest(
         except KeyError as exc:
             _fail(str(exc).strip('"'))
             return
-        write_report(report, out)
+        decision = _decide(report, acceptance)
+        write_report(report, out, decision)
 
     issued_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     stamp = commit or _git_commit() or f"v{__version__}"
@@ -278,14 +310,15 @@ def attest(
         bundle, pub_pem = to_bundle(
             report, issued_at=issued_at, commit=stamp,
             private_key_pem=private_key_pem, sign=not no_sign, assurance=assurance,
+            decision=decision,
         )
     except MissingAttestExtraError as exc:
         _fail(str(exc))
         return
 
     bundle_path = write_bundle(bundle, out / ATTESTATION_JSON)
-    # The human-readable evidence travels with the bundle.
-    write_compliance_markdown(report, out / "report.compliance.md")
+    # The human-readable evidence travels with the bundle, under the same decision.
+    write_compliance_markdown(report, out / "report.compliance.md", decision)
     pub_path: Path | None = None
     if pub_pem is not None and key is None:
         # Ephemeral key: publish the public half so the bundle stays offline-verifiable.

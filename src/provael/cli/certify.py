@@ -12,7 +12,17 @@ from pydantic import ValidationError
 from provael import __version__
 from provael.calibration import load_calibrations
 from provael.certify import CertifyProfile, write_dossier
-from provael.cli._shared import _err, _fail, _git_commit, _out, _split_csv, app
+from provael.cli._shared import (
+    _decide,
+    _decision_for,
+    _err,
+    _fail,
+    _git_commit,
+    _load_protocol,
+    _out,
+    _split_csv,
+    app,
+)
 from provael.config import RunConfig
 from provael.defenses.measure import MitigationReport
 from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
@@ -73,6 +83,15 @@ def certify(
             "measure and its measured effect. Omit and the dossier says so explicitly.",
         ),
     ] = None,
+    protocol: Annotated[
+        Path | None,
+        typer.Option(
+            "--protocol",
+            help="Acceptance protocol (YAML/JSON) the dossier's release decision is made against. "
+            "Without it a prior run's report.decision.json is used when present, else the "
+            "dossier states the run was not assessed.",
+        ),
+    ] = None,
 ) -> None:
     """Emit a Machinery Regulation conformity-assessment evidence dossier (JSON + OSCAL + HTML).
 
@@ -90,7 +109,9 @@ def certify(
         except ValidationError:
             _fail(f"{in_dir} does not contain a valid Provael report.json")
             return
+        decision = _decision_for(in_dir, report, protocol)
     else:
+        acceptance = _load_protocol(protocol)
         calibrations = load_calibrations(calib, policy, suite) if calib is not None else None
         try:
             config = RunConfig(
@@ -104,7 +125,8 @@ def certify(
         except KeyError as exc:
             _fail(str(exc).strip('"'))
             return
-        write_report(report, out)
+        decision = _decide(report, acceptance)
+        write_report(report, out, decision)
 
     component: ComponentProfile | None = None
     if component_metadata is not None:
@@ -139,7 +161,7 @@ def certify(
     stamp = commit or _git_commit() or f"v{__version__}"
     paths = write_dossier(
         report, out, profile=profile, issued_at=issued_at, commit=stamp, component=component,
-        include_crosswalk=include_crosswalk, mitigation=mitigation_report,
+        include_crosswalk=include_crosswalk, mitigation=mitigation_report, decision=decision,
     )
 
     render_summary(report, _out)

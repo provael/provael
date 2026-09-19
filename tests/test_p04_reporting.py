@@ -179,7 +179,7 @@ def test_report_carries_both_intervals_and_seed_provenance() -> None:
     assert report.anytime_ci[0] <= report.ci95[0] + 1e-9
     assert report.anytime_ci[1] >= report.ci95[1] - 1e-9
     md = to_markdown(report)
-    assert "anytime-valid CI" in md and "ASR 95% CI (Wilson)" in md
+    assert "anytime-valid CI" in md and "ASR 95% CI (Wilson, episode-level)" in md
 
 
 def test_fewer_than_five_seeds_is_preliminary() -> None:

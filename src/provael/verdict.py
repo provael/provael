@@ -35,7 +35,7 @@ import json
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
@@ -519,6 +519,29 @@ def release_verdict(
     )
 
 
+def acceptance_block(decision: ReleaseDecision) -> dict[str, Any]:
+    """The decision as every machine-readable emitter carries it, under one set of keys.
+
+    The evidence manifest, the SARIF run properties, the OSCAL props, the compliance report and the
+    attestation statement all render this same block, so a reader comparing two artifacts of one
+    run finds the verdict, the protocol and the reasons under the same names in each.
+    """
+    return {
+        "verdict": decision.verdict.value,
+        "assessed": decision.assessed,
+        "protocol": decision.protocol,
+        "protocol_digest": decision.protocol_digest,
+        "reasons": list(decision.reasons),
+    }
+
+
+def acceptance_line(decision: ReleaseDecision) -> str:
+    """One human-readable line naming the protocol behind a verdict (or that there is none)."""
+    if not decision.assessed:
+        return "no acceptance protocol named — not assessed"
+    return f"protocol `{decision.protocol}` ({decision.protocol_digest})"
+
+
 #: Filename of the decision sidecar `provael attack --protocol` writes beside `report.json`.
 DECISION_JSON = "report.decision.json"
 
@@ -551,6 +574,8 @@ def load_decision(run_dir: Path) -> ReleaseDecision | None:
 
 __all__ = [
     "AcceptanceProtocol",
+    "acceptance_block",
+    "acceptance_line",
     "ConditionalException",
     "Criterion",
     "DECISION_JSON",

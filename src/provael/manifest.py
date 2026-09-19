@@ -3,10 +3,20 @@
 ``build_evidence_manifest`` is a pure function of a :class:`~provael.types.RunReport` plus a
 **pinned** repository + commit. It restates the exact metric semantics (adversarial ASR vs the
 all-episode observed rate vs the benign control), the per-attack results with Wilson intervals and
-applicability (N/A stays N/A, never a fabricated 0), the evidence-ladder state, the verdict, and the
-limitations — and it never claims hardware / calibration / external reproduction the report has not
-earned. It carries no wall-clock (the commit is passed in), so the same report+commit yields
+applicability (N/A stays N/A, never a fabricated 0), the evidence-ladder state, the release decision
+**with the protocol that produced it**, the endpoint and predicate the rates were scored under, and
+the limitations — and it never claims hardware / calibration / external reproduction the report has
+not earned. It carries no wall-clock (the commit is passed in), so the same report+commit yields
 byte-identical bytes.
+
+FORMAT v2 (0.43.0). ``release_verdict`` changed meaning: it used to be a default gate's answer
+(real policy + benign control, no threshold) rendered as a decision, and read ``pass`` on the
+committed task-0 shard with ``roleplay`` at 5/5. It is now the verdict under a named acceptance
+protocol, ``incomplete`` with ``release_assessed: false`` when none was named.
+``acceptance_protocol`` says which, ``release_reasons`` say why, ``endpoint`` and ``predicate`` say
+what was scored, and ``interval_method`` names the interval every ``wilson_ci95`` here is — an
+episode-level Wilson score, which is not the task-clustered interval a sharded run's
+``aggregate.json`` carries.
 """
 
 from __future__ import annotations
@@ -16,6 +26,7 @@ from typing import Any
 
 from provael.calibration import wilson_ci
 from provael.eai import CATALOG, all_ids, coverage_counts, coverage_headline
+from provael.endpoints import ENDPOINT_DEFINITIONS, ENDPOINT_ORACLES, UNSAFE_ENVELOPE
 from provael.evidence import evidence_state_of
 from provael.scoring.asr import (
     BASELINE_FAMILY,
@@ -24,10 +35,14 @@ from provael.scoring.asr import (
     benign_unsafe_rate,
 )
 from provael.types import RunReport
-from provael.verdict import release_verdict
+from provael.verdict import ReleaseDecision, acceptance_block, release_verdict
 
-#: Public evidence-manifest format id.
-EVIDENCE_MANIFEST_FORMAT = "provael-evidence-manifest/v1"
+#: Public evidence-manifest format id. v2: the release decision carries its protocol (see the
+#: module docstring); v1 consumers reading `release_verdict` as a default gate's answer must not.
+EVIDENCE_MANIFEST_FORMAT = "provael-evidence-manifest/v2"
+
+#: How every interval in this manifest was computed.
+INTERVAL_METHOD = "wilson-score-95 (episode-level)"
 
 
 def _registry_counts() -> dict[str, int]:
@@ -104,6 +119,12 @@ def _per_attack(report: RunReport) -> list[dict[str, Any]]:
     return rows
 
 
+def _ran_instruction_family(report: RunReport) -> bool:
+    """Whether an instruction-channel arm ran, so its framing limitation is stated only then."""
+    families = {r.family for r in report.results}
+    return bool(families & {"instruction", "optimized_instruction"})
+
+
 def build_evidence_manifest(
     report: RunReport,
     *,
@@ -111,10 +132,14 @@ def build_evidence_manifest(
     commit: str,
     regulatory_clock_version: str,
     source_reports: list[dict[str, str]] | None = None,
+    decision: ReleaseDecision | None = None,
 ) -> dict[str, Any]:
     """Build the deterministic public evidence manifest. ``commit`` must be a pinned ref.
 
-    ``source_reports`` is for a SHARDED run: a ten-task suite executed one task per container has
+    ``decision`` is the release decision the caller made (under a named protocol, or not
+    assessed); derived here only when the caller passes none, so the manifest can never disagree
+    with the report it describes. ``source_reports`` is for a SHARDED run: a ten-task suite executed
+    one task per container has
     ten independent ``report.json`` files and no single artifact to digest. Pass the per-shard
     ``{path, sha256}`` list and the manifest records all of them, so a consumer can re-fetch and
     verify each shard independently. ``source_report_sha256`` then digests the COMBINED view, which
@@ -130,7 +155,32 @@ def build_evidence_manifest(
     adv = adversarial_asr(report.results)
     allep = all_episode_observed_unsafe_rate(report.results)
     a_lo, a_hi = wilson_ci(adv.successes, adv.attempts) if adv.attempts else (None, None)
-    decision = release_verdict(report)
+    decision = decision if decision is not None else release_verdict(report)
+    acceptance = acceptance_block(decision)
+    predicate = "calibrated" if report.calibrated else "default (uncalibrated)"
+    limitations = [
+        "Simulation only: a redirection/activation in sim is a robustness signal, not a "
+        "real-world exploit; cross-model transfer is claimed only where a real policy ran.",
+        f"Evidence state is '{evidence_state_of(report).value}': no hardware, calibration, or "
+        "external-reproduction claim is made beyond what this state supports.",
+        f"Endpoint is '{UNSAFE_ENVELOPE}' under the {predicate} predicate: an envelope exit, "
+        "which is not task completion, not a calibrated hazard violation unless the predicate is "
+        "calibrated, and not physical-robot evidence.",
+        "The all-episode observed-unsafe rate includes the benign control and is NOT the "
+        "adversarial ASR.",
+        "Not-applicable attacks are N/A (excluded from the denominator), never scored as 0%.",
+        f"Every wilson_ci95 here is a {INTERVAL_METHOD}; a task-clustered interval (a sharded "
+        "run's aggregate.json) is a different estimate and is never substituted for it.",
+        "The release verdict is a statement under the named acceptance protocol, or not assessed "
+        "when none was named; it is not a property of the measurement.",
+    ]
+    if _ran_instruction_family(report):
+        limitations.append(
+            "Instruction-family rates are instruction-induced fragility under an "
+            "out-of-distribution imperative frame — a harmless-variation control separates them "
+            "from attacker control — and are not evidence that an attacker chose where the policy "
+            "went."
+        )
     return {
         "format": EVIDENCE_MANIFEST_FORMAT,
         "tool_version": report.tool_version,
@@ -145,9 +195,24 @@ def build_evidence_manifest(
         **({"shards": len(source_reports)} if source_reports else {}),
         "policy": report.policy,
         "suite": report.suite,
+        "model": report.model,
         "evidence_state": evidence_state_of(report).value,
         "calibrated": report.calibrated,
-        "release_verdict": decision.verdict.value,
+        "predicate": predicate,
+        "endpoint": {
+            "id": UNSAFE_ENVELOPE,
+            "definition": ENDPOINT_DEFINITIONS[UNSAFE_ENVELOPE],
+            "oracle": ENDPOINT_ORACLES[UNSAFE_ENVELOPE],
+        },
+        "release_verdict": acceptance["verdict"],
+        "release_assessed": acceptance["assessed"],
+        "acceptance_protocol": (
+            {"name": acceptance["protocol"], "digest": acceptance["protocol_digest"]}
+            if acceptance["assessed"]
+            else None
+        ),
+        "release_reasons": acceptance["reasons"],
+        "interval_method": INTERVAL_METHOD,
         "registry": _registry_counts(),
         # All ten Top-10 risks with their coverage state. Carried in the manifest — not only in
         # the human-readable report — so a downstream consumer reading this file learns which
@@ -160,6 +225,11 @@ def build_evidence_manifest(
             "all_episode_observed_unsafe_rate": "unsafe rate over ALL applicable episodes (benign "
             "included); diluted below the adversarial ASR — NOT the attack rate.",
             "benign_unsafe_rate": "the benign-control false-positive rate (the ASR's control).",
+            "intervals": f"wilson_ci95 is a {INTERVAL_METHOD}. A sharded run's aggregate.json "
+            "carries a task-clustered interval (whole tasks resampled) under its own name; the two "
+            "are different estimates of different things and are never interchanged.",
+            "release_verdict": "the decision under `acceptance_protocol`; `incomplete` with "
+            "`release_assessed: false` when no protocol was named. Never a default gate.",
         },
         "adversarial_asr": {
             "successes": adv.successes, "attempts": adv.attempts, "rate": adv.measured_rate,
@@ -171,15 +241,7 @@ def build_evidence_manifest(
         "benign_unsafe_rate": benign_unsafe_rate(report.results),
         "per_attack": _per_attack(report),
         "regulatory_clock_version": regulatory_clock_version,
-        "limitations": [
-            "Simulation only: a redirection/activation in sim is a robustness signal, not a "
-            "real-world exploit; cross-model transfer is claimed only where a real policy ran.",
-            f"Evidence state is '{evidence_state_of(report).value}': no hardware, calibration, or "
-            "external-reproduction claim is made beyond what this state supports.",
-            "The all-episode observed-unsafe rate includes the benign control and is NOT the "
-            "adversarial ASR.",
-            "Not-applicable attacks are N/A (excluded from the denominator), never scored as 0%.",
-        ],
+        "limitations": limitations,
     }
 
 
@@ -190,18 +252,20 @@ def to_evidence_manifest_json(
     commit: str,
     regulatory_clock_version: str,
     source_reports: list[dict[str, str]] | None = None,
+    decision: ReleaseDecision | None = None,
 ) -> str:
     """Serialise the manifest to stable, indented JSON (keys sorted; trailing newline)."""
     manifest = build_evidence_manifest(
         report, repository=repository, commit=commit,
         regulatory_clock_version=regulatory_clock_version,
-        source_reports=source_reports,
+        source_reports=source_reports, decision=decision,
     )
     return json.dumps(manifest, indent=2, sort_keys=True) + "\n"
 
 
 __all__ = [
     "EVIDENCE_MANIFEST_FORMAT",
+    "INTERVAL_METHOD",
     "build_evidence_manifest",
     "to_evidence_manifest_json",
 ]

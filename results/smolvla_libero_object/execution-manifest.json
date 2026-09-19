@@ -1,5 +1,6 @@
 {
   "accelerator": null,
+  "acceptance_protocol": null,
   "action_schema_digest": null,
   "attacks": [
     "none",
@@ -26,7 +27,7 @@
   "evidence_state": "legacy-unverified",
   "hardware": null,
   "horizon": 280,
-  "manifest_schema_version": 2,
+  "manifest_schema_version": 3,
   "missing_fields": [
     "python_version",
     "os",

@@ -178,4 +178,5 @@ def test_cli_attest_profile_embeds_assurance(tmp_path: Path) -> None:
     bundle = json.loads((out / "attestation.json").read_text())
     stmt = json.loads(base64.b64decode(bundle["payload"]))
     assert stmt["assurance"]["profile"] == "iso-10218-2"
-    assert stmt["ruleset"] == "provael-attest-ruleset/4"
+    assert stmt["ruleset"] == "provael-attest-ruleset/5"
+    assert stmt["release_verdict"] == "incomplete" and stmt["acceptance_protocol"] is None

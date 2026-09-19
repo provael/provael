@@ -28,7 +28,7 @@ from provael.scoring.safety_cost import (
     unsafe_success_rate,
 )
 from provael.types import ASRStat, RunReport
-from provael.verdict import release_verdict
+from provael.verdict import ReleaseDecision, acceptance_line, release_verdict
 
 REPORT_JSON = "report.json"
 REPORT_MD = "report.md"
@@ -76,8 +76,14 @@ def to_json(report: RunReport) -> str:
     return json.dumps(data, indent=2, sort_keys=True) + "\n"
 
 
-def to_markdown(report: RunReport) -> str:
-    """Render a report as a Markdown document."""
+def to_markdown(report: RunReport, decision: ReleaseDecision | None = None) -> str:
+    """Render a report as a Markdown document.
+
+    ``decision`` is the release decision the caller made (under a named protocol, or not assessed);
+    it is derived here only when the caller has none, so this page, the scorecard, the SARIF and
+    the manifest of one run can never disagree about its verdict.
+    """
+    decision = decision if decision is not None else release_verdict(report)
     lines: list[str] = []
     lines.append("# Provael — VLA Red-Team Report")
     lines.append("")
@@ -103,20 +109,19 @@ def to_markdown(report: RunReport) -> str:
     adv_pct = "N/A" if adv_n == 0 else f"{100.0 * adv_rate:.1f}%"
     adv_ci = wilson_ci(adv_s, adv_n) if adv_n else None
     lines.append(f"| **adversarial ASR** (benign excluded) | **{adv_pct} ({adv_s}/{adv_n})** |")
-    lines.append(f"| adversarial ASR 95% CI (Wilson) | {_fmt_ci(adv_ci)} |")
+    lines.append(f"| adversarial ASR 95% CI (Wilson, episode-level) | {_fmt_ci(adv_ci)} |")
     lines.append(
         f"| all-episode observed-unsafe (benign incl.) | "
         f"{100.0 * report.asr:.1f}% ({report.successes}/{report.attempts}) |"
     )
-    lines.append(f"| all-episode 95% CI (Wilson) | {_fmt_ci(report.ci95)} |")
+    lines.append(f"| all-episode 95% CI (Wilson, episode-level) | {_fmt_ci(report.ci95)} |")
     lines.append(f"| all-episode anytime-valid CI | {_fmt_ci(report.anytime_ci)} |")
     lines.append(f"| seeds | {report.seeds}{' (preliminary, <5)' if report.preliminary else ''} |")
     lines.append(f"| stochastic | {report.stochastic} |")
     lines.append(f"| ASR std (per-seed) | {100.0 * report.asr_std:.1f}% |")
     lines.append(f"| evidence state | `{evidence_state_of(report).value}` |")
-    lines.append(
-        f"| release verdict (default gate) | **{release_verdict(report).verdict.value}** |"
-    )
+    lines.append(f"| release verdict | **{decision.verdict.value}** |")
+    lines.append(f"| acceptance protocol | {acceptance_line(decision)} |")
     predicate = "calibrated" if report.calibrated else "default (uncalibrated)"
     lines.append(f"| predicate | {predicate} |")
     benign = benign_control(report)
@@ -140,6 +145,13 @@ def to_markdown(report: RunReport) -> str:
         lines.append(f"| matched-benign FPR | {100.0 * report.matched_benign_fpr:.1f}% |")
     if report.succ_but_unsafe is not None:
         lines.append(f"| Succ-But-Unsafe | {100.0 * report.succ_but_unsafe:.1f}% |")
+    lines.append("")
+    reasons = " ".join(r if r.endswith(".") else f"{r}." for r in decision.reasons)
+    lines.append(f"> **Release decision.** {reasons}")
+    lines.append(
+        "> The verdict is a statement about this run under the named protocol; the measurement "
+        "above stands on its own. Intervals are episode-level Wilson scores unless named otherwise."
+    )
     if report.stochastic:
         lines.append("")
         lines.append(
@@ -246,16 +258,19 @@ def to_markdown(report: RunReport) -> str:
     return "\n".join(lines)
 
 
-def write_report(report: RunReport, out_dir: Path) -> tuple[Path, Path]:
+def write_report(
+    report: RunReport, out_dir: Path, decision: ReleaseDecision | None = None
+) -> tuple[Path, Path]:
     """Write ``report.json`` and ``report.md`` into ``out_dir`` (created if needed).
 
-    Returns the ``(json_path, md_path)`` written.
+    Returns the ``(json_path, md_path)`` written. ``decision`` reaches ``report.md`` only —
+    ``report.json`` is the measurement and the attested subject, and carries no decision.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     json_path = out_dir / REPORT_JSON
     md_path = out_dir / REPORT_MD
     json_path.write_text(to_json(report), encoding="utf-8")
-    md_path.write_text(to_markdown(report), encoding="utf-8")
+    md_path.write_text(to_markdown(report, decision), encoding="utf-8")
     return json_path, md_path
 
 

@@ -19,7 +19,7 @@ provael report --in runs/measure --format oscal --out report.oscal.json   # GRC-
 | AI RMF function | What Provael provides |
 | --- | --- |
 | **GOVERN / MAP** | The Embodied AI Security Top-10 (EAI01–10) as the mapped risk context (`report.json#/eai`) |
-| **MEASURE 2.7** (security & resilience) | Calibrated redirection rate + 95% Wilson CI + benign-FPR control — a *measured, controlled* metric, not a vibe |
+| **MEASURE 2.7** (security & resilience) | Redirection rate + 95% Wilson CI + benign-FPR control under a **calibrated** predicate — a *measured, controlled* metric, not a vibe; under the default predicate the compliance export files this row as a gap |
 | **MANAGE** | Re-run per checkpoint; track ASR over time (leaderboard); regression-gate (examples/ci/regression-gate.md) |
 
 Tag findings with **MITRE ATLAS** technique ids and the **NIST AI 100-2e2025** adversarial-ML

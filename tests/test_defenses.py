@@ -424,7 +424,7 @@ def test_cli_attack_with_defense_then_mitigation(tmp_path: Path) -> None:
     assert log.is_file() and log.read_text().strip()
     manifest = json.loads((defended / "execution-manifest.json").read_text())
     assert manifest["defense"] == "instruction_canonicalization"
-    assert manifest["manifest_schema_version"] == 2
+    assert manifest["manifest_schema_version"] == 3
     assert "defense" not in json.loads((defended / "report.json").read_text())
 
     mit = runner.invoke(

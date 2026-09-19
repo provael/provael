@@ -24,7 +24,7 @@ from provael.eai import CATALOG
 from provael.evidence import evidence_state_of, transfer_status_of
 from provael.scoring.asr import benign_control
 from provael.types import ASRStat, RunReport
-from provael.verdict import release_verdict
+from provael.verdict import ReleaseDecision, acceptance_block, release_verdict
 
 #: Filename written into a run's output directory.
 OSCAL_JSON = "report.oscal.json"
@@ -89,6 +89,7 @@ def to_oscal(
     profile_href: str | None = None,
     reviewed_control_ids: list[str] | None = None,
     collected: str | None = None,
+    decision: ReleaseDecision | None = None,
 ) -> dict[str, object]:
     """Build an OSCAL assessment-results object (as a dict).
 
@@ -141,7 +142,8 @@ def to_oscal(
     # D1: the same run-level honesty tier the compliance export and attestation carry, so an OSCAL
     # consumer cannot misread stub scaffolding as a conformity-relevant real-transfer measurement.
     transfer_status = transfer_status_of(report)
-    decision = release_verdict(report)
+    decision = decision if decision is not None else release_verdict(report)
+    acceptance = acceptance_block(decision)
     # `target` is required by the schema (finding requires uuid/title/description/target), and
     # finding-target itself requires type/target-id/status{state}. The state is DERIVED from the
     # run's own release verdict rather than hardcoded: emitting a fixed "satisfied" would publish a
@@ -214,7 +216,16 @@ def to_oscal(
             ),
             {"name": "transfer-status", "value": transfer_status},
             {"name": "evidence-state", "value": evidence_state_of(report).value},
-            {"name": "release-verdict", "value": release_verdict(report).verdict.value},
+            {"name": "release-verdict", "value": str(acceptance["verdict"])},
+            {"name": "release-assessed", "value": str(acceptance["assessed"]).lower()},
+            {"name": "acceptance-protocol", "value": str(acceptance["protocol"] or "none")},
+            {
+                "name": "acceptance-protocol-digest",
+                "value": str(acceptance["protocol_digest"] or "none"),
+            },
+            {"name": "release-reasons", "value": "; ".join(acceptance["reasons"])},
+            {"name": "predicate", "value": "calibrated" if report.calibrated else "default"},
+            {"name": "interval-method", "value": "wilson-score-95 (episode-level)"},
         ],
     }
 
@@ -256,15 +267,15 @@ def to_oscal(
     }
 
 
-def to_oscal_json(report: RunReport) -> str:
+def to_oscal_json(report: RunReport, decision: ReleaseDecision | None = None) -> str:
     """Serialise the OSCAL assessment-results as deterministic JSON."""
-    return json.dumps(to_oscal(report), indent=2, sort_keys=True)
+    return json.dumps(to_oscal(report, decision=decision), indent=2, sort_keys=True)
 
 
-def write_oscal(report: RunReport, path: Path) -> Path:
+def write_oscal(report: RunReport, path: Path, decision: ReleaseDecision | None = None) -> Path:
     """Write the OSCAL JSON to ``path`` and return it."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(to_oscal_json(report), encoding="utf-8")
+    path.write_text(to_oscal_json(report, decision), encoding="utf-8")
     return path
 
 

@@ -66,6 +66,7 @@ from provael.types import (
     ComponentProfile,
     RunReport,
 )
+from provael.verdict import ReleaseDecision
 
 #: Dossier bundle filenames written into the output directory.
 CERTIFY_JSON = "dossier.json"
@@ -473,11 +474,13 @@ def _referenced_artifacts(subject: dict[str, Any]) -> dict[str, Any]:
 
 def _annex_iii_pack(
     report: RunReport, *, issued_at: str, commit: str,
-    mitigation: MitigationReport | None = None,
+    mitigation: MitigationReport | None = None, decision: ReleaseDecision | None = None,
 ) -> dict[str, Any]:
     """The Machinery Annex III EHSR pack (legacy shape — hosted/machinery.py's public contract)."""
     stmt_dict: dict[str, Any] = json.loads(
-        build_statement(report, issued_at=issued_at, commit=commit).model_dump_json()
+        build_statement(
+            report, issued_at=issued_at, commit=commit, decision=decision
+        ).model_dump_json()
     )
     tier = _run_transfer_tier(report)
     return {
@@ -634,10 +637,13 @@ def _risk_reduction_measures(mitigation: MitigationReport | None) -> dict[str, A
 def _annex_i_dossier(
     report: RunReport, *, issued_at: str, commit: str, component: ComponentProfile | None,
     include_crosswalk: bool = False, mitigation: MitigationReport | None = None,
+    decision: ReleaseDecision | None = None,
 ) -> dict[str, Any]:
     """The Annex I Part A conformity-assessment evidence dossier (the rich shape)."""
     stmt_dict: dict[str, Any] = json.loads(
-        build_statement(report, issued_at=issued_at, commit=commit).model_dump_json()
+        build_statement(
+            report, issued_at=issued_at, commit=commit, decision=decision
+        ).model_dump_json()
     )
     tier = _run_transfer_tier(report)
     family_rows = _family_evidence_rows(report)
@@ -694,6 +700,7 @@ def build_dossier(
     component: ComponentProfile | None = None,
     include_crosswalk: bool = False,
     mitigation: MitigationReport | None = None,
+    decision: ReleaseDecision | None = None,
 ) -> dict[str, Any]:
     """Build the conformity-evidence dossier for ``profile`` (pure — no clock, no random).
 
@@ -706,12 +713,16 @@ def build_dossier(
         include_crosswalk: append the EAI ↔ RoboJailBench crosswalk appendix (Annex I only).
         mitigation: the measured protective measure for this run, or None. Either way the dossier
             carries a ``risk_reduction_measures`` section — absent would read as covered.
+        decision: the release decision under a named protocol, or None for not assessed. It is
+            the one embedded in the attestation statement, so the dossier carries no second one.
     """
     if profile is CertifyProfile.annex_iii:
-        return _annex_iii_pack(report, issued_at=issued_at, commit=commit, mitigation=mitigation)
+        return _annex_iii_pack(
+            report, issued_at=issued_at, commit=commit, mitigation=mitigation, decision=decision
+        )
     return _annex_i_dossier(
         report, issued_at=issued_at, commit=commit, component=component,
-        include_crosswalk=include_crosswalk, mitigation=mitigation,
+        include_crosswalk=include_crosswalk, mitigation=mitigation, decision=decision,
     )
 
 
@@ -722,7 +733,7 @@ def to_dossier_json(dossier: dict[str, Any]) -> str:
 
 def to_dossier_oscal_json(
     report: RunReport, *, profile: CertifyProfile, issued_at: str | None = None,
-    mitigation: MitigationReport | None = None,
+    mitigation: MitigationReport | None = None, decision: ReleaseDecision | None = None,
 ) -> str:
     """The dossier's OSCAL twin — assessment-results bound to the crosswalk clauses under review.
 
@@ -739,6 +750,7 @@ def to_dossier_oscal_json(
         profile_href=_PROFILE_HREF[profile.value],
         reviewed_control_ids=[_slug(key) for key in MACHINERY_CROSSWALK_KEYS],
         collected=issued_at,
+        decision=decision,
     )
     rrm = _risk_reduction_measures(mitigation)
     # OSCAL nests the body under "assessment-results"; fall back to the root for any shape that
@@ -1044,18 +1056,22 @@ def write_dossier(
     component: ComponentProfile | None = None,
     include_crosswalk: bool = False,
     mitigation: MitigationReport | None = None,
+    decision: ReleaseDecision | None = None,
 ) -> dict[str, Path]:
     """Write the dossier bundle (JSON + OSCAL + HTML) into ``out_dir``; return the paths."""
     out_dir.mkdir(parents=True, exist_ok=True)
     dossier = build_dossier(
         report, profile=profile, issued_at=issued_at, commit=commit, component=component,
-        include_crosswalk=include_crosswalk, mitigation=mitigation,
+        include_crosswalk=include_crosswalk, mitigation=mitigation, decision=decision,
     )
     json_path = out_dir / CERTIFY_JSON
     json_path.write_text(to_dossier_json(dossier) + "\n", encoding="utf-8")
     oscal_path = out_dir / CERTIFY_OSCAL_JSON
     oscal_path.write_text(
-        to_dossier_oscal_json(report, profile=profile, issued_at=issued_at, mitigation=mitigation)
+        to_dossier_oscal_json(
+            report, profile=profile, issued_at=issued_at, mitigation=mitigation,
+            decision=decision,
+        )
         + "\n",
         encoding="utf-8",
     )

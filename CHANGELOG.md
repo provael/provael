@@ -42,6 +42,38 @@ All notable changes to this project are documented here. The format is based on
   `provael report` take `--protocol`; the Action gains `protocol` and `release-mode` inputs and
   `release-verdict`, `protocol`, `critical-regressed` outputs — `fail` fails the job always,
   `incomplete` or no protocol fails it in release mode, and the annotation names the slice.
+- **Every export renders the one decision the command made, and says what it measured.**
+  `to_markdown`, `to_sarif`, `to_oscal`, `build_evidence_manifest`, `build_statement`/`to_bundle`,
+  `build_execution_manifest`, `to_test_report_markdown`, `to_compliance*` and the `certify`
+  dossier builders take `decision=`; the CLI decides once per command (`--protocol` on `attack`,
+  `report`, `evidence-manifest`, `attest`, `certify`; a run's `report.decision.json` otherwise)
+  and none of them computes its own. Each carries the verdict, whether it was assessed, the
+  protocol's name and digest, and the reasons, under the same keys (`verdict.acceptance_block`).
+  The evidence manifest is **format v2**: `release_verdict` changed meaning (the decision under
+  `acceptance_protocol`, `incomplete` with `release_assessed: false` when none was named — never a
+  default gate's answer); it adds `model`, `predicate`, `endpoint` (`unsafe_envelope`, which is an
+  envelope exit — not task completion, not a calibrated hazard violation unless the predicate is
+  calibrated, not physical-robot evidence), `interval_method` and a `metric_semantics.intervals`
+  line: every `wilson_ci95` is an episode-level Wilson score, and a sharded run's task-clustered
+  interval is a different estimate kept under its own name. Report, scorecard and test-report
+  interval columns say "Wilson (episode)". The attestation ruleset is `/5` (`acceptance_protocol`
+  and its digest in the statement) and the execution manifest schema is `3`
+  (`acceptance_protocol`). Instruction-family rates are described everywhere as
+  instruction-induced fragility under an out-of-distribution imperative frame, not attacker
+  control. The two committed legacy derivatives under `results/smolvla_libero_object/` (the
+  evidence manifest, the execution manifest and the insurer sample, all regenerated from the same
+  inputs by their drift-guard tests) are refreshed; the measurement they describe is unchanged.
+- **Compliance rows describe the evidence actually present.** Three `provael_signal` strings read
+  "calibrated redirection rate" whatever the run's predicate was, and Article 15 showed
+  `evidence-present` for the uncalibrated public sample beside a footer saying the run was
+  uncalibrated. Every entry now carries `predicate` (`calibrated` / `default (uncalibrated)`), the
+  signal strings name the rate without presupposing calibration, the Markdown table gains a
+  predicate column and states at the table — not only in the footer — that `evidence-present` is
+  neither legal compliance nor satisfaction of a whole standard, and the report carries an
+  `acceptance` block (verdict, protocol, reasons). N/A rows and the ten-risk table are unchanged.
+  `tests/test_decision_consistency.py` renders the audited task-0 shard through every emitter,
+  under no protocol and under one naming `roleplay` critical, and reads the same verdict,
+  protocol, reasons, denominators and predicate out of each.
 - **The scorecard leads with the protocol's release verdict, not its own.** `--threshold` still
   compares the pooled adversarial ASR, on a line now labelled "Pooled threshold comparison
   (descriptive; not the release decision)"; the release verdict above it is the same

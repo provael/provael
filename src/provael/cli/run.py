@@ -282,15 +282,17 @@ def attack(
         return
     elapsed = time.perf_counter() - started
 
-    json_path, md_path = write_report(report, config.out)
     decision = _decide(report, acceptance)
+    json_path, md_path = write_report(report, config.out, decision)
     if acceptance is not None:
         decision_path = write_decision(decision, config.out)
         _out.print(
             f"Release decision under protocol [cyan]{acceptance.name}[/cyan]: "
             f"[bold]{decision.verdict.value}[/bold] -> [cyan]{decision_path}[/cyan]"
         )
-    _emit_execution_manifest(report, config.out, elapsed=elapsed, defense=config.defense)
+    _emit_execution_manifest(
+        report, config.out, elapsed=elapsed, defense=config.defense, decision=decision
+    )
     if config.defense:
         log_path = _write_defense_log(defense_audit, config.out)
         _out.print(f"Defense [cyan]{config.defense}[/cyan] audit trail -> [cyan]{log_path}[/cyan]")
@@ -299,12 +301,12 @@ def attack(
 
     sarif_target = sarif_out or (config.out / "report.sarif" if fmt is OutputFormat.sarif else None)
     if sarif_target is not None:
-        write_sarif(report, sarif_target)
+        write_sarif(report, sarif_target, decision)
         _out.print(f"Wrote [cyan]{sarif_target}[/cyan]  (SARIF 2.1.0)")
 
     if fmt is OutputFormat.compliance:
         compliance_target = config.out / COMPLIANCE_JSON
-        write_compliance_json(report, compliance_target)
+        write_compliance_json(report, compliance_target, decision)
         _out.print(f"Wrote [cyan]{compliance_target}[/cyan]  (compliance evidence, JSON)")
 
     if fmt is OutputFormat.scorecard:
@@ -312,7 +314,7 @@ def attack(
         _out.print(f"Wrote [cyan]{scorecard_target}[/cyan]  (pre-deployment ASR scorecard)")
 
     if fmt is OutputFormat.oscal:
-        oscal_target = write_oscal(report, config.out / OSCAL_JSON)
+        oscal_target = write_oscal(report, config.out / OSCAL_JSON, decision)
         _out.print(f"Wrote [cyan]{oscal_target}[/cyan]  (OSCAL assessment-results)")
 
     if fmt is OutputFormat.mlbom:

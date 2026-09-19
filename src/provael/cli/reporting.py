@@ -136,19 +136,19 @@ def report(
         return
     if fmt is OutputFormat.sarif:
         if out is not None:
-            write_sarif(loaded, out)
+            write_sarif(loaded, out, decision)
             _out.print(f"Wrote [cyan]{out}[/cyan]  (SARIF 2.1.0)")
         else:
-            print(to_sarif_json(loaded))  # machine-readable SARIF to stdout
+            print(to_sarif_json(loaded, decision))  # machine-readable SARIF to stdout
         return
     if fmt is OutputFormat.compliance:
         if out is None:
-            print(to_compliance_json(loaded))  # machine-readable evidence JSON to stdout
+            print(to_compliance_json(loaded, decision))  # machine-readable evidence JSON
         elif out.suffix.lower() == ".md":
-            write_compliance_markdown(loaded, out)
+            write_compliance_markdown(loaded, out, decision)
             _out.print(f"Wrote [cyan]{out}[/cyan]  (compliance evidence, Markdown)")
         else:
-            write_compliance_json(loaded, out)
+            write_compliance_json(loaded, out, decision)
             _out.print(f"Wrote [cyan]{out}[/cyan]  (compliance evidence, JSON)")
         return
     if fmt is OutputFormat.scorecard:
@@ -160,23 +160,23 @@ def report(
         return
     if fmt is OutputFormat.oscal:
         if out is not None:
-            write_oscal(loaded, out)
+            write_oscal(loaded, out, decision)
             _out.print(f"Wrote [cyan]{out}[/cyan]  (OSCAL assessment-results)")
         else:
-            print(to_oscal_json(loaded))  # machine-readable OSCAL to stdout
+            print(to_oscal_json(loaded, decision))  # machine-readable OSCAL to stdout
         return
     if fmt is OutputFormat.test_report:
         from provael.test_report import load_manifest, to_test_report_markdown, write_test_report
 
         manifest = load_manifest(in_dir)
         if out is not None:
-            write_test_report(loaded, out, manifest)
+            write_test_report(loaded, out, manifest, decision)
             note = "with" if manifest is not None else "WITHOUT"
             _out.print(
                 f"Wrote [cyan]{out}[/cyan]  (clause-7.8-shaped test report, {note} manifest)"
             )
         else:
-            print(to_test_report_markdown(loaded, manifest))
+            print(to_test_report_markdown(loaded, manifest, decision))
         return
     if fmt is OutputFormat.mlbom:
         if out is not None:

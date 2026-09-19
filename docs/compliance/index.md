@@ -36,13 +36,17 @@ framework asks for, and specs the report Provael generates from them.
 
 ## What Provael measures (the evidence it produces)
 
-A calibrated Provael run (`provael calibrate` + `provael attack --calib`) yields:
+A Provael run yields, under whichever predicate it was scored with — the documented default, or
+a calibrated one from `provael calibrate` + `provael attack --calib`; every artifact says which:
 
-- **Calibrated redirection rate** per attack and per **EAI** risk — the rate at which an attack
-  drove the policy out of its *calibrated* safe envelope — with a **95% Wilson CI**.
+- **Redirection rate** per attack and per **EAI** risk — the rate at which an attack drove the
+  policy out of its safe envelope under that predicate — with a **95% Wilson CI** (episode-level;
+  a task-clustered interval, where a sharded run's aggregate carries one, is named as such).
 - **Benign baseline FPR** — the control: the `none` (un-attacked) rate under the *same*
-  predicate, plus the held-out benign false-positive rate the calibration was tuned to
-  (`<= target-fpr`).
+  predicate. A calibrated run adds the benign false-positive rate its threshold was tuned to on a
+  benign tuning split (`<= target-fpr`) — tuning data, not an untouched final evaluation.
+- **The release decision** — under a named acceptance protocol, or `incomplete` / not assessed
+  when none was named. It is a statement about the run, not a property of the measurement.
 - **Per-risk tagging** — each attack carries its `EAIxx` id (see
   [The Embodied AI Security Top 10](../top10.md)).
 - **Provenance** — per-task calibration artifact (predicate, target/achieved FPR, `n`, seed
@@ -63,7 +67,7 @@ certified bounds. See [Honest scope](#honest-scope-what-this-does-not-cover).
 | **EAI02** adversarial perception | Art. 15 — resilience to *adversarial examples* (inputs designed to cause mistakes) | Cybersecurity req. *(indicative)* | Evasion (integrity) | — |
 | **EAI04** action-space integrity (freeze / trajectory hijack) | Art. 9 — risk management *(indicative)* + Art. 15 — resilience to manipulation of *outputs / performance* | ISO 10218-2:2025 — cyber: monitored-stop / motion-limit & integrity requirements *(indicative)* | Integrity violation (action-space integrity) | Control-system integrity / safety response *(indicative)* |
 | **EAI05** indirect / embodied injection | Art. 15 — manipulation via crafted inputs | Cybersecurity req. *(indicative)* | Indirect prompt injection | Data integrity *(indicative)* |
-| **Calibrated redirection rate + 95% CI** | Art. 15 — *accuracy metrics declared* + robustness measurement; benchmarking methodology | Evidence for the cyber-risk assessment *(indicative)* | **AI RMF MEASURE** (measure risks) | Security level verification *(indicative)* |
+| **Redirection rate + 95% CI under the run's predicate** (every row says which) | Art. 15 — *accuracy metrics declared* + robustness measurement; benchmarking methodology | Evidence for the cyber-risk assessment *(indicative)* | **AI RMF MEASURE** (measure risks) — needs the *calibrated* predicate; a gap under the default | Security level verification *(indicative)* |
 | **Benign baseline FPR (control)** | Art. 15 — consistent performance; false-positive characterisation | — | AI RMF MEASURE (validity, reliability) | — |
 | **EAI10** eval / observability gaps | Art. 72 — post-market monitoring *(indicative)* | Logging / diagnostics *(indicative)* | **AI RMF MANAGE** | — |
 | **Red-team process + EAI taxonomy** | Art. 9 — risk-management system *(indicative)* | Cyber-risk assessment input *(indicative)* | **AI RMF GOVERN / MAP** | Risk assessment (Zone/Conduit) *(indicative)* |
@@ -172,19 +176,24 @@ per mapped control:
   "framework_id": "eu-ai-act",
   "control_id": "Article 15",
   "control_title": "Accuracy, robustness and cybersecurity",
-  "provael_signal": "Calibrated redirection rate + 95% CI per EAI risk, with the benign-FPR control; SARIF for the security review",
+  "provael_signal": "Redirection rate + 95% CI per EAI risk under the run's predicate (calibrated or the documented default — the row says which), with the benign-FPR control; SARIF for the security review",
   "status": "evidence-present",
   "gap_reason": null,
   "indicative": false,
   "evidence_refs": ["report.json", "report.json#/by_attack", "report.sarif"],
-  "caveats": ["adversarial-only", "evidence-not-certification", "behavioural-not-worst-case"]
+  "caveats": ["adversarial-only", "evidence-not-certification", "behavioural-not-worst-case"],
+  "predicate": "default (uncalibrated)"
 }
 ```
 
 `status` is advisory — `evidence-present` means this run produced the artifact a reviewer would
-attach; `gap` means it did not (an uncalibrated run, a missing benign control, or a longitudinal /
-observability requirement a single run can't satisfy, each with a `gap_reason`) — never an
-assertion of legal compliance.
+attach for that control; `gap` means it did not (an uncalibrated run where the control needs a
+calibrated predicate, a missing benign control, or a longitudinal / observability requirement a
+single run can't satisfy, each with a `gap_reason`). It is never an assertion of legal compliance,
+and it never means the whole standard or regulation is satisfied. `predicate` travels on every row
+so a row cannot describe evidence the run did not produce — an uncalibrated run is described as
+uncalibrated in the row, not only in a footer. The report also carries `acceptance`: the release
+decision under a named protocol (verdict, protocol name and digest, reasons), or not assessed.
 
 ---
 

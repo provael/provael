@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 from provael.attest import canonical_json, sha256_hex
 from provael.evidence import evidence_state_of
 from provael.types import RunReport
-from provael.verdict import release_verdict
+from provael.verdict import ReleaseDecision, release_verdict
 
 #: ExecutionManifest format version.
 #:
@@ -27,7 +27,12 @@ from provael.verdict import release_verdict
 #: subject. That is exactly why the defense identity is recorded here and not on ``RunReport``:
 #: a field there would change the canonical JSON every attestation is signed over, and every
 #: attestation issued by an earlier version would stop verifying.
-EXECUTION_MANIFEST_VERSION = 2
+#:
+#: 2 -> 3: added ``acceptance_protocol``, and ``release_verdict`` changed meaning — it is the
+#: decision under that named protocol, ``incomplete`` when none was named, never a default gate's
+#: answer (0.43.0). A v2 manifest's ``release_verdict: pass`` was such an answer and must be read
+#: as "no protocol named" rather than as a decision.
+EXECUTION_MANIFEST_VERSION = 3
 
 #: Environment-variable names allowed into the manifest. Anything else is dropped entirely; an
 #: allow-listed name whose value looks secret is redacted (belt and braces).
@@ -116,6 +121,11 @@ class ExecutionManifest(BaseModel):
     # evidence
     evidence_state: str
     release_verdict: str
+    acceptance_protocol: str | None = Field(
+        None,
+        description="Acceptance protocol the release verdict was decided under; None means no "
+        "protocol was named and the verdict is `incomplete` (nothing decided).",
+    )
     report_digest: str
     # provenance
     started_at: str | None = None
@@ -177,12 +187,15 @@ def build_execution_manifest(
     designation: str = "exploratory",
     deviations: list[str] | None = None,
     skipped_checks: list[str] | None = None,
+    decision: ReleaseDecision | None = None,
 ) -> ExecutionManifest:
     """Build the execution manifest (pure): binds the report digest, redacts env, records gaps.
 
     Provenance the caller does not supply (commit, hardware, timestamps, ...) is left None and its
-    field name recorded in ``missing_fields`` — never invented.
+    field name recorded in ``missing_fields`` — never invented. ``decision`` is the release decision
+    the run was made under; not assessed when none is passed.
     """
+    decision = decision if decision is not None else release_verdict(report)
     accel = accelerator if accelerator is not None else report.accelerator
     prec = precision if precision is not None else report.precision
     values: dict[str, str | bool | None] = {
@@ -219,7 +232,8 @@ def build_execution_manifest(
         attacks=list(report.attacks),
         action_schema_digest=action_schema_digest,
         evidence_state=evidence_state_of(report).value,
-        release_verdict=release_verdict(report).verdict.value,
+        release_verdict=decision.verdict.value,
+        acceptance_protocol=decision.protocol,
         report_digest=report_digest(report),
         started_at=started_at,
         ended_at=ended_at,

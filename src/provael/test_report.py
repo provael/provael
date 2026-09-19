@@ -35,6 +35,7 @@ from provael.compliance import to_compliance
 from provael.execution import ExecutionManifest
 from provael.scoring.asr import benign_control, semantic_role
 from provael.types import RunReport
+from provael.verdict import ReleaseDecision, acceptance_line, release_verdict
 
 #: Default filename written into a run's output directory.
 TEST_REPORT_MD = "report.test-report.md"
@@ -229,16 +230,21 @@ def _results(report: RunReport) -> list[str]:
     lines += [
         "",
         "Units: rates are episode fractions; an episode is *unsafe* when the suite's predicate "
-        "fired at any step within the horizon. A control arm enters neither the ASR nor the benign "
-        "floor. `N/A` is an arm that had no applicable episode on this suite — it was not "
-        "measured, and must not be read as 0%.",
+        "fired at any step within the horizon — the `unsafe_envelope` endpoint, which is not task "
+        "completion, not a calibrated hazard violation unless the predicate is calibrated, and not "
+        "physical-robot evidence. A control arm enters neither the ASR nor the benign floor. `N/A` "
+        "is an arm that had no applicable episode on this suite — it was not measured, and must "
+        "not be read as 0%. An instruction-family rate is instruction-induced fragility under an "
+        "out-of-distribution imperative frame (the harmless-variation control separates it from "
+        "attacker control), not evidence that an attacker chose where the policy went.",
     ]
     return lines
 
 
 def _uncertainty(report: RunReport) -> list[str]:
     lines = [
-        "- Every rate above carries a 95% Wilson score interval over its own episodes.",
+        "- Every rate above carries a 95% Wilson score interval over its own episodes "
+        "(episode-level; named as such wherever it appears).",
         f"- Per-seed spread of the ASR (standard deviation across seeds): {report.asr_std:.3f}.",
     ]
     if report.anytime_ci is not None:
@@ -287,8 +293,8 @@ def _deviations(report: RunReport, manifest: ExecutionManifest | None) -> list[s
     return lines or ["- None recorded."]
 
 
-def _annex_clause_map(report: RunReport) -> list[str]:
-    compliance = to_compliance(report)
+def _annex_clause_map(report: RunReport, decision: ReleaseDecision | None) -> list[str]:
+    compliance = to_compliance(report, decision)
     lines = [
         "| framework | control | what this evidence speaks to | status | not established |",
         "|---|---|---|---|---|",
@@ -313,8 +319,18 @@ def _annex_clause_map(report: RunReport) -> list[str]:
     return lines
 
 
-def to_test_report_markdown(report: RunReport, manifest: ExecutionManifest | None = None) -> str:
-    """Render the clause-7.8-shaped test report as Markdown."""
+def to_test_report_markdown(
+    report: RunReport,
+    manifest: ExecutionManifest | None = None,
+    decision: ReleaseDecision | None = None,
+) -> str:
+    """Render the clause-7.8-shaped test report as Markdown.
+
+    ``decision`` is the release decision the caller made; when none is passed the run's recorded
+    verdict is NOT read back from the manifest as if it were a decision — it is rendered as not
+    assessed, which is what a run with no named protocol is.
+    """
+    decision = decision if decision is not None else release_verdict(report)
     run_id = manifest.run_id if manifest is not None else "not recorded (no execution manifest)"
     digest = manifest.report_digest if manifest is not None else "not recorded"
     started = (manifest.started_at if manifest is not None else None) or "not recorded"
@@ -326,7 +342,6 @@ def to_test_report_markdown(report: RunReport, manifest: ExecutionManifest | Non
         if manifest is not None
         else (report.evidence_state or "not recorded")
     )
-    verdict = manifest.release_verdict if manifest is not None else "not recorded"
     lines: list[str] = [
         "# Test report — adversarial robustness of a vision-language-action policy in simulation",
         "",
@@ -394,7 +409,10 @@ def to_test_report_markdown(report: RunReport, manifest: ExecutionManifest | Non
         "## 12. Evidence state and verdict (7.8.3.1 e)",
         "",
         f"- **Evidence state:** `{evidence}` (see docs.provael.com, evidence ladder)",
-        f"- **Release verdict:** `{verdict}`",
+        f"- **Release verdict:** `{decision.verdict.value}` — {acceptance_line(decision)}",
+        *[f"  - {reason}" for reason in decision.reasons],
+        "- The verdict is a statement about this run under the named protocol, not a property of "
+        "the measurement; no protocol named means nothing was decided.",
         "- **Reproduction:** `provael reproduce` on the committed `report.json`; `provael attest` "
         "binds this report to a signature when a key is supplied.",
         "",
@@ -405,18 +423,21 @@ def to_test_report_markdown(report: RunReport, manifest: ExecutionManifest | Non
         "",
         "## Annex A — clause map (from `provael report --format compliance`)",
         "",
-        *_annex_clause_map(report),
+        *_annex_clause_map(report, decision),
         "",
     ]
     return "\n".join(lines)
 
 
 def write_test_report(
-    report: RunReport, path: Path, manifest: ExecutionManifest | None = None
+    report: RunReport,
+    path: Path,
+    manifest: ExecutionManifest | None = None,
+    decision: ReleaseDecision | None = None,
 ) -> Path:
     """Write the Markdown test report to ``path`` and return it."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(to_test_report_markdown(report, manifest), encoding="utf-8")
+    path.write_text(to_test_report_markdown(report, manifest, decision), encoding="utf-8")
     return path
 
 

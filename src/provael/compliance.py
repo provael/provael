@@ -1,8 +1,9 @@
 """Compliance-evidence export for a :class:`~provael.types.RunReport` (v0.5.0).
 
-Turns a calibrated red-team run into an **auditor-readable evidence artifact** that maps the
-run's measured signals (calibrated redirection rate + 95% Wilson CI, the benign-FPR control, the
-EAI risks exercised, the per-task calibration metadata) onto the framework requirements in
+Turns a red-team run into an **auditor-readable evidence artifact** that maps the run's measured
+signals (the redirection rate + 95% Wilson CI under the run's predicate — calibrated or the
+documented default, and every row says which — the benign-FPR control, the EAI risks exercised, the
+per-task calibration metadata where a calibration ran) onto the framework requirements in
 ``docs/compliance/index.md`` — **EU AI Act** (Reg. (EU) 2024/1689), the **EU Machinery Regulation**
 (Reg. (EU) 2023/1230 — the operative route for AI-enabled robots after the 2026 Digital Omnibus),
 **ISO 10218-1/-2:2025** (cyber), **NIST AI 100-2 / AI RMF**, and **IEC 62443** — plus the
@@ -28,6 +29,14 @@ evidence-not-certification, behavioural-not-worst-case).
 It reuses an existing ``report.json`` — no attacks are re-run — so the whole path is
 CPU/stub-runnable in CI. Output is ``sort_keys``-stable, so a deterministic run yields a
 byte-identical artifact.
+
+ROWS DESCRIBE THE EVIDENCE PRESENT, since 0.43.0. Three signal strings used to read "calibrated
+redirection rate" whatever the run's predicate was, and the Article 15 row showed
+``evidence-present`` for the uncalibrated public sample beside a footer saying the run was
+uncalibrated. A footer does not correct a row. Each entry now carries ``predicate`` — the state
+the rate was actually scored under — the signal strings name the rate without presupposing
+calibration, and the release decision (``acceptance``) travels with the report under the protocol
+that produced it, or as not assessed.
 """
 
 from __future__ import annotations
@@ -44,6 +53,7 @@ from provael.calibration import wilson_ci
 from provael.eai import CATALOG, EaiCoverage, status_for
 from provael.evidence import EvidenceState, evidence_state_of, transfer_status_of
 from provael.types import RunReport
+from provael.verdict import ReleaseDecision, acceptance_block, release_verdict
 
 COMPLIANCE_JSON = "report.compliance.json"
 COMPLIANCE_MD = "report.compliance.md"
@@ -174,8 +184,9 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         framework=_EU, framework_id="eu-ai-act",
         control_id="Article 15", control_title="Accuracy, robustness and cybersecurity",
         provael_signal=(
-            "Calibrated redirection rate + 95% CI per EAI risk, with the benign-FPR control; "
-            "SARIF for the security review"
+            "Redirection rate + 95% CI per EAI risk under the run's predicate (calibrated or the "
+            "documented default — the row says which), with the benign-FPR control; SARIF for the "
+            "security review"
         ),
         evidence_refs=("report.json", "report.json#/by_attack", "report.sarif"),
         indicative=False,
@@ -314,7 +325,10 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         framework=_NIST, framework_id="nist",
         control_id="AI RMF — MEASURE",
         control_title="Measure identified risks",
-        provael_signal="Calibrated rate + 95% CI + benign FPR — a measured, controlled metric",
+        provael_signal=(
+            "Redirection rate + 95% CI + benign FPR under a CALIBRATED predicate — a measured, "
+            "controlled metric; a gap under the default predicate"
+        ),
         evidence_refs=(
             "report.json#/calibration", "report.json#/benign_fpr", "report.json#/by_attack",
         ),
@@ -485,8 +499,8 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         control_title="Establishment and operation of a risk management plan",
         provael_signal=(
             "The EAI risk taxonomy as the threat catalogue for a high-impact system, with the "
-            "calibrated redirection rate + 95% CI per risk and the benign-FPR control as the "
-            "adversarial input to the operator's risk-management plan"
+            "redirection rate + 95% CI per risk under the run's predicate and the benign-FPR "
+            "control as the adversarial input to the operator's risk-management plan"
         ),
         evidence_refs=("report.json#/eai", "docs/top10.md"),
         indicative=True,
@@ -660,7 +674,7 @@ class EvidenceResult(BaseModel):
     """The measured signals from the run, shared by every requirement entry as its evidence."""
 
     redirection_rate: float | None = Field(
-        ..., description="Overall ASR / calibrated redirection rate (None if nothing ran)."
+        ..., description="Adversarial ASR under the run's predicate (None if nothing ran)."
     )
     ci95: tuple[float, float] | None = Field(..., description="95% Wilson CI on the overall rate.")
     benign_fpr: float | None = Field(
@@ -721,6 +735,24 @@ class ComplianceEntry(BaseModel):
     )
     evidence_refs: list[str]
     caveats: list[str] = Field(..., description="Honest-scope caveat ids (see scope_caveats).")
+    predicate: str = Field(
+        "default (uncalibrated)",
+        description="The predicate the rate behind this row was scored under: 'calibrated' or "
+        "'default (uncalibrated)'. Carried per row so no row can describe evidence the run did not "
+        "produce.",
+    )
+
+
+class Acceptance(BaseModel):
+    """The release decision this report was produced under — the same one every emitter renders."""
+
+    verdict: str
+    assessed: bool = Field(
+        False, description="False when no acceptance protocol was named: nothing was decided."
+    )
+    protocol: str | None = None
+    protocol_digest: str | None = None
+    reasons: list[str] = Field(default_factory=list)
 
 
 class ComplianceReport(BaseModel):
@@ -733,6 +765,13 @@ class ComplianceReport(BaseModel):
     policy: str
     suite: str
     calibrated: bool
+    predicate: str = Field(
+        "default (uncalibrated)", description="'calibrated' or 'default (uncalibrated)'."
+    )
+    acceptance: Acceptance = Field(
+        default_factory=lambda: Acceptance(verdict="incomplete"),
+        description="The release decision under a named protocol, or not assessed.",
+    )
     disclaimer: str
     scope_caveats: list[ScopeCaveat]
     result: EvidenceResult
@@ -882,7 +921,11 @@ def _status(req: Requirement, ev: EvidenceResult) -> tuple[Status, str | None]:
     return "evidence-present", None
 
 
-def _entry(req: Requirement, ev: EvidenceResult) -> ComplianceEntry:
+def _predicate_label(report: RunReport) -> str:
+    return "calibrated" if report.calibrated else "default (uncalibrated)"
+
+
+def _entry(req: Requirement, ev: EvidenceResult, predicate: str) -> ComplianceEntry:
     status, gap_reason = _status(req, ev)
     return ComplianceEntry(
         key=req.key,
@@ -896,22 +939,34 @@ def _entry(req: Requirement, ev: EvidenceResult) -> ComplianceEntry:
         indicative=req.indicative,
         evidence_refs=list(req.evidence_refs),
         caveats=list(_ENTRY_CAVEATS),
+        predicate=predicate,
     )
 
 
-def to_compliance(report: RunReport) -> ComplianceReport:
-    """Build a :class:`ComplianceReport` from a run report (no attacks are re-run)."""
+def to_compliance(
+    report: RunReport, decision: ReleaseDecision | None = None
+) -> ComplianceReport:
+    """Build a :class:`ComplianceReport` from a run report (no attacks are re-run).
+
+    ``decision`` is the release decision the caller made (under a named protocol, or not
+    assessed); derived here only when none is passed, so this artifact cannot disagree with the
+    report, the SARIF or the manifest of the same run.
+    """
     ev = _evidence(report)
-    entries = [_entry(req, ev) for req in REQUIREMENTS]
+    predicate = _predicate_label(report)
+    entries = [_entry(req, ev, predicate) for req in REQUIREMENTS]
     summary = {"evidence-present": 0, "gap": 0}
     for entry in entries:
         summary[entry.status] += 1
+    decision = decision if decision is not None else release_verdict(report)
     return ComplianceReport(
         tool_version=report.tool_version,
         generated_from="report.json",
         policy=report.policy,
         suite=report.suite,
         calibrated=report.calibrated,
+        predicate=predicate,
+        acceptance=Acceptance(**acceptance_block(decision)),
         disclaimer=DISCLAIMER,
         scope_caveats=[ScopeCaveat(id=cid, text=CAVEATS[cid]) for cid in _ENTRY_CAVEATS],
         result=ev,
@@ -920,15 +975,17 @@ def to_compliance(report: RunReport) -> ComplianceReport:
     )
 
 
-def to_compliance_dict(report: RunReport) -> dict[str, object]:
+def to_compliance_dict(
+    report: RunReport, decision: ReleaseDecision | None = None
+) -> dict[str, object]:
     """The compliance report as a JSON-safe dict (keys sorted for stability)."""
-    data: dict[str, object] = json.loads(to_compliance(report).model_dump_json())
+    data: dict[str, object] = json.loads(to_compliance(report, decision).model_dump_json())
     return data
 
 
-def to_compliance_json(report: RunReport) -> str:
+def to_compliance_json(report: RunReport, decision: ReleaseDecision | None = None) -> str:
     """Serialise the compliance report to stable, indented JSON (no trailing newline)."""
-    return json.dumps(to_compliance_dict(report), indent=2, sort_keys=True)
+    return json.dumps(to_compliance_dict(report, decision), indent=2, sort_keys=True)
 
 
 # --------------------------------------------------------------------------------------------
@@ -948,9 +1005,9 @@ def _rate_ci(rate: float | None, ci: tuple[float, float] | None) -> str:
 _STATUS_GLYPH: dict[str, str] = {"evidence-present": "✅ evidence-present", "gap": "⚠️ gap"}
 
 
-def to_compliance_markdown(report: RunReport) -> str:
+def to_compliance_markdown(report: RunReport, decision: ReleaseDecision | None = None) -> str:
     """Render the compliance report as an auditor-readable Markdown document."""
-    cr = to_compliance(report)
+    cr = to_compliance(report, decision)
     ev = cr.result
     predicate = (
         f"calibrated (benign-FPR target {_pct(ev.target_fpr)})" if cr.calibrated
@@ -971,6 +1028,16 @@ def to_compliance_markdown(report: RunReport) -> str:
     lines.append(f"| suite | `{cr.suite}` |")
     lines.append(f"| predicate | {predicate} |")
     lines.append(f"| derived from | `{cr.generated_from}` |")
+    lines.append(f"| release verdict | **{cr.acceptance.verdict}** |")
+    protocol = (
+        f"`{cr.acceptance.protocol}` ({cr.acceptance.protocol_digest})"
+        if cr.acceptance.assessed
+        else "none named — not assessed"
+    )
+    lines.append(f"| acceptance protocol | {protocol} |")
+    lines.append("")
+    for reason in cr.acceptance.reasons:
+        lines.append(f"- {reason}")
     lines.append("")
 
     lines.append("## Measured evidence (this run)")
@@ -1030,15 +1097,18 @@ def to_compliance_markdown(report: RunReport) -> str:
     lines.append("")
     lines.append(f"**{present} evidence-present · {gaps} gap** across {len(cr.entries)} mapped "
                  "controls. Status is advisory — `evidence-present` means this run produced the "
-                 "artifact a reviewer would attach, never an assertion of legal compliance.")
+                 "artifact a reviewer would attach for that control. It is not an assertion of "
+                 "legal compliance, and it does not mean the whole standard or regulation is "
+                 "satisfied; the `predicate` column says what each rate was scored under, and a "
+                 f"row scored under the {cr.predicate} predicate is exactly that.")
     lines.append("")
-    lines.append("| framework | control | status | Provael signal |")
-    lines.append("| --- | --- | --- | --- |")
+    lines.append("| framework | control | status | predicate | Provael signal |")
+    lines.append("| --- | --- | --- | --- | --- |")
     for entry in cr.entries:
         flag = " *(indicative)*" if entry.indicative else ""
         lines.append(
             f"| {entry.framework_id} | {entry.control_id}{flag} | "
-            f"{_STATUS_GLYPH[entry.status]} | {entry.provael_signal} |"
+            f"{_STATUS_GLYPH[entry.status]} | {entry.predicate} | {entry.provael_signal} |"
         )
     lines.append("")
 
@@ -1056,6 +1126,7 @@ def to_compliance_markdown(report: RunReport) -> str:
                      f"{_STATUS_GLYPH[entry.status]}{indicative}")
         lines.append("")
         lines.append(f"- **Provael signal:** {entry.provael_signal}")
+        lines.append(f"- **Predicate:** {entry.predicate}")
         lines.append(f"- **Evidence:** {', '.join(f'`{ref}`' for ref in entry.evidence_refs)}")
         if entry.gap_reason is not None:
             lines.append(f"- **Gap:** {entry.gap_reason}")
@@ -1070,17 +1141,21 @@ def to_compliance_markdown(report: RunReport) -> str:
     return "\n".join(lines)
 
 
-def write_compliance_json(report: RunReport, path: Path) -> Path:
+def write_compliance_json(
+    report: RunReport, path: Path, decision: ReleaseDecision | None = None
+) -> Path:
     """Write the compliance JSON to ``path`` (parent dirs created). Returns ``path``."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(to_compliance_json(report) + "\n", encoding="utf-8")
+    path.write_text(to_compliance_json(report, decision) + "\n", encoding="utf-8")
     return path
 
 
-def write_compliance_markdown(report: RunReport, path: Path) -> Path:
+def write_compliance_markdown(
+    report: RunReport, path: Path, decision: ReleaseDecision | None = None
+) -> Path:
     """Write the compliance Markdown to ``path`` (parent dirs created). Returns ``path``."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(to_compliance_markdown(report), encoding="utf-8")
+    path.write_text(to_compliance_markdown(report, decision), encoding="utf-8")
     return path
 
 
@@ -1094,6 +1169,7 @@ __all__ = [
     "EaiBreakdown",
     "EvidenceResult",
     "ScopeCaveat",
+    "Acceptance",
     "ComplianceEntry",
     "ComplianceReport",
     "to_compliance",

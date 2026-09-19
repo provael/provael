@@ -55,7 +55,7 @@ from provael.attacks.registry import FAMILIES
 from provael.compliance import to_compliance_dict
 from provael.evidence import EvidenceState, evidence_state_of, transfer_status_of
 from provael.types import MEASURED_REAL_TRANSFER, STUB_VALIDATED_SCAFFOLDING, RunReport
-from provael.verdict import ReleaseVerdict, release_verdict
+from provael.verdict import ReleaseDecision, ReleaseVerdict, release_verdict
 
 #: The attestation statement format id (our own DSSE-style envelope, not in-toto conformance).
 STATEMENT_FORMAT = "provael-attestation/v1"
@@ -67,7 +67,10 @@ PAYLOAD_TYPE = "application/vnd.provael.attestation+json"
 #: /2: added the CRA + ISO/IEC TR 5469 + ISO 42001/23894 rows and the D1 run-level transfer tier.
 #: /3: added the eu-machinery:annex-i-part-a row (Machinery Reg Annex I Part A conformity route).
 #: /4: added the optional standards-aligned `assurance` view (--profile; see provael.assurance).
-RULESET_VERSION = "provael-attest-ruleset/4"
+#: /5: `release_verdict` is the decision under a NAMED acceptance protocol (`acceptance_protocol`,
+#:     `acceptance_protocol_digest`), `incomplete` when none was named — never a default gate; the
+#:     embedded compliance predicate carries the same decision and a per-row predicate state.
+RULESET_VERSION = "provael-attest-ruleset/5"
 
 ATTESTATION_JSON = "attestation.json"
 ATTESTATION_PUB = "attestation.pub"
@@ -202,7 +205,16 @@ class AttestationStatement(BaseModel):
     )
     release_verdict: str = Field(
         ReleaseVerdict.INCOMPLETE.value,
-        description="Release verdict (provael.verdict): incomplete / fail / conditional / pass.",
+        description="Release verdict (provael.verdict): incomplete / fail / conditional / pass — "
+        "under `acceptance_protocol`, or not assessed when it is None.",
+    )
+    acceptance_protocol: str | None = Field(
+        None,
+        description="Name of the acceptance protocol the verdict was decided under, or None when "
+        "no protocol was named (then the verdict is `incomplete`: nothing was decided).",
+    )
+    acceptance_protocol_digest: str | None = Field(
+        None, description="Content digest of that protocol, or None."
     )
     regulatory_clock: list[RegulatoryClock]
     transfer: list[TransferStatus]
@@ -608,14 +620,18 @@ def build_statement(
     commit: str,
     ruleset: str = RULESET_VERSION,
     assurance: dict[str, Any] | None = None,
+    decision: ReleaseDecision | None = None,
 ) -> AttestationStatement:
     """Build the attestation statement (pure): wraps the SAME compliance evidence as the export.
 
     ``assurance`` (optional) is a standards-aligned view built by :mod:`provael.assurance` and
     embedded verbatim into the signed payload; it is ``None`` for the default (no-profile) bundle,
-    so existing attestations are unchanged apart from the schema/ruleset bump.
+    so existing attestations are unchanged apart from the schema/ruleset bump. ``decision`` is the
+    release decision the caller made; derived as not-assessed when none is passed, and the same
+    decision reaches the embedded compliance predicate, so the signed payload cannot carry two.
     """
     report_digest = _report_digest(report)
+    decision = decision if decision is not None else release_verdict(report)
     return AttestationStatement(
         tool_version=report.tool_version,
         ruleset=ruleset,
@@ -628,10 +644,12 @@ def build_statement(
         accelerator=report.accelerator,
         precision=report.precision,
         evidence_state=evidence_state_of(report).value,
-        release_verdict=release_verdict(report).verdict.value,
+        release_verdict=decision.verdict.value,
+        acceptance_protocol=decision.protocol,
+        acceptance_protocol_digest=decision.protocol_digest,
         regulatory_clock=list(REGULATORY_CLOCK),
         transfer=_transfer_status(report),
-        predicate=to_compliance_dict(report),
+        predicate=to_compliance_dict(report, decision),
         assurance=assurance,
     )
 
@@ -645,6 +663,7 @@ def to_bundle(
     private_key_pem: bytes | None = None,
     sign: bool = True,
     assurance: dict[str, Any] | None = None,
+    decision: ReleaseDecision | None = None,
 ) -> tuple[AttestationBundle, bytes | None]:
     """Build a bundle from a report. Returns ``(bundle, public_key_pem_or_None)``.
 
@@ -654,7 +673,8 @@ def to_bundle(
     ``assurance`` (optional) is embedded into the signed statement (see :func:`build_statement`).
     """
     statement = build_statement(
-        report, issued_at=issued_at, commit=commit, ruleset=ruleset, assurance=assurance
+        report, issued_at=issued_at, commit=commit, ruleset=ruleset, assurance=assurance,
+        decision=decision,
     )
     payload_bytes = _canonical(json.loads(statement.model_dump_json()))
     payload_b64 = base64.b64encode(payload_bytes).decode("ascii")

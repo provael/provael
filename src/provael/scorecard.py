@@ -21,7 +21,7 @@ from provael.calibration import wilson_ci
 from provael.eai import CATALOG, coverage_headline, status_for
 from provael.scoring.asr import benign_control
 from provael.types import RunReport
-from provael.verdict import ReleaseDecision, release_verdict
+from provael.verdict import ReleaseDecision, acceptance_line, release_verdict
 
 #: Default filename written into a run's output directory.
 SCORECARD_MD = "report.scorecard.md"
@@ -128,11 +128,7 @@ def to_scorecard_markdown(
     """
     decision = decision if decision is not None else release_verdict(report)
     verdict_badge = _VERDICT_BADGES.get(decision.verdict.value, "⚠️ INCOMPLETE")
-    protocol = (
-        f"protocol `{decision.protocol}` ({decision.protocol_digest})"
-        if decision.assessed
-        else "no acceptance protocol named — not assessed"
-    )
+    protocol = acceptance_line(decision)
     status = verdict(report, threshold)
     badge = _BADGES.get(status, "❌ FAIL")
     adv_rate, adv_successes, adv_attempts = report.adversarial_headline()
@@ -174,7 +170,7 @@ def to_scorecard_markdown(
         # All ten risks, always. `n` is carried because the heatmap is the one table with no
         # success/attempt columns: without it a reader cannot tell an N/A bucket from a measured
         # one. `status` then says WHY an N/A is N/A — untested here, or untestable at all.
-        "| EAI | risk | ASR | 95% CI | n | status |",
+        "| EAI | risk | ASR | 95% Wilson CI (episode) | n | status |",
         "|---|---|---:|:---:|---:|---|",
     ]
     for eai_id, name, attempts, successes, status in _by_eai(report):
@@ -186,7 +182,8 @@ def to_scorecard_markdown(
 
     lines += [
         "", "## Per-attack", "",
-        "| attack | EAI | ASR | 95% CI | successes | attempts |", "|---|---|---:|:---:|---:|---:|",
+        "| attack | EAI | ASR | 95% Wilson CI (episode) | successes | attempts |",
+        "|---|---|---:|:---:|---:|---:|",
     ]
     for name, stat in report.by_attack.items():
         tag = report.eai.get(name)
@@ -201,8 +198,11 @@ def to_scorecard_markdown(
         "---",
         "",
         "_Behavioural-susceptibility measurement via templated attacks (not a certified bound). "
-        "Read each rate against the benign control. Stub numbers are properties of the test "
-        "fixture, not a real VLA. See docs/sim-predicts-real.md and docs/compliance/index.md._",
+        "Read each rate against the benign control. Intervals are episode-level Wilson scores; a "
+        "task-clustered interval is a different estimate and is named as such where it appears. "
+        "An instruction-family rate is instruction-induced fragility under an out-of-distribution "
+        "imperative frame, not attacker control. Stub numbers are properties of the test fixture, "
+        "not a real VLA. See docs/sim-predicts-real.md and docs/compliance/index.md._",
         "",
     ]
     return "\n".join(lines)

@@ -795,6 +795,16 @@
      ],
      "required": false,
      "secondary_opts": []
+    },
+    {
+     "help": "Acceptance protocol (YAML/JSON) the dossier's release decision is made against. Without it a prior run's report.decision.json is used when present, else the dossier states the run was not assessed.",
+     "is_flag": false,
+     "name": "protocol",
+     "opts": [
+      "--protocol"
+     ],
+     "required": false,
+     "secondary_opts": []
     }
    ],
    "short_help": null
@@ -877,6 +887,16 @@
      "name": "out",
      "opts": [
       "--out"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Acceptance protocol (YAML/JSON) the manifest's release decision is made against. Without it the run's report.decision.json is used when present, else the manifest says the run was not assessed.",
+     "is_flag": false,
+     "name": "protocol",
+     "opts": [
+      "--protocol"
      ],
      "required": false,
      "secondary_opts": []
@@ -1055,6 +1075,16 @@
      "name": "out",
      "opts": [
       "--out"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Acceptance protocol (YAML/JSON) the attested release decision is made against. Without it a prior run's report.decision.json is used when present, else the bundle states the run was not assessed.",
+     "is_flag": false,
+     "name": "protocol",
+     "opts": [
+      "--protocol"
      ],
      "required": false,
      "secondary_opts": []
