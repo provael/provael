@@ -66,14 +66,18 @@ CONFORMITY_MAPPING: tuple[dict[str, str], ...] = (
         "manufacturer's, not Provael's.",
     },
     {
-        "obligation": "High-risk AI safety-component obligations for AI embedded in machinery "
-        "(robustness, accuracy, cybersecurity — Art. 15).",
-        "instrument": "Regulation (EU) 2024/1689 (AI Act), Annex I machinery",
+        "obligation": "AI-specific health and safety requirements for machinery, added to "
+        "Machinery Regulation Annex III by delegated act (Art. 8, third paragraph) and reflecting "
+        "AI Act Chapter III Section 2 — robustness, accuracy, cybersecurity (Art. 15) — and "
+        "Arts 17, 19, 72, 73.",
+        "instrument": "Regulation (EU) 2024/1689 (AI Act), as amended by Regulation (EU) "
+        "2026/1744; reaches machinery through Regulation (EU) 2023/1230 Art. 8, third paragraph",
         "applies_from": "2028-08-02",
         "provael_evidence": "Per-family transfer-test (rate + 95% Wilson CI + benign control) and "
         "the compliance crosswalk, carried inside the attestation. Reg (EU) 2026/1744 (Digital "
-        "Omnibus on AI, OJ 24 Jul 2026, in force 27 Jul 2026) moved embedded Annex I application "
-        "to 2028-08-02; 2027-08-02 is the superseded statutory baseline.",
+        "Omnibus on AI, OJ 24 Jul 2026, in force 27 Jul 2026) moved the Machinery Regulation to AI "
+        "Act Annex I Section B, so Chapter III does not apply to machinery directly; the delegated "
+        "acts apply by 2028-08-02, and 2027-08-02 is the superseded statutory baseline.",
     },
     {
         "obligation": "Cybersecurity risk assessment for industrial / collaborative robots.",

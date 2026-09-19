@@ -88,7 +88,12 @@ class MissingAttestExtraError(RuntimeError):
 # --------------------------------------------------------------------------------------------
 # Regulatory clock — factual application dates the attestation is measured against. Dates only;
 # no claim of conformity. The EU AI Act line states BOTH the original statutory date and the
-# operative one, on purpose.
+# operative one, on purpose — and, since 20 September 2026, WHICH instrument a robot is assessed
+# under: the Digital Omnibus moved the Machinery Regulation to AI Act Annex I Section B, so the
+# AI Act's Chapter III is not directly applicable to machinery and the AI-specific requirements
+# arrive through the Machinery Regulation's own Annex III by delegated act (its Art. 8, third
+# paragraph, applying by 2 Aug 2028). The eu-ai-act entry carried "Annex I machinery" and Art. 15
+# as if the route were direct for six weeks after that reading was available.
 #
 # These dates are SIGNED. An attestation carrying a superseded date does not merely misinform —
 # it cryptographically guarantees the integrity of a wrong fact, which is worse than carrying no
@@ -112,26 +117,42 @@ class RegulatoryClock(BaseModel):
 REGULATORY_CLOCK: tuple[RegulatoryClock, ...] = (
     RegulatoryClock(
         framework_id="eu-machinery",
-        instrument="Regulation (EU) 2023/1230 (Machinery Regulation)",
+        instrument="Regulation (EU) 2023/1230 (Machinery Regulation), as amended by "
+        "Regulation (EU) 2026/1744",
         applies_from="2027-01-20",
-        note="Applies from 20 Jan 2027; AI-enabled safety functions need a cyber-risk assessment "
-        "against corruption. This is the operative route for AI-enabled robots.",
-        last_verified="2026-07-23",
-        source="http://data.europa.eu/eli/reg/2023/1230/oj",
+        note="Applies from 20 Jan 2027 (Art. 54 as corrected, OJ L 169, 4.7.2023). This is the "
+        "operative route for AI-enabled robots: Annex III 1.1.9 (protection against corruption) "
+        "and 1.2.1 (safety and reliability of control systems) are the essential requirements the "
+        "adversarial-robustness evidence feeds. Regulation (EU) 2026/1744 inserted a third "
+        "paragraph into Art. 8: the Commission adopts delegated acts adding AI-specific health and "
+        "safety requirements to Annex III, reflecting AI Act Chapter III Section 2 and Arts 17, "
+        "19, 72 and 73, and those delegated acts apply by 2 Aug 2028; new Art. 20(10) gives "
+        "presumption of conformity through the AI Act's harmonised standards and common "
+        "specifications until Machinery-specific ones exist.",
+        last_verified="2026-09-19",
+        source="http://data.europa.eu/eli/reg/2023/1230/oj (consolidated text CELEX "
+        "02023R1230-20260727; corrigendum OJ L 169, 4.7.2023)",
     ),
     RegulatoryClock(
         framework_id="eu-ai-act",
-        instrument="Regulation (EU) 2024/1689 (AI Act), Annex I machinery",
+        instrument="Regulation (EU) 2024/1689 (AI Act), as amended by Regulation (EU) "
+        "2026/1744 (Digital Omnibus on AI)",
         applies_from="2028-08-02",
-        note="Statutory date for Annex I embedded high-risk under Reg (EU) 2024/1689 was "
-        "2 Aug 2027. That deferral is no longer provisional: Regulation (EU) 2026/1744 (Digital "
-        "Omnibus on AI) was published in the OJ on 24 Jul 2026 and entered into force on "
-        "27 Jul 2026, moving product-embedded high-risk application to 2 Aug 2028 (stand-alone "
-        "Annex III moves to 2 Dec 2027). 2028-08-02 is the operative date; 2027-08-02 is retained "
-        "here only as the superseded statutory baseline.",
-        last_verified="2026-08-01",
+        note="For AI-enabled MACHINERY the AI Act's Chapter III (including Art. 15) does not "
+        "apply directly: Regulation (EU) 2026/1744, point (41)(b), moved Regulation (EU) 2023/1230 "
+        "to AI Act Annex I Section B (point 21), and the AI-specific requirements reach machinery "
+        "through the Machinery Regulation's own Annex III by delegated act under its Art. 8, "
+        "third paragraph, applying by 2 Aug 2028 — the date this entry carries. Art. 15 applies "
+        "directly to Annex I Section A product-embedded systems from 2 Aug 2028 and to Annex III "
+        "stand-alone high-risk systems from 2 Dec 2027 (Art. 113 as amended, point (40)). The "
+        "2027-08-02 statutory date is superseded; Regulation (EU) 2026/1744 was published in the "
+        "OJ on 24 Jul 2026 and entered into force on 27 Jul 2026. Art. 15's robustness and "
+        "cybersecurity language remains the measurement anchor the Machinery-side requirements "
+        "are to reflect; it is not the instrument a robot is assessed under.",
+        last_verified="2026-09-19",
         source="http://data.europa.eu/eli/reg/2024/1689/oj (as amended by "
-        "http://data.europa.eu/eli/reg/2026/1744/oj)",
+        "http://data.europa.eu/eli/reg/2026/1744/oj, points (40) and (41); Machinery side: CELEX "
+        "02023R1230-20260727 Art. 8 third paragraph and Art. 20(10))",
     ),
     RegulatoryClock(
         framework_id="eu-cra",

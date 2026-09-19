@@ -225,7 +225,11 @@ REQUIREMENTS: tuple[Requirement, ...] = (
         provael_signal=(
             "Redirection rate + 95% CI per EAI risk under the run's predicate (calibrated or the "
             "documented default — the row says which), with the benign-FPR control; SARIF for the "
-            "security review"
+            "security review. For MACHINERY this article is the measurement anchor, not the "
+            "instrument: since Regulation (EU) 2026/1744 the Machinery Regulation sits in AI Act "
+            "Annex I Section B, and Art. 15's requirements reach a robot through Machinery "
+            "Regulation Annex III by delegated act (Art. 8, third paragraph, applying by "
+            "2028-08-02) — see the eu-machinery rows"
         ),
         evidence_refs=("report.json", "report.json#/by_attack", "report.sarif"),
         indicative=False,
@@ -251,13 +255,18 @@ REQUIREMENTS: tuple[Requirement, ...] = (
     Requirement(
         key="eu-machinery:cyber",
         framework=_MACHINERY, framework_id="eu-machinery",
-        control_id="Reg. (EU) 2023/1230 (applies 2027-01-20)",
+        control_id="Reg. (EU) 2023/1230 (applies 2027-01-20); Annex III 1.1.9 and 1.2.1",
         control_title="Machinery — protection against corruption / safety-function AI",
         provael_signal=(
             "Measured redirection rate per EAI risk as input to the mandatory cyber-risk "
             "assessment for AI-enabled machinery, with action-space integrity (EAI04: keep-out "
             "hijack / critical-step freeze of the commanded motion) as the on-point evidence for "
-            "the corruption-of-safety-function essential requirement; SARIF for the security file"
+            "the corruption-of-safety-function essential requirement (Annex III 1.1.9; control "
+            "systems 1.2.1); SARIF for the security file. The AI-specific requirements the Digital "
+            "Omnibus routes to machinery (Reg. (EU) 2026/1744 -> Art. 8, third paragraph, "
+            "delegated acts applying by 2028-08-02, reflecting AI Act Art. 15) land in this same "
+            "Annex; until then Art. 20(10) presumes conformity through the AI Act's harmonised "
+            "standards"
         ),
         evidence_refs=("report.json#/by_attack", "report.sarif", "docs/compliance/index.md"),
         indicative=True,
