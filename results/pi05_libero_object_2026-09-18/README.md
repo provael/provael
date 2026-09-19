@@ -40,7 +40,7 @@ McNemar is paired at matched (task, seed) against the benign arm; the pair count
 
 ## Notes (hand-written)
 
-The first attack arm on a second architecture: π0.5 (`lerobot/pi05_libero_finetuned_v044`, a 3B
+An attack arm on a second architecture: π0.5 (`lerobot/pi05_libero_finetuned_v044`, a 3B
 PaliGemma-based flow-matching policy) through provael's native `pi05` adapter, on the same ten
 `libero_object` tasks the SmolVLA headline is measured on, horizon 280, three seeds, `roleplay`
 against `none`. The pre-registered leg (docs/studies/pi0-openpi-transfer.md, Amendment 1, Zenodo

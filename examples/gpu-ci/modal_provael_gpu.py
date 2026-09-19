@@ -130,12 +130,14 @@ REPOSITORY = "provael/provael"
 #: PyPI served on the morning it ran — not reproducible in either direction, and it silently split
 #: the two GPU lanes five releases apart while both looked healthy.
 #:
-#: 0.42.0 IS THE FIRST RELEASE THIS LANE CAN RECORD FROM. The four provenance fields the Record step
+#: NO RELEASE BEFORE 0.42.0 CAN RECORD FROM THIS LANE. The four provenance fields the Record step
 #: requires (`repository`, `commit`, `dep_lock_digest`, `precision`) reached the wheel in 0.42.0;
 #: on 0.41.2 every shard would have been refused. Bumped in the 0.42.0 release PR because the body
-#: at 0.41.2 is the published measurement (the workstation's 14 September runs) and this is the
-#: newer release — exactly the case the paragraph above allows.
-PROVAEL_PIN = "0.42.0"
+#: at 0.41.2 is the published measurement (the workstation's 14 September runs) and that was the
+#: newer release — exactly the case the paragraph above allows — and moved with the 0.42.1 patch
+#: the next day, before any shard had run at 0.42.0, so the campaign directory names the release
+#: the containers actually install.
+PROVAEL_PIN = "0.42.1"
 PROVAEL = f"provael[lerobot]=={PROVAEL_PIN}"
 
 # --------------------------------------------------------------------------- #

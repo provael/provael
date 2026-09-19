@@ -6,14 +6,26 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+Nothing pending. The next entry opens when a post-0.42.1 change lands.
+
+## [0.42.1] — 2026-09-19
+
+A patch, one day after 0.42.0, because the fix to `published_measurement`'s lineage matching is
+shipped code that 0.42.0 users have the bug of, and because the evidence surfaces moved: the
+workstation's two remaining runs are committed, the leaderboard aggregates the 14 September
+re-measurement and names its source run, and the registry counts the real policies measured — two
+since the π0.5 arm, stated as a count of adapters with a committed arm and nothing more. The
+published measurement posture is unchanged from 0.42.0: measured with 0.41.2, one release behind,
+inside the window.
+
 ### Added
 
 - **The two runs the workstation finished on 18 September 2026 after the crash, committed.**
   `results/smolvla_libero_10_2026-09-14/` is now all ten LIBERO-10 tasks (shards 3–9 relaunched
   from their ledgers): roleplay 0/30, `none` 0/30, clean task success 12/30 and 0/30 under the
   frame — on the long-horizon suite the frame breaks completion without an envelope exit, on an
-  uncalibrated box shaped for the Object scenes. `results/pi05_libero_object_2026-09-18/` is the
-  first attack arm on a second architecture: π0.5 (`lerobot/pi05_libero_finetuned_v044`, native
+  uncalibrated box shaped for the Object scenes. `results/pi05_libero_object_2026-09-18/` is an
+  attack arm on a second architecture: π0.5 (`lerobot/pi05_libero_finetuned_v044`, native
   `pi05` adapter) on the ten Object tasks at three seeds, `roleplay` 1/30 against `none` 0/30
   (McNemar p = 1.0, clustered [0%, 10%]), task success 27/30 unattacked and 8/30 under the frame.
   It is the pre-registered study's *preliminary* leg (three seeds, two arms of eight), so no
@@ -23,14 +35,6 @@ All notable changes to this project are documented here. The format is based on
   backend sentence and the roadmap say `pi05` has a committed real-model result now. Both runs are
   other lineages than the published Object body (a different task suite; a different policy), so
   `watch/publish-freshness.json` does not move. The ledger grows to 96 rows.
-
-### Fixed
-
-- **`published_measurement` picks the record that represents the published body from the body's
-  own lineage.** It matched on (policy, suite, version); the LIBERO-10 shards that finished on the
-  morning of 18 September 2026 shared all three with the Object body and were newer, so the record
-  standing for the published body would have been one from another task suite. It matches the
-  full lineage now, and `watch/publish-freshness.json`'s `measuredAt` stays the Object body's.
 
 - **The committed leaderboard names the run it aggregates, and a workflow can move it to a newer
   one.** `leaderboard/results/source.json` sits beside the signed board and says which committed
@@ -46,6 +50,17 @@ All notable changes to this project are documented here. The format is based on
   against the published key. Written because the ten-task suite had been re-measured on 0.41.2
   (#255) while the board still said 0.32.0, and the key that could move it lives only in the
   secret.
+
+- **The registry counts the distinct real policies measured, beside the families.**
+  `provael coverage` and `watch/registry.json` gain `realPoliciesTested` and `realPolicyNames`,
+  derived from the same scan as `realPolicyFamilies` (same fixture exclusions, same applicability
+  test; a policy counts with at least one applicable adversarial episode in a committed run), so
+  the count rose to 2 (`pi05`, `smolvla`) the day the π0.5 arm landed rather than the day someone
+  edited a constant. The `meaning` string says what it is not: a scaffolding adapter never run does
+  not count, a registered adapter is not a measured one, a policy is not an architecture, and one
+  checkpoint is not a survey. The README's coverage breakdown carries the count and the names, held
+  to the counter by the same test that holds its family counts, and the generated
+  `list-policies` inventory line states it beside the registered and scaffolding counts.
 
 ### Changed
 
@@ -64,6 +79,14 @@ All notable changes to this project are documented here. The format is based on
   policy (the breadth probe ran it at n = 3), which moves the committed crosswalk, manifest and
   assurance goldens; and the control run's notes cite the reframe erratum by its number,
   E-2026-12.
+
+### Fixed
+
+- **`published_measurement` picks the record that represents the published body from the body's
+  own lineage.** It matched on (policy, suite, version); the LIBERO-10 shards that finished on the
+  morning of 18 September 2026 shared all three with the Object body and were newer, so the record
+  standing for the published body would have been one from another task suite. It matches the
+  full lineage now, and `watch/publish-freshness.json`'s `measuredAt` stays the Object body's.
 
 ## [0.42.0] — 2026-09-18
 

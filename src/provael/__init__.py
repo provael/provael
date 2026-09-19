@@ -10,7 +10,7 @@ StubSuite. Real VLA policies (e.g. SmolVLA via LeRobot) live behind the optional
 ``provael[lerobot]`` extra and are gated behind ``PROVAEL_INTEGRATION=1``.
 """
 
-__version__ = "0.42.0"
+__version__ = "0.42.1"
 
 # ── The documented public surface ────────────────────────────────────────────
 #
