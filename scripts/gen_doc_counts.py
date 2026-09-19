@@ -41,7 +41,7 @@ import sys
 from pathlib import Path
 
 from provael.attacks.registry import ATTACKS
-from provael.coverage import NON_ADVERSARIAL_FAMILIES
+from provael.coverage import NON_ADVERSARIAL_FAMILIES, coverage
 from provael.policies.registry import POLICIES, SCAFFOLDING_POLICIES
 from provael.suites import FIXTURE_SUITES, REQUIRES_LEROBOT, SCAFFOLDING_SUITES, SUITES
 
@@ -69,6 +69,9 @@ def _counts() -> dict[str, int]:
         "non_adversarial_families": len(NON_ADVERSARIAL_FAMILIES),
         "policies": len(POLICIES),
         "policies_scaffolding": len(SCAFFOLDING_POLICIES),
+        # Measured, not registered: the fourth convention, read from the committed runs through the
+        # same counter watch/registry.json is generated from (a checkout; a wheel has no results/).
+        "policies_measured": coverage().real_policies_tested,
         "suites": len(SUITES),
         "suites_fixture": len(FIXTURE_SUITES),
         "suites_gated": len(REQUIRES_LEROBOT),
@@ -88,7 +91,9 @@ def rendered() -> dict[str, str]:
         ),
         "policies": (
             f"{n['policies']} policies — 1 CPU (stub), {n['policies'] - 1} need a GPU extra, "
-            f"of which {n['policies_scaffolding']} are registered scaffolding"
+            f"of which {n['policies_scaffolding']} are registered scaffolding; "
+            f"{n['policies_measured']} have a committed real-model result "
+            f"({', '.join(coverage().real_policy_names)})"
         ),
         # REGISTERED, not runnable, and the difference is stated rather than rounded away. The docs
         # said "5 suites" because five are runnable; watch/registry.json publishes 6 because six are

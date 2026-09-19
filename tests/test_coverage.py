@@ -279,6 +279,10 @@ def test_readme_breakdown_matches_the_counter() -> None:
         f"{c.real_policy_tested} exercised against a real policy**",
         f"**{c.stub_validated_only} stub-validated only**",
         f"**{c.adversarial_attacks} adversarial attacks**",
+        # The policy count beside the family count, with the names — the second architecture's
+        # committed arm (18 September 2026) must reach the README from the counter, not from prose.
+        f"**{c.real_policies_tested} real policies** ("
+        + ", ".join(f"`{name}`" for name in c.real_policy_names),
     ]
     missing = [e for e in expected if e not in text]
     assert not missing, (

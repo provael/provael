@@ -161,13 +161,16 @@ and prints it as three numbers on purpose, because *registered is not validated*
 **17 adversarial families registered, 8 exercised against a real policy** (`instruction`, `visual`, `injection`,
 `gradient_patch`, `optimized_instruction`, `optimized_patch`, `universal_patch`,
 `weight_integrity` — one of the eight transferred; the other seven returned measured nulls, five
-of them at n = 3, which is a result and not a rate), **9 stub-validated only**. Note also that the
+of them at n = 3, which is a result and not a rate), **9 stub-validated only**, measured on
+**2 real policies** (`pi05`, `smolvla` — `realPoliciesTested` and `realPolicyNames` in
+[`watch/registry.json`](watch/registry.json), derived from the committed runs, never typed; a
+policy is not an architecture, and one checkpoint is not a survey). Note also that the
 registry holds **39 adversarial attacks**, which is not the same number as 17 families; reading
 the registry dict's length as a family count overstates coverage by 14. It red-teams **8
 policies** — the CPU `stub`
 plus real **SmolVLA / π0 / π0.5 / π0-FAST** (via the `[lerobot]` extra), **OpenVLA**
 (via `[openvla]`), and **π0 served by openpi** — Physical Intelligence's own stack, via the CPU-only
-`[openpi]` websocket client to a GPU policy server. **Three of those eight are registered scaffolding**: `groot` (needs `lerobot[groot]`, which `provael[lerobot]` does not provision), `openvla` and `openpi` have each been structurally tested but have **never had a checkpoint loaded here**. Two backends have committed real-model results: `smolvla` (the ten-task suite) and `pi05` (a three-seed preliminary leg on the same tasks, `results/pi05_libero_object_2026-09-18/`). `provael list-policies` gives each backend a `status` of `measured` / `scaffolding` / `no run committed here`, so the difference is visible before you point `--policy` at one. Suites: **7** registered (`stub` + `reach` +
+`[openpi]` websocket client to a GPU policy server. **Three of those eight are registered scaffolding**: `groot` (needs `lerobot[groot]`, which `provael[lerobot]` does not provision), `openvla` and `openpi` have each been structurally tested but have **never had a checkpoint loaded here**. Two backends have committed real-model results: `smolvla` (the ten-task suite) and `pi05` — `lerobot/pi05_libero_finetuned_v044` as recorded in the committed run, [`results/pi05_libero_object_2026-09-18/`](results/pi05_libero_object_2026-09-18/README.md): the ten Object tasks at three seeds, `roleplay` 1/30 against `none` 0/30, McNemar p = 1.0. In the changelog's words, "it is the pre-registered study's *preliminary* leg (three seeds, two arms of eight), so no transfer of the envelope-exit effect is claimed and no headline moves", and because that run is "a different policy" from the published Object body, "`watch/publish-freshness.json` does not move". `provael list-policies` gives each backend a `status` of `measured` / `scaffolding` / `no run committed here`, so the difference is visible before you point `--policy` at one. Suites: **7** registered (`stub` + `reach` +
 `humanoid` on CPU; **LIBERO** + **Meta-World** gated; `ai2_bridge` and `vla_arena` are
 **scaffolding** — registered and structurally tested, but no benchmark has ever been run through
 either, so neither is coverage; `vla_arena` is the declared-predicate suite that needs its own
