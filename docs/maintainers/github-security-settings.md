@@ -70,6 +70,19 @@ was just rebuilt or re-stamped. The comment beside each `git commit` says which 
 - [ ] Dependabot security updates enabled
 - [ ] CodeQL / OpenSSF Scorecard reviewed (see `.github/workflows/scorecard.yml`)
 
+## Repository presentation (UI only)
+
+Moved here from a reader-facing comment block in `docs/community.md` on 20 September 2026; the
+topics and labels are set by API in the same pass, the two items below cannot be.
+
+- [ ] Social preview image uploaded (`docs/assets/social_preview.png`, 1280×640): Settings →
+      General → Social preview → Edit → Upload
+- [ ] Discussions categories **Top-10 RFC** and **Results** created beside the default six
+      (Discussions → categories → New category); the RFC page and the community page link to them
+- [ ] Repository topics include `eu-ai-act` and `machinery-regulation` beside the existing set
+      (`gh repo edit --add-topic`)
+- [ ] Labels `attack-family` and `assessment` exist for the issue forms (`gh label list`)
+
 ## Access & apps
 
 - [ ] Audit installed GitHub Apps and their scopes

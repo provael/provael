@@ -63,26 +63,3 @@ reproduction run against it, [open an issue](https://github.com/provael/provael/
 Reproductions of other people's numbers are welcome here and get published whichever way they come
 out — including when they fail to reproduce ours.
 
-<!--
-========================================================================================
-MAINTAINER TODO — one-time GitHub UI actions (cannot be set via API / not in this repo)
-========================================================================================
-
-1) SOCIAL PREVIEW IMAGE  (docs/assets/social_preview.png, 1280x640)
-   GitHub does not allow setting the social preview via API — upload it by hand:
-     Repo -> Settings -> General (the default Settings page) -> scroll to "Social preview"
-       -> "Edit" -> "Upload an image..." -> choose docs/assets/social_preview.png -> save.
-   This is the card shown when the repo is linked on X / LinkedIn / Slack / Discord.
-
-2) REPO TOPICS  (repo home page -> "About" -> the gear icon -> "Topics")
-   Add:
-     robot-security, vla, embodied-ai, red-teaming, ai-security, smolvla, libero,
-     lerobot, sarif, eu-ai-act, machinery-regulation, robotics, ai-safety
-
-3) DISCUSSIONS + LABELS
-   - Settings -> Features -> enable "Discussions", then create the categories above
-     (Announcements, Top-10 RFC, Results, Q&A).
-   - Labels used by the new issue forms — create if missing (Issues -> Labels):
-       attack-family, assessment      (the "top10" label already exists)
-========================================================================================
--->
