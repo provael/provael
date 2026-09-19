@@ -1,0 +1,39 @@
+Provael
+Copyright 2026 Sattyam Jain
+
+This product includes software developed by the Provael project (https://provael.com).
+
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+The name "Provael" is an unregistered mark of Sattyam Jain; see TRADEMARKS.md. The Embodied AI
+Security Top 10 (docs/top10.md) is a separate community document under CC-BY-SA 4.0 and is not
+covered by this NOTICE.
+
+-----------------------------------------------------------------------------------------------
+Third-party software
+-----------------------------------------------------------------------------------------------
+
+Nothing below is bundled in the Provael sdist or wheel. The optional extras declared in
+pyproject.toml install these packages from their own distributions under their own licences;
+they are listed here because a Provael run that uses them produces results the project publishes.
+
+  lerobot (Hugging Face)                Apache License 2.0
+    https://github.com/huggingface/lerobot
+    Installed by the [lerobot] and [hardware] extras (pinned 0.5.1). Provides the SmolVLA policy
+    loading path and the LIBERO simulator environment.
+
+  LIBERO (Lifelong Robot Learning)      MIT License
+    https://github.com/Lifelong-Robot-Learning/LIBERO
+    Installed through lerobot's [libero] extra. The benchmark the published body was measured on.
+
+  openpi-client (Physical Intelligence) Apache License 2.0
+    https://github.com/Physical-Intelligence/openpi
+    Installed by the [openpi] extra. Websocket client to an openpi policy server.
+
+One third-party file is checked into this repository outside the Python package:
+
+  paper/spais/neurips_2026.sty          NeurIPS 2026 LaTeX style file, used under its authors'
+                                        terms for a conference submission; not part of any
+                                        distributed Provael artifact.
+
+No MuJoCo Menagerie or other simulator asset is vendored in this repository.

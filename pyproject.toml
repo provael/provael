@@ -14,7 +14,7 @@ readme = "README.md"
 # classifier below per interpreter a CI lane runs.
 requires-python = ">=3.12"
 license = "Apache-2.0"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Sattyam Jain", email = "sattyamjain96@gmail.com" }]
 maintainers = [{ name = "Sattyam Jain", email = "sattyamjain96@gmail.com" }]
 keywords = [
