@@ -14,6 +14,22 @@ Copy the file for your platform into the consumer repo. The default `stub` polic
 extra (see the `redteam-real` job in `github-actions.yml`). SARIF also lands in DefectDojo /
 SonarQube — see [../integrations/sarif-aggregators.md](../integrations/sarif-aggregators.md).
 
+## The release decision: a named protocol, gated separately from the diagnostic
+
+`asr-threshold` compares the **pooled** adversarial ASR, and a pool is descriptive: seven arms can
+pool to 7/30 while one of them sits at 5/5. Pass an **acceptance protocol** (YAML/JSON, the
+`protocol` input) and the release decision is made against criteria written down before the run —
+critical attacks and tasks each gated on their own slice, required controls and seeds, an optional
+bounded exception. `provael attack --protocol` writes `report.decision.json` beside `report.json`;
+the Action publishes it as `release-verdict` (`pass | fail | conditional | incomplete`) and
+`protocol`, and the gate fails the job on `fail` whatever the pooled rate did. A critical slice that
+did not run is `incomplete`, never 0%.
+
+Without a protocol the run is a **diagnostic**: measured, `release-verdict` empty, nothing decided.
+Set `release-mode: "true"` on the job that ships, and an undecided or `incomplete` run fails it.
+The same protocol's critical attacks drive the regression gate (`baseline`) on their own slices,
+so a critical arm regressing under a flat aggregate is a regression.
+
 ## Measuring a defense in CI (opt-in)
 
 Set the Action's `defense` input to a registered defense name (`provael list-defenses`) and a

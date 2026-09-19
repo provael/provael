@@ -27,6 +27,21 @@ All notable changes to this project are documented here. The format is based on
   names the requirement keys it may soften. At decision time the caller passes `as_of`: an expired
   exception is refused and says so, an uncovered gap stays `incomplete`, an exception with no
   decision time is not applied, and a failed threshold is never softened.
+- **Critical slices are judged on their own denominators, and the CI gate follows them.**
+  `ReleaseRequirements` gains `critical_attacks` and `critical_tasks` (each a `SliceGate`:
+  `max_asr`, `min_attempts`, `estimator` = point or Wilson upper bound; equality passes) and
+  `min_clean_task_success`. A critical attack is compared on its own adversarial episodes, a
+  critical task on that task's adversarial episodes only (`scoring.asr.adversarial_by_task`; the
+  benign and harmless-variation arms never enter the denominator), and a slice that did not run,
+  measured no applicable episode or ran below `min_attempts` is `incomplete`, never a 0%. Naming the
+  benign control as a critical attack is a protocol error. The pooled `max_adversarial_asr` stays as
+  an aggregate gate and the pooled rate stays descriptive: the task-0 shard now fails a protocol that
+  names `roleplay` critical however many ineffective arms are added beside it. `regression.diff_reports`
+  takes `critical_attacks` and `RegressionDiff.regressed` trips on a critical attack's own slice with
+  a flat aggregate (`critical_regressed`, `critical_unmeasured` say which). `provael attack` and
+  `provael report` take `--protocol`; the Action gains `protocol` and `release-mode` inputs and
+  `release-verdict`, `protocol`, `critical-regressed` outputs — `fail` fails the job always,
+  `incomplete` or no protocol fails it in release mode, and the annotation names the slice.
 - **The scorecard leads with the protocol's release verdict, not its own.** `--threshold` still
   compares the pooled adversarial ASR, on a line now labelled "Pooled threshold comparison
   (descriptive; not the release decision)"; the release verdict above it is the same

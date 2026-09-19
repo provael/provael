@@ -14,6 +14,8 @@ from provael.avid import to_avid_json, write_avid
 from provael.cli._shared import (
     ExportFormat,
     OutputFormat,
+    _critical_attacks,
+    _decision_for,
     _err,
     _fail,
     _family_transfer_tests,
@@ -105,6 +107,16 @@ def report(
             "--no-sign", help="With --attest-out, emit a digest-only bundle (no signature)."
         ),
     ] = False,
+    protocol: Annotated[
+        Path | None,
+        typer.Option(
+            "--protocol",
+            help="Acceptance protocol (YAML/JSON) to decide the run against. Without it the run's "
+            "own report.decision.json is used when present, else the run is rendered as not "
+            "assessed. With --baseline, the protocol's critical attacks are gated on their own "
+            "slices.",
+        ),
+    ] = None,
 ) -> None:
     """Print a summary of a previously written report, or emit it as SARIF / compliance evidence."""
     try:
@@ -115,9 +127,11 @@ def report(
     except ValidationError:
         _fail(f"{in_dir} does not contain a valid Provael report.json")
         return
+    decision = _decision_for(in_dir, loaded, protocol)
     if baseline is not None:
         _report_baseline(
-            loaded, baseline, regression_tolerance, out, sarif_out, attest_out, key, no_sign
+            loaded, baseline, regression_tolerance, out, sarif_out, attest_out, key, no_sign,
+            critical_attacks=_critical_attacks(protocol),
         )
         return
     if fmt is OutputFormat.sarif:
@@ -139,10 +153,10 @@ def report(
         return
     if fmt is OutputFormat.scorecard:
         if out is not None:
-            write_scorecard(loaded, out, threshold)
+            write_scorecard(loaded, out, threshold, decision)
             _out.print(f"Wrote [cyan]{out}[/cyan]  (pre-deployment ASR scorecard)")
         else:
-            print(to_scorecard_markdown(loaded, threshold))  # one-page Markdown to stdout
+            print(to_scorecard_markdown(loaded, threshold, decision))  # one-page Markdown
         return
     if fmt is OutputFormat.oscal:
         if out is not None:

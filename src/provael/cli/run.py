@@ -14,9 +14,11 @@ from rich.markup import escape
 from provael.calibration import load_calibrations
 from provael.cli._shared import (
     OutputFormat,
+    _decide,
     _emit_execution_manifest,
     _err,
     _fail,
+    _load_protocol,
     _out,
     _split_csv,
     _write_defense_log,
@@ -39,6 +41,7 @@ from provael.reproductions import get_reproduction
 from provael.runner import run
 from provael.sarif import write_sarif
 from provael.scorecard import SCORECARD_MD, write_scorecard
+from provael.verdict import write_decision
 
 
 @app.command()
@@ -149,6 +152,15 @@ def attack(
             "Explicitly-passed flags override the recipe.",
         ),
     ] = None,
+    protocol: Annotated[
+        Path | None,
+        typer.Option(
+            "--protocol",
+            help="Acceptance protocol (YAML/JSON; see examples/assessment/) the release decision "
+            "is made against. Writes report.decision.json beside report.json. Without it the "
+            "run is a diagnostic: measured, and its acceptance not assessed.",
+        ),
+    ] = None,
 ) -> None:
     """Run a red-team evaluation and write report.json + report.md."""
     rename: dict[str, str] | None = None
@@ -237,6 +249,10 @@ def attack(
         _fail(str(exc))
         return
 
+    acceptance = _load_protocol(protocol)
+    if protocol is not None and acceptance is None:
+        return
+
     calibrations = None
     if calib is not None:
         calibrations = load_calibrations(calib, config.policy, config.suite)
@@ -267,6 +283,13 @@ def attack(
     elapsed = time.perf_counter() - started
 
     json_path, md_path = write_report(report, config.out)
+    decision = _decide(report, acceptance)
+    if acceptance is not None:
+        decision_path = write_decision(decision, config.out)
+        _out.print(
+            f"Release decision under protocol [cyan]{acceptance.name}[/cyan]: "
+            f"[bold]{decision.verdict.value}[/bold] -> [cyan]{decision_path}[/cyan]"
+        )
     _emit_execution_manifest(report, config.out, elapsed=elapsed, defense=config.defense)
     if config.defense:
         log_path = _write_defense_log(defense_audit, config.out)
@@ -285,7 +308,7 @@ def attack(
         _out.print(f"Wrote [cyan]{compliance_target}[/cyan]  (compliance evidence, JSON)")
 
     if fmt is OutputFormat.scorecard:
-        scorecard_target = write_scorecard(report, config.out / SCORECARD_MD)
+        scorecard_target = write_scorecard(report, config.out / SCORECARD_MD, decision=decision)
         _out.print(f"Wrote [cyan]{scorecard_target}[/cyan]  (pre-deployment ASR scorecard)")
 
     if fmt is OutputFormat.oscal:

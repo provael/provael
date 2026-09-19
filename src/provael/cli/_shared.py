@@ -21,6 +21,7 @@ import os
 import platform
 import re
 import subprocess
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
@@ -66,6 +67,12 @@ from provael.regression import (
 from provael.report import load_report
 from provael.scoring.asr import by_family
 from provael.types import RunReport, TransferTest
+from provael.verdict import (
+    AcceptanceProtocol,
+    ReleaseDecision,
+    load_decision,
+    release_verdict,
+)
 
 
 class OutputFormat(StrEnum):
@@ -468,12 +475,69 @@ def _emit_regression_attestation(
         _out.print(f"Wrote [cyan]{attest_out}[/cyan]  (digest-only regression attestation)")
 
 
+def _load_protocol(path: Path | None) -> AcceptanceProtocol | None:
+    """Load the acceptance protocol at ``path``, or None when none was named.
+
+    A protocol that does not load is a hard error: the caller must not fall back to "not
+    assessed" when the operator asked for a decision. ``_fail`` exits the process; the ``None``
+    return after it is for the type checker (the CLI tests run in-process).
+    """
+    if path is None:
+        return None
+    try:
+        return AcceptanceProtocol.load(path)
+    except FileNotFoundError:
+        _fail(f"no acceptance protocol at {path}")
+    except (ValidationError, ValueError) as exc:
+        _fail(f"{path} is not a valid acceptance protocol: {exc}")
+    return None
+
+
+def _decide(report: RunReport, protocol: AcceptanceProtocol | None) -> ReleaseDecision:
+    """The ONE release decision a command makes, passed to every emitter it writes.
+
+    The decision time is the wall clock, which is fine here because the decision is a sidecar and
+    never part of ``report.json``; it is what an exception's expiry is judged against.
+    """
+    try:
+        return release_verdict(report, protocol, as_of=datetime.now(UTC))
+    except ValueError as exc:
+        _fail(str(exc))
+    return release_verdict(report)
+
+
+def _critical_attacks(protocol: Path | None) -> list[str]:
+    """The attacks the protocol at ``protocol`` names as critical, for the regression gate."""
+    acceptance = _load_protocol(protocol)
+    if acceptance is None:
+        return []
+    return sorted(acceptance.requirements.critical_attacks)
+
+
+def _decision_for(run_dir: Path, report: RunReport, protocol: Path | None) -> ReleaseDecision:
+    """A decision for a loaded run: from ``--protocol`` if given, else the run's sidecar, else none.
+
+    Re-deciding under a newly named protocol beats a stale sidecar; a sidecar beats nothing. A run
+    with neither is rendered as not assessed, which is the truth about it.
+    """
+    acceptance = _load_protocol(protocol)
+    if acceptance is not None:
+        return _decide(report, acceptance)
+    stored = load_decision(run_dir)
+    return stored if stored is not None else release_verdict(report)
+
+
 def _report_baseline(
     candidate_report: RunReport, baseline: Path, tolerance: float,
     out: Path | None, sarif_out: Path | None,
     attest_out: Path | None = None, key: Path | None = None, no_sign: bool = False,
+    critical_attacks: Sequence[str] = (),
 ) -> None:
-    """Run the per-checkpoint regression diff and exit non-zero if the candidate regressed."""
+    """Run the per-checkpoint regression diff and exit non-zero if the candidate regressed.
+
+    ``critical_attacks`` (from the acceptance protocol) are gated on their own slices, so a critical
+    arm regressing under a flat aggregate is a regression here too.
+    """
     try:
         baseline_report = load_report(baseline)
     except FileNotFoundError as exc:
@@ -483,7 +547,9 @@ def _report_baseline(
         _fail(f"{baseline} is not a valid Provael report.json")
         return
 
-    diff: RegressionDiff = diff_reports(candidate_report, baseline_report, tolerance)
+    diff: RegressionDiff = diff_reports(
+        candidate_report, baseline_report, tolerance, critical_attacks=critical_attacks
+    )
 
     table = Table(
         title=f"Provael — baseline-regression diff (tolerance {tolerance:.0%})", title_style="bold"
@@ -496,6 +562,12 @@ def _report_baseline(
     table.add_row(*_diff_row(diff.overall))
     for s in diff.by_eai:
         table.add_row(*_diff_row(s))
+    critical_rows = {s.key: s for s in diff.by_attack if s.key in diff.critical_attacks}
+    for name in diff.critical_attacks:
+        if name in critical_rows:
+            table.add_row(*_diff_row(critical_rows[name]))
+        else:
+            table.add_row(f"critical: {name}", "n/a", "n/a", "n/a", "not measured")
     _out.print(table)
 
     if out is not None:
@@ -511,10 +583,20 @@ def _report_baseline(
         _emit_regression_attestation(diff, candidate_report, attest_out, key, no_sign)
 
     if diff.regressed:
+        critical = (
+            f" Critical regression: {', '.join(diff.critical_regressed)}."
+            if diff.critical_regressed
+            else ""
+        )
         _fail(
             f"regression: {diff.overall.reason}. Regressed slices: "
-            f"{', '.join(diff.regressed_keys)}.",
+            f"{', '.join(diff.regressed_keys)}.{critical}",
             code=1,
+        )
+    if diff.critical_unmeasured:
+        _err.print(
+            f"[yellow]note:[/yellow] critical attack(s) not comparable (no data on one side): "
+            f"{', '.join(diff.critical_unmeasured)} — not shown to be safe."
         )
     _out.print("[green]no regression[/green] past the tolerance with disjoint 95% CIs.")
 

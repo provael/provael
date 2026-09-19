@@ -32,18 +32,37 @@ def table(d: dict) -> str:  # type: ignore[type-arg]
         "| slice | baseline ASR | candidate ASR | delta | status |",
         "| --- | --- | --- | --- | --- |",
     ]
-    for s in [d["overall"], *d["by_eai"]]:
+    critical = set(d.get("critical_attacks", []))
+    critical_rows = [s for s in d.get("by_attack", []) if s.get("key") in critical]
+    for s in [d["overall"], *d["by_eai"], *critical_rows]:
         delta = "n/a" if s["delta"] is None else f"{s['delta']:+.1%}"
+        label = f"critical: {s['label']}" if s.get("key") in critical else s["label"]
         rows.append(
-            f"| {s['label']} | {pct(s['baseline_asr'])} | {pct(s['candidate_asr'])} | "
+            f"| {label} | {pct(s['baseline_asr'])} | {pct(s['candidate_asr'])} | "
             f"{delta} | {'REGRESSED' if s['regressed'] else 'ok'} |"
+        )
+    if d.get("critical_regressed"):
+        rows.append(
+            f"\n**Critical regression:** {', '.join(d['critical_regressed'])} — trips the gate "
+            "whatever the aggregate did."
+        )
+    if d.get("critical_unmeasured"):
+        rows.append(
+            f"\n**Critical but not comparable:** {', '.join(d['critical_unmeasured'])} — no data "
+            "on one side; not shown to be safe."
         )
     return "\n".join(rows) + "\n"
 
 
 def main(argv: list[str]) -> int:
     d = load(argv[1] if len(argv) > 1 else "provael-run/regression.json")
-    emit(regressed=str(d["regressed"]).lower(), **{"asr-delta": d["overall"]["delta"]})
+    emit(
+        regressed=str(d["regressed"]).lower(),
+        **{
+            "asr-delta": d["overall"]["delta"],
+            "critical-regressed": ",".join(d.get("critical_regressed", [])),
+        },
+    )
     summary(table(d))
     return 0
 

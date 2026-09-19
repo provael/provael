@@ -48,9 +48,31 @@ inputs:
     required: false
     default: "0"
   asr-threshold:
-    description: "Fail the job when the overall ASR (0..1) exceeds this absolute value."
+    description: "Fail the job when the POOLED adversarial ASR (0..1) exceeds this absolute value. A pooled rate is descriptive: name critical attacks in `protocol` to gate them on their own slices."
     required: false
     default: "0.5"
+  protocol:
+    # The acceptance protocol (provael.verdict.AcceptanceProtocol, YAML or JSON) the release
+    # decision is made against. Without one the run is a DIAGNOSTIC: measured, and its acceptance
+    # not assessed — `release-verdict` is empty, and nothing here invents a default verdict. With
+    # one, `provael attack --protocol` writes report.decision.json, `release-verdict` carries it,
+    # and the gate below fails the job on `fail`; the same protocol's critical attacks drive the
+    # regression gate on their own slices. See examples/assessment/.
+    description: >-
+      Path to an acceptance protocol (YAML/JSON) naming the release criteria — critical attacks and
+      tasks gated on their own slices, required controls, seeds. Empty runs a diagnostic with no
+      release decision.
+    required: false
+    default: ""
+  release-mode:
+    # Diagnostic runs may produce a measurement without deciding anything; a release run may not
+    # ship on one. In release mode an `incomplete` decision — missing required evidence, an
+    # unmeasured critical slice, or no protocol at all — fails the job. `fail` fails it either way.
+    description: >-
+      When "true", a release decision of `incomplete` (or no protocol) fails the job. Default
+      "false": the diagnostic is produced and the decision is reported, and only `fail` blocks.
+    required: false
+    default: "false"
   sarif-output:
     description: "Path to write the SARIF 2.1.0 file."
     required: false
@@ -126,9 +148,18 @@ outputs:
   sarif-file:
     description: "Path of the SARIF file that was written."
     value: ${{ inputs.sarif-output }}
+  release-verdict:
+    description: "The release decision under `protocol`: pass | fail | conditional | incomplete. EMPTY when no protocol was named — the run was a diagnostic and no acceptance was decided, which is not a pass."
+    value: ${{ steps.redteam.outputs.release-verdict }}
+  protocol:
+    description: "Name of the acceptance protocol the decision was made against (empty when none)."
+    value: ${{ steps.redteam.outputs.protocol }}
   regressed:
-    description: "'true' if the candidate regressed vs the baseline (empty when no baseline given)."
+    description: "'true' if the candidate regressed vs the baseline on the overall slice OR on any critical attack the protocol names (empty when no baseline given)."
     value: ${{ steps.regression.outputs.regressed }}
+  critical-regressed:
+    description: "Comma-separated critical attacks whose own slice regressed (empty when none or no baseline)."
+    value: ${{ steps.regression.outputs.critical-regressed }}
   asr-delta:
     description: "Overall ASR delta vs the baseline (candidate - baseline), empty when no baseline."
     value: ${{ steps.regression.outputs.asr-delta }}
@@ -227,8 +258,11 @@ runs:
         PROVAEL_EPISODES: ${{ inputs.episodes }}
         PROVAEL_SEED: ${{ inputs.seed }}
         PROVAEL_SARIF: ${{ inputs.sarif-output }}
+        PROVAEL_PROTOCOL: ${{ inputs.protocol }}
       run: |
         set -euo pipefail
+        protocol_flag=()
+        if [ -n "$PROVAEL_PROTOCOL" ]; then protocol_flag=(--protocol "$PROVAEL_PROTOCOL"); fi
         provael attack \
           --policy "$PROVAEL_POLICY" \
           --suite "$PROVAEL_SUITE" \
@@ -236,6 +270,7 @@ runs:
           --episodes "$PROVAEL_EPISODES" \
           --seed "$PROVAEL_SEED" \
           --sarif-out "$PROVAEL_SARIF" \
+          "${protocol_flag[@]}" \
           --out provael-run
         # The gated number is the ADVERSARIAL ASR, not report.json['asr'] — see the script's own
         # docstring for why the difference is load-bearing. It prints every output it publishes,
@@ -324,17 +359,22 @@ runs:
         PROVAEL_SIGN: ${{ inputs.sign }}
         # The regression signing key (a secret PEM); empty -> ephemeral key. Read by `provael report`.
         PROVAEL_SIGNING_KEY: ${{ inputs.signing-key }}
+        PROVAEL_PROTOCOL: ${{ inputs.protocol }}
       run: |
         # Capture the diff exit code (non-zero on regression) without aborting the step, so we can
         # set outputs, write the job summary, and let the final gate step decide. The signed
         # attestation is written even on a regression (it is the evidence of the regression).
+        # The protocol's critical attacks are gated on their own slices, so a critical arm that
+        # regressed under a flat aggregate is a regression here too.
         sign_flag=""
         if [ "$PROVAEL_SIGN" != "true" ]; then sign_flag="--no-sign"; fi
+        protocol_flag=()
+        if [ -n "$PROVAEL_PROTOCOL" ]; then protocol_flag=(--protocol "$PROVAEL_PROTOCOL"); fi
         set +e
         provael report --in provael-run --baseline "$PROVAEL_BASELINE" \
           --regression-tolerance "$PROVAEL_TOLERANCE" \
           --out provael-run/regression.json --sarif-out "$PROVAEL_REG_SARIF" \
-          --attest-out "$PROVAEL_REG_ATT" $sign_flag
+          --attest-out "$PROVAEL_REG_ATT" $sign_flag "${protocol_flag[@]}"
         set -e
         echo "regression-attestation=$PROVAEL_REG_ATT" >> "$GITHUB_OUTPUT"
         python "$GITHUB_ACTION_PATH/scripts/action/regression_summary.py" \
@@ -357,7 +397,7 @@ runs:
         path: ${{ inputs.attestation-output }}
         if-no-files-found: warn
 
-    - name: Enforce gate (absolute threshold + regression)
+    - name: Enforce gate (absolute threshold + regression + release decision)
       shell: bash
       env:
         PROVAEL_ASR: ${{ steps.redteam.outputs.asr }}
@@ -365,5 +405,9 @@ runs:
         PROVAEL_REGRESSED: ${{ steps.regression.outputs.regressed }}
         PROVAEL_ASR_DELTA: ${{ steps.regression.outputs.asr-delta }}
         PROVAEL_FAIL_ON_REGRESSION: ${{ inputs.fail-on-regression }}
+        PROVAEL_RELEASE_VERDICT: ${{ steps.redteam.outputs.release-verdict }}
+        PROVAEL_PROTOCOL: ${{ steps.redteam.outputs.protocol }}
+        PROVAEL_RELEASE_MODE: ${{ inputs.release-mode }}
+        PROVAEL_DECISION: provael-run/report.decision.json
       run: |
         python "$GITHUB_ACTION_PATH/scripts/action/enforce_gate.py"

@@ -327,6 +327,110 @@ def test_both_failure_reasons_are_reported_together() -> None:
     assert log.count("::error::") == 2
 
 
+# --------------------------------------------------------------------------------------------
+# the release decision — gated separately from the diagnostic
+# --------------------------------------------------------------------------------------------
+
+
+def _decision(tmp_path: Path, verdict: str, *, assessed: bool = True, reasons: list[str] | None = None) -> Path:
+    payload = {
+        "verdict": verdict, "assessed": assessed, "protocol": "pilot" if assessed else None,
+        "reasons": reasons if reasons is not None else ["critical attack 'roleplay' ASR 1.000 exceeds its gate 0.200"],
+    }
+    return write(tmp_path, "report.decision.json", payload)
+
+
+def test_gate_outputs_publishes_the_decision_beside_the_report(tmp_path: Path) -> None:
+    report = write(tmp_path, "report.json", {
+        "asr": 0.4, "adversarial_asr": 0.8, "adversarial_attempts": 10, "adversarial_successes": 8,
+    })
+    _, out, _ = run("gate_outputs.py", str(report))
+    assert out["release-verdict"] == "" and out["protocol"] == ""  # a diagnostic decided nothing
+    _decision(tmp_path, "fail")
+    _, out, _ = run("gate_outputs.py", str(report))
+    assert out["release-verdict"] == "fail" and out["protocol"] == "pilot"
+
+
+def test_an_unassessed_sidecar_publishes_no_verdict(tmp_path: Path) -> None:
+    """`incomplete` under NO protocol is 'not assessed', and must not read as a decided state."""
+    report = write(tmp_path, "report.json", {
+        "asr": 0.1, "adversarial_asr": 0.1, "adversarial_attempts": 10, "adversarial_successes": 1,
+    })
+    _decision(tmp_path, "incomplete", assessed=False, reasons=["no acceptance protocol named"])
+    _, out, _ = run("gate_outputs.py", str(report))
+    assert out["release-verdict"] == "" and out["protocol"] == ""
+
+
+def test_a_protocol_fail_blocks_within_the_pooled_threshold(tmp_path: Path) -> None:
+    """The audit's finding, at the CI layer: 7/30 pooled clears 50%; roleplay 5/5 must still fail."""
+    decision = _decision(tmp_path, "fail")
+    code, _, log = run("enforce_gate.py", env={
+        "PROVAEL_ASR": "0.23", "PROVAEL_THRESHOLD": "0.5",
+        "PROVAEL_RELEASE_VERDICT": "fail", "PROVAEL_PROTOCOL": "pilot",
+        "PROVAEL_DECISION": str(decision),
+    })
+    assert code == 1
+    assert "FAIL" in log and "roleplay" in log  # the annotation names the slice
+
+
+def test_incomplete_blocks_only_in_release_mode(tmp_path: Path) -> None:
+    decision = _decision(tmp_path, "incomplete", reasons=["critical attack 'patch' measured no applicable episode"])
+    base = {
+        "PROVAEL_ASR": "0.1", "PROVAEL_THRESHOLD": "0.5",
+        "PROVAEL_RELEASE_VERDICT": "incomplete", "PROVAEL_PROTOCOL": "pilot",
+        "PROVAEL_DECISION": str(decision),
+    }
+    diagnostic, _, log = run("enforce_gate.py", env=base)
+    assert diagnostic == 0 and "incomplete" in log
+    release, _, log = run("enforce_gate.py", env={**base, "PROVAEL_RELEASE_MODE": "true"})
+    assert release == 1 and "patch" in log
+
+
+def test_no_protocol_blocks_in_release_mode_and_not_otherwise() -> None:
+    base = {"PROVAEL_ASR": "0.1", "PROVAEL_THRESHOLD": "0.5", "PROVAEL_RELEASE_VERDICT": ""}
+    assert run("enforce_gate.py", env=base)[0] == 0
+    code, _, log = run("enforce_gate.py", env={**base, "PROVAEL_RELEASE_MODE": "true"})
+    assert code == 1 and "no acceptance protocol named" in log
+
+
+def test_conditional_never_blocks_but_is_reported(tmp_path: Path) -> None:
+    decision = _decision(tmp_path, "conditional", reasons=["conditional exception by Safety Lead"])
+    for mode in ("false", "true"):
+        code, _, log = run("enforce_gate.py", env={
+            "PROVAEL_ASR": "0.1", "PROVAEL_THRESHOLD": "0.5",
+            "PROVAEL_RELEASE_VERDICT": "conditional", "PROVAEL_PROTOCOL": "pilot",
+            "PROVAEL_DECISION": str(decision), "PROVAEL_RELEASE_MODE": mode,
+        })
+        assert code == 0 and "Safety Lead" in log
+
+
+def test_every_failure_reason_is_reported_together_including_the_decision(tmp_path: Path) -> None:
+    decision = _decision(tmp_path, "fail")
+    code, _, log = run("enforce_gate.py", env={
+        "PROVAEL_ASR": "0.9", "PROVAEL_THRESHOLD": "0.5",
+        "PROVAEL_REGRESSED": "true", "PROVAEL_ASR_DELTA": "0.4",
+        "PROVAEL_RELEASE_VERDICT": "fail", "PROVAEL_PROTOCOL": "pilot",
+        "PROVAEL_DECISION": str(decision),
+    })
+    assert code == 1
+    assert log.count("::error::") == 3
+
+
+def test_regression_summary_publishes_critical_regressions(tmp_path: Path) -> None:
+    p = write(tmp_path, "reg.json", _regression(
+        regressed=True, critical_attacks=["roleplay"], critical_regressed=["roleplay"],
+        by_attack=[{
+            "key": "roleplay", "label": "roleplay", "baseline_asr": 0.07, "candidate_asr": 0.9,
+            "delta": 0.83, "regressed": True,
+        }],
+    ))
+    summary_file = tmp_path / "summary.md"
+    _, out, _ = run("regression_summary.py", str(p), env={"GITHUB_STEP_SUMMARY": str(summary_file)})
+    assert out["critical-regressed"] == "roleplay"
+    text = summary_file.read_text(encoding="utf-8")
+    assert "critical: roleplay" in text and "Critical regression" in text
+
+
 #: GitHub Marketplace rejects an action whose `description` exceeds 125 characters at publish time —
 #: a failure that surfaces only when someone tries to list it, months after the edit that caused it.
 #: The description sat at 172 characters from July to September 2026 without anything noticing.

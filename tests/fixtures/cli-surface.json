@@ -323,6 +323,16 @@
      ],
      "required": false,
      "secondary_opts": []
+    },
+    {
+     "help": "Acceptance protocol (YAML/JSON; see examples/assessment/) the release decision is made against. Writes report.decision.json beside report.json. Without it the run is a diagnostic: measured, and its acceptance not assessed.",
+     "is_flag": false,
+     "name": "protocol",
+     "opts": [
+      "--protocol"
+     ],
+     "required": false,
+     "secondary_opts": []
     }
    ],
    "short_help": null
@@ -514,6 +524,16 @@
      "name": "no_sign",
      "opts": [
       "--no-sign"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Acceptance protocol (YAML/JSON) to decide the run against. Without it the run's own report.decision.json is used when present, else the run is rendered as not assessed. With --baseline, the protocol's critical attacks are gated on their own slices.",
+     "is_flag": false,
+     "name": "protocol",
+     "opts": [
+      "--protocol"
      ],
      "required": false,
      "secondary_opts": []
