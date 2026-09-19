@@ -91,13 +91,15 @@ reads like a broken package rather than a version floor. Verified by running it.
 states the requirement at the install command.
 
 **2. The README says `libero_object`; the CLI suite is `libero`. Named, not changed.**
-README prose names the measured thing `libero_object` six times, and `--suite libero_object` is not
+README prose named the measured thing `libero_object` six times, and `--suite libero_object` is not
 valid. The failure is well handled — the CLI answers
 `unknown suite 'libero_object'; available: ['humanoid', 'libero', 'metaworld', 'reach', 'stub']`,
 which is a good error — and the correct command is documented in `docs/quickstart.md`,
 `leaderboard/README.md`, `CONTRIBUTING-leaderboard.md` and the results README. Renaming a CLI
 surface or a results directory to close a prose mismatch is a bigger change than this exercise
-justifies, so it is recorded rather than fixed.
+justifies, so it was recorded rather than fixed. *(Closed on 20 September 2026 the other way round:
+the prose now uses the CLI's own names — suite `libero`, tasks `libero_object/<i>` — in the README
+and the quickstart.)*
 
 **3. The real wall is a GPU bill, not a papercut. Not fixable here.**
 See the block above. It is already documented with its exact cost, which is the most that

@@ -51,8 +51,14 @@ statement of conformity.
 ```bash
 pip install 'provael[lerobot]'                 # GPU
 PROVAEL_INTEGRATION=1 provael attack --policy smolvla --suite libero \
+    --tasks libero_object/0,libero_object/1,libero_object/2,libero_object/3,libero_object/4,libero_object/5,libero_object/6,libero_object/7,libero_object/8,libero_object/9 \
     --model HuggingFaceVLA/smolvla_libero --attacks none,instruction,visual,injection
 ```
+
+The suite is `libero`; `libero_object` is a **task filter** inside it, spelled `libero_object/<i>`
+(`--suite libero_object` is not a suite name — the CLI lists the valid ones in its error). The
+published body is exactly those ten tasks; `libero_spatial/*`, `libero_goal/*` and `libero_10/*`
+select the other LIBERO task suites through the same adapter.
 
 See the [examples gallery](examples.md) for π0 / GR00T / OpenVLA adapters and the second
 (Meta-World) suite.

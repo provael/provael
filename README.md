@@ -60,13 +60,15 @@ was named. Timed on a clean container: **20 s** from `pip install` to a written 
 
 | Policy | Suite | Status | Evidence |
 | --- | --- | --- | --- |
-| `smolvla` — `HuggingFaceVLA/smolvla_libero` | `libero`, task suite `libero_object` (10 tasks) | **measured**, the published body | [14 Sep 2026 run](results/smolvla_libero_object_suite_2026-09-14/README.md) · [delivery pack](examples/delivery-pack/smolvla-libero-object-2026-09-14/README.md) |
-| `pi05` — `lerobot/pi05_libero_finetuned_v044` | `libero`, `libero_object` | **measured — preliminary** (3 seeds, 2 of 8 arms, at the floor) | [18 Sep 2026 run](results/pi05_libero_object_2026-09-18/README.md) |
+| `smolvla` — `HuggingFaceVLA/smolvla_libero` | `--suite libero --tasks libero_object/0…9` (10 tasks) | **measured**, the published body | [14 Sep 2026 run](results/smolvla_libero_object_suite_2026-09-14/README.md) · [delivery pack](examples/delivery-pack/smolvla-libero-object-2026-09-14/README.md) |
+| `pi05` — `lerobot/pi05_libero_finetuned_v044` | `--suite libero --tasks libero_object/0…9` | **measured — preliminary** (3 seeds, 2 of 8 arms, at the floor) | [18 Sep 2026 run](results/pi05_libero_object_2026-09-18/README.md) |
 | `stub` | `stub`, `reach`, `humanoid` (CPU fixtures) | fixture | the run above |
 
-The real rows need a GPU, Linux and `[lerobot]`. Every other registered adapter (`pi0`, `pi0fast`,
-`groot`, `openvla`, `openpi`) and suite (Meta-World, `ai2_bridge`, `vla_arena`) has **no run
-committed here** or is **scaffolding**; `provael list-policies` / `list-suites` print each one's status.
+`libero_object` is a **task filter, not a suite**: the suite is `libero`, the ten Object tasks are
+`--tasks libero_object/0,…,9`. The real rows need a GPU, Linux and `[lerobot]`. Every other registered
+adapter (`pi0`, `pi0fast`, `groot`, `openvla`, `openpi`) and suite (Meta-World, `ai2_bridge`,
+`vla_arena`) has **no run committed here** or is **scaffolding**; `provael list-policies` /
+`list-suites` print each one's status.
 
 ## The measured result
 
