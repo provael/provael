@@ -5,6 +5,13 @@ labels: ["leaderboard"]
 body:
   - type: markdown
     attributes:
+      value: >
+        **Do not upload private material here.** Private checkpoints, credentials, customer traces
+        and confidential findings never go into a public issue, pull request or gist — a public
+        commit is indexed within minutes. Use the monitored private contact, hello@provael.com
+        (see `docs/maintainers/private-assessment-procedure.md`).
+  - type: markdown
+    attributes:
       value: |
         Thanks for contributing a result! The fastest path is a **pull request** adding
         `results/<name>/report.json` — see

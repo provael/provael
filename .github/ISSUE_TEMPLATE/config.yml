@@ -3,3 +3,6 @@ contact_links:
   - name: Security vulnerability (report privately)
     url: https://github.com/provael/provael/security/advisories/new
     about: Please report security issues privately via a GitHub security advisory — see SECURITY.md, not a public issue.
+  - name: Private checkpoints, customer traces or confidential findings (never here)
+    url: mailto:hello@provael.com
+    about: Never upload a private checkpoint, credentials, customer traces or confidential findings to a public issue, PR or gist. Use the monitored private contact; see docs/maintainers/private-assessment-procedure.md.

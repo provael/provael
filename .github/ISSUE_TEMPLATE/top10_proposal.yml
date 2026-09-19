@@ -5,6 +5,13 @@ labels: ["top10"]
 body:
   - type: markdown
     attributes:
+      value: >
+        **Do not upload private material here.** Private checkpoints, credentials, customer traces
+        and confidential findings never go into a public issue, pull request or gist — a public
+        commit is indexed within minutes. Use the monitored private contact, hello@provael.com
+        (see `docs/maintainers/private-assessment-procedure.md`).
+  - type: markdown
+    attributes:
       value: |
         Propose a **new risk** for [The Embodied AI Security Top 10](../blob/main/docs/top10.md).
         The full process is in the [RFC (v0.2 → v0.3)](../blob/main/docs/top10-rfc.md). To *dispute

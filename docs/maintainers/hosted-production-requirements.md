@@ -8,6 +8,12 @@ so the gap is explicit and nobody mistakes the reference for the product.
 > Status: **specification only.** None of the controls below are implemented. `PROVAEL_HOSTED_LICENSE`
 > is a local feature flag, not authentication. Every signature the reference server produces is the
 > operator's own key and is untrusted until a verifier adds it to their trust store.
+>
+> A paid assessment does **not** run through this server. It runs in the customer's environment or
+> in one isolated environment per engagement, by the procedure in
+> [private-assessment-procedure.md](private-assessment-procedure.md); the controls below are what an
+> operated multi-tenant service would need, and that service starts only when repeated buyers require
+> hosted operation and will pay for its controls.
 
 ## Identity, ownership, authorization
 

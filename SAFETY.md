@@ -152,6 +152,16 @@ be evaluated against — not a real-world exploit.
 - Red-team / blue-team exercises in simulation, to produce an ASR number that a
   defense (e.g. SafeVLA-style alignment) can be measured against.
 
+## Private material never goes into public GitHub
+
+A private checkpoint, credentials, a customer's traces or recordings, or a confidential finding must
+never be attached to an issue, a pull request, a discussion or a gist here — a public commit is
+indexed within minutes, and a revert does not un-publish it. The monitored private contact is
+**hello@provael.com**. How a paid assessment receives, runs on, returns and deletes private inputs is
+written down in [docs/maintainers/private-assessment-procedure.md](docs/maintainers/private-assessment-procedure.md):
+customer-controlled execution preferred, one isolated environment per engagement otherwise, and the
+in-repo reference server used for neither.
+
 ## Responsible disclosure
 
 If you use this tool and discover a concrete safety weakness in a specific **publicly

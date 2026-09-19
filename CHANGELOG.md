@@ -45,6 +45,22 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- **A private-assessment procedure, dry-run once with dummy data.**
+  `docs/maintainers/private-assessment-procedure.md` records, for one engagement at a time:
+  authorisation and the named access owner and operator before any input moves; the allowed-inputs
+  list (credentials, traces and anything not in the protocol refused); execution in the customer's
+  environment by preference, else one isolated environment per engagement with a limited egress
+  list and provenance variables set — never the in-repo reference server; what leaves (the delivery
+  pack, each file digested) and what does not; retention and verified deletion. The 19 September
+  2026 dry run — dummy checkpoint in, stub run under the example protocol, seven deliverables out,
+  every step digested, deletion verified, the execution manifest's `env` block empty — is logged
+  on the page with what it could not exercise. `.gitignore` refuses `private/`, `customer/` and
+  `*.customer.*`; every issue form and the template chooser say that private checkpoints,
+  credentials, customer traces and confidential findings never go into public GitHub and name the
+  monitored private contact; SAFETY.md and CONTRIBUTING.md say the same; the hosted README and the
+  hosted-production-requirements page state that a paid assessment does not run through the
+  reference server, and the hosted README's stale family enumeration is replaced by the
+  registered-versus-validated pointer.
 - **A reference delivery pack, generated from the published body.** `scripts/gen_delivery_pack.py`
   renders `examples/delivery-pack/smolvla-libero-object-2026-09-14/` from the ten 14 September
   shards using the same emitters the CLI uses: findings with every rate beside its control and

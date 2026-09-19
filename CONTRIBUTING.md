@@ -104,6 +104,13 @@ signed off.)
 Open a GitHub issue (templates provided). For security vulnerabilities, see
 [SECURITY.md](SECURITY.md) — please do **not** open a public issue for those.
 
+**Never upload private material.** A private checkpoint, credentials, customer traces or a
+confidential finding do not belong in an issue, a PR, a discussion or a gist — every template says
+so at the top. The monitored private contact is hello@provael.com; the handling procedure for a
+paid assessment's inputs is [docs/maintainers/private-assessment-procedure.md](docs/maintainers/private-assessment-procedure.md).
+A reproduction of a public result on a public checkpoint is welcome in the open, and there is a
+template for it.
+
 ## Contributing to the Embodied AI Security Top 10
 
 [docs/top10.md](docs/top10.md) — *The Embodied AI Security Top 10* — is a community draft we

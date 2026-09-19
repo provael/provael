@@ -4,10 +4,18 @@ Provael is **open-core**. Everything you need to red-team a policy and produce e
 Apache-2.0. This directory is an **experimental reference** for a hosted attestation flow — it is
 **not** a production signing service and does **not** confer any authority.
 
+## Not for commercial private workloads
+
+A paid assessment never runs through this server. It has no authentication, no tenant or artifact
+ownership, no job binding and no trusted key, so an unauthenticated signing endpoint is never the
+paid service; the assessment runs in the customer's environment or in one isolated environment per
+engagement, by [`docs/maintainers/private-assessment-procedure.md`](../../../docs/maintainers/private-assessment-procedure.md).
+Every example on this page is local and experimental.
+
 ## Free forever (Apache-2.0, no license, CPU-only)
 
-- The `provael` CLI and every attack family — `instruction`, `visual`, `injection`, `action`,
-  **`backdoor` (EAI03)**, and the `optimized` search.
+- The `provael` CLI and every registered attack family (`provael list-attacks` prints them, with
+  the registered-versus-validated distinction `provael coverage` draws), and the optimized searches.
 - ASR with a **95% Wilson CI** and the **benign-FPR control**; calibration; the `transfer-test`.
 - **SARIF** output, the reusable **GitHub Action**, and the **Embodied AI Security Top 10**.
 - **Local `provael attest`** — a digest-bound, dated evidence bundle, optionally **Ed25519-signed

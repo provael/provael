@@ -6,6 +6,13 @@ body:
   - type: markdown
     attributes:
       value: >
+        **Do not upload private material here.** Private checkpoints, credentials, customer traces
+        and confidential findings never go into a public issue, pull request or gist — a public
+        commit is indexed within minutes. Use the monitored private contact, hello@provael.com
+        (see `docs/maintainers/private-assessment-procedure.md`).
+  - type: markdown
+    attributes:
+      value: >
         Use this for anything where the **evidence semantics** look wrong: an ASR that folds in the
         benign control, an N/A rendered as 0%, an over-promoted `evidence_state`, an attestation that
         verifies when it should not, a stale count, or a claim the data does not support.

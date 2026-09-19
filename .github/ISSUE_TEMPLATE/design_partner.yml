@@ -5,6 +5,13 @@ labels: ["assessment"]
 body:
   - type: markdown
     attributes:
+      value: >
+        **Do not upload private material here.** Private checkpoints, credentials, customer traces
+        and confidential findings never go into a public issue, pull request or gist — a public
+        commit is indexed within minutes. Use the monitored private contact, hello@provael.com
+        (see `docs/maintainers/private-assessment-procedure.md`).
+  - type: markdown
+    attributes:
       value: |
         For a hosted **real-VLA (GPU) transfer assessment** — a signed transfer run, a leaderboard
         entry, and a compliance dossier. Details and pricing:

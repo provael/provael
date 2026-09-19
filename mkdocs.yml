@@ -95,6 +95,7 @@ nav:
   - Maintainers:
       - GitHub security settings: maintainers/github-security-settings.md
       - Hosted production requirements: maintainers/hosted-production-requirements.md
+      - Private assessment procedure: maintainers/private-assessment-procedure.md
   - Changelog: changelog.md
   - Errata: errata.md
   - FAQ: faq.md
