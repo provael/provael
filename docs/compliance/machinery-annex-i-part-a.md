@@ -1,6 +1,6 @@
 # Machinery Regulation Annex I Part A — conformity-assessment evidence dossier
 
-`provael certify` produces the adversarial-robustness **evidence dossier** a notified body reviews
+`provael dossier` produces the adversarial-robustness **evidence dossier** a notified body reviews
 for an **ML-based safety component** under the EU Machinery Regulation. It extends the
 [`provael attest`](../attestation.md) bundle and the [Machinery Annex III pack](machinery-reg-2027.md)
 into the assessor-facing artifact a buyer hands over — as machine-readable **OSCAL** and a single
@@ -35,7 +35,7 @@ adjacent points, verified verbatim against CELEX 32023R1230 on 2026-08-01:
 | **Part A, point 5** | "Safety components with fully or partially self-evolving behaviour using machine learning approaches ensuring safety functions" | You place the **ML safety component itself** on the market — a policy, a perception-driven safety function, sold as a component. |
 | **Part A, point 6** | Machinery having **embedded systems** with fully or partially self-evolving behaviour using machine learning approaches ensuring safety functions | You place the **whole machine** on the market with the ML safety system inside it — a humanoid, an AMR, a cell. This is the integrator's row. |
 
-Both route to the same Article 25(2) third-party procedure via Article 6(1), and `provael certify`
+Both route to the same Article 25(2) third-party procedure via Article 6(1), and `provael dossier`
 emits both rows so the operator makes the determination rather than inheriting ours.
 
 > **Part B point 19 is not a substitute for either.** It is the **Article 25(3)** sibling, a
@@ -98,14 +98,14 @@ compliance export and `attest`.
 
 ```bash
 # From a stub run (CPU, deterministic) — writes dossier.json + dossier.oscal.json + dossier.html
-uv run provael certify --profile annex-i-part-a --out runs/dossier
+uv run provael dossier --profile annex-i-part-a --out runs/dossier
 
 # From a prior run directory, with an operator component overlay
-uv run provael certify --in runs/calib --profile annex-i-part-a \
+uv run provael dossier --in runs/calib --profile annex-i-part-a \
   --component-metadata component.json --out runs/dossier
 
 # The Annex III EHSR pack shares the same code path
-uv run provael certify --profile annex-iii --out runs/dossier-annex-iii
+uv run provael dossier --profile annex-iii --out runs/dossier-annex-iii
 ```
 
 `component.json` is an operator-supplied `ComponentProfile` (all fields optional):
@@ -149,7 +149,7 @@ A dossier that states a hazard and a residual risk answers half the question. An
 safety-relevant functions AND their validation** are both about the *measure*: what was installed,
 where it acts, and what measuring it actually showed.
 
-`provael certify --mitigation <report.mitigation.json>` emits a `risk_reduction_measures` section
+`provael dossier --mitigation <report.mitigation.json>` emits a `risk_reduction_measures` section
 carrying the measure's name, kind and **position** (input-side filter vs action-side monitor — different
 protective measures with different failure modes), the per-family pre/post ASR with both 95% Wilson
 intervals, the benign controls, the acceptance gate, the verdict **verbatim**, and both arm digests so

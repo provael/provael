@@ -144,11 +144,11 @@ arm, the regression gate and the self-maintaining baseline: [docs/quickstart.md]
 ## Evidence outputs
 
 `report.json` (byte-deterministic) and `report.md` · `--format scorecard | sarif | oscal |
-test-report` (ISO/IEC 17025 clause 7.8 layout) · `--format compliance` — the crosswalk,
-[docs/compliance/index.md](docs/compliance/index.md) · a CycloneDX ML-BOM · `provael attest`, a dated,
-digest-bound, offline-verifiable bundle ([docs/attestation.md](docs/attestation.md)) · `provael certify`,
-the Machinery Regulation evidence dossier · the signed board ([docs/leaderboard.md](docs/leaderboard.md)).
-All of it is **evidence, not certification**.
+test-report` (ISO/IEC 17025 clause 7.8 layout) · `--format compliance`, the crosswalk
+([docs/compliance/index.md](docs/compliance/index.md)) · a CycloneDX ML-BOM · `provael attest`, a dated,
+digest-bound, offline-verifiable bundle ([docs/attestation.md](docs/attestation.md)) · `provael dossier`, the
+Machinery Regulation evidence dossier · the signed board ([docs/leaderboard.md](docs/leaderboard.md)). All of
+it is **evidence, not certification**.
 
 ## Where the rest lives
 

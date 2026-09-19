@@ -52,7 +52,7 @@ CI (`.github/workflows/ci.yml`) is CPU-only by design and never installs GPU ext
 
 Optional extras: `[lerobot]`, `[hardware]` (lerobot + feetech, for the sim-to-real path), `[openvla]`, `[openpi]`, `[attest]`, `[hosted]`. Dependency groups: `dev`, `docs`.
 
-The CLI surface beyond `attack`: `reproduce`, `report`, `export`, `certify`, `attest`, `calibrate`, `serve`, `crosswalk`, `transfer-test`, `evidence-manifest` (emits the JSON the website pins), `coverage` (registry + committed-run counts), `watch` (freshness), `submit` (leaderboard), `offline-study`, `sim-to-real`, `verify-checkpoint`, `workspace-bounds` (per-task benign reachable bounds), `mitigation`, `doctor`, `version`, and the `list-*` introspection commands. Two sub-apps nest under it: `study` (`cross-arch`, `eai04`) and `leaderboard` (`build`, `verify`).
+The CLI surface beyond `attack`: `reproduce`, `report`, `export`, `dossier`, `attest`, `calibrate`, `serve`, `crosswalk`, `transfer-test`, `evidence-manifest` (emits the JSON the website pins), `coverage` (registry + committed-run counts), `watch` (freshness), `submit` (leaderboard), `offline-study`, `sim-to-real`, `verify-checkpoint`, `workspace-bounds` (per-task benign reachable bounds), `mitigation`, `doctor`, `version`, and the `list-*` introspection commands. Two sub-apps nest under it: `study` (`cross-arch`, `eai04`) and `leaderboard` (`build`, `verify`).
 
 <!-- END AUTO-MANAGED -->
 

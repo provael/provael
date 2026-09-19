@@ -674,6 +674,153 @@
   },
   {
    "help": "Emit a Machinery Regulation conformity-assessment evidence dossier (JSON + OSCAL + HTML).\n\nThe dossier is EVIDENCE INPUT to a conformity assessment \u2014 it is NOT a conformity assessment,\nand Provael is not a notified body. `--profile annex-i-part-a` (default) targets the Annex I\nPart A route for ML self-evolving-behaviour safety components; `--profile annex-iii` emits the\nAnnex III EHSR pack. The HTML is the human artifact: open it and print / save as PDF.",
+   "name": "dossier",
+   "params": [
+    {
+     "help": "Directory with a prior report.json. Omit to run a stub.",
+     "is_flag": false,
+     "name": "in_dir",
+     "opts": [
+      "--in"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Which Machinery conformity pack to emit.",
+     "is_flag": false,
+     "name": "profile",
+     "opts": [
+      "--profile"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Operator ComponentProfile JSON (identity / intended use / operating envelope).",
+     "is_flag": false,
+     "name": "component_metadata",
+     "opts": [
+      "--component-metadata"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Policy to run (when --in is omitted).",
+     "is_flag": false,
+     "name": "policy",
+     "opts": [
+      "--policy"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Suite to run (when --in is omitted).",
+     "is_flag": false,
+     "name": "suite",
+     "opts": [
+      "--suite"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Attacks to run when --in is omitted. Keep 'none' for the control.",
+     "is_flag": false,
+     "name": "attacks",
+     "opts": [
+      "--attacks"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Episodes per (task, attack) pair.",
+     "is_flag": false,
+     "name": "episodes",
+     "opts": [
+      "--episodes"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Base random seed.",
+     "is_flag": false,
+     "name": "seed",
+     "opts": [
+      "--seed"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Calibration dir (from `provael calibrate`).",
+     "is_flag": false,
+     "name": "calib",
+     "opts": [
+      "--calib"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Override the source commit stamp.",
+     "is_flag": false,
+     "name": "commit",
+     "opts": [
+      "--commit"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Output directory for the dossier bundle.",
+     "is_flag": false,
+     "name": "out",
+     "opts": [
+      "--out"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Append the EAI \u2194 RoboJailBench taxonomy-crosswalk appendix (Annex I Part A).",
+     "is_flag": true,
+     "name": "include_crosswalk",
+     "opts": [
+      "--include-crosswalk"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "report.mitigation.json from `provael mitigation`, to state the protective measure and its measured effect. Omit and the dossier says so explicitly.",
+     "is_flag": false,
+     "name": "mitigation",
+     "opts": [
+      "--mitigation"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Acceptance protocol (YAML/JSON) the dossier's release decision is made against. Without it a prior run's report.decision.json is used when present, else the dossier states the run was not assessed.",
+     "is_flag": false,
+     "name": "protocol",
+     "opts": [
+      "--protocol"
+     ],
+     "required": false,
+     "secondary_opts": []
+    }
+   ],
+   "short_help": null
+  },
+  {
+   "help": "Emit a Machinery Regulation conformity-assessment evidence dossier (JSON + OSCAL + HTML).\n\nThe dossier is EVIDENCE INPUT to a conformity assessment \u2014 it is NOT a conformity assessment,\nand Provael is not a notified body. `--profile annex-i-part-a` (default) targets the Annex I\nPart A route for ML self-evolving-behaviour safety components; `--profile annex-iii` emits the\nAnnex III EHSR pack. The HTML is the human artifact: open it and print / save as PDF.",
    "name": "certify",
    "params": [
     {

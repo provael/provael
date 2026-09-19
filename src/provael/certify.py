@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2026 Sattyam Jain
-"""Conformity-assessment evidence **dossier** for an ML safety component (``provael certify``).
+"""Conformity-assessment evidence **dossier** for an ML safety component (``provael dossier``).
 
 The EU Machinery Regulation (EU) 2023/1230 **applies from 20 January 2027** (CELEX 32023R1230,
 Article 54). It routes ML "self-evolving behaviour" safety components into **Annex I Part A**, whose
@@ -172,7 +172,7 @@ _ANNEX_III_EHSRS: tuple[dict[str, str], ...] = (
 
 
 class CertifyProfile(StrEnum):
-    """Which conformity pack ``certify`` emits — both share this one code path."""
+    """Which conformity pack ``dossier`` emits — both share this one code path."""
 
     annex_i_part_a = "annex-i-part-a"
     annex_iii = "annex-iii"

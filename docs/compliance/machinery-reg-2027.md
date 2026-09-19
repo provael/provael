@@ -67,7 +67,7 @@ A dossier that states a hazard and a residual risk answers half the question. An
 safety-relevant functions AND their validation** are both about the *measure*: what was installed,
 where it acts, and what measuring it actually showed.
 
-`provael certify --mitigation <report.mitigation.json>` emits a `risk_reduction_measures` section
+`provael dossier --mitigation <report.mitigation.json>` emits a `risk_reduction_measures` section
 carrying the measure's name, kind and **position** (input-side filter vs action-side monitor — different
 protective measures with different failure modes), the per-family pre/post ASR with both 95% Wilson
 intervals, the benign controls, the acceptance gate, the verdict **verbatim**, and both arm digests so

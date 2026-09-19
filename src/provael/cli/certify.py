@@ -1,12 +1,20 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2026 Sattyam Jain
-"""The `certify` command: build a certification dossier from a run."""
+"""The `dossier` command: build the Machinery Regulation evidence dossier from a run.
+
+Renamed from ``certify`` on 20 September 2026. The old name implied a certification this tool
+does not issue and contradicted "evidence, not certification" on every page that described it;
+Provael is not a notified body and a dossier is evidence INPUT to a conformity assessment.
+``certify`` stays as a hidden, deprecated alias — same options, same output, a warning on stderr
+— until 0.46.0, so a pinned CI job keeps working for two minor versions while it is renamed.
+"""
 
 from __future__ import annotations
 
+import functools
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from pydantic import ValidationError
@@ -37,8 +45,8 @@ from provael.runner import run
 from provael.types import ComponentProfile
 
 
-@app.command()
-def certify(
+@app.command("dossier")
+def dossier(
     in_dir: Annotated[
         Path | None,
         typer.Option("--in", help="Directory with a prior report.json. Omit to run a stub."),
@@ -191,3 +199,15 @@ def certify(
             "[yellow]note:[/yellow] stub numbers are properties of the deterministic fixture, "
             "not a real VLA. Certify a real run for a transfer measurement."
         )
+
+
+@app.command("certify", hidden=True, deprecated=True)
+@functools.wraps(dossier)
+def certify(*args: Any, **kwargs: Any) -> None:
+    """Deprecated alias of `dossier` (removed in 0.46.0)."""
+    _err.print(
+        "[yellow]deprecated:[/yellow] `provael certify` is now `provael dossier` — same options, "
+        "same output. The old name implied a certification this tool does not issue; it keeps "
+        "working until 0.46.0 and then goes away."
+    )
+    dossier(*args, **kwargs)

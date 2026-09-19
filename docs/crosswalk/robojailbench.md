@@ -154,5 +154,5 @@ provael crosswalk --target robojailbench                 # deterministic mapping
 provael crosswalk --target robojailbench --format md     # the tables above
 provael study cross-arch                                 # the real-policy transfer numbers
 # optional: attach this crosswalk as an appendix to a conformity dossier
-provael certify --profile annex-i-part-a --include-crosswalk --out runs/dossier
+provael dossier --profile annex-i-part-a --include-crosswalk --out runs/dossier
 ```

@@ -246,7 +246,7 @@ def test_cli_certify_writes_the_bundle(tmp_path: Path) -> None:
     out = tmp_path / "dossier"
     res = runner.invoke(
         app,
-        ["certify", "--profile", "annex-i-part-a", "--attacks", "none,instruction",
+        ["dossier", "--profile", "annex-i-part-a", "--attacks", "none,instruction",
          "--episodes", "3", "--out", str(out)],
     )
     assert res.exit_code == 0, res.output
@@ -260,7 +260,7 @@ def test_cli_certify_writes_the_bundle(tmp_path: Path) -> None:
 
 def test_cli_certify_annex_iii_profile(tmp_path: Path) -> None:
     out = tmp_path / "annex3"
-    res = runner.invoke(app, ["certify", "--profile", "annex-iii", "--episodes", "5",
+    res = runner.invoke(app, ["dossier", "--profile", "annex-iii", "--episodes", "5",
                               "--out", str(out)])
     assert res.exit_code == 0, res.output
     data = json.loads((out / "dossier.json").read_text(encoding="utf-8"))
@@ -268,7 +268,7 @@ def test_cli_certify_annex_iii_profile(tmp_path: Path) -> None:
 
 
 def test_cli_certify_help() -> None:
-    res = runner.invoke(app, ["certify", "--help"])
+    res = runner.invoke(app, ["dossier", "--help"])
     assert res.exit_code == 0
     assert "evidence" in res.output.lower()
 
@@ -446,3 +446,23 @@ def test_certify_is_free_core_with_no_entitlement_check_near_the_new_section() -
     source = Path(certify_mod.__file__).read_text(encoding="utf-8")
     for token in ("entitlement", "license_key", "licence_key", "paid_tier", "require_subscription"):
         assert token not in source, f"certify.py must not gate on {token!r}"
+
+
+def test_certify_is_a_deprecated_alias_that_still_works(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """`certify` renamed to `dossier` on 20 Sep 2026: the old name keeps working until 0.46.0,
+    prints a deprecation on stderr, and is hidden from `--help`. A pinned CI job must not break
+    on the rename; a reader must not keep learning the word that implied a certification."""
+    from typer.testing import CliRunner
+
+    from provael.cli import app
+
+    r = CliRunner()
+    res = r.invoke(app, ["certify", "--episodes", "2", "--attacks", "none,instruction",
+                         "--out", str(tmp_path)])
+    assert res.exit_code == 0, res.stdout
+    assert "deprecated" in (res.stdout + (res.stderr or "")) and "provael dossier" in (
+        res.stdout + (res.stderr or "")
+    )
+    assert (tmp_path / "dossier.json").exists() or any(tmp_path.iterdir())
+    top = r.invoke(app, ["--help"])
+    assert "dossier" in top.stdout and "certify" not in top.stdout

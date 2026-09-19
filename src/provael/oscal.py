@@ -51,7 +51,7 @@ def _uid(report: RunReport, *parts: str) -> str:
 #: invent a plausible-looking date (which would put a false fact into a compliance artifact), an
 #: unsupplied collection time is emitted as the Unix epoch, which no reader can mistake for a real
 #: collection date, and flagged explicitly via the ``collected-precision`` property. Pass
-#: ``collected=`` (the CLI and ``certify`` do) to record the actual time.
+#: ``collected=`` (the CLI and ``dossier`` do) to record the actual time.
 UNRECORDED_COLLECTED = "1970-01-01T00:00:00Z"
 
 
@@ -96,7 +96,7 @@ def to_oscal(
     """Build an OSCAL assessment-results object (as a dict).
 
     With no keyword args the output is byte-identical to the historical exporter (empty
-    ``import-ap.href``, no reviewed-controls). The ``certify`` path passes ``profile_href`` (the
+    ``import-ap.href``, no reviewed-controls). The ``dossier`` path passes ``profile_href`` (the
     conformity profile the results are assessed against) and ``reviewed_control_ids`` (the crosswalk
     clauses), which populate ``import-ap.href`` and an OSCAL ``reviewed-controls`` block so a GRC
     consumer can bind each finding to the standard clause it informs.

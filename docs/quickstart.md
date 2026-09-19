@@ -346,7 +346,7 @@ default (empty), so every existing consumer is unaffected, and it roughly **doub
 | --- | --- |
 | `residual-asr` | Adversarial ASR of the **defended** arm. Separately named, and **not** what the gate reads. |
 | `mitigation-verdict` | `credited` \| `not-credited` \| `rejected-benign-cost` \| `insufficient`. |
-| `mitigation-report` | Path to `report.mitigation.json` — feed it to `provael certify --mitigation`. |
+| `mitigation-report` | Path to `report.mitigation.json` — feed it to `provael dossier --mitigation`. |
 | `defense-log` | Path to `defense-log.jsonl`, the raw → defended trail per instruction and action. |
 
 **The gating rule, and it matters more than the feature.** `asr-threshold` keeps gating the

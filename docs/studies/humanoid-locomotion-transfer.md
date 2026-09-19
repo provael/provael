@@ -6,7 +6,7 @@
 
 > Status: PRE-REGISTERED — protocol only, no results claimed.
 
-> **This study is what the ISO 25785-1 compliance row is waiting on.** `provael certify` emits an
+> **This study is what the ISO 25785-1 compliance row is waiting on.** `provael dossier` emits an
 > anticipatory row (`iso-25785-1:dynamically-stable`) naming these three attacks against the
 > in-development Type-C standard for dynamically stable robots — see
 > [compliance](../compliance/index.md#functional-safety-an-input-never-a-determination) and the

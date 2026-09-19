@@ -97,7 +97,7 @@ The intended paid surface is a **future operated service**; the in-repo hosted s
 | CLI, all attack families (incl. the `backdoor` EAI03 screen), ASR + 95% CI + benign control | ✅ | |
 | `transfer-test`, SARIF, the GitHub Action, the Embodied AI Security Top 10 | ✅ | |
 | Measured defenses (`--defense`), `provael mitigation`, the Action's `defense` input | ✅ | |
-| `provael certify` incl. the `risk_reduction_measures` dossier section | ✅ | |
+| `provael dossier` incl. the `risk_reduction_measures` dossier section | ✅ | |
 | **Local `attest`** (digest-bound; Ed25519-signed with *your* key, verified against *your* trust store) + the leaderboard | ✅ | |
 | **Experimental** reference server (`provael serve`, `[hosted]` extra) — disabled by default; operator-key, **untrusted by default** | ✅ | |
 | **Authenticated, trusted signing** (a KMS-backed key an assessor can trust) — [production requirements](maintainers/hosted-production-requirements.md) | | ⏳ not built |

@@ -130,7 +130,7 @@ carry:
 Stated plainly: **this measure was credited on rows mapped to EAI04/EAI06 and addresses nothing on
 EAI03, EAI08 or EAI09.** A dossier that reported "a protective measure was applied and credited"
 without this table would be wrong in the way that matters — it would read as coverage. The
-`risk_reduction_measures` section of `provael certify` carries this limitation for exactly that
+`risk_reduction_measures` section of `provael dossier` carries this limitation for exactly that
 reason.
 
 ---

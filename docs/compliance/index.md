@@ -254,7 +254,7 @@ gaps), and the honest-scope caveats. It reuses `report.json` (no attacks re-run)
 [docs/compliance/index.md](https://github.com/provael/provael/blob/main/docs/compliance/index.md) for the full
 crosswalk and schema.
 
-For an assessor-facing pack, `provael certify` emits an EU Machinery Regulation Annex I Part A (or
+For an assessor-facing pack, `provael dossier` emits an EU Machinery Regulation Annex I Part A (or
 `--profile annex-iii`) conformity-assessment evidence dossier — per-family ASR with both intervals,
 an honest per-family real-policy transfer statement, a residual-risk statement, a clause crosswalk,
 and references to the ML-BOM + attestation — as OSCAL plus a single print-to-PDF HTML; it is
