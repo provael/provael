@@ -95,6 +95,26 @@ We are not your CSIRT and cannot report on your behalf. The notification duty is
   simulator are isolated behind the optional `[lerobot]` extra and a `PROVAEL_INTEGRATION=1`
   gate. Releases publish to PyPI via OIDC trusted publishing (no stored tokens).
 
+### Verifying a release
+
+From 0.44.0 every GitHub Release asset (wheel, sdist, CycloneDX SBOM, `SHA256SUMS`) ships with a
+Sigstore bundle beside it, `<asset>.sigstore.json`, signed keyless by `release.yml` through the
+repository's OIDC identity, and with a SLSA build-provenance attestation in GitHub's store. PyPI
+carries PEP 740 attestations for the wheel and sdist. Any of the three names the workflow, the tag
+and the commit that built the file:
+
+```bash
+cosign verify-blob --bundle provael-X.Y.Z-py3-none-any.whl.sigstore.json \
+  --certificate-identity-regexp '^https://github.com/provael/provael/\.github/workflows/release\.yml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  provael-X.Y.Z-py3-none-any.whl
+gh attestation verify provael-X.Y.Z-py3-none-any.whl --repo provael/provael
+```
+
+Releases 0.42.0 to 0.43.0 carry the build-provenance attestation and the PyPI attestations but
+no bundle beside the asset; `gh attestation verify` works for them. Earlier releases carry the PyPI
+attestations only.
+
 ### Network egress, by path
 
 Three paths, three different answers; stating them together is what stops the CPU claim being read
