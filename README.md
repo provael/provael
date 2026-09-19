@@ -1083,8 +1083,11 @@ CC BY-SA 4.0 and versioned separately from the tool; see
 
 ## Trademarks
 
-**Provael™** (the product name and logo) is a trademark of the Provael maintainers; the code is
-Apache-2.0. The **Embodied AI Security Top 10** is a **separate**, independent community document
-licensed **CC-BY-SA 4.0** — deliberately **unbranded and donatable**, not a Provael™ product, and
-not affiliated with or endorsed by the OWASP® Foundation or MITRE®. Please keep the product name
-(Provael™) distinct from the standard's name when citing either.
+**Provael™** (the product name and the Proof-Path logo) is an **unregistered mark** of Sattyam
+Jain — no trademark application has been filed yet; one is planned in India (classes 9 and 42). What
+you may do with the name without asking, and what needs permission, is in
+[TRADEMARKS.md](TRADEMARKS.md). The code is Apache-2.0. The **Embodied AI Security Top 10** is a
+**separate**, independent community document licensed **CC-BY-SA 4.0** — deliberately **unbranded
+and donatable**, not a Provael™ product, and not affiliated with or endorsed by the OWASP® Foundation
+or MITRE®. Please keep the product name (Provael™) distinct from the standard's name when citing
+either.

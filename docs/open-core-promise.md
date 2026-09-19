@@ -51,7 +51,7 @@ and the open tool never gates the local stub or real-model path.
   page will be updated with a new dated version — the free list above only ever grows.
 - The **Embodied AI Security Top 10** is a community standard under **CC-BY-SA**, kept deliberately
   **unbranded and donatable** — it is not a Provael™ product and will never be paywalled. Provael™
-  (the tool + name) is a trademark; the standard is separate. See
-  [TRADEMARKS](https://github.com/provael/provael/blob/main/README.md#trademarks).
+  (the tool + name) is an unregistered mark with a published policy; the standard is separate. See
+  [TRADEMARKS.md](https://github.com/provael/provael/blob/main/TRADEMARKS.md).
 
 *Signed by the maintainers, 2026-07-23. Supersedes no prior promise; this is v1.0.*
