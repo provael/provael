@@ -45,6 +45,18 @@ All notable changes to this project are documented here. The format is based on
 
 ### Changed
 
+- **The measurement ledger carries what a consumer used to re-derive.** Each
+  `watch/measurements.json` row now names the run's checkpoint (`model`), its adversarial and
+  benign numerators and denominators, its predicate (`calibrated`) and `evidenceState`, the
+  `intervalMethod` every per-run interval uses (episode-level Wilson; a sharded run's
+  task-clustered interval stays under its own name in its `aggregate.json`), and `published` —
+  whether the row is part of the body behind the published headline, by the same `displacement`
+  rule `publish-freshness.json` applies; `publishedLineage` says which body. `watch/README.md`
+  keeps four dates apart (execution date, tool release date, assembly commit, source-review date)
+  and states that none is written from a wall clock. `tests/test_watch_consistency.py` holds
+  `registry.json` to the coverage counter, the ledger's rows to the committed manifests and its
+  `published` rows to `publish-freshness.json`'s body, and every generator to a no-op on a clean
+  tree.
 - **A release `pass` needs a named acceptance protocol; with none named, nothing is decided.**
   `provael.verdict.release_verdict` used to apply a default gate — a real policy plus a benign
   control, no threshold on anything — and every emitter rendered its answer as *the* release

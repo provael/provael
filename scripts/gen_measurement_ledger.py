@@ -51,7 +51,9 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from provael.watch import (  # noqa: E402  - after the sys.path insert above
     counts_as_measurement,
+    displacement,
     measurements_from_results,
+    task_suite_of,
 )
 
 OUT = ROOT / "watch" / "measurements.json"
@@ -67,8 +69,56 @@ NOTE = (
     "rendered as a measurement instant. `countsAsMeasurement: false` marks a fixture backend: a "
     "stub run executes real attacks in under a second and would otherwise refresh a freshness "
     "claim having re-measured nothing. This file says WHEN and ON WHAT, never WHERE a number is "
-    "published — only the consuming site knows that."
+    "published — only the consuming site knows that. Since 0.43.0 each row also carries the run's "
+    "checkpoint (`model`), its adversarial and benign counts (numerator and denominator, so a "
+    "consumer never re-derives a rate from the all-episode `asr`), its predicate and evidence "
+    "state, the interval method its intervals use, and `published` — whether the row belongs to "
+    "the body behind the published headline (`publishedLineage`), as provael.watch.displacement "
+    "computes it. Four dates are distinct on purpose: `measuredAt` is the run's execution date "
+    "(manifest `ended_at`); the tool's release date is CHANGELOG.md's; the assembly commit is the "
+    "repository state a consumer pins; a source-review date lives beside the claim it reviewed. "
+    "None of them is written by this file's wall clock."
 )
+
+#: Every interval this project publishes per run is an episode-level Wilson score. A sharded run's
+#: aggregate.json carries a task-clustered interval under its own name; the two are never mixed.
+INTERVAL_METHOD = "wilson-score-95 (episode-level)"
+
+
+def _report_facts(artifact: str) -> dict[str, object]:
+    """The per-row facts R03 and a consuming site need, read from the run's own report.json.
+
+    Read here rather than added to :class:`MeasurementRecord`, which is the freshness computation's
+    input and is pinned by its own tests. Missing files or fields are ``None``, never 0.
+    """
+    path = ROOT / artifact / "report.json"
+    facts: dict[str, object] = {
+        "model": None, "adversarialSuccesses": None, "adversarialAttempts": None,
+        "benignSuccesses": None, "benignAttempts": None, "calibrated": None, "evidenceState": None,
+    }
+    if not path.is_file():
+        return facts
+    try:
+        r = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):  # pragma: no cover - malformed committed report
+        return facts
+    facts["model"] = r.get("model")
+    facts["calibrated"] = r.get("calibrated")
+    facts["evidenceState"] = r.get("evidence_state") or "legacy-unverified"
+    results = r.get("results") or []
+    applicable = [e for e in results if e.get("applicable", True)]
+    adversarial = [e for e in applicable if e.get("family") not in ("baseline", "control")]
+    benign = [e for e in applicable if e.get("family") == "baseline"]
+    if r.get("adversarial_attempts") is not None:
+        facts["adversarialAttempts"] = r.get("adversarial_attempts")
+        facts["adversarialSuccesses"] = r.get("adversarial_successes")
+    elif results:
+        facts["adversarialAttempts"] = len(adversarial)
+        facts["adversarialSuccesses"] = sum(1 for e in adversarial if e.get("success"))
+    if benign:
+        facts["benignAttempts"] = len(benign)
+        facts["benignSuccesses"] = sum(1 for e in benign if e.get("success"))
+    return facts
 
 
 def _artifact_dirs() -> list[str]:
@@ -103,10 +153,28 @@ def build() -> dict[str, object]:
             f"{len(records)} measurement record(s) but {len(dirs)} manifest director(ies); the two "
             "walks have desynchronised and pairing by index would mislabel every artifact link"
         )
+    real_records = [r for r in records if counts_as_measurement(r) and r.recorded]
+    standing = displacement(real_records)
+    published = standing.published if standing is not None else None
+    lineage = (
+        (published.policy, published.suite, published.task_suite, published.tool_version)
+        if published is not None
+        else None
+    )
     rows: list[dict[str, object]] = []
     for record, artifact in zip(records, dirs, strict=True):
+        in_body = (
+            lineage is not None
+            and counts_as_measurement(record)
+            and record.recorded
+            and (record.policy, record.suite, task_suite_of(record.tasks), record.tool_version)
+            == lineage
+        )
         rows.append(
             {
+                **_report_facts(artifact),
+                "intervalMethod": INTERVAL_METHOD,
+                "published": in_body,
                 "artifactPath": artifact,
                 "artifactUrl": (
                     f"{REPO}/tree/{record.commit}/{artifact}"
@@ -137,6 +205,21 @@ def build() -> dict[str, object]:
         "measurements": rows,
         "measurementCount": len(rows),
         "realPolicyMeasurementCount": len(real),
+        # The body behind the published headline, so a consumer can tell a row that IS the
+        # published number from one that is merely newer. `null` when nothing real is recorded.
+        "publishedLineage": (
+            {
+                "policy": published.policy,
+                "suite": published.suite,
+                "taskSuite": published.task_suite,
+                "toolVersion": published.tool_version,
+                "attempts": published.attempts,
+                "runs": published.runs,
+                "rows": sum(1 for r in rows if r["published"]),
+            }
+            if published is not None
+            else None
+        ),
         # The newest instant that may legitimately refresh a freshness claim: recorded, and not a
         # fixture. This is the same value watch/freshness.json carries, derived the same way, so the
         # two artifacts cannot drift into disagreeing about the project's own currency.
