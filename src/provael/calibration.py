@@ -123,6 +123,16 @@ def anytime_ci(
 
     Returns ``(lo, hi)`` clamped to ``[0, 1]``; ``(0.0, 1.0)`` when ``attempts == 0`` (no data). The
     interval always contains the MLE ``S/n`` (the mixture LR at the MLE is <= 1 < 1/alpha).
+
+    ROUNDED TO 12 DECIMAL PLACES, since 0.43.0, and here is why a statistics function carries a
+    rounding step. ``_betaln`` calls the platform's ``lgamma``, and libm implementations differ in
+    the last bits: the same counts gave ``0.0509692617012705`` on the Linux workstation that ran
+    the 14 September 2026 shards and ``0.05096926170127061`` on a macOS checkout. Every other
+    number in a report is a ratio or a ``sqrt`` (correctly rounded everywhere), so this was the one
+    field that made the COMBINED view of a sharded run — and therefore the evidence manifest's
+    ``source_report_sha256`` — depend on which operating system regenerated it. Twelve places is
+    ten orders of magnitude above the noise and far below anything a reader can use; the interval
+    is a claim about a rate, not about the fifteenth digit of a root-finder.
     """
     if attempts <= 0:
         return (0.0, 1.0)
@@ -161,7 +171,7 @@ def anytime_ci(
 
     low = 0.0 if excess(eps) <= 0.0 else _root(eps, mle)
     high = 1.0 if excess(1.0 - eps) <= 0.0 else _root(mle, 1.0 - eps)
-    return (max(0.0, low), min(1.0, high))
+    return (round(max(0.0, low), 12), round(min(1.0, high), 12))
 
 
 def transfer_test(
