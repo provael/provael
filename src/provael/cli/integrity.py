@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The `verify-checkpoint` command: checkpoint integrity, independent of any run."""
 
 from __future__ import annotations

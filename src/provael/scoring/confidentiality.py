@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Model & data confidentiality scoring (EAI09): the memorized-canary leak protocol.
 
 The `instruction` / `visual` / `injection` families drive a *danger* signal; the `action` family

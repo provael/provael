@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Open-loop attack measurement on RECORDED frames of a real robot dataset.
 
 WHAT THIS IS, AND THE ONE SENTENCE THAT MUST TRAVEL WITH EVERY NUMBER IT PRODUCES.

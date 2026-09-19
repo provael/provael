@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`scripts/gen_root_stubs.py` is what stops docs versioning from 404ing published URLs.
 
 WHY THIS EXISTS. `mike` namespaces every page under a version path, so wiring it moves

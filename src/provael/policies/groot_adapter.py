@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """GR00T-N1 humanoid adapter — a real whole-body VLA policy, routed through the LeRobot path.
 
 NVIDIA's GR00T-N1 is an open humanoid foundation policy loadable through LeRobot's generic

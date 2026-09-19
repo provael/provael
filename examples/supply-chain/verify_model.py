@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Verify a policy checkpoint before you trust its ASR.
 
 A red-team result is only as trustworthy as the model you ran it on. This example shows the two

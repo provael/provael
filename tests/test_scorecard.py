@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Pre-deployment ASR scorecard: verdict logic, Markdown content, and CLI wiring."""
 
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """VLA-Arena suite adapter: a DECLARED per-step safety predicate instead of a fitted box.
 
 WHY THIS SUITE EXISTS. Every keep-out-zone result in this project rests on a world-frame box that

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`provael --help` is a published surface, and a refactor must not move it.
 
 WHY THIS EXISTS. Issue #193 asks for `src/provael/cli.py` — three thousand lines and 27 top-level

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """EAI03 weight-integrity: emulated bit-flip corruption of a policy's loaded parameters.
 
 **The first family in this project that attacks the parameters rather than the input.** Every

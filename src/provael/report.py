@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Persist and present a :class:`RunReport`.
 
 Writes a machine-readable ``report.json`` and a human-readable ``report.md``, loads

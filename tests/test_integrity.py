@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Checkpoint supply-chain integrity: the fail-closed matrix and the honesty boundary.
 
 The whole value of this control is that "we did not check" and "we checked and it matched" produce

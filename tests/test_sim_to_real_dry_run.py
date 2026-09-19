@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The sim-to-real dry run: exercise the physical-run pipeline before there is a robot.
 
 WHY THIS TEST EXISTS. The pre-registered protocol has been sitting unrun since 24 July, and when

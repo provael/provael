@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """ActionSchema: which action channels are motion, queried at runtime, N/A when incompatible.
 
 Pins the schema by running it: validation (in-range, disjoint, named), motion extraction for

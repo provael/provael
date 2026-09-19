@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The `leaderboard` sub-app's commands: `build` and `verify`."""
 
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """What "freshest measurement" means, pinned — because it was just misread (#136-adjacent).
 
 THE MISREADING THIS EXISTS TO STOP. The badge went red, and the natural reading was "the badge is

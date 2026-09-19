@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The scheduled real-model lane: the next shards of a declared campaign, on Modal L4s.
 
 Provael's core is CPU-tested in CI; the headline credibility move is a cheap, *real-model* job.

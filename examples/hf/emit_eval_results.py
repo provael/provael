@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Emit a Provael ASR as a Hugging Face eval result for a policy's model page.
 
 Pushing ASR onto the model card (and, via PR, onto *other* people's VLA models) makes Provael

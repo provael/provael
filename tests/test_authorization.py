@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """EAI08 authorization family: stub activation, benign control, predicate truth table, canary, N/A."""
 
 from __future__ import annotations

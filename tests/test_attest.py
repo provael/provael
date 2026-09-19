@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``attest`` command: the signed, dated, crosswalked evidence bundle.
 
 Covers the pure statement builder (wraps the SAME compliance evidence, deterministic, digest binds

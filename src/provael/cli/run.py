@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The two commands that execute a run: `attack` and `reproduce`."""
 
 from __future__ import annotations

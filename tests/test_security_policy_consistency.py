@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """SECURITY.md states one set of counterparty facts, and never contradicts itself about them.
 
 R12 (19 Sep 2026): the file opened with "published by an open-source steward" and, ninety lines

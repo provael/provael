@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Action-space integrity scoring (EAI04): the freeze + trajectory-hijack protocol.
 
 The `instruction` / `visual` / `injection` families succeed by driving a *danger*

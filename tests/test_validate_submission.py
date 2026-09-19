@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """CPU tests for leaderboard submission validation (WS4)."""
 
 from __future__ import annotations

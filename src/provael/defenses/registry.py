@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Defense registry: resolve names to :class:`~provael.defenses.base.Defense` instances.
 
 Shaped deliberately like :mod:`provael.attacks.registry` — same dict-of-factories, same

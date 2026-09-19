@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Write the inventory lines in the docs from the registries, so no human types them.
 
 WHY THIS EXISTS, AND WHY GUARDING THE NUMBER WAS NOT ENOUGH. ``tests/test_counted_claims.py``

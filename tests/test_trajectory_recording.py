@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Every episode that records an outcome must also record the trajectory behind it (#136).
 
 WHY THIS IS A HARD FAILURE AND NOT A WARNING. The calibration input was being computed on every

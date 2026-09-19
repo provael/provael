@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Shared pytest fixtures: a loaded stub policy and a stub suite."""
 
 from __future__ import annotations

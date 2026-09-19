@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The results README generator restates nothing: its table is the shards' own numbers."""
 
 from __future__ import annotations

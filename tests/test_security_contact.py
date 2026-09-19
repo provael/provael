@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The vulnerability-disclosure address must be one address, and the same one everywhere.
 
 ``SECURITY.md`` named a gmail address while the website's ``.well-known/security.txt`` named

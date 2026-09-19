@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``optimized_patch`` family: the query-budgeted adversarial-patch search on the image channel.
 
 Covers the search machinery on CPU with a SYNTHETIC image + oracle (budget respected, deterministic

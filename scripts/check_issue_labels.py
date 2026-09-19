@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Every label an issue FORM declares must exist on the repository.
 
 THE INCIDENT. Six intake forms declared five labels — `attack-family`, `assessment`,

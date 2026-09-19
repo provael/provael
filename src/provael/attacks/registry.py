@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Attack registry: resolve names and family names to :class:`Attack` instances.
 
 Families: ``baseline`` (a no-op control for measuring lift), ``instruction`` (text

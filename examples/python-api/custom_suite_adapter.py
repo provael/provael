@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Bring your own simulator — a runnable, CPU-only custom SuiteAdapter.
 
 A Provael *suite* wraps an environment behind a Gym-like ``reset`` / ``step`` plus an

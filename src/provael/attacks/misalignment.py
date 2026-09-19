@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``misalignment`` attack family (EAI06): cross-domain safety misalignment / embodiment gap.
 
 The EAI06 vector is the **embodiment gap** (BadRobot, ICLR 2025, risk (b)): an instruction a

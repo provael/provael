@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """A test report in the SHAPE of ISO/IEC 17025:2017 clause 7.8 — the document assessors read.
 
 WHY THIS SHAPE. The 13 September 2026 regulatory re-read found that no certifier, notified body or

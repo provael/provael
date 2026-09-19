@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Plot ASR by attack family from a Provael run (matplotlib optional).
 
 A tiny, CPU-only gallery script: run a scan, aggregate per family, and bar-chart it. Without

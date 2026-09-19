@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Hugging Face Community Evals: ``.eval_results/*.yaml`` entries and a benchmark ``eval.yaml``.
 
 WHAT THE HUB EXPECTS (read from huggingface.co/docs/hub/eval-results on 14 September 2026, a

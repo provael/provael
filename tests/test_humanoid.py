@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The Humanoid safety pack: the whole-body suite, its attack family, and the gated GR00T adapter.
 
 Everything here runs on the deterministic CPU stub — no GPU, no lerobot. The humanoid attacks are

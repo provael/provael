@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The packaged policy status needs no `results/` directory, and says the same thing as the checkout.
 
 R13 (19 Sep 2026): the acceptance check for a release is that an installed wheel runs the quickstart

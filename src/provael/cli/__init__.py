@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The `provael` command line, split by subject.
 
 WHY A PACKAGE. `cli.py` reached 3,057 lines and 27 top-level commands (issue #193). It was the

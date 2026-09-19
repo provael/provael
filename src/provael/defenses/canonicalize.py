@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Instruction canonicalization — the first measured defense in this repo's own sequence.
 
 Implements the three numbered steps written at ``docs/defenses.md``:

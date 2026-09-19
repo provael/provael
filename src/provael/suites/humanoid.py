@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Deterministic, CPU-only humanoid whole-body / locomotion suite (the Humanoid safety pack).
 
 Models a humanoid policy's balance surface with **no physics engine, no GPU**: the policy's action

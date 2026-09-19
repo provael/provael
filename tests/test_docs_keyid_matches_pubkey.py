@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Every documented leaderboard keyid must be the one derived from the published key.
 
 THE DRIFT THIS EXISTS TO STOP. The project signing key was rotated in #74 (the old private key

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``universal_patch`` family: ONE patch, fit once, carried to episodes it never queried.
 
 The property under test is **universality**, and it is the thing that separates this family from

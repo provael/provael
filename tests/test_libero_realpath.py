@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """P0.2 — the LIBERO real-path predicate is not theater.
 
 Two halves, mirroring ``test_libero_adapter.py``:

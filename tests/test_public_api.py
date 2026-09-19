@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`docs/python-api.md` and `provael.__all__` must describe the same public surface.
 
 THE GAP THIS CLOSES. `docs/python-api.md` is the published Python API and nothing enforced it.

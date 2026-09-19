@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`list-policies` / `list-suites` must distinguish what has been *run* from what merely *imports*.
 
 THE GAP THIS CLOSES. Eight policy backends are registered; exactly one (`smolvla`) has ever had a

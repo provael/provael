@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """VLA-Arena suite adapter, exercised against a fake env shaped by VLA-Arena's own source.
 
 The package pins Python 3.11 and never enters the CPU build, so nothing here imports it. The fake

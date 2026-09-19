@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``sensor_spoof`` attack family (EAI02): adversarial perception / sensor spoofing.
 
 A **new EAI02 attack vector** distinct from the scalar ``visual`` family: instead of raising a

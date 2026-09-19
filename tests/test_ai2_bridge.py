@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The AI2 harness bridge is registered scaffolding and must keep saying so.
 
 The risk this guards is specific: a registered suite that returns plausible values instead of

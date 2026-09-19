@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The six `list-*` commands.
 
 They read the registries and print them. Grouped together because they are the same shape and

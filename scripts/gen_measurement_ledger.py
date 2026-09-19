@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Emit one ledger row per committed measurement, so a reader can date every published number.
 
 WHY THIS EXISTS. `watch/freshness.json` answers one question — when was ANYTHING last measured —

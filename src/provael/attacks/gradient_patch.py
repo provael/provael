@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """White-box **gradient** adversarial patch on the camera channel (GPU-gated).
 
 THE GAP THIS CLOSES, IN THIS PROJECT'S OWN WORDS. ``PRIOR_ART.md`` records, against DURA, DRIFT and

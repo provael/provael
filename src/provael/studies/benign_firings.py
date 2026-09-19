@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Where the benign control arm fires, task by task — the #136 determination.
 
 WHAT QUESTION THIS ANSWERS. A benign false-positive rate is one number, and one number cannot

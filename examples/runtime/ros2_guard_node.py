@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """A ROS 2 reference node that applies the Provael safety envelope to a live action topic.
 
 Speaks robotics middleware natively: an rclpy node that subscribes to the policy's action /

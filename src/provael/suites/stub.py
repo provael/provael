@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """A tiny, deterministic, CPU-only simulation suite.
 
 ``StubSuite`` is a one-task toy environment ("reach") whose only job is to turn a

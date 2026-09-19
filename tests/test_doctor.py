@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`provael doctor` — the command whose entire job is to tell the truth about this install.
 
 WHY THIS FILE EXISTS. `doctor` shipped with zero tests, and the first defect found in it was that

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Cross-architecture transfer study: one attack battery vs many VLA architectures.
 
 **Question.** Do the *same* templated attacks move different VLA architectures, or is a redirection

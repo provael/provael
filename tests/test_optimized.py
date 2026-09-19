@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``optimized`` family: the query-budgeted, black-box targeted-hijack search.
 
 Covers the search machinery on CPU (budget respected, deterministic given a seed, magnitude cap,

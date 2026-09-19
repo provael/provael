@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Episode video: frames reach the sink, the report does not move, and the writer is optional.
 
 The sink is a runner ARGUMENT, not a config field, for the same reason ``audit_sink`` is: a

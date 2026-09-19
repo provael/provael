@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Calibrate per-task LIBERO keep-out zones from BENIGN rollouts (GPU/sim required).
 
 Why: the default keep-out zone is generic, so an attack "success" only means the

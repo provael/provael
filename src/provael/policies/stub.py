@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """A deterministic, CPU-only, intentionally manipulable stub policy.
 
 ``StubPolicy`` exists so the entire engine (attacks, scoring, runner, report, CLI)

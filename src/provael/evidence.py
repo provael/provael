@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """An explicit evidence-state ladder — how far a result has actually been verified.
 
 The old honesty flag was binary: ``policy != "stub" and suite != "stub"`` was awarded

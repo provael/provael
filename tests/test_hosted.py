@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Hosted open-core surface: the entitlement gate, the pure insurer report, and the free core.
 
 The key property under test: the paid gate is real, but it lives ONLY on the operated surface — the

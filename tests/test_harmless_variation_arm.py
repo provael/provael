@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The harmless-variation arm must be excluded from BOTH populations, not one.
 
 WHY THIS ARM EXISTS. It is the strongest objection to our own headline, and the site states it in

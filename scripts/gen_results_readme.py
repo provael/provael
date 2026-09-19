@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Render a results directory's README.md from its own artifacts — no number typed by hand.
 
 WHY. Every committed results directory carries a README whose table restates the shards'

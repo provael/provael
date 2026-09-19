@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Checkpoint supply-chain integrity — a pre-load control for the CI gate.
 
 WHAT THIS IS, AND WHAT IT IS NOT

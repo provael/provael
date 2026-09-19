@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Mitigation report — the artifact a buyer files when a defense is claimed.
 
 Implements the measurement protocol written at ``docs/defenses.md`` exactly, with none of the four

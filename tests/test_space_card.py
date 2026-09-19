@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`leaderboard/README.md` is a Hugging Face Space card, and HF validates it server-side.
 
 WHY THIS EXISTS. The Space sync job silently stopped working for three days. `HF_TOKEN` was added

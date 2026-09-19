@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """One guard for every place the release version is restated.
 
 `provael.__version__` is the single source of truth (hatch reads it to build the wheel), but the

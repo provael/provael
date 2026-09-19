@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 # Regenerate the README demo asset (docs/assets/demo.svg) from a real stub run.
 #
 # Deterministic and machine-independent: it runs the CPU stub pipeline (seed 0) and

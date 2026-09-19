@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """OpenVLA adapter: CPU-testable construction + error paths; gated real-forward integration test.
 
 The real forward pass needs a GPU, the ``[openvla]`` extra, and ``PROVAEL_INTEGRATION=1``; it is

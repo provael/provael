@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The scheduled campaign: a declared grid, measured one shard per run slot, at one held release.
 
 WHY A CAMPAIGN AND NOT A PROBE. Until 18 September 2026 the scheduled GPU lane measured one task,

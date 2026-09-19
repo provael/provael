@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """LIBERO ``SuiteAdapter`` (gated) — red-team SmolVLA-style policies in a real sim.
 
 GATING: this module imports **no** optional dependency at module scope, so it stays

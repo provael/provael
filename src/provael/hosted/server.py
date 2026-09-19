@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Reference hosted attestation server (the ``[hosted]`` extra) — EXPERIMENTAL, off by default.
 
 A small, self-hostable FastAPI app that turns a posted ``report.json`` into an attestation bundle

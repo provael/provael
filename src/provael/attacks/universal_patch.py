@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Universal (run-wide) adversarial-patch transfer on the camera channel (GPU-gated).
 
 WHERE THIS SITS RELATIVE TO ``optimized_patch``

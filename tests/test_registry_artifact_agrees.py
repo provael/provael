@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`watch/registry.json` must agree with the registry it claims to count.
 
 THE GAP THIS CLOSES. The artifact's own note says it exists so that "no human types these

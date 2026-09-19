@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The release gate: an absolute ASR threshold, the baseline-regression check, and the decision.
 
 FAILS CLOSED ON AN EMPTY ASR. `gate_outputs.py` emits an empty string when no adversarial episode

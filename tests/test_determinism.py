@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Determinism: the same seed produces an identical report; different seeds differ.
 
 The in-process tests below cannot see the whole contract. Two ``run()`` calls in one interpreter

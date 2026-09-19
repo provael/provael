@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Guards for the process-level safety-cost metrics (CC / RET / USR / quadrant).
 
 THE PROPERTY THESE EXIST TO HOLD. Every function here returns ``None`` rather than ``0.0`` when the

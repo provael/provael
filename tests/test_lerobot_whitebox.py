@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The LeRobot adapter's white-box surfaces: INT8-emulated weight access and input gradients.
 
 Three layers, gated by what the environment can run:

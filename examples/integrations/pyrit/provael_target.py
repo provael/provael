@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """A PyRIT-style target that runs Provael's embodied scan (reference integration).
 
 Microsoft PyRIT (https://github.com/Azure/PyRIT) — "Metasploit for LLMs" — orchestrates attacks

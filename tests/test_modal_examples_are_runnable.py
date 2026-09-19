@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Guard that the Modal examples expose what ``modal run`` actually looks for.
 
 WHY THIS EXISTS. ``examples/gpu-ci/modal_provael_gpu.py`` built its app inside ``build_app()`` so

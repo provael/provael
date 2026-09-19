@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """CLI smoke tests via typer's CliRunner."""
 
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The gate that would have caught #157 and #158 merging with no changelog line.
 
 `check_changelog.py` gates a RELEASE and could not have caught either: `[Unreleased]` was

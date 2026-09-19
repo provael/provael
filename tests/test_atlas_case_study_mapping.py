@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ATLAS table in the case-study page must not drift from the catalog it mirrors.
 
 WHY THIS EXISTS. `docs/standards/atlas-case-study.md` restates a mapping that already has a

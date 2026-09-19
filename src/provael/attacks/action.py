@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``action`` attack family (EAI04): action-space integrity attacks.
 
 Where the other families drive a *danger* signal past a threshold, this family attacks

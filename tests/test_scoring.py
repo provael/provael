@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """ASR scoring math, including the empty / zero-division guard."""
 
 from __future__ import annotations

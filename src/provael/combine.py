@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Combine the per-task reports of a SHARDED run into one in-memory view.
 
 WHY A SHARDED RUN EXISTS AT ALL. A ten-task LIBERO screen is ~15 GPU-hours, and `provael attack`

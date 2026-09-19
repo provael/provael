@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Meta-World ``SuiteAdapter`` (gated) — a second *real* manipulation benchmark, CPU-renderable.
 
 Meta-World (MT/ML, Gymnasium) is a classic multi-task manipulation benchmark that renders on

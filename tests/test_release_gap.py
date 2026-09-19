@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The published-measurement window: the staleness signal the age badge cannot see.
 
 WHY A SECOND WINDOW. `STALE_DAYS` asks when ANYTHING was last measured, and a one-episode timing

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The published board must state which tool version measured it, and that claim is checked.
 
 THE GAP THIS CLOSES. `leaderboard.json` carries `measured_with`, and nothing verified it against

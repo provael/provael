@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Every committed artifact validates against the published JSON Schema for its format.
 
 WHY THESE SCHEMAS EXIST. A third party submitting a run had no machine-checkable contract for

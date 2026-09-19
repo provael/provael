@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Visual + injection attack families: mutation, calibrated aggression, exact seed-0 ASR.
 
 The expected ASRs were computed from the deterministic stub design (per-seed SHA-256

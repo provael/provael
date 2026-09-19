@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The shipped acceptance-protocol example loads and decides the committed evidence honestly.
 
 `examples/assessment/protocol.example.yml` is the worked shape of a customer protocol. It must load

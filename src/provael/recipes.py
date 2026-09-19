@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Named run recipes: reusable :class:`~provael.config.RunConfig` presets for the CLI.
 
 A *recipe* is a named preset of RunConfig overrides — the copy-paste shortcut that turns

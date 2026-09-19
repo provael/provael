@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """ExecutionManifest: runtime provenance bound to the report, secret-safe, gaps explicit (Phase 8).
 
 Pins the manifest by building it: it binds the report's canonical digest (the same one the

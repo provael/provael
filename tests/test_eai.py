@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """EAI Top-10 mapping: attack metadata, the report.eai map, and the report tables."""
 
 from __future__ import annotations

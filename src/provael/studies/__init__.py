@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Reproducible red-team studies built on the shipped runner + scoring (defensive, sim-only).
 
 Each study REUSES ``provael.runner`` + ``provael.scoring`` (no ASR reimplementation) and keeps a

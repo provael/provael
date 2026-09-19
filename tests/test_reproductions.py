@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Reproductions: registry resolution, valid attack mappings, and CLI (banner + honesty note)."""
 
 from __future__ import annotations

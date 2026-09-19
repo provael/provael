@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``optimized_instruction`` family: an optimized, command-preserving instruction search.
 
 Every shipped *instruction* attack so far is **templated** — ``roleplay`` / ``goal_substitution`` /

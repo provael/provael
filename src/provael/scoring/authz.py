@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Authorization / excessive-autonomy scoring (EAI08): the operator-authorization protocol.
 
 The `instruction` / `visual` / `injection` families succeed by driving a *danger* signal past a

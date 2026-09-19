@@ -1,4 +1,6 @@
 #!/usr/bin/env -S uv run --script
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [

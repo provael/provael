@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Publish the re-measurement's progress, so a page can render a denominator instead of STALE.
 
 WHY THIS EXISTS. `watch/publish-freshness.json` says the published measurement is nine releases

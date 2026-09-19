@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Publish the baseline-regression verdict and render it as a job-summary table.
 
 A REGRESSION HERE IS TWO CONDITIONS, NOT ONE: the delta exceeds tolerance AND the 95% confidence

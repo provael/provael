@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """One guard for every prose claim that restates a number derived from the registry.
 
 THE DRIFT THIS EXISTS TO STOP. `universal_patch` was registered in 0.29.0, taking the registry

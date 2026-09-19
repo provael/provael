@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Adoption is loaded from packaged artifacts, gated on evidence, and never silently drops one.
 
 WHAT THIS STOPS. `CALIBRATED_ZONES` was a hand-written literal that stayed `{}` while ten fitted

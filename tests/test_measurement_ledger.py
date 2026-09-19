@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`watch/measurements.json` must stay current, deterministic, and honest about its own dates.
 
 WHAT THIS GUARDS. The ledger is the artifact www.provael.com's /status/ page joins its published

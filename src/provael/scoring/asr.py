@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Attack Success Rate (ASR) scoring.
 
 Pure, side-effect-free functions over a list of :class:`AttackResult`. The headline

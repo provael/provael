@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The Embodied AI Security Top 10 — the catalog Provael's attacks map to.
 
 Each attack family is tagged with the ``EAIxx`` risk it exercises (see

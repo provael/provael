@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Attack interface.
 
 An :class:`Attack` perturbs the instruction (and optionally the observation) that a

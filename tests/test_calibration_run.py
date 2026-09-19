@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """End-to-end calibration on the stub: target FPR, calibrated ASR/CI, fallback, determinism."""
 
 from __future__ import annotations

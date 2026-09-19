@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Eval-rigor primitives: BH-FDR (C1), Succ-But-Unsafe (C2), resumable trial ledger (E3).
 
 Each is pinned by *running it*: the BH correction and the exact binomial tail against known values,

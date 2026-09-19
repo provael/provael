@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Nothing under `## Planned` in the roadmap may already be shipped.
 
 WHY. `docs/roadmap.md` listed "**Public leaderboard** with open submission" under **Planned** while

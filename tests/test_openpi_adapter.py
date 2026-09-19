@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """openpi adapter: CPU construction + error paths + prompt-injection wiring; gated real-server test.
 
 The real forward pass needs the ``[openpi]`` extra (``openpi-client``), ``PROVAEL_INTEGRATION=1``, and

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Policy registry: resolve a policy name to a :class:`PolicyAdapter`.
 
 ``stub`` is always available (pure CPU, no deps). The real VLA policies map to adapters that

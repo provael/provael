@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``authorization`` attack family (EAI08): identity, access & excessive autonomy.
 
 Where the other families attack the danger axis, the motor command, or screen for a trigger, this

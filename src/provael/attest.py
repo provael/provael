@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Signed, dated attestation bundle for a :class:`~provael.types.RunReport` (v0.7.0).
 
 ``provael attest`` turns the existing compliance evidence (:mod:`provael.compliance`) into a

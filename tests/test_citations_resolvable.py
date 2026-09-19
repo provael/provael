@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """One guard: every evidence citation in the Top 10 must name a source a reader can go find.
 
 THE DRIFT THIS EXISTS TO STOP. In July 2026 an independent audit fact-checked this repo's

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Per-checkpoint baseline-regression diff for a :class:`~provael.types.RunReport`.
 
 Compares a *candidate* run (a new checkpoint) against a *baseline* run (the last known-good

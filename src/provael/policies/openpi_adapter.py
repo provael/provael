@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Adapter for openpi / π0-class flow-matching policies (Physical-Intelligence/openpi).
 
 This is a **second non-LeRobot backend** (alongside :mod:`~provael.policies.openvla_adapter`), and

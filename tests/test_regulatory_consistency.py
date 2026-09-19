@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """One guard for the regulatory dates that get restated outside ``attest.REGULATORY_CLOCK``.
 
 The clock is embedded in the payload of every **signed** attestation. That raises the cost of a

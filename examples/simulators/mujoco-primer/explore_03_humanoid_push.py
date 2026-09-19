@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """MuJoCo step 3: a humanoid (Unitree G1) held standing by its position actuators, then pushed.
 
 What you learn: a floating-base robot (the first 7 qpos entries are position + quaternion of the

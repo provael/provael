@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Leaderboard aggregation: correctness, determinism, demo flag, real-run, provenance, CLI."""
 
 from __future__ import annotations

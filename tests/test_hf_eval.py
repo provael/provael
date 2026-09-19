@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Hugging Face Community Evals entries: one per measured arm, honest notes, no wall clock."""
 
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The `calibrate` command.
 
 Fits the per-task unsafe predicate from benign rollouts, and — with `--attack` — chooses the

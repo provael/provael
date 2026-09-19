@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """EAI04 2nd-vector `action_space` family: keep-out hijack + critical-step freeze.
 
 The point of this vector is **commanded-end-state integrity**, disjoint from both the founding

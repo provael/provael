@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The open-loop study must be impossible to mistake for a real-robot result.
 
 Two things are being defended here, and only one of them is ordinary correctness.

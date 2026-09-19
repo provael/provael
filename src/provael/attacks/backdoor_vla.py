@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``backdoor`` attack family (EAI03): objective-decoupled trigger screening.
 
 Where the other families perturb the *live* task, this family screens a policy for a **latent,

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Episode video: the frames the policy actually saw, written beside the report as MP4.
 
 WHY THIS EXISTS. Every LIBERO step already renders the camera image the policy consumes; until now

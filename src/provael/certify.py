@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Conformity-assessment evidence **dossier** for an ML safety component (``provael certify``).
 
 The EU Machinery Regulation (EU) 2023/1230 **applies from 20 January 2027** (CELEX 32023R1230,

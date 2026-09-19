@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The public evidence manifest: deterministic, honest, N/A-preserving (Phase 10).
 
 Pins the manifest by building it: a pinned commit is required, the committed SmolVLA×LIBERO manifest

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The `[hardware]` extra must be installable today, and must not leak into the sim path.
 
 The extra exists so that the day an SO-101 arrives, `pip install 'provael[hardware]'` resolves

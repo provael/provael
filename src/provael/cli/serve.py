@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The `serve` command: the operated/hosted surface, gated on the `hosted` extra."""
 
 from __future__ import annotations

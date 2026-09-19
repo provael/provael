@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The run orchestrator: policy x suite x attacks x seeds -> RunReport.
 
 For each ``(task, attack, episode)`` triple the runner plays one episode:

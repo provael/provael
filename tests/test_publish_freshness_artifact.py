@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`watch/publish-freshness.json` must agree with the constant and the rule the CLI enforces.
 
 WHAT THIS GUARDS. The artifact publishes the second staleness window — how far the PUBLISHED

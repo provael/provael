@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Rewrite ``campaign.json`` for every committed campaign, from the shards beside it.
 
 One combined view per ``results/gpu-scheduled/campaign-<version>/`` directory, through

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """One guard against publishing a confidence interval that carries no information.
 
 THE DRIFT THIS EXISTS TO STOP. `README.md` published `[0%, 0%]` as the task-clustered 95% interval

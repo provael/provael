@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Every surface that labels a run's transfer tier must read the ladder, not re-derive it.
 
 THE BUG THIS PINS. `evidence.transfer_status_of` exists to be the one source of truth, and its

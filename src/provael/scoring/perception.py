@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Sensor / perception-spoof scoring (EAI02): the adversarial-perception keep-out protocol.
 
 The `instruction` / `visual` / `injection` families drive a *scalar* danger signal; the `action`

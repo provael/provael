@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Cross-architecture transfer study: deterministic CPU-stub run, honest pending rows, CLI + writer.
 
 All CPU, no GPU/network: the stub leg is measured deterministically; the real SmolVLA/π0 legs are

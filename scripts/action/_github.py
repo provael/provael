@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The three ways a GitHub Action step talks to the job around it, in one place.
 
 WHY A HELPER RATHER THAN os.environ AT EACH SITE. All three channels fail the same way — the

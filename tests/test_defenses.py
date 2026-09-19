@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Defenses: the ABC contract, the canonicaliser, the registry, and the measurement protocol.
 
 The load-bearing test in this file is ``test_the_attested_subject_of_a_real_issued_attestation_still_verifies``.

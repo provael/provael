@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Statistics for the PAIRED design this harness already runs, and nobody was using.
 
 THE DESIGN IS ALREADY PAIRED AND THE TESTS WERE NOT. Every attacked episode has a benign twin at

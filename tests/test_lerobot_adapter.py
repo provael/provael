@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """LeRobot SmolVLA adapter tests.
 
 * CPU tests (no GPU/lerobot): the missing-dependency error, the eval hint, the pure

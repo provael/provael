@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ATLAS submission artifact must stay well-formed, and must not drift from what was sent.
 
 WHY THIS EXISTS. `docs/standards/atlas-submission-2026-08-08.yaml` was emailed to `atlas@mitre.org` on

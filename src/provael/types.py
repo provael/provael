@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Core data types for the provael engine.
 
 Observations and environment state flow through the pipeline as plain ``dict``

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """MuJoCo step 1: drive the Panda from Python, watch it live, and draw a keep-out box.
 
 What you learn: MjModel (the description) vs MjData (the state), the control vector, stepping the

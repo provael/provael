@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Combining shards must recompute, not average — and must refuse shards that aren't one run.
 
 The failure this guards is quiet. Ten shards each carry their own summary fields, and the obvious

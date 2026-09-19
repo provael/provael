@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Adapter for real VLA policies loaded through LeRobot (e.g. SmolVLA).
 
 DESIGN: this module imports **no** optional dependency at module scope, so the core

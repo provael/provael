@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Refuse a published leaderboard whose rows have aged out without saying so.
 
 WHAT WENT WRONG. `leaderboard/results/leaderboard.json` publishes four rows measured with provael

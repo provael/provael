@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Full pipeline on the stubs: asserts the exact, hard-coded ASR for seed=0.
 
 The expected numbers below were computed from the deterministic stub design

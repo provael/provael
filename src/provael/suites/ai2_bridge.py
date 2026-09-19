@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """AI2 ``vla-evaluation-harness`` bridge — **registered scaffolding, never run**.
 
 This module is the same honesty scope ``groot``, ``openvla`` and ``openpi`` state in

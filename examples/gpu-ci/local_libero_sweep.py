@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Run the sharded LIBERO screen on ONE machine, resumably, and aggregate its shards.
 
 The workstation twin of :mod:`modal_libero_suite`. That recipe fans ten tasks out to ten rented

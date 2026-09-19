@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The submission funnel must never report a capture that did not happen.
 
 WHY THIS EXISTS. `leaderboard/app.py` pointed its submit button at the Hugging Face dataset

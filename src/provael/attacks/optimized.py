@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``optimized`` attack family (EAI04): search-based, query-budgeted action hijack.
 
 Every other shipped family is *templated* — a fixed transform of the observation. This is the

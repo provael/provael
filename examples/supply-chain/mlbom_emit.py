@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Emit a CycloneDX ML-BOM for a red-teamed policy (audit evidence for the AI Act file).
 
 A CycloneDX ML-BOM (https://cyclonedx.org/capabilities/mlbom/) is the standard machine-readable

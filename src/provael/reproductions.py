@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Named reproductions of published VLA attacks, mapped onto Provael's attack families.
 
 The active VLA-attack literature (FreezeVLA, the OpenVLA adversarial patch, BadVLA, RoboPAIR) is

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The registered/runnable split must stay tied to the declarations it is derived from.
 
 WHY THIS EXISTS. `watch/registry.json` published `policies` and `suites` as bare integers, and the

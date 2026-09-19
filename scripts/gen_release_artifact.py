@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Publish the current release as an artifact, so a consumer derives it instead of copying it.
 
 WHY THIS EXISTS. `watch/` is the consumption surface: registry.json carries the counts,

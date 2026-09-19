@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Draw each episode's end-effector path against the task's keep-out zone, as SVG.
 
 WHY. The keep-out predicate is the one thing in a LIBERO result a reader cannot see: a report says

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """EAI ↔ RoboJailBench crosswalk: integrity, determinism, and the certify appendix.
 
 The load-bearing guards (what stops the crosswalk silently rotting as families change):

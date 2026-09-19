@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Calibrated, per-task keep-out zones for the LIBERO red-team predicate (WS1).
 
 The shipped default keep-out zone is a generic box, so an attack "success" means the

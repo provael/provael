@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """EAI06 misalignment family: embodiment-gap keep-out violation, benign control, predicate, N/A, canary.
 
 The point of EAI06 is the **embodiment gap**: an instruction a chat-layer safety filter passes as

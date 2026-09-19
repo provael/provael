@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Action-space-integrity scoring (EAI04, 2nd vector): the commanded-end-state protocol.
 
 Provael's founding EAI04 vector is the `action` family (:mod:`provael.scoring.action`): a `freeze::`

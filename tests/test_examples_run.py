@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Every CPU-only example actually runs, unmodified, with no arguments.
 
 WHY THIS EXISTS. `examples/python-api/` had four scripts and nothing executed any of them — not a

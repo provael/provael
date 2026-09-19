@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Real-policy attack injection (image overlay / scene-text render / N/A) — CPU only.
 
 No GPU, no lerobot: synthetic images + a fake policy/suite exercise the image-space

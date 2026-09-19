@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Fail if any relative markdown link does not resolve CASE-EXACTLY against the git index.
 
 WHY THE GIT INDEX AND NOT THE FILESYSTEM. macOS and Windows ship case-insensitive filesystems, so

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`coverage` and `watch`: what this install knows about itself, and how current it is."""
 
 from __future__ import annotations

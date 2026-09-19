@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The benign control arm is published to the same standard as the ASR it qualifies.
 
 The bug these pin: every exporter in this package emitted the adversarial ASR with a Wilson

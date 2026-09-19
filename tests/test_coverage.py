@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The coverage counter: one source for every published count, with validation attached.
 
 THE MISTAKE THIS GUARDS AGAINST, WHICH HAS ALREADY BEEN MADE ONCE FROM THE OUTSIDE.

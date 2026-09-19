@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Snapshot the CLI's public surface, so a refactor can prove it moved nothing.
 
 WHY THIS EXISTS. Issue #193 asks for `src/provael/cli.py` — 3,000-odd lines and 27 top-level

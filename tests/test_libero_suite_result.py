@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Pin the committed 10-task suite result, so a change to the statistics is caught here.
 
 These assertions exist because the numbers in `results/smolvla_libero_object_suite/README.md` and

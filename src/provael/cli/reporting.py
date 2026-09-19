@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`report`, `transfer-test` and `export`: turn a finished run into something a reader consumes."""
 
 from __future__ import annotations

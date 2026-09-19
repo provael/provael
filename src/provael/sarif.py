@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """SARIF 2.1.0 export for a :class:`~provael.types.RunReport`.
 
 Emits a static-analysis-style result per attack so red-team findings surface in

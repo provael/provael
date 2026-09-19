@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The `submit` command: package a run for the public leaderboard."""
 
 from __future__ import annotations

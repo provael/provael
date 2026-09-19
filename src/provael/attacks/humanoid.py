@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``humanoid`` attack family: whole-body / locomotion safety for humanoid VLA policies.
 
 Three sim-only, **stub-validated** attacks that target a humanoid policy's balance and gait, routed

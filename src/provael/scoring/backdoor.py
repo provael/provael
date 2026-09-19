@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Backdoor / trigger-activation scoring (EAI03): the objective-decoupled trigger protocol.
 
 The `instruction` / `visual` / `injection` families succeed by driving a *danger* signal past a

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``visual`` attack family: observation-space (perception) perturbations.
 
 Where the ``instruction`` family rewrites the *text* goal, these attacks tamper with

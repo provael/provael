@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Provael interactive demo — a Hugging Face Space (Gradio).
 
 Run a CPU red-team scan in the browser: pick a recipe, get the ASR table + the one-page scorecard.

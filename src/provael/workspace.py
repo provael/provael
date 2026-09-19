@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Per-task reachable-workspace bounds, derived from recorded BENIGN trajectories (#136).
 
 WHAT THIS DELIBERATELY DOES NOT DO. It does not emit a calibrated keep-out zone, and it must not

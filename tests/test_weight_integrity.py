@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Tests for the EAI03 weight-integrity family.
 
 The load-bearing test in this file is :func:`test_corruption_never_leaks_into_a_later_attack`.

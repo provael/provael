@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The runtime examples: the mitigation demo runs the protocol, and the guard node still clamps.
 
 This file used to assert a DIRECTION OF EFFECT — `assert fw < base`, plus frozen point estimates

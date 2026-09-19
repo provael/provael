@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The watch/ artifacts agree with each other and with the code that derives them.
 
 R07 (19 Sep 2026): the consumption surface already existed; what drifted was the consumption. One

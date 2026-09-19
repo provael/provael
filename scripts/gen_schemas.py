@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Regenerate the published JSON Schemas from the pydantic models.
 
 Run after ANY change to `RunReport` or `Leaderboard`; `tests/test_published_schemas.py` fails until

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The `study` sub-app's commands: `cross-arch` and `eai04`."""
 
 from __future__ import annotations

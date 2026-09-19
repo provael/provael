@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``baseline`` family: a no-op control for measuring attack *lift*.
 
 A red-team ASR is only meaningful **relative to the un-attacked policy**. ``NoOpAttack``

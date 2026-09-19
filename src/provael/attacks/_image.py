@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Deterministic image-space perturbations for the ``visual`` / ``injection`` families.
 
 Pure numpy + PIL, no GPU and no lerobot — so they are unit-testable on CPU with

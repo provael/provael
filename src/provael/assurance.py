@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Standards-aligned assurance profiles over a :class:`~provael.types.RunReport` (sim-only).
 
 ``provael attest --profile <iso-10218-2|iec-62443|insurer>`` embeds one of these views inside the

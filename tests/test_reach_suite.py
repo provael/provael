@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """ReachSuite: the spatial CPU predicate, exact frozen ASR, and suite-agnosticism vs the stub.
 
 ``reach`` is the second pure-CPU suite. It scores a *spatial* keep-out zone on an end-effector

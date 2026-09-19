@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """EAI04 action-space-integrity family: predicates, attacks, and a stub transfer-test.
 
 Provael's brand is honest measurement, so the action family ships with the same

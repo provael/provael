@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Defense interface — the mitigation counterpart to :class:`~provael.attacks.base.Attack`.
 
 A :class:`Defense` wraps the policy from **both sides**: :meth:`Defense.apply` pre-processes the

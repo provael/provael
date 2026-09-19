@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The Action's gate logic, which was previously untestable by construction.
 
 WHY THIS FILE EXISTS. Five blocks of Python lived inside ``action.yml`` as shell heredocs. Nothing

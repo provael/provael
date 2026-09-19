@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Policy adapter interface.
 
 A :class:`PolicyAdapter` wraps anything that maps an observation + instruction to

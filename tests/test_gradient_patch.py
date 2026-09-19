@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The white-box gradient patch: it must be inert without gradients, and real with them.
 
 WHY THE INERTNESS TESTS COME FIRST. This family's whole risk is reporting a white-box null it never

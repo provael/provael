@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """A workflow step containing a pipeline must be able to fail on it.
 
 WHY THIS EXISTS, AND WHY IT IS THE THIRD TIME. Bash takes a pipeline's exit status from the LAST

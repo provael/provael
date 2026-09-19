@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """AVID export: record structure, determinism, and the `export` CLI command."""
 
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Pre-deployment ASR scorecard — the one-page artifact a release ticket attaches.
 
 Turns a :class:`~provael.types.RunReport` into a single Markdown page a product-security engineer

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`.github/workflows/gpu-arm.yml` and the example's STAGES must name the same arms.
 
 WHY THIS EXISTS. The workflow offers a `stage` dropdown and the example defines the stages. Those

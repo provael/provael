@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`watch/release.json` must never disagree with the package it describes.
 
 WHY THIS GUARD IS THE WHOLE POINT OF THE ARTIFACT. The file exists so a consumer derives the

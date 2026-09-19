@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Two registry invariants that were held by convention and by nothing else.
 
 Both are the same shape of problem: a derived collection that happens to agree with its source

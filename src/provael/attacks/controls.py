@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Diagnostic control arms: ``benign_reword``, ``nonsense_text``, ``scrambled_text`` and
 ``roleplay_no_target``.
 

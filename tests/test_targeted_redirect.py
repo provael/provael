@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``optimized_instruction`` family: the optimized, command-preserving instruction search.
 
 Covers the greedy search machinery on the deterministic CPU StubPolicy+StubSuite (budget respected,

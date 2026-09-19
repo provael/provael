@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """ExecutionManifest — runtime provenance, bound to the deterministic report by digest (Phase 8).
 
 ``report.json`` is byte-deterministic and must stay that way, so it carries NO wall-clock time or

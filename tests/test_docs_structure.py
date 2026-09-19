@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Structural guards for the MkDocs site: reachable section hubs, and no case-colliding URLs.
 
 Two defect classes, both invisible to a normal build because MkDocs is happy to publish them.

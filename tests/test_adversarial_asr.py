@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Adversarial ASR vs the benign control vs the all-episode rate (Phase 1).
 
 The headline ASR is measured over the ADVERSARIAL episodes only — the benign ``none`` control is

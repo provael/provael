@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """A typed release verdict — not a binary pass/fail (Phase 9), decided under a NAMED protocol.
 
 A red-team run answers "is this release-ready?" with four states, never two:

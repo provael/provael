@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Keep every pre-versioning docs URL alive after `mike` moved the site under `/latest/`.
 
 WHY THIS EXISTS. `mike` publishes each build under a version path and leaves only a redirect at the

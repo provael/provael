@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Continuous-measurement watch: a freshness signal that decays on its own.
 
 A point-in-time scan and a continuously-verified claim are different products, and only the second

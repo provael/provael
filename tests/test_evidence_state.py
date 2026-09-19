@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The evidence-state ladder: what a run has actually EARNED, never over-promoted (Phase 2).
 
 Pins the classifier by running it: a stub run is `stub`, a real policy on a real suite is

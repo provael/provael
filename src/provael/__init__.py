@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """provael (Provael) — red-team open Vision-Language-Action robot policies.
 
 A model-agnostic harness that perturbs the instructions/observations fed to a VLA

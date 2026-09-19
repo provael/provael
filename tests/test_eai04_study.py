@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """EAI04 action-space transfer study: the CPU reference, the not-applicable-on-real finding, reuse.
 
 The load-bearing guard is ``test_eai04_not_applicable_on_a_libero_shaped_observation``: it proves the

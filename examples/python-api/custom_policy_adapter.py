@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Bring your own VLA in ~30 lines — a runnable, CPU-only custom PolicyAdapter.
 
 A Provael *policy* is anything that maps ``(observation, instruction) -> action`` (the tiny

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The measurement loop: walk recorded frames, ask the policy twice, compare.
 
 Separated from :mod:`provael.studies.offline_observation` on purpose. That module holds the metric

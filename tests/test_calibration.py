@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Calibration core: Wilson CI, seed split, scalar/spatial fitting, model, artifact IO."""
 
 from __future__ import annotations

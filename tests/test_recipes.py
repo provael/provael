@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Recipes: built-in resolution, YAML-file loading, errors, and CLI wiring (list + override)."""
 
 from __future__ import annotations

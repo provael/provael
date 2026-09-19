@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Process-level safety-cost metrics: risk exposure time, cumulative cost, and the quadrant.
 
 A binary "did this episode end unsafe?" collapses two things a reviewer needs separately: *whether*

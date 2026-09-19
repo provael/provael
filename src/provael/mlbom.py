@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Emit a Provael run as a CycloneDX ML-BOM (E4 — supply-chain / AI Act Art. 11 evidence).
 
 A CycloneDX **ML-BOM** (https://cyclonedx.org/capabilities/mlbom/) is the standard machine-readable

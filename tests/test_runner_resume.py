@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Resume: a run interrupted and restarted must produce the report it would have produced anyway.
 
 WHY THIS FILE EXISTS. `provael.ledger` shipped complete and tested but was wired into nothing —

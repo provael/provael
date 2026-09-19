@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`examples/lerobot_eval_smolvla_libero.py` must stay a reproduction, not merely a script.
 
 WHY THIS EXISTS. The example advertises specific numbers — `roleplay` 44/50, benign control 2/50 —

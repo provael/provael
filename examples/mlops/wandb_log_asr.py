@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Log a Provael run's ASR to Weights & Biases, with a promotion-gate note.
 
 `run.log({"asr": ...})` plus a `wandb.Table` of per-attack results lets a W&B Registry automation

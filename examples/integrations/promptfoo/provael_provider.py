@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """A promptfoo custom provider that runs a Provael VLA red-team scan.
 
 promptfoo (https://www.promptfoo.dev) is a widely-used LLM red-team / eval runner. Its custom

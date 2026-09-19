@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Resolve the identity of the policy that actually executed — the helpers behind issue #227.
 
 WHY A MODULE OF PURE FUNCTIONS. The facts that make two deployments executable-inequivalent

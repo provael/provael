@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The badge's reader and the run's writer must agree on ONE filename, in ONE place.
 
 WHAT WENT WRONG, and it is worth stating because the code was not the bug. `provael attack` writes

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Action-envelope clamp — ``docs/defenses.md`` row 3 (action clamping / keep-out enforcement).
 
 The first **action-side** defense: it acts on what comes out of the policy, using the

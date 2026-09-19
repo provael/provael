@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The keep-out path viewer draws only what the report carries, and says so when it carries nothing."""
 
 from __future__ import annotations

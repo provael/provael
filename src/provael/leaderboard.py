@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Aggregate run reports into a ranked ASR leaderboard.
 
 Reads any number of ``report.json`` files, buckets every episode by

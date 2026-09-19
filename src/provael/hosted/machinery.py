@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """EU Machinery Regulation **Annex III** evidence-pack draft (a structured evidence export).
 
 Where the insurer report (:mod:`provael.hosted.report`) is a broad conformity *mapping*, this is a

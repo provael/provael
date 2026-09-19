@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Validate leaderboard submission `report.json` files (CPU-only).
 
 Run by CI on PRs that touch `results/**`, and locally before you submit. Checks every

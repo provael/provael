@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Defenses — measured mitigations, held to the same evidential bar as attacks.
 
 ``docs/defenses.md`` is the taxonomy and the spec. Its rule is the one this package exists to

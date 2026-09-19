@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """MuJoCo step 2: render the same arm offscreen and write an MP4 — how episode videos are made.
 
 What you learn: the offscreen Renderer, cameras, the frame rate you choose vs the physics rate,

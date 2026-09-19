@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Coverage counts, derived from the registries and the committed real-model runs.
 
 WHY THIS MODULE EXISTS. Coverage counts are restated in the README, the docs, the Hugging Face

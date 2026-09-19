@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Transfer-test path: by_family aggregation + the rate/CI/benign/status transfer-test."""
 
 from __future__ import annotations

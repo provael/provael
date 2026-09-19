@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Log a Provael run's ASR to MLflow (track policy robustness over time).
 
 `mlflow.log_metric("asr", ...)` makes ASR a first-class tracked metric, so you can watch a

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The paired design must be tested as paired, and the corrections must bite.
 
 The interesting assertions here are the ones that make the headline WEAKER. McNemar is ~200x less

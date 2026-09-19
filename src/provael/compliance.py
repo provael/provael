@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Compliance-evidence export for a :class:`~provael.types.RunReport` (v0.5.0).
 
 Turns a red-team run into an **auditor-readable evidence artifact** that maps the run's measured

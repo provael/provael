@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """One run, one decision, every export.
 
 WHY THIS FILE EXISTS. Until 0.43.0 each emitter called ``release_verdict(report)`` on its own with

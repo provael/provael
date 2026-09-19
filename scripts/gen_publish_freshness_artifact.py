@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Publish the release-drift window as an artifact, so a consumer reads the answer.
 
 WHY THIS EXISTS, and what it does NOT exist for. `watch/freshness.json` answers one question — when

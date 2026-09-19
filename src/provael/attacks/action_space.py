@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``action_space`` attack family (EAI04, 2nd vector): commanded-end-state integrity.
 
 Provael's founding EAI04 vector is the `action` family (`freeze` nulls the commanded motion,

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The release gate must reject what it is for, and accept the repo's real heading style.
 
 A gate nobody has watched fail is a gate nobody knows works. These test both directions, and pin

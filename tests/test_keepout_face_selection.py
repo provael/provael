@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The replayed face-selection finding, pinned so it cannot drift unnoticed.
 
 WHY A TEST AND NOT ONLY A STUDY. `studies/keepout_face_selection/` records that on the one

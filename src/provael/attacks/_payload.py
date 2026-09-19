@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Shared, deterministic helpers for attack payloads.
 
 Every attack must be a pure, reproducible function of its inputs. These helpers

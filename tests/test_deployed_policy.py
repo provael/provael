@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Issue #227: a report names the policy that EXECUTED, beside the checkpoint that was REQUESTED.
 
 `RunReport.model` is the request. `RunReport.deployed_policy` is what the adapter resolved at

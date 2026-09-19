@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`offline-study` and `sim-to-real`.
 
 The two studies that read a recorded dataset rather than stepping a simulator."""

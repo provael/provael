@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Render the reference delivery pack from one real, supported, committed run — nothing typed.
 
 WHY. A paid assessment hands a customer a pack: findings, limitations, the report, the decision,

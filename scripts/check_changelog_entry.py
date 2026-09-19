@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Refuse a pull request that changes published behaviour without a changelog line.
 
 WHY THIS EXISTS, AND IT IS A DIFFERENT GAP FROM `check_changelog.py`. That script gates a

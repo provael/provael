@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Unit tests for the diagnostic control arms (benign_reword, nonsense_text, scrambled_text,
 roleplay_no_target).
 

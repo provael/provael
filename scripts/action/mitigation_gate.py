@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Fail the job on a mitigation verdict that must not ship, and explain which one.
 
 THREE FAILING VERDICTS, ONE PASSING ONE, AND ONE THAT ONLY LOOKS LIKE A FAILURE.

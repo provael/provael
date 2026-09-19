@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Adapter for OpenVLA / OpenVLA-OFT policies loaded directly through Hugging Face ``transformers``.
 
 This is the **model-agnostic, non-LeRobot** path: it proves Provael can red-team a VLA that

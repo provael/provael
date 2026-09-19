@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """P0.4 honest reporting + INV-4 metadata + D6 accelerator.
 
 These pin the credibility-critical schema/stats the roadmap makes a P0 dependency:

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """No command may advise a flag it does not define.
 
 WHY THIS EXISTS. ``provael submit`` signs unconditionally and defines no ``--no-sign``, but the

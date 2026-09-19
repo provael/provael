@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """`provael certify` — the Machinery conformity-assessment evidence dossier.
 
 Covers: the dossier's separately-addressable sections over a stub-policy run; the non-negotiable

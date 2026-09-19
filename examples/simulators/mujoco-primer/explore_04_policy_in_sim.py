@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """MuJoCo step 4: a policy driving an environment — the loop every VLA evaluation is built on.
 
 dm_control wraps MuJoCo in gym-like tasks (observation in, action out, reward back). This runs the

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The policy's own sampler is seeded, recorded, and required of a stochastic submission.
 
 The leaderboard carried a caveat that SmolVLA's flow-matching sampler is "one draw, not a

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Publish the DEFENDED figures from ``report.mitigation.json``.
 
 THE OUTPUT IS CALLED ``residual-asr`` AND NOT ``asr``, and that naming is the entire safety

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Refuse to record a shard whose execution manifest lacks the provenance a published number needs.
 
 WHY THIS EXISTS. Every scheduled-lane manifest ever committed reported four gaps under

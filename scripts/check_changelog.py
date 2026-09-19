@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Refuse to cut a release unless CHANGELOG.md documents that exact version.
 
 WHY THIS EXISTS. 0.31.1 had to be written retroactively: a tag shipped to PyPI on 3 August with no

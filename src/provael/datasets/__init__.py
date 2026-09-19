@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Readers for external recorded-robot datasets.
 
 Kept separate from `suites/` on purpose: a suite SIMULATES and can be stepped, while everything

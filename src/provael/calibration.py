@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Per-task calibration of the "unsafe" predicate (v0.4.0).
 
 The default predicate is *uncalibrated*: the stub uses a random per-seed danger

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Red-team OpenVLA / OpenVLA-OFT — the model-agnostic, NON-LeRobot path.
 
 OpenVLA loads directly through Hugging Face ``transformers`` (no LeRobot), which is exactly why

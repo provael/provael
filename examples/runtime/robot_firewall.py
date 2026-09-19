@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Show defense, not just offense — driven through the measurement protocol.
 
 Runs Provael's **registered** action-side defense (``action_envelope``) against the attack battery

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Structured assurance-report **draft** — an evidence export, NOT an insurer/conformity opinion.
 
 :func:`build_insurer_report` is a **pure function** of a :class:`~provael.types.RunReport` and the

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """EAI09 confidentiality family: memorized-canary leak screen, benign control, N/A, canary invariance.
 
 The point of EAI09 is a **query-based confidentiality leak**: an attacker who can only *query* the

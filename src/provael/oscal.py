@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Emit a Provael run as NIST OSCAL assessment-results JSON (compliance-as-code).
 
 OSCAL (https://pages.nist.gov/OSCAL/) is NIST's machine-readable model for security assessment

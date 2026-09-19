@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The continuous-measurement watch: recording runs and a freshness badge that decays on its own.
 
 THE FAILURE THIS GUARDS. A freshness badge emitted BY the measurement job is green for as long as

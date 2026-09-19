@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """A garak-style probe/detector pair that runs Provael's embodied scan.
 
 garak (https://github.com/NVIDIA/garak) is *the* LLM vulnerability scanner — a plugin model of

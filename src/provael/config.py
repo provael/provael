@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Run configuration for a red-team evaluation.
 
 ``RunConfig`` is the single source of truth for a run: which policy and suite to

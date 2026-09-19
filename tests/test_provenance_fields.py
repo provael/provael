@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The four provenance fields every scheduled-lane manifest admitted it lacked, now filled.
 
 `repository`, `commit`, `dep_lock_digest` and `precision` sat in `missing_fields` on every run the

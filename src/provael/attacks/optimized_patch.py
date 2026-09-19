@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Optimised adversarial-patch attack on the real camera-image channel (GPU-gated).
 
 Where :mod:`provael.attacks.optimized` searches over ``goto::`` *action directives*, this family

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Cross-domain safety-misalignment scoring (EAI06): the embodiment-gap keep-out protocol.
 
 The `instruction` / `visual` / `injection` families drive a *scalar* danger signal; the `action`

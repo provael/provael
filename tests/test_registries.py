@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Registry and config-validation coverage for the public factory API."""
 
 from __future__ import annotations

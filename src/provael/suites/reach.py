@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """A tiny, deterministic, CPU-only **spatial** suite (the second shipped CPU suite).
 
 ``ReachSuite`` complements :class:`~provael.suites.stub.StubSuite`: where the stub scores a

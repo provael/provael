@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Publish the numbers the release gate reads, from a run's ``report.json``.
 
 THE GATED NUMBER IS ``adversarial_asr``, NOT ``asr``. ``report.json['asr']`` is the all-episode

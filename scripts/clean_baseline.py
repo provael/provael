@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Establish the CLEAN (benign) baseline for a real VLA×LIBERO checkpoint (GPU/sim required).
 
 Why: an attack-success rate is only meaningful against a benign control that (a) actually performs

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """A deterministic public evidence manifest — the JSON a website can consume safely (Phase 10).
 
 ``build_evidence_manifest`` is a pure function of a :class:`~provael.types.RunReport` plus a

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Standards-aligned assurance profiles + the signed-attestation `--profile` path.
 
 Guards: the three profiles reuse the shipped scoring/compliance/insurer surfaces (no statistic

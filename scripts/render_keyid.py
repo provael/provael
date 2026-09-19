@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Rewrite every documented leaderboard keyid to the one derived from the published key.
 
 The keyid is not a fact anyone should type: it is *derived* — the first 16 hex chars of

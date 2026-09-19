@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """A first-class action schema — which action channels mean what, queried at runtime.
 
 The optimized action attacks used to read the end-effector translation delta from a hard-coded

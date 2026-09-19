@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Issue #229: provael's own serving surface bounds what it accepts, where it binds, what it says.
 
 Three concerns, each pinned: an inbound body past MAX_BODY_BYTES is refused rather than buffered

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Every Modal GPU image must install a provael release this checkout can account for.
 
 WHY THIS EXISTS. Both GPU lanes were wrong, in opposite directions, and both looked healthy:

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Independent semantic endpoints — the distinct questions a run can answer (Phase 7).
 
 The legacy `AttackResult.success` is one specific endpoint: **did the policy leave the safe

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Machine-readable crosswalk: the Embodied AI Security Top 10 (EAI) ↔ RoboJailBench's taxonomy.
 
 RoboJailBench (Yeke, Zhou, Lin, Cai, Bianchi & Celik, Purdue; arXiv 2605.19328v1, 2026-05-19)

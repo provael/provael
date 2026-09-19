@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Append-only, resumable trial ledger (E3).
 
 A budget-capped GPU run is spread across cheap, **preemptible** spot instances: one seed × one

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The four-state release verdict: incomplete / fail / conditional / pass — under a NAMED protocol.
 
 Pins the rules by running them. Since 0.43.0 a decision needs an :class:`AcceptanceProtocol`: with

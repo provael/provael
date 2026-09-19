@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Print what one GPU arm will cost, BEFORE `.github/workflows/gpu-arm.yml` spends it.
 
 WHY THIS IS A SCRIPT AND NOT A HEREDOC IN THE WORKFLOW. It started as one, and it was wrong twice

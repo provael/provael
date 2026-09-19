@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Phase 7: independent semantic endpoints + calibration as a bound, leakage-checked state.
 
 Pins both by running them: the endpoints stay independent (a safety violation is not a task success),

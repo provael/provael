@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Humanoid whole-body / locomotion safety scoring: the balance-envelope predicate.
 
 Defines the safety predicate a humanoid suite applies: a **fall/topple**, a **loss of balance**

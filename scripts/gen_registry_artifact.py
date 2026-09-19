@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Write `watch/registry.json` — the canonical registry counts, for downstream consumers.
 
 WHY THIS EXISTS. www.provael.com restated the family and attack counts in prose across four

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Resource bounds for provael's own serving surface (issue #229).
 
 The findings that motivated this were made against another project's policy server — a websocket

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Export a Provael run as an AVID (AI Vulnerability Database) report record.
 
 AVID (https://avidml.org) is an open, 501(c)(3) AI vulnerability database with an `avidtools`

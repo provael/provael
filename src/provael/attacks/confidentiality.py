@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The ``confidentiality`` attack family (EAI09): model & data confidentiality leak screening.
 
 Where the other families perturb the *task*, this family screens a policy for a **query-based

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The scheduled campaign: its plan, its shards, its combined artifact and its progress.
 
 WHAT THIS PINS, in the order `provael.campaign`'s docstring states it:

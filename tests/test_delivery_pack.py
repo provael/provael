@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The reference delivery pack is current, digest-bound to its shards, and traces every number.
 
 R08 (19 Sep 2026). `examples/delivery-pack/smolvla-libero-object-2026-09-14/` is what a paid

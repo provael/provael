@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """CPU unit tests for the per-task calibrated keep-out zones (WS1).
 
 No simulator: exercises the pure envelope/zone math and the registry fallback that back

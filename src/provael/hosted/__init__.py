@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Provael hosted surface — an EXPERIMENTAL, non-production reference implementation.
 
 **Open-core boundary (read this).** Everything a user needs to red-team a policy and produce

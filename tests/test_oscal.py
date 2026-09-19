@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """OSCAL assessment-results export: structure, determinism, and CLI wiring."""
 
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The Typer apps, the two consoles, and the helpers the command modules share.
 
 WHAT LIVES HERE, AND WHAT DELIBERATELY DOES NOT. This file was `cli.py` — 3,057 lines and every

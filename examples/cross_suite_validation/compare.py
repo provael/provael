@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Cross-suite validation — the same attacks, run on two different suites, on CPU.
 
 This is the artifact that answers "you only proved it on one suite" with *data*. It runs the

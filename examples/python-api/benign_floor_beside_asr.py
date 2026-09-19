@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Read an attack-success rate and its benign floor out of one report.
 
 CPU-only, no GPU, no model download, no arguments, under a second on the deterministic stub.

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The per-checkpoint baseline-regression gate: the CI-aware diff and its CLI wiring.
 
 Every case uses hand-built deterministic reports (no policy/sim/GPU), so it runs in CPU CI. The

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Simulation suites and a small name -> suite factory.
 
 The ``stub`` suite is always available (pure CPU, no deps). The ``libero`` suite wraps

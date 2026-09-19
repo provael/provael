@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Scoring for the EAI03 weight-integrity family: the flip budget at which a policy breaks.
 
 THE NUMBER THIS MODULE EXISTS TO PRODUCE. A weight-integrity run does not have one headline rate;

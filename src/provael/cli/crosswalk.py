@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The `crosswalk` command: render the standards crosswalk in a chosen target and format."""
 
 from __future__ import annotations

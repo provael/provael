@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """EAI02 sensor_spoof family: reach-suite keep-out violation, benign control, predicate, N/A, canary."""
 
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Load recorded frames from a LeRobotDataset, and refuse the ones that are not what they say.
 
 WHY THIS VALIDATES INSTEAD OF TRUSTING THE NAME. Of the five public Hugging Face datasets matching

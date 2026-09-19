@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The #136 determination: are the benign false positives scattered, or concentrated?
 
 This pins the study in ``studies/keepout_calibration/`` against the committed artifacts it reads,

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """The scheduled lane's shape and budget, exercised on the CPU lane before Modal spends anything.
 
 WHY THIS EXISTS. `examples/gpu-ci/modal_provael_gpu.py` used to be a probe whose arithmetic could

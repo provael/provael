@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
 """Every committed run from the cut-over on carries the provenance a published number needs; every
 older run's gaps are listed, labelled unknown, and never backfilled.
 
