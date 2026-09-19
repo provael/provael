@@ -94,6 +94,20 @@ We are not your CSIRT and cannot report on your behalf. The notification duty is
 - The core installs no GPU/ML stack and makes no network calls; real policies and the LIBERO
   simulator are isolated behind the optional `[lerobot]` extra and a `PROVAEL_INTEGRATION=1`
   gate. Releases publish to PyPI via OIDC trusted publishing (no stored tokens).
+
+### Network egress, by path
+
+Three paths, three different answers; stating them together is what stops the CPU claim being read
+as a claim about the GPU path.
+
+| path | downloads and egress | credentials |
+| --- | --- | --- |
+| **CPU CLI** (`pip install provael`, the `stub` / `reach` / `humanoid` suites, every export) | none at run time. `pip install` itself reaches PyPI once. | none read; the execution manifest's environment block is an allow-list (`provael.execution.ENV_ALLOWLIST`) and secrets never reach an artifact |
+| **optional model loaders** (`[lerobot]`, `[openvla]`, `[openpi]`) | the Hugging Face Hub for the checkpoint the run names (and LeRobot's simulator assets); `[openpi]` opens a websocket to the policy server the operator configures. Nothing else. | a Hub token if the checkpoint is gated, supplied by the operator's own environment; never logged, never written into `report.json` or the manifest |
+| **customer execution** (a paid assessment) | the customer's network, under the customer's policy; the isolated-environment variant limits egress to the checkpoint host — see [the procedure](docs/maintainers/private-assessment-procedure.md) | granted and revoked by the customer's access owner |
+
+`provael serve` (the `[hosted]` extra) binds loopback only unless `--allow-remote` is passed, has no
+authentication, and is not used for private workloads.
 - The tool ships **no real-world-harm payloads** and drives **no physical robots**. Misuse
   against systems you do not own or have permission to test is out of scope and not condoned —
   see [SAFETY.md](SAFETY.md).
@@ -113,8 +127,12 @@ vulnerabilities in Provael**, and the core install (6 deps, no GPU/ML stack) is 
   not reachable through Provael, on CPU or GPU. If you **separately** run LeRobot's async inference,
   follow the upstream advisory (fixed in LeRobot PR #3048, which replaces pickle with
   safetensors + JSON) — require auth/mTLS on the PolicyServer and upgrade once a fixed release is
-  verified against the `smolvla_libero` path. Pinning Provael's extra to that fixed release is a
-  tracked follow-up (the `smolvla_libero` glue is verified only against `0.5.1` today).
+  verified against the `smolvla_libero` path. **Pinning Provael's extra to that fixed release is a
+  bounded, explicit exception, not a forgotten one:** the pin stays at `0.5.1` until a fixed
+  release has been validated against the supported checkpoint on a GPU (the adapter's per-step
+  rollout was read off this version's evaluator, and 0.6.x moved import paths and raised the torch
+  floor — `pyproject.toml` records why), and it moves by a validated run, never by a version-string
+  edit. Enabling LeRobot's separate inference server is not a shortcut to that and is not done.
 
 ## Scope under the EU Cyber Resilience Act
 

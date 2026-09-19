@@ -97,6 +97,7 @@ nav:
       - Hosted production requirements: maintainers/hosted-production-requirements.md
       - Private assessment procedure: maintainers/private-assessment-procedure.md
       - Paid-run dependency licences: maintainers/paid-run-dependency-licences.md
+      - Real-policy validation trigger: maintainers/real-policy-validation.md
   - Changelog: changelog.md
   - Errata: errata.md
   - FAQ: faq.md

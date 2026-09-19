@@ -128,6 +128,18 @@ All notable changes to this project are documented here. The format is based on
   intervals do not show equivalence, and adds a "next investigation" line per regressed slice.
   `examples/ci/regression-gate.md` and `.yml` carry the protocol input and the worked pair
   (the delivery pack's `retest.md`).
+- **Release readiness: egress stated per path, the LeRobot pin exception bounded, and the wheel's
+  status tested.** SECURITY.md documents network egress and credentials for the CPU CLI (none), the
+  optional model loaders (the Hub for the named checkpoint; a token from the operator's environment,
+  never logged or written into an artifact) and customer execution (the customer's network, or the
+  isolated environment's limited egress), and states the `lerobot==0.5.1` advisory follow-up as a
+  bounded exception: the pin moves by a run validated against the supported checkpoint on a GPU,
+  never by a version-string edit, and the separate inference server is not a shortcut.
+  `docs/maintainers/real-policy-validation.md` says which changes need a small real-policy
+  validation (one task, one arm pair, ~1 GPU-hour, diffed against the committed task-0 shard)
+  before the path is described as working, and that unavailable execution is reported as
+  unverified. `tests/test_wheel_status.py` holds the packaged statuses and the coverage counter's
+  `unscanned` behaviour to what an installed wheel must say.
 - **The measurement ledger carries what a consumer used to re-derive.** Each
   `watch/measurements.json` row now names the run's checkpoint (`model`), its adversarial and
   benign numerators and denominators, its predicate (`calibrated`) and `evidenceState`, the
