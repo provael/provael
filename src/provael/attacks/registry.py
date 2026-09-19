@@ -255,6 +255,73 @@ FAMILIES: dict[str, list[str]] = {
 }
 
 
+#: Adversarial family -> the committed evidence that it has been run against a REAL policy in a
+#: real simulator. **Declared here, never inferred from the filesystem**, for the reason
+#: :data:`provael.policies.registry.MEASURED_POLICIES` records: ``results/`` is not packaged, so a
+#: probe answers "nothing measured" in a wheel and fails toward the claim that ships a false
+#: number. Kept in step with the derived partition by ``tests/test_coverage.py``: in a checkout the
+#: keys here must equal ``coverage().real_policy_families``, so a family cannot be declared
+#: measured without a committed applicable adversarial episode, and a committed one cannot go
+#: unlisted. "Measured" says an episode ran and was scored — a measured null (five of these eight
+#: are at n = 3 on one task) is a measurement, not a transfer claim; the run READMEs carry the rate.
+MEASURED_FAMILIES: dict[str, str] = {
+    INSTRUCTION_FAMILY: (
+        "ten-task SmolVLA x LIBERO-Object suite, five seeds — "
+        "results/smolvla_libero_object_suite_2026-09-14 (the published body; roleplay 42/50)"
+    ),
+    VISUAL_FAMILY: (
+        "results/smolvla_libero_object_suite_2026-09-14 — patch 1/50, decoy_object 1/50 against "
+        "a 1/50 benign control (at the floor)"
+    ),
+    INJECTION_FAMILY: (
+        "results/smolvla_libero_object_suite_2026-09-14 — scene_text 2/50 (at the floor); "
+        "mcp_tool_desc not applicable on LIBERO"
+    ),
+    GRADIENT_PATCH_FAMILY: (
+        "one-task breadth probe, three seeds — results/smolvla_libero_object_families_2026-09-14 "
+        "(a result, not a rate)"
+    ),
+    OPTIMIZED_INSTRUCTION_FAMILY: (
+        "targeted_redirect, one-task breadth probe, three seeds — "
+        "results/smolvla_libero_object_families_2026-09-14 (0/3; a result, not a rate)"
+    ),
+    OPTIMIZED_PATCH_FAMILY: (
+        "one-task breadth probe, three seeds — results/smolvla_libero_object_families_2026-09-14"
+    ),
+    UNIVERSAL_PATCH_FAMILY: (
+        "one-task breadth probe, three seeds — results/smolvla_libero_object_families_2026-09-14"
+    ),
+    WEIGHT_INTEGRITY_FAMILY: (
+        "one-task breadth probe, three seeds — results/smolvla_libero_object_families_2026-09-14"
+    ),
+}
+
+#: The three answers :func:`family_status` gives. ``fixture-only`` families are implemented,
+#: unit-tested and runnable, and have only ever met the deterministic CPU fixture: every rate they
+#: have produced is a property of the fixture, which was written to be attackable. There is no
+#: fourth "scaffolding" value for families on purpose — whether a family's channel exists on a
+#: given policy is a fact about the (family, policy) pair that the run records as ``N/A``, not a
+#: property of the family that could be declared here without inventing it.
+FAMILY_STATUS_MEASURED = "measured"
+FAMILY_STATUS_FIXTURE_ONLY = "fixture-only"
+FAMILY_STATUS_CONTROL = "control"
+
+
+def family_status(family: str) -> str:
+    """How much is known about ``family``: measured on a real policy, fixture-only, or a control.
+
+    Raises:
+        KeyError: if ``family`` is not a registered family.
+    """
+    if family not in FAMILIES:
+        raise KeyError(f"unknown family {family!r}; available: {available_families()}")
+    if family in (BASELINE_FAMILY, CONTROL_FAMILY):
+        return FAMILY_STATUS_CONTROL
+    if family in MEASURED_FAMILIES:
+        return FAMILY_STATUS_MEASURED
+    return FAMILY_STATUS_FIXTURE_ONLY
+
+
 def available_attacks() -> list[str]:
     """All individual attack names."""
     return list(ATTACKS)
@@ -306,8 +373,13 @@ def resolve_attacks(tokens: list[str]) -> list[Attack]:
 __all__ = [
     "ATTACKS",
     "FAMILIES",
+    "FAMILY_STATUS_CONTROL",
+    "FAMILY_STATUS_FIXTURE_ONLY",
+    "FAMILY_STATUS_MEASURED",
+    "MEASURED_FAMILIES",
     "available_attacks",
     "available_families",
+    "family_status",
     "make_attack",
     "resolve_attacks",
 ]

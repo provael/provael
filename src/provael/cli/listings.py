@@ -12,8 +12,12 @@ from rich.markup import escape
 from rich.table import Table
 
 from provael.attacks.registry import (
+    FAMILY_STATUS_CONTROL,
+    FAMILY_STATUS_FIXTURE_ONLY,
+    FAMILY_STATUS_MEASURED,
     available_attacks,
     available_families,
+    family_status,
     make_attack,
 )
 from provael.cli._shared import _POLICY_STATUS_STYLE, _out, app
@@ -121,16 +125,37 @@ def list_suites() -> None:
     )
 
 
+
+_FAMILY_STATUS_STYLE: dict[str, str] = {
+    FAMILY_STATUS_MEASURED: "green",
+    FAMILY_STATUS_FIXTURE_ONLY: "yellow",
+    FAMILY_STATUS_CONTROL: "dim",
+}
+
 @app.command("list-attacks")
 def list_attacks() -> None:
     """List registered attacks and attack families."""
     table = Table(title="Attacks")
     table.add_column("attack", style="cyan", no_wrap=True)
     table.add_column("family", style="magenta")
+    # Per FAMILY, because the evidence is per family: `measured` = a committed run drove this
+    # family against a real policy in a real simulator (the run README carries the rate, which may
+    # be a null); `fixture-only` = only the deterministic CPU fixture has ever seen it, and every
+    # rate it has produced is a property of a fixture written to be attackable; `control` = not
+    # an attack. `full-sweep` on a real policy runs the measured ones by default.
+    table.add_column("status", no_wrap=True)
     for name in available_attacks():
-        table.add_row(name, make_attack(name).family)
+        family = make_attack(name).family
+        status = family_status(family)
+        table.add_row(name, family, f"[{_FAMILY_STATUS_STYLE[status]}]{status}[/]")
     _out.print(table)
     _out.print(f"families: {', '.join(available_families())}")
+    _out.print(
+        "[dim]`status` is per family: measured = a committed real-policy run (rate or null, see "
+        "the run README); fixture-only = only the CPU fixture has ever seen it; control = not an "
+        "attack. `attack --recipe full-sweep` on a real policy runs the measured families unless "
+        "--include-fixture-families is passed.[/dim]"
+    )
 
 
 @app.command("list-recipes")

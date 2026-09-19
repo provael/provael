@@ -31,10 +31,11 @@ from provael.compliance import (
     write_compliance_json,
 )
 from provael.config import RunConfig
+from provael.coverage import FIXTURE_POLICIES
 from provael.mlbom import ML_BOM_JSON, write_ml_bom
 from provael.oscal import OSCAL_JSON, write_oscal
 from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
-from provael.recipes import load_recipe
+from provael.recipes import FULL_SWEEP, fixture_only_families, full_sweep_attacks, load_recipe
 from provael.report import (
     render_summary,
     write_report,
@@ -154,6 +155,15 @@ def attack(
             "Explicitly-passed flags override the recipe.",
         ),
     ] = None,
+    include_fixture_families: Annotated[
+        bool,
+        typer.Option(
+            "--include-fixture-families",
+            help="With --recipe full-sweep on a REAL policy, also run the families that have "
+            "only ever met the CPU fixture (see `list-attacks` for each family's status). Off by "
+            "default: the sweep runs the families with a committed real-policy measurement.",
+        ),
+    ] = False,
     protocol: Annotated[
         Path | None,
         typer.Option(
@@ -240,6 +250,32 @@ def attack(
         overrides["defense"] = defense
     if _explicit("out"):
         overrides["out"] = out
+
+    # `full-sweep` is the one recipe whose attack list depends on what it is pointed at: on a real
+    # policy it defaults to the families with a committed real-policy measurement, and the
+    # fixture-only ones are opt-in (`--include-fixture-families`). Resolved here, after the policy
+    # is known and before an explicit `--attacks` (which always wins) is applied.
+    resolved_policy = str(overrides.get("policy", base.get("policy", policy)))
+    if recipe == FULL_SWEEP and "attacks" not in overrides:
+        real_policy = resolved_policy not in FIXTURE_POLICIES
+        sweep = full_sweep_attacks(
+            real_policy=real_policy, include_fixture_families=include_fixture_families
+        )
+        base["attacks"] = sweep
+        skipped = fixture_only_families() if real_policy and not include_fixture_families else []
+        if skipped:
+            _err.print(
+                f"[yellow]note:[/yellow] full-sweep on a real policy runs the "
+                f"{len(sweep) - 2} families with a committed real-policy measurement; "
+                f"{len(skipped)} fixture-only families are not run ({', '.join(skipped)}). "
+                "Add --include-fixture-families to run them, knowing their only evidence so far "
+                "is the CPU fixture."
+            )
+    elif include_fixture_families:
+        _err.print(
+            "[yellow]note:[/yellow] --include-fixture-families only changes `--recipe full-sweep`; "
+            "it has no effect on this run."
+        )
 
     try:
         config = RunConfig.model_validate({**base, **overrides})

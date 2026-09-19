@@ -24,7 +24,12 @@ from typing import Any
 import yaml
 
 from provael.attacks.controls import CONTROL_FAMILY
-from provael.attacks.registry import FAMILIES
+from provael.attacks.registry import (
+    FAMILIES,
+    FAMILY_STATUS_FIXTURE_ONLY,
+    FAMILY_STATUS_MEASURED,
+    family_status,
+)
 from provael.coverage import NON_ADVERSARIAL_FAMILIES
 
 #: **Every** adversarial family in the registry, in registry order — derived at import, never
@@ -159,9 +164,11 @@ RECIPES: dict[str, Recipe] = {
     ),
     "full-sweep": Recipe(
         "full-sweep",
-        f"Every one of the {len(ALL_FAMILIES)} adversarial families + BOTH controls (benign "
-        "baseline and harmless-variation reword), 10 "
-        "episodes. Families inapplicable to the chosen suite are SKIPPED (N/A), never scored 0.",
+        "Every registered adversarial family + BOTH controls (benign baseline and "
+        "harmless-variation reword), 10 episodes, on the CPU fixture. On a REAL policy the "
+        "default narrows to the families with a committed real-policy measurement; "
+        "--include-fixture-families adds the rest (see `list-attacks` for each family's "
+        "status). Families inapplicable to the chosen suite are SKIPPED (N/A), never scored 0.",
         {"attacks": _with_both_controls(ALL_FAMILIES), "episodes": 10},
     ),
     "eai03-weight-integrity": Recipe(
@@ -199,6 +206,39 @@ RECIPES: dict[str, Recipe] = {
 }
 
 
+#: The recipe whose attack list depends on what it is pointed at. See :func:`full_sweep_attacks`.
+FULL_SWEEP = "full-sweep"
+
+
+def full_sweep_attacks(*, real_policy: bool, include_fixture_families: bool = False) -> list[str]:
+    """The attack list ``full-sweep`` actually runs, given what it is pointed at.
+
+    On the CPU fixture (``real_policy=False``) it is every registered adversarial family plus both
+    controls — the fixture exists to exercise the whole pipeline, and a fixture number is labelled
+    as a fixture number everywhere it is printed.
+
+    On a real policy the default is the families with a **committed real-policy measurement**
+    (:data:`provael.attacks.registry.MEASURED_FAMILIES`) plus both controls. The other families
+    are ``fixture-only``: implemented, unit-tested, and only ever run against a fixture written to
+    be attackable, where ``full-sweep`` prints an ASR in the eighties. A buyer who runs the sweep
+    on their own checkpoint should get the families whose real-policy behaviour is on record, and
+    opt into the unproven ones with ``include_fixture_families=True`` (the CLI's
+    ``--include-fixture-families``) knowing that is what they are. This is a default, not a wall:
+    ``--attacks`` names any family directly, and a fixture-only family that lands a committed
+    real-policy run graduates through the drift test that holds ``MEASURED_FAMILIES`` to the
+    committed runs.
+    """
+    if not real_policy or include_fixture_families:
+        return _with_both_controls(list(ALL_FAMILIES))
+    measured = [f for f in ALL_FAMILIES if family_status(f) == FAMILY_STATUS_MEASURED]
+    return _with_both_controls(measured)
+
+
+def fixture_only_families() -> list[str]:
+    """Registered adversarial families with no committed real-policy measurement, in order."""
+    return [f for f in ALL_FAMILIES if family_status(f) == FAMILY_STATUS_FIXTURE_ONLY]
+
+
 def available_recipes() -> list[str]:
     """Names of all built-in recipes."""
     return list(RECIPES)
@@ -234,8 +274,11 @@ __all__ = [
     "CORE_FAMILIES",
     "CONDITIONAL_FAMILIES",
     "BENIGN_CONTROL",
+    "FULL_SWEEP",
     "Recipe",
     "RECIPES",
     "available_recipes",
+    "fixture_only_families",
+    "full_sweep_attacks",
     "load_recipe",
 ]

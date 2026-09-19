@@ -325,6 +325,16 @@
      "secondary_opts": []
     },
     {
+     "help": "With --recipe full-sweep on a REAL policy, also run the families that have only ever met the CPU fixture (see `list-attacks` for each family's status). Off by default: the sweep runs the families with a committed real-policy measurement.",
+     "is_flag": true,
+     "name": "include_fixture_families",
+     "opts": [
+      "--include-fixture-families"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
      "help": "Acceptance protocol (YAML/JSON; see examples/assessment/) the release decision is made against. Writes report.decision.json beside report.json. Without it the run is a diagnostic: measured, and its acceptance not assessed.",
      "is_flag": false,
      "name": "protocol",

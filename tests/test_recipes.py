@@ -262,3 +262,90 @@ def test_every_example_recipe_carries_the_benign_control() -> None:
     for path in sorted((REPO / "examples" / "recipes").glob("*.yml")):
         attacks = yaml.safe_load(path.read_text(encoding="utf-8"))["attacks"]
         assert BENIGN_CONTROL in attacks, f"{path.name} has no benign control"
+
+
+# --------------------------------------------------------------------------- #
+# full-sweep on a REAL policy runs what has met a real policy (20 September 2026)
+# --------------------------------------------------------------------------- #
+
+
+def test_full_sweep_on_the_fixture_runs_every_family() -> None:
+    """The fixture exists to exercise the whole pipeline; nothing is narrowed there."""
+    from provael.recipes import full_sweep_attacks
+
+    assert full_sweep_attacks(real_policy=False) == load_recipe("full-sweep")["attacks"]
+
+
+def test_full_sweep_on_a_real_policy_defaults_to_the_measured_families() -> None:
+    """On a real policy the default is the families with a committed real-policy measurement.
+
+    The fixture-only families are implemented and runnable, but every rate they have produced is a
+    property of a fixture written to be attackable — `full-sweep` on the CPU prints an ASR in the
+    eighties for them. A buyer pointing the sweep at their own checkpoint gets the families whose
+    real-policy behaviour is on record; the rest are one flag away, and the flag says what they are.
+    """
+    from provael.attacks.registry import (
+        FAMILY_STATUS_FIXTURE_ONLY,
+        FAMILY_STATUS_MEASURED,
+        MEASURED_FAMILIES,
+        family_status,
+    )
+    from provael.recipes import fixture_only_families, full_sweep_attacks
+
+    narrowed = full_sweep_attacks(real_policy=True)
+    assert BENIGN_CONTROL in narrowed and CONTROL_FAMILY in narrowed, "both controls stay"
+    swept = [f for f in narrowed if f not in NON_ADVERSARIAL_FAMILIES and f != BENIGN_CONTROL]
+    assert set(swept) == set(MEASURED_FAMILIES)
+    assert all(family_status(f) == FAMILY_STATUS_MEASURED for f in swept)
+    assert set(fixture_only_families()) == set(ALL_FAMILIES) - set(MEASURED_FAMILIES)
+    assert all(family_status(f) == FAMILY_STATUS_FIXTURE_ONLY for f in fixture_only_families())
+    # opting in restores the whole registry, in the same order as the fixture sweep
+    assert full_sweep_attacks(real_policy=True, include_fixture_families=True) == full_sweep_attacks(
+        real_policy=False
+    )
+
+
+def test_the_packaged_measured_families_match_the_derived_partition() -> None:
+    """`MEASURED_FAMILIES` is declared (a wheel has no results/); coverage() derives the same set.
+
+    Same contract as `MEASURED_POLICIES`: in a checkout the two must agree in both directions, so
+    a family cannot be declared measured without a committed applicable adversarial episode, and a
+    committed one cannot stay `fixture-only`. Each entry must also name a results directory that
+    exists.
+    """
+    from provael.attacks.registry import MEASURED_FAMILIES
+    from provael.coverage import coverage
+
+    cov = coverage()
+    if not cov.evidence_scanned:  # a wheel: nothing to compare against
+        return
+    assert set(MEASURED_FAMILIES) == set(cov.real_policy_families)
+    root = Path(__file__).resolve().parents[1]
+    for family, evidence in MEASURED_FAMILIES.items():
+        dirs = [tok.rstrip("(),;") for tok in evidence.replace("_\n", "_").split() if tok.startswith("results/")]
+        assert dirs, f"{family}: the evidence string names no results/ directory"
+        for d in dirs:
+            assert (root / d).is_dir(), f"{family}: {d} does not exist"
+
+
+def test_cli_full_sweep_narrows_on_a_real_policy_and_says_so(tmp_path: Path) -> None:
+    """The CLI prints the narrowing before it tries to load the policy, and names the flag."""
+    from provael.recipes import fixture_only_families
+
+    result = runner.invoke(
+        app,
+        ["attack", "--recipe", "full-sweep", "--policy", "smolvla", "--suite", "libero",
+         "--out", str(tmp_path)],
+    )
+    # smolvla needs the [lerobot] extra, so the run itself fails on this CPU lane; the
+    # resolution happens before the load, which is the point of the assertion.
+    combined = result.stdout + (result.stderr or "")
+    assert "full-sweep on a real policy runs the" in combined
+    assert "--include-fixture-families" in combined
+    for family in fixture_only_families():
+        assert family in combined
+    stub = runner.invoke(
+        app, ["attack", "--recipe", "full-sweep", "--policy", "stub", "--out", str(tmp_path / "s")]
+    )
+    assert stub.exit_code == 0, stub.stdout
+    assert "fixture-only families are not run" not in stub.stdout + (stub.stderr or "")
