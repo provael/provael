@@ -21,7 +21,8 @@ PY := uv run python
 .PHONY: help install lint typecheck test check check-docs check-doc-counts fix-doc-counts \
 	check-links check-leaderboard check-issue-labels gen-registry gen-schemas \
 	check-measurement-ledger gen-measurement-ledger check-release gen-release \
-	check-campaign gen-campaign check-provenance check-delivery-pack gen-delivery-pack
+	check-campaign gen-campaign check-provenance check-delivery-pack gen-delivery-pack \
+	hooks check-dco
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -113,3 +114,10 @@ gen-registry: ## Regenerate the registry artifact the website mirrors
 
 gen-schemas: ## Regenerate the published JSON schemas after a model change
 	$(PY) scripts/gen_schemas.py
+
+hooks: ## Install the local git hooks (prepare-commit-msg adds the DCO Signed-off-by trailer)
+	install -m 0755 scripts/hooks/prepare-commit-msg .git/hooks/prepare-commit-msg
+	@echo "installed .git/hooks/prepare-commit-msg — every commit now carries Signed-off-by"
+
+check-dco: ## Fail if a commit on this branch (since origin/main) lacks a Signed-off-by trailer
+	$(PY) scripts/check_dco.py --range origin/main..HEAD

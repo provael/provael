@@ -95,9 +95,13 @@ Signed-off-by: Your Name <you@example.com>
 - Forgot the last commit? `git commit --amend -s --no-edit`.
 - A whole branch? `git rebase --signoff main`.
 
-The full certificate text is short — read it at <https://developercertificate.org/>. (If the
-DCO check app is enabled on the repo, PRs with unsigned commits will fail until every commit is
-signed off.)
+The full certificate text is short — read it at <https://developercertificate.org/>.
+
+**CI checks it.** The `dco` job in `.github/workflows/ci.yml` runs `scripts/check_dco.py` over
+every commit in a pull request and fails on any human commit without the trailer (bots are
+exempt). Run `make hooks` once and a local `prepare-commit-msg` hook adds the trailer for you;
+`make check-dco` runs the same check on your branch before you push. Who has contributed, and
+under which terms, is recorded in [CONTRIBUTORS.md](CONTRIBUTORS.md).
 
 ## Reporting bugs / requesting features
 

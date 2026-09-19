@@ -1,0 +1,26 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Sattyam Jain
+#
+# Add the Developer Certificate of Origin trailer to every commit, so `git commit` without `-s`
+# still satisfies the `dco` CI job. Install with `make hooks` (copies this file to
+# .git/hooks/prepare-commit-msg). Idempotent: a message that already carries the trailer for the
+# configured identity is left alone. Merges, squashes and `--amend` of an already-signed commit
+# pass through untouched.
+set -eu
+msg_file="$1"
+source="${2:-}"
+case "$source" in
+  merge|squash) exit 0 ;;
+esac
+name="$(git config user.name || true)"
+email="$(git config user.email || true)"
+if [ -z "$name" ] || [ -z "$email" ]; then
+  echo "prepare-commit-msg: git user.name / user.email are not set; cannot add Signed-off-by" >&2
+  exit 1
+fi
+trailer="Signed-off-by: $name <$email>"
+if grep -qF "$trailer" "$msg_file"; then
+  exit 0
+fi
+git interpret-trailers --in-place --trailer "$trailer" "$msg_file"
