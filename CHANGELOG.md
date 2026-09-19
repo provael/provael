@@ -4,6 +4,27 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+**Recent, in twenty lines.** This file is long because it records reasoning as well as changes;
+the entries below are the ones a reader arriving today needs, newest at the top. Every heading is a
+release the tag exists for; the Unreleased section holds what is merged and not yet cut.
+
+- **0.43.0 (19 Sep 2026)** — a release verdict is made only under a named acceptance protocol
+  (`--protocol`); without one every export says `incomplete — not assessed`. Evidence manifest v2
+  with the coverage counts in one convention (17 families, 39 attacks); π0.5 packaged as measured
+  (preliminary). The fourteen-item correction backlog, worked in order.
+- **0.42.1 / 0.42.0 (18–19 Sep 2026)** — the second architecture: π0.5's preliminary leg on
+  LIBERO-Object (roleplay 1/30 against 0/30, no transfer claimed); the coverage counter counts
+  policies as well as families; `E-2026-12`: the headline is fragility under the roleplay frame,
+  not attacker control — the no-target frame exits at 27/30, the scrambled tokens at 18/30.
+- **0.41.2 (9 Sep 2026)** — the 14 September re-measurement's tool version: roleplay 42/50
+  against 1/50 on all ten Object tasks, inside the August interval; publication freshness as a
+  derivable artifact (`watch/publish-freshness.json`).
+- **Before 0.41** — the ten-task suite result and the sharded GPU runner (0.32), the benign-reword
+  and nonsense controls, signed attestations, the compliance crosswalk, the Top 10, the leaderboard.
+
+Corrections to published numbers live in [docs/errata.md](docs/errata.md), not here; an incident's
+narrative belongs there too, and from 0.44.0 entries say what changed and why, in that order.
+
 ## [Unreleased]
 
 Nothing pending. The next entry opens when a post-0.43.0 change lands.
@@ -3697,6 +3718,13 @@ documentation: a defence is a number you can re-derive, not a press release.
 
 No attack, scorer or measured number changed in this release. Two evidence artifacts gained fields:
 `dossier.json` carries four new `standards_crosswalk` rows, and `crosswalk.foresight.json` is new.
+
+### Releases before 0.30.0 follow unchanged
+
+Everything below this line predates the ten-task suite result (0.32.0) and the controls the
+headline is now read against. It is kept verbatim as the record of how the project got here; the
+"Recent" block at the top of this file is the readable entry point, and nothing below it is the
+current claim.
 
 ## [0.29.1] — 2026-07-31
 
