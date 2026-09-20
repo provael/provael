@@ -166,9 +166,10 @@ work is a customer protocol agreed before a paid run).
 - **Optimized attacks (in progress):** the `optimized` family — `targeted_hijack`, a black-box,
   query-budgeted search — is the first non-templated attack (stub-validated; real transfer gated).
 
-- **Docs-site versioning** (`mike`), tag-driven. A tagged release publishes a versioned docs set
-  and moves the `latest` alias; a push to `main` does not. The version selector renders from
-  `extra.version.provider: mike`.
+- **Docs-site versioning** (`mike`), tag-driven for the alias. A tagged release publishes a
+  versioned docs set and moves the `latest` alias; since 20 September 2026 a push to `main`
+  publishes `main` as its own unaliased version at `/dev/`, moving nothing. The version selector
+  renders from `extra.version.provider: mike`.
 
     **This reverses a decision recorded earlier the same day (2 September 2026), and the reversal is
     the interesting part.** The objection was never to versioning — it was that `mike` namespaces
@@ -187,10 +188,12 @@ work is a customer protocol agreed before a paid run).
     `--alias-type=copy`. And `alias_type: redirect`, the other option, would have made every alias
     URL bounce to a **dated** `/0.39.2/…` path, which defeats the point of having an alias at all.
 
-    **What this costs:** `main` no longer publishes, so a docs fix waits for the next release. That
-    reopens a narrowed version of the incident push-on-main was introduced to fix. If it bites, the
-    answer is to publish `main` as its own unaliased version, not to move `latest` off releases —
-    recorded in `.github/workflows/docs.yml` next to the trigger.
+    **What this cost, and the remedy now wired:** between 2 and 20 September 2026 `main` did not
+    publish, so a docs fix waited for the next release — a narrowed version of the incident
+    push-on-main was introduced to fix. The remedy named at the time is in place: `main` publishes
+    as its own unaliased version at `/dev/` on every push (`.github/workflows/docs.yml`), `latest`
+    still means the newest release, the root stubs still point at `latest`, and the smoke probes
+    `/dev/` on every deploy.
 
 ## Blocked on hardware — sim-to-real (SO-ARM101)
 

@@ -77,6 +77,15 @@ def test_mike_owned_paths_are_never_targets(tmp_path: Path) -> None:
     assert not [p for p in plan(root, "latest") if p.split("/")[0] in {"0.39.1", "latest", "versions.json"}]
 
 
+def test_the_dev_version_main_publishes_is_mikes(tmp_path: Path) -> None:
+    """`main` deploys to /dev/ (docs.yml, 20 September 2026): a non-numeric mike version directory
+    the digit test cannot recognise. A stub written over it would replace the live main docs with a
+    redirect into the release alias — the opposite of what /dev/ is for."""
+    root = _pages(tmp_path)
+    _tree(root, ["dev/index.html", "dev/errata/index.html", "latest/dev/index.html"])
+    assert not [p for p in plan(root, "latest") if p.split("/")[0] == "dev"]
+
+
 def test_it_is_idempotent(tmp_path: Path) -> None:
     root = _pages(tmp_path)
     write_stubs(root, "latest", plan(root, "latest"))

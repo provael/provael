@@ -13,16 +13,19 @@
 # merge would publish unreleased docs under the alias every reader lands on.
 #
 # So the incident window is back, narrowed to "between releases" rather than "until someone
-# remembers". That is a real cost, accepted deliberately. If it bites — a docs fix that matters
-# sitting unpublished behind a release — the fix is NOT to move `latest` on main: deploy main as
-# its own version (`mike deploy --branch gh-pages dev`) with no alias change, so main is published
-# at /dev/ and `latest` still tracks releases. The smoke job below still runs on every deploy.
+# remembers". That was accepted deliberately on 2 September 2026, with the remedy named: deploy
+# main as its own version with no alias change. SINCE 20 SEPTEMBER 2026 THAT REMEDY IS WIRED: a
+# push to main runs `mike deploy dev` — no alias moves, `latest` still tracks releases — so the
+# docs as they are on main are always readable at docs.provael.com/dev/, and a docs fix that
+# matters is published the moment it merges without being published as a release. The root stubs
+# still point at `latest` (a cited URL means the released docs), gen_root_stubs.py treats `dev/`
+# as mike's, and the smoke probes /dev/ on every deploy.
 name: Docs
 
 on:
   push:
-    branches: [main]      # build only — see the `deploy` job's `if:`
-    tags: ["v*"]          # build AND publish
+    branches: [main]      # build AND publish to /dev/ (no alias move) — see the `deploy` job
+    tags: ["v*"]          # build AND publish the version, moving `latest`
   pull_request:
   workflow_dispatch:
     inputs:
@@ -52,9 +55,10 @@ jobs:
 
   deploy:
     needs: build
-    # Tags publish; main does not. The dispatch path stays gated behind `inputs.deploy`.
+    # Tags publish a version and move `latest`; main publishes `dev` and moves nothing. The
+    # dispatch path stays gated behind `inputs.deploy`. pull_request never reaches this job.
     if: >-
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')) ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy)
     runs-on: ubuntu-latest
     permissions:
@@ -81,7 +85,9 @@ jobs:
         id: ver
         run: |
           set -euo pipefail
-          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+          if [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            v="dev"                           # main publishes as its own unaliased version
+          elif [ "${GITHUB_EVENT_NAME}" = "push" ]; then
             v="${GITHUB_REF_NAME#v}"          # refs/tags/v0.39.2 -> 0.39.2
           else
             v="$(uv run python -c 'import provael; print(provael.__version__)')"
@@ -90,7 +96,7 @@ jobs:
           echo "version=$v" >> "$GITHUB_OUTPUT"
           echo "publishing docs for $v"
 
-      - name: Deploy the versioned docs and move the latest alias
+      - name: Deploy the docs (a version + the latest alias on a tag; /dev/ with no alias on main)
         run: |
           set -euo pipefail
           git config user.name  'github-actions[bot]'
@@ -102,9 +108,14 @@ jobs:
           # /latest/… URL would 404, which is worse than not versioning at all. `redirect` is also
           # wrong here — it would make every alias URL bounce to a DATED /0.39.2/… path, and a
           # stable undated URL is the entire reason `latest` exists.
-          uv run --group docs mike deploy --branch gh-pages --alias-type=copy \
-            --update-aliases "${{ steps.ver.outputs.version }}" latest
-          uv run --group docs mike set-default --branch gh-pages latest
+          if [ "${{ steps.ver.outputs.version }}" = "dev" ]; then
+            # main: its own version, no alias touched. `latest` keeps meaning the newest release.
+            uv run --group docs mike deploy --branch gh-pages --alias-type=copy dev
+          else
+            uv run --group docs mike deploy --branch gh-pages --alias-type=copy \
+              --update-aliases "${{ steps.ver.outputs.version }}" latest
+            uv run --group docs mike set-default --branch gh-pages latest
+          fi
 
       # mike namespaces everything under the version path, so without this every published URL
       # (/top10/, /errata/, and the retired UPPERCASE ones) 404s at the root. An old URL stays old
@@ -149,7 +160,9 @@ jobs:
 
           # Real pages, under the alias. /errata/ and /top10/ are here by name because they are the
           # two this check exists for: the corrections register and the most-cited page.
-          PAGES="/latest/ /latest/errata/ /latest/top10/ /latest/changelog/ /latest/leaderboard/ /latest/findings/ /latest/studies/ /latest/standards/ /latest/compliance/ /latest/maintainers/github-security-settings/"
+          # /dev/ is main as of the most recent push to it (present from the deploy of 20 September
+          # 2026 onward; a tag deploy does not touch it).
+          PAGES="/latest/ /latest/errata/ /latest/top10/ /latest/changelog/ /latest/leaderboard/ /latest/findings/ /latest/studies/ /latest/standards/ /latest/compliance/ /latest/maintainers/github-security-settings/ /dev/ /dev/errata/"
 
           # Root paths that were published before versioning -> the alias path their stub must name.
           # These are the cited ones; if any of these breaks, versioning has cost more than it bought.

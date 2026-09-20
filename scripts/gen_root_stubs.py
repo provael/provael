@@ -52,7 +52,10 @@ import sys
 from pathlib import Path
 
 #: Root entries `mike` owns. Never written, never treated as a stub target.
-MIKE_OWNED = frozenset({"index.html", "versions.json", ".nojekyll", "CNAME", ".git"})
+# `dev` is the unaliased version `main` publishes to since 20 September 2026 (docs.yml); it is a
+# mike version directory whose name is not numeric, so it is named here rather than caught by the
+# digit test in _mike_owns.
+MIKE_OWNED = frozenset({"index.html", "versions.json", ".nojekyll", "CNAME", ".git", "dev"})
 
 _TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
