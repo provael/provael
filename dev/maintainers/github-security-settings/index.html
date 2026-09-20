@@ -2790,27 +2790,39 @@ that land in <code>watch/**</code> or <code>results/</code> carry <code>[skip ci
 freshness refresh); the two leaderboard commits deliberately do not, so CI checks the board that
 was just rebuilt or re-stamped. The comment beside each <code>git commit</code> says which and why.</p>
 <ul>
-<li>[ ] App created, installed on this repository only, secrets set</li>
-<li>[ ] App is the ruleset's only bypass actor</li>
+<li>[x] App created (<code>provael-bot</code>, App ID 5011957, owned by the org; Contents R/W, Metadata R, no
+      webhook), secrets <code>PROVAEL_BOT_APP_ID</code> / <code>PROVAEL_BOT_PRIVATE_KEY</code> set (verified sattyamjjain
+      2026-09-20 — the Freshness badge run 35523108826 pushed to the protected <code>main</code> through it)</li>
+<li>[x] App is the ruleset's only bypass actor (verified sattyamjjain 2026-09-20 — ruleset <code>main</code>
+      id 19765152, <code>bypass_actors</code> = one Integration, mode always; no human role)</li>
 </ul>
 <h2 id="branch-protection-main">Branch protection — <code>main</code></h2>
 <ul>
-<li>[ ] Require a pull request before merging (no direct pushes) — <em>waits for the bot App below; the
-      six pushing workflows fail on a protected main until its secrets exist</em></li>
-<li>[ ] Require <strong>every</strong> CI status check to pass. The <code>check</code> job is a matrix over the interpreters
+<li>[x] Require a pull request before merging (no direct pushes) (verified sattyamjjain 2026-09-20 —
+      ruleset <code>main</code>, <code>pull_request</code> rule, 0 required approvals (one maintainer cannot approve his
+      own PR), rebase and squash only; <code>GET /rules/branches/main</code> lists it for a human pusher)</li>
+<li>[x] Require <strong>every</strong> CI status check to pass. The <code>check</code> job is a matrix over the interpreters
       <code>pyproject.toml</code> claims, so it reports one context per leg — <code>ruff + mypy + pytest (CPU, no
       lerobot, Python 3.12)</code> and the same for 3.13. Requiring one leaves the other advisory, and
-      a leg added later is not required until someone comes back here.</li>
-<li>[ ] Require the docs-strict + evidence-integrity checks to pass</li>
+      a leg added later is not required until someone comes back here. (verified sattyamjjain
+      2026-09-20 — both legs, <code>package build + metadata check</code>, <code>dependency vulnerability audit</code>,
+      <code>issue-form labels exist</code>, <code>dco</code>, <code>a published change carries a changelog line</code>, each pinned
+      to the GitHub Actions integration id 15368)</li>
+<li>[x] Require the docs-strict check to pass (verified sattyamjjain 2026-09-20 — the Docs workflow's
+      <code>build</code> job, <code>mkdocs build --strict</code>, is a required context). The evidence-integrity checks
+      run inside the <code>check</code> legs (<code>tests/test_results_provenance.py</code>, the golden tests), so they
+      are covered by the two contexts above rather than by a separate one</li>
 <li>[x] Require linear history (verified sattyamjjain 2026-09-20 — ruleset <code>main</code>, <code>required_linear_history</code>, active;
       merge commits are not accepted, rebase/squash only)</li>
-<li>[ ] Require branches to be up to date before merging — <em>with the required checks, once the App exists</em></li>
+<li>[x] Require branches to be up to date before merging (verified sattyamjjain 2026-09-20 —
+      <code>strict_required_status_checks_policy: true</code>; a PR behind <code>main</code> re-runs its checks after a
+      rebase before it can merge)</li>
 <li>[ ] Require conversation resolution before merging</li>
 <li>[ ] Require review from CODEOWNERS (when a second qualified maintainer exists)</li>
 <li>[x] Block force pushes (verified sattyamjjain 2026-09-20 — ruleset <code>main</code> id 19765152, <code>non_fast_forward</code>, active)</li>
 <li>[x] Block branch deletion (verified sattyamjjain 2026-09-20 — ruleset <code>main</code>, <code>deletion</code>, active)</li>
-<li>[x] Include administrators in the above (verified sattyamjjain 2026-09-20 — the ruleset has no bypass actor;
-      the bot App becomes the only one when it is created)</li>
+<li>[x] Include administrators in the above (verified sattyamjjain 2026-09-20 — the only bypass actor
+      is the bot App; org owners and admins go through a pull request like anyone else)</li>
 </ul>
 <h2 id="tags-releases">Tags &amp; releases</h2>
 <ul>
@@ -2846,7 +2858,12 @@ topics and labels are set by API in the same pass, the two items below cannot be
 </ul>
 <h2 id="access-apps">Access &amp; apps</h2>
 <ul>
-<li>[ ] Audit installed GitHub Apps and their scopes</li>
+<li>[ ] Audit installed GitHub Apps and their scopes — as of 2026-09-20 two are installed on the org:
+      <code>cloudflare-workers-and-pages</code> (all repositories; administration, checks, contents,
+      deployments, pull_requests write) and <code>provael-bot</code> (<strong>installed on all repositories at
+      creation; narrow it to <code>provael/provael</code> only</strong> — Settings → GitHub Apps → provael-bot →
+      Configure → Only select repositories; the API refuses that change to a non-owner token, so it
+      is a UI click for the org owner)</li>
 <li>[ ] Least-privilege collaborator/team access</li>
 </ul>
 <h2 id="why-this-is-a-document-not-code">Why this is a document, not code</h2>
