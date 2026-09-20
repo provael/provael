@@ -37,27 +37,39 @@ that land in `watch/**` or `results/` carry `[skip ci]` (each would otherwise re
 freshness refresh); the two leaderboard commits deliberately do not, so CI checks the board that
 was just rebuilt or re-stamped. The comment beside each `git commit` says which and why.
 
-- [ ] App created, installed on this repository only, secrets set
-- [ ] App is the ruleset's only bypass actor
+- [x] App created (`provael-bot`, App ID 5011957, owned by the org; Contents R/W, Metadata R, no
+      webhook), secrets `PROVAEL_BOT_APP_ID` / `PROVAEL_BOT_PRIVATE_KEY` set (verified sattyamjjain
+      2026-09-20 — the Freshness badge run 35523108826 pushed to the protected `main` through it)
+- [x] App is the ruleset's only bypass actor (verified sattyamjjain 2026-09-20 — ruleset `main`
+      id 19765152, `bypass_actors` = one Integration, mode always; no human role)
 
 ## Branch protection — `main`
 
-- [ ] Require a pull request before merging (no direct pushes) — *waits for the bot App below; the
-      six pushing workflows fail on a protected main until its secrets exist*
-- [ ] Require **every** CI status check to pass. The `check` job is a matrix over the interpreters
+- [x] Require a pull request before merging (no direct pushes) (verified sattyamjjain 2026-09-20 —
+      ruleset `main`, `pull_request` rule, 0 required approvals (one maintainer cannot approve his
+      own PR), rebase and squash only; `GET /rules/branches/main` lists it for a human pusher)
+- [x] Require **every** CI status check to pass. The `check` job is a matrix over the interpreters
       `pyproject.toml` claims, so it reports one context per leg — `ruff + mypy + pytest (CPU, no
       lerobot, Python 3.12)` and the same for 3.13. Requiring one leaves the other advisory, and
-      a leg added later is not required until someone comes back here.
-- [ ] Require the docs-strict + evidence-integrity checks to pass
+      a leg added later is not required until someone comes back here. (verified sattyamjjain
+      2026-09-20 — both legs, `package build + metadata check`, `dependency vulnerability audit`,
+      `issue-form labels exist`, `dco`, `a published change carries a changelog line`, each pinned
+      to the GitHub Actions integration id 15368)
+- [x] Require the docs-strict check to pass (verified sattyamjjain 2026-09-20 — the Docs workflow's
+      `build` job, `mkdocs build --strict`, is a required context). The evidence-integrity checks
+      run inside the `check` legs (`tests/test_results_provenance.py`, the golden tests), so they
+      are covered by the two contexts above rather than by a separate one
 - [x] Require linear history (verified sattyamjjain 2026-09-20 — ruleset `main`, `required_linear_history`, active;
       merge commits are not accepted, rebase/squash only)
-- [ ] Require branches to be up to date before merging — *with the required checks, once the App exists*
+- [x] Require branches to be up to date before merging (verified sattyamjjain 2026-09-20 —
+      `strict_required_status_checks_policy: true`; a PR behind `main` re-runs its checks after a
+      rebase before it can merge)
 - [ ] Require conversation resolution before merging
 - [ ] Require review from CODEOWNERS (when a second qualified maintainer exists)
 - [x] Block force pushes (verified sattyamjjain 2026-09-20 — ruleset `main` id 19765152, `non_fast_forward`, active)
 - [x] Block branch deletion (verified sattyamjjain 2026-09-20 — ruleset `main`, `deletion`, active)
-- [x] Include administrators in the above (verified sattyamjjain 2026-09-20 — the ruleset has no bypass actor;
-      the bot App becomes the only one when it is created)
+- [x] Include administrators in the above (verified sattyamjjain 2026-09-20 — the only bypass actor
+      is the bot App; org owners and admins go through a pull request like anyone else)
 
 ## Tags & releases
 
@@ -94,7 +106,12 @@ topics and labels are set by API in the same pass, the two items below cannot be
 
 ## Access & apps
 
-- [ ] Audit installed GitHub Apps and their scopes
+- [ ] Audit installed GitHub Apps and their scopes — as of 2026-09-20 two are installed on the org:
+      `cloudflare-workers-and-pages` (all repositories; administration, checks, contents,
+      deployments, pull_requests write) and `provael-bot` (**installed on all repositories at
+      creation; narrow it to `provael/provael` only** — Settings → GitHub Apps → provael-bot →
+      Configure → Only select repositories; the API refuses that change to a non-owner token, so it
+      is a UI click for the org owner)
 - [ ] Least-privilege collaborator/team access
 
 ## Why this is a document, not code
