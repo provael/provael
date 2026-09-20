@@ -1,0 +1,15 @@
+<svg viewBox="0 0 1320 360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b2a3e"/>
+      <stop offset="1" stop-color="#0b3b52"/>
+    </linearGradient>
+  </defs>
+  <rect x="40" y="60" width="240" height="240" rx="56" fill="url(#bg2)"/>
+  <path d="M108 188 L150 232 L228 132" fill="none" stroke="#19d3e0"
+        stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="320" y="205" font-family="DejaVu Sans, sans-serif" font-weight="700"
+        font-size="168" fill="#0b1f33">provael</text>
+  <text x="326" y="268" font-family="DejaVu Sans, sans-serif" font-weight="700"
+        font-size="40" letter-spacing="6" fill="#0e9bb0">PROVE IT. PREVAIL.</text>
+</svg>
