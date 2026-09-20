@@ -80,10 +80,14 @@ was just rebuilt or re-stamped. The comment beside each `git commit` says which 
 
 ## Scanning & alerts
 
-- [ ] Secret scanning enabled
-- [ ] Secret scanning push protection enabled
-- [ ] Dependabot alerts enabled (see `.github/dependabot.yml` for update PRs)
-- [ ] Dependabot security updates enabled
+- [x] Secret scanning enabled (verified sattyamjjain 2026-09-20 — it was **off** until then, as were
+      the three rows below; all four were switched on by API that evening, 0 secret-scanning alerts)
+- [x] Secret scanning push protection enabled (verified sattyamjjain 2026-09-20)
+- [x] Dependabot alerts enabled (verified sattyamjjain 2026-09-20; see `.github/dependabot.yml` for
+      update PRs; 0 open alerts here. Alerts and security updates were switched on for
+      `provael/website` and `provael/provael-api` the same evening — the website opened with 20,
+      19 of them in build tooling)
+- [x] Dependabot security updates enabled (verified sattyamjjain 2026-09-20)
 - [x] CodeQL default setup enabled for this repository (verified sattyamjjain 2026-09-20 —
       `code-scanning/default-setup` state `configured`, default suite); Scorecard runs weekly
       (`.github/workflows/scorecard.yml`) — re-read after the ruleset gains the PR and checks rules
@@ -93,10 +97,14 @@ was just rebuilt or re-stamped. The comment beside each `git commit` says which 
 Moved here from a reader-facing comment block in `docs/community.md` on 20 September 2026; the
 topics and labels are set by API in the same pass, the two items below cannot be.
 
-- [ ] Social preview image uploaded (`docs/assets/social_preview.png`, 1280×640): Settings →
-      General → Social preview → Edit → Upload
-- [ ] Discussions categories **Top-10 RFC** and **Results** created beside the default six
-      (Discussions → categories → New category); the RFC page and the community page link to them
+- [x] Social preview image uploaded (verified sattyamjjain 2026-09-20). The image is the website's
+      `public/og.png` (1200×630, rendered from `src/data/og-cards.json` in the website repo, whose
+      `check:og:cards` holds its text to the homepage h1) — re-upload it whenever that card changes.
+      The card it replaced was a 1920×1080 "100% · 10 / 10 episodes" from July, the result retired on
+      /errata, which no check could see because the text was inside a PNG
+- [x] Discussions categories **Top-10 RFC** and **Results** created beside the default six
+      (verified sattyamjjain 2026-09-20; both "Open-ended discussion"); the RFC page and the
+      community page link to them
 - [x] Repository topics include `eu-ai-act` and `machinery-regulation` beside the existing set
       (verified sattyamjjain 2026-09-20 via `gh repo edit --add-topic`; 20 topics)
 - [x] Labels `attack-family` and `assessment` exist for the issue forms (verified sattyamjjain
@@ -106,12 +114,14 @@ topics and labels are set by API in the same pass, the two items below cannot be
 
 ## Access & apps
 
-- [ ] Audit installed GitHub Apps and their scopes — as of 2026-09-20 two are installed on the org:
-      `cloudflare-workers-and-pages` (all repositories; administration, checks, contents,
-      deployments, pull_requests write) and `provael-bot` (**installed on all repositories at
-      creation; narrow it to `provael/provael` only** — Settings → GitHub Apps → provael-bot →
-      Configure → Only select repositories; the API refuses that change to a non-owner token, so it
-      is a UI click for the org owner)
+- [x] Audit installed GitHub Apps and their scopes — as of the evening of 2026-09-20 three are
+      installed on the org: `cloudflare-workers-and-pages` (all repositories; administration, checks,
+      contents, deployments, pull_requests write — the Pages deploy for the website), `provael-bot`
+      (**narrowed to `provael/provael` only** that evening, by the org owner in the UI; Contents R/W,
+      Metadata R) and `dco` (installed 2026-09-20 on `provael/provael` only; it posts the DCO status
+      with a "Details" page that tells a contributor how to add the sign-off, and skips bot authors
+      the same way `scripts/check_dco.py` does. The ruleset keeps requiring the CI `dco` job, not
+      the App). Re-audit when an App is added: `gh api /orgs/provael/installations`
 - [ ] Least-privilege collaborator/team access
 
 ## Why this is a document, not code
