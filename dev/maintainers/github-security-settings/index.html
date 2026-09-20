@@ -2833,10 +2833,14 @@ was just rebuilt or re-stamped. The comment beside each <code>git commit</code> 
 </ul>
 <h2 id="scanning-alerts">Scanning &amp; alerts</h2>
 <ul>
-<li>[ ] Secret scanning enabled</li>
-<li>[ ] Secret scanning push protection enabled</li>
-<li>[ ] Dependabot alerts enabled (see <code>.github/dependabot.yml</code> for update PRs)</li>
-<li>[ ] Dependabot security updates enabled</li>
+<li>[x] Secret scanning enabled (verified sattyamjjain 2026-09-20 — it was <strong>off</strong> until then, as were
+      the three rows below; all four were switched on by API that evening, 0 secret-scanning alerts)</li>
+<li>[x] Secret scanning push protection enabled (verified sattyamjjain 2026-09-20)</li>
+<li>[x] Dependabot alerts enabled (verified sattyamjjain 2026-09-20; see <code>.github/dependabot.yml</code> for
+      update PRs; 0 open alerts here. Alerts and security updates were switched on for
+      <code>provael/website</code> and <code>provael/provael-api</code> the same evening — the website opened with 20,
+      19 of them in build tooling)</li>
+<li>[x] Dependabot security updates enabled (verified sattyamjjain 2026-09-20)</li>
 <li>[x] CodeQL default setup enabled for this repository (verified sattyamjjain 2026-09-20 —
       <code>code-scanning/default-setup</code> state <code>configured</code>, default suite); Scorecard runs weekly
       (<code>.github/workflows/scorecard.yml</code>) — re-read after the ruleset gains the PR and checks rules</li>
@@ -2845,10 +2849,14 @@ was just rebuilt or re-stamped. The comment beside each <code>git commit</code> 
 <p>Moved here from a reader-facing comment block in <code>docs/community.md</code> on 20 September 2026; the
 topics and labels are set by API in the same pass, the two items below cannot be.</p>
 <ul>
-<li>[ ] Social preview image uploaded (<code>docs/assets/social_preview.png</code>, 1280×640): Settings →
-      General → Social preview → Edit → Upload</li>
-<li>[ ] Discussions categories <strong>Top-10 RFC</strong> and <strong>Results</strong> created beside the default six
-      (Discussions → categories → New category); the RFC page and the community page link to them</li>
+<li>[x] Social preview image uploaded (verified sattyamjjain 2026-09-20). The image is the website's
+      <code>public/og.png</code> (1200×630, rendered from <code>src/data/og-cards.json</code> in the website repo, whose
+      <code>check:og:cards</code> holds its text to the homepage h1) — re-upload it whenever that card changes.
+      The card it replaced was a 1920×1080 "100% · 10 / 10 episodes" from July, the result retired on
+      /errata, which no check could see because the text was inside a PNG</li>
+<li>[x] Discussions categories <strong>Top-10 RFC</strong> and <strong>Results</strong> created beside the default six
+      (verified sattyamjjain 2026-09-20; both "Open-ended discussion"); the RFC page and the
+      community page link to them</li>
 <li>[x] Repository topics include <code>eu-ai-act</code> and <code>machinery-regulation</code> beside the existing set
       (verified sattyamjjain 2026-09-20 via <code>gh repo edit --add-topic</code>; 20 topics)</li>
 <li>[x] Labels <code>attack-family</code> and <code>assessment</code> exist for the issue forms (verified sattyamjjain
@@ -2858,12 +2866,14 @@ topics and labels are set by API in the same pass, the two items below cannot be
 </ul>
 <h2 id="access-apps">Access &amp; apps</h2>
 <ul>
-<li>[ ] Audit installed GitHub Apps and their scopes — as of 2026-09-20 two are installed on the org:
-      <code>cloudflare-workers-and-pages</code> (all repositories; administration, checks, contents,
-      deployments, pull_requests write) and <code>provael-bot</code> (<strong>installed on all repositories at
-      creation; narrow it to <code>provael/provael</code> only</strong> — Settings → GitHub Apps → provael-bot →
-      Configure → Only select repositories; the API refuses that change to a non-owner token, so it
-      is a UI click for the org owner)</li>
+<li>[x] Audit installed GitHub Apps and their scopes — as of the evening of 2026-09-20 three are
+      installed on the org: <code>cloudflare-workers-and-pages</code> (all repositories; administration, checks,
+      contents, deployments, pull_requests write — the Pages deploy for the website), <code>provael-bot</code>
+      (<strong>narrowed to <code>provael/provael</code> only</strong> that evening, by the org owner in the UI; Contents R/W,
+      Metadata R) and <code>dco</code> (installed 2026-09-20 on <code>provael/provael</code> only; it posts the DCO status
+      with a "Details" page that tells a contributor how to add the sign-off, and skips bot authors
+      the same way <code>scripts/check_dco.py</code> does. The ruleset keeps requiring the CI <code>dco</code> job, not
+      the App). Re-audit when an App is added: <code>gh api /orgs/provael/installations</code></li>
 <li>[ ] Least-privilege collaborator/team access</li>
 </ul>
 <h2 id="why-this-is-a-document-not-code">Why this is a document, not code</h2>
