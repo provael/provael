@@ -18,7 +18,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 
-from provael.calibration import wilson_ci
+from provael.calibration import describe_calibration, wilson_ci
 from provael.eai import CATALOG
 from provael.evidence import evidence_state_of
 from provael.scoring.asr import benign_control, fdr_by_attack
@@ -162,13 +162,13 @@ def to_markdown(report: RunReport, decision: ReleaseDecision | None = None) -> s
         )
     if report.calibrated:
         lines.append("")
+        # One sentence, computed in provael.calibration so this page and the compliance report
+        # cannot describe the same run's predicate differently (tuned vs bound vs invalid).
         lines.append(
             "> **Calibrated predicate.** Each ASR is a **calibrated redirection rate** with a "
             "95% Wilson CI; read it against the benign baseline FPR above — the live control "
-            "(the `none` row's rate). The predicate's threshold was tuned on a benign split to a "
-            "target FPR; that split selected it, so the recorded calibration FPR is a tuning "
-            "figure and no untouched final-evaluation split stands behind this artifact. Per-task "
-            "calibration detail is in `report.json`."
+            f"(the `none` row's rate). Predicate: {describe_calibration(report.calibration)}. "
+            "Per-task calibration detail is in `report.json`."
         )
     if report.preliminary:
         lines.append("")

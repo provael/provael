@@ -48,7 +48,8 @@ a calibrated one from `provael calibrate` + `provael attack --calib`; every arti
   a task-clustered interval, where a sharded run's aggregate carries one, is named as such).
 - **Benign baseline FPR** — the control: the `none` (un-attacked) rate under the *same*
   predicate. A calibrated run adds the benign false-positive rate its threshold was tuned to on a
-  benign tuning split (`<= target-fpr`) — tuning data, not an untouched final evaluation.
+  benign tuning split (`<= target-fpr`) — tuning data — and, on a three-way fit, the FPR measured
+  afterwards on the eval split with whether its binding holds for this run.
 - **The release decision** — under a named acceptance protocol, or `incomplete` / not assessed
   when none was named. It is a statement about the run, not a property of the measurement.
 - **Per-risk tagging** — each attack carries its `EAIxx` id (see
@@ -144,7 +145,7 @@ manufacturer's regulatory counsel, not for a red-team tool.
 | EU Machinery Regulation 2023/1230 — "protection against corruption" + safety-function AI (conformity input) | Measured redirection rate per EAI risk as input to the mandatory cyber-risk assessment; SARIF for the security file *(indicative)* |
 | EU AI Act Art. 72 — post-market monitoring | Re-run on each model/checkpoint update; track redirection rate over time (leaderboard) |
 | NIST AI RMF MEASURE | Calibrated rate + CI + benign FPR (a measured, controlled metric, not a vibe) |
-| Auditor wants reproducibility | Seed, config, and per-task calibration artifact (target vs tuning-split FPR, fit/tuning seed split — no untouched evaluation split) |
+| Auditor wants reproducibility | Seed, config, and per-task calibration artifact (target, tuning-split FPR, eval-split FPR and binding on a three-way fit; the fit / tuning / eval seed splits) |
 
 ---
 

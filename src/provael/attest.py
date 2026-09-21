@@ -449,6 +449,16 @@ _REPORT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     6: ("deployed_policy",),
 }
 
+#: Fields added to each `calibration.<task>` entry (`CalibrationMeta`) by schema version — the
+#: same contract one level DOWN. Schema 7 added `split` / `eval_fpr` / `binding` to a model that is
+#: nested inside the report rather than a top-level field, and the two tables above do not reach
+#: into it: a schema-6 report with a calibrated task would dump the three as null, its canonical
+#: bytes would move, and its attestation would verify as TAMPERED. No committed report carried a
+#: calibrated task when this landed, which is why the guarantee is cheap to keep and worth keeping.
+_CALIBRATION_META_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
+    7: ("split", "eval_fpr", "binding"),
+}
+
 
 def report_projection(report: RunReport | dict[str, Any]) -> dict[str, Any]:
     """The exact object every report digest is taken over, schema-aware.
@@ -472,6 +482,14 @@ def report_projection(report: RunReport | dict[str, Any]) -> dict[str, Any]:
         if declared < version:
             for name in names:
                 obj.pop(name, None)
+    for version, names in _CALIBRATION_META_FIELDS_ADDED_IN.items():
+        if declared < version:
+            calibration = obj.get("calibration")
+            if isinstance(calibration, dict):
+                for meta in calibration.values():
+                    if isinstance(meta, dict):
+                        for name in names:
+                            meta.pop(name, None)
     return obj
 
 

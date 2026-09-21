@@ -1284,7 +1284,7 @@
      "secondary_opts": []
     },
     {
-     "help": "Number of benign rollouts (split two ways into fit / tuning; there is no untouched evaluation split on this path).",
+     "help": "Number of benign rollouts. Split three ways into fit / tuning / eval by default (needs 3 or more); --split two-way divides them into fit / tuning only.",
      "is_flag": false,
      "name": "seeds",
      "opts": [
@@ -1314,11 +1314,21 @@
      "secondary_opts": []
     },
     {
-     "help": "Max benign FPR on the tuning split (the split the predicate is selected against \u2014 a target it is made to satisfy, not an untouched evaluation).",
+     "help": "Max benign FPR on the tuning split (the split the predicate is selected against \u2014 a target it is made to satisfy). A three-way fit then measures the FPR again on the eval split and records it beside this target, never in its place.",
      "is_flag": false,
      "name": "target_fpr",
      "opts": [
       "--target-fpr"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "three-way (default): fit / tuning / eval \u2014 the eval split is scored after the predicate is chosen and its FPR is bound into the artifact; an eval FPR above target is recorded as an invalid binding, never re-fitted. two-way: the historical fit / tuning split; the recorded FPR is a tuning figure and the artifact carries no binding.",
+     "is_flag": false,
+     "name": "split",
+     "opts": [
+      "--split"
      ],
      "required": false,
      "secondary_opts": []

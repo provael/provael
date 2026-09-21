@@ -29,6 +29,29 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ### Changed
 
+- **`provael calibrate` splits benign rollouts three ways by default — fit / tuning / eval — and
+  the eval split is scored only after the predicate is chosen.** The two-way path stays as
+  `--split two-way`. Why: since 0.43.0 every surface has said that the second split *selects* the
+  threshold or hazard face, so its FPR is a tuning figure and no evaluation split stood behind a
+  calibration; his 19 September review listed wiring the three-way split end to end as the first
+  product gap, and the 24 October re-run under a calibrated predicate would otherwise publish
+  calibrations with no FPR anyone could call an estimate. What changed: the artifact records
+  `split`, `eval_seeds`, `eval_fpr` and a `binding` (`CalibrationBinding` schema 2: endpoint,
+  oracle version, policy, suite, task, checkpoint, predicate kind, the three seed-set digests,
+  target and achieved eval FPR; seed overlap refused at build); an eval FPR above target is
+  written as fitted with an invalid binding and a red row, never re-fitted on the eval seeds (a
+  threshold moved to satisfy its own evaluation turns that split back into tuning data); the
+  runner re-derives the binding's validity against the run's own policy, suite, task, `--model`
+  and oracle version, applies the predicate either way, and says which
+  (`calibration.<task>.split` / `eval_fpr` / `binding` in `report.json` — **report schema 7**,
+  nested keys the projection strips for a report declaring less, so every earlier attestation
+  keeps verifying; `schemas/report.v7.schema.json`); the Markdown report and the compliance
+  report render one sentence from `provael.calibration.describe_calibration` (tuned / bound /
+  invalid) instead of each stating the split in its own words; the CLI table gains an `eval FPR`
+  column. Old artifacts without the new keys load as what they are, two-way fits with no
+  binding. **No measured number moves, and no real-policy calibration validity is claimed**: the
+  roadmap's condition — a fresh supported real-policy calibration run — is unchanged, and every
+  published number is still measured under the uncalibrated default box.
 - The brand assets under `docs/assets/` (README wordmark, org picture, docs logo and favicon) now
   derive from the website's Proof-Path mark through `scripts/gen_brand_assets.py`; the teal
   checkmark this repository had carried since before the mark existed is retired everywhere, and

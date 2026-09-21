@@ -89,6 +89,18 @@ still digests to its own bytes — an attestation issued before 0.42.0 keeps ver
 adapter cannot resolve a part it records `null`, never a guess; the three scaffolding adapters
 (`openvla`, `openpi`, `groot`) have never run and record nothing.
 
+### A bound predicate is signed over as a different thing (schema 7)
+
+Since 0.45 each calibrated task's entry in the signed `report.json` carries `split`, `eval_fpr`
+and `binding`: which split the calibration artifact came from, the benign FPR measured on the eval
+split of a three-way fit after the predicate was chosen, and whether the artifact's
+`CalibrationBinding` holds for *this* run (`valid`, or `invalid: <reason>` — another checkpoint,
+task or oracle version, or an eval FPR above target). A predicate tuned to a target and one whose
+FPR was measured afterwards therefore digest differently, which is the point of signing over it.
+The three keys sit inside a nested model rather than at the top of the report, so the projection
+strips them for any report that declares a schema below 7 (`attest._CALIBRATION_META_FIELDS_ADDED_IN`)
+and every earlier attestation keeps verifying.
+
 ### The regulatory clock
 
 Factual application dates, carried so the evidence is legible against the calendar buyers care

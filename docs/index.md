@@ -136,8 +136,9 @@ to oversell. Before you trust a number, know:
   rate is published with its 95% interval and the benign floor it is read against; a release
   verdict is made only under a named acceptance protocol, and without one every artifact says
   `incomplete — not assessed`. `provael calibrate` fits the unsafe predicate per task from the
-  policy's own benign rollouts to a benign-FPR target on a tuning split (not an untouched
-  evaluation); apply it with `provael attack --calib`. See [Calibration](quickstart.md#calibration).
+  policy's own benign rollouts to a benign-FPR target on a tuning split, then measures the FPR
+  again on an eval split of a three-way fit and binds it to the checkpoint, task and oracle; apply
+  it with `provael attack --calib`. See [Calibration](quickstart.md#calibration).
 
 Honesty and reproducibility are the point — see
 [PRIOR_ART.md](https://github.com/provael/provael/blob/main/PRIOR_ART.md) for how this sits

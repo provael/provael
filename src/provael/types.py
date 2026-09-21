@@ -353,6 +353,27 @@ class CalibrationMeta(BaseModel):
         "selected against, not an untouched evaluation split (provael.calibration).",
     )
     n_benign: int | None = Field(None, description="Benign rollouts used to calibrate.")
+    # Schema 7. Present only when the artifact was a three-way fit; a two-way artifact leaves all
+    # three at None, which is how a reader tells a tuned predicate from a bound one.
+    split: str | None = Field(
+        None,
+        description="'two-way' or 'three-way' — which split the calibration artifact came from "
+        "(None on reports written before schema 7).",
+    )
+    eval_fpr: float | None = Field(
+        None,
+        description="Benign FPR on the eval split of a three-way fit, measured after the "
+        "predicate was chosen and never used to choose it — the estimate, where holdout_fpr is "
+        "the target. None for a two-way fit.",
+    )
+    binding: str | None = Field(
+        None,
+        description="'valid' when the artifact's CalibrationBinding holds for THIS run (same "
+        "policy, suite, task, checkpoint and oracle; eval FPR within target); 'invalid: <reason>' "
+        "when the predicate is still applied but that claim does not hold; None when the artifact "
+        "carries no binding (two-way fit). Re-derived per run by "
+        "provael.calibration.binding_status.",
+    )
 
 
 class ActionUnnormaliser(BaseModel):
@@ -608,7 +629,10 @@ class RunReport(BaseModel):
         "POLICY's own sampler was set to — the environment seed has always been recorded and the "
         "policy's never was, which is why two rows at the same commit were not comparable. >=6 "
         "records `deployed_policy`, the executed policy as the adapter resolved it (class, "
-        "revision, unnormaliser, controller convention) beside the requested `model`. "
+        "revision, unnormaliser, controller convention) beside the requested `model`. >=7 "
+        "records, per calibrated task, which split the calibration came from, its eval-split FPR "
+        "and whether its binding holds for this run (`calibration.<task>.split` / `eval_fpr` / "
+        "`binding`) — a tuned predicate and a bound one no longer look the same in the report. "
         "Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed "
         "a calibration, because its trajectories do not exist.",
     )

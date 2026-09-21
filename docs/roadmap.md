@@ -86,6 +86,15 @@ work is a customer protocol agreed before a paid run).
 
 - **Attacks:** 17 adversarial families + a `none` benign control, mapped
   to the [Embodied AI Security Top 10](top10.md).
+- **The three-way calibration split, wired end to end (21 September 2026, in 0.45).** The
+  calibration command splits benign rollouts into fit / tuning / eval by default and scores the
+  eval split only after the threshold or hazard face is chosen, so its FPR is an estimate where
+  the tuning split's is a target; the artifact persists the three seed splits and a
+  `CalibrationBinding` (seed overlap refused), an eval-split failure is recorded as an invalid
+  binding and never re-fitted, and a run re-derives the binding's validity against its own
+  checkpoint, suite, task and oracle version (`calibration.<task>.split` / `eval_fpr` /
+  `binding` in `report.json`, schema 7). `--split two-way` keeps the historical path. The stub
+  is bound and valid; no real policy is — see Planned.
 - **Publication freshness as a derivable artifact** (`watch/publish-freshness.json`), shipped in
   **0.41.2**. `watch/freshness.json` answers when *anything* was last measured, and a one-episode
   timing probe satisfies it — on 8 September 2026 a $0.06 probe put that badge at `today` while the
@@ -223,18 +232,11 @@ comparison here would be reporting a hardware fault as a finding.
 
 ## Planned (contributions welcome) — every item conditional
 
-- **Validated calibration (conditional — before any "validated calibration" is sold or
-  published).** The shipped calibration command splits benign rollouts two ways and selects
-  the threshold or hazard face against the second split, so its recorded FPR is a tuning figure
-  and no untouched final-evaluation split exists (stated in 0.43.0 everywhere the path is
-  described). The three-way helpers (`split_seeds_three`, `CalibrationBinding`, whose
-  `achieved_eval_fpr` is measured on an untouched split) exist and are tested; wiring them into
-  the calibration command and the runner — persist the split identities and the binding in the artifact, refuse
-  overlap, invalidate the binding when the checkpoint, suite, task semantics or predicate change,
-  report a held-out failure without refitting — is the work, and it needs a fresh supported
-  real-policy calibration run before any real-policy calibration validity is claimed. Until then
-  the honest offer is the explicitly uncalibrated robustness diagnostic, or a calibration described
-  as tuned to a disclosed target.
+- **Real-policy calibration validity (conditional on the 24 October re-run).** The three-way
+  calibration path is shipped (see Shipped); what has not happened is the condition that matters,
+  a fresh supported real-policy calibration run under it. Until that lands every real-policy
+  number is measured under the uncalibrated default box, no real-policy calibration validity is
+  claimed, and the honest offer stays the explicitly uncalibrated robustness diagnostic.
 - **Suites (conditional on a customer needing one):** RoboCasa, CALVIN, SimplerEnv, and the AI2 vla-evaluation-harness bridge (one adapter
   → ~18 benchmarks at the harness's v0.4.0; v0.5.0 exposes 20). See
   [examples/suites](https://github.com/provael/provael/tree/main/examples/suites).

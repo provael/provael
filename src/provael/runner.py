@@ -29,7 +29,7 @@ from provael.attacks.gradient_patch import GradientOracleAttack
 from provael.attacks.optimized import OracleAttack, SchemaAwareAttack, ZoneAwareAttack
 from provael.attacks.registry import resolve_attacks
 from provael.attacks.weight_integrity import SensitivityReferencePolicy, WeightIntegrityAttack
-from provael.calibration import Calibration, anytime_ci, wilson_ci
+from provael.calibration import Calibration, anytime_ci, binding_status, wilson_ci
 from provael.config import RunConfig
 from provael.defenses.base import Defense
 from provael.defenses.registry import make_defense
@@ -532,6 +532,13 @@ def run(
                     target_fpr=cal.target_fpr,
                     holdout_fpr=cal.benign_fpr,
                     n_benign=cal.n_benign,
+                    split=cal.split,
+                    eval_fpr=cal.eval_fpr,
+                    # Derived against THIS run — the artifact cannot know what it is applied to.
+                    binding=binding_status(
+                        cal, policy=config.policy, suite=config.suite, task=task,
+                        model=config.model,
+                    ),
                 )
     # The benign baseline's rate under the predicate actually used IS the live benign FPR.
     baseline = attack_breakdown.get("none")
@@ -552,7 +559,10 @@ def run(
         # rather than signed over, and the corruption parameters would sit outside the
         # signature that is supposed to cover them. 6: the report carries `deployed_policy`,
         # the executed policy as the adapter resolved it (issue #227); same rule, same reason.
-        schema_version=6,
+        # 7: `calibration.<task>` carries `split` / `eval_fpr` / `binding`, so a bound predicate
+        # and a tuned one are signed over as different things (nested, so the projection strips
+        # them for a report that declares less — see attest._CALIBRATION_META_FIELDS_ADDED_IN).
+        schema_version=7,
         evidence_state=classify_run(config.policy, config.suite).value,
         policy=config.policy,
         model=config.model,

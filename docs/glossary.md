@@ -61,9 +61,13 @@ its validity window). Only this turns a valid signature into a *trusted* one. `a
 
 **Calibration** — a predicate whose threshold was fit on the policy's benign rollouts and tuned on
 a second benign split to a target false-positive rate. The tuning split selects the threshold, so
-the recorded FPR is a tuning figure; the shipped path has no untouched final-evaluation split, and
-a calibration is never described as validated on one. Uncalibrated evidence cannot satisfy a
-calibration-required gate. Missing/invalid calibration is *uncalibrated*, never
+its recorded FPR (`benign_fpr`) is a tuning figure. A **three-way** fit (the default since 0.45)
+scores a third, **eval split** only after the choice: that FPR (`eval_fpr`) is the estimate, and
+it travels in a **binding** (endpoint, oracle, policy, suite, task, checkpoint, seed-set digests,
+target, achieved eval FPR) that fails closed — above target, or applied to another checkpoint,
+task or oracle, the binding is *invalid* and the run says so while still applying the predicate.
+A two-way fit has no eval split and is never described as validated. Uncalibrated evidence cannot
+satisfy a calibration-required gate. Missing/invalid calibration is *uncalibrated*, never
 "calibrated-with-a-warning".
 
 ## Standing caveat

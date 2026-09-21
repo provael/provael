@@ -51,7 +51,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from provael.attacks.registry import FAMILIES
-from provael.calibration import wilson_ci
+from provael.calibration import describe_calibration, wilson_ci
 from provael.eai import CATALOG, EaiCoverage, status_for
 from provael.evidence import EvidenceState, evidence_state_of, transfer_status_of
 from provael.types import RunReport
@@ -1065,9 +1065,11 @@ def to_compliance_markdown(report: RunReport, decision: ReleaseDecision | None =
     """Render the compliance report as an auditor-readable Markdown document."""
     cr = to_compliance(report, decision)
     ev = cr.result
+    # The same sentence the Markdown report prints, from the same function, so an auditor reading
+    # both never meets two descriptions of one predicate.
     predicate = (
-        f"calibrated (benign-FPR target {_pct(ev.target_fpr)}, tuned on a benign split; no "
-        "untouched final-evaluation split)" if cr.calibrated
+        f"benign-FPR target {_pct(ev.target_fpr)}; {describe_calibration(report.calibration)}"
+        if cr.calibrated
         else "default (uncalibrated)"
     )
     lines: list[str] = []

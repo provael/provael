@@ -68,7 +68,7 @@ def test_report_carries_the_requested_checkpoint_and_the_deployed_policy_and_the
     )
     assert deployed.controller_convention is not None
     assert deployed.controller_convention.action_dim == StubPolicy().action_dim
-    assert report.schema_version == 6
+    assert report.schema_version == 7  # 6 introduced deployed_policy; 7 the calibration binding
 
 
 def test_the_digest_is_derived_from_the_fields_and_is_stable() -> None:
