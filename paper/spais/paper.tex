@@ -3,8 +3,10 @@
 %
 % DRAFT 1, 21 Sep 2026 (skeleton 14 Sep). Every number below is copied from a committed results
 % directory's generated README/aggregate; the directory is named in a comment beside each table so
-% the anonymised PDF carries no path. Nothing is typed from memory. Style file: the NeurIPS one the
-% 6-pager used; swap for the CoRL anonymized template before upload — the body does not change.
+% the anonymised PDF carries no path. Nothing is typed from memory. Style file: the CoRL 2026
+% submission template (corl_2026.sty + corlabbrvnat.bst, unmodified, from the SPAIS CFP's template
+% link, downloaded 21 Sep 2026); no option = the anonymized submission form (line numbers, the
+% "Submitted to … Do not distribute" footnote, authors replaced by the template's placeholder).
 %
 % Sources (repo-relative, not in the PDF):
 %   T1  results/smolvla_libero_object_suite_2026-09-14/README.md      (400 episodes, 8 arms, 5 seeds)
@@ -13,18 +15,19 @@
 %       results/smolvla_libero_{spatial,goal,10}_2026-09-14/README.md (60 episodes each)
 %       results/smolvla_libero_object_families_2026-09-14/README.md   (129 records, 41 arms, task 0)
 \documentclass{article}
-\usepackage[dblblindworkshop]{neurips_2026}
+\usepackage{corl_2026}   % submission form; loads natbib [square,numbers], hyperref and lineno itself
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{booktabs}
 \usepackage{amsmath}
 \usepackage{xcolor}
-\usepackage[hidelinks]{hyperref}
+% The style sets pdfsubject to the proceedings name and pdfauthor to "Anonymous Submission";
+% check_anonymity.sh requires every info field empty, so they are cleared here, after the style.
 \hypersetup{pdfauthor={},pdftitle={},pdfsubject={},pdfkeywords={}}
 \newcommand{\todo}[1]{\textcolor{red}{[#1]}}
 \newcommand{\arm}[1]{\texttt{#1}}
 
-\title{Two Controls a Robot Red Team Cannot Publish Without:\\
+\title{Two Controls a Robot Red Team Cannot Publish Without:
 a Length-Matched Scramble and a Second Architecture}
 
 \author{Anonymous Author(s)\\
@@ -55,6 +58,9 @@ Wilson interval and a task-clustered interval; artifacts, ledgers and seeds are 
 contribution is not an attack. It is the two controls, what they changed, and tooling that makes
 them a flag rather than a project.
 \end{abstract}
+
+\keywords{Evaluation, Red-teaming, Vision-language-action policies}
+\hypersetup{pdfkeywords={}}
 
 \section{Introduction}
 
@@ -131,7 +137,7 @@ counts (attack-only--benign-only); Holm across the six adversarial arms; task-cl
 95\%. Clean task success on the benign arm: 48/50. The same protocol on release 0.32.0 in August
 gave \arm{roleplay} 44/50 and \arm{none} 2/50; the number reproduces.}
 \label{tab:headline}
-\footnotesize
+\footnotesize\setlength{\tabcolsep}{4pt}
 \begin{tabular}{llrlrrl}
 \toprule
 arm & role & exits & Wilson & McNemar & Holm & clustered \\
@@ -246,7 +252,6 @@ Anonymised artifact bundle: the results directories with every shard's report an
 manifest, the aggregates, the run ledgers, the release tag and the exact reproduction commands, plus
 the harness source under a permissive licence. Withheld for review; released with the camera-ready.
 
-\bibliographystyle{plainnat}
 \begin{thebibliography}{6}
 
 \bibitem[Fei et al.(2025)]{fei2025liberoplus}
