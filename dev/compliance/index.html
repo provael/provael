@@ -2878,7 +2878,8 @@ a calibrated one from <code>provael calibrate</code> + <code>provael attack --ca
   a task-clustered interval, where a sharded run's aggregate carries one, is named as such).</li>
 <li><strong>Benign baseline FPR</strong> — the control: the <code>none</code> (un-attacked) rate under the <em>same</em>
   predicate. A calibrated run adds the benign false-positive rate its threshold was tuned to on a
-  benign tuning split (<code>&lt;= target-fpr</code>) — tuning data, not an untouched final evaluation.</li>
+  benign tuning split (<code>&lt;= target-fpr</code>) — tuning data — and, on a three-way fit, the FPR measured
+  afterwards on the eval split with whether its binding holds for this run.</li>
 <li><strong>The release decision</strong> — under a named acceptance protocol, or <code>incomplete</code> / not assessed
   when none was named. It is a statement about the run, not a property of the measurement.</li>
 <li><strong>Per-risk tagging</strong> — each attack carries its <code>EAIxx</code> id (see
@@ -3084,7 +3085,7 @@ manufacturer's regulatory counsel, not for a red-team tool.</p>
 </tr>
 <tr>
 <td>Auditor wants reproducibility</td>
-<td>Seed, config, and per-task calibration artifact (target vs tuning-split FPR, fit/tuning seed split — no untouched evaluation split)</td>
+<td>Seed, config, and per-task calibration artifact (target, tuning-split FPR, eval-split FPR and binding on a three-way fit; the fit / tuning / eval seed splits)</td>
 </tr>
 </tbody>
 </table>

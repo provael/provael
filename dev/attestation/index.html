@@ -854,6 +854,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#a-bound-predicate-is-signed-over-as-a-different-thing-schema-7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A bound predicate is signed over as a different thing (schema 7)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-regulatory-clock" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2751,6 +2762,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#a-bound-predicate-is-signed-over-as-a-different-thing-schema-7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A bound predicate is signed over as a different thing (schema 7)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-regulatory-clock" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2925,6 +2947,16 @@ under a different unnormaliser, and on LIBERO-Goal a metadata mismatch takes suc
 still digests to its own bytes — an attestation issued before 0.42.0 keeps verifying. Where an
 adapter cannot resolve a part it records <code>null</code>, never a guess; the three scaffolding adapters
 (<code>openvla</code>, <code>openpi</code>, <code>groot</code>) have never run and record nothing.</p>
+<h3 id="a-bound-predicate-is-signed-over-as-a-different-thing-schema-7">A bound predicate is signed over as a different thing (schema 7)</h3>
+<p>Since 0.45 each calibrated task's entry in the signed <code>report.json</code> carries <code>split</code>, <code>eval_fpr</code>
+and <code>binding</code>: which split the calibration artifact came from, the benign FPR measured on the eval
+split of a three-way fit after the predicate was chosen, and whether the artifact's
+<code>CalibrationBinding</code> holds for <em>this</em> run (<code>valid</code>, or <code>invalid: &lt;reason&gt;</code> — another checkpoint,
+task or oracle version, or an eval FPR above target). A predicate tuned to a target and one whose
+FPR was measured afterwards therefore digest differently, which is the point of signing over it.
+The three keys sit inside a nested model rather than at the top of the report, so the projection
+strips them for any report that declares a schema below 7 (<code>attest._CALIBRATION_META_FIELDS_ADDED_IN</code>)
+and every earlier attestation keeps verifying.</p>
 <h3 id="the-regulatory-clock">The regulatory clock</h3>
 <p>Factual application dates, carried so the evidence is legible against the calendar buyers care
 about. Dates only — no claim of conformity:</p>

@@ -2729,9 +2729,13 @@ its validity window). Only this turns a valid signature into a <em>trusted</em> 
 <strong>fail-closed</strong>: unsigned or untrusted is never "verified".</p>
 <p><strong>Calibration</strong> — a predicate whose threshold was fit on the policy's benign rollouts and tuned on
 a second benign split to a target false-positive rate. The tuning split selects the threshold, so
-the recorded FPR is a tuning figure; the shipped path has no untouched final-evaluation split, and
-a calibration is never described as validated on one. Uncalibrated evidence cannot satisfy a
-calibration-required gate. Missing/invalid calibration is <em>uncalibrated</em>, never
+its recorded FPR (<code>benign_fpr</code>) is a tuning figure. A <strong>three-way</strong> fit (the default since 0.45)
+scores a third, <strong>eval split</strong> only after the choice: that FPR (<code>eval_fpr</code>) is the estimate, and
+it travels in a <strong>binding</strong> (endpoint, oracle, policy, suite, task, checkpoint, seed-set digests,
+target, achieved eval FPR) that fails closed — above target, or applied to another checkpoint,
+task or oracle, the binding is <em>invalid</em> and the run says so while still applying the predicate.
+A two-way fit has no eval split and is never described as validated. Uncalibrated evidence cannot
+satisfy a calibration-required gate. Missing/invalid calibration is <em>uncalibrated</em>, never
 "calibrated-with-a-warning".</p>
 <h2 id="standing-caveat">Standing caveat</h2>
 <p><strong>Certification</strong> — Provael produces <strong>evidence, not certification</strong>. It is not a conformity

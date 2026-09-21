@@ -3286,14 +3286,23 @@ and LIBERO a generic keep-out box — so ASR reads as "diverted out of the benig
 <code>provael calibrate</code> replaces that with a <strong>per-task predicate fit from the policy's own benign
 rollouts</strong>:</p>
 <ol>
-<li>Run <code>N</code> benign (attack <code>none</code>) rollouts per task and split the seeds into <strong>fit / tuning</strong>.</li>
+<li>Run <code>N</code> benign (attack <code>none</code>) rollouts per task and split the seeds three ways into
+   <strong>fit / tuning / eval</strong> (the default; <code>--split two-way</code> keeps the historical fit / tuning split).</li>
 <li>Derive the safe predicate from the fit split — a thresholded danger signal (stub) or an
    end-effector keep-out zone placed disjoint from the benign envelope (LIBERO) — and tune it so
    the benign <strong>false-positive rate</strong> on the tuning split is <code>&lt;= --target-fpr</code> (default 0.05).
-   The tuning split takes part in that selection, so the recorded FPR is the target the choice
-   was made to satisfy, <strong>not</strong> an estimate on data the selection never saw: this path has no
-   untouched final-evaluation split, and no artifact from it is described as validated on one.</li>
-<li>Save a per-task JSON artifact (envelope/threshold, tuning-split benign FPR, <code>n</code>, seed split).</li>
+   The tuning split takes part in that selection, so its recorded FPR (<code>benign_fpr</code>) is the
+   target the choice was made to satisfy, <strong>not</strong> an estimate.</li>
+<li>Score the <strong>eval split</strong> against the chosen predicate. It was never consulted by the choice, so
+   its FPR (<code>eval_fpr</code>) is the estimate. An eval FPR above target is <strong>recorded, not repaired</strong>:
+   the artifact keeps the threshold the tuning split chose and its binding is marked invalid —
+   re-fitting on the eval seeds would turn them back into tuning data. On a two-way fit there is
+   no eval split and no artifact from it is described as validated.</li>
+<li>Save a per-task JSON artifact: envelope/threshold, target and tuning FPR, eval FPR, <code>n</code>, the
+   three seed splits, and a <code>binding</code> (endpoint, oracle, policy, suite, task, checkpoint, the
+   three seed-set digests, target, achieved eval FPR) that a later run re-checks against itself:
+   another checkpoint, task or oracle version reads <code>binding: invalid: &lt;reason&gt;</code> in that run's
+   <code>report.json</code>, with the predicate still applied and the FPR claim withdrawn.</li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="c1"># 1) calibrate (CPU stub shown — deterministic)</span>
 uv<span class="w"> </span>run<span class="w"> </span>provael<span class="w"> </span>calibrate<span class="w"> </span>--policy<span class="w"> </span>stub<span class="w"> </span>--suite<span class="w"> </span>stub<span class="w"> </span>--seeds<span class="w"> </span><span class="m">20</span><span class="w"> </span>--target-fpr<span class="w"> </span><span class="m">0</span>.05<span class="w"> </span>--out<span class="w"> </span>calib/
@@ -3305,8 +3314,11 @@ uv<span class="w"> </span>run<span class="w"> </span>provael<span class="w"> </s
 <p>A calibrated run reports a <strong>calibrated redirection rate</strong> with a <strong>95% Wilson CI</strong> and the
 <strong>benign baseline FPR</strong> (the <code>none</code> row, scored under the same predicate) alongside — every
 number gets its control. The <code>calibrated</code> flag, <code>benign_fpr</code>, and per-task calibration metadata
-are recorded in <code>report.json</code>, <code>report.md</code>, the CLI table, and the SARIF output. Without
-<code>--calib</code>, the default predicate is used, unchanged.</p>
+(<code>split</code>, <code>holdout_fpr</code> = the tuning figure, <code>eval_fpr</code>, <code>binding</code>; report schema 7) are recorded
+in <code>report.json</code>, <code>report.md</code>, the CLI table, and the SARIF output. Without <code>--calib</code>, the default
+predicate is used, unchanged. A valid binding on the stub is a statement about the stub; the
+roadmap's condition stands — a fresh supported real-policy calibration run before any real-policy
+calibration validity is claimed.</p>
 <blockquote>
 <p>The real <strong>SmolVLA × LIBERO</strong> calibration runs on a GPU box (it needs the <code>[lerobot]</code> extra);
 the stub path runs on CPU and is covered by CI.</p>
