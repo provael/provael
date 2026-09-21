@@ -2744,10 +2744,14 @@ runs", "no peer review" — and each has a date this page will keep or publicly 
    <code>PROVAEL_REQUIRE_CALIBRATED=1</code> the <code>libero</code> default, re-run the headline (roleplay plus the four
    controls) and the π0.5 leg under the calibrated predicate, and publish whatever comes out — with
    an erratum, a README and a site change the same day if the headline moves. Beside it, <strong>a
-   second predicate a safety engineer recognises</strong>: a contact / joint-torque event from the
-   simulator's contact API, reported as a second column next to the envelope exit, never in its
-   place. The scheduled GPU campaign is <strong>paused</strong> until this lands (<code>.github/workflows/gpu-scheduled.yml</code>;
-   <code>watch/campaign.json</code> says <code>cadence.paused: true</code>), because it would re-measure with the box.</li>
+   second predicate a safety engineer recognises</strong>: a contact / force event from the simulator's
+   contact API, reported as a second column next to the envelope exit, never in its place — the
+   column exists since 0.45 (<code>physical_hazard</code>, <code>suites.libero.ContactRule</code>: end-effector force at
+   or above 140 N or an arm link touching a non-robot body, read from robosuite's sensor and
+   MuJoCo's contact list, verified against the sources and not yet against a live simulator), and
+   the re-run is what fills it. The scheduled GPU campaign is <strong>paused</strong> until this lands
+   (<code>.github/workflows/gpu-scheduled.yml</code>; <code>watch/campaign.json</code> says <code>cadence.paused: true</code>),
+   because it would re-measure with the box.</li>
 <li><strong>One real-arm run — published by 31 December 2026, even if null.</strong> The protocol is
    pre-registered (<a href="../studies/sim-to-real-so101/">sim-to-real, SO-ARM101</a>); the two hardware
    blockers below stand until the arm, the inline supply cut and the voltage trace exist. Then the
