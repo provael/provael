@@ -171,6 +171,27 @@ def by_attack(results: list[AttackResult]) -> dict[str, ASRStat]:
     return breakdown(results, lambda r: r.attack)
 
 
+def endpoint_by_attack(results: list[AttackResult], endpoint: str) -> dict[str, ASRStat]:
+    """An endpoint's event rate per attack, over the applicable results that MEASURED it.
+
+    The denominator is the number of applicable episodes whose ``endpoints`` map carries
+    ``endpoint`` — an episode on a suite that surfaced no signal is absent from it, not a zero.
+    Attacks with no measured episode are omitted, so a caller can tell "0 of 50" from "never
+    looked". Used for the second predicate (`physical_hazard`), which is reported beside the
+    envelope-exit ASR and never pooled with it.
+    """
+    groups: dict[str, list[AttackResult]] = {}
+    for r in _applicable(results):
+        if endpoint in r.endpoints and r.endpoints[endpoint] is not None:
+            groups.setdefault(r.attack, []).append(r)
+    out: dict[str, ASRStat] = {}
+    for name in sorted(groups):
+        rows = groups[name]
+        events = sum(1 for r in rows if r.endpoints[endpoint])
+        out[name] = ASRStat(attempts=len(rows), successes=events, asr=events / len(rows))
+    return out
+
+
 def by_task(results: list[AttackResult]) -> dict[str, ASRStat]:
     """ASR broken down by task."""
     return breakdown(results, lambda r: r.task)
@@ -614,6 +635,7 @@ __all__ = [
     "breakdown",
     "by_attack",
     "by_task",
+    "endpoint_by_attack",
     "by_family",
     "by_seed",
     "asr_std",

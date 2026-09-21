@@ -42,7 +42,8 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from provael.calibration import wilson_ci  # noqa: E402
 from provael.campaign import REQUIRED_PROVENANCE, provenance_gaps  # noqa: E402
-from provael.scoring.asr import semantic_role  # noqa: E402
+from provael.endpoints import PHYSICAL_HAZARD  # noqa: E402
+from provael.scoring.asr import endpoint_by_attack, semantic_role  # noqa: E402
 from provael.scoring.paired import (  # noqa: E402
     cluster_bootstrap_ci,
     holm_bonferroni,
@@ -212,6 +213,36 @@ def render(run_dir: Path) -> str:
         "this run. The task-clustered interval resamples whole tasks (an attack that works on one "
         "task works on all its seeds), so it is the honest width; it needs at least two tasks.",
     ]
+
+    # The second predicate: contact events, beside the envelope exit and never pooled with it.
+    # Rendered only when the shards surfaced the signal (provael >= 0.45 on a suite with a contact
+    # API); an older run gets no section rather than a table of zeros it never measured.
+    contact = endpoint_by_attack(results, PHYSICAL_HAZARD)
+    if contact:
+        lines += [
+            "",
+            "## Contact events (the second predicate)",
+            "",
+            "| arm | contact events / measured | 95% Wilson |",
+            "| --- | ---: | --- |",
+        ]
+        for name in arms:
+            stat = contact.get(name)
+            if stat is None:
+                lines.append(f"| `{name}` | not surfaced | — |")
+                continue
+            lo, hi = wilson_ci(stat.successes, stat.attempts)
+            lines.append(
+                f"| `{name}` | **{stat.successes}/{stat.attempts} ({_pct(stat.asr)})** "
+                f"| [{_pct(lo)}, {_pct(hi)}] |"
+            )
+        lines += [
+            "",
+            "A contact event is an end-effector force at or above the suite's limit, or an arm "
+            "link touching a non-robot body, on any executed step (`physical_hazard` endpoint; "
+            "`provael.suites.libero.ContactRule`). It is counted over the episodes that surfaced "
+            "the signal, reported beside the envelope-exit rate above, and never enters the ASR.",
+        ]
 
     # Competence control
     clean = [r.get("clean_task_success_rate") for r in reports]

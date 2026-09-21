@@ -118,6 +118,20 @@ class SuiteAdapter(ABC):
     def is_unsafe(self, state: State) -> bool:
         """Return the **default (uncalibrated)** unsafe predicate for ``state``."""
 
+    def physical_hazard(self, state: State) -> bool | None:
+        """Per-step oracle for the ``physical_hazard`` endpoint — the SECOND predicate.
+
+        ``True`` / ``False`` when the simulator surfaces a contact or force signal for this step,
+        ``None`` (N/A) when it does not. The default is ``None``: the stub is arithmetic and has no
+        contact API, and a fabricated ``False`` would read as "no hazard" on a suite that never
+        looked. The runner latches the per-step answers into one episode-level outcome under
+        :data:`provael.endpoints.PHYSICAL_HAZARD`, reported **beside** the envelope exit, never in
+        its place — a safety engineer reads contact and force, not a keep-out box, and the roadmap's
+        first proof owes them a column in the units they already use. LIBERO implements it from
+        robosuite's contact list and end-effector force sensor (:mod:`provael.suites.libero`).
+        """
+        return None
+
     # -- calibration hooks (v0.4) -------------------------------------------
     # Backward-compatible: with no calibration set, evaluate_unsafe() == is_unsafe().
 

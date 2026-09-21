@@ -20,8 +20,9 @@ from rich.table import Table
 
 from provael.calibration import describe_calibration, wilson_ci
 from provael.eai import CATALOG
+from provael.endpoints import PHYSICAL_HAZARD
 from provael.evidence import evidence_state_of
-from provael.scoring.asr import benign_control, fdr_by_attack
+from provael.scoring.asr import benign_control, endpoint_by_attack, fdr_by_attack
 from provael.scoring.safety_cost import (
     QUADRANT_KEYS,
     TASK_SUCCESS_UNMEASURED,
@@ -46,6 +47,17 @@ def _asr_with_ci(stat: ASRStat) -> str:
 
 def _stat_row(name: str, stat: ASRStat) -> tuple[str, str, str, str]:
     return (name, _asr_with_ci(stat), str(stat.successes), str(stat.attempts))
+
+
+def _endpoint_cell(stat: ASRStat | None) -> str:
+    """``events/measured (rate%) [Wilson]`` for an endpoint, or ``n/a`` where nothing measured."""
+    if stat is None or stat.attempts == 0:
+        return "n/a"
+    lo, hi = wilson_ci(stat.successes, stat.attempts)
+    return (
+        f"{stat.successes}/{stat.attempts} ({100.0 * stat.asr:.1f}%) "
+        f"[{100.0 * lo:.0f}–{100.0 * hi:.0f}%]"
+    )
 
 
 def _fmt_ci(ci: tuple[float, float] | None) -> str:
@@ -181,11 +193,36 @@ def to_markdown(report: RunReport, decision: ReleaseDecision | None = None) -> s
     lines.append("")
     lines.append("## ASR by attack")
     lines.append("")
-    lines.append("| attack | EAI | ASR | successes | attempts |")
-    lines.append("| --- | --- | --- | --- | --- |")
+    # The second predicate rides beside the envelope exit when the suite surfaced it (LIBERO's
+    # contact / force event), and is said to be absent when it did not. It is never folded into
+    # the ASR column: two predicates, two columns, one table.
+    contact = endpoint_by_attack(report.results, PHYSICAL_HAZARD)
+    if contact:
+        lines.append("| attack | EAI | ASR | successes | attempts | contact events |")
+        lines.append("| --- | --- | --- | --- | --- | --- |")
+    else:
+        lines.append("| attack | EAI | ASR | successes | attempts |")
+        lines.append("| --- | --- | --- | --- | --- |")
     for name, stat in report.by_attack.items():
         a, asr, s, n = _stat_row(name, stat)
-        lines.append(f"| {a} | {_eai_cell_md(report, name)} | {asr} | {s} | {n} |")
+        row = f"| {a} | {_eai_cell_md(report, name)} | {asr} | {s} | {n} |"
+        if contact:
+            row += f" {_endpoint_cell(contact.get(name))} |"
+        lines.append(row)
+    lines.append("")
+    if contact:
+        lines.append(
+            "> **Contact events** are the second predicate (`physical_hazard`): an end-effector "
+            "force at or above the suite's limit, or an arm link touching a non-robot body, on "
+            "any executed step — counted over the episodes that surfaced the signal, beside the "
+            "envelope exit and never pooled with it (`provael.endpoints`)."
+        )
+    else:
+        lines.append(
+            "> Contact events (the second predicate, `physical_hazard`): **not surfaced** by this "
+            "suite — no contact or force signal was read on any episode, so the column is absent "
+            "rather than zero."
+        )
     lines.append("")
     fdr = fdr_by_attack(report)
     if fdr:
@@ -299,9 +336,15 @@ def build_summary_table(report: RunReport) -> Table:
     table.add_column("ASR", justify="right", style="bold red")
     table.add_column("successes", justify="right")
     table.add_column("attempts", justify="right")
+    contact = endpoint_by_attack(report.results, PHYSICAL_HAZARD)
+    if contact:
+        table.add_column("contact events", justify="right", style="bold yellow")
     for name, stat in report.by_attack.items():
         a, asr, s, n = _stat_row(name, stat)
-        table.add_row(a, _eai_id(report, name) or "—", asr, s, n)
+        cells = [a, _eai_id(report, name) or "—", asr, s, n]
+        if contact:
+            cells.append(_endpoint_cell(contact.get(name)))
+        table.add_row(*cells)
     return table
 
 
