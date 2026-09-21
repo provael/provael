@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/provael/provael/main/docs/assets/provael_wordmark.png" alt="Provael — prove it, prevail" width="440">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/provael/provael/main/docs/assets/provael_wordmark_dark.png">
+    <img src="https://raw.githubusercontent.com/provael/provael/main/docs/assets/provael_wordmark.png" alt="Provael — prove it, prevail" width="440">
+  </picture>
 </p>
 
 # Provael™

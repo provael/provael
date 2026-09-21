@@ -27,6 +27,14 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
+### Changed
+
+- The brand assets under `docs/assets/` (README wordmark, org picture, docs logo and favicon) now
+  derive from the website's Proof-Path mark through `scripts/gen_brand_assets.py`; the teal
+  checkmark this repository had carried since before the mark existed is retired everywhere, and
+  the README wordmark gains a dark-scheme variant. The retired `social_preview.png` (the July
+  "100 %" card) is deleted; the repository's social preview is the website's `og.png`.
+
 ### Added
 
 - Keep-out figures for the three 14–18 September LIBERO-Object runs (`results/<run>/figures/`,

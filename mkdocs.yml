@@ -10,6 +10,8 @@ copyright: Apache-2.0 · Independent project · evidence, not certification
 
 theme:
   name: material
+  logo: assets/provael_icon.svg
+  favicon: assets/provael_icon.svg
   features:
     - navigation.sections
     - navigation.top
