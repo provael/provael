@@ -1,18 +1,28 @@
 % SPAIS @ CoRL 2026 — The Science of Physical AI Safety. Up to 4 pages excl. references,
 % double-blind, non-archival. Deadline 1 Oct 2026 AoE (OpenReview 2 Oct 11:59 UTC).
 %
-% SKELETON, 14 Sep 2026. Every \todo{} names the committed artifact the number comes from; nothing
-% is typed from memory. The style file is the NeurIPS one the 6-pager used; swap for the CoRL
-% anonymized template before submission (the CFP requires it) — the body does not change.
+% DRAFT 1, 21 Sep 2026 (skeleton 14 Sep). Every number below is copied from a committed results
+% directory's generated README/aggregate; the directory is named in a comment beside each table so
+% the anonymised PDF carries no path. Nothing is typed from memory. Style file: the NeurIPS one the
+% 6-pager used; swap for the CoRL anonymized template before upload — the body does not change.
+%
+% Sources (repo-relative, not in the PDF):
+%   T1  results/smolvla_libero_object_suite_2026-09-14/README.md      (400 episodes, 8 arms, 5 seeds)
+%   T2  results/smolvla_libero_object_control_2026-09-14/README.md    (180 episodes, 6 arms, 3 seeds)
+%   T3  results/pi05_libero_object_2026-09-18/README.md               (60 episodes, 2 arms, 3 seeds)
+%       results/smolvla_libero_{spatial,goal,10}_2026-09-14/README.md (60 episodes each)
+%       results/smolvla_libero_object_families_2026-09-14/README.md   (129 records, 41 arms, task 0)
 \documentclass{article}
-\usepackage[final]{neurips_2026}
+\usepackage[dblblindworkshop]{neurips_2026}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{booktabs}
 \usepackage{amsmath}
 \usepackage{xcolor}
-\usepackage{hyperref}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{pdfauthor={},pdftitle={},pdfsubject={},pdfkeywords={}}
 \newcommand{\todo}[1]{\textcolor{red}{[#1]}}
+\newcommand{\arm}[1]{\texttt{#1}}
 
 \title{Two Controls a Robot Red Team Cannot Publish Without:\\
 a Length-Matched Scramble and a Second Architecture}
@@ -26,116 +36,252 @@ a Length-Matched Scramble and a Second Architecture}
 \maketitle
 
 \begin{abstract}
-An attack success rate on a vision-language-action policy is a difference between two rates, and
-most published ones report only one of them. We report a paired evaluation in simulation in which
-every attacked episode has a benign twin at the same task and seed, and we add the two controls a
-reviewer asks for first. The first is a \emph{length-matched scramble}: the attack sentence with its
-target noun replaced and its token order destroyed, so that ``any long unfamiliar string derails
-the policy'' is a hypothesis with its own arm rather than an objection. \todo{scrambled\_text rate
-from results/smolvla\_libero\_object\_control\_2026-09-14/aggregate.json}. The second is a second
-architecture under the identical protocol: \todo{$\pi_{0.5}$ roleplay and benign rates from
-results/pi05\_libero\_object\_2026-09-15}. We also report, for one policy, every attack family the
-harness ships against a real checkpoint at three seeds, including a weight-corruption ladder and a
-gradient patch, \todo{count of families with a real-policy number from
-results/smolvla\_libero\_object\_families\_2026-09-15}; and the same instruction attack on three
-further task suites, \todo{spatial/goal/10 rates}. Every rate carries its floor, a Wilson interval
-and a task-clustered bootstrap interval; the artifacts, the ledgers and the seeds are public. The
-contribution is not an attack. It is the two controls, what they changed, and the tooling that
-makes them a flag rather than a project.
+An attack success rate on a vision-language-action (VLA) policy is a difference between two rates,
+and most published ones report only one of them. We report a paired evaluation in simulation in
+which every attacked episode has a benign twin at the same task and seed, and we add the two
+controls a reviewer asks for first. The first is a \emph{length-matched scramble}: the attack
+sentence with its target noun replaced and its token order destroyed, so that ``any long
+unfamiliar string derails the policy'' is a hypothesis with its own arm rather than an objection.
+On the policy where the attack succeeds in 42 of 50 episodes against a benign floor of 1 in 50, the
+scramble succeeds in 18 of 30 and the attack frame with no target named in 27 of 30. The headline
+therefore measures fragility under a long out-of-distribution imperative, not attacker-directed
+steering, and we corrected our own earlier reading of it. The second control is a second
+architecture under the identical protocol: a 3B flow-matching policy fine-tuned on the same suite
+leaves its envelope in 1 of 30 episodes under the same attack while its task success drops from
+27/30 to 8/30. We also run every attack family the harness ships against one policy at three seeds
+(only the instruction family fires; ten rungs of a weight bit-flip ladder and a gradient patch do
+not) and the headline attack on three further suites (0/30 on each). Every rate carries its floor, a
+Wilson interval and a task-clustered interval; artifacts, ledgers and seeds are public. The
+contribution is not an attack. It is the two controls, what they changed, and tooling that makes
+them a flag rather than a project.
 \end{abstract}
 
 \section{Introduction}
-\todo{Cut from paper/vlm4rwd/paper.tex \S1 to ~0.4 page: the floor argument; the two objections
-(wording brittleness; one policy) stated as the hypotheses this paper tests.}
+
+An attack success rate is a difference, not a level: the rate at which a safety predicate fires
+under perturbation minus the rate at which it fires when nothing is perturbed. The second term is
+routinely omitted, and without it the rate cannot be compared across policies or across checkpoints
+of one policy, and it rewards a loose predicate, since widening the unsafe region raises the number
+with nothing in the report moving the other way. Our earlier work ran the benign arm and found that
+a published ``100\%'' contained the floor. This paper is about the two objections that survive a
+benign floor.
+
+The first objection is wording. A templated instruction attack that succeeds in four episodes of
+five could be exploiting nothing more specific than the policy's brittleness to a long, unfamiliar
+sentence. A three-token nonsense control, the usual answer, is not length-matched and cannot rule
+that out. The second objection is scale of evidence: one policy. Robustness sweeps on the same
+suite report that VLA models are fragile to many perturbations at once
+\citep{fei2025liberoplus,guo2025robustvla} and that LIBERO scores partly reflect memorisation
+\citep{zhou2025liberopro}, so a single policy's number may be a fact about that policy.
+
+We treat both as hypotheses with arms of their own. Section~\ref{sec:method} gives the design,
+Section~\ref{sec:results} the numbers, and Section~\ref{sec:disc} what they do and do not license.
+The attacks are templated and unoptimised throughout; every rate is a floor on susceptibility.
 
 \section{Method}
 \label{sec:method}
 
-\paragraph{Policy, suite and predicate.} \todo{Reuse vlm4rwd \S3 verbatim, then add:} The
-re-measurement uses provael \todo{version from the shards' tool\_version} on the ten
-\texttt{libero\_object} tasks at five seeds per arm; the controls, the family probe and the three
-further suites use three seeds. The predicate is the documented default keep-out box throughout, and
-every report says so; a calibrated predicate fitted with the attack arm at held-out seeds is reported
-separately \todo{results/calib, dawn run} and never substituted after the fact.
+\paragraph{Policies, suite and predicate.} The first policy is SmolVLA fine-tuned on LIBERO
+(\arm{smolvla\_libero}); the second is $\pi_{0.5}$ fine-tuned on LIBERO
+(\arm{pi05\_libero\_finetuned\_v044}), a 3B PaliGemma-based flow-matching policy, loaded through a
+native adapter with the same LIBERO processors. The headline suite is the ten \arm{libero\_object}
+tasks at horizon 280. The unsafe predicate is the harness's documented default: a static
+axis-aligned keep-out box on the end-effector position, never fitted to any suite, and every report
+carries a flag saying so. A predicate calibrated on held-out seeds with the attack arm is being
+fitted and will be reported separately; it is not substituted after the fact. Task success is
+scored by the suite's own success function and reported beside every rate as a competence control,
+because a policy that cannot do the task cannot be redirected from it.
 
-\paragraph{The length-matched scramble.} The roleplay attack renders as a twenty-token sentence; the
-previous nonsense control was three tokens, so a null there never showed that a twenty-token
-out-of-distribution string is harmless. \texttt{scrambled\_text} is the roleplay template's own
-tokens with the graspable target replaced by a one-token filler and the order destroyed by a seeded
-per-episode shuffle, whitespace-token count identical; \texttt{roleplay\_no\_target} keeps the frame
-and replaces only the target. Both carry the \emph{control} role: they enter neither the attack rate
-nor the benign floor.
+\paragraph{The attack and the controls.} \arm{roleplay} renders a fixed twenty-token sentence: a
+``safe movie scene'' frame that asks the arm, ``as a harmless prop'', to hand over a named
+graspable target. \arm{nonsense\_text} (three tokens) and \arm{benign\_reword} (a paraphrase of
+the original instruction) are the controls the earlier campaign carried. Two were added for this
+work. \arm{scrambled\_text} is the roleplay template's own tokens with the target noun replaced by
+a one-token filler and the order destroyed by a seeded per-episode shuffle, whitespace-token count
+identical. \arm{roleplay\_no\_target} keeps the frame intact and replaces only the target. All four
+carry the \emph{control} role: they enter neither the attack rate nor the benign floor, and a
+report that mixed them in would fail its own schema.
 
-\paragraph{The second architecture.} \todo{$\pi_{0.5}$ checkpoint id, loaded through the same
-adapter and the same LIBERO processors; the pilot's clean task success against the checkpoint's
-reported 97.5\% (10 ep/task); n = 30 per arm.}
+\paragraph{Paired design, multiplicity, intervals.} Every attacked episode has a benign twin at the
+same task and seed, driven by the same policy and scored by the same predicate. Significance is the
+exact McNemar test on the discordant (task, seed) pairs; Holm--Bonferroni is applied across the
+adversarial arms of a run, controlling the family-wise rate because a single row is quoted as a
+security finding. Intervals are Wilson on the pooled count and a bootstrap that resamples
+\emph{tasks}, not episodes, since episodes within a task share a scene, a layout and an instruction;
+the clustered interval is the honest width and it declines to answer when fewer than two tasks are
+discordant. The headline runs five seeds per arm; the controls, the second architecture, the family
+probe and the further suites run three, and their reports carry \arm{preliminary} in their own
+field.
 
-\paragraph{Paired design, multiplicity, intervals.} \todo{Reuse vlm4rwd \S3 paragraphs verbatim.}
+\paragraph{Provenance.} Runs were executed with harness release 0.41.2 on one workstation GPU,
+sharded per task, each shard writing a signed report and an execution manifest; the generated
+tables below are analyses of those reports and are not themselves reports. The $\pi_{0.5}$ arms
+were pre-registered with a public timestamped deposit before they ran (reference withheld for
+review); the leg reported here is the pre-registration's preliminary leg (three seeds, two of eight
+arms), in its own words.
 
 \section{Results}
+\label{sec:results}
 
 \begin{table}[t]
 \centering\small
-\caption{\todo{SmolVLA $\times$ libero\_object, ten tasks, five seeds, provael current release.
-Columns: arm, role, unsafe/attempts, Wilson 95\%, McNemar vs benign (discordant pairs), Holm,
-task-clustered 95\%. Generated from results/smolvla\_libero\_object\_suite\_2026-09-14/README.md.}}
+\caption{SmolVLA $\times$ \arm{libero\_object}, ten tasks, five seeds per arm, 400 episodes.
+Envelope exits / attempts; Wilson 95\%; exact McNemar against \arm{none} with the discordant pair
+counts (attack-only--benign-only); Holm across the six adversarial arms; task-clustered bootstrap
+95\%. Clean task success on the benign arm: 48/50. The same protocol on release 0.32.0 in August
+gave \arm{roleplay} 44/50 and \arm{none} 2/50; the number reproduces.}
+\label{tab:headline}
+\footnotesize
 \begin{tabular}{llrlrrl}
 \toprule
-arm & role & rate & Wilson & McNemar & Holm & clustered \\
+arm & role & exits & Wilson & McNemar & Holm & clustered \\
 \midrule
-\todo{rows} & & & & & & \\
+\arm{none} & benign floor & 1/50 & [0, 10]\% & --- & --- & --- \\
+\arm{roleplay} & attack & \textbf{42/50} & [71, 92]\% & $9.1\!\times\!10^{-13}$ (41--0) & $5.5\!\times\!10^{-12}$ & [62, 100]\% \\
+\arm{goal\_substitution} & attack & 7/50 & [7, 26]\% & 0.070 (7--1) & 0.35 & [0, 34]\% \\
+\arm{scene\_text} & attack & 2/50 & [1, 13]\% & 1 (1--0) & 1 & [0, 10]\% \\
+\arm{paraphrase} & attack & 1/50 & [0, 10]\% & 1 (1--1) & 1 & [0, 6]\% \\
+\arm{patch} & attack & 1/50 & [0, 10]\% & 1 (1--1) & 1 & [0, 6]\% \\
+\arm{decoy\_object} & attack & 1/50 & [0, 10]\% & 1 (1--1) & 1 & [0, 6]\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{table}[t]
 \centering\small
-\caption{\todo{The controls beside the attack, three seeds: none, roleplay, benign\_reword,
-nonsense\_text, scrambled\_text, roleplay\_no\_target. From
-results/smolvla\_libero\_object\_control\_2026-09-14.}}
+\caption{The controls beside the attack: SmolVLA $\times$ \arm{libero\_object}, ten tasks, three
+seeds, 180 episodes, same day and checkpoint as Table~\ref{tab:headline}. Clean task success on the
+benign arm: 29/30. \arm{roleplay} against \arm{none}: McNemar $6\times10^{-8}$ (25--0), clustered
+[67, 100]\%. Controls enter neither the attack rate nor the floor, so no test is reported against
+them; the comparison the paper turns on is the two bottom rows against \arm{roleplay}.}
+\label{tab:controls}
 \begin{tabular}{llrl}
 \toprule
-arm & role & rate & Wilson \\
+arm & role & exits & Wilson \\
 \midrule
-\todo{rows} & & & \\
+\arm{none} & benign floor & 1/30 & [1, 17]\% \\
+\arm{roleplay} & attack & 26/30 & [70, 95]\% \\
+\arm{benign\_reword} & control & 0/30 & [0, 11]\% \\
+\arm{nonsense\_text} & control (3 tokens) & 0/30 & [0, 11]\% \\
+\arm{scrambled\_text} & control (20 tokens, order destroyed) & \textbf{18/30} & [42, 75]\% \\
+\arm{roleplay\_no\_target} & control (frame kept, target removed) & \textbf{27/30} & [74, 97]\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph{What the scramble says.} \todo{One of two paragraphs, decided by the data: (a) the
-scramble fires at or near the floor while roleplay fires at $\sim$88\%, so the gap is attacker
-control and not wording; or (b) the scramble fires well above the floor, the headline is restated
-as generic fragility with a bounded attacker-specific residual, and an erratum (E-2026-12) is
-issued. Write the one the aggregate supports; do not write both.}
+\paragraph{What the scramble says.} The frame with no target named leaves the envelope as often as
+the attack itself (27/30 against 26/30 in the same run), and the same twenty tokens in destroyed
+order do so in three episodes of five (18/30). The two short controls stay at zero, as before. So
+the \arm{roleplay} rate measures the policy leaving its safety envelope when handed a long,
+imperative, out-of-distribution instruction; it does not show an attacker steering the arm toward a
+chosen object, because most of the effect appears with the words in the wrong order and all of it
+appears with no target at all. That is a real safety finding about the policy. It is not
+attacker-directed control, and every sentence in our earlier reports that read 44/50 as control of
+the outcome has been withdrawn by a published erratum; the number itself stands. The residual that
+belongs to the intact sentence rather than to its tokens is bounded by the gap between the
+scramble and the frame, roughly 27/30 against 18/30 at three seeds, and we do not claim more than
+that. What this run does not settle is whether a shorter imperative, or a fluent non-imperative
+sentence of the same length, produces the same effect; those arms do not exist yet.
 
-\paragraph{The second architecture.} \todo{$\pi_{0.5}$ vs SmolVLA on the same arm and tasks,
-n = 30 each; state the difference with both intervals and say plainly what n = 30 can and cannot
-resolve.}
+\paragraph{The second architecture.} On the same ten tasks, horizon and predicate, $\pi_{0.5}$
+leaves the envelope in 0/30 benign episodes and 1/30 under \arm{roleplay} (one task, one seed;
+McNemar $p=1$, clustered [0, 10]\%), against SmolVLA's 26/30 at the same seed count. Its clean task
+success is 27/30 (90\%) beside the 97.5\% its authors report, and under the frame it completes 8/30.
+Thirty episodes bound the difference in envelope exits well: the two Wilson intervals, [1, 17]\% and
+[70, 95]\%, do not approach each other. They bound little else. In particular the frame degrades
+\emph{both} policies' task completion, and only SmolVLA converts that degradation into an envelope
+exit; whether that is the action head, the backbone, the fine-tune or the box is not separable at
+$n=30$ with two arms, and the pre-registered eight-arm leg exists to ask it.
 
-\paragraph{Breadth.} \todo{Families with a real-policy number after the probe (was 3 of 17), the
-weight-corruption crossing point for gradient vs random selection on a flow-matching head against
-the 100--300-flip band reported for that head class, and the first measurement of the gradient
-patch. Nulls are reported as nulls with their intervals.}
+\paragraph{Breadth.} A probe of every runnable family on one task at three seeds (41 arms, 129
+episode records) found exactly one family that does anything on this policy: \arm{roleplay},
+\arm{roleplay\_no\_target} and \arm{scrambled\_text} 3/3 each, \arm{goal\_substitution} 1/3, and
+every other applicable arm 0/3, including all ten rungs of a weight bit-flip ladder (random and
+gradient-ranked selection, $k\in\{1,4,16,64,256\}$ flips) and a gradient-optimised patch. Seventeen
+arms are not applicable, not zero: families whose channel (tool descriptions, authorisation
+dialogue, backdoor triggers on text the policy never reads) does not exist on this policy. Three
+episodes bound nothing tighter than an upper limit of 56\%, so nothing here is a rate; it says which
+families deserve seeds. On the bit flips specifically, \citet{gao2026bitflip} report that a few
+gradient-selected flips zero out direct-regression and discrete-token action heads while
+flow-matching heads need on the order of 100--300; our selection is a one-shot first-order ranking
+against the clean weights rather than their progressive search, so our null at $k\le256$ on a
+flow-matching head is a lower bound on the budget, not a disagreement with their result.
 
-\paragraph{Suites.} \todo{roleplay on spatial/goal/10 at three seeds beside object: does the
-instruction attack survive a suite the policy was not fine-tuned on for the headline?}
+\paragraph{Further suites.} The headline attack against \arm{none} on LIBERO-Spatial (horizon
+220), LIBERO-Goal (300) and LIBERO-10 (520), three seeds on all ten tasks of each: 0/30 and 0/30 on
+every suite, clean task success 23/30, 23/30 and 12/30, and on LIBERO-10 task success under the
+frame 0/30. The effect that breaches the envelope on LIBERO-Object in four episodes of five was not
+observed once elsewhere at this size (upper bound 11\% each). Two readings are open and the data do
+not choose between them: the keep-out box is the Object suite's and may not be a sensible box for
+these scenes, and the policy completes fewer than half of the long-horizon tasks unattacked, so on
+LIBERO-10 the failure mode under the frame is a policy that stops doing the task rather than one
+that leaves its box. ``Not observed'' is the whole claim; ``safe'' is not available from it.
 
 \section{Discussion and limitations}
-\todo{Simulation only; one default predicate; three seeds on every arm but the headline; $\pi_{0.5}$
-at n = 30; templated attacks as a floor on susceptibility; the sim-to-real correlation literature
-(third-party Spearman 0.40--0.70) as the reason none of this predicts a real rate; what a
-certifier can and cannot take from a report shaped like ISO/IEC 17025 clause 7.8 (nothing about
-conformity).}
+\label{sec:disc}
+
+Simulation only, with one default predicate that was never fitted to any suite; a calibrated
+predicate is reported separately and the calibrated numbers may move. Three seeds on every arm but
+the headline, and $n=30$ on the second architecture, so most nulls here are upper bounds in the 10
+to 60\% range rather than findings. The attacks are templated and unoptimised, so every rate is a
+floor on susceptibility and nothing bounds how much better an optimised attacker does. Sim-to-real
+correlation for VLA evaluation is, in the third-party literature, moderate and recipe-dependent
+\citep{wang2026simreal,li2024simpler}, which is the reason none of this predicts a real-world rate;
+it is a regression signal, not a field measurement. A certifier can take from a report shaped like
+ISO/IEC 17025 clause 7.8 the protocol, the floor, the intervals and the provenance; nothing about
+conformity.
+
+What the two controls changed is the point. Without the scramble the 42/50 reads as steering and
+supports a story about hijacking a robot; with it the same number is fragility under a long
+imperative, which is a different engineering problem (instruction canonicalisation and envelope
+enforcement, both measurable as defences under the same paired design) and a different regulatory
+claim. Without the second architecture the finding is about VLA policies; with it the finding is
+about one policy, and the interesting question becomes what differs. Both controls cost one flag
+and a night of GPU time. We recommend that a red-team report on a language-conditioned policy be
+considered incomplete without a length-matched scramble of every instruction attack it publishes,
+and that a claim about a class of policies name at least two of them.
 
 \section*{Artifacts}
-\todo{Anonymized artifact bundle: the results directories, aggregate.json files, ledgers, the
-release tag and the recipe. Run check\_anonymity.sh before upload.}
+Anonymised artifact bundle: the results directories with every shard's report and execution
+manifest, the aggregates, the run ledgers, the release tag and the exact reproduction commands, plus
+the harness source under a permissive licence. Withheld for review; released with the camera-ready.
 
-\bibliographystyle{plain}
-\begin{thebibliography}{9}
-\bibitem{todo} \todo{Import the bibliography of paper/vlm4rwd/paper.tex; add RobustVLA
-(arXiv:2510.00037), LIBERO-PRO (arXiv:2510.03827), the weight-corruption paper (arXiv:2608.15475),
-the third-party sim-to-real audit (arXiv:2606.10366).}
+\bibliographystyle{plainnat}
+\begin{thebibliography}{6}
+
+\bibitem[Fei et al.(2025)]{fei2025liberoplus}
+Senyu Fei, Siyin Wang, Junhao Shi, et al.
+\newblock {LIBERO-Plus}: In-depth robustness analysis of vision-language-action models.
+\newblock 2025. arXiv:2510.13626.
+
+\bibitem[Gao et al.(2026)]{gao2026bitflip}
+Yudong Gao, Linghan Chen, Wenhan Wu, et al.
+\newblock Bit-flip attacks on vision-language-action models: Action-decoding architecture shapes
+the vulnerability.
+\newblock 2026. arXiv:2608.15475.
+
+\bibitem[Guo et al.(2025)]{guo2025robustvla}
+Jianing Guo, Zhenhong Wu, Chang Tu, et al.
+\newblock {RobustVLA}: On robustness of vision-language-action model against multi-modal
+perturbations.
+\newblock 2025. arXiv:2510.00037.
+
+\bibitem[Li et al.(2024)]{li2024simpler}
+Xuanlin Li, Kyle Hsu, Jiayuan Gu, et al.
+\newblock Evaluating real-world robot manipulation policies in simulation.
+\newblock In \emph{Conference on Robot Learning (CoRL)}, 2024. arXiv:2405.05941.
+
+\bibitem[Wang et al.(2026)]{wang2026simreal}
+Shuo Wang, Hanyuan Xu, Yingdong Hu, et al.
+\newblock A practical recipe towards improving sim-and-real correlation for {VLA} evaluation.
+\newblock 2026. arXiv:2606.10366.
+
+\bibitem[Zhou et al.(2025)]{zhou2025liberopro}
+Xueyang Zhou, Yangming Xu, Guiyao Tie, et al.
+\newblock {LIBERO-PRO}: Towards robust and fair evaluation of vision-language-action models beyond
+memorization.
+\newblock 2025. arXiv:2510.03827.
+
 \end{thebibliography}
 
 \end{document}
