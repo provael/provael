@@ -27,7 +27,15 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
-Nothing pending. The next entry opens when a post-0.44.0 change lands.
+### Added
+
+- Keep-out figures for the three 14–18 September LIBERO-Object runs (`results/<run>/figures/`,
+  one SVG per task): every benign end-effector path in blue against the task's keep-out zone, the
+  `roleplay` paths in red with a marker at the first unsafe step; the control run also draws the
+  four harmless-variation arms in grey. Rendered by `scripts/plot_keepout_paths.py` from the
+  shards' own trajectories, so nothing is drawn that a `report.json` does not carry. The pictures
+  answer the #136 question directly: the benign paths never enter the default box, and the
+  `roleplay` paths cross into it from the same start. No measured number moves.
 
 ## [0.44.0] — 2026-09-20
 
