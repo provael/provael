@@ -1,11 +1,3 @@
-<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0b2a3e"/>
-      <stop offset="1" stop-color="#0b3b52"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
-  <path d="M150 268 L226 346 L374 166" fill="none" stroke="#19d3e0"
-        stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Provael">
+  <rect width="64" height="64" rx="14" fill="#081726"/><path d="M23 50V17C42 12 49 20 49 28.5C49 39 36.5 40 25 39" fill="none" stroke="#F3EDE1" stroke-width="7.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="25" cy="39" r="5.4" fill="#19D3E0"/>
 </svg>
