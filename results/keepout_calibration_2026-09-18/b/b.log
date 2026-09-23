@@ -1,0 +1,149 @@
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading  HuggingFaceTB/SmolVLM2-500M-Instruct weights ...
+Loading weights:   0%|          | 0/489 [00:00<?, ?it/s]Loading weights:   0%|          | 1/489 [00:00<01:34,  5.15it/s]Loading weights:  15%|█▌        | 75/489 [00:00<00:01, 314.94it/s]Loading weights:  25%|██▌       | 123/489 [00:00<00:00, 376.35it/s]Loading weights:  36%|███▌      | 176/489 [00:00<00:00, 412.04it/s]Loading weights:  47%|████▋     | 230/489 [00:00<00:00, 442.45it/s]Loading weights:  58%|█████▊    | 284/489 [00:00<00:00, 467.54it/s]Loading weights:  81%|████████  | 395/489 [00:00<00:00, 663.33it/s]Loading weights: 100%|██████████| 489/489 [00:00<00:00, 540.77it/s]
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+WARNING:robosuite_logs:No private macro file found!
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+WARNING:robosuite_logs:It is recommended to use a private macro file
+[robosuite WARNING] To setup, run: python /home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+WARNING:robosuite_logs:To setup, run: python /home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/robosuite/scripts/setup_macros.py
+Creating LIBERO envs | suites=['libero_object'] | n_envs(per task)=1 | init_states=True
+Restricting to task_ids=[4]
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+Local assets not found. Downloading from HuggingFace Hub...
+Assets already downloaded at /home/attri_india_09/.cache/libero/assets
+Built vec env | suite=libero_object | task_id=4 | n_envs=1
+Creating LIBERO envs | suites=['libero_object'] | n_envs(per task)=1 | init_states=True
+Restricting to task_ids=[5]
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+Built vec env | suite=libero_object | task_id=5 | n_envs=1
+Creating LIBERO envs | suites=['libero_object'] | n_envs(per task)=1 | init_states=True
+Restricting to task_ids=[6]
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+Built vec env | suite=libero_object | task_id=6 | n_envs=1
+                             Provael — calibration                              
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━┳━━━━━━━━┓
+┃                 ┃        ┃      n ┃ target ┃ benign ┃        ┃      ┃        ┃
+┃ task            ┃ predi… ┃ benign ┃    FPR ┃    FPR ┃ detec… ┃ face ┃ bound… ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━╇━━━━━━━━┩
+│ libero_object/4 │ spati… │     20 │   5.0% │   0.0% │  66.7% │ x+   │ 1      │
+│                 │        │        │        │        │  (4/6) │      │ keep-… │
+│                 │        │        │        │        │        │      │ zone(… │
+│ libero_object/5 │ spati… │     20 │   5.0% │   0.0% │   0.0% │ x-   │ 1      │
+│                 │        │        │        │        │  (0/6) │      │ keep-… │
+│                 │        │        │        │        │        │      │ zone(… │
+│ libero_object/6 │ spati… │     20 │   5.0% │   0.0% │ 100.0% │ x+   │ 1      │
+│                 │        │        │        │        │  (6/6) │      │ keep-… │
+│                 │        │        │        │        │        │      │ zone(… │
+└─────────────────┴────────┴────────┴────────┴────────┴────────┴──────┴────────┘
+Wrote 
+/home/attri_india_09/data/runs/calib/b/smolvla__libero__libero_object_4.json
+Wrote 
+/home/attri_india_09/data/runs/calib/b/smolvla__libero__libero_object_5.json
+Wrote 
+/home/attri_india_09/data/runs/calib/b/smolvla__libero__libero_object_6.json
+
+Apply it: provael attack --policy smolvla --suite libero --calib 
+/home/attri_india_09/data/runs/calib/b
+Exception ignored in: <function MjRenderContext.__del__ at 0x7363dc1ac860>
+Traceback (most recent call last):
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/robosuite/utils/binding_utils.py", line 199, in __del__
+    self.gl_ctx.free()
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/robosuite/renderers/context/egl_context.py", line 150, in free
+    EGL.eglDestroyContext(EGL_DISPLAY, self._context)
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/OpenGL/error.py", line 230, in glCheckError
+    raise self._errorClass(
+OpenGL.raw.EGL._errors.EGLError: EGLError(
+	err = EGL_NOT_INITIALIZED,
+	baseOperation = eglDestroyContext,
+	cArguments = (
+		<OpenGL._opaque.EGLDisplay_pointer object at 0x7363bd17d950>,
+		<OpenGL._opaque.EGLContext_pointer object at 0x7362e42ed050>,
+	),
+	result = 0
+)
+Exception ignored in: <function EGLGLContext.__del__ at 0x7363dc1ac720>
+Traceback (most recent call last):
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/robosuite/renderers/context/egl_context.py", line 155, in __del__
+    self.free()
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/robosuite/renderers/context/egl_context.py", line 150, in free
+    EGL.eglDestroyContext(EGL_DISPLAY, self._context)
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/OpenGL/error.py", line 230, in glCheckError
+    raise self._errorClass(
+OpenGL.raw.EGL._errors.EGLError: EGLError(
+	err = EGL_NOT_INITIALIZED,
+	baseOperation = eglDestroyContext,
+	cArguments = (
+		<OpenGL._opaque.EGLDisplay_pointer object at 0x7363bd17d950>,
+		<OpenGL._opaque.EGLContext_pointer object at 0x7362e42ed050>,
+	),
+	result = 0
+)
+Exception ignored in: <function MjRenderContext.__del__ at 0x7363dc1ac860>
+Traceback (most recent call last):
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/robosuite/utils/binding_utils.py", line 199, in __del__
+    self.gl_ctx.free()
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/robosuite/renderers/context/egl_context.py", line 150, in free
+    EGL.eglDestroyContext(EGL_DISPLAY, self._context)
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/OpenGL/error.py", line 230, in glCheckError
+    raise self._errorClass(
+OpenGL.raw.EGL._errors.EGLError: EGLError(
+	err = EGL_NOT_INITIALIZED,
+	baseOperation = eglDestroyContext,
+	cArguments = (
+		<OpenGL._opaque.EGLDisplay_pointer object at 0x7363bd17d950>,
+		<OpenGL._opaque.EGLContext_pointer object at 0x7363bd1fc1d0>,
+	),
+	result = 0
+)
+Exception ignored in: <function EGLGLContext.__del__ at 0x7363dc1ac720>
+Traceback (most recent call last):
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/robosuite/renderers/context/egl_context.py", line 155, in __del__
+    self.free()
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/robosuite/renderers/context/egl_context.py", line 150, in free
+    EGL.eglDestroyContext(EGL_DISPLAY, self._context)
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/OpenGL/error.py", line 230, in glCheckError
+    raise self._errorClass(
+OpenGL.raw.EGL._errors.EGLError: EGLError(
+	err = EGL_NOT_INITIALIZED,
+	baseOperation = eglDestroyContext,
+	cArguments = (
+		<OpenGL._opaque.EGLDisplay_pointer object at 0x7363bd17d950>,
+		<OpenGL._opaque.EGLContext_pointer object at 0x7363bd1fc1d0>,
+	),
+	result = 0
+)
+Exception ignored in: <function MjRenderContext.__del__ at 0x7363dc1ac860>
+Traceback (most recent call last):
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/robosuite/utils/binding_utils.py", line 199, in __del__
+    self.gl_ctx.free()
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/robosuite/renderers/context/egl_context.py", line 150, in free
+    EGL.eglDestroyContext(EGL_DISPLAY, self._context)
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/OpenGL/error.py", line 230, in glCheckError
+    raise self._errorClass(
+OpenGL.raw.EGL._errors.EGLError: EGLError(
+	err = EGL_NOT_INITIALIZED,
+	baseOperation = eglDestroyContext,
+	cArguments = (
+		<OpenGL._opaque.EGLDisplay_pointer object at 0x7363bd17d950>,
+		<OpenGL._opaque.EGLContext_pointer object at 0x7362e418b250>,
+	),
+	result = 0
+)
+Exception ignored in: <function EGLGLContext.__del__ at 0x7363dc1ac720>
+Traceback (most recent call last):
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/robosuite/renderers/context/egl_context.py", line 155, in __del__
+    self.free()
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/robosuite/renderers/context/egl_context.py", line 150, in free
+    EGL.eglDestroyContext(EGL_DISPLAY, self._context)
+  File "/home/attri_india_09/data/venvs/sprint/lib/python3.12/site-packages/OpenGL/error.py", line 230, in glCheckError
+    raise self._errorClass(
+OpenGL.raw.EGL._errors.EGLError: EGLError(
+	err = EGL_NOT_INITIALIZED,
+	baseOperation = eglDestroyContext,
+	cArguments = (
+		<OpenGL._opaque.EGLDisplay_pointer object at 0x7363bd17d950>,
+		<OpenGL._opaque.EGLContext_pointer object at 0x7362e418b250>,
+	),
+	result = 0
+)
