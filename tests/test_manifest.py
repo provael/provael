@@ -87,7 +87,10 @@ def test_defense_counts_say_study_and_real_policy_apart() -> None:
     """Two shipped defenses carry a study; both studies ran on the stub fixture."""
     reg = _manifest(load_report(_REAL))["registry"]
     assert reg["defenses_total"] == 2 and reg["defenses_with_study"] == 2
-    assert reg["defenses_measured_real_policy"] == 0  # until a real-policy defended arm lands
+    # Two landed on 18 September 2026 (canonicalization, envelope) — see results/. The split this
+    # assertion guards is unchanged: a defense with a STUDY behind it is a different claim from
+    # one measured on a real policy, and both numbers stay in the manifest side by side.
+    assert reg["defenses_measured_real_policy"] == 2
     assert "defenses_measured" not in reg  # the ambiguous key is gone
 
 

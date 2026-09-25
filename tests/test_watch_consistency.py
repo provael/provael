@@ -35,7 +35,12 @@ def test_registry_json_is_the_coverage_counter_output() -> None:
     assert on_disk["adversarialFamilies"] == cov.adversarial_families == 17
     assert on_disk["adversarialAttacks"] == cov.adversarial_attacks == 39
     assert on_disk["realPolicyNames"] == ["pi05", "smolvla"]
-    assert on_disk["realPolicyDefenses"] == 0  # no real-policy defended arm committed yet
+    # Two since 18 September 2026: instruction_canonicalization and action_envelope, both on
+    # SmolVLA over the ten libero_object tasks. The counter counts arms that RAN, not arms that
+    # mean anything — the envelope run scored 0/30 with a competence control of 0/30, and its
+    # NOTES.md says so. A count is not a verdict, and this assertion is not one either.
+    assert on_disk["realPolicyDefenses"] == 2
+    assert on_disk["realPolicyDefenseNames"] == ["action_envelope", "instruction_canonicalization"]
 
 
 def test_the_ledger_has_one_row_per_committed_manifest_and_carries_the_new_facts() -> None:

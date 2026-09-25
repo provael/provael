@@ -224,7 +224,7 @@
     "attacks_baseline": 1,
     "attacks_control": 4,
     "attacks_total": 44,
-    "defenses_measured_real_policy": 0,
+    "defenses_measured_real_policy": 2,
     "defenses_total": 2,
     "defenses_with_study": 2,
     "families_adversarial": 17,

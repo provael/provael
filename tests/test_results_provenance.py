@@ -51,6 +51,12 @@ KNOWN_GAPS: dict[str, tuple[str, ...]] = {
     "smolvla_libero_object_clip_2026-09-14": ("dep_lock_digest", "precision", "repository"),
     "smolvla_libero_object_control": ("commit", "dep_lock_digest", "precision", "repository"),
     "smolvla_libero_object_control_2026-09-14": ("dep_lock_digest", "precision", "repository"),
+    "smolvla_libero_object_defense_canonicalization_2026-09-18": (
+        "dep_lock_digest", "precision", "repository",
+    ),
+    "smolvla_libero_object_defense_envelope_2026-09-18": (
+        "dep_lock_digest", "precision", "repository",
+    ),
     "smolvla_libero_object_families_2026-09-14": ("dep_lock_digest", "precision", "repository"),
     "smolvla_libero_object_suite": ("commit", "dep_lock_digest", "precision", "repository"),
     "smolvla_libero_object_suite_2026-09-14": ("commit", "dep_lock_digest", "precision", "repository"),
