@@ -113,6 +113,15 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ### Fixed
 
+- **`list-suites` called Meta-World ready on `lerobot` alone, and "horizon 280" had no stated
+  source.** Why: Meta-World is a separate lerobot extra that `provael[lerobot]` does not bring in,
+  so a box with the extra was told the suite was ready and failed inside LeRobot's env factory;
+  both readiness checks now require the `metaworld` module too, and the module docstring agrees
+  with its own install hint. `suites.libero.LIBERO_HORIZON` records OpenVLA's per-suite evaluation
+  budgets (220 / 280 / 300 / 520, each just above the suite's longest training demonstration),
+  which every committed LIBERO run already used; the `eai04-redirect` recipe and the local sweep
+  read it, the sweep no longer runs libero_spatial at object's 280 by default, and
+  `tests/test_libero_horizon.py` holds committed runs to it. No measured number moves.
 - **Four published docs claims the repository no longer supports.** Why: each was found stale in
   the 26 September re-verification of `AUDIT_BACKLOG.md` and `ISSUE_REGISTER.md`. `docs/faq.md`
   and the instruction-transfer finding quoted Predictive Red Teaming as "MAE < 0.19" without the

@@ -7,8 +7,9 @@ Meta-World (MT/ML, Gymnasium) is a classic multi-task manipulation benchmark tha
 Provael's spatial keep-out predicate applies directly, the same way it does on LIBERO.
 
 GATING / HONESTY: like :mod:`provael.suites.libero`, this module imports **no** optional
-dependency at module scope. The simulator is reached through LeRobot's env factory (which ships a
-Meta-World env), guarded behind the ``[lerobot]`` extra.
+dependency at module scope. The simulator is reached through LeRobot's env factory, which needs
+LeRobot's SEPARATE ``metaworld`` extra (``lerobot[metaworld]``); ``provael[lerobot]`` pins
+``lerobot[smolvla,libero]`` and does not bring it in.
 
 This adapter's **predicate logic is unit-tested on CPU** (the keep-out zone on the end-effector
 position — see :class:`~provael.suites.keepout_zones.KeepOutZone`). The **simulator wiring**
@@ -21,7 +22,7 @@ mismatch it fails loudly at integration time, never silently.
 
 Enable the real path::
 
-    pip install 'provael[lerobot]'        # provides LeRobot's Meta-World env
+    pip install 'provael[lerobot]' 'lerobot[metaworld]'   # Meta-World is a separate lerobot extra
     PROVAEL_INTEGRATION=1 provael attack --policy <vla> --suite metaworld ...
 """
 
@@ -100,8 +101,13 @@ class MetaworldSuiteAdapter(SuiteAdapter):
 
     @staticmethod
     def lerobot_available() -> bool:
-        """True if ``lerobot`` is importable without importing it."""
-        return importlib.util.find_spec("lerobot") is not None
+        """True if ``lerobot`` AND ``metaworld`` are importable, without importing either.
+
+        ``lerobot`` alone is not enough: Meta-World is a separate lerobot extra, and until
+        26 September 2026 this checked only ``lerobot``, so a box with ``provael[lerobot]`` was
+        told the suite was ready and failed later, inside the env factory.
+        """
+        return all(importlib.util.find_spec(m) is not None for m in ("lerobot", "metaworld"))
 
     def _ensure_lerobot(self) -> None:
         if not self.lerobot_available():

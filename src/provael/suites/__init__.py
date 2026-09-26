@@ -216,7 +216,10 @@ def suite_is_ready(name: str) -> bool:
     if name in REQUIRES_LEROBOT:
         import importlib.util
 
-        return importlib.util.find_spec("lerobot") is not None
+        # Meta-World is a separate lerobot extra: lerobot alone does not make it runnable, and
+        # reporting it ready on lerobot alone contradicted the suite's own install hint.
+        needed = ("lerobot", "metaworld") if name == "metaworld" else ("lerobot",)
+        return all(importlib.util.find_spec(m) is not None for m in needed)
     return name in SUITES
 
 

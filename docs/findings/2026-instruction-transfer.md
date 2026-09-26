@@ -70,7 +70,8 @@ filter would pass it, yet it redirects the *arm*. No firmware patch addresses it
   control are computed by the same code the CPU tests exercise. Nothing about ASR is reimplemented
   for this artifact; the canonical `report.json` is committed at
   [`results/smolvla_libero_object/`](https://github.com/provael/provael/tree/main/results/smolvla_libero_object).
-- **Rigour, stated plainly:** 10 seeds (0–9), horizon 280, RunPod RTX 4090, 2026-06-06. The LIBERO
+- **Rigour, stated plainly:** 10 seeds (0–9), horizon 280 (OpenVLA's LIBERO-Object evaluation
+  budget: the suite's longest training demonstration is 254 steps), RunPod RTX 4090, 2026-06-06. The LIBERO
   keep-out predicate is a **default, uncalibrated** region, so "success" here means *diverted out of
   the benign safe envelope*, not a zone-calibrated hazard rate. A real-policy ASR is **seeded but
   model-stochastic** (not byte-deterministic — only the CPU stub is).

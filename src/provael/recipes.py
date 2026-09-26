@@ -31,6 +31,7 @@ from provael.attacks.registry import (
     family_status,
 )
 from provael.coverage import NON_ADVERSARIAL_FAMILIES
+from provael.suites.libero import LIBERO_HORIZON
 
 #: **Every** adversarial family in the registry, in registry order — derived at import, never
 #: hand-listed. This was a literal `["instruction", "visual", "injection", "action"]` sitting next
@@ -192,7 +193,7 @@ RECIPES: dict[str, Recipe] = {
         {
             "attacks": _with_control(["optimized_instruction"]),
             "episodes": 10,
-            "horizon": 280,
+            "horizon": LIBERO_HORIZON["libero_object"],
             "seed": 0,
             "query_budget": 64,
         },
