@@ -3087,7 +3087,9 @@ pre-deployment signal for real-robot brittleness — is not ours to assert; it i
 literature this build leans on:</p>
 <ul>
 <li><strong>Predictive Red Teaming</strong> (Majumdar et al., 2025) degrades a policy's <em>inputs</em> in sim / on edited
-  images and shows the predicted failure distribution tracks real-robot failures (MAE &lt; 0.19).
+  images and shows the predicted per-factor success tracks real-robot success ("less than 0.19
+  average difference between predicted and real success rates"). The result is on visuomotor
+  diffusion policies, not VLAs; see <a href="../../sim-predicts-real/">Sim predicts real</a>.
   <a href="https://arxiv.org/abs/2502.06575">arXiv:2502.06575</a></li>
 <li><strong>SimplerEnv</strong> (Li et al., CoRL 2024) shows simulated evaluation of manipulation policies
   correlates strongly with real hardware — the reason VLA papers rank policies in sim at all.

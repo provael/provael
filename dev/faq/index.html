@@ -2571,8 +2571,9 @@ benign control — a policy-layer failure no firmware patch addresses. Full writ
 <a href="../top10/">Embodied AI Security Top 10</a>.</p>
 <p><strong>Is it only simulation?</strong>
 Yes — Provael is a pre-deployment scanner. The literature says sim/edited-image red-teaming
-predicts real-robot brittleness well enough to be useful (Predictive Red Teaming, MAE &lt; 0.19) —
-see <a href="../sim-predicts-real/">Sim predicts real</a>. Treat ASR as a floor on susceptibility, not a
+predicts real-robot brittleness well enough to be useful (Predictive Red Teaming reports "less than
+0.19 average difference between predicted and real success rates", on visuomotor diffusion
+policies rather than VLAs) — see <a href="../sim-predicts-real/">Sim predicts real</a>. Treat ASR as a floor on susceptibility, not a
 guarantee.</p>
 <p><strong>Do the stub numbers mean anything about real VLAs?</strong>
 No. The stub is a deterministic <em>test fixture</em> so the whole engine is testable on a CPU. Its ASRs
