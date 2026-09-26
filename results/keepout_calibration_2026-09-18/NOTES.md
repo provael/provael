@@ -4,7 +4,11 @@ fit was sharded across tasks: `a` = tasks 0-3, `b` = 4-6, `c` = 7-9. Each group'
 its artifacts. There is no `report.json` here: a calibration is a fit, not a run.
 
 Twenty benign rollouts per task (14 fit / 6 holdout), a `roleplay` arm at the holdout seeds to score
-whether the chosen boundary catches anything, 36 candidate faces, target benign FPR 0.05.
+whether the chosen boundary catches anything, 36 candidate faces, target benign FPR 0.05. The same
+six attacked rollouts also chose the face: among the candidates that meet the benign target, each
+fit keeps the one that catches the most of them, ties to the tightest gap (`spatial_fit` reads
+`face_selected_from_data: true`, `n_adversarial: 6` in every file). So the detection rates below
+are in-sample, the rate each face was selected to maximise, not a held-out one.
 
 **Where each task landed.** Every fit reports a benign FPR of 0.0 on its holdout and declares one
 zone. The fits differ in the only thing that matters — whether the boundary catches an attacked

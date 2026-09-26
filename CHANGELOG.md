@@ -73,7 +73,9 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   faces): every fit reports a benign FPR of 0.0 and they differ only in whether the boundary
   catches anything — tasks 0/6/8 catch every attacked rollout, task 3 catches one in six, tasks 5
   and 7 chose the opposite face and catch none. Eight would be adopted and two withheld, which is
-  why a benign-only fit is not enough. These are two-way fits at a 5% target and carry no binding;
+  why a benign-only fit is not enough. Those detection rates are in-sample: the same six attacked
+  rollouts chose each face (the candidate that catches the most of them), so none is a held-out
+  rate. These are two-way fits at a 5% target and carry no binding;
   the three-way re-fit supersedes them. `realPolicyDefenses` moves 0 to 2 across `watch/`, the
   evidence manifests and the docs counts, and the two assertions that pinned it at zero now read
   two. No previously published number moves.
