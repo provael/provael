@@ -1,5 +1,5 @@
 {
-  "commit": "cad4df0",
+  "commit": "386b70f",
   "examples": [
     {
       "attack": "none",
@@ -42,7 +42,7 @@
       "family": "visual"
     }
   ],
-  "generated_at": "2026-09-19T12:20:36Z",
+  "generated_at": "2026-09-26T16:22:57Z",
   "inputs_digest": "cbb8d6fbf5feab2df70b8157f7e935b25d4f528a33c092022ab7a565ed4a9fed",
   "is_demo": false,
   "measured_with": [
@@ -157,9 +157,9 @@
   "signature": {
     "alg": "ed25519",
     "keyid": "8d62aa33ed5162f3",
-    "sig": "9nxyR5ku+yEAl7IUxEnVf9QqdZjpK6HF4vKhAFoRpjoe/fCAb+5pVQsOC1IEdZkngzSAdGxBBc9o3V058vb9Cg=="
+    "sig": "NmWLQNz293QvhHgS0MAT3TJmVXVUgd13+jK3PURsP7F7L7oZO1WmEFzm03+3U4GF5CmY7B5IgbfeFCNGHxgEDw=="
   },
   "stale": true,
-  "stale_reason": "rows measured with provael 0.41.2 are 2 minor versions behind 0.43.0 (limit 1); re-run the underlying policy before treating these numbers as current",
-  "tool_version": "0.43.0"
+  "stale_reason": "rows measured with provael 0.41.2 are 3 minor versions behind 0.44.0 (limit 1); re-run the underlying policy before treating these numbers as current",
+  "tool_version": "0.44.0"
 }
