@@ -9,6 +9,16 @@ saying **fourteen** for a whole release, because nothing imports prose and so no
 `tests/test_recipes.py` already asserts that `full-sweep` covers every registry family; what it
 could not see is that the documentation describing that sweep had fallen a family behind.
 
+THE MIRROR OF IT. On 21 September 2026 the prose ran a release *ahead* instead. The day #278 (the
+three-way calibration split) and #279 (the contact / force predicate) merged to `main`, six lines
+in five files — `docs/roadmap.md` twice, `docs/glossary.md`, `docs/quickstart.md`,
+`docs/attestation.md` and the module docstring of `suites/libero.py` — said both had shipped
+"since 0.45" while `__version__` was 0.44.0 and both still sat under `[Unreleased]`. Four of those
+pages publish from `main` to docs.provael.com/dev/. Nothing looked, because every guard here only
+ever asked whether prose had fallen *behind*. `tests/test_roadmap_honesty.py` holds "shipped is not
+called planned"; `test_no_doc_or_docstring_names_an_unreleased_version` below holds "unreleased is
+not called released". They are the two directions of one error, not duplicates — delete neither.
+
 A counted claim is the cheapest thing in this repo to get wrong and one of the more expensive to
 be caught getting wrong: the product's entire pitch is that its numbers are checkable, so a
 reader who counts `provael list-attacks` and gets a different answer from the README has found a
@@ -36,10 +46,12 @@ from __future__ import annotations
 
 import re
 import subprocess
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+from packaging.version import Version
 
 from provael.attacks.baseline import FAMILY as BASELINE_FAMILY
 from provael.attacks.registry import ATTACKS
@@ -595,3 +607,99 @@ def test_the_generated_inventory_lines_are_regenerated() -> None:
         "a generated inventory line is stale. Run `python scripts/gen_doc_counts.py` and commit "
         "the result; do not edit those lines by hand."
     )
+
+
+# --------------------------------------------------------------------------- #
+# the other direction — prose naming a release that does not exist yet
+# --------------------------------------------------------------------------- #
+
+#: Files that may name a version above the current one, exempt by path and each for a reason:
+#:
+#: * ``CHANGELOG.md`` — ``[Unreleased]`` is written ahead of the cut that ships it. A changelog that
+#:   could not name a version above the current one could never be written before its release.
+#: * ``docs/errata.md`` — an erratum quotes the past, including a version as it was wrongly printed.
+_UNRELEASED_EXEMPT = frozenset({"CHANGELOG.md", "docs/errata.md"})
+
+#: A version-introduction phrase: "since 0.45", "the default since 0.45", "as of 0.45",
+#: "(…, in 0.45)", "in release 0.45". ``\s`` rather than a space throughout, because prose is
+#: hard-wrapped and "since\n0.45" is the same claim. Two exclusions came from running the first
+#: draft over the tree; the third is a precaution the fixtures below exercise:
+#:
+#: * ``removed in`` is a deprecation schedule, which names a future release on purpose —
+#:   ``provael certify`` is "removed in 0.46.0". A promise about a release is not a claim it shipped.
+#: * the major is capped at two digits, so an arXiv id ("in 2505.16640") is not read as a version;
+#: * a unit after the number ("in 1.5 s") makes it a measurement.
+_VERSION_INTRO = re.compile(
+    r"(?<!removed\s)\b(?:since|as\s+of|in)\s+(?:(?:version|release)\s+)?v?"
+    r"(\d{1,2}\.\d{1,3}(?:\.\d{1,3})?)(?![\d.]*\d)"
+    r"(?!\s*(?:(?:s|ms|m|mm|cm|N|Hz|rad|deg|x|seconds?|minutes?|hours?)\b|%|°|×))",
+    re.IGNORECASE,
+)
+
+
+def _ahead_of_release(root: Path, rels: Iterable[str], current: str) -> tuple[list[str], int]:
+    """Every phrase in ``rels`` (under ``root``) naming a release after ``current``, and a count.
+
+    Returns ``(offenders as "file:line: 'phrase'", version phrases seen in total)``; the count lets
+    a caller prove the sweep looked at something. Versions are compared as
+    :class:`packaging.version.Version`, never as strings: as text "0.10" sorts before "0.9", and a
+    guard that read 0.10 as older than 0.9 would pass on exactly the day it was needed.
+    """
+    now = Version(current)
+    offenders: list[str] = []
+    seen = 0
+    for rel in rels:
+        if rel in _UNRELEASED_EXEMPT:
+            continue
+        text = (root / rel).read_text(encoding="utf-8")
+        for match in _VERSION_INTRO.finditer(text):
+            seen += 1
+            if Version(match.group(1)) > now:
+                line = text.count("\n", 0, match.start()) + 1
+                offenders.append(f"{rel}:{line}: {' '.join(match.group(0).split())!r}")
+    return offenders, seen
+
+
+def _docs_and_src_modules() -> list[str]:
+    """Every tracked Markdown document, and every module under ``src/`` — docstrings ship in the
+    wheel, so a module that says "since 0.45" publishes it as surely as a docs page does."""
+    rels = [path.relative_to(REPO).as_posix() for path in _tracked_text_files()]
+    return [r for r in rels if r.endswith(".md") or (r.startswith("src/") and r.endswith(".py"))]
+
+
+def test_no_doc_or_docstring_names_an_unreleased_version() -> None:
+    """Unreleased is not called released — the mirror of the universal_patch story in the header."""
+    from provael import __version__
+
+    ahead, seen = _ahead_of_release(REPO, _docs_and_src_modules(), __version__)
+    assert seen, "no version phrase matched anywhere; the pattern must have stopped matching"
+    assert not ahead, (
+        f"prose names a release after {__version__}, which does not exist yet. Say what is true "
+        f'("on main since <date>, not yet in a release") and name the version once it is cut:\n  '
+        + "\n  ".join(ahead)
+    )
+
+
+def test_the_unreleased_guard_fails_on_a_release_that_does_not_exist(tmp_path: Path) -> None:
+    """A guard nobody has seen fail is not a guard: the shape that shipped must go red."""
+    (tmp_path / "doc.md").write_text("the column exists since 0.45 (`ContactRule`)\n", encoding="utf-8")
+    assert _ahead_of_release(tmp_path, ["doc.md"], "0.44.0")[0] == ["doc.md:1: 'since 0.45'"]
+    # Hard-wrapped, and past the point where string comparison gets it backwards.
+    (tmp_path / "wrapped.md").write_text("a fit (the default since\n0.10) scores the eval split\n", encoding="utf-8")
+    assert _ahead_of_release(tmp_path, ["wrapped.md"], "0.9.0")[0] == [
+        "wrapped.md:1: 'since 0.10'"
+    ]
+
+
+def test_the_unreleased_guard_allows_honest_history(tmp_path: Path) -> None:
+    """…and it must not forbid the past, a deprecation schedule, or a number that is no version."""
+    (tmp_path / "doc.md").write_text(
+        "the column exists since 0.44 (`ContactRule`)\n"
+        "`certify` is a deprecated alias (removed in 0.46.0)\n"
+        "as reported in 2505.16640, the force settles in 1.5 s\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "CHANGELOG.md").write_text("## [Unreleased]\n- lands in 0.45\n", encoding="utf-8")
+    ahead, seen = _ahead_of_release(tmp_path, ["doc.md", "CHANGELOG.md"], "0.44.0")
+    assert ahead == []
+    assert seen == 1, "the honest 'since 0.44' must still be SEEN, or this passes by not looking"

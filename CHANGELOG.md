@@ -109,6 +109,14 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   the README wordmark gains a dark-scheme variant. The retired `social_preview.png` (the July
   "100 %" card) is deleted; the repository's social preview is the website's `og.png`.
 
+### Fixed
+
+- **Four docs pages and `suites/libero.py`'s module docstring said the contact column and the
+  three-way calibration split shipped "since 0.45"**; there is no 0.45. Both are on `main` since
+  21 September 2026 (#278, #279) and in no release yet, and all six lines now say so.
+  `tests/test_counted_claims.py` fails on any tracked doc or `src/` docstring that names a release
+  after `provael.__version__` — the mirror of the checks that catch prose falling a release behind.
+
 ## [0.44.0] — 2026-09-20
 
 The hygiene-and-scope release: the 19 September repository backlog (sections 1, 3, 4 and 5 —
