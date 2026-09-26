@@ -21,8 +21,8 @@ own E-2026-05 on 3 September 2026 for a stale attack-family count (16 → 17 fam
 attacks) three days before this document minted E-2026-05 for the ISO 10218 correction; neither
 side saw the other, and the previous version of this note wrongly said the two files agreed
 entry-for-entry. The website keeps the ID it published under; the same correction is recorded
-below as **E-2026-09**, so that every correction has an entry in the maintained source. The next
-free ID is **E-2026-14**.
+below as **E-2026-09**, so that every correction has an entry in the maintained source. E-2026-14
+is held for an entry in preparation; the next free ID is **E-2026-16**.
 
 ---
 
@@ -756,6 +756,35 @@ count is stated without the family count of its own convention. The same sweep c
 more machine-readable surfaces without an erratum of their own: `/llms.txt`'s adoption figures now
 derive from the file `/adopters/` renders, `/404` answers 404, and `/pricing`'s JSON-LD no longer
 publishes the design-partner rate as the assessment's base price. The website changelog records them.
+
+## E-2026-15 — www.provael.com printed two publication days its own regulatory clock does not verify, one under a "Verified dates" heading
+
+**Status:** raised and corrected on the website on 26 September 2026 (provael/website #146);
+recorded here so the shared ID space stays entry-for-entry · no measured number moves · no signed
+artifact is affected
+**Date raised:** 26 September 2026
+**Affects:** website surfaces only — `/compliance` and `/compliance/iso-10218` and their Markdown
+twins, `/regulatory-clock` and its twin (visible text, screen-reader link labels and `<time
+datetime>`), `/for/certifiers-insurers`, `/readiness`, `llms-full.txt` and the sample evidence pack.
+Nothing in this repository's artifacts prints either day.
+
+### What was wrong
+
+The site printed ISO 10218-1/-2:2025 as "published 5 February 2025" and ANSI/A3 R15.06-2025 as
+"21 August 2025" on ten built surfaces, one of them on `/compliance.md` under the heading "Verified
+dates". The site's own regulatory clock said otherwise: of ISO 10218, that ISO's catalogue shows the
+month and "the 5 February day is from secondary sources and is not carried as a verified value"; of
+R15.06, that "the 21 August 2025 day remains unverified". The website's fact check was requiring
+the ISO day as a verified regulatory fact, so the one check that read every page held the
+unverified value in place.
+
+### What is correct
+
+Both are printed at the precision the clock verifies: published February 2025, and August 2025.
+The date is read from the clock rather than typed, and the website's build fails if any page
+prints a day the clock doubts, or renders a month-precision date with a day. The clock's recorded
+dates are unchanged; whether a doubted day should stay in its `applicableDate` field is an open
+decision, not part of this correction.
 
 ---
 

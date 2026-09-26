@@ -3,7 +3,8 @@
 # Copyright (c) 2026 Sattyam Jain
 """Regenerate the brand assets under ``docs/assets/`` from the website's mark.
 
-WHY. The website is upstream for the brand, as it is for every public number: its Proof-Path mark
+WHY. The website is upstream for the brand, the one flow that runs that way (this repository is
+upstream for every number and claim the website shows): its Proof-Path mark
 (the letter P drawn as a policy trajectory that resolves into a teal verdict node, never a
 checkmark) is defined once in ``provael-website/scripts/gen-assets.mjs`` and rendered into the
 favicon and every social card there. This repository carried a *different* logo until 21 September
