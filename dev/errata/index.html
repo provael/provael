@@ -3272,6 +3272,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#e-2026-16-three-atlas-mappings-named-something-that-is-not-an-atlas-tactic-in-the-sarif-of-every-release-since-0160" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-2026-16 — Three ATLAS mappings named something that is not an ATLAS tactic, in the SARIF of every release since 0.16.0
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="E-2026-16 — Three ATLAS mappings named something that is not an ATLAS tactic, in the SARIF of every release since 0.16.0">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-was-wrong_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-correct_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is correct
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reproduction-register" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4208,6 +4247,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#e-2026-16-three-atlas-mappings-named-something-that-is-not-an-atlas-tactic-in-the-sarif-of-every-release-since-0160" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-2026-16 — Three ATLAS mappings named something that is not an ATLAS tactic, in the SARIF of every release since 0.16.0
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="E-2026-16 — Three ATLAS mappings named something that is not an ATLAS tactic, in the SARIF of every release since 0.16.0">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-was-wrong_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-correct_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is correct
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reproduction-register" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4257,7 +4335,7 @@ attacks) three days before this document minted E-2026-05 for the ISO 10218 corr
 side saw the other, and the previous version of this note wrongly said the two files agreed
 entry-for-entry. The website keeps the ID it published under; the same correction is recorded
 below as <strong>E-2026-09</strong>, so that every correction has an entry in the maintained source. E-2026-14
-is held for an entry in preparation; the next free ID is <strong>E-2026-16</strong>.</p>
+is held for an entry in preparation; the next free ID is <strong>E-2026-17</strong>.</p>
 <hr />
 <h2 id="e-2026-01-signed-attestations-carry-a-superseded-eu-ai-act-application-date">E-2026-01 — Signed attestations carry a superseded EU AI Act application date</h2>
 <p><strong>Status:</strong> corrected in the tool · previously issued bundles are unaffected in authenticity
@@ -4973,6 +5051,48 @@ The date is read from the clock rather than typed, and the website's build fails
 prints a day the clock doubts, or renders a month-precision date with a day. The clock's recorded
 dates are unchanged; whether a doubted day should stay in its <code>applicableDate</code> field is an open
 decision, not part of this correction.</p>
+<hr />
+<h2 id="e-2026-16-three-atlas-mappings-named-something-that-is-not-an-atlas-tactic-in-the-sarif-of-every-release-since-0160">E-2026-16 — Three ATLAS mappings named something that is not an ATLAS tactic, in the SARIF of every release since 0.16.0</h2>
+<p><strong>Status:</strong> corrected on <code>main</code> on 26 September 2026 (provael #296; the website's pages in
+provael/website #151), in no release yet · no measured number moves · no signed artifact is
+affected: the mapping is written at export time and is not part of <code>report.json</code>, which is what an
+attestation signs
+<strong>Date raised:</strong> 26 September 2026
+<strong>Affects:</strong> <code>properties.atlasTechniques</code> on the EAI01, EAI02 and EAI03 rules of every SARIF file
+provael 0.16.0 to 0.44.0 emits; <code>results/crosswalk/crosswalk.atlas.json</code>;
+<code>docs/standards/atlas-case-study.md</code>; on www.provael.com, <code>/eai-top-10/eai01</code> and <code>/eai03</code> with
+their Markdown twins, and the site's pinned copies of the crosswalk and the sample SARIF, which move
+at its next re-pin.</p>
+<h3 id="what-was-wrong_10">What was wrong</h3>
+<p>Checked against MITRE ATLAS data release 2026.09 (<code>dist/v6/ATLAS-2026.09.yaml</code> in
+<code>mitre-atlas/atlas-data</code>), including which tactic each technique sits under:</p>
+<ul>
+<li><strong>EAI01</strong> read "ML Attack Staging → prompt-injection / jailbreak of an ML-driven agent". "ML
+  Attack Staging" is a retired name: AML.TA0001 was "AI Attack Staging" by release 2026.03 and is
+  "AI Attack Adaptation" since 2026.08. ATLAS files neither LLM Prompt Injection (Execution) nor
+  LLM Jailbreak (Defense Evasion, Privilege Escalation) under that tactic.</li>
+<li><strong>EAI02</strong> read "Evasion → …". ATLAS has no tactic by that name; it is "Defense Evasion". The
+  Top 10's own crosswalk table in <code>docs/top10.md</code> already said so.</li>
+<li><strong>EAI03</strong> read "… ML Supply Chain Compromise → poison an open-weights checkpoint", putting a
+  technique, under its retired name, where the tactic goes. AI Supply Chain Compromise is a
+  technique under Initial Access.</li>
+</ul>
+<p>The tests held the mapping's shape (an arrow, no invented <code>AML.T</code> identifiers) and never that the
+left of the arrow was an ATLAS tactic.</p>
+<h3 id="what-is-correct_14">What is correct</h3>
+<ul>
+<li>EAI01: Execution → LLM Prompt Injection (direct) of an ML-driven agent; Defense Evasion → LLM
+  Jailbreak</li>
+<li>EAI02: Defense Evasion → adversarial example in the perception channel (craft adversarial data)</li>
+<li>EAI03: Persistence → Manipulate AI Model (backdoor); Initial Access → AI Supply Chain Compromise
+  of an open-weights checkpoint</li>
+</ul>
+<p>If you ingest <code>atlasTechniques</code> from a Provael SARIF file, read these three rules with the tactics
+above. <code>tests/test_eai.py</code> now fails on any mapping whose tactic is not one of ATLAS 2026.09's
+sixteen, and the website's <code>check:eai</code> fails when an EAI page names different tactics from this
+catalog. The ATLAS community submission of 8 August 2026
+(<code>docs/standards/atlas-submission-2026-08-08.yaml</code>) is left exactly as sent; it names "ML Attack
+Staging" twice.</p>
 <hr />
 <h2 id="reproduction-register">Reproduction register</h2>
 <p>Independent reruns of published results, recorded as they arrive through the
