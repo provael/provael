@@ -57,14 +57,22 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+from provael.suites.libero import LIBERO_HORIZON
+
 #: The shipped protocol — the `full` stage of modal_libero_suite.py, arm for arm. ``instruction``
 #: expands to roleplay, goal_substitution, paraphrase; ``visual`` to patch, decoy_object;
 #: ``injection`` to scene_text, mcp_tool_desc; ``none`` is the matched benign twin. Eight arms.
 DEFAULT_ATTACKS = "none,instruction,visual,injection"
 DEFAULT_SUITE = "libero_object"
 DEFAULT_TASKS = tuple(range(10))
-DEFAULT_HORIZON = 280
+# The horizon defaults to the chosen suite's own budget (LIBERO_HORIZON); a single fixed default
+# ran libero_spatial at object's 280 unless --horizon was passed by hand.
 DEFAULT_SEEDS = 5
+
+
+def _horizon(args: argparse.Namespace) -> int:
+    """The explicit --horizon, or the suite's OpenVLA evaluation budget."""
+    return int(args.horizon) if args.horizon is not None else LIBERO_HORIZON[args.suite]
 
 
 def _task_name(suite: str, task_id: int) -> str:
@@ -85,7 +93,7 @@ def _attack_command(args: argparse.Namespace, task_id: int) -> list[str]:
         "--attacks", args.attacks,
         "--seeds", str(args.seeds),
         "--episodes-per-seed", "1",
-        "--horizon", str(args.horizon),
+        "--horizon", str(_horizon(args)),
         "--seed", str(args.base_seed),
         "--resume", str(shard / "ledger.jsonl"),
         "--out", str(shard),
@@ -147,7 +155,7 @@ def cmd_launch(args: argparse.Namespace) -> int:
         )
     print(f"launching {len(tasks)} task(s), {args.parallel} at a time, into {args.out}")
     print(f"protocol: suite={args.suite} attacks={args.attacks} seeds={args.seeds} "
-          f"horizon={args.horizon} policy={args.policy} model={args.model}")
+          f"horizon={_horizon(args)} policy={args.policy} model={args.model}")
     failures = 0
     with ThreadPoolExecutor(max_workers=args.parallel) as pool:
         for task_id, code, elapsed in pool.map(lambda t: _run_shard(args, t), tasks):
@@ -272,7 +280,10 @@ def _parser() -> argparse.ArgumentParser:
     launch.add_argument("--policy", default="smolvla")
     launch.add_argument("--model", default="HuggingFaceVLA/smolvla_libero")
     launch.add_argument("--seeds", type=int, default=DEFAULT_SEEDS)
-    launch.add_argument("--horizon", type=int, default=DEFAULT_HORIZON)
+    launch.add_argument(
+        "--horizon", type=int, default=None,
+        help="env steps per episode; default: the suite's OpenVLA budget (LIBERO_HORIZON)",
+    )
     launch.add_argument("--base-seed", type=int, default=0)
     launch.add_argument(
         "--parallel", type=int, default=1, help="shards at once — measure before raising"

@@ -76,6 +76,19 @@ from provael.suites.keepout_zones import DEFAULT_KEEP_OUT_ZONE, KeepOutZone, zon
 from provael.types import IMAGE_KEY, Action, Observation, State, SuiteFeatures
 from provael.video import image_from
 
+#: Episode horizon per LIBERO task suite, in env steps. These are OpenVLA's evaluation budgets
+#: (``experiments/robot/libero/run_libero_eval.py``): each suite's longest training demonstration
+#: plus a margin — spatial 193 → 220, object 254 → 280, goal 270 → 300, libero_10 505 → 520. Every
+#: committed LIBERO run used its suite's value and ``tests/test_libero_horizon.py`` holds the next
+#: one to it. Written down on 26 September 2026: "horizon 280" had shipped in recipes, reports
+#: and findings since June with no stated reason.
+LIBERO_HORIZON: dict[str, int] = {
+    "libero_spatial": 220,
+    "libero_object": 280,
+    "libero_goal": 300,
+    "libero_10": 520,
+}
+
 #: The LIBERO task suites shipped by lerobot 0.5.1 (verified).
 LIBERO_TASK_SUITES: tuple[str, ...] = (
     "libero_object",
