@@ -120,7 +120,9 @@ jobs:
       # mike namespaces everything under the version path, so without this every published URL
       # (/top10/, /errata/, and the retired UPPERCASE ones) 404s at the root. An old URL stays old
       # forever — see scripts/gen_root_stubs.py. `--check` afterwards makes a generator that wrote
-      # nothing distinguishable from one with nothing to write.
+      # nothing distinguishable from one with nothing to write. The same run copies the alias's
+      # robots.txt and sitemap over the root's, which mike never writes: until 26 September 2026
+      # the root still served the 2 September sitemap, 64 URLs that had all become redirects.
       - name: Keep every pre-versioning URL alive at the root
         run: |
           set -euo pipefail
@@ -192,8 +194,27 @@ jobs:
             return 1
           }
 
+          # The root crawl files must be the alias's, byte for byte. A crawler reads robots.txt only
+          # at the root, and mike never writes there, so these froze at the 2 September 2026
+          # pre-versioning deploy until scripts/gen_root_stubs.py began copying them. Both sides are
+          # required to be non-empty, so two failed fetches cannot compare equal.
+          same() {  # $1 = root file. 12 tries x 15s.
+            for i in $(seq 1 12); do
+              at_root="$(curl -fsS --max-time 20 "${ORIGIN}/$1?${BUST}-${i}" 2>/dev/null)" || at_root=""
+              in_alias="$(curl -fsS --max-time 20 "${ORIGIN}/latest/$1?${BUST}-${i}" 2>/dev/null)" || in_alias=""
+              if [ -n "$at_root" ] && [ "$at_root" = "$in_alias" ]; then
+                echo "ok   /$1 = /latest/$1"
+                return 0
+              fi
+              sleep 15
+            done
+            echo "FAIL /$1 is not a copy of /latest/$1 (a root crawl file left by an older deploy)"
+            return 1
+          }
+
           for p in $PAGES; do probe "$p" "" || fail=1; done
           for pair in $ROOTINDEX $ROOT $REDIRECTS; do
             probe "${pair%%=*}" "${pair##*=}" || fail=1
           done
+          for f in robots.txt sitemap.xml; do same "$f" || fail=1; done
           exit $fail
