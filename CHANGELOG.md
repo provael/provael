@@ -113,6 +113,16 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ### Fixed
 
+- **Four published docs claims the repository no longer supports.** Why: each was found stale in
+  the 26 September re-verification of `AUDIT_BACKLOG.md` and `ISSUE_REGISTER.md`. `docs/faq.md`
+  and the instruction-transfer finding quoted Predictive Red Teaming as "MAE < 0.19" without the
+  caveat `docs/sim-predicts-real.md` already carries (the result is on diffusion policies, not
+  VLAs); `docs/index.md` listed GR00T and OpenVLA as real policies and Meta-World as a real
+  simulator (both policies are unrun scaffolding, and Meta-World is not runnable end to end);
+  `docs/standards/listings.md` said "nothing submitted yet" after sixteen listing PRs, and now
+  carries the ledger its own checklist asks for; `pyproject.toml` called lerobot 0.6.0 the newest
+  release (0.6.1 has been on PyPI since 3 August). The glossary now links the website's. No
+  measured number moves.
 - **Three module docstrings that had gone stale, and E-2026-15 in the errata log.** Why: each said
   something the code no longer does. `combine.py` said `provael attack` cannot resume (the ledger
   has been wired in as `--resume` since 30 August, #157); `attacks/controls.py` said `--attacks

@@ -3,6 +3,9 @@
 Precise definitions for the terms Provael reports. The whole point of the tool is that these do not
 blur into each other.
 
+*See also* the [provael.com glossary](https://www.provael.com/glossary/), which defines the terms
+the website uses for buyers; where the two differ, this page is the maintained source.
+
 ## Metrics
 
 **Adversarial ASR (Attack Success Rate)** — successes / attempts over the **adversarial** episodes

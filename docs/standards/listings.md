@@ -1,8 +1,10 @@
 # Directory listings & awesome-list PRs (ready to submit)
 
-> **Gated — nothing submitted yet.** Each item below is an external action (a submission or a PR to
-> another repo). The **copy is final and ready to send**; the act of submitting is a **manual step
-> that requires explicit sign-off**. Provael™ does not submit these automatically.
+> **Status, 26 September 2026: sixteen listing PRs opened since 9 August — three merged, three
+> closed unmerged, ten open — plus two issues on one list (ledger in §2).** The OECD.AI catalogue
+> submission (§1) is not recorded here. Each item remains an external action (a submission or a PR
+> to another repo) and a **manual step that requires explicit sign-off**; Provael™ does not submit
+> these automatically.
 
 Getting Provael into the recognised discovery layer is how a scanner goes from a repo to a standard.
 Each entry below is drafted to paste directly into the target's form / PR, followed by the exact
@@ -62,6 +64,34 @@ overview: <https://oecd.ai/en/catalogue/contribute>.
    linked repo, not the one-liner.
 4. Open the PR from a topic branch with a short, neutral title (e.g. `Add Provael (VLA red-team)`).
 5. Record the PR URL back in this file.
+
+### Submitted — ledger, states as of 26 September 2026
+
+| Opened | List | PR | State |
+| --- | --- | --- | --- |
+| 2026-08-09 | x-zheng16/Awesome-Embodied-AI-Safety | [#8](https://github.com/x-zheng16/Awesome-Embodied-AI-Safety/pull/8) | open |
+| 2026-08-12 | lfai/lfai-landscape | [#1415](https://github.com/lfai/lfai-landscape/pull/1415) | closed, not merged |
+| 2026-08-12 | ottosulin/awesome-ai-security | [#386](https://github.com/ottosulin/awesome-ai-security/pull/386) | open |
+| 2026-08-21 | LiQiiiii/Awesome-VLA-Safety | [#7](https://github.com/LiQiiiii/Awesome-VLA-Safety/pull/7) | open |
+| 2026-09-01 | DravenALG/awesome-vla-wam | [#8](https://github.com/DravenALG/awesome-vla-wam/pull/8) | closed, not merged |
+| 2026-09-01 | LLMSecurity/awesome-agent-skills-security | [#57](https://github.com/LLMSecurity/awesome-agent-skills-security/pull/57) | closed, not merged |
+| 2026-09-01 | RiccardoBiosas/awesome-MLSecOps | [#77](https://github.com/RiccardoBiosas/awesome-MLSecOps/pull/77) | merged |
+| 2026-09-01 | scadastrangelove/awesome-ai-security-tools | [#78](https://github.com/scadastrangelove/awesome-ai-security-tools/pull/78) | merged |
+| 2026-09-01 | ai4s-research/awesome-vision-language-action | [#1](https://github.com/ai4s-research/awesome-vision-language-action/pull/1) | open |
+| 2026-09-01 | DelinQu/awesome-vision-language-action-model | [#3](https://github.com/DelinQu/awesome-vision-language-action-model/pull/3) | open |
+| 2026-09-01 | iotsrg/awesome-ros-security | [#1](https://github.com/iotsrg/awesome-ros-security/pull/1) | open |
+| 2026-09-01 | jonyzhang2023/awesome-embodied-vla-va-vln | [#52](https://github.com/jonyzhang2023/awesome-embodied-vla-va-vln/pull/52) | open |
+| 2026-09-01 | LukeLIN-web/Awesome-VLA | [#1](https://github.com/LukeLIN-web/Awesome-VLA/pull/1) | open |
+| 2026-09-02 | wadeKeith/Awesome-Embodied-AI | [#7](https://github.com/wadeKeith/Awesome-Embodied-AI/pull/7) | merged |
+| 2026-09-03 | keon/awesome-physical-ai | [#42](https://github.com/keon/awesome-physical-ai/pull/42) | open |
+| 2026-09-05 | GT-RIPL/Awesome-LLM-Robotics | [#121](https://github.com/GT-RIPL/Awesome-LLM-Robotics/pull/121) | open |
+
+Also open: issues [#1](https://github.com/cst-labs/awesome-embodied-ai-safety/issues/1) and
+[#2](https://github.com/cst-labs/awesome-embodied-ai-safety/issues/2) on
+`cst-labs/awesome-embodied-ai-safety` (2026-08-08), which ask before proposing an entry, and
+[huggingface.js#2492](https://github.com/huggingface/huggingface.js/pull/2492) (2026-09-14), which
+registers Provael as an evaluation framework rather than adding a list entry. States move; re-read
+each link before quoting one.
 
 ## Sequence & gating
 
