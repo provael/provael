@@ -2701,6 +2701,14 @@ the whole <code>dist/v6/ATLAS-2026.07.yaml</code> corpus (178 techniques, 68 cas
 hand-edit, and see the note under the table on what keeps the two in agreement.</p>
 <p>Phrasings are descriptive <code>tactic → technique</code>. <strong>No <code>AML.TXXXX</code> identifiers are cited</strong>: quoting a
 technique id we have not verified against the live matrix would manufacture false precision.</p>
+<p>Tactic and technique names were checked on 26 September 2026 against ATLAS data release 2026.09
+(<code>dist/v6/ATLAS-2026.09.yaml</code> in <code>mitre-atlas/atlas-data</code>), including which tactic each technique
+sits under. That check changed three rows. EAI01 had named "ML Attack Staging", a retired name
+(AML.TA0001 is now "AI Attack Adaptation") for a tactic ATLAS files neither prompt injection nor
+jailbreak under. EAI02 had named "Evasion", where the tactic is "Defense Evasion". EAI03 had put a
+technique, under its retired name "ML Supply Chain Compromise", where a tactic goes. The legacy
+<code>dist/ATLAS.yaml</code> still self-reports 5.6.0 and names AML.TA0001 "AI Attack Staging", so check
+against the <code>v6</code> release.</p>
 <p><code>mapping_status</code> values, all three of which are used below:</p>
 <table>
 <thead>
@@ -2737,19 +2745,19 @@ technique id we have not verified against the live matrix would manufacture fals
 <tr>
 <td>EAI01</td>
 <td>Policy &amp; instruction jailbreak</td>
-<td>ML Attack Staging → prompt-injection / jailbreak of an ML-driven agent</td>
+<td>Execution → LLM Prompt Injection (direct) of an ML-driven agent; Defense Evasion → LLM Jailbreak</td>
 <td><code>proposed-mapped</code></td>
 </tr>
 <tr>
 <td>EAI02</td>
 <td>Adversarial perception</td>
-<td>Evasion → adversarial example in the perception channel (craft adversarial data)</td>
+<td>Defense Evasion → adversarial example in the perception channel (craft adversarial data)</td>
 <td><code>proposed-mapped</code></td>
 </tr>
 <tr>
 <td>EAI03</td>
 <td>Model &amp; pipeline poisoning, backdoors &amp; supply chain</td>
-<td>Persistence → backdoor the ML model; ML Supply Chain Compromise → poison an open-weights checkpoint</td>
+<td>Persistence → Manipulate AI Model (backdoor); Initial Access → AI Supply Chain Compromise of an open-weights checkpoint</td>
 <td><code>proposed-mapped</code></td>
 </tr>
 <tr>
