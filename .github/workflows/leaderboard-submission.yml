@@ -65,7 +65,7 @@ jobs:
                  "named HF_TOKEN — the deployed Space is stale until this job can run."
             exit 1
           fi
-          uv run --no-project --with "huggingface_hub>=0.36" python - <<'EOF'
+          uv run --no-project --with "huggingface_hub==2.0.0" python - <<'EOF'
           import os
           from huggingface_hub import HfApi
 
