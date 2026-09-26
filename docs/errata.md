@@ -22,7 +22,7 @@ attacks) three days before this document minted E-2026-05 for the ISO 10218 corr
 side saw the other, and the previous version of this note wrongly said the two files agreed
 entry-for-entry. The website keeps the ID it published under; the same correction is recorded
 below as **E-2026-09**, so that every correction has an entry in the maintained source. E-2026-14
-is held for an entry in preparation; the next free ID is **E-2026-16**.
+is held for an entry in preparation; the next free ID is **E-2026-17**.
 
 ---
 
@@ -785,6 +785,54 @@ The date is read from the clock rather than typed, and the website's build fails
 prints a day the clock doubts, or renders a month-precision date with a day. The clock's recorded
 dates are unchanged; whether a doubted day should stay in its `applicableDate` field is an open
 decision, not part of this correction.
+
+---
+
+## E-2026-16 — Three ATLAS mappings named something that is not an ATLAS tactic, in the SARIF of every release since 0.16.0
+
+**Status:** corrected on `main` on 26 September 2026 (provael #296; the website's pages in
+provael/website #151), in no release yet · no measured number moves · no signed artifact is
+affected: the mapping is written at export time and is not part of `report.json`, which is what an
+attestation signs
+**Date raised:** 26 September 2026
+**Affects:** `properties.atlasTechniques` on the EAI01, EAI02 and EAI03 rules of every SARIF file
+provael 0.16.0 to 0.44.0 emits; `results/crosswalk/crosswalk.atlas.json`;
+`docs/standards/atlas-case-study.md`; on www.provael.com, `/eai-top-10/eai01` and `/eai03` with
+their Markdown twins, and the site's pinned copies of the crosswalk and the sample SARIF, which move
+at its next re-pin.
+
+### What was wrong
+
+Checked against MITRE ATLAS data release 2026.09 (`dist/v6/ATLAS-2026.09.yaml` in
+`mitre-atlas/atlas-data`), including which tactic each technique sits under:
+
+- **EAI01** read "ML Attack Staging → prompt-injection / jailbreak of an ML-driven agent". "ML
+  Attack Staging" is a retired name: AML.TA0001 was "AI Attack Staging" by release 2026.03 and is
+  "AI Attack Adaptation" since 2026.08. ATLAS files neither LLM Prompt Injection (Execution) nor
+  LLM Jailbreak (Defense Evasion, Privilege Escalation) under that tactic.
+- **EAI02** read "Evasion → …". ATLAS has no tactic by that name; it is "Defense Evasion". The
+  Top 10's own crosswalk table in `docs/top10.md` already said so.
+- **EAI03** read "… ML Supply Chain Compromise → poison an open-weights checkpoint", putting a
+  technique, under its retired name, where the tactic goes. AI Supply Chain Compromise is a
+  technique under Initial Access.
+
+The tests held the mapping's shape (an arrow, no invented `AML.T` identifiers) and never that the
+left of the arrow was an ATLAS tactic.
+
+### What is correct
+
+- EAI01: Execution → LLM Prompt Injection (direct) of an ML-driven agent; Defense Evasion → LLM
+  Jailbreak
+- EAI02: Defense Evasion → adversarial example in the perception channel (craft adversarial data)
+- EAI03: Persistence → Manipulate AI Model (backdoor); Initial Access → AI Supply Chain Compromise
+  of an open-weights checkpoint
+
+If you ingest `atlasTechniques` from a Provael SARIF file, read these three rules with the tactics
+above. `tests/test_eai.py` now fails on any mapping whose tactic is not one of ATLAS 2026.09's
+sixteen, and the website's `check:eai` fails when an EAI page names different tactics from this
+catalog. The ATLAS community submission of 8 August 2026
+(`docs/standards/atlas-submission-2026-08-08.yaml`) is left exactly as sent; it names "ML Attack
+Staging" twice.
 
 ---
 
