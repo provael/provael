@@ -2,10 +2,11 @@
 # Copyright (c) 2026 Sattyam Jain
 """Combine the per-task reports of a SHARDED run into one in-memory view.
 
-WHY A SHARDED RUN EXISTS AT ALL. A ten-task LIBERO screen is ~15 GPU-hours, and `provael attack`
-cannot resume — :mod:`provael.ledger` was built for exactly that and is not wired into the runner.
-So the suite run is executed one task per container and writes ten independent ``report.json``
-files. Each is a complete, self-describing artifact of its own task.
+WHY A SHARDED RUN EXISTS AT ALL. A ten-task LIBERO screen is ~15 GPU-hours, so the suite run is
+executed one task per container and writes ten independent ``report.json`` files. Each is a
+complete, self-describing artifact of its own task. (This once added that `provael attack` could
+not resume; :mod:`provael.ledger` has been wired into the runner as ``--resume`` since
+30 August 2026, #157.)
 
 WHAT THIS IS FOR, AND WHAT IT IS NOT. The public evidence manifest describes ONE measurement, and
 a suite result measured across ten shards has no single report to point at. This builds the view

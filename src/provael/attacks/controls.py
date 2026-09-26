@@ -48,7 +48,7 @@ silent and both change what the headline number means, which is why they shipped
 tested-but-unregistered classes until the scoring could hold them.
 :mod:`tests.test_harmless_variation_arm` is the standing guard on that separation.
 
-RUNNABLE, AND SEPARATELY, MEASURED. ``--attacks control`` resolves to both arms; the ``control``
+RUNNABLE, AND SEPARATELY, MEASURED. ``--attacks control`` resolves to all four arms; the ``control``
 stage of ``examples/gpu-ci/modal_libero_suite.py`` runs them against SmolVLA x LIBERO paired with
 ``none`` and ``roleplay`` in one report. Until that has run on a given policy,
 :func:`~provael.scoring.asr.harmless_variation_rate` returns ``None`` rather than ``0.0``: an

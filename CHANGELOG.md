@@ -113,6 +113,13 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ### Fixed
 
+- **Three module docstrings that had gone stale, and E-2026-15 in the errata log.** Why: each said
+  something the code no longer does. `combine.py` said `provael attack` cannot resume (the ledger
+  has been wired in as `--resume` since 30 August, #157); `attacks/controls.py` said `--attacks
+  control` resolves to "both arms" (it resolves to four); `scripts/gen_brand_assets.py` called the
+  website upstream "for every public number" (it is upstream for the brand only). `docs/errata.md`
+  records E-2026-15, the website's correction of two publication days its own regulatory clock does
+  not verify; no measured number moves.
 - **Four docs pages and `suites/libero.py`'s module docstring said the contact column and the
   three-way calibration split shipped "since 0.45"**; there is no 0.45. Both are on `main` since
   21 September 2026 (#278, #279) and in no release yet, and all six lines now say so.
