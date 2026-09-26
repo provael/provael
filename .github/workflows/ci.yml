@@ -202,16 +202,18 @@ jobs:
       contents: read
       issues: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           python-version: "3.12"
-      - run: pip install pyyaml
+      # PyYAML from uv.lock, hash-checked, where `pip install pyyaml` took whatever PyPI served that
+      # minute. --no-install-project: the script needs PyYAML, not provael.
+      - run: uv sync --locked --no-dev --no-install-project
       - env:
           GH_TOKEN: ${{ github.token }}
-        run: python scripts/check_issue_labels.py
+        run: uv run --no-sync python scripts/check_issue_labels.py
 
   build:
     name: package build + metadata check
@@ -231,7 +233,7 @@ jobs:
         run: uv build
 
       - name: Check distribution metadata
-        run: uvx twine check dist/*
+        run: uvx twine==7.0.0 check dist/*
 
   audit:
     name: dependency vulnerability audit
@@ -264,7 +266,7 @@ jobs:
             --format requirements-txt -o audit-default.txt
           grep -qE '^pillow==' audit-default.txt \
             || { echo "::error::export produced no runtime deps — the audit would be vacuous"; exit 1; }
-          uvx pip-audit --strict --progress-spinner off -r audit-default.txt
+          uvx pip-audit==2.10.1 --strict --progress-spinner off -r audit-default.txt
 
       # The GPU extras are not what `pip install provael` resolves, and torch advisories routinely
       # have no fixed version, so this lane reports without gating. `lerobot` and `openpi` are
@@ -285,5 +287,5 @@ jobs:
           uv export --extra lerobot --extra openvla --extra attest --extra hosted \
             --no-emit-project --no-hashes --no-annotate --quiet \
             --format requirements-txt -o audit-extras.txt
-          uvx pip-audit --progress-spinner off -r audit-extras.txt \
+          uvx pip-audit==2.10.1 --progress-spinner off -r audit-extras.txt \
             --ignore-vuln GHSA-f7vj-73pm-m822

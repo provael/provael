@@ -122,8 +122,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      # modal is pinned, not `>=0.64`: a range installed whatever Modal had shipped that morning into
+      # a job that holds MODAL_TOKEN_*. A client Modal stops accepting fails at `modal run`, loudly;
+      # bump gpu-arm.yml and gpu-scheduled.yml together.
       - name: Install the Modal client
-        run: pip install "modal>=0.64"
+        run: pip install "modal==1.5.5"
 
       # provael itself, because "Keep the run" regenerates the ledger and the badge and both import
       # it. gpu-scheduled.yml installs it inside its record step; this workflow did not, and the
