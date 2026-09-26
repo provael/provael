@@ -91,7 +91,9 @@ adapter cannot resolve a part it records `null`, never a guess; the three scaffo
 
 ### A bound predicate is signed over as a different thing (schema 7)
 
-Since 0.45 each calibrated task's entry in the signed `report.json` carries `split`, `eval_fpr`
+Not yet in any release: what this section describes was wired on main on 21 September 2026, so
+no report from a released version carries it. Each calibrated task's entry in the signed
+`report.json` carries `split`, `eval_fpr`
 and `binding`: which split the calibration artifact came from, the benign FPR measured on the eval
 split of a three-way fit after the predicate was chosen, and whether the artifact's
 `CalibrationBinding` holds for *this* run (`valid`, or `invalid: <reason>` — another checkpoint,
