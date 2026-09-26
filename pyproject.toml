@@ -96,8 +96,8 @@ provael = "provael.cli:app"
 # read off lerobot's own evaluator for exactly this version ("read, not guessed"), and 0.6.0 moved
 # import paths, split the dataset/training deps into new extras and raised the torch floor. Bumping
 # it therefore requires re-reading those call signatures and re-running the PROVAEL_INTEGRATION=1
-# lane on a GPU box — not a version-string edit. Note lerobot's main branch self-reports 0.6.1, but
-# 0.6.0 is the newest release on PyPI; pin only against a published release.
+# lane on a GPU box — not a version-string edit. lerobot 0.6.0 (6 Jul 2026) and 0.6.1 (3 Aug 2026)
+# are both published on PyPI; pin only against a published release.
 [project.optional-dependencies]
 # smolvla -> the policy (transformers); libero -> the simulator (Part 2 above). Both ride this one
 # GPU extra so a single `pip install 'provael[lerobot]'` gives the full real SmolVLA x LIBERO path.

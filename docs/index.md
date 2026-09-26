@@ -22,8 +22,11 @@ receives inside a simulator and measures how often those perturbations drive it 
 state. The headline number is the ASR, reported with a 95% Wilson CI and a benign-FPR control.
 
 - **CPU-first.** The whole engine (attacks, scoring, runner, report, CLI) runs and is tested on a
-  plain CPU with a deterministic stub. Real policies (SmolVLA, π0, GR00T, OpenVLA…) and real
-  simulators (LIBERO, Meta-World) live behind optional extras + a `PROVAEL_INTEGRATION` gate.
+  plain CPU with a deterministic stub. Real policies live behind optional extras + a
+  `PROVAEL_INTEGRATION` gate: SmolVLA and π0.5 have been measured on LIBERO; π0 and π0-FAST are
+  runnable adapters with no committed result yet; GR00T, OpenVLA and openpi are registered
+  scaffolding that has never run (`watch/registry.json`). LIBERO is the simulator every committed
+  real-policy result ran on; Meta-World is registered but not yet runnable end to end.
 - **Seventeen adversarial families** mapped to the [Embodied AI Security Top 10](top10.md) — 8 of the 10
   categories (EAI01–06, EAI08, EAI09): `instruction`, `visual`, `sensor_spoof`, `injection`, `action`,
   `action_space`, `backdoor`, `authorization`, `confidentiality`, `misalignment`, `humanoid`, plus the
