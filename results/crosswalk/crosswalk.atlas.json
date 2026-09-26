@@ -9,7 +9,7 @@
   "eai_to_atlas": [
     {
       "atlas_techniques": [
-        "ML Attack Staging \u2192 prompt-injection / jailbreak of an ML-driven agent"
+        "Execution \u2192 LLM Prompt Injection (direct) of an ML-driven agent; Defense Evasion \u2192 LLM Jailbreak"
       ],
       "coverage": "attacks-implemented",
       "coverage_note": "The `instruction` family (roleplay / goal_substitution / paraphrase) and the `optimized_instruction` search. The only family with measured real-policy transfer.",
@@ -20,7 +20,7 @@
     },
     {
       "atlas_techniques": [
-        "Evasion \u2192 adversarial example in the perception channel (craft adversarial data)"
+        "Defense Evasion \u2192 adversarial example in the perception channel (craft adversarial data)"
       ],
       "coverage": "attacks-implemented",
       "coverage_note": "The `visual`, `sensor_spoof` and `optimized_patch` families, plus the humanoid balance-spoof. `optimized_patch` needs a real image channel and never scores on a CPU stub suite.",
@@ -31,7 +31,7 @@
     },
     {
       "atlas_techniques": [
-        "Persistence \u2192 backdoor the ML model; ML Supply Chain Compromise \u2192 poison an open-weights checkpoint"
+        "Persistence \u2192 Manipulate AI Model (backdoor); Initial Access \u2192 AI Supply Chain Compromise of an open-weights checkpoint"
       ],
       "coverage": "attacks-implemented",
       "coverage_note": "The `backdoor` family screens objective-decoupled object and phrase triggers, and `weight_integrity` screens emulated bit-flip corruption of the loaded weights (gradient-selected and equal-count random arms across a 1-256 flip ladder). Both attack the model asset rather than the input; NEITHER models how an attacker delivers the corruption. Train-time poisoning and DRAM fault injection are the delivery paths, and they are EAI03 and EAI07 platform questions this tool does not measure. `weight_integrity` has run against a real policy once, at n = 3 per rung on one LIBERO task (14 September 2026, 0/3 on every arm, a result and not a rate); the powered arm is registered and priced but has not run.",
