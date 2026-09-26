@@ -133,6 +133,15 @@ markdown_extensions:
 
 plugins:
   - search
+  # Every page's canonical URL is its /latest/ form, whichever version built it. With no `mike`
+  # entry here, `mike deploy` injects the plugin with its default, which sets site_url to the
+  # VERSION path, so every 0.44.0 page declared /0.44.0/…/ canonical and every release moved the
+  # canonical URL of every page. A stable undated URL is what `latest` exists for (docs.yml says
+  # so). This also puts /latest/ URLs in each build's sitemap, which the root robots.txt names
+  # once scripts/gen_root_stubs.py has copied it up. Local `mkdocs build` is unaffected: the plugin
+  # only rewrites site_url when mike sets MIKE_DOCS_VERSION.
+  - mike:
+      canonical_version: latest
   # The docs URLs were uppercase (/TOP10/, /DEFENSES/, /COMPLIANCE/…) and therefore
   # case-sensitive traps: a reader who typed or guessed the lowercase form got a 404, and so did
   # anything that lowercased a URL in transit. Renaming to lowercase fixes that but retires the

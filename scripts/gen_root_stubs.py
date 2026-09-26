@@ -40,6 +40,15 @@ For an alias path that is itself a redirect stub (the retired uppercase URLs, wr
 target (`/latest/top10/`) rather than hopping through `/latest/TOP10/`: one hop, and the target
 string the smoke asserts is in the body.
 
+THE ROOT CRAWL FILES. A crawler reads `robots.txt` only at the host root, and then the sitemap it
+names. mike copies both into every version directory, where no crawler looks, and never writes the
+root. So the root copies were whatever the last pre-versioning deploy left (2 September 2026): a
+`robots.txt` naming a `sitemap.xml` of 64 root URLs that had since all become redirects, dated
+that day, and missing every page added after it. That is the freeze described above, in the two
+files a search engine reads first. So every run also copies the alias's `robots.txt`,
+`sitemap.xml` and `sitemap.xml.gz` over the root's, byte for byte, and `--check` fails while they
+differ.
+
     python scripts/gen_root_stubs.py --root <gh-pages worktree> [--alias latest] [--check]
 """
 
@@ -48,6 +57,7 @@ from __future__ import annotations
 import argparse
 import posixpath
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -56,6 +66,11 @@ from pathlib import Path
 # mike version directory whose name is not numeric, so it is named here rather than caught by the
 # digit test in _mike_owns.
 MIKE_OWNED = frozenset({"index.html", "versions.json", ".nojekyll", "CNAME", ".git", "dev"})
+
+#: Files a crawler reads only at the host root, copied there from the alias (see the docstring).
+#: The first two every MkDocs build writes, so an alias without one is an error, not a no-op.
+CRAWL_FILES = ("robots.txt", "sitemap.xml", "sitemap.xml.gz")
+REQUIRED_CRAWL_FILES = frozenset({"robots.txt", "sitemap.xml"})
 
 _TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
@@ -160,6 +175,28 @@ def write_stubs(root: Path, alias: str, paths: list[str]) -> None:
         dest.write_text(expected_stub(alias_dir, alias, rel), encoding="utf-8")
 
 
+def stale_crawl_files(root: Path, alias: str) -> list[str]:
+    """Root crawl files that are missing, or are not a byte copy of the alias's."""
+    alias_dir = root / alias
+    missing = sorted(n for n in REQUIRED_CRAWL_FILES if not (alias_dir / n).is_file())
+    if missing:
+        raise SystemExit(f"the alias has no {', '.join(missing)} at {alias_dir}; nothing to copy")
+    return [
+        name
+        for name in CRAWL_FILES
+        if (alias_dir / name).is_file()
+        and (
+            not (root / name).is_file()
+            or (root / name).read_bytes() != (alias_dir / name).read_bytes()
+        )
+    ]
+
+
+def copy_crawl_files(root: Path, alias: str, names: list[str]) -> None:
+    for name in names:
+        shutil.copyfile(root / alias / name, root / name)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--root", required=True, type=Path, help="gh-pages worktree")
@@ -170,6 +207,7 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     todo = plan(args.root, args.alias)
+    crawl = stale_crawl_files(args.root, args.alias)
     if args.check:
         if todo:
             print(
@@ -177,12 +215,19 @@ def main(argv: list[str] | None = None) -> int:
                 f"{', '.join(todo[:10])}",
                 file=sys.stderr,
             )
+        if crawl:
+            print(
+                f"root {', '.join(crawl)} differ from /{args.alias}/'s; a crawler reads the root",
+                file=sys.stderr,
+            )
+        if todo or crawl:
             return 1
-        print("every published root URL is a stub into the alias")
+        print("every published root URL is a stub into the alias, and the crawl files are its own")
         return 0
 
     write_stubs(args.root, args.alias, todo)
-    print(f"wrote {len(todo)} root stub(s) -> /{args.alias}/…")
+    copy_crawl_files(args.root, args.alias, crawl)
+    print(f"wrote {len(todo)} root stub(s) -> /{args.alias}/…; copied {len(crawl)} crawl file(s)")
     return 0
 
 

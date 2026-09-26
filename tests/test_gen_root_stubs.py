@@ -32,6 +32,8 @@ def _module() -> Any:
 
 plan = _module().plan
 write_stubs = _module().write_stubs
+stale_crawl_files = _module().stale_crawl_files
+main = _module().main
 
 
 def _tree(root: Path, files: list[str]) -> None:
@@ -168,3 +170,38 @@ def test_retired_uppercase_urls_get_their_own_stub(tmp_path: Path) -> None:
     write_stubs(root, "latest", todo)
     assert (root / "TOP10" / "index.html").exists()
     assert (root / "top10" / "index.html").exists()
+
+
+def _crawl(root: Path) -> Path:
+    """The alias's crawl files as a build writes them; the root's as 2 September 2026 left them."""
+    (root / "latest" / "robots.txt").write_text("Sitemap: https://docs.provael.com/sitemap.xml\n")
+    (root / "latest" / "sitemap.xml").write_text("<loc>https://docs.provael.com/latest/top10/</loc>")
+    (root / "latest" / "sitemap.xml.gz").write_bytes(b"\x1f\x8b gz of the above")
+    (root / "robots.txt").write_text("Sitemap: https://docs.provael.com/sitemap.xml\n# frozen\n")
+    (root / "sitemap.xml").write_text("<loc>https://docs.provael.com/top10/</loc>")
+    return root
+
+
+def test_frozen_root_crawl_files_are_replaced_by_the_alias_copies(tmp_path: Path) -> None:
+    """26 September 2026: the root robots.txt and sitemap.xml were still the 2 September ones.
+
+    mike never writes the root, so the sitemap a crawler was pointed at listed 64 root URLs that had
+    all become stubs, and none of the pages added since. The check must fail on that alone, the
+    write must make the root a byte copy of the alias, and a second run must find nothing to do.
+    """
+    root = _crawl(_pages(tmp_path))
+    write_stubs(root, "latest", plan(root, "latest"))
+    assert stale_crawl_files(root, "latest") == ["robots.txt", "sitemap.xml", "sitemap.xml.gz"]
+    assert main(["--root", str(root), "--check"]) == 1, "stale crawl files alone must fail it"
+    assert main(["--root", str(root)]) == 0
+    for name in ("robots.txt", "sitemap.xml", "sitemap.xml.gz"):
+        assert (root / name).read_bytes() == (root / "latest" / name).read_bytes(), name
+    assert stale_crawl_files(root, "latest") == []
+    assert main(["--root", str(root), "--check"]) == 0
+
+
+def test_an_alias_without_a_sitemap_is_an_error_not_a_silent_no_op(tmp_path: Path) -> None:
+    root = _pages(tmp_path)
+    (root / "latest" / "robots.txt").write_text("User-agent: *\n")
+    with pytest.raises(SystemExit):
+        stale_crawl_files(root, "latest")
