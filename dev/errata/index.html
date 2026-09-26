@@ -3233,6 +3233,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#e-2026-15-wwwprovaelcom-printed-two-publication-days-its-own-regulatory-clock-does-not-verify-one-under-a-verified-dates-heading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-2026-15 — www.provael.com printed two publication days its own regulatory clock does not verify, one under a "Verified dates" heading
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="E-2026-15 — www.provael.com printed two publication days its own regulatory clock does not verify, one under a &#34;Verified dates&#34; heading">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-was-wrong_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-correct_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is correct
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reproduction-register" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4130,6 +4169,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#e-2026-15-wwwprovaelcom-printed-two-publication-days-its-own-regulatory-clock-does-not-verify-one-under-a-verified-dates-heading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-2026-15 — www.provael.com printed two publication days its own regulatory clock does not verify, one under a "Verified dates" heading
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="E-2026-15 — www.provael.com printed two publication days its own regulatory clock does not verify, one under a &#34;Verified dates&#34; heading">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-was-wrong_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-correct_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is correct
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reproduction-register" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4178,8 +4256,8 @@ own E-2026-05 on 3 September 2026 for a stale attack-family count (16 → 17 fam
 attacks) three days before this document minted E-2026-05 for the ISO 10218 correction; neither
 side saw the other, and the previous version of this note wrongly said the two files agreed
 entry-for-entry. The website keeps the ID it published under; the same correction is recorded
-below as <strong>E-2026-09</strong>, so that every correction has an entry in the maintained source. The next
-free ID is <strong>E-2026-14</strong>.</p>
+below as <strong>E-2026-09</strong>, so that every correction has an entry in the maintained source. E-2026-14
+is held for an entry in preparation; the next free ID is <strong>E-2026-16</strong>.</p>
 <hr />
 <h2 id="e-2026-01-signed-attestations-carry-a-superseded-eu-ai-act-application-date">E-2026-01 — Signed attestations carry a superseded EU AI Act application date</h2>
 <p><strong>Status:</strong> corrected in the tool · previously issued bundles are unaffected in authenticity
@@ -4872,6 +4950,29 @@ count is stated without the family count of its own convention. The same sweep c
 more machine-readable surfaces without an erratum of their own: <code>/llms.txt</code>'s adoption figures now
 derive from the file <code>/adopters/</code> renders, <code>/404</code> answers 404, and <code>/pricing</code>'s JSON-LD no longer
 publishes the design-partner rate as the assessment's base price. The website changelog records them.</p>
+<h2 id="e-2026-15-wwwprovaelcom-printed-two-publication-days-its-own-regulatory-clock-does-not-verify-one-under-a-verified-dates-heading">E-2026-15 — www.provael.com printed two publication days its own regulatory clock does not verify, one under a "Verified dates" heading</h2>
+<p><strong>Status:</strong> raised and corrected on the website on 26 September 2026 (provael/website #146);
+recorded here so the shared ID space stays entry-for-entry · no measured number moves · no signed
+artifact is affected
+<strong>Date raised:</strong> 26 September 2026
+<strong>Affects:</strong> website surfaces only — <code>/compliance</code> and <code>/compliance/iso-10218</code> and their Markdown
+twins, <code>/regulatory-clock</code> and its twin (visible text, screen-reader link labels and <code>&lt;time
+datetime&gt;</code>), <code>/for/certifiers-insurers</code>, <code>/readiness</code>, <code>llms-full.txt</code> and the sample evidence pack.
+Nothing in this repository's artifacts prints either day.</p>
+<h3 id="what-was-wrong_9">What was wrong</h3>
+<p>The site printed ISO 10218-1/-2:2025 as "published 5 February 2025" and ANSI/A3 R15.06-2025 as
+"21 August 2025" on ten built surfaces, one of them on <code>/compliance.md</code> under the heading "Verified
+dates". The site's own regulatory clock said otherwise: of ISO 10218, that ISO's catalogue shows the
+month and "the 5 February day is from secondary sources and is not carried as a verified value"; of
+R15.06, that "the 21 August 2025 day remains unverified". The website's fact check was requiring
+the ISO day as a verified regulatory fact, so the one check that read every page held the
+unverified value in place.</p>
+<h3 id="what-is-correct_13">What is correct</h3>
+<p>Both are printed at the precision the clock verifies: published February 2025, and August 2025.
+The date is read from the clock rather than typed, and the website's build fails if any page
+prints a day the clock doubts, or renders a month-precision date with a day. The clock's recorded
+dates are unchanged; whether a doubted day should stay in its <code>applicableDate</code> field is an open
+decision, not part of this correction.</p>
 <hr />
 <h2 id="reproduction-register">Reproduction register</h2>
 <p>Independent reruns of published results, recorded as they arrive through the
