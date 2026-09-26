@@ -8,6 +8,8 @@ All notable changes to this project are documented here. The format is based on
 the entries below are the ones a reader arriving today needs, newest at the top. Every heading is a
 release the tag exists for; the Unreleased section holds what is merged and not yet cut.
 
+- **0.44.0 (20 Sep 2026)** — hygiene and scope: `full-sweep` on a real policy narrows to measured
+  families, `certify` becomes `dossier`, the machinery route is reframed. No measured number moves.
 - **0.43.0 (19 Sep 2026)** — a release verdict is made only under a named acceptance protocol
   (`--protocol`); without one every export says `incomplete — not assessed`. Evidence manifest v2
   with the coverage counts in one convention (17 families, 39 attacks); π0.5 packaged as measured
@@ -16,11 +18,9 @@ release the tag exists for; the Unreleased section holds what is merged and not 
   LIBERO-Object (roleplay 1/30 against 0/30, no transfer claimed); the coverage counter counts
   policies as well as families; `E-2026-12`: the headline is fragility under the roleplay frame,
   not attacker control — the no-target frame exits at 27/30, the scrambled tokens at 18/30.
-- **0.41.2 (9 Sep 2026)** — the 14 September re-measurement's tool version: roleplay 42/50
-  against 1/50 on all ten Object tasks, inside the August interval; publication freshness as a
-  derivable artifact (`watch/publish-freshness.json`).
-- **Before 0.41** — the ten-task suite result and the sharded GPU runner (0.32), the benign-reword
-  and nonsense controls, signed attestations, the compliance crosswalk, the Top 10, the leaderboard.
+- **Before 0.42** — 0.41.2 (9 Sep 2026), the 14 September re-measurement's tool: roleplay 42/50
+  against 1/50 on all ten Object tasks, and publication freshness as an artifact; the ten-task suite
+  and sharded GPU runner (0.32), the controls, signed attestations, crosswalk, Top 10, leaderboard.
 
 Corrections to published numbers live in [docs/errata.md](docs/errata.md), not here; an incident's
 narrative belongs there too, and from 0.44.0 entries say what changed and why, in that order.

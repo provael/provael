@@ -19,6 +19,12 @@ ever asked whether prose had fallen *behind*. `tests/test_roadmap_honesty.py` ho
 called planned"; `test_no_doc_or_docstring_names_an_unreleased_version` below holds "unreleased is
 not called released". They are the two directions of one error, not duplicates — delete neither.
 
+AND THE SUMMARY. `CHANGELOG.md` opens with "Recent, in twenty lines", the block a reader arriving
+today is told runs newest at the top. On 26 September 2026 its newest bullet was still 0.43.0, six
+days after 0.44.0 was cut and headed in the same file.
+`test_the_changelog_summary_names_the_newest_release` below closes it: unreleased is not called
+released, and the summary names the newest release.
+
 A counted claim is the cheapest thing in this repo to get wrong and one of the more expensive to
 be caught getting wrong: the product's entire pitch is that its numbers are checkable, so a
 reader who counts `provael list-attacks` and gets a different answer from the README has found a
@@ -703,3 +709,49 @@ def test_the_unreleased_guard_allows_honest_history(tmp_path: Path) -> None:
     ahead, seen = _ahead_of_release(tmp_path, ["doc.md", "CHANGELOG.md"], "0.44.0")
     assert ahead == []
     assert seen == 1, "the honest 'since 0.44' must still be SEEN, or this passes by not looking"
+
+
+# --------------------------------------------------------------------------- #
+# the summary — "Recent, in twenty lines" names the newest release
+# --------------------------------------------------------------------------- #
+
+
+def _newest_release(changelog: str) -> str | None:
+    """The version of the first released ``## [x.y.z]`` heading; ``[Unreleased]`` is not one."""
+    m = re.search(r"^## \[(\d+\.\d+\.\d+)\]", changelog, re.MULTILINE)
+    return m.group(1) if m else None
+
+
+def _recent_names(changelog: str, version: str) -> bool:
+    """Whether a bullet's bold lead in the "Recent" block (the text above the first ``## [``
+    heading) names ``version``. "0.42.1 / 0.42.0 (…)" names both."""
+    start = changelog.find("**Recent, in")
+    assert start != -1, "CHANGELOG.md has no '**Recent, in …**' summary; this test reads it"
+    end = changelog.find("\n## [", start)
+    block = changelog[start : end if end != -1 else len(changelog)]
+    leads = re.finditer(r"^- \*\*([^*]+)\*\*", block, re.MULTILINE)
+    return any(version in lead.group(1) for lead in leads)
+
+
+def test_the_changelog_summary_names_the_newest_release() -> None:
+    """The summary a reader arriving today is sent to lists the newest release."""
+    text = (REPO / "CHANGELOG.md").read_text(encoding="utf-8")
+    newest = _newest_release(text)
+    assert newest, "no released '## [x.y.z]' heading in CHANGELOG.md"
+    assert _recent_names(text, newest), (
+        f"CHANGELOG.md's 'Recent' summary has no bullet for {newest}, the newest release heading in "
+        "the same file. Add one written from that section's own text (what changed and why, no new "
+        "figure), and fold the oldest bullet so the block keeps its stated size."
+    )
+
+
+def test_the_summary_guard_fails_when_the_newest_release_is_missing() -> None:
+    """The shape that stood for six days must go red: a release cut and headed, not summarised."""
+    changelog = (
+        "**Recent, in twenty lines.** Newest at the top.\n\n"
+        "- **0.44.0 (20 Sep 2026)** — the previous release.\n\n"
+        "## [Unreleased]\n\n## [0.45.0] — 2026-10-01\n\n## [0.44.0] — 2026-09-20\n"
+    )
+    assert _newest_release(changelog) == "0.45.0"
+    assert not _recent_names(changelog, "0.45.0")
+    assert _recent_names(changelog, "0.44.0")
