@@ -2948,7 +2948,9 @@ still digests to its own bytes — an attestation issued before 0.42.0 keeps ver
 adapter cannot resolve a part it records <code>null</code>, never a guess; the three scaffolding adapters
 (<code>openvla</code>, <code>openpi</code>, <code>groot</code>) have never run and record nothing.</p>
 <h3 id="a-bound-predicate-is-signed-over-as-a-different-thing-schema-7">A bound predicate is signed over as a different thing (schema 7)</h3>
-<p>Since 0.45 each calibrated task's entry in the signed <code>report.json</code> carries <code>split</code>, <code>eval_fpr</code>
+<p>Not yet in any release: what this section describes was wired on main on 21 September 2026, so
+no report from a released version carries it. Each calibrated task's entry in the signed
+<code>report.json</code> carries <code>split</code>, <code>eval_fpr</code>
 and <code>binding</code>: which split the calibration artifact came from, the benign FPR measured on the eval
 split of a three-way fit after the predicate was chosen, and whether the artifact's
 <code>CalibrationBinding</code> holds for <em>this</em> run (<code>valid</code>, or <code>invalid: &lt;reason&gt;</code> — another checkpoint,
