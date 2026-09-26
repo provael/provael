@@ -1,279 +1,279 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://docs.provael.com/dev/</loc>
+         <loc>https://docs.provael.com/latest/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/accelerators/</loc>
+         <loc>https://docs.provael.com/latest/accelerators/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/adopters/</loc>
+         <loc>https://docs.provael.com/latest/adopters/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/attacks/</loc>
+         <loc>https://docs.provael.com/latest/attacks/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/attestation/</loc>
+         <loc>https://docs.provael.com/latest/attestation/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/changelog/</loc>
+         <loc>https://docs.provael.com/latest/changelog/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/checkpoint-integrity/</loc>
+         <loc>https://docs.provael.com/latest/checkpoint-integrity/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/community/</loc>
+         <loc>https://docs.provael.com/latest/community/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/comparison/</loc>
+         <loc>https://docs.provael.com/latest/comparison/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/defenses/</loc>
+         <loc>https://docs.provael.com/latest/defenses/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/errata/</loc>
+         <loc>https://docs.provael.com/latest/errata/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/examples/</loc>
+         <loc>https://docs.provael.com/latest/examples/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/faq/</loc>
+         <loc>https://docs.provael.com/latest/faq/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/first-run-transcript/</loc>
+         <loc>https://docs.provael.com/latest/first-run-transcript/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/glossary/</loc>
+         <loc>https://docs.provael.com/latest/glossary/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/handbook/</loc>
+         <loc>https://docs.provael.com/latest/handbook/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/leaderboard-disclosure/</loc>
+         <loc>https://docs.provael.com/latest/leaderboard-disclosure/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/leaderboard/</loc>
+         <loc>https://docs.provael.com/latest/leaderboard/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/measure-2-7/</loc>
+         <loc>https://docs.provael.com/latest/measure-2-7/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/migration-v2/</loc>
+         <loc>https://docs.provael.com/latest/migration-v2/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/open-core-promise/</loc>
+         <loc>https://docs.provael.com/latest/open-core-promise/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/python-api/</loc>
+         <loc>https://docs.provael.com/latest/python-api/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/quickstart/</loc>
+         <loc>https://docs.provael.com/latest/quickstart/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/reproduction-request/</loc>
+         <loc>https://docs.provael.com/latest/reproduction-request/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/roadmap/</loc>
+         <loc>https://docs.provael.com/latest/roadmap/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/sim-predicts-real/</loc>
+         <loc>https://docs.provael.com/latest/sim-predicts-real/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/top10-rfc/</loc>
+         <loc>https://docs.provael.com/latest/top10-rfc/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/top10/</loc>
+         <loc>https://docs.provael.com/latest/top10/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/compliance/</loc>
+         <loc>https://docs.provael.com/latest/compliance/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/compliance/machinery-annex-i-part-a/</loc>
+         <loc>https://docs.provael.com/latest/compliance/machinery-annex-i-part-a/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/compliance/machinery-annex-iii-corruption/</loc>
+         <loc>https://docs.provael.com/latest/compliance/machinery-annex-iii-corruption/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/compliance/machinery-reg-2027/</loc>
+         <loc>https://docs.provael.com/latest/compliance/machinery-reg-2027/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/crosswalk/</loc>
+         <loc>https://docs.provael.com/latest/crosswalk/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/crosswalk/bit-flip-vla/</loc>
+         <loc>https://docs.provael.com/latest/crosswalk/bit-flip-vla/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/crosswalk/embodied-agent-attack-surfaces/</loc>
+         <loc>https://docs.provael.com/latest/crosswalk/embodied-agent-attack-surfaces/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/crosswalk/foresight-safety-vla/</loc>
+         <loc>https://docs.provael.com/latest/crosswalk/foresight-safety-vla/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/crosswalk/halos-integrator/</loc>
+         <loc>https://docs.provael.com/latest/crosswalk/halos-integrator/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/crosswalk/libero-safety/</loc>
+         <loc>https://docs.provael.com/latest/crosswalk/libero-safety/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/crosswalk/robojailbench/</loc>
+         <loc>https://docs.provael.com/latest/crosswalk/robojailbench/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/crosswalk/safevla-bench/</loc>
+         <loc>https://docs.provael.com/latest/crosswalk/safevla-bench/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/crosswalk/vla-arena/</loc>
+         <loc>https://docs.provael.com/latest/crosswalk/vla-arena/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/crosswalk/xpolicylab/</loc>
+         <loc>https://docs.provael.com/latest/crosswalk/xpolicylab/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/findings/</loc>
+         <loc>https://docs.provael.com/latest/findings/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/findings/2026-cross-arch-transfer/</loc>
+         <loc>https://docs.provael.com/latest/findings/2026-cross-arch-transfer/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/findings/2026-instruction-transfer/</loc>
+         <loc>https://docs.provael.com/latest/findings/2026-instruction-transfer/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/findings/semantic-vs-mechanical-instruction-attacks/</loc>
+         <loc>https://docs.provael.com/latest/findings/semantic-vs-mechanical-instruction-attacks/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/maintainers/</loc>
+         <loc>https://docs.provael.com/latest/maintainers/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/maintainers/github-security-settings/</loc>
+         <loc>https://docs.provael.com/latest/maintainers/github-security-settings/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/maintainers/hosted-production-requirements/</loc>
+         <loc>https://docs.provael.com/latest/maintainers/hosted-production-requirements/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/maintainers/paid-run-dependency-licences/</loc>
+         <loc>https://docs.provael.com/latest/maintainers/paid-run-dependency-licences/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/maintainers/private-assessment-procedure/</loc>
+         <loc>https://docs.provael.com/latest/maintainers/private-assessment-procedure/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/maintainers/real-policy-validation/</loc>
+         <loc>https://docs.provael.com/latest/maintainers/real-policy-validation/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/standards/</loc>
+         <loc>https://docs.provael.com/latest/standards/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/standards/atlas-case-study/</loc>
+         <loc>https://docs.provael.com/latest/standards/atlas-case-study/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/standards/last-measured/</loc>
+         <loc>https://docs.provael.com/latest/standards/last-measured/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/standards/listings/</loc>
+         <loc>https://docs.provael.com/latest/standards/listings/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/standards/owasp-asi-embodied/</loc>
+         <loc>https://docs.provael.com/latest/standards/owasp-asi-embodied/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/standards/published-asr-baselines/</loc>
+         <loc>https://docs.provael.com/latest/standards/published-asr-baselines/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/studies/</loc>
+         <loc>https://docs.provael.com/latest/studies/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/studies/action-envelope/</loc>
+         <loc>https://docs.provael.com/latest/studies/action-envelope/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/studies/ai2-bridge-notes/</loc>
+         <loc>https://docs.provael.com/latest/studies/ai2-bridge-notes/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/studies/eai04-action-space-transfer/</loc>
+         <loc>https://docs.provael.com/latest/studies/eai04-action-space-transfer/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/studies/humanoid-locomotion-transfer/</loc>
+         <loc>https://docs.provael.com/latest/studies/humanoid-locomotion-transfer/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/studies/instruction-canonicalization/</loc>
+         <loc>https://docs.provael.com/latest/studies/instruction-canonicalization/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/studies/metaworld-transfer/</loc>
+         <loc>https://docs.provael.com/latest/studies/metaworld-transfer/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/studies/offline-real-observation/</loc>
+         <loc>https://docs.provael.com/latest/studies/offline-real-observation/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/studies/pi0-openpi-transfer/</loc>
+         <loc>https://docs.provael.com/latest/studies/pi0-openpi-transfer/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/studies/sim-to-real-so101/</loc>
+         <loc>https://docs.provael.com/latest/studies/sim-to-real-so101/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.provael.com/dev/studies/weight-integrity-stub/</loc>
+         <loc>https://docs.provael.com/latest/studies/weight-integrity-stub/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
 </urlset>
