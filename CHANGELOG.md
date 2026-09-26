@@ -144,6 +144,17 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   21 September 2026 (#278, #279) and in no release yet, and all six lines now say so.
   `tests/test_counted_claims.py` fails on any tracked doc or `src/` docstring that names a release
   after `provael.__version__` — the mirror of the checks that catch prose falling a release behind.
+- **Three ATLAS mappings named something that is not an ATLAS tactic.** Why: checked on
+  26 September 2026 against MITRE's data release 2026.09. EAI01 said "ML Attack Staging", a retired
+  name (AML.TA0001 is "AI Attack Adaptation" since 2026.08), and ATLAS files neither prompt
+  injection nor jailbreak under that tactic. It now reads Execution → LLM Prompt Injection and
+  Defense Evasion → LLM Jailbreak. EAI02 said "Evasion" for "Defense Evasion". The Top 10's own
+  crosswalk table already had both right. EAI03 put "ML Supply Chain Compromise", a technique
+  under its retired name, in the tactic slot: it is AI Supply Chain Compromise, under Initial
+  Access. The catalog, `results/crosswalk/crosswalk.atlas.json`, every SARIF rule's
+  `atlasTechniques` and `docs/standards/atlas-case-study.md` move together. `tests/test_eai.py`
+  now fails on a mapping whose tactic is not one of ATLAS's sixteen. The 8 August submission to
+  MITRE is left exactly as sent. No measured number moves.
 
 ## [0.44.0] — 2026-09-20
 

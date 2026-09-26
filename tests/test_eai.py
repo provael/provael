@@ -117,6 +117,34 @@ def test_every_attacked_risk_carries_a_structured_atlas_mapping() -> None:
             assert "AML.T" not in technique  # descriptive phrasing only, no fabricated ids
 
 
+#: MITRE ATLAS's sixteen tactic names, from data release 2026.09 (`dist/v6/ATLAS-2026.09.yaml` in
+#: mitre-atlas/atlas-data), checked 26 September 2026. When ATLAS renames one, as it renamed
+#: AML.TA0001 from "AI Attack Staging" to "AI Attack Adaptation" in 2026.08, change this set and
+#: the catalog together. The legacy `dist/ATLAS.yaml` (5.6.0) is not the current data.
+ATLAS_TACTICS = frozenset({
+    "AI Model Access", "AI Attack Adaptation", "Reconnaissance", "Resource Development",
+    "Initial Access", "Execution", "Persistence", "Defense Evasion", "Discovery", "Collection",
+    "Exfiltration", "Impact", "Privilege Escalation", "Credential Access", "Command and Control",
+    "Lateral Movement",
+})
+
+
+def test_every_atlas_mapping_names_a_real_atlas_tactic() -> None:
+    """The left of each ``→`` is an ATLAS tactic, by its current name.
+
+    Found on 26 September 2026: EAI01 named "ML Attack Staging" (retired), EAI02 "Evasion" (the
+    tactic is "Defense Evasion"), and EAI03 put a technique, "ML Supply Chain Compromise", where the
+    tactic goes. Each read as a precise ATLAS reference to anyone who did not check the matrix.
+    """
+    for eai_id in attacked_ids():
+        for technique in CATALOG[eai_id].atlas_techniques:
+            for pair in technique.split("; "):
+                tactic = pair.split("→", 1)[0].strip()
+                assert tactic in ATLAS_TACTICS, (
+                    f"{eai_id}: {tactic!r} is not an ATLAS tactic in data release 2026.09"
+                )
+
+
 def test_unattacked_risks_have_no_fabricated_atlas_mapping() -> None:
     """EAI07 and EAI10 must stay empty rather than be padded to make the column look complete.
 

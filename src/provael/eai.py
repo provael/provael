@@ -88,8 +88,8 @@ CATALOG: dict[str, EaiRisk] = {
             "`optimized_instruction` search. The only family with measured real-policy "
             "transfer."
         ),
-        atlas_techniques=("ML Attack Staging → prompt-injection / jailbreak of an "
-                          "ML-driven agent",),
+        atlas_techniques=("Execution → LLM Prompt Injection (direct) of an ML-driven agent; "
+                          "Defense Evasion → LLM Jailbreak",),
     ),
     "EAI02": EaiRisk(
         id="EAI02",
@@ -105,8 +105,8 @@ CATALOG: dict[str, EaiRisk] = {
             "balance-spoof. `optimized_patch` needs a real image channel and never scores on a "
             "CPU stub suite."
         ),
-        atlas_techniques=("Evasion → adversarial example in the perception channel (craft "
-                          "adversarial data)",),
+        atlas_techniques=("Defense Evasion → adversarial example in the perception channel "
+                          "(craft adversarial data)",),
     ),
     "EAI03": EaiRisk(
         id="EAI03",
@@ -129,8 +129,8 @@ CATALOG: dict[str, EaiRisk] = {
             "on one LIBERO task (14 September 2026, 0/3 on every arm, a result and not a rate); "
             "the powered arm is registered and priced but has not run."
         ),
-        atlas_techniques=("Persistence → backdoor the ML model; ML Supply Chain Compromise → "
-                          "poison an open-weights checkpoint",),
+        atlas_techniques=("Persistence → Manipulate AI Model (backdoor); Initial Access → AI "
+                          "Supply Chain Compromise of an open-weights checkpoint",),
     ),
     "EAI04": EaiRisk(
         id="EAI04",

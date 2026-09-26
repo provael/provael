@@ -40,6 +40,15 @@ hand-edit, and see the note under the table on what keeps the two in agreement.
 Phrasings are descriptive `tactic → technique`. **No `AML.TXXXX` identifiers are cited**: quoting a
 technique id we have not verified against the live matrix would manufacture false precision.
 
+Tactic and technique names were checked on 26 September 2026 against ATLAS data release 2026.09
+(`dist/v6/ATLAS-2026.09.yaml` in `mitre-atlas/atlas-data`), including which tactic each technique
+sits under. That check changed three rows. EAI01 had named "ML Attack Staging", a retired name
+(AML.TA0001 is now "AI Attack Adaptation") for a tactic ATLAS files neither prompt injection nor
+jailbreak under. EAI02 had named "Evasion", where the tactic is "Defense Evasion". EAI03 had put a
+technique, under its retired name "ML Supply Chain Compromise", where a tactic goes. The legacy
+`dist/ATLAS.yaml` still self-reports 5.6.0 and names AML.TA0001 "AI Attack Staging", so check
+against the `v6` release.
+
 `mapping_status` values, all three of which are used below:
 
 | value | meaning |
@@ -50,9 +59,9 @@ technique id we have not verified against the live matrix would manufacture fals
 
 | EAI | Risk | ATLAS tactic → technique | `mapping_status` |
 | --- | --- | --- | --- |
-| EAI01 | Policy & instruction jailbreak | ML Attack Staging → prompt-injection / jailbreak of an ML-driven agent | `proposed-mapped` |
-| EAI02 | Adversarial perception | Evasion → adversarial example in the perception channel (craft adversarial data) | `proposed-mapped` |
-| EAI03 | Model & pipeline poisoning, backdoors & supply chain | Persistence → backdoor the ML model; ML Supply Chain Compromise → poison an open-weights checkpoint | `proposed-mapped` |
+| EAI01 | Policy & instruction jailbreak | Execution → LLM Prompt Injection (direct) of an ML-driven agent; Defense Evasion → LLM Jailbreak | `proposed-mapped` |
+| EAI02 | Adversarial perception | Defense Evasion → adversarial example in the perception channel (craft adversarial data) | `proposed-mapped` |
+| EAI03 | Model & pipeline poisoning, backdoors & supply chain | Persistence → Manipulate AI Model (backdoor); Initial Access → AI Supply Chain Compromise of an open-weights checkpoint | `proposed-mapped` |
 | EAI04 | Action-space integrity | Impact → manipulate / deny the agent's actuation | `proposed-gap` |
 | EAI05 | Indirect / embodied prompt injection | Execution → indirect prompt injection via the environment | `proposed-mapped` |
 | EAI06 | Cross-domain safety misalignment (the embodiment gap) | Impact → unsafe embodied action under a language-benign instruction | `proposed-gap` |
