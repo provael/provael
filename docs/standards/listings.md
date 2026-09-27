@@ -2,9 +2,10 @@
 
 > **Status, 26 September 2026: sixteen listing PRs opened since 9 August — three merged, three
 > closed unmerged, ten open — plus two issues on one list (ledger in §2).** The OECD.AI catalogue
-> submission (§1) is not recorded here. Each item remains an external action (a submission or a PR
-> to another repo) and a **manual step that requires explicit sign-off**; Provael™ does not submit
-> these automatically.
+> lists Provael at <https://oecd.ai/en/catalogue/tools/provael> (seen 27 September 2026; a
+> modification request for its paid-services sentence was sent the same day). Each item remains an
+> external action (a submission or a PR to another repo) and a **manual step that requires
+> explicit sign-off**; Provael™ does not submit these automatically.
 
 Getting Provael into the recognised discovery layer is how a scanner goes from a repo to a standard.
 Each entry below is drafted to paste directly into the target's form / PR, followed by the exact
@@ -38,7 +39,8 @@ overview: <https://oecd.ai/en/catalogue/contribute>.
 2. Open <https://oecd.ai/en/catalogue/tools/submit> and sign in / create the submitter account.
 3. Paste each field above; select the closest OECD taxonomy values offered by the form.
 4. Note the current submission deadline shown on the form before sending; screenshot the confirmation.
-5. Record the resulting catalogue URL back in this file once approved.
+5. Record the resulting catalogue URL back in this file once approved. **Listed:**
+   <https://oecd.ai/en/catalogue/tools/provael> (seen 27 September 2026).
 
 ## 2. Awesome-list PRs (embodied-AI-safety / red-teaming discovery lists)
 

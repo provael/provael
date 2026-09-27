@@ -257,7 +257,8 @@ comparison here would be reporting a hardware fault as a finding.
     pose it receives — the plugin work above, after the calibrated predicate and the hardware run —
     not a suite adapter on the caller side. The benign control arm is expressible either way. Full
     notes, with the correction on top, in [docs/studies/ai2-bridge-notes.md](studies/ai2-bridge-notes.md).
-- **Standards (submissions and proposals until a body accepts them):** MITRE ATLAS case study, OWASP Agentic embodied annex, OECD.AI listing (drafts in
+- **Standards (submissions and proposals until a body accepts them):** MITRE ATLAS case study (sent 8 August 2026, withdrawn 27 September after E-2026-12), OWASP
+  Agentic embodied annex, OECD.AI listing (live at <https://oecd.ai/en/catalogue/tools/provael>) (drafts in
   [docs/standards](https://github.com/provael/provael/tree/main/docs/standards)).
 - **Stronger attacks (conditional on a customer or a funded study):** gradient-based adversarial **suffixes** (GCG-style) and a real-model
   transfer of the `optimized` family beyond the stub. The white-box *patch* half of this line

@@ -14,7 +14,7 @@ withholding is documented where the row would have gone.
 | Page | Status |
 | --- | --- |
 | [MITRE ATLAS case study](atlas-case-study.md) | Mirror of the submission, complete: all ten EAI rows with a per-row `mapping_status`, two of them `none-yet`. The **PR** route to `atlas-data` is what remains a draft. |
-| [MITRE ATLAS submission YAML](atlas-submission-2026-08-08.yaml) | **SENT 8 August 2026** to atlas@mitre.org — one technique + one case study. Awaiting a response. |
+| [MITRE ATLAS submission YAML](atlas-submission-2026-08-08.yaml) | **SENT 8 August 2026** to atlas@mitre.org — one technique + one case study. **WITHDRAWN 27 September 2026**: our own later controls reversed its central claim (E-2026-12). Kept exactly as sent. |
 | [OWASP Agentic Top-10 — embodied annex](owasp-asi-embodied.md) | Draft |
 | [Directory listings & awesome-list PRs](listings.md) | Prepared |
 
@@ -27,6 +27,13 @@ ATLAS scope admits a red-team exercise, and no fielded system was attacked and n
 The exact file submitted is committed at
 [`atlas-submission-2026-08-08.yaml`](atlas-submission-2026-08-08.yaml) so the submission is
 reproducible and its date is on the record rather than in someone's sent folder.
+
+**Withdrawn 27 September 2026**, by email to the same address. The technique it proposed describes
+attacker-directed redirection; the controls run on 18 September (E-2026-12) show the effect is
+fragility under a long out-of-distribution instruction: the same frame with no target named leaves
+the envelope in 27 of 30 episodes, and a length-matched scramble in 18 of 30. Its case study also
+cited the single-task 10 of 10, since replaced by the ten-task 42 of 50. A revised case study with
+both controls was offered. The file above stays exactly as sent.
 
 The argument, verified against **`dist/v6/ATLAS-2026.07.yaml`** — the current data release
 (collection version **2026.07**), `mitre-atlas/atlas-data`, fetched 8 August 2026: the strings
