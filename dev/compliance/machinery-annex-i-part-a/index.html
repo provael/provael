@@ -2827,8 +2827,9 @@ way that assessment consumes it.</p>
    inputs to a systematic-capability or validation argument. A PL comes from architecture, MTTFd,
    diagnostic coverage and CCF; an attack-success rate is none of those and must never be presented
    as one.
-6. <strong>Referenced artifacts</strong> — the CycloneDX <strong>ML-BOM</strong> and the PEP 740 <strong>attestation</strong> are
-   <em>referenced</em> by filename and bound by the run's SHA-256 digest, not duplicated.</p>
+6. <strong>Referenced artifacts</strong> — the CycloneDX <strong>ML-BOM</strong> and the <strong>attestation</strong> bundle
+   (<code>provael-attestation/v2</code>, a DSSE-style envelope of our own; it is not a PEP 740 attestation)
+   are <em>referenced</em> by filename and bound by the run's SHA-256 digest, not duplicated.</p>
 <p>The command <strong>reuses</strong> every statistic from <code>provael.scoring.asr</code> and <code>provael.calibration</code> — no
 scoring is reimplemented — and re-runs nothing: it consumes a <code>report.json</code>, exactly like the
 compliance export and <code>attest</code>.</p>
