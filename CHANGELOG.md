@@ -121,6 +121,30 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   `tests/fixtures/cyclonedx-1.6`. **Consumers that read `metadata.component.name == "provael"`,
   or that looked for the model under `components`, must read `metadata.tools` and
   `metadata.component` instead.** No measured number moves.
+- **Attestations bind `report.json`'s bytes, and the signature covers a small fixed record
+  (`provael-attestation/v2`).** Why: a v1 subject was the SHA-256 of the report's model
+  projection, because the statement builder was handed a parsed report, so deleting a field whose
+  stored value equals its default (loading restores it) left the digest intact; and a signed
+  statement is 38 to 117 KB, while AWS KMS signs pure Ed25519 only over a raw message of at most
+  4,096 bytes, which ruled out a KMS-held key for the operated tier. What changed: the subject is
+  the SHA-256 of the file as written (`subject.binding: report-json-bytes/v1`, the value
+  `sha256sum report.json` prints), so `attest --verify --report` is a byte-for-byte check; the
+  Ed25519 signature covers a 306-byte signed record naming the statement's SHA-256 and the
+  subject's, a 363-byte message under the DSSE encoding (`attest.signed_record`,
+  `record_signing_message`). `ReportArtifact` carries the bytes read from disk to every statement
+  builder (`attest`, `certify`, `submit`, the assurance and insurer views), `submit` publishes the
+  submitter's `report.json` byte for byte instead of a re-serialised copy, the hosted server binds
+  the request body as received (post it with `curl --data-binary`, not `--data`), `report.json`
+  is written as LF bytes on every OS, and `.gitattributes` stops a Windows checkout rewriting
+  byte-bound files. The verifier now also rejects a bundle whose `payloadType` is not an
+  attestation, or whose statement format it does not know: before, a signature by the same key
+  over any payload type verified as an attestation. The certify dossier no longer calls the bundle
+  a PEP 740 attestation, which it never was. The committed insurer sample is regenerated as v2.
+  **Compatibility:** v1 bundles still verify, by the v1 rule (frozen fixtures in
+  `tests/fixtures/attestation_v1` pin it), and the verdict names the rule applied; 0.44.0 and
+  earlier cannot verify a v2 bundle, so upgrade verifiers before issuers. The execution and
+  evidence manifests keep the projection digest, which is no longer equal to the attestation
+  subject. No measured number moves.
 
 - **Meta-World is declared scaffolding: the published counts move from 5 runnable / 2 scaffolding
   suites to 4 / 3.** Why: no Meta-World benchmark has ever been run (nothing under `results/`), and

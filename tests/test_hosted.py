@@ -183,6 +183,34 @@ def test_server_builds_with_expected_routes(monkeypatch: pytest.MonkeyPatch) -> 
 
 
 @pytest.mark.skipif(not _HAS_TESTCLIENT, reason="requires the `hosted` extra and an HTTP client")
+def test_attest_binds_the_body_exactly_as_posted(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The bundle's subject is the SHA-256 of the bytes the caller sent, so the file they hold
+    # verifies; the same report with other whitespace is another file and another subject.
+    import base64
+    import hashlib
+    import json
+
+    from provael.report import report_json_bytes
+
+    monkeypatch.setenv(ENABLE_HOSTED_ENV, "1")
+    from fastapi.testclient import TestClient
+
+    from provael.hosted.server import create_app
+
+    client = TestClient(create_app())
+    file_bytes = report_json_bytes(_report())
+    compact = json.dumps(json.loads(file_bytes), separators=(",", ":")).encode("utf-8")
+    subjects = []
+    for body in (file_bytes, compact):
+        resp = client.post("/attest", content=body, headers={"content-type": "application/json"})
+        assert resp.status_code == 200, resp.text
+        statement = json.loads(base64.b64decode(resp.json()["bundle"]["payload"]))
+        assert statement["subject"]["digest"]["sha256"] == hashlib.sha256(body).hexdigest()
+        subjects.append(statement["subject"]["digest"]["sha256"])
+    assert subjects[0] != subjects[1]
+
+
+@pytest.mark.skipif(not _HAS_TESTCLIENT, reason="requires the `hosted` extra and an HTTP client")
 def test_attest_refuses_to_sign_with_a_throwaway_ephemeral_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

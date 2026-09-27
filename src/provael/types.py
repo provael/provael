@@ -242,7 +242,7 @@ class AttackResult(BaseModel):
     decisions: list[Decision] = Field(
         default_factory=list,
         description="Per-episode log: one Decision per executed timestep (P0.4). Deterministic on "
-        "the stub; bound by the report.json SHA-256 the attestation subject records.",
+        "the stub; bound by the attestation subject with the rest of report.json.",
     )
     trajectory: Trajectory | None = Field(
         None,
@@ -564,9 +564,12 @@ class ComponentProfile(BaseModel):
 class RunReport(BaseModel):
     """The full, deterministic result of a red-team run.
 
-    DIGEST CONTRACT (read before adding a field). ``provael.attest`` binds an attestation to
-    ``sha256`` of a *canonical, SCHEMA-AWARE projection* of this model, not to the bytes of
-    ``report.json`` and not to a bare re-serialisation:
+    DIGEST CONTRACT (read before adding a field). Two digests identify a report, by different
+    rules. A v2 attestation (issued from 0.45) binds ``sha256`` of ``report.json`` exactly as
+    written, so nothing about this model can move it for a file already on disk. Every other digest
+    over a RunReport — the execution and evidence manifests, leaderboard inputs, shard digests, and
+    the subject of a v1 attestation — is ``sha256`` of a *canonical, SCHEMA-AWARE projection* of
+    this model, not of the file's bytes and not of a bare re-serialisation:
 
         report_digest = sha256(canonical_json(attest.report_projection(report)))
 
@@ -581,10 +584,11 @@ class RunReport(BaseModel):
     on doing the bare dump anyway, and two of them shipped broken:
     ``leaderboard._inputs_digest`` (fixed 0.36.1) and ``combine.shard_digests`` (fixed 0.36.2).
 
-    So the rule, stated once: **any digest over a RunReport goes through
-    ``attest.report_projection``.** Adding an optional field is then additive rather than breaking —
-    register it in ``_RESULT_FIELDS_ADDED_IN`` with its schema version, bump ``schema_version`` in
-    the same change that starts emitting it, and old attestations keep verifying.
+    So the rule, stated once: **any digest over a parsed RunReport goes through
+    ``attest.report_projection``** (the v2 attestation subject hashes the file instead, and never
+    re-serialises). Adding an optional field is then additive rather than breaking — register it in
+    ``_RESULT_FIELDS_ADDED_IN`` with its schema version, bump ``schema_version`` in the same change
+    that starts emitting it, and old manifests and v1 attestations keep verifying.
 
     ``extra="forbid"`` is set so an unrecognised key cannot ride along into the signed payload: a
     report file carrying an unexpected field is rejected at load rather than silently absorbed into

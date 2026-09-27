@@ -50,8 +50,9 @@ implemented here**.
 ```bash
 pip install 'provael[hosted]'
 PROVAEL_ENABLE_EXPERIMENTAL_HOSTED=1 provael serve   # uvicorn on 127.0.0.1:8000
-# POST a report.json (digest-only bundle):
-curl -s localhost:8000/attest -H 'content-type: application/json' --data @runs/stub/report.json
+# POST a report.json (digest-only bundle). --data-binary, not --data: the bundle binds the SHA-256
+# of the body as received, and --data strips the file's newlines, which makes it another file.
+curl -s localhost:8000/attest -H 'content-type: application/json' --data-binary @runs/stub/report.json
 ```
 
 **Evidence, not certification.** This surface documents measured simulation results; it is not a

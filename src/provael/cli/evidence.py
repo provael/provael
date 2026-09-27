@@ -46,9 +46,11 @@ from provael.config import RunConfig
 from provael.manifest import to_evidence_manifest_json
 from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
 from provael.report import (
+    ReportArtifact,
     benign_control_text,
     load_report,
     render_summary,
+    report_json_path,
     write_report,
 )
 from provael.runner import run
@@ -236,19 +238,21 @@ def attest(
             except (FileNotFoundError, ValidationError):
                 _fail(f"{trust_store} is not a readable trust store")
                 return
-        subject = None
+        # The file's bytes, unparsed: a v2 subject is their SHA-256, and a v1 subject is checked by
+        # parsing them inside verify_bundle, where a file that fails to load is a clean mismatch.
+        subject_bytes: bytes | None = None
         if subject_report is not None:
             try:
-                subject = load_report(subject_report)
-            except (FileNotFoundError, ValidationError):
-                _fail(f"{subject_report} does not contain a valid report.json")
+                subject_bytes = report_json_path(subject_report).read_bytes()
+            except OSError:
+                _fail(f"{subject_report} does not contain a readable report.json")
                 return
         try:
             result = verify_bundle(
                 bundle,
                 public_key_pem_bytes=pub_bytes,
                 trust_store=store,
-                subject_report=subject,
+                subject_report_bytes=subject_bytes,
                 now=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             )
         except MissingAttestExtraError as exc:
@@ -272,15 +276,18 @@ def attest(
         return
 
     # -- issuance mode -----------------------------------------------------------------------
+    # The bundle binds report.json's bytes, so it is built from the file as read (`artifact`),
+    # never from a report re-serialised after loading.
     if in_dir is not None:
         try:
-            report = load_report(in_dir)
+            artifact = ReportArtifact.read(in_dir)
         except FileNotFoundError as exc:
             _fail(str(exc))
             return
         except ValidationError:
             _fail(f"{in_dir} does not contain a valid Provael report.json")
             return
+        report = artifact.report
         decision = _decision_for(in_dir, report, protocol)
     else:
         acceptance = _load_protocol(protocol)
@@ -299,18 +306,19 @@ def attest(
             return
         decision = _decide(report, acceptance)
         write_report(report, out, decision)
+        artifact = ReportArtifact.read(out)  # what is on disk is what gets bound
 
     issued_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     stamp = commit or _git_commit() or f"v{__version__}"
     private_key_pem = key.read_bytes() if key is not None else None
     assurance = (
-        build_assurance(report, profile, issued_at=issued_at, commit=stamp)
+        build_assurance(artifact, profile, issued_at=issued_at, commit=stamp)
         if profile is not None else None
     )
 
     try:
         bundle, pub_pem = to_bundle(
-            report, issued_at=issued_at, commit=stamp,
+            artifact, issued_at=issued_at, commit=stamp,
             private_key_pem=private_key_pem, sign=not no_sign, assurance=assurance,
             decision=decision,
         )
@@ -344,6 +352,7 @@ def attest(
         )
     _out.print("\n[bold]Attestation[/bold]")
     _out.print(f"  subject   : {report.policy} x {report.suite}")
+    _out.print(f"  report    : sha256 {artifact.sha256} (the file's bytes: sha256sum report.json)")
     _out.print(f"  evidence  : {evidence}, benign FPR {fpr}")
     _out.print(f"  issued_at : {issued_at}   commit: {stamp}")
     if bundle.signed:

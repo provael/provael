@@ -9,6 +9,7 @@ attestation stays byte-deterministic, and the committed SmolVLA×LIBERO sample m
 
 from __future__ import annotations
 
+import base64
 import json
 from pathlib import Path
 
@@ -26,7 +27,7 @@ from provael.assurance import (
 from provael.attest import load_bundle, to_bundle, to_bundle_json, verify_bundle
 from provael.cli import app
 from provael.config import RunConfig
-from provael.report import load_report
+from provael.report import ReportArtifact, load_report
 from provael.runner import run
 
 runner = CliRunner()
@@ -161,14 +162,19 @@ def test_attestation_with_profile_is_byte_identical_across_two_runs() -> None:
 
 
 def test_committed_sample_matches_a_fresh_build_and_verifies() -> None:
-    report = _real_report()
-    assurance = build_assurance(report, AssuranceProfile.insurer,
+    # Built from the committed file's bytes, which is what the sample's subject binds.
+    artifact = ReportArtifact.read(_REAL)
+    assurance = build_assurance(artifact, AssuranceProfile.insurer,
                                 issued_at=_ISSUED, commit="smolvla-libero-2026-06-06")
-    fresh, _ = to_bundle(report, issued_at=_ISSUED, commit="smolvla-libero-2026-06-06",
+    fresh, _ = to_bundle(artifact, issued_at=_ISSUED, commit="smolvla-libero-2026-06-06",
                          sign=False, assurance=assurance)
     assert to_bundle_json(fresh) + "\n" == _SAMPLE.read_text(encoding="utf-8")  # drift guard
     # digest-only sample: the honest offline check is the integrity layer (not a trusted signature).
-    assert verify_bundle(load_bundle(_SAMPLE)).integrity_only_ok
+    result = verify_bundle(load_bundle(_SAMPLE), subject_report_bytes=artifact.raw)
+    assert result.integrity_only_ok and result.subject_report_integrity_ok is True
+    # the embedded insurer report names the same subject as the bundle, not a second digest
+    statement = json.loads(base64.b64decode(fresh.payload))
+    assert statement["assurance"]["insurer_report"]["subject"] == statement["subject"]
 
 
 def test_cli_attest_profile_embeds_assurance(tmp_path: Path) -> None:

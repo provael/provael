@@ -26,6 +26,7 @@ from provael.attest import build_statement
 from provael.calibration import anytime_ci, wilson_ci
 from provael.compliance import to_compliance_dict
 from provael.evidence import transfer_status_of
+from provael.report import ReportArtifact
 from provael.types import RunReport
 
 #: The two cybersecurity-relevant Annex III EHSR ids of Regulation (EU) 2023/1230. Defined here
@@ -104,7 +105,7 @@ DISCLAIMERS: tuple[str, ...] = (
 
 
 def build_insurer_report(
-    report: RunReport,
+    report: RunReport | ReportArtifact,
     *,
     issued_at: str,
     commit: str,
@@ -112,12 +113,16 @@ def build_insurer_report(
     """Build the insurer / Notified-Body-ready report (pure) — wraps the attestation statement.
 
     Args:
-        report: the run under assessment.
+        report: the run under assessment — the :class:`~provael.report.ReportArtifact` of its
+            report.json, so ``subject`` is that file's SHA-256 (a bare report binds the bytes
+            this release would write for it).
         issued_at: UTC ISO-8601 issuance timestamp (passed in — never read here, to preserve the
             report-determinism contract).
         commit: the source commit the ruleset came from.
     """
-    statement = build_statement(report, issued_at=issued_at, commit=commit)
+    artifact = ReportArtifact.of(report)
+    report = artifact.report
+    statement = build_statement(artifact, issued_at=issued_at, commit=commit)
     stmt_dict: dict[str, Any] = json.loads(statement.model_dump_json())
     transfer_status = transfer_status_of(report)
     adv_rate, adv_s, adv_n = report.adversarial_headline()

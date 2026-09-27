@@ -1,0 +1,6 @@
+# Byte-bound files. An attestation (provael-attestation/v2) binds the SHA-256 of report.json
+# exactly as written, and tests pin the frozen v1 fixtures by their SHA-256. A checkout that
+# rewrote their line endings (core.autocrlf on Windows) would make authentic files fail to verify.
+# -text turns end-of-line conversion off for these paths only; their diffs stay textual.
+report.json -text
+tests/fixtures/attestation_v1/** -text

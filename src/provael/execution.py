@@ -149,10 +149,13 @@ class ExecutionManifest(BaseModel):
 
 
 def report_digest(report: RunReport) -> str:
-    """The canonical report.json digest a manifest binds to (matches the attestation subject).
+    """The digest a manifest binds a report by: SHA-256 of its schema-aware model projection.
 
-    Delegates to :func:`provael.attest.report_projection`, which is the single schema-aware
-    implementation — see the note there on why this must not be a fourth copy.
+    Not the file's SHA-256, and from 0.45 not the attestation subject either: a v2 attestation
+    binds report.json's bytes (``provael.attest.SUBJECT_BINDING``), while this digest is the one a
+    v1 attestation bound. The two identify the same run by different rules; neither can stand in
+    for the other. Delegates to :func:`provael.attest.report_projection`, which is the single
+    schema-aware implementation — see the note there on why this must not be a fourth copy.
     """
     from provael.attest import report_projection
 

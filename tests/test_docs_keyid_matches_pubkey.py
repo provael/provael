@@ -43,6 +43,18 @@ _KEYID_RE = re.compile(r"keyid[\"'`]?\s*[:=]?\s*[\"'`]?([0-9a-f]{16})\b")
 #: superseded value so it never sits immediately after the token `keyid`.)
 _HISTORICAL = frozenset({"CHANGELOG.md"})
 
+#: Directories of bundles signed with their own test key, which is committed beside them. Their
+#: keyids are claims about THAT key, not about the published board, so they are checked against it
+#: rather than exempted: a fixture whose keyid drifted from its own key still fails here.
+_OWN_KEY_DIRS: dict[str, Path] = {
+    "tests/fixtures/attestation_v1/": REPO / "tests" / "fixtures" / "attestation_v1" / "fixture.pub",
+}
+
+
+def _key_for(rel: str) -> Path:
+    """The public key a keyid in ``rel`` must derive from."""
+    return next((key for prefix, key in _OWN_KEY_DIRS.items() if rel.startswith(prefix)), _PUBKEY)
+
 
 def _tracked_text_files() -> list[Path]:
     out = subprocess.run(
@@ -77,13 +89,18 @@ def test_the_scan_actually_finds_keyids() -> None:
 
 
 def test_every_documented_keyid_matches_the_published_key() -> None:
-    """No tracked file may claim a keyid the published public key does not derive to."""
-    expected = keyid_of(_PUBKEY.read_bytes())
+    """No tracked file may claim a keyid the key that signed it does not derive to."""
     wrong = sorted(
-        {f"{rel}: keyid {kid}" for rel, kid in _keyids_in_repo() if kid != expected}
+        {
+            f"{rel}: keyid {kid} (expected {keyid_of(_key_for(rel).read_bytes())} from "
+            f"{_key_for(rel).relative_to(REPO)})"
+            for rel, kid in _keyids_in_repo()
+            if kid != keyid_of(_key_for(rel).read_bytes())
+        }
     )
     assert not wrong, (
-        f"these files name a keyid that is not derived from {_PUBKEY.relative_to(REPO)} "
-        f"(expected {expected}). Run `uv run python scripts/render_keyid.py` instead of typing "
-        "keyids by hand:\n  " + "\n  ".join(wrong)
+        "these files name a keyid that is not derived from the key that signed them (for "
+        f"anything but a test fixture, {_PUBKEY.relative_to(REPO)}). Run "
+        "`uv run python scripts/render_keyid.py` instead of typing keyids by hand:\n  "
+        + "\n  ".join(wrong)
     )

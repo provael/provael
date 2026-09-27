@@ -87,8 +87,9 @@ Each item is separately addressable in `dossier.json` (and rendered in `dossier.
    inputs to a systematic-capability or validation argument. A PL comes from architecture, MTTFd,
    diagnostic coverage and CCF; an attack-success rate is none of those and must never be presented
    as one.
-6. **Referenced artifacts** — the CycloneDX **ML-BOM** and the PEP 740 **attestation** are
-   *referenced* by filename and bound by the run's SHA-256 digest, not duplicated.
+6. **Referenced artifacts** — the CycloneDX **ML-BOM** and the **attestation** bundle
+   (`provael-attestation/v2`, a DSSE-style envelope of our own; it is not a PEP 740 attestation)
+   are *referenced* by filename and bound by the run's SHA-256 digest, not duplicated.
 
 The command **reuses** every statistic from `provael.scoring.asr` and `provael.calibration` — no
 scoring is reimplemented — and re-runs nothing: it consumes a `report.json`, exactly like the

@@ -22,13 +22,16 @@ core; calling :func:`create_app` without the extra raises a clear, actionable er
 is deliberately outside the deterministic ``report.json`` path, which never embeds wall-clock time.
 """
 
-from __future__ import annotations
+# No `from __future__ import annotations` in this module, on purpose: FastAPI reads a handler's
+# annotations to wire its parameters, and a postponed (string) annotation naming a class imported
+# inside create_app — `Request`, `Depends` — cannot be resolved from the module's globals, so
+# FastAPI silently took `request` for a query parameter and answered every POST with 422.
 
 import logging
 import os
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import Annotated, Any
 
 from provael import __version__
 from provael.attest import MissingAttestExtraError, to_bundle
@@ -48,7 +51,7 @@ from provael.hosted.bounds import (
     error_body,
 )
 from provael.hosted.report import build_insurer_report
-from provael.types import RunReport
+from provael.report import ReportArtifact
 
 #: Where an internal failure's traceback goes: the operator's log, never the response body. A
 #: caller gets a stable error shape and a request id to quote; the operator greps the id.
@@ -103,6 +106,8 @@ def create_app(*, max_body_bytes: int = MAX_BODY_BYTES) -> Any:
       * ``POST /attest``          — report.json -> attestation bundle. Default digest-only.
         ``?sign=true`` signs with the operator's OWN key (``PROVAEL_SIGNING_KEY``) and returns its
         public key; it refuses to mint a throwaway ephemeral key whose public half is discarded.
+        The bundle binds the SHA-256 of the body exactly as posted, so post the file's bytes
+        (``curl --data-binary``; plain ``--data`` strips its newlines and binds another file).
       * ``POST /assurance-report`` — report.json -> a structured assurance-report **draft** (an
         evidence export, NOT an insurer / Notified-Body opinion), behind the
         ``PROVAEL_HOSTED_LICENSE`` local feature flag.
@@ -115,9 +120,10 @@ def create_app(*, max_body_bytes: int = MAX_BODY_BYTES) -> Any:
             f"{ENABLE_HOSTED_ENV}=1 to run it locally at your own risk."
         )
     try:
-        from fastapi import FastAPI, HTTPException, Query, Request
+        from fastapi import Depends, FastAPI, HTTPException, Query, Request
         from fastapi.exceptions import RequestValidationError
         from fastapi.responses import JSONResponse
+        from pydantic import ValidationError
     except ImportError as exc:  # pragma: no cover - exercised via the CLI/import error path
         raise MissingHostedExtraError(
             "The hosted server needs the `hosted` extra: pip install 'provael[hosted]'."
@@ -169,6 +175,18 @@ def create_app(*, max_body_bytes: int = MAX_BODY_BYTES) -> Any:
                                request_id=request_id),
         )
 
+    # The body is read as bytes, not parsed into a model by FastAPI: an attestation binds the
+    # SHA-256 of the report.json it was given, and a model parsed and re-serialised is another
+    # file. The async dependency reads it on the event loop; the handlers stay sync (thread pool).
+    async def _posted_report(request: Request) -> ReportArtifact:
+        try:
+            return ReportArtifact.from_bytes(await request.body())
+        except ValidationError as exc:
+            # Same shape as FastAPI's own body validation, so the 422 handler above answers it.
+            raise RequestValidationError(
+                [{**err, "loc": ("body", *err.get("loc", ()))} for err in exc.errors()]
+            ) from exc
+
     @app.get("/healthz")
     def healthz() -> dict[str, str]:
         return {
@@ -180,7 +198,7 @@ def create_app(*, max_body_bytes: int = MAX_BODY_BYTES) -> Any:
 
     @app.post("/attest")
     def attest_endpoint(
-        report: RunReport,
+        report: Annotated[ReportArtifact, Depends(_posted_report)],
         sign: bool = Query(default=False, description="Sign with the OPERATOR's key (needs one)."),
     ) -> dict[str, Any]:
         key_pem = _signing_key_pem()
@@ -217,7 +235,9 @@ def create_app(*, max_body_bytes: int = MAX_BODY_BYTES) -> Any:
         }
 
     @app.post("/assurance-report")
-    def assurance_report_endpoint(report: RunReport) -> dict[str, Any]:
+    def assurance_report_endpoint(
+        report: Annotated[ReportArtifact, Depends(_posted_report)],
+    ) -> dict[str, Any]:
         try:
             require_entitlement()
         except EntitlementError as exc:
