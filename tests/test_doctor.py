@@ -26,6 +26,7 @@ from typer.testing import CliRunner
 
 from provael.cli import app
 from provael.policies.registry import SCAFFOLDING_POLICIES
+from provael.suites import SCAFFOLDING_SUITES
 
 runner = CliRunner()
 
@@ -85,6 +86,19 @@ def test_every_scaffolding_backend_is_listed_as_scaffolding() -> None:
     for name in SCAFFOLDING_POLICIES:
         assert re.search(rf"scaffolding\s+{re.escape(name)}\b", out), (
             f"{name} is in SCAFFOLDING_POLICIES but doctor did not mark it as scaffolding"
+        )
+
+
+def test_every_scaffolding_suite_is_listed_as_scaffolding() -> None:
+    """The suite half, which said "importable" for every scaffolded suite until 28 Sep 2026.
+
+    "importable" reads as one command away from a measurement; for a suite nobody has ever run a
+    benchmark through, that is the same silent promotion the policy test above exists to stop.
+    """
+    out = _doctor()
+    for name in SCAFFOLDING_SUITES:
+        assert re.search(rf"scaffolding\s+{re.escape(name)}\b", out), (
+            f"{name} is in SCAFFOLDING_SUITES but doctor did not mark it as scaffolding"
         )
 
 

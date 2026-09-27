@@ -46,8 +46,11 @@ OVERALL                   67/90         54/90
 Add a GPU suite to the `SUITES` list in `compare.py` (needs `provael[lerobot]`):
 
 ```python
-SUITES = ["stub", "reach", "libero", "metaworld"]
+SUITES = ["stub", "reach", "libero"]
 ```
+
+`metaworld` is registered scaffolding: with no keep-out zone of its own it raises at reset, because
+LIBERO's default box lies behind the Sawyer arm (see [../suites/](../suites/)).
 
 See [../adapters/](../adapters/) for the model side and [../suites/](../suites/) for the suite
 adapter roadmap.

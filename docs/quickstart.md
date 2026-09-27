@@ -29,7 +29,7 @@ predicate: default (uncalibrated) · benign baseline FPR 0.0%
 ```bash
 provael list-policies         # 8 policies — 1 CPU (stub), 7 need a GPU extra, of which 3 are registered scaffolding; 2 have a committed real-model result (pi05, smolvla)
 provael list-attacks          # 44 attacks across 19 families (17 adversarial + 2 benign control): action/action_space/authorization/backdoor/confidentiality/gradient_patch/humanoid/injection/instruction/misalignment/optimized/optimized_instruction/optimized_patch/sensor_spoof/universal_patch/visual/weight_integrity/baseline/control
-provael list-suites           # 7 suites registered — 3 CPU fixtures, 3 gated real simulators, 2 scaffolding (never run)
+provael list-suites           # 7 suites registered — 3 CPU fixtures, 1 gated real simulator, 3 scaffolding (never run)
 provael list-recipes          # named presets: quick / instruction-only / core-sweep / full-sweep / ci-gate
 provael list-reproductions    # FreezeVLA / OpenVLA-patch / BadVLA / RoboPAIR
 provael reproduce freezevla   # reproduce a published attack on the CPU stub
@@ -63,10 +63,11 @@ select the other LIBERO task suites through the same adapter.
 See the [examples gallery](examples.md) for the π0 / GR00T / OpenVLA adapters and the second real
 simulator, Meta-World. Read the status before pointing a run at either: `provael list-policies` and
 `provael list-suites` say, per adapter and per suite, whether a committed run has ever driven a real
-policy through it. Meta-World's is **no run committed here** — the adapter is implemented and
-unit-tested, its simulator wiring has never been introspected against an installed package, and the
-CLI cannot yet complete a run on it (its `notes` say why); `groot`, `openvla` and `openpi` are
-**scaffolding**. Only `libero` × `smolvla` (and π0.5's preliminary leg) is `measured`.
+policy through it. Meta-World is **scaffolding** — the adapter is implemented and unit-tested, but
+its simulator wiring has never been introspected against an installed package, no benchmark has
+been run through it, and the CLI cannot complete a run on it (its `notes` say why); `groot`,
+`openvla` and `openpi` are **scaffolding** too. Only `libero` × `smolvla` (and π0.5's preliminary
+leg) is `measured`.
 
 Add `--video-dir clips/` to write one MP4 per episode — the frames the policy actually saw, after
 the attack and any defense, red-bordered from the first step the predicate fired. Recording never

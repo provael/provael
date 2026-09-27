@@ -26,7 +26,7 @@ state. The headline number is the ASR, reported with a 95% Wilson CI and a benig
   `PROVAEL_INTEGRATION` gate: SmolVLA and π0.5 have been measured on LIBERO; π0 and π0-FAST are
   runnable adapters with no committed result yet; GR00T, OpenVLA and openpi are registered
   scaffolding that has never run (`watch/registry.json`). LIBERO is the simulator every committed
-  real-policy result ran on; Meta-World is registered but not yet runnable end to end.
+  real-policy result ran on; Meta-World is registered scaffolding that no benchmark has run through.
 - **Seventeen adversarial families** mapped to the [Embodied AI Security Top 10](top10.md) — 8 of the 10
   categories (EAI01–06, EAI08, EAI09): `instruction`, `visual`, `sensor_spoof`, `injection`, `action`,
   `action_space`, `backdoor`, `authorization`, `confidentiality`, `misalignment`, `humanoid`, plus the

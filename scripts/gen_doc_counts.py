@@ -76,7 +76,10 @@ def _counts() -> dict[str, int]:
         "policies_measured": coverage().real_policies_tested,
         "suites": len(SUITES),
         "suites_fixture": len(FIXTURE_SUITES),
-        "suites_gated": len(REQUIRES_LEROBOT),
+        # Runnable gated simulators only. REQUIRES_LEROBOT also holds suites that are scaffolding
+        # (metaworld, vla_arena), so counting it whole printed "3 gated real simulators" beside
+        # "3 scaffolding" and the published line summed to 9 of 7 suites.
+        "suites_gated": len(set(REQUIRES_LEROBOT) - set(SCAFFOLDING_SUITES)),
         "suites_scaffolding": len(SCAFFOLDING_SUITES),
     }
 
@@ -84,6 +87,13 @@ def _counts() -> dict[str, int]:
 def rendered() -> dict[str, str]:
     """The trailing comment each ``provael list-<thing>`` line must carry, keyed by ``<thing>``."""
     n = _counts()
+    groups = n["suites_fixture"] + n["suites_gated"] + n["suites_scaffolding"]
+    if groups != n["suites"]:
+        raise ValueError(
+            f"the suite line's groups sum to {groups}, not {n['suites']}: a suite is in two groups "
+            "or in none, and the published inventory would not add up"
+        )
+    gated = "simulator" if n["suites_gated"] == 1 else "simulators"
     return {
         # The full enumeration. This is the line that had eighteen of nineteen names in it.
         "attacks": (
@@ -104,7 +114,7 @@ def rendered() -> dict[str, str]:
         # "Registered is not validated."
         "suites": (
             f"{n['suites']} suites registered — {n['suites_fixture']} CPU fixtures, "
-            f"{n['suites_gated']} gated real simulators, {n['suites_scaffolding']} scaffolding "
+            f"{n['suites_gated']} gated real {gated}, {n['suites_scaffolding']} scaffolding "
             f"(never run)"
         ),
     }

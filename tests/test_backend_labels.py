@@ -205,13 +205,13 @@ def test_libero_is_measured_and_metaworld_is_not() -> None:
 
     `libero` holds the published body; `metaworld` has never produced a committed episode, its
     simulator wiring has never been introspected against an installed package (its docstring says
-    so), and it cannot complete a CLI run (`suite_gating_note`). One is a measurement surface and
-    one is not, and `list-suites` now says which.
+    so), and it cannot complete a CLI run. One is a measurement surface and one is not, and since
+    28 September 2026 `metaworld` is declared scaffolding rather than "no run committed here".
     """
-    from provael.suites import SUITE_STATUS_MEASURED, SUITE_STATUS_UNRUN, suite_status
+    from provael.suites import SUITE_STATUS_MEASURED, suite_status
 
     assert suite_status("libero") == SUITE_STATUS_MEASURED
-    assert suite_status("metaworld") == SUITE_STATUS_UNRUN
+    assert suite_status("metaworld").startswith("scaffolding")
     assert suite_status("stub") == "fixture"
     assert suite_status("ai2_bridge").startswith("scaffolding")
 
@@ -234,10 +234,26 @@ def test_the_packaged_measured_suites_match_the_derived_set_and_name_real_runs()
 
 
 def test_list_suites_prints_the_status_column() -> None:
+    """Every suite's row carries its own status, read from the `status` cell itself.
+
+    It asserted the literal "no run committed here" until 28 September 2026, when Meta-World, the
+    only suite that carried it, was declared scaffolding; no registered suite carries it now. Each
+    row's own cell is read because a substring anywhere in the output cannot see the column go
+    missing: "scaffolding" also fills the `kind` column and opens the notes.
+    """
     from typer.testing import CliRunner
 
     from provael.cli import app
+    from provael.suites import STATUS_SCAFFOLDING as SUITE_STATUS_SCAFFOLDING
+    from provael.suites import suite_status
 
     res = CliRunner().invoke(app, ["list-suites"], env={"COLUMNS": "160"})
     assert res.exit_code == 0, res.stdout
-    assert "no run committed here" in res.stdout and "measured" in res.stdout
+    for name in available_suites():
+        status = suite_status(name)
+        shown = "scaffolding" if status == SUITE_STATUS_SCAFFOLDING else status
+        row = next((ln for ln in res.stdout.splitlines() if ln.startswith(f"│ {name} ")), None)
+        assert row is not None, f"no row for {name}:\n{res.stdout}"
+        cell = row.split("│")[4].strip()
+        # A multi-word status may wrap; its first line must still open the label.
+        assert cell and shown.startswith(cell), (name, row)

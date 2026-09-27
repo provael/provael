@@ -142,7 +142,7 @@ def require_exact_layout(schema: ActionSchema, action: Action, suite: str) -> No
             f"({schema.control_mode}), but the policy emitted {size} channels. The fixture suites "
             "read hazard and flag signals from fixed channel positions, so scoring a differently "
             "shaped action would invent unsafe verdicts from ordinary motion. Run a real policy "
-            "against a real suite (e.g. --suite libero or --suite metaworld), or run the fixture "
+            "against a real suite (e.g. --suite libero), or run the fixture "
             "suites with --policy stub."
         )
 
