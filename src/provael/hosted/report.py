@@ -22,7 +22,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from provael.attest import build_statement
+from provael.attest import REGULATORY_CLOCK, build_statement
 from provael.calibration import anytime_ci, wilson_ci
 from provael.compliance import to_compliance_dict
 from provael.evidence import transfer_status_of
@@ -40,15 +40,30 @@ from provael.types import RunReport
 ANNEX_III_CORRUPTION = "Annex III, 1.1.9"
 ANNEX_III_CONTROL_SYSTEMS = "Annex III, 1.2.1"
 
+_CLOCK = {entry.framework_id: entry for entry in REGULATORY_CLOCK}
+
+
+def _date(framework_id: str) -> dict[str, str]:
+    """A row's date and the precision it is verified to, read from the signed clock.
+
+    The rows used to type their dates, and one copy kept an unsourced day for ISO 10218 (2025-04-01)
+    after the clock that it mirrored had the same wrong value (E-2026-17): a restated date is a
+    second place for the error to survive. Reading the clock leaves one.
+    """
+    entry = _CLOCK[framework_id]
+    return {"applies_from": entry.applies_from, "applies_from_precision": entry.date_precision}
+
+
 #: The conformity mapping: each row lines a Provael artifact up against the instrument + date it
-#: informs. Dates mirror :data:`provael.attest.REGULATORY_CLOCK` (factual application dates).
+#: informs. Dates are read from :data:`provael.attest.REGULATORY_CLOCK` (factual application
+#: dates), with the precision the clock verifies them to.
 CONFORMITY_MAPPING: tuple[dict[str, str], ...] = (
     {
         "obligation": "Protection against corruption of safety-related functions: connection to "
         "the machinery, or corruption of software/data critical for safety, must not lead to a "
         "hazardous situation.",
         "instrument": f"Regulation (EU) 2023/1230 (Machinery Regulation), {ANNEX_III_CORRUPTION}",
-        "applies_from": "2027-01-20",
+        **_date("eu-machinery"),
         "provael_evidence": "Measured ASR per EAI risk with a 95% Wilson CI and the benign-FPR "
         "control (report.json + SARIF); the digest-bound, dated attestation statement.",
     },
@@ -60,7 +75,7 @@ CONFORMITY_MAPPING: tuple[dict[str, str], ...] = (
         "listed high-risk machinery and is routed to third-party conformity assessment.",
         "instrument": "Regulation (EU) 2023/1230 (Machinery Regulation), Annex I Part A "
         "(via Art. 6(1) -> Art. 25(2))",
-        "applies_from": "2027-01-20",
+        **_date("eu-machinery"),
         "provael_evidence": "The `provael certify --profile annex-i-part-a` dossier: per-family "
         "adversarial evidence with the honest real-policy transfer statement, as the "
         "adversarial-robustness input a notified body reviews. Routing determination is the "
@@ -73,7 +88,7 @@ CONFORMITY_MAPPING: tuple[dict[str, str], ...] = (
         "Arts 17, 19, 72, 73.",
         "instrument": "Regulation (EU) 2024/1689 (AI Act), as amended by Regulation (EU) "
         "2026/1744; reaches machinery through Regulation (EU) 2023/1230 Art. 8, third paragraph",
-        "applies_from": "2028-08-02",
+        **_date("eu-ai-act"),
         "provael_evidence": "Per-family transfer-test (rate + 95% Wilson CI + benign control) and "
         "the compliance crosswalk, carried inside the attestation. Reg (EU) 2026/1744 (Digital "
         "Omnibus on AI, OJ 24 Jul 2026, in force 27 Jul 2026) moved the Machinery Regulation to AI "
@@ -83,7 +98,7 @@ CONFORMITY_MAPPING: tuple[dict[str, str], ...] = (
     {
         "obligation": "Cybersecurity risk assessment for industrial / collaborative robots.",
         "instrument": "ISO 10218-1/-2:2025 (cyber clauses)",
-        "applies_from": "2025-04-01",
+        **_date("iso-10218"),
         "provael_evidence": "Per-EAI ASR as a documented input to the robot's cyber-risk "
         "assessment; the EAI04 monitored-stop / action-integrity evidence.",
     },
