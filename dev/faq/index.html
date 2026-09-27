@@ -2584,8 +2584,10 @@ and a benign-FPR control.</p>
 (via <code>[openvla]</code>). Any policy implementing the <code>PolicyAdapter</code> ABC works — see
 <a href="../python-api/">Python API</a>.</p>
 <p><strong>Which simulators?</strong>
-<code>stub</code> (scalar, CPU) and <code>reach</code> (spatial, CPU) ship pure-CPU; <code>libero</code> and <code>metaworld</code> wrap real
-simulators behind <code>[lerobot]</code>. More are on the <a href="../roadmap/">roadmap</a>.</p>
+<code>stub</code> (scalar, CPU) and <code>reach</code> (spatial, CPU) ship pure-CPU; <code>libero</code> wraps a real simulator
+behind <code>[lerobot]</code>. <code>metaworld</code> wraps a second one (it also needs LeRobot's own <code>metaworld</code> extra)
+but is registered <strong>scaffolding</strong>: no benchmark has been run through it, and the CLI cannot
+complete a run on it. More are on the <a href="../roadmap/">roadmap</a>.</p>
 <p><strong>Are these real adversarial attacks?</strong>
 They're templated, auditable perturbations — a screen, not gradient/search-optimised worst-case
 attacks. That's deliberate (reproducible, inspectable). <code>provael reproduce</code> maps published attacks

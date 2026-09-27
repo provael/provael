@@ -2939,7 +2939,7 @@ predicate: default (uncalibrated) · benign baseline FPR 0.0%
 <h2 id="commands">Commands</h2>
 <div class="highlight"><pre><span></span><code>provael<span class="w"> </span>list-policies<span class="w">         </span><span class="c1"># 8 policies — 1 CPU (stub), 7 need a GPU extra, of which 3 are registered scaffolding; 2 have a committed real-model result (pi05, smolvla)</span>
 provael<span class="w"> </span>list-attacks<span class="w">          </span><span class="c1"># 44 attacks across 19 families (17 adversarial + 2 benign control): action/action_space/authorization/backdoor/confidentiality/gradient_patch/humanoid/injection/instruction/misalignment/optimized/optimized_instruction/optimized_patch/sensor_spoof/universal_patch/visual/weight_integrity/baseline/control</span>
-provael<span class="w"> </span>list-suites<span class="w">           </span><span class="c1"># 7 suites registered — 3 CPU fixtures, 3 gated real simulators, 2 scaffolding (never run)</span>
+provael<span class="w"> </span>list-suites<span class="w">           </span><span class="c1"># 7 suites registered — 3 CPU fixtures, 1 gated real simulator, 3 scaffolding (never run)</span>
 provael<span class="w"> </span>list-recipes<span class="w">          </span><span class="c1"># named presets: quick / instruction-only / core-sweep / full-sweep / ci-gate</span>
 provael<span class="w"> </span>list-reproductions<span class="w">    </span><span class="c1"># FreezeVLA / OpenVLA-patch / BadVLA / RoboPAIR</span>
 provael<span class="w"> </span>reproduce<span class="w"> </span>freezevla<span class="w">   </span><span class="c1"># reproduce a published attack on the CPU stub</span>
@@ -2966,10 +2966,11 @@ select the other LIBERO task suites through the same adapter.</p>
 <p>See the <a href="../examples/">examples gallery</a> for the π0 / GR00T / OpenVLA adapters and the second real
 simulator, Meta-World. Read the status before pointing a run at either: <code>provael list-policies</code> and
 <code>provael list-suites</code> say, per adapter and per suite, whether a committed run has ever driven a real
-policy through it. Meta-World's is <strong>no run committed here</strong> — the adapter is implemented and
-unit-tested, its simulator wiring has never been introspected against an installed package, and the
-CLI cannot yet complete a run on it (its <code>notes</code> say why); <code>groot</code>, <code>openvla</code> and <code>openpi</code> are
-<strong>scaffolding</strong>. Only <code>libero</code> × <code>smolvla</code> (and π0.5's preliminary leg) is <code>measured</code>.</p>
+policy through it. Meta-World is <strong>scaffolding</strong> — the adapter is implemented and unit-tested, but
+its simulator wiring has never been introspected against an installed package, no benchmark has
+been run through it, and the CLI cannot complete a run on it (its <code>notes</code> say why); <code>groot</code>,
+<code>openvla</code> and <code>openpi</code> are <strong>scaffolding</strong> too. Only <code>libero</code> × <code>smolvla</code> (and π0.5's preliminary
+leg) is <code>measured</code>.</p>
 <p>Add <code>--video-dir clips/</code> to write one MP4 per episode — the frames the policy actually saw, after
 the attack and any defense, red-bordered from the first step the predicate fired. Recording never
 touches <code>report.json</code>. <code>provael compose-video clips/&lt;benign&gt;.mp4 clips/&lt;attacked&gt;.mp4 --out
