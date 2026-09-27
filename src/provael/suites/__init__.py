@@ -84,6 +84,12 @@ SCAFFOLDING_SUITES: dict[str, str] = {
         "the hook for a second writer (allenai/vla-evaluation-harness#127), so the supported route "
         "is a model-server proxy, not this adapter; no benchmark has been run here"
     ),
+    "metaworld": (
+        "scaffolding: adapter implemented and unit-tested, but from the CLI it raises at reset "
+        "(it refuses LIBERO's default keep-out box, which lies behind the Sawyer arm; there is no "
+        "zone option and no committed Meta-World calibration), and the Python API route needs a "
+        "keep_out_zone derived from the suite's own benign envelope; no benchmark has been run here"
+    ),
     "vla_arena": (
         "scaffolding: adapter written against VLA-Arena's source (declared per-step cost "
         "predicate, LIBERO-shaped policy path) and tested on a fake env; needs its own Python "
@@ -93,17 +99,12 @@ SCAFFOLDING_SUITES: dict[str, str] = {
 
 #: Suites that are implemented and runnable from the Python API but cannot complete a run from
 #: the CLI as shipped. Rendered in ``list-suites`` and ``doctor`` beside the suite so "runnable" is
-#: never read as "one command away". Meta-World: the adapter refuses LIBERO's default keep-out box
-#: because it lies behind the Sawyer arm (``MetaworldSuiteAdapter._ensure_zone_is_reachable``), the
-#: CLI has no option to pass another zone, and no Meta-World calibration is committed — so
-#: ``--suite metaworld`` raises at reset until a zone derived from the suite's own benign envelope
-#: is supplied in code.
-SUITE_GATING_NOTES: dict[str, str] = {
-    "metaworld": (
-        "runnable from the Python API with a keep_out_zone derived from the suite's benign "
-        "envelope; from the CLI it raises at reset (no zone option, no committed calibration)"
-    ),
-}
+#: never read as "one command away". Empty since 28 September 2026: its one entry, Meta-World
+#: (the adapter refuses LIBERO's default keep-out box because it lies behind the Sawyer arm, the
+#: CLI has no zone option, and no Meta-World calibration is committed), moved to
+#: :data:`SCAFFOLDING_SUITES` with that reason folded in, because no benchmark has ever been run
+#: through it. The mechanism stays for the next suite that is runnable but CLI-gated.
+SUITE_GATING_NOTES: dict[str, str] = {}
 
 
 def suite_gating_note(name: str) -> str | None:
@@ -120,9 +121,9 @@ STATUS_SCAFFOLDING = "scaffolding — no benchmark ever run"
 #: :data:`~provael.policies.registry.MEASURED_POLICIES` and for the same reason (``results/`` is
 #: not packaged). ``tests/test_backend_labels.py`` holds the keys to ``coverage().real_suite_names``
 #: in a checkout, so a suite cannot read ``measured`` without a committed applicable adversarial
-#: episode, and a committed one cannot go unlisted. Meta-World is deliberately absent: its adapter
-#: is implemented and unit-tested, its simulator wiring has never been introspected against an
-#: installed package, and no run has been committed — it is ``no run committed here`` until one is.
+#: episode, and a committed one cannot go unlisted. Meta-World is absent and declared scaffolding
+#: in :data:`SCAFFOLDING_SUITES`: its adapter is implemented and unit-tested, but its simulator
+#: wiring has never been introspected against an installed package and no run has been committed.
 MEASURED_SUITES: dict[str, str] = {
     "libero": (
         "SmolVLA x LIBERO-Object, ten tasks (results/smolvla_libero_object_suite_2026-09-14, the "

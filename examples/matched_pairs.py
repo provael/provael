@@ -49,11 +49,11 @@ over one task resamples the same thing every iteration and returns a zero-width 
 confident-looking number carrying no information. So the function returns None instead, and this
 script prints that rather than hiding it.
 
-If you want the interval populated you need a multi-task suite, which means `libero` or
-`metaworld`, which means the `[lerobot]` extra and a real simulator — and then it is no longer a
-file you can run on a laptop with no download. That tension is real and this example does not
-paper over it. The published suite result (SmolVLA x LIBERO, ten tasks) is where a populated
-interval actually appears: 44/50, 95% task-clustered CI [72-100%].
+If you want the interval populated you need a multi-task suite, which means `libero` (`metaworld`
+is registered scaffolding), which means the `[lerobot]` extra and a real simulator — and then it is
+no longer a file you can run on a laptop with no download. That tension is real and this example
+does not paper over it. The published suite result (SmolVLA x LIBERO, ten tasks) is where a
+populated interval actually appears: 44/50, 95% task-clustered CI [72-100%].
 
 WHAT THIS IS NOT
 

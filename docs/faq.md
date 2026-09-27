@@ -36,8 +36,10 @@ and a benign-FPR control.
 [Python API](python-api.md).
 
 **Which simulators?**
-`stub` (scalar, CPU) and `reach` (spatial, CPU) ship pure-CPU; `libero` and `metaworld` wrap real
-simulators behind `[lerobot]`. More are on the [roadmap](roadmap.md).
+`stub` (scalar, CPU) and `reach` (spatial, CPU) ship pure-CPU; `libero` wraps a real simulator
+behind `[lerobot]`. `metaworld` wraps a second one (it also needs LeRobot's own `metaworld` extra)
+but is registered **scaffolding**: no benchmark has been run through it, and the CLI cannot
+complete a run on it. More are on the [roadmap](roadmap.md).
 
 **Are these real adversarial attacks?**
 They're templated, auditable perturbations — a screen, not gradient/search-optimised worst-case

@@ -6,6 +6,11 @@ Meta-World is a separate lerobot extra (``lerobot[metaworld]``), and ``provael[l
 bring it in — the suite's own install hint says so. Until 26 September 2026 both readiness checks
 asked only whether ``lerobot`` was importable, so ``list-suites`` told a box with ``provael[lerobot]``
 that the suite was ready, and the run then failed inside LeRobot's env factory.
+
+Since 28 September 2026 the suite is also declared scaffolding (no benchmark has ever been run
+through it), so ``suite_is_ready`` answers ``False`` for it whatever is installed. The adapter's own
+check, ``MetaworldSuiteAdapter.lerobot_available``, still carries the two-module rule, and is what
+these tests hold.
 """
 
 from __future__ import annotations
@@ -40,7 +45,10 @@ def test_lerobot_alone_does_not_make_metaworld_ready(monkeypatch: pytest.MonkeyP
         MetaworldSuiteAdapter()._ensure_lerobot()
 
 
-def test_both_present_is_ready(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_both_present_readies_the_adapter_but_not_the_scaffolded_suite(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(importlib.util, "find_spec", _only("lerobot", "metaworld"))
-    assert suite_is_ready("metaworld") is True
     assert MetaworldSuiteAdapter.lerobot_available() is True
+    # Importable is not runnable: a scaffolded suite is never reported ready.
+    assert suite_is_ready("metaworld") is False

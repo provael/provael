@@ -31,7 +31,7 @@
  ],
  "realPolicyTested": 8,
  "runnablePolicies": 5,
- "runnableSuites": 5,
+ "runnableSuites": 4,
  "scaffoldingPolicies": 3,
  "scaffoldingPolicyNames": [
   "groot",
@@ -40,9 +40,10 @@
  ],
  "scaffoldingSuiteNames": [
   "ai2_bridge",
+  "metaworld",
   "vla_arena"
  ],
- "scaffoldingSuites": 2,
+ "scaffoldingSuites": 3,
  "stubOnlyFamilies": [
   "action",
   "action_space",

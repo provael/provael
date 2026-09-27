@@ -122,6 +122,25 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   or that looked for the model under `components`, must read `metadata.tools` and
   `metadata.component` instead.** No measured number moves.
 
+- **Meta-World is declared scaffolding: the published counts move from 5 runnable / 2 scaffolding
+  suites to 4 / 3.** Why: no Meta-World benchmark has ever been run (nothing under `results/`), and
+  its CLI path raises at reset, because the adapter refuses LIBERO's default keep-out box (it lies
+  behind the Sawyer arm), there is no zone option, and no Meta-World calibration is committed. That
+  is the project's own definition of scaffolding, and `watch/registry.json` still counted it as
+  runnable. `SCAFFOLDING_SUITES` now carries it with that reason (the CLI-gating note is folded in,
+  so `SUITE_GATING_NOTES` is empty); `list-suites` renders it as scaffolding, `doctor` now labels
+  every scaffolded suite as scaffolding rather than "importable", and `suite_is_ready("metaworld")`
+  is `False` whatever is installed. The docs and examples that described its status now call it
+  scaffolding (quickstart, attacks, FAQ, index, roadmap, and the suites and cross-suite examples);
+  `ActionLayoutError`'s hint no longer suggests `--suite metaworld`, and `examples/suites/README.md`
+  no longer calls its wiring "validated on the gated, real path", which the suite registry's own
+  comment ("never been introspected against an installed package") contradicted.
+  `watch/registry.json` and the generated inventory line in `docs/quickstart.md` are regenerated;
+  the website picks the counts up at its next re-pin. That inventory line's three groups are now
+  disjoint (3 CPU fixtures, 1 gated real simulator, 3 scaffolding): two suites are both gated and
+  scaffolding, and counting them in both made the line sum to 9 of 7 (8 of 7 before this change).
+  `scripts/gen_doc_counts.py` now refuses to render a line whose groups do not sum to the total.
+
 ### Fixed
 
 - **`list-suites` called Meta-World ready on `lerobot` alone, and "horizon 280" had no stated

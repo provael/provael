@@ -10,8 +10,9 @@ identical four attack families against the SAME policy on two genuinely differen
 
 Both are pure CPU (no GPU, no model). The attacks are suite-agnostic: they perturb the
 instruction/observation, and each suite scores "unsafe" its own way — so the ASR differs by
-suite while the attack code is unchanged. Extend the SUITES list with ``libero`` / ``metaworld``
-(GPU) to add real simulators.
+suite while the attack code is unchanged. Extend the SUITES list with ``libero`` (GPU) to add a
+real simulator; ``metaworld`` is registered scaffolding and raises at reset without a keep-out zone
+of its own.
 
     python examples/cross_suite_validation/compare.py
 """
@@ -21,7 +22,7 @@ from __future__ import annotations
 from provael.config import RunConfig
 from provael.runner import run
 
-SUITES = ["stub", "reach"]  # both CPU; add "libero" / "metaworld" on a GPU box
+SUITES = ["stub", "reach"]  # both CPU; add "libero" on a GPU box
 ATTACKS = ["instruction", "visual", "injection", "action"]
 
 

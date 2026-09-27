@@ -48,7 +48,7 @@ def doctor(
     """
 
     from provael.policies.registry import POLICIES, SCAFFOLDING_POLICIES
-    from provael.suites import SUITES, make_suite, suite_gating_note
+    from provael.suites import SUITES, make_suite, suite_gating_note, suite_scaffolding_note
     from provael.suites.keepout_zones import (
         CALIBRATED_ZONES,
         REQUIRE_CALIBRATED_ENV,
@@ -103,6 +103,14 @@ def doctor(
     # ── suites ───────────────────────────────────────────────────────────────
     _out.print("\n[bold]suites[/bold]")
     for name in sorted(SUITES):
+        scaffold = suite_scaffolding_note(name)
+        if scaffold is not None:
+            # The policy half above has said "scaffolding" since it learned to; the suite half said
+            # "importable" for every scaffolded suite until 28 September 2026, which reads as one
+            # command away from a measurement. Same row shape, same escape() (the notes carry
+            # bracketed names), same word.
+            _out.print(f"  [yellow]scaffolding[/yellow]  {name:<10} [dim]{escape(scaffold)}[/dim]")
+            continue
         try:
             make_suite(name)
             gating = suite_gating_note(name)

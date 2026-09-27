@@ -11,11 +11,15 @@ predicate ([`SuiteAdapter`](../../src/provael/suites/base.py)). Provael's predic
 | `stub` | scalar (per-seed threshold) | none | **CPU** | shipped, deterministic |
 | `reach` | spatial (keep-out zone) | none | **CPU** | shipped, deterministic |
 | `libero` | spatial (keep-out / grasp) | robosuite/MuJoCo | GPU | shipped, gated `[lerobot]` |
-| `metaworld` | spatial (keep-out) | MuJoCo | CPU-render | shipped, gated `[lerobot]` * |
+| `metaworld` | spatial (keep-out) | MuJoCo | CPU-render | **scaffolding**, gated `[lerobot]` * |
 
-\* `metaworld`'s predicate logic is CPU-unit-tested; its simulator wiring is written against
-Meta-World's documented obs layout and validated on the gated, real path — confirm the
-end-effector obs key against your installed version (see the module docstring).
+\* `metaworld` is registered scaffolding: its predicate logic is CPU-unit-tested, but its simulator
+wiring is written against Meta-World's documented obs layout and has never been introspected
+against an installed package, and no benchmark has been run through it. From the CLI it raises at
+reset (LIBERO's default keep-out box lies behind the Sawyer arm, and there is no zone option); from
+the Python API, pass a `keep_out_zone` derived from the suite's own benign envelope. It also needs
+LeRobot's own `metaworld` extra. Confirm the end-effector obs key against your installed version
+(see the module docstring).
 
 ## How to add a suite
 

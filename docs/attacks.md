@@ -334,9 +334,10 @@ policies** — the CPU `stub`
 plus real **SmolVLA / π0 / π0.5 / π0-FAST** (via the `[lerobot]` extra), **OpenVLA**
 (via `[openvla]`), and **π0 served by openpi** — Physical Intelligence's own stack, via the CPU-only
 `[openpi]` websocket client to a GPU policy server. **Three of those eight are registered scaffolding**: `groot` (needs `lerobot[groot]`, which `provael[lerobot]` does not provision), `openvla` and `openpi` have each been structurally tested but have **never had a checkpoint loaded here**. Two backends have committed real-model results: `smolvla` (the ten-task suite) and `pi05` — `lerobot/pi05_libero_finetuned_v044` as recorded in the committed run, [`results/pi05_libero_object_2026-09-18/`](https://github.com/provael/provael/blob/main/results/pi05_libero_object_2026-09-18/README.md): the ten Object tasks at three seeds, `roleplay` 1/30 against `none` 0/30, McNemar p = 1.0. In the changelog's words, "it is the pre-registered study's *preliminary* leg (three seeds, two arms of eight), so no transfer of the envelope-exit effect is claimed and no headline moves", and because that run is "a different policy" from the published Object body, "`watch/publish-freshness.json` does not move". `provael list-policies` gives each backend a `status` of `measured` / `scaffolding` / `no run committed here`, so the difference is visible before you point `--policy` at one. Suites: **7** registered (`stub` + `reach` +
-`humanoid` on CPU; **LIBERO** + **Meta-World** gated; `ai2_bridge` and `vla_arena` are
+`humanoid` on CPU; **LIBERO** gated; `metaworld`, `ai2_bridge` and `vla_arena` are
 **scaffolding** — registered and structurally tested, but no benchmark has ever been run through
-either, so neither is coverage; `vla_arena` is the declared-predicate suite that needs its own
+any of them, so none is coverage; `metaworld` cannot complete a CLI run (`provael list-suites` says
+why), and `vla_arena` is the declared-predicate suite that needs its own
 Python 3.11 environment), or any policy/suite you wrap with the tiny adapter ABCs. The templated families are
 heuristic perturbations (not gradient-based); the `optimized` family is a model-agnostic search
 that only *queries* the policy — see

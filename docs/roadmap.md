@@ -151,10 +151,11 @@ work is a customer protocol agreed before a paid run).
   backend. `smolvla` (the ten-task suite) and `pi05` (a three-seed preliminary leg on the same
   tasks, 18 September 2026) have committed real-model results.
 - **Suites:** `stub` (scalar, CPU), `reach` (spatial, CPU), `humanoid` (whole-body, CPU),
-  `libero` + `metaworld` (real simulators, gated); `vla_arena` (VLA-Arena's declared per-step
-  cost predicate as `is_unsafe()`, LIBERO-shaped policy path — **registered scaffolding** until its
-  first committed run; needs its own Python 3.11 environment). `provael list-suites` marks which
-  is which.
+  `libero` (real simulator, gated); `metaworld` (real simulator, gated — **registered scaffolding**:
+  no benchmark has been run through it, and from the CLI it raises at reset); `vla_arena`
+  (VLA-Arena's declared per-step cost predicate as `is_unsafe()`, LIBERO-shaped policy path —
+  **registered scaffolding** until its first committed run; needs its own Python 3.11 environment).
+  `provael list-suites` marks which is which.
 - **Evidence:** SARIF, compliance crosswalk, pre-deployment scorecard, OSCAL export, AVID export.
 - **Reproductions:** FreezeVLA, OpenVLA-patch, BadVLA, RoboPAIR.
 - **Integrations:** promptfoo provider; garak/PyRIT reference plugins; multi-CI (GitHub/GitLab/

@@ -100,7 +100,7 @@ def list_suites() -> None:
     # `status` answers the evidence question the other columns do not: has a committed run driven
     # a real policy through this simulator? `libero` and `metaworld` sit behind the same extra and
     # rendered identically until 20 September 2026; one holds the published body, the other has
-    # never produced a committed episode (and cannot yet complete a CLI run — see its note).
+    # never produced a committed episode and has been declared scaffolding since 28 September 2026.
     table.add_column("status")
     table.add_column("notes", min_width=24)
     for name in available_suites():
