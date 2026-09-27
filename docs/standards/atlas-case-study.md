@@ -1,5 +1,9 @@
 # MITRE ATLAS case-study draft — embodied VLA red-team
 
+> **Withdrawn 27 September 2026.** The submission this page mirrors was withdrawn by email: its
+> central claim, attacker-directed redirection, was reversed by our own later controls (E-2026-12;
+> see [the standards index](index.md)). The rest of this page is the mirror as it stood.
+>
 > **Disposition, 2 September 2026.** A submission **was sent** — one proposed technique plus one
 > case study, emailed to `atlas@mitre.org` on **8 August 2026**, still awaiting a response. The
 > exact file is committed at
