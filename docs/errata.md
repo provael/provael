@@ -22,7 +22,8 @@ attacks) three days before this document minted E-2026-05 for the ISO 10218 corr
 side saw the other, and the previous version of this note wrongly said the two files agreed
 entry-for-entry. The website keeps the ID it published under; the same correction is recorded
 below as **E-2026-09**, so that every correction has an entry in the maintained source. E-2026-14
-is held for an entry in preparation; the next free ID is **E-2026-17**.
+was held for the LinkedIn correction below, written on 27 September 2026; the next free ID is
+**E-2026-17**.
 
 ---
 
@@ -756,6 +757,46 @@ count is stated without the family count of its own convention. The same sweep c
 more machine-readable surfaces without an erratum of their own: `/llms.txt`'s adoption figures now
 derive from the file `/adopters/` renders, `/404` answers 404, and `/pricing`'s JSON-LD no longer
 publishes the design-partner rate as the assessment's base price. The website changelog records them.
+
+## E-2026-14 — A post on the project's LinkedIn page called the site's Machinery Regulation date wrong; the post was wrong
+
+**Status:** raised on 15 September 2026 in the post's own comments, recorded here on 27 September
+2026 · provael.com and the signed regulatory clock were right throughout · no measured number moves
+· no signed artifact is affected
+**Date raised:** 15 September 2026
+**Affects:** one post on the Provael LinkedIn page, published 12 September 2026:
+<https://www.linkedin.com/posts/provael_github-provaelprovael-provael-red-team-activity-7504585258181423104-pRlQ>.
+Nothing in this repository, in any signed artifact or on provael.com carried the wrong date.
+
+### What was wrong
+
+The post said the date on provael.com's front page was wrong, gave the Regulation's application
+date as 14 January 2027, and said two more dates in Article 54 had already passed: Articles 26 to 42
+from 14 January 2024, and Article 50(1) from 14 October 2023. It had read Article 54 as the EUR-Lex
+HTML of Regulation (EU) 2023/1230 still prints it, which is the text before the Corrigendum of
+4 July 2023 (OJ L 169, CELEX 32023R1230R(01)) corrected all three dates in items 10, 11 and 12.
+Laura S. (EU Machinery Compliance) pointed to the corrigendum in the comments.
+
+### What is correct
+
+Article 54 as corrected: the Regulation applies from **20 January 2027** (item 10), Articles 26 to
+42 from 20 January 2024 (item 11), and Article 50(1) from **20 October 2026** (item 12), which has
+not passed. The site's regulatory clock (`applicableDate` 2027-01-20, "as corrected by the
+Corrigendum of 4 July 2023") and the clock inside every signed attestation (`eu-machinery`,
+`2027-01-20`) carried the corrected date throughout, and the website's build rejects the
+uncorrected date string.
+
+**On the ID.** The reply under the post, on 15 September, announced this correction as E-2026-12.
+That ID went to the roleplay-headline reframe on 18 September, before this entry was written, so
+this correction is E-2026-14 and E-2026-12 is a different one.
+
+**The rule it adds.** A regulatory date in any post is taken from the site's
+`regulatory-clock.json` or the product's `attest.REGULATORY_CLOCK`, never re-read from EUR-Lex
+prose, which can predate a corrigendum. `tests/test_regulatory_consistency.py` now holds the
+clock's Machinery date to 20 January 2027 and fails on any tracked file that states an uncorrected
+Article 54 date as the one that applies.
+
+---
 
 ## E-2026-15 — www.provael.com printed two publication days its own regulatory clock does not verify, one under a "Verified dates" heading
 

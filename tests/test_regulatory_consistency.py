@@ -23,6 +23,13 @@ back is the framing that the deferral is pending: that is what turns a historica
 current claim. So the scan targets the stale framing, mirroring the forbidden-string list the
 website already enforces, and leaves the dates alone.
 
+THE SECOND DATE (E-2026-14). The Machinery Regulation applies from 20 January 2027 because the
+Corrigendum of 4 July 2023 (OJ L 169) corrected Article 54, and the EUR-Lex HTML of the act still
+prints the uncorrected text. A post from this project's LinkedIn page read that text on 12
+September 2026 and told readers the site's correct date was wrong. The site and the signed clock
+never moved; this pins the clock's date and bans stating an uncorrected Article 54 date as the one
+that applies. A historical quote of the corrigendum ("for X, read Y") is not that, and stays legal.
+
 Two exemptions, both deliberate:
 
 * ``CHANGELOG.md`` — historical entries legitimately record what was true at the time.
@@ -53,6 +60,21 @@ _SUPERSEDED_FRAMING: tuple[tuple[str, str], ...] = (
     (r"provisional \*{0,2}2028-08-02", "calls the adopted 2028 date provisional"),
     (r"proposed 2028-08-02", "calls the 2028 date proposed"),
     (r"treat 2027 as binding", "instructs the reader to plan against the superseded date"),
+)
+
+#: The Machinery Regulation's application date as corrected (Corrigendum, OJ L 169, 4.7.2023,
+#: item 10). E-2026-14.
+MACHINERY_APPLIES_FROM = "2027-01-20"
+
+#: Framing that states an uncorrected Article 54 date as the one that applies (items 10, 11 and 12
+#: of the corrigendum moved all three). Matched case-insensitively.
+_UNCORRECTED_MACHINERY: tuple[tuple[str, str], ...] = (
+    (
+        r"appl(?:y|ies|ied|ying)\s+(?:from\s+)?14 (?:January 202[47]|October 2023)",
+        "states an uncorrected Article 54 date as the one that applies",
+    ),
+    (r"not 20 January 2027", "calls the corrected application date wrong"),
+    (r"2027-01-14", "carries the uncorrected application date in ISO form"),
 )
 
 #: Files allowed to contain the superseded framing. Keep this short; a missing entry fails loudly,
@@ -99,6 +121,27 @@ def test_no_tracked_file_carries_the_superseded_framing() -> None:
     assert not offenders, "superseded AI Act framing found:\n  " + "\n  ".join(offenders)
 
 
+def test_the_clock_names_the_corrected_machinery_date() -> None:
+    """The clock is what every signed attestation embeds, so its Machinery date is pinned here."""
+    machinery = {c.framework_id: c for c in REGULATORY_CLOCK}["eu-machinery"]
+    assert machinery.applies_from == MACHINERY_APPLIES_FROM
+    assert "OJ L 169" in machinery.note, "the corrigendum that fixed the date must be cited in-band"
+
+
+def test_no_tracked_file_states_an_uncorrected_machinery_date() -> None:
+    """E-2026-14: the uncorrected Article 54 must not come back as a current claim."""
+    offenders: list[str] = []
+    for path in _tracked_text_files():
+        rel = path.relative_to(REPO).as_posix()
+        if rel in _EXEMPT:
+            continue
+        body = path.read_text(encoding="utf-8")
+        for pattern, why in _UNCORRECTED_MACHINERY:
+            if re.search(pattern, body, re.I):
+                offenders.append(f"{rel}: {why} (matched {pattern!r})")
+    assert not offenders, "uncorrected Machinery Regulation date found:\n  " + "\n  ".join(offenders)
+
+
 def test_every_restatement_of_the_date_agrees_with_the_clock() -> None:
     """``hosted/report.py`` restates the date for the API surface; it cannot drift from the clock.
 
@@ -123,7 +166,7 @@ def test_the_scan_actually_reads_files() -> None:
     assert any(f.name == "attest.py" for f in files)
 
 
-@pytest.mark.parametrize("pattern", [p for p, _ in _SUPERSEDED_FRAMING])
+@pytest.mark.parametrize("pattern", [p for p, _ in _SUPERSEDED_FRAMING + _UNCORRECTED_MACHINERY])
 def test_each_banned_pattern_compiles(pattern: str) -> None:
     """A pattern that does not compile silently bans nothing."""
     assert re.compile(pattern, re.I) is not None
