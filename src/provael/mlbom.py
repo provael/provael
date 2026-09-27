@@ -9,18 +9,27 @@ metrics ties the red-team result into the same supply-chain evidence auditors al
 Dependency-Track), and maps onto the **EU AI Act Art. 11 / Annex IV** technical-documentation
 expectation for accuracy, robustness and cybersecurity.
 
+**What the BOM describes.** ``metadata.component`` is the policy under test (the model, with its
+model card); provael is the tool that produced the BOM and is named under ``metadata.tools``, the
+CycloneDX 1.5+ place for it. Earlier versions put provael in ``metadata.component``, which told a
+consumer the BOM described the red-team tool rather than the model it measured.
+
 **Evidence, not conformity.** This documents a measured simulation result; it is not a conformity
-declaration. DETERMINISM: no wall-clock timestamp is emitted, so a deterministic run yields a
-byte-identical BOM (``sort_keys``-stable), exactly like the SARIF/OSCAL exporters.
+declaration. DETERMINISM: no wall-clock timestamp is emitted and the ``serialNumber`` is derived
+from the report itself (:func:`serial_number`), so a deterministic run yields a byte-identical BOM
+(``sort_keys``-stable), exactly like the SARIF/OSCAL exporters.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
+import uuid
 from pathlib import Path
 
 from provael.calibration import wilson_ci
 from provael.evidence import transfer_status_of
+from provael.report import to_json
 from provael.scoring.asr import benign_control
 from provael.types import RunReport
 
@@ -29,6 +38,10 @@ ML_BOM_JSON = "report.mlbom.json"
 
 #: CycloneDX spec version — 1.6 introduced the ML-BOM model-card capability and is widely consumed.
 SPEC_VERSION = "1.6"
+
+#: Namespace of the UUIDv5 in :func:`serial_number`. Fixed forever: changing it would change the
+#: ``serialNumber`` of every BOM emitted for an unchanged report.
+SERIAL_NAMESPACE = uuid.uuid5(uuid.NAMESPACE_URL, "https://github.com/provael/provael#ml-bom")
 
 #: What the AI Act asks this evidence to inform (factual pointer; no conformity claim).
 _AI_ACT_ART11 = (
@@ -45,6 +58,19 @@ def _metric_str(x: float) -> str:
     Emitting JSON numbers there makes the BOM schema-invalid and Dependency-Track rejects it.
     """
     return f"{round(x, 4)}"
+
+
+def serial_number(report: RunReport) -> str:
+    """The BOM's ``serialNumber``: a UUIDv5 of the report's canonical JSON.
+
+    CycloneDX says every generated BOM SHOULD carry a unique serial, even when its contents have not
+    changed, and most generators emit a random UUID. A random serial would break the determinism
+    contract (the same run must yield a byte-identical BOM), so the UUID is derived from the
+    SHA-256 of :func:`provael.report.to_json`, the text provael writes as ``report.json``. The same
+    report always gets the same serial, and any change to the report gets a different one.
+    """
+    digest = hashlib.sha256(to_json(report).encode("utf-8")).hexdigest()
+    return f"urn:uuid:{uuid.uuid5(SERIAL_NAMESPACE, digest)}"
 
 
 def to_ml_bom(report: RunReport) -> dict[str, object]:
@@ -125,22 +151,27 @@ def to_ml_bom(report: RunReport) -> dict[str, object]:
         ],
     }
 
+    # The component the BOM DESCRIBES is the policy under test, so the model (with its model card)
+    # is `metadata.component`; provael, the tool that produced the BOM, goes under
+    # `metadata.tools.components`. The model is not repeated in top-level `components`: a second
+    # copy would duplicate its `bom-ref`, which must be unique across the BOM.
     return {
         "bomFormat": "CycloneDX",
         "specVersion": SPEC_VERSION,
+        "serialNumber": serial_number(report),
         "version": 1,
         "metadata": {
-            "component": {
-                "type": "application",
-                "name": "provael",
-                "version": report.tool_version,
+            "component": model_component,
+            "tools": {
+                "components": [
+                    {"type": "application", "name": "provael", "version": report.tool_version},
+                ],
             },
             "properties": [
                 {"name": "provael:ai-act-art11", "value": _AI_ACT_ART11},
                 {"name": "provael:transfer-status", "value": transfer_status},
             ],
         },
-        "components": [model_component],
     }
 
 
@@ -156,4 +187,12 @@ def write_ml_bom(report: RunReport, path: Path) -> Path:
     return path
 
 
-__all__ = ["ML_BOM_JSON", "SPEC_VERSION", "to_ml_bom", "to_ml_bom_json", "write_ml_bom"]
+__all__ = [
+    "ML_BOM_JSON",
+    "SERIAL_NAMESPACE",
+    "SPEC_VERSION",
+    "serial_number",
+    "to_ml_bom",
+    "to_ml_bom_json",
+    "write_ml_bom",
+]
