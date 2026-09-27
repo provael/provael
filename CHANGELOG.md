@@ -110,6 +110,17 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   checkmark this repository had carried since before the mark existed is retired everywhere, and
   the README wordmark gains a dark-scheme variant. The retired `social_preview.png` (the July
   "100 %" card) is deleted; the repository's social preview is the website's `og.png`.
+- **The ML-BOM names the model it describes, and carries a serial number.** Why: `metadata.component`
+  is the component a CycloneDX BOM describes, and it named provael, the tool, so a consumer read
+  the BOM as describing the red-team harness rather than the policy it measured; and the BOM had
+  no `serialNumber`, which CycloneDX says every BOM should carry. The policy under test (its model
+  card included) is now `metadata.component`, provael moves to `metadata.tools.components`, and the
+  model is no longer repeated in top-level `components`. The serial is a UUIDv5 of the report's
+  canonical JSON rather than a random UUID, so the same report still yields a byte-identical BOM.
+  Every emitted BOM is now validated against the official CycloneDX 1.6.2 JSON schema, vendored in
+  `tests/fixtures/cyclonedx-1.6`. **Consumers that read `metadata.component.name == "provael"`,
+  or that looked for the model under `components`, must read `metadata.tools` and
+  `metadata.component` instead.** No measured number moves.
 
 ### Fixed
 

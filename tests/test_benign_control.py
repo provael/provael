@@ -114,9 +114,12 @@ def test_every_exporter_publishes_the_control_arm_with_its_interval() -> None:
 
     bom = to_ml_bom(report)
     bom = json.loads(bom) if isinstance(bom, str) else bom
+    # The model is the BOM's subject (`metadata.component`); `components` is read too, so the check
+    # survives a future BOM that lists parts of the model there.
+    components = [bom["metadata"]["component"], *bom.get("components", [])]
     benign_metrics = [
         m
-        for c in bom.get("components", [])
+        for c in components
         for m in c.get("modelCard", {}).get("quantitativeAnalysis", {}).get("performanceMetrics", [])
         if m.get("type") == "benign-false-positive-rate"
     ]
