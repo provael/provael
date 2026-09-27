@@ -101,9 +101,10 @@ def _report_digest(report: RunReport) -> str:
 
     This used to inline `sha256_hex(canonical_json(...))`, which was identical to
     `execution.report_digest` right up until that one learned to strip fields added after a
-    report's own schema_version. A duplicated digest that silently disagrees with the attested
-    subject is the worst kind of duplication: both look right, and only the artifact that was
-    signed by the other one fails.
+    report's own schema_version. A duplicated digest that silently disagrees with its twin is the
+    worst kind of duplication: both look right, and only the artifact that was signed by the other
+    one fails. It is the projection digest, not ``sha256sum report.json``, and from 0.45 not the
+    attestation subject (which binds the file's bytes).
     """
     from provael.execution import report_digest
 

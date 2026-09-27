@@ -10,9 +10,10 @@ timestamps live in the manifest instead.
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
-from provael.attest import build_statement
+from provael.attest import SUBJECT_BINDING, build_statement
 from provael.config import RunConfig
 from provael.execution import (
     build_execution_manifest,
@@ -20,7 +21,7 @@ from provael.execution import (
     report_digest,
     to_execution_manifest_json,
 )
-from provael.report import load_report
+from provael.report import load_report, report_json_bytes
 from provael.runner import run
 
 _REAL = Path(__file__).resolve().parent.parent / "results" / "smolvla_libero_object"
@@ -39,14 +40,19 @@ def _manifest(**overrides: object):
     return build_execution_manifest(report, **base)  # type: ignore[arg-type]
 
 
-def test_manifest_binds_the_same_report_digest_as_the_attestation() -> None:
+def test_manifest_binds_the_projection_and_the_attestation_binds_the_file() -> None:
     report = _report()
     manifest = build_execution_manifest(report, run_id="r", package_version="0.22.0",
                                         protocol_version="v1")
-    # the manifest's report_digest matches both the standalone digest and the attestation subject
+    # the manifest binds the schema-aware projection, the digest a v1 attestation bound ...
     assert manifest.report_digest == report_digest(report)
+    # ... and from 0.45 the attestation binds report.json's bytes: a different rule, so a
+    # different digest. This test asserted they were equal until the v2 format landed.
     statement = build_statement(report, issued_at="2026-07-22T00:00:00Z", commit="c")
-    assert manifest.report_digest == statement.subject.digest["sha256"]
+    assert statement.subject.binding == SUBJECT_BINDING
+    assert statement.subject.digest["sha256"] == hashlib.sha256(
+        report_json_bytes(report)).hexdigest()
+    assert manifest.report_digest != statement.subject.digest["sha256"]
 
 
 def test_env_is_allowlisted_and_secrets_redacted() -> None:

@@ -26,6 +26,7 @@ from provael.calibration import wilson_ci
 from provael.compliance import REQUIREMENTS
 from provael.evidence import transfer_status_of
 from provael.hosted.report import build_insurer_report
+from provael.report import ReportArtifact
 from provael.scoring.asr import by_family, matched_benign_fpr
 from provael.types import MEASURED_REAL_TRANSFER, STUB_VALIDATED_SCAFFOLDING, RunReport
 
@@ -201,31 +202,36 @@ def _iec_62443(report: RunReport) -> dict[str, Any]:
     }
 
 
-def _insurer(report: RunReport, *, issued_at: str, commit: str) -> dict[str, Any]:
+def _insurer(artifact: ReportArtifact, *, issued_at: str, commit: str) -> dict[str, Any]:
     """Insurer-consumable summary: reuses the shipped insurer report + the family transfer table."""
+    report = artifact.report
     return {
         "instrument": "insurer / underwriting summary",
         "role": "underwriting input — the honest 'which families transfer on the real model' table "
         "with its statistical controls",
-        "insurer_report": build_insurer_report(report, issued_at=issued_at, commit=commit),
+        "insurer_report": build_insurer_report(artifact, issued_at=issued_at, commit=commit),
         "family_transfer_table": family_transfer_table(report),
     }
 
 
 def build_assurance(
-    report: RunReport, profile: AssuranceProfile, *, issued_at: str, commit: str
+    report: RunReport | ReportArtifact, profile: AssuranceProfile, *, issued_at: str, commit: str
 ) -> dict[str, Any]:
     """Build the profile-specific assurance view (pure, deterministic — no wall-clock read here).
 
     Reuses the shipped scoring / compliance / insurer surfaces; every view carries the transfer
-    caveat, the shared cert-readiness cross-reference, and the evidence-not-cert disclaimer.
+    caveat, the shared cert-readiness cross-reference, and the evidence-not-cert disclaimer. Pass
+    the :class:`~provael.report.ReportArtifact` the bundle is built from: the insurer view embeds a
+    statement, whose subject must be the same file digest as the bundle's own.
     """
+    artifact = ReportArtifact.of(report)
+    report = artifact.report
     if profile is AssuranceProfile.iso_10218_2:
         view = _iso_10218_2(report)
     elif profile is AssuranceProfile.iec_62443:
         view = _iec_62443(report)
     else:
-        view = _insurer(report, issued_at=issued_at, commit=commit)
+        view = _insurer(artifact, issued_at=issued_at, commit=commit)
     return {
         "format": ASSURANCE_FORMAT,
         "profile": profile.value,

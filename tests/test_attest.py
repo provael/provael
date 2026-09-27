@@ -41,6 +41,7 @@ from provael.attest import (
 from provael.cli import app
 from provael.compliance import to_compliance_dict
 from provael.config import RunConfig
+from provael.report import report_json_bytes
 from provael.runner import run
 from provael.types import RunReport
 
@@ -239,13 +240,17 @@ def test_malformed_payload_is_rejected_not_raised() -> None:
 def test_subject_report_integrity_is_an_independent_recheck() -> None:
     report = _report()
     bundle, _ = to_bundle(report, issued_at=_ISSUED, commit=_COMMIT, sign=False)
-    ok = verify_bundle(bundle, subject_report=report)
+    # a bare report is bound as the bytes write_report writes for it
+    ok = verify_bundle(bundle, subject_report_bytes=report_json_bytes(report))
     assert ok.subject_report_integrity_ok is True
     # a DIFFERENT report does not hash to the attested subject digest
     other = _report(attacks=["none", "visual"])
-    bad = verify_bundle(bundle, subject_report=other)
+    bad = verify_bundle(bundle, subject_report_bytes=report_json_bytes(other))
     assert bad.subject_report_integrity_ok is False
     assert verify_exit_code(bad) == EXIT_SUBJECT_MISMATCH
+    # and the parsed report cannot stand in for the file (tests/test_attest_binding.py says why)
+    parsed = verify_bundle(bundle, subject_report=report)
+    assert parsed.subject_report_integrity_ok is False
 
 
 @_needs_crypto
@@ -336,10 +341,20 @@ def test_cli_attest_stub_e2e_then_verify(tmp_path: Path) -> None:
         store_path = out / "trust.json"
         store_path.write_text(store.model_dump_json())
         strict = runner.invoke(
-            app, ["attest", "--verify", str(bundle_path), "--trust-store", str(store_path)]
+            app, ["attest", "--verify", str(bundle_path), "--trust-store", str(store_path),
+                  "--report", str(out / "report.json")]
         )
         assert strict.exit_code == 0, strict.output
         assert "STRICT OK" in strict.output
+        assert "subject report digest matches" in strict.output
+        # the bundle binds the file as written: one appended byte is a different subject
+        edited = tmp_path / "edited.json"
+        edited.write_bytes((out / "report.json").read_bytes() + b"\n")
+        moved = runner.invoke(
+            app, ["attest", "--verify", str(bundle_path), "--trust-store", str(store_path),
+                  "--report", str(edited)]
+        )
+        assert moved.exit_code == EXIT_SUBJECT_MISMATCH, moved.output
         # with only the pubkey (no trust store), strict verification fails closed as UNTRUSTED
         untrusted = runner.invoke(
             app, ["attest", "--verify", str(bundle_path), "--pubkey", str(out / "attestation.pub")]

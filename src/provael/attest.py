@@ -12,30 +12,35 @@ commit, records a per-attack transfer-test status, and wraps it all in a DSSE-st
 Two layers, so the free core keeps working and nothing is over-claimed:
 
 * **Digest layer (always on, standard-library only).** The envelope carries the SHA-256 of the
-  canonical statement bytes, and the statement's ``subject`` carries the SHA-256 of the canonical
-  ``report.json``. ``attest --verify`` recomputes both offline. This proves *integrity*, not
-  identity, and the note on the bundle says exactly that.
+  canonical statement bytes, and the statement's ``subject`` carries the SHA-256 of ``report.json``
+  exactly as written. ``attest --verify --report`` recomputes both offline. This proves
+  *integrity*, not identity, and the note on the bundle says exactly that.
 
-  **Scope of the subject digest — read this before relying on it.** It binds the report's *model
-  projection* (``json.loads(report.model_dump_json())``), not the published file's bytes.
-  :class:`~provael.types.RunReport` sets ``extra="forbid"``, so a key appended to a signed
-  ``report.json`` is now rejected when the file is loaded rather than silently dropped before
-  hashing. One rewrite still reproduces the digest: DELETING a field whose stored value equals its
-  declared default (e.g. ``"stochastic": false``), because loading restores the default. Binding
-  the exact bytes would require the raw file to reach this module — callers hand it an already
-  parsed ``RunReport`` — so treat the subject digest as binding the measured evidence, not a
-  byte-for-byte file identity.
+  **What the subject binds.** A ``provael-attestation/v2`` statement (issued from 0.45) binds the
+  file's bytes (``subject.binding`` = ``report-json-bytes/v1``; what ``sha256sum report.json``
+  prints), so every edit to a published report fails the check — including the one v1 could not
+  see: deleting a field whose stored value equals its declared default, which loading restores. A
+  v1 statement (issued up to 0.44) bound the report's schema-aware *model projection*
+  (:func:`report_projection`) instead, because callers handed this module an already parsed
+  report; :class:`~provael.report.ReportArtifact` now carries the bytes to it. v1 bundles still
+  verify, by the v1 rule, and :func:`verify_bundle` says which rule it applied.
 * **Signature layer (opt-in, needs the ``attest`` extra).** With ``pip install 'provael[attest]'``
-  the envelope is signed with Ed25519 over the DSSE pre-authentication encoding and verifies
-  offline against the bundled public key. Ed25519 is deterministic, so a fixed
-  ``(report, issued_at, ruleset, commit, key)`` yields a byte-identical signature — the tests pin
-  those and assert reproducibility.
+  the bundle is signed with pure Ed25519 and verifies offline against the bundled public key. A v2
+  signature covers a fixed-size *signed record* under the DSSE pre-authentication encoding — the
+  statement's SHA-256, the subject's SHA-256 and binding, and the payload type
+  (:func:`signed_record`) — never the statement itself, so the signed message is the same 363
+  bytes for every run. That is what lets a key held in AWS KMS sign it: KMS signs pure Ed25519
+  (``ED25519_SHA_512``) only over a raw message of at most 4096 bytes, and a statement is tens of
+  kilobytes. A v1 signature covered the whole statement. Ed25519 is deterministic, so a fixed
+  ``(report bytes, issued_at, ruleset, commit, key)`` yields a byte-identical signature — the
+  tests pin those and assert reproducibility.
 
-Determinism contract: :func:`build_statement` is a pure function of the ``RunReport`` and the
-issuance metadata handed to it. The wall-clock date and the git commit are read by the CLI and
-*passed in*, never read here, so the report-determinism contract in :mod:`provael.types` is
-preserved. ``attest`` re-runs nothing: it reuses a ``report.json`` exactly like the compliance
-export, so the whole path is CPU/stub-runnable.
+Determinism contract: :func:`build_statement` is a pure function of the report (its bytes, when a
+:class:`~provael.report.ReportArtifact` is passed) and the issuance metadata handed to it. The
+wall-clock date and the git commit are read by the CLI and *passed in*, never read here, so the
+report-determinism contract in :mod:`provael.types` is preserved. ``attest`` re-runs nothing: it
+reuses a ``report.json`` exactly like the compliance export, so the whole path is
+CPU/stub-runnable.
 
 This is **evidence, not certification** — the same honest-scope caveats travel inside the wrapped
 compliance report. Provael is an independent project and is not affiliated with ISO, the EU, NIST,
@@ -50,21 +55,31 @@ import json
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from provael.attacks.optimized import FAMILY as OPTIMIZED_FAMILY
 from provael.attacks.registry import FAMILIES
 from provael.compliance import to_compliance_dict
 from provael.evidence import EvidenceState, evidence_state_of, transfer_status_of
+from provael.report import ReportArtifact
 from provael.types import MEASURED_REAL_TRANSFER, STUB_VALIDATED_SCAFFOLDING, RunReport
 from provael.verdict import ReleaseDecision, ReleaseVerdict, release_verdict
 
 #: The attestation statement format id (our own DSSE-style envelope, not in-toto conformance).
-STATEMENT_FORMAT = "provael-attestation/v1"
+#: v2 (0.45): the subject binds the report.json bytes and the signature covers a signed record.
+STATEMENT_FORMAT = "provael-attestation/v2"
+#: The format issued up to 0.44: subject = the report's model projection, signature over the whole
+#: statement. Still verified; never issued.
+STATEMENT_FORMAT_V1 = "provael-attestation/v1"
+#: What a v2 subject digest is taken over: report.json exactly as written.
+SUBJECT_BINDING = "report-json-bytes/v1"
 #: The wrapped predicate's type — the compliance-evidence crosswalk.
 PREDICATE_TYPE = "provael-compliance-evidence/v1"
 #: DSSE payload type for the envelope.
 PAYLOAD_TYPE = "application/vnd.provael.attestation+json"
+#: The record a v2 signature covers (:func:`signed_record`): its format id and DSSE payload type.
+SIGNED_RECORD_FORMAT = "provael-signed-record/v1"
+SIGNED_RECORD_TYPE = "application/vnd.provael.signed-record+json"
 #: Ruleset version for the framework crosswalk. Bump when compliance.REQUIREMENTS changes.
 #: /2: added the CRA + ISO/IEC TR 5469 + ISO 42001/23894 rows and the D1 run-level transfer tier.
 #: /3: added the eu-machinery:annex-i-part-a row (Machinery Reg Annex I Part A conformity route).
@@ -193,7 +208,15 @@ class AttestationSubject(BaseModel):
     """What is being attested: the run under test, bound by the digest of its report.json."""
 
     name: str = Field(..., description="policy x suite, e.g. 'stub x stub'.")
-    digest: dict[str, str] = Field(..., description="Digest of the canonical report.json (sha256).")
+    digest: dict[str, str] = Field(
+        ..., description="Digest of report.json (sha256); `binding` says what it was taken over."
+    )
+    binding: str | None = Field(
+        None,
+        description="What `digest` covers: 'report-json-bytes/v1' = SHA-256 of report.json exactly "
+        "as written (v2). Absent on a v1 statement, whose digest covers the report's model "
+        "projection (provael.attest.report_projection) rather than the file.",
+    )
 
 
 class TransferStatus(BaseModel):
@@ -281,6 +304,20 @@ class VerifyResult(BaseModel):
 
     # Integrity layer.
     digest_ok: bool = Field(..., description="Payload SHA-256 matches the envelope digest.")
+    statement_format_ok: bool = Field(
+        False,
+        description="The envelope declares the attestation payload type and the payload is a "
+        "statement format this verifier knows. False fails every verdict: a valid signature over "
+        "something that is not a Provael statement attests nothing.",
+    )
+    statement_format: str | None = Field(
+        None, description="The statement's format id, e.g. 'provael-attestation/v2'."
+    )
+    subject_binding: str | None = Field(
+        None,
+        description="The rule the subject digest was checked by: 'report-json-bytes/v1' (v2, the "
+        "file's bytes) or 'report-projection' (v1, the parsed report's model projection).",
+    )
     subject_report_integrity_ok: bool | None = Field(
         None,
         description="Source report.json digest matches the signed subject; None when the source "
@@ -338,7 +375,11 @@ class VerifyResult(BaseModel):
     def integrity_only_ok(self) -> bool:
         """Digest layer only: payload (and, if supplied, the source report) are intact. Proves
         integrity, NOT signer identity or trust — never surface this as plain "verified"."""
-        return self.digest_ok and self.subject_report_integrity_ok is not False
+        return (
+            self.digest_ok
+            and self.statement_format_ok
+            and self.subject_report_integrity_ok is not False
+        )
 
     @property
     def overall_strict_ok(self) -> bool:
@@ -346,6 +387,7 @@ class VerifyResult(BaseModel):
         keyid-matching, TRUSTED, non-revoked, in-window signature. Unsigned/untrusted => False."""
         return (
             self.digest_ok
+            and self.statement_format_ok
             and self.subject_report_integrity_ok is not False
             and self.expected_binding_ok is not False
             and self.signature_present
@@ -494,10 +536,12 @@ def report_projection(report: RunReport | dict[str, Any]) -> dict[str, Any]:
 
 
 def _report_digest(report: RunReport | dict[str, Any]) -> str:
-    """The canonical report.json digest — what :func:`build_statement` binds as the subject.
+    """The projection digest — what a v1 statement bound as its subject (issued up to 0.44).
 
-    Hashes the model projection, not the file's bytes; see the module docstring for exactly which
-    edits to a published ``report.json`` this does and does not detect.
+    Hashes the model projection, not the file's bytes; see the module docstring for the edit to a
+    published ``report.json`` this cannot detect, and why v2 binds the bytes instead. Kept to
+    verify v1 bundles; the manifests' report digests are the same quantity
+    (:func:`provael.execution.report_digest`).
     """
     return _sha256_hex(_canonical(report_projection(report)))
 
@@ -519,6 +563,38 @@ def _pae(payload_type: str, payload: bytes) -> bytes:
     """DSSE pre-authentication encoding (what actually gets signed)."""
     t = payload_type.encode("utf-8")
     return b"DSSEv1 %d %b %d %b" % (len(t), t, len(payload), payload)
+
+
+def signed_record(
+    statement_bytes: bytes,
+    subject_sha256: str,
+    *,
+    payload_type: str = PAYLOAD_TYPE,
+    binding: str = SUBJECT_BINDING,
+) -> bytes:
+    """The record a v2 signature covers: canonical JSON, the same 306 bytes for every run.
+
+    It names the statement by its SHA-256 and repeats the subject's digest and binding, so the
+    message a signer sees never grows with the statement, and a signer that logs what it signed
+    (a KMS audit trail) logs which report it vouched for. ``payload_type`` is the envelope's, so a
+    signature cannot be moved onto an envelope declaring another type.
+    """
+    return _canonical({
+        "format": SIGNED_RECORD_FORMAT,
+        "payload_type": payload_type,
+        "statement_sha256": _sha256_hex(statement_bytes),
+        "subject_binding": binding,
+        "subject_sha256": subject_sha256,
+    })
+
+
+def record_signing_message(record: bytes) -> bytes:
+    """The exact message a v2 signer signs, 363 bytes: the DSSE PAE of a :func:`signed_record`.
+
+    What an external signer (a KMS or HSM key) is handed. It signs these bytes with pure Ed25519
+    (for AWS KMS: ``MessageType=RAW``, ``ED25519_SHA_512``), not a digest of them.
+    """
+    return _pae(SIGNED_RECORD_TYPE, record)
 
 
 # --------------------------------------------------------------------------------------------
@@ -655,7 +731,7 @@ def _transfer_status(report: RunReport) -> list[TransferStatus]:
 
 
 def build_statement(
-    report: RunReport,
+    report: RunReport | ReportArtifact,
     *,
     issued_at: str,
     commit: str,
@@ -665,13 +741,19 @@ def build_statement(
 ) -> AttestationStatement:
     """Build the attestation statement (pure): wraps the SAME compliance evidence as the export.
 
+    The subject is the SHA-256 of the report.json bytes. To attest a file that already exists,
+    pass the :class:`~provael.report.ReportArtifact` read from it: a bare :class:`RunReport` is
+    bound as the bytes :func:`provael.report.write_report` writes for it, which are that file's
+    bytes only when this release wrote it.
+
     ``assurance`` (optional) is a standards-aligned view built by :mod:`provael.assurance` and
     embedded verbatim into the signed payload; it is ``None`` for the default (no-profile) bundle,
     so existing attestations are unchanged apart from the schema/ruleset bump. ``decision`` is the
     release decision the caller made; derived as not-assessed when none is passed, and the same
     decision reaches the embedded compliance predicate, so the signed payload cannot carry two.
     """
-    report_digest = _report_digest(report)
+    artifact = ReportArtifact.of(report)
+    report = artifact.report
     decision = decision if decision is not None else release_verdict(report)
     return AttestationStatement(
         tool_version=report.tool_version,
@@ -680,7 +762,8 @@ def build_statement(
         commit=commit,
         subject=AttestationSubject(
             name=f"{report.policy} x {report.suite}",
-            digest={"sha256": report_digest},
+            digest={"sha256": artifact.sha256},
+            binding=SUBJECT_BINDING,
         ),
         accelerator=report.accelerator,
         precision=report.precision,
@@ -696,7 +779,7 @@ def build_statement(
 
 
 def to_bundle(
-    report: RunReport,
+    report: RunReport | ReportArtifact,
     *,
     issued_at: str,
     commit: str,
@@ -708,10 +791,12 @@ def to_bundle(
 ) -> tuple[AttestationBundle, bytes | None]:
     """Build a bundle from a report. Returns ``(bundle, public_key_pem_or_None)``.
 
-    ``sign=True`` (default) signs with Ed25519 (needs the ``attest`` extra); an ephemeral key is
-    generated when ``private_key_pem`` is None, and its public PEM is returned so the caller can
-    write it next to the bundle. ``sign=False`` yields a digest-only bundle and returns None.
-    ``assurance`` (optional) is embedded into the signed statement (see :func:`build_statement`).
+    Pass the :class:`~provael.report.ReportArtifact` of the file being attested (see
+    :func:`build_statement` for what a bare report binds). ``sign=True`` (default) signs with
+    Ed25519 (needs the ``attest`` extra); an ephemeral key is generated when ``private_key_pem`` is
+    None, and its public PEM is returned so the caller can write it next to the bundle.
+    ``sign=False`` yields a digest-only bundle and returns None. ``assurance`` (optional) is
+    embedded into the signed statement (see :func:`build_statement`).
     """
     statement = build_statement(
         report, issued_at=issued_at, commit=commit, ruleset=ruleset, assurance=assurance,
@@ -736,7 +821,8 @@ def to_bundle(
 
     priv_pem = private_key_pem if private_key_pem is not None else generate_private_key_pem()
     pub_pem = public_key_pem(priv_pem)
-    signature = _sign(priv_pem, _pae(PAYLOAD_TYPE, payload_bytes))
+    record = signed_record(payload_bytes, statement.subject.digest["sha256"])
+    signature = _sign(priv_pem, record_signing_message(record))
     ephemeral = private_key_pem is None
     return (
         AttestationBundle(
@@ -750,8 +836,9 @@ def to_bundle(
                 )
             ],
             note=(
-                "Ed25519 over the DSSE pre-authentication encoding. Verify offline: "
-                "provael attest --verify <bundle> --pubkey <key>. "
+                "Ed25519 over the DSSE pre-authentication encoding of a signed record naming this "
+                "statement's SHA-256 and the report.json SHA-256. Verify offline: "
+                "provael attest --verify <bundle> --pubkey <key> --report <report.json>. "
                 + ("Signed with an ephemeral key — proves integrity, not signer identity; "
                    "pass --key to sign with your organisation key."
                    if ephemeral else "Signed with the supplied key.")
@@ -761,22 +848,119 @@ def to_bundle(
     )
 
 
+#: How :class:`VerifyResult` names the v1 subject rule. Never written into a statement (a v1
+#: statement carries no ``binding``); it says which rule the verifier applied to one.
+V1_SUBJECT_RULE = "report-projection"
+
+
+def _parse_statement(payload_bytes: bytes) -> dict[str, Any]:
+    """The payload as a JSON object, or ``{}`` when it is not one. Never raises."""
+    try:
+        obj = json.loads(payload_bytes)
+    except (ValueError, RecursionError):  # bad JSON, bad UTF-8, or nesting deep enough to overflow
+        return {}
+    return obj if isinstance(obj, dict) else {}
+
+
+def _subject_of(statement: dict[str, Any]) -> tuple[str | None, str | None, str | None]:
+    """``(name, sha256, binding)`` of a statement's subject; each None when absent or mistyped."""
+    subject = statement.get("subject")
+    if not isinstance(subject, dict):
+        return None, None, None
+    digest = subject.get("digest")
+    sha = digest.get("sha256") if isinstance(digest, dict) else None
+    name, binding = subject.get("name"), subject.get("binding")
+    return (
+        name if isinstance(name, str) else None,
+        sha if isinstance(sha, str) else None,
+        binding if isinstance(binding, str) else None,
+    )
+
+
+def _signing_message(
+    fmt: str | None, payload_type: str, payload_bytes: bytes, statement: dict[str, Any]
+) -> bytes | None:
+    """What the bundle's signature must cover, by statement format; None if nothing is checkable.
+
+    v1 signed the statement itself. v2 signs the record naming it, rebuilt here from the payload
+    actually received — never from the envelope's own ``payloadSha256`` claim, which nobody signed.
+    """
+    if fmt == STATEMENT_FORMAT_V1:
+        return _pae(payload_type, payload_bytes)
+    if fmt == STATEMENT_FORMAT:
+        _, sha, binding = _subject_of(statement)
+        if sha is None or binding is None:
+            return None
+        return record_signing_message(
+            signed_record(payload_bytes, sha, payload_type=payload_type, binding=binding)
+        )
+    return None
+
+
+def _check_subject(
+    fmt: str | None,
+    statement: dict[str, Any],
+    report_bytes: bytes | None,
+    report: RunReport | dict[str, Any] | None,
+) -> tuple[bool, str, str]:
+    """Recheck the report a verifier holds against the attested subject: ``(ok, reason, code)``."""
+    _, claimed, _ = _subject_of(statement)
+    if claimed is None:
+        return False, "no intact attested subject digest to check the report against", (
+            "SUBJECT_REPORT_MISMATCH"
+        )
+    if fmt == STATEMENT_FORMAT:
+        if report_bytes is None:
+            return False, (
+                "a v2 subject binds report.json's exact bytes: pass the file, not a parsed report"
+            ), "SUBJECT_BYTES_REQUIRED"
+        ok = _sha256_hex(report_bytes) == claimed
+    elif fmt == STATEMENT_FORMAT_V1:
+        if report_bytes is not None:
+            try:
+                report = RunReport.model_validate_json(report_bytes)
+            except ValidationError:
+                return False, (
+                    "report.json does not load as a report, so it cannot be the v1 subject "
+                    "(an unknown key, or not a report at all)"
+                ), "SUBJECT_REPORT_MISMATCH"
+        ok = report is not None and _report_digest(report) == claimed
+    else:
+        return False, "the subject of an unsupported statement format cannot be checked", (
+            "SUBJECT_REPORT_MISMATCH"
+        )
+    if ok:
+        return True, "subject report digest matches the attested subject", "SUBJECT_OK"
+    return False, "subject report digest MISMATCH (report != attested subject)", (
+        "SUBJECT_REPORT_MISMATCH"
+    )
+
+
 def verify_bundle(
     bundle: AttestationBundle | dict[str, Any],
     *,
     public_key_pem_bytes: bytes | None = None,
     trust_store: TrustStore | None = None,
+    subject_report_bytes: bytes | None = None,
     subject_report: RunReport | dict[str, Any] | None = None,
     expected_subject_name: str | None = None,
     now: str | None = None,
 ) -> VerifyResult:
     """Verify a bundle offline, fail-closed, establishing each fact independently.
 
+    - **Statement format** (always): the envelope declares the attestation payload type and the
+      payload is a v1 or v2 statement. Anything else fails every verdict, however valid its
+      signature: the rules below differ by format, and there are none for an unknown one.
     - **Payload integrity** (always): the base64 payload recomputes to the envelope digest.
-    - **Subject-report integrity** (only if ``subject_report`` is given): the report you hold
-      hashes to the digest the signed subject binds — the embedded digest alone is not that check.
+    - **Subject-report integrity** (only when a report is supplied): the report you hold matches
+      the digest the signed subject binds — the embedded digest alone is not that check. A v2
+      subject is the SHA-256 of the file, so pass its bytes as ``subject_report_bytes``; a v2
+      bundle checked against a parsed ``subject_report`` alone fails closed
+      (``SUBJECT_BYTES_REQUIRED``), because a parsed report cannot say what bytes it came from. A
+      v1 subject is the parsed report's projection digest; either argument serves.
     - **Signature**: presence + cryptographic validity + keyid match, against the supplied public
-      key or, absent that, the trust-store key carrying the signature's keyid.
+      key or, absent that, the trust-store key carrying the signature's keyid. It covers the
+      signed record for v2 and the statement for v1.
     - **Signer trust** (ONLY via ``trust_store``): a valid signature from an unknown key is
       authentic but UNTRUSTED. Revocation and the validity window (needs ``now``) are checked here.
 
@@ -803,30 +987,54 @@ def verify_bundle(
     reasons.append("payload digest matches" if digest_ok else "payload digest MISMATCH (tampered)")
     codes.append("PAYLOAD_OK" if digest_ok else "PAYLOAD_DIGEST_MISMATCH")
 
-    statement: dict[str, Any] = {}
-    if digest_ok:
-        try:
-            statement = json.loads(payload_bytes)
-        except json.JSONDecodeError:
-            statement = {}
+    # `parsed` is read for the format and to rebuild what the signature covers, which fails on its
+    # own if the payload was altered; facts about the run are read only from an intact payload.
+    parsed = _parse_statement(payload_bytes)
+    statement = parsed if digest_ok else {}
+
+    # -- statement format: which rules the rest of this bundle is checked by --
+    fmt_raw = parsed.get("format")
+    fmt = fmt_raw if isinstance(fmt_raw, str) else None
+    _, _, parsed_binding = _subject_of(parsed)
+    if fmt == STATEMENT_FORMAT:
+        subject_rule: str | None = parsed_binding
+    else:
+        subject_rule = V1_SUBJECT_RULE if fmt == STATEMENT_FORMAT_V1 else None
+    type_ok = b.payloadType == PAYLOAD_TYPE
+    known = fmt == STATEMENT_FORMAT_V1 or (
+        fmt == STATEMENT_FORMAT and parsed_binding == SUBJECT_BINDING
+    )
+    statement_format_ok = type_ok and known
+    if not type_ok:
+        reasons.append(f"payloadType {b.payloadType!r} is not an attestation ({PAYLOAD_TYPE})")
+        codes.append("UNEXPECTED_PAYLOAD_TYPE")
+    if not known:
+        reasons.append(
+            f"v2 statement with an unknown subject binding {parsed_binding!r}"
+            if fmt == STATEMENT_FORMAT else f"unsupported statement format {fmt!r}"
+        )
+        codes.append("UNSUPPORTED_STATEMENT_FORMAT")
+    elif fmt == STATEMENT_FORMAT_V1:
+        reasons.append(
+            f"{fmt} statement (issued up to 0.44): its subject binds the report's model "
+            "projection, not the file's bytes"
+        )
+    if not statement_format_ok and digest_ok:
+        codes.append("MALFORMED")
 
     # -- subject-report integrity (independent recheck, only when a source report is supplied) --
     subject_report_integrity_ok: bool | None = None
-    if subject_report is not None:
-        claimed = statement.get("subject", {}).get("digest", {}).get("sha256")
-        subject_report_integrity_ok = (
-            claimed is not None and _report_digest(subject_report) == claimed
+    if subject_report_bytes is not None or subject_report is not None:
+        subject_report_integrity_ok, why, code = _check_subject(
+            fmt, statement, subject_report_bytes, subject_report
         )
-        reasons.append(
-            "subject report digest matches the attested subject" if subject_report_integrity_ok
-            else "subject report digest MISMATCH (report != attested subject)"
-        )
-        codes.append("SUBJECT_OK" if subject_report_integrity_ok else "SUBJECT_REPORT_MISMATCH")
+        reasons.append(why)
+        codes.append(code)
 
     # -- expected binding --
     expected_binding_ok: bool | None = None
     if expected_subject_name is not None:
-        expected_binding_ok = statement.get("subject", {}).get("name") == expected_subject_name
+        expected_binding_ok = _subject_of(statement)[0] == expected_subject_name
         reasons.append(
             "subject binding matches expectation" if expected_binding_ok
             else "subject binding MISMATCH (not the expected run)"
@@ -859,14 +1067,19 @@ def verify_bundle(
             if not keyid_matches:
                 reasons.append("verifying key id does not match the signature keyid")
                 codes.append("KEYID_MISMATCH")
-            try:
-                signature = base64.b64decode(b.signatures[0].sig, validate=True)
-                signature_ok = _verify(verify_pem, signature, _pae(b.payloadType, payload_bytes))
-            except ValueError:
+            message = _signing_message(fmt, b.payloadType, payload_bytes, parsed)
+            if message is None:
                 signature_ok = False
-            reasons.append(
-                "signature cryptographically valid" if signature_ok else "signature INVALID"
-            )
+                reasons.append("signature INVALID: no statement this verifier can check it over")
+            else:
+                try:
+                    signature = base64.b64decode(b.signatures[0].sig, validate=True)
+                    signature_ok = _verify(verify_pem, signature, message)
+                except ValueError:
+                    signature_ok = False
+                reasons.append(
+                    "signature cryptographically valid" if signature_ok else "signature INVALID"
+                )
             codes.append("SIGNATURE_VALID" if signature_ok else "SIGNATURE_INVALID")
 
         # -- signer trust — established ONLY via the trust store --
@@ -902,6 +1115,9 @@ def verify_bundle(
 
     result = VerifyResult(
         digest_ok=digest_ok,
+        statement_format_ok=statement_format_ok,
+        statement_format=fmt,
+        subject_binding=subject_rule,
         subject_report_integrity_ok=subject_report_integrity_ok,
         signature_present=signature_present,
         signature_ok=signature_ok,
@@ -983,8 +1199,15 @@ def load_bundle(path: Path) -> AttestationBundle:
 
 __all__ = [
     "STATEMENT_FORMAT",
+    "STATEMENT_FORMAT_V1",
+    "SUBJECT_BINDING",
+    "V1_SUBJECT_RULE",
     "PREDICATE_TYPE",
     "PAYLOAD_TYPE",
+    "SIGNED_RECORD_FORMAT",
+    "SIGNED_RECORD_TYPE",
+    "signed_record",
+    "record_signing_message",
     "RULESET_VERSION",
     "ATTESTATION_JSON",
     "ATTESTATION_PUB",

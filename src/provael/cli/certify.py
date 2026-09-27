@@ -37,7 +37,7 @@ from provael.config import RunConfig
 from provael.defenses.measure import MitigationReport
 from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
 from provael.report import (
-    load_report,
+    ReportArtifact,
     render_summary,
     write_report,
 )
@@ -112,13 +112,14 @@ def dossier(
     """
     if in_dir is not None:
         try:
-            report = load_report(in_dir)
+            artifact = ReportArtifact.read(in_dir)
         except FileNotFoundError as exc:
             _fail(str(exc))
             return
         except ValidationError:
             _fail(f"{in_dir} does not contain a valid Provael report.json")
             return
+        report = artifact.report
         decision = _decision_for(in_dir, report, protocol)
     else:
         acceptance = _load_protocol(protocol)
@@ -137,6 +138,7 @@ def dossier(
             return
         decision = _decide(report, acceptance)
         write_report(report, out, decision)
+        artifact = ReportArtifact.read(out)  # the dossier's statement binds what is on disk
 
     component: ComponentProfile | None = None
     if component_metadata is not None:
@@ -170,7 +172,7 @@ def dossier(
     issued_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     stamp = commit or _git_commit() or f"v{__version__}"
     paths = write_dossier(
-        report, out, profile=profile, issued_at=issued_at, commit=stamp, component=component,
+        artifact, out, profile=profile, issued_at=issued_at, commit=stamp, component=component,
         include_crosswalk=include_crosswalk, mitigation=mitigation_report, decision=decision,
     )
 

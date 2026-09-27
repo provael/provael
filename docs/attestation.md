@@ -25,14 +25,16 @@ the same compliance report verbatim.
 ## Two layers, so the free core keeps working
 
 1. **Digest layer — always on, standard-library only.** The envelope carries the SHA-256 of the
-   canonical statement, and the statement's `subject` carries the SHA-256 of the canonical
-   `report.json`. `provael attest --verify` recomputes both with no network and no extra
-   dependency. This is integrity, not identity: it proves the evidence was not altered, not who
-   produced it.
+   canonical statement, and the statement's `subject` carries the SHA-256 of `report.json` exactly
+   as written: the value `sha256sum report.json` prints. `provael attest --verify --report` recomputes
+   both with no network and no extra dependency. This is integrity, not identity: it proves the
+   evidence was not altered, not who produced it.
 2. **Signature layer — opt-in, needs the `attest` extra.** With `pip install 'provael[attest]'`
-   the envelope is signed with **Ed25519** over the DSSE pre-authentication encoding and verifies
-   offline against the bundled public key. Ed25519 is deterministic, so a fixed
-   `(report, issued_at, ruleset, commit, key)` yields a byte-identical signature.
+   the bundle is signed with pure **Ed25519** (RFC 8032) and verifies offline against the bundled
+   public key. The signature covers a small fixed-size *signed record* that names the statement by
+   its SHA-256 (see [What is signed](#what-is-signed-the-v2-format)), under the DSSE
+   pre-authentication encoding. Ed25519 is deterministic, so a fixed
+   `(report bytes, issued_at, ruleset, commit, key)` yields a byte-identical signature.
 
 The free core stays six light dependencies. `attest --no-sign` produces a digest-only bundle
 without the extra; the signed bundle needs the extra, and the CLI says so with a clear install hint.
@@ -49,8 +51,9 @@ provael attest --in runs/calib --out runs/attest
 # Sign with your organisation key instead of an ephemeral one
 provael attest --in runs/calib --key org-ed25519.pem --out runs/attest
 
-# Verify offline — recomputes the digest and checks the signature
-provael attest --verify runs/attest/attestation.json --pubkey runs/attest/attestation.pub
+# Verify offline — recomputes the digests and checks the signature; --report checks the file too
+provael attest --verify runs/attest/attestation.json --pubkey runs/attest/attestation.pub \
+  --report runs/attest/report.json
 ```
 
 `attest` writes `attestation.json` (the bundle), `attestation.pub` (the public key, for ephemeral
@@ -61,7 +64,8 @@ signing), and `report.compliance.md` (the human-readable evidence) into `--out`.
 A DSSE-style envelope: `payloadType`, a base64 `payload`, its `payloadSha256`, and a `signatures`
 array. The payload decodes to a statement with:
 
-- `subject` — `policy x suite` plus the SHA-256 digest of the source `report.json`.
+- `subject` — `policy x suite`, the SHA-256 of the source `report.json` exactly as written, and
+  `binding: report-json-bytes/v1`, which says so.
 - `predicate` — the **full compliance crosswalk**: the ASR with its 95% Wilson CI, the benign-FPR
   control, the per-EAI breakdown, and every mapped requirement across the EU AI Act, the EU
   Machinery Regulation, ISO 10218:2025, NIST AI 100-2 / AI RMF, and IEC 62443, each with its
@@ -70,6 +74,37 @@ array. The payload decodes to a statement with:
   `stub-validated-scaffolding` for the stub and for the search-based `optimized` family (whose real
   transfer is GPU-gated).
 - `regulatory_clock`, `issued_at`, `commit`, `ruleset`, `tool_version`.
+
+### What is signed (the v2 format)
+
+From 0.45 a bundle carries a `provael-attestation/v2` statement, and two things differ from v1:
+
+- **The subject is the file.** A v1 subject was the SHA-256 of the report's schema-aware *model
+  projection* (the report parsed, then re-serialised canonically), because the code that built it
+  was handed a parsed report. That missed one edit: deleting a field whose stored value equals its
+  default, which loading restores. A v2 subject is the SHA-256 of the bytes, so `--report` is a
+  byte-for-byte check and any edit fails it, including a line-ending change. Pass the file you were
+  given: a report parsed and written out again is a different file.
+- **The signature covers a signed record, not the statement.** The record is canonical JSON,
+  306 bytes for every run:
+
+  ```json
+  {"format":"provael-signed-record/v1","payload_type":"application/vnd.provael.attestation+json",
+   "statement_sha256":"<sha256 of the statement>","subject_binding":"report-json-bytes/v1",
+   "subject_sha256":"<sha256 of report.json>"}
+  ```
+
+  and the signed message is its DSSE encoding under the type
+  `application/vnd.provael.signed-record+json`: 363 bytes. A statement is tens of kilobytes (the
+  insurer sample's is over 100 KB), and AWS KMS signs pure Ed25519 (`ED25519_SHA_512`) only over a
+  raw message of at most 4,096 bytes; a key held in KMS or an HSM can sign the record as it is.
+  `provael.attest.signed_record` and `record_signing_message` build it.
+
+**Compatibility.** A v1 bundle (issued up to 0.44) still verifies, by the v1 rule, and the verifier
+says which rule it applied. A verifier from 0.44 or earlier cannot verify a v2 bundle: upgrade the
+verifier. The verifier also now rejects a bundle whose `payloadType` is not an attestation, or whose
+statement format it does not know, however valid its signature: before 0.45 a signature made by the
+same key over something else (any payload type) could be presented as an attestation.
 
 ### The deployed policy, not only the checkpoint (schema 6)
 

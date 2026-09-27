@@ -29,8 +29,10 @@ from provael.leaderboard import (
     validate_report,
 )
 from provael.report import (
-    load_report,
-    write_report,
+    REPORT_JSON,
+    REPORT_MD,
+    ReportArtifact,
+    to_markdown,
 )
 
 
@@ -109,10 +111,11 @@ def submit_cmd(
         return
 
     try:
-        report = load_report(report_paths[0].parent)
+        artifact = ReportArtifact.read(report_paths[0])
     except (FileNotFoundError, ValidationError) as exc:
         _fail(f"{report_paths[0]} is not a readable report.json: {exc}")
         return
+    report = artifact.report
 
     # 1. Validate — the same check the CI workflow runs on arrival, so a submitter sees the
     #    failure here rather than after opening a PR.
@@ -130,7 +133,7 @@ def submit_cmd(
     stamp = _git_commit() or f"v{__version__}"
     try:
         bundle, pub_pem = to_bundle(
-            report, issued_at=issued_at, commit=stamp,
+            artifact, issued_at=issued_at, commit=stamp,
             private_key_pem=key.read_bytes() if key is not None else None, sign=True,
         )
     except MissingAttestExtraError:
@@ -155,7 +158,10 @@ def submit_cmd(
         else Path("results") / slug
     )
     dest.mkdir(parents=True, exist_ok=True)
-    write_report(report, dest)
+    # The submitter's report.json is published byte for byte: the bundle binds those bytes, and a
+    # copy re-serialised here would be a different file whenever another release wrote it.
+    (dest / REPORT_JSON).write_bytes(artifact.raw)
+    (dest / REPORT_MD).write_text(to_markdown(report), encoding="utf-8")
     bundle_path = write_bundle(bundle, dest / ATTESTATION_JSON)
     if pub_pem is not None and key is None:
         (dest / ATTESTATION_PUB).write_bytes(pub_pem)

@@ -7,12 +7,16 @@ a report back from disk (for the ``report`` CLI command), and renders a Rich tab
 plus the headline ASR line to a console.
 
 ``report.json`` is produced via pydantic's ``model_dump_json`` with sorted keys and
-stable formatting so two runs of the same config yield byte-identical files.
+stable formatting so two runs of the same config yield byte-identical files. It is written as
+bytes, with LF line endings on every OS, because an attestation binds those bytes
+(:class:`ReportArtifact`).
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 from rich.console import Console
@@ -88,6 +92,62 @@ def to_json(report: RunReport) -> str:
     # Round-trip through Python so keys are sorted -> deterministic byte output.
     data = json.loads(report.model_dump_json())
     return json.dumps(data, indent=2, sort_keys=True) + "\n"
+
+
+def report_json_bytes(report: RunReport) -> bytes:
+    """The exact bytes :func:`write_report` writes as ``report.json`` for ``report``."""
+    return to_json(report).encode("utf-8")
+
+
+def report_json_path(path: Path) -> Path:
+    """``<path>/report.json`` for a run directory, ``path`` itself for a file."""
+    return path / REPORT_JSON if path.is_dir() else path
+
+
+@dataclass(frozen=True)
+class ReportArtifact:
+    """A ``report.json`` as a verifier will hold it: its exact bytes, and the report they parse to.
+
+    An attestation binds ``sha256(raw)``, so the bytes travel with the parsed report instead of
+    being re-derived from it. Re-serialising a parsed report does not reproduce a file another
+    release wrote: a field that release did not emit comes back as ``null``, and a report written
+    with ``write_text`` on Windows has CRLF line endings. Anything that attests a file that already
+    exists therefore starts from :meth:`read`, never from :func:`load_report`.
+    """
+
+    raw: bytes
+    report: RunReport
+
+    @classmethod
+    def from_bytes(cls, raw: bytes) -> ReportArtifact:
+        """Parse ``raw`` as a report (pydantic's ``ValidationError`` when it is not one)."""
+        return cls(raw=raw, report=RunReport.model_validate_json(raw))
+
+    @classmethod
+    def read(cls, path: Path) -> ReportArtifact:
+        """Read ``<path>/report.json``, or ``path`` itself when it is a file.
+
+        Raises:
+            FileNotFoundError: if there is no such file.
+        """
+        json_path = report_json_path(path)
+        if not json_path.exists():
+            raise FileNotFoundError(f"no report.json found at {json_path}")
+        return cls.from_bytes(json_path.read_bytes())
+
+    @classmethod
+    def of(cls, report: RunReport | ReportArtifact) -> ReportArtifact:
+        """``report`` as an artifact: an artifact as it is, a bare report as the bytes
+        :func:`write_report` writes for it (which are a file's bytes only if this release wrote
+        that file)."""
+        if isinstance(report, ReportArtifact):
+            return report
+        return cls(raw=report_json_bytes(report), report=report)
+
+    @property
+    def sha256(self) -> str:
+        """Hex SHA-256 of :attr:`raw`: what ``sha256sum report.json`` prints."""
+        return hashlib.sha256(self.raw).hexdigest()
 
 
 def to_markdown(report: RunReport, decision: ReleaseDecision | None = None) -> str:
@@ -311,7 +371,9 @@ def write_report(
     out_dir.mkdir(parents=True, exist_ok=True)
     json_path = out_dir / REPORT_JSON
     md_path = out_dir / REPORT_MD
-    json_path.write_text(to_json(report), encoding="utf-8")
+    # Bytes, not text: `write_text` turns "\n" into "\r\n" on Windows, and the attestation
+    # subject is the SHA-256 of this file, so the same run must write the same bytes on every OS.
+    json_path.write_bytes(report_json_bytes(report))
     md_path.write_text(to_markdown(report, decision), encoding="utf-8")
     return json_path, md_path
 
@@ -319,13 +381,12 @@ def write_report(
 def load_report(in_dir: Path) -> RunReport:
     """Load a :class:`RunReport` from ``<in_dir>/report.json``.
 
+    To attest the file, use :meth:`ReportArtifact.read`, which keeps its bytes.
+
     Raises:
         FileNotFoundError: if no ``report.json`` exists in ``in_dir``.
     """
-    json_path = in_dir / REPORT_JSON if in_dir.is_dir() else in_dir
-    if not json_path.exists():
-        raise FileNotFoundError(f"no report.json found at {json_path}")
-    return RunReport.model_validate_json(json_path.read_text(encoding="utf-8"))
+    return ReportArtifact.read(in_dir).report
 
 
 def build_summary_table(report: RunReport) -> Table:
@@ -393,8 +454,11 @@ def render_summary(report: RunReport, console: Console | None = None) -> None:
 
 __all__ = [
     "REPORT_JSON",
+    "ReportArtifact",
     "benign_control_text",
     "REPORT_MD",
+    "report_json_bytes",
+    "report_json_path",
     "to_json",
     "to_markdown",
     "write_report",

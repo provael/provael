@@ -30,11 +30,12 @@ from __future__ import annotations
 from typing import Any
 
 from provael.certify import CertifyProfile, build_dossier, to_dossier_json
+from provael.report import ReportArtifact
 from provael.types import RunReport
 
 
 def build_machinery_annex_pack(
-    report: RunReport,
+    report: RunReport | ReportArtifact,
     *,
     issued_at: str,
     commit: str,
@@ -54,7 +55,9 @@ def build_machinery_annex_pack(
     )
 
 
-def to_machinery_annex_pack_json(report: RunReport, *, issued_at: str, commit: str) -> str:
+def to_machinery_annex_pack_json(
+    report: RunReport | ReportArtifact, *, issued_at: str, commit: str
+) -> str:
     """Serialise the Annex III pack to stable, indented JSON (keys sorted)."""
     return to_dossier_json(
         build_machinery_annex_pack(report, issued_at=issued_at, commit=commit)
