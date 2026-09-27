@@ -3350,6 +3350,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#e-2026-17-signed-attestations-carried-an-iso-10218-date-no-source-gives-1-april-2025-for-a-standard-iso-dates-to-february-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-2026-17 — Signed attestations carried an ISO 10218 date no source gives: 1 April 2025, for a standard ISO dates to February 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="E-2026-17 — Signed attestations carried an ISO 10218 date no source gives: 1 April 2025, for a standard ISO dates to February 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-was-wrong_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-correct_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is correct
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reproduction-register" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4364,6 +4403,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#e-2026-17-signed-attestations-carried-an-iso-10218-date-no-source-gives-1-april-2025-for-a-standard-iso-dates-to-february-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-2026-17 — Signed attestations carried an ISO 10218 date no source gives: 1 April 2025, for a standard ISO dates to February 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="E-2026-17 — Signed attestations carried an ISO 10218 date no source gives: 1 April 2025, for a standard ISO dates to February 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-was-wrong_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-correct_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is correct
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reproduction-register" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4414,7 +4492,7 @@ side saw the other, and the previous version of this note wrongly said the two f
 entry-for-entry. The website keeps the ID it published under; the same correction is recorded
 below as <strong>E-2026-09</strong>, so that every correction has an entry in the maintained source. E-2026-14
 was held for the LinkedIn correction below, written on 27 September 2026; the next free ID is
-<strong>E-2026-17</strong>.</p>
+<strong>E-2026-18</strong>.</p>
 <hr />
 <h2 id="e-2026-01-signed-attestations-carry-a-superseded-eu-ai-act-application-date">E-2026-01 — Signed attestations carry a superseded EU AI Act application date</h2>
 <p><strong>Status:</strong> corrected in the tool · previously issued bundles are unaffected in authenticity
@@ -5203,6 +5281,34 @@ sixteen, and the website's <code>check:eai</code> fails when an EAI page names d
 catalog. The ATLAS community submission of 8 August 2026
 (<code>docs/standards/atlas-submission-2026-08-08.yaml</code>) is left exactly as sent; it names "ML Attack
 Staging" twice.</p>
+<hr />
+<h2 id="e-2026-17-signed-attestations-carried-an-iso-10218-date-no-source-gives-1-april-2025-for-a-standard-iso-dates-to-february-2025">E-2026-17 — Signed attestations carried an ISO 10218 date no source gives: 1 April 2025, for a standard ISO dates to February 2025</h2>
+<p><strong>Status:</strong> corrected on <code>main</code> on 28 September 2026, ships in 0.45.0 · no measured number moves ·
+a bundle already issued stays authentic (its signature still proves the statement is unchanged,
+this date included), so read its ISO 10218 date as corrected below
+<strong>Date raised:</strong> 28 September 2026
+<strong>Affects:</strong> the <code>iso-10218</code> entry of the <code>regulatory_clock</code> inside every attestation statement
+provael 0.7.0 (3 July 2026) to 0.44.0 issued; the ISO 10218 row of the conformity mapping in every
+assurance-report draft (<code>provael.hosted.report</code>), and so the insurer view embedded in a
+<code>--profile insurer</code> bundle, including the committed sample
+<code>results/smolvla_libero_object/attestation.insurer.json</code> until 0.45.0.</p>
+<h3 id="what-was-wrong_12">What was wrong</h3>
+<p>The clock's ISO 10218 entry carried <code>applies_from: 2025-04-01</code> from the release that introduced
+attestations. No source gives that day. ISO's catalogue gives the publication date of both
+ISO 10218-1:2025 and ISO 10218-2:2025 as 2025-02, a month with no day, and the entry's note called
+the standard "in force since 2025", when a standard is published rather than brought into force. The
+same day was typed a second time into the hosted conformity mapping, so correcting one copy would
+have left the other. The clock sits inside the signed statement, so every attestation from those
+releases vouches, under a valid signature, for a date nobody verified.</p>
+<h3 id="what-is-correct_16">What is correct</h3>
+<p>ISO 10218-1:2025 and ISO 10218-2:2025 were published in February 2025 (ISO's catalogue, checked 28
+September 2026: iso.org/standard/73933 and iso.org/standard/73934). From 0.45.0 the entry reads
+<code>applies_from: 2025-02</code> with <code>date_precision: month</code>; every clock entry states the precision its
+date is verified to, and the clock model refuses a date written more finely than that. The hosted
+conformity mapping reads its dates from the clock instead of repeating them. The ruleset moves to
+<code>provael-attest-ruleset/6</code>, so a manifest's <code>regulatory_clock_version</code> says which clock it used.
+The website's <code>regulatory-clock.json</code> moves its ISO 10218 and ANSI/A3 R15.06 dates to month
+precision in the same sweep, which settles the decision E-2026-15 left open.</p>
 <hr />
 <h2 id="reproduction-register">Reproduction register</h2>
 <p>Independent reruns of published results, recorded as they arrive through the

@@ -3013,7 +3013,9 @@ strips them for any report that declares a schema below 7 (<code>attest._CALIBRA
 and every earlier attestation keeps verifying.</p>
 <h3 id="the-regulatory-clock">The regulatory clock</h3>
 <p>Factual application dates, carried so the evidence is legible against the calendar buyers care
-about. Dates only — no claim of conformity:</p>
+about. Dates only — no claim of conformity. Each entry states the precision its date is verified to
+(<code>date_precision</code>: day, month or year), and no date is written more finely than its source gives
+it:</p>
 <ul>
 <li><strong>EU Machinery Regulation (EU) 2023/1230</strong> — applies <strong>20 January 2027</strong>. AI-enabled safety
   functions need a cyber-risk assessment against corruption (Annex III 1.1.9 and 1.2.1); this is
@@ -3030,8 +3032,10 @@ about. Dates only — no claim of conformity:</p>
   and to stand-alone Annex III systems from 2 December 2027; the statutory 2 August 2027 is
   superseded. Art. 15's robustness and cybersecurity language remains the measurement anchor the
   Machinery-side requirements are to reflect.</li>
-<li><strong>ISO 10218-1/-2:2025</strong> — in force since 2025; the revision adds cybersecurity requirements for
-  industrial robots, feeding the Machinery Regulation cyber-risk assessment.</li>
+<li><strong>ISO 10218-1/-2:2025</strong> — published <strong>February 2025</strong> (the month ISO's catalogue gives; no day
+  is carried). The revision adds cybersecurity requirements for industrial robots, feeding the
+  Machinery Regulation cyber-risk assessment. Bundles from 0.7.0 to 0.44.0 carry 1 April 2025, a
+  day no source gives (<a href="../errata/">E-2026-17</a>).</li>
 <li><strong>NIST AI 100-2e2025</strong> — adversarial-ML taxonomy; guidance, not a compliance deadline.</li>
 </ul>
 <h2 id="standards-aligned-assurance-profiles-profile">Standards-aligned assurance profiles (<code>--profile</code>)</h2>
