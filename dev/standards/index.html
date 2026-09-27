@@ -2765,7 +2765,7 @@ withholding is documented where the row would have gone.</p>
 </tr>
 <tr>
 <td><a href="atlas-submission-2026-08-08.yaml">MITRE ATLAS submission YAML</a></td>
-<td><strong>SENT 8 August 2026</strong> to atlas@mitre.org — one technique + one case study. Awaiting a response.</td>
+<td><strong>SENT 8 August 2026</strong> to atlas@mitre.org — one technique + one case study. <strong>WITHDRAWN 27 September 2026</strong>: our own later controls reversed its central claim (E-2026-12). Kept exactly as sent.</td>
 </tr>
 <tr>
 <td><a href="owasp-asi-embodied/">OWASP Agentic Top-10 — embodied annex</a></td>
@@ -2784,6 +2784,12 @@ ATLAS scope admits a red-team exercise, and no fielded system was attacked and n
 <p>The exact file submitted is committed at
 <a href="atlas-submission-2026-08-08.yaml"><code>atlas-submission-2026-08-08.yaml</code></a> so the submission is
 reproducible and its date is on the record rather than in someone's sent folder.</p>
+<p><strong>Withdrawn 27 September 2026</strong>, by email to the same address. The technique it proposed describes
+attacker-directed redirection; the controls run on 18 September (E-2026-12) show the effect is
+fragility under a long out-of-distribution instruction: the same frame with no target named leaves
+the envelope in 27 of 30 episodes, and a length-matched scramble in 18 of 30. Its case study also
+cited the single-task 10 of 10, since replaced by the ten-task 42 of 50. A revised case study with
+both controls was offered. The file above stays exactly as sent.</p>
 <p>The argument, verified against <strong><code>dist/v6/ATLAS-2026.07.yaml</code></strong> — the current data release
 (collection version <strong>2026.07</strong>), <code>mitre-atlas/atlas-data</code>, fetched 8 August 2026: the strings
 <code>robot</code>, <code>embodied</code>, <code>vision-language-action</code>, <code>actuator</code> and <code>drone</code> each return <strong>zero</strong> matches
