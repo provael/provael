@@ -23,7 +23,7 @@ side saw the other, and the previous version of this note wrongly said the two f
 entry-for-entry. The website keeps the ID it published under; the same correction is recorded
 below as **E-2026-09**, so that every correction has an entry in the maintained source. E-2026-14
 was held for the LinkedIn correction below, written on 27 September 2026; the next free ID is
-**E-2026-17**.
+**E-2026-18**.
 
 ---
 
@@ -874,6 +874,41 @@ sixteen, and the website's `check:eai` fails when an EAI page names different ta
 catalog. The ATLAS community submission of 8 August 2026
 (`docs/standards/atlas-submission-2026-08-08.yaml`) is left exactly as sent; it names "ML Attack
 Staging" twice.
+
+---
+
+## E-2026-17 — Signed attestations carried an ISO 10218 date no source gives: 1 April 2025, for a standard ISO dates to February 2025
+
+**Status:** corrected on `main` on 28 September 2026, ships in 0.45.0 · no measured number moves ·
+a bundle already issued stays authentic (its signature still proves the statement is unchanged,
+this date included), so read its ISO 10218 date as corrected below
+**Date raised:** 28 September 2026
+**Affects:** the `iso-10218` entry of the `regulatory_clock` inside every attestation statement
+provael 0.7.0 (3 July 2026) to 0.44.0 issued; the ISO 10218 row of the conformity mapping in every
+assurance-report draft (`provael.hosted.report`), and so the insurer view embedded in a
+`--profile insurer` bundle, including the committed sample
+`results/smolvla_libero_object/attestation.insurer.json` until 0.45.0.
+
+### What was wrong
+
+The clock's ISO 10218 entry carried `applies_from: 2025-04-01` from the release that introduced
+attestations. No source gives that day. ISO's catalogue gives the publication date of both
+ISO 10218-1:2025 and ISO 10218-2:2025 as 2025-02, a month with no day, and the entry's note called
+the standard "in force since 2025", when a standard is published rather than brought into force. The
+same day was typed a second time into the hosted conformity mapping, so correcting one copy would
+have left the other. The clock sits inside the signed statement, so every attestation from those
+releases vouches, under a valid signature, for a date nobody verified.
+
+### What is correct
+
+ISO 10218-1:2025 and ISO 10218-2:2025 were published in February 2025 (ISO's catalogue, checked 28
+September 2026: iso.org/standard/73933 and iso.org/standard/73934). From 0.45.0 the entry reads
+`applies_from: 2025-02` with `date_precision: month`; every clock entry states the precision its
+date is verified to, and the clock model refuses a date written more finely than that. The hosted
+conformity mapping reads its dates from the clock instead of repeating them. The ruleset moves to
+`provael-attest-ruleset/6`, so a manifest's `regulatory_clock_version` says which clock it used.
+The website's `regulatory-clock.json` moves its ISO 10218 and ANSI/A3 R15.06 dates to month
+precision in the same sweep, which settles the decision E-2026-15 left open.
 
 ---
 

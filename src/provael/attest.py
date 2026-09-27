@@ -52,10 +52,11 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, model_validator
 
 from provael.attacks.optimized import FAMILY as OPTIMIZED_FAMILY
 from provael.attacks.registry import FAMILIES
@@ -87,7 +88,11 @@ SIGNED_RECORD_TYPE = "application/vnd.provael.signed-record+json"
 #: /5: `release_verdict` is the decision under a NAMED acceptance protocol (`acceptance_protocol`,
 #:     `acceptance_protocol_digest`), `incomplete` when none was named — never a default gate; the
 #:     embedded compliance predicate carries the same decision and a per-row predicate state.
-RULESET_VERSION = "provael-attest-ruleset/5"
+#: /6: every regulatory-clock entry states the `date_precision` its date is verified to, and
+#:     ISO 10218 carries the month ISO's catalogue gives instead of an unsourced day (E-2026-17).
+#:     Bumped although REQUIREMENTS did not change, because manifests stamp this string as their
+#:     `regulatory_clock_version`, and two different clocks must not share one.
+RULESET_VERSION = "provael-attest-ruleset/6"
 
 ATTESTATION_JSON = "attestation.json"
 ATTESTATION_PUB = "attestation.pub"
@@ -116,17 +121,46 @@ class MissingAttestExtraError(RuntimeError):
 # in the OJ on 2026-07-24: the fact was verified one day before it changed, and nothing re-read it.
 # `last_verified` is the field that makes that visible; keep it honest, and prefer re-checking a
 # date over trusting this comment.
+#
+# A date is carried at the precision its source gives, never finer. ISO 10218 was carried as
+# 2025-04-01 from 0.7.0 (3 Jul 2026) to 0.44.0: no source gave that day, and ISO's catalogue shows
+# only the month, 2025-02 (E-2026-17). `date_precision` says what a date is verified to (not the
+# statement's compute `precision`), and the model refuses a date written more finely than that.
 # --------------------------------------------------------------------------------------------
+
+#: The ISO 8601 shape a date must have at each precision.
+_DATE_AT_PRECISION: dict[str, str] = {
+    "day": r"\d{4}-\d{2}-\d{2}",
+    "month": r"\d{4}-\d{2}",
+    "year": r"\d{4}",
+}
+
 
 class RegulatoryClock(BaseModel):
     """One framework's application date (factual), carried alongside the crosswalk."""
 
     framework_id: str
     instrument: str
-    applies_from: str
+    applies_from: str = Field(
+        ..., description="ISO 8601 at `date_precision`: YYYY-MM-DD, YYYY-MM or YYYY."
+    )
+    date_precision: Literal["day", "month", "year"] = Field(
+        ...,
+        description="What `applies_from` is verified to. A day is carried only where the source "
+        "gives one; a month-precision date names no day at all.",
+    )
     note: str
     last_verified: str = Field("", description="Date this date/note was last checked vs source.")
     source: str = Field("", description="Official source (ELI / publisher URL or designation).")
+
+    @model_validator(mode="after")
+    def _date_matches_precision(self) -> RegulatoryClock:
+        if not re.fullmatch(_DATE_AT_PRECISION[self.date_precision], self.applies_from):
+            raise ValueError(
+                f"{self.framework_id}: applies_from {self.applies_from!r} is not a "
+                f"{self.date_precision}-precision date"
+            )
+        return self
 
 
 REGULATORY_CLOCK: tuple[RegulatoryClock, ...] = (
@@ -135,6 +169,7 @@ REGULATORY_CLOCK: tuple[RegulatoryClock, ...] = (
         instrument="Regulation (EU) 2023/1230 (Machinery Regulation), as amended by "
         "Regulation (EU) 2026/1744",
         applies_from="2027-01-20",
+        date_precision="day",
         note="Applies from 20 Jan 2027 (Art. 54 as corrected, OJ L 169, 4.7.2023). This is the "
         "operative route for AI-enabled robots: Annex III 1.1.9 (protection against corruption) "
         "and 1.2.1 (safety and reliability of control systems) are the essential requirements the "
@@ -153,6 +188,7 @@ REGULATORY_CLOCK: tuple[RegulatoryClock, ...] = (
         instrument="Regulation (EU) 2024/1689 (AI Act), as amended by Regulation (EU) "
         "2026/1744 (Digital Omnibus on AI)",
         applies_from="2028-08-02",
+        date_precision="day",
         note="For AI-enabled MACHINERY the AI Act's Chapter III (including Art. 15) does not "
         "apply directly: Regulation (EU) 2026/1744, point (41)(b), moved Regulation (EU) 2023/1230 "
         "to AI Act Annex I Section B (point 21), and the AI-specific requirements reach machinery "
@@ -173,6 +209,7 @@ REGULATORY_CLOCK: tuple[RegulatoryClock, ...] = (
         framework_id="eu-cra",
         instrument="Regulation (EU) 2024/2847 (Cyber Resilience Act)",
         applies_from="2027-12-11",
+        date_precision="day",
         note="Main obligations apply from 2027-12-11; the earlier vulnerability/incident "
         "reporting duties apply from 2026-09-11. Products with digital elements (an AI-enabled "
         "robot qualifies) need essential cybersecurity requirements + conformity assessment. "
@@ -183,16 +220,22 @@ REGULATORY_CLOCK: tuple[RegulatoryClock, ...] = (
     RegulatoryClock(
         framework_id="iso-10218",
         instrument="ISO 10218-1/-2:2025",
-        applies_from="2025-04-01",
-        note="In force since 2025; the 2025 revision adds cybersecurity requirements for "
-        "industrial robots, feeding the Machinery Regulation cyber-risk assessment.",
-        last_verified="2026-07-23",
-        source="ISO catalogue (iso.org): ISO 10218-1:2025 / ISO 10218-2:2025",
+        applies_from="2025-02",
+        date_precision="month",
+        note="Both parts published February 2025: ISO's catalogue gives the month (2025-02) and no "
+        "day, so none is carried. A standard is published rather than brought into force; the "
+        "2025 revision adds cybersecurity requirements for industrial robots, feeding the "
+        "Machinery Regulation cyber-risk assessment. Carried as 2025-04-01, a day no source gave, "
+        "from 0.7.0 to 0.44.0 (E-2026-17).",
+        last_verified="2026-09-28",
+        source="ISO catalogue: https://www.iso.org/standard/73933.html (ISO 10218-1:2025) and "
+        "https://www.iso.org/standard/73934.html (ISO 10218-2:2025), publication date 2025-02",
     ),
     RegulatoryClock(
         framework_id="nist",
         instrument="NIST AI 100-2e2025 (adversarial ML taxonomy)",
         applies_from="2025",
+        date_precision="year",
         note="Guidance, not a compliance deadline; used here to name the attack classes.",
         last_verified="2026-07-23",
         source="NIST CSRC (csrc.nist.gov): NIST AI 100-2e2025",

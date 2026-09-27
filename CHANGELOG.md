@@ -167,6 +167,18 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ### Fixed
 
+- **The signed regulatory clock dated ISO 10218 to 1 April 2025, a day no source gives (E-2026-17).**
+  Why: ISO's catalogue gives the publication date of both ISO 10218-1:2025 and -2:2025 as 2025-02,
+  a month with no day, and the clock sits inside every signed statement, so every attestation from
+  0.7.0 to 0.44.0 vouched for the unsourced day; the hosted conformity mapping typed the same day
+  again. What changed: the entry reads `applies_from: 2025-02`; every clock entry carries a
+  `date_precision` (day, month or year) and the model refuses a date written more finely than it;
+  the entry's note no longer calls a published standard "in force"; the hosted conformity rows read
+  their dates (and `applies_from_precision`) from the clock instead of repeating them; the ruleset
+  moves to `provael-attest-ruleset/6`, because manifests stamp it as their
+  `regulatory_clock_version` and two clocks must not share one; the committed evidence manifests
+  that stamp it (`results/smolvla_libero_object`, the 14 September delivery pack) and the insurer
+  sample are regenerated, and only that string and the clock move in them. No measured number moves.
 - **`list-suites` called Meta-World ready on `lerobot` alone, and "horizon 280" had no stated
   source.** Why: Meta-World is a separate lerobot extra that `provael[lerobot]` does not bring in,
   so a box with the extra was told the suite was ready and failed inside LeRobot's env factory;
