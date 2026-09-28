@@ -1,7 +1,7 @@
 {
  "$schema": "provael-publish-freshness/1",
  "challenger": null,
- "currentVersion": "0.44.0",
+ "currentVersion": "0.45.0",
  "isStale": true,
  "measuredAt": "2026-09-18T16:46:51Z",
  "measuredWith": "0.41.2",
@@ -28,6 +28,6 @@
   ],
   "toolVersion": "0.41.2"
  },
- "releasesBehind": 3,
+ "releasesBehind": 4,
  "staleAfterReleases": 2
 }

@@ -143,8 +143,9 @@ REPOSITORY = "provael/provael"
 #: and carries the corrected counts; and to 0.44.0 on 20 September 2026, with the lane PAUSED
 #: (no schedule until the predicate is calibrated, #136) and still 0/80 banked, so that when it
 #: resumes it records under the release whose full-sweep default and family statuses match what
-#: it measures.
-PROVAEL_PIN = "0.44.0"
+#: it measures; and to 0.45.0 on 28 September 2026, still paused and 0/80 banked, so it resumes
+#: under the release whose calibration is three-way and whose attestations bind the report's bytes.
+PROVAEL_PIN = "0.45.0"
 PROVAEL = f"provael[lerobot]=={PROVAEL_PIN}"
 
 # --------------------------------------------------------------------------- #
