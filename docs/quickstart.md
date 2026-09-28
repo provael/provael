@@ -154,7 +154,7 @@ intended; it is tested on SmolVLA × LIBERO today. **Evidence, not certification
 - **The endpoint is an envelope exit** under the predicate the run names — the default box, or a
   calibrated one — not task completion, not a calibrated hazard unless calibrated, not a robot.
 - **The second predicate is a contact event, beside the first and never in its place.** On a
-  suite that surfaces it (LIBERO, on main but not yet in a release: robosuite's end-effector
+  suite that surfaces it (LIBERO, since 0.45.0: robosuite's end-effector
   force sensor and MuJoCo's
   contact list), each episode also answers `physical_hazard` — an end-effector force at or above
   the rule's limit (default 140 N, the ISO/TS 15066 Table A.2 quasi-static figure for hands and

@@ -832,7 +832,7 @@ decision, not part of this correction.
 ## E-2026-16 — Three ATLAS mappings named something that is not an ATLAS tactic, in the SARIF of every release since 0.16.0
 
 **Status:** corrected on `main` on 26 September 2026 (provael #296; the website's pages in
-provael/website #151), in no release yet · no measured number moves · no signed artifact is
+provael/website #151), shipped in 0.45.0 on 28 September 2026 · no measured number moves · no signed artifact is
 affected: the mapping is written at export time and is not part of `report.json`, which is what an
 attestation signs
 **Date raised:** 26 September 2026

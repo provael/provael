@@ -7,6 +7,13 @@
     and a `credited` verdict here is evidence that the pipeline position and the measurement
     protocol work end to end — not that this mitigation would hold up on a real policy.
 
+> *Note, 28 September 2026.* A defended arm on a real policy is now committed:
+> [`results/smolvla_libero_object_defense_canonicalization_2026-09-18`](https://github.com/provael/provael/tree/main/results/smolvla_libero_object_defense_canonicalization_2026-09-18)
+> (SmolVLA × LIBERO-Object, ten tasks, three seeds). The attack survives the defense at 20/30
+> against a 1/30 benign floor, with competence 29/30. It is **not** a measured reduction against
+> the undefended 42/50: that run used five seeds, the task-clustered intervals overlap, and a
+> paired run at matched seeds has not happened. The protocol and result below are unchanged.
+
 **Verdict: `credited` on both suites — and read the next section before quoting that word.**
 
 This is the first defense measured under the protocol in [defenses](../defenses.md), and the

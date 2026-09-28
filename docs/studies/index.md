@@ -20,8 +20,8 @@ until someone does. The counters further down this page are honest and they are 
 
 | Study | Kind |
 | --- | --- |
-| [Instruction canonicalization](instruction-canonicalization.md) | Defense — measured on the stub fixture only (no real-policy defended arm committed) |
-| [Action envelope](action-envelope.md) | Defense — measured on the stub fixture only (no real-policy defended arm committed) |
+| [Instruction canonicalization](instruction-canonicalization.md) | Defense — measured on the stub fixture; a real-policy defended arm is committed (SmolVLA, 18 Sep 2026) and is not a measured reduction |
+| [Action envelope](action-envelope.md) | Defense — measured on the stub fixture; a real-policy defended arm is committed (SmolVLA, 18 Sep 2026) and says nothing about the attack: the policy completed no task under it |
 | [EAI04 action-space-integrity transfer](eai04-action-space-transfer.md) | Attack transfer |
 | [Offline real-observation (recorded SO-101 frames)](offline-real-observation.md) | Attack on real recorded frames — **open-loop**, measured null |
 

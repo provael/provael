@@ -7,6 +7,13 @@
     A `credited` verdict here is evidence that the action-side pipeline position and the measurement
     protocol work end to end — not that a magnitude clamp would protect a real policy.
 
+> *Note, 28 September 2026.* A defended arm on a real policy is now committed:
+> [`results/smolvla_libero_object_defense_envelope_2026-09-18`](https://github.com/provael/provael/tree/main/results/smolvla_libero_object_defense_envelope_2026-09-18)
+> (SmolVLA × LIBERO-Object, ten tasks, three seeds). It reads 0/30 on the `roleplay` arm **and
+> 0/30 on the competence control**: the policy completed no task at all under the envelope, so the
+> zero says nothing about the attack. At the shipped defaults it is unusable on this policy. The
+> protocol and result below are unchanged.
+
 **Verdicts: `credited` on `stub` and `reach`, `not-credited` on `humanoid`** — and most of the
 credit carries no information. Read the next two sections before quoting any of it.
 

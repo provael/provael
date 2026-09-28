@@ -31,6 +31,20 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
+### Fixed
+
+- **The studies index said neither defense had a real-policy defended arm committed.** Why: 0.45.0
+  counts two (`realPolicyDefenses` 0 → 2), both committed on 18 September under `results/`, and the
+  index row for each still read "no real-policy defended arm committed". The rows now say an arm is
+  committed and what it does not show, and each study page gains a dated note with the arm's
+  result: canonicalization 20/30 against a 1/30 floor, not a reduction against the undefended
+  42/50 at other seeds; the envelope 0/30 with competence 0/30, so it says nothing about the attack.
+  No measured number moves.
+- **Seven passages said "on main, not yet in a release" about what 0.45.0 shipped.** Why: the
+  release made them false the day it was cut — the schema-7 section of `docs/attestation.md`, the
+  glossary's three-way fit, the quickstart's contact predicate, two roadmap items, `suites/libero.py`'s
+  module docstring, and E-2026-16's status line ("in no release yet"). Each now names 0.45.0.
+
 ## [0.45.0] — 2026-09-28
 
 The attestation-format release. A signed bundle now binds the exact bytes of `report.json`, and its
