@@ -1,0 +1,30 @@
+# docs.provael.com — the MkDocs technical corpus.
+#
+# MkDocs generates a sitemap.xml but no robots.txt, so this host previously answered 404 for
+# /robots.txt: roughly fifty pages of technical documentation with no crawl guidance and an
+# undeclared sitemap. A crawler that cannot find the sitemap has to discover the corpus by
+# following links, and the section hubs it would follow were themselves 404ing until recently.
+#
+# Files placed in docs_dir are copied verbatim into site/, so this ships as-is.
+#
+# The marketing site (www.provael.com) declares its own sitemap in its own robots.txt. Sitemap
+# declarations are per-host and do not carry across, which is why this file has to exist here
+# rather than listing the docs sitemap over there.
+
+User-agent: *
+Allow: /
+
+# Redirect stubs for the retired uppercase URLs. They are one-line meta-refresh pages with no
+# content of their own; the canonical tag on each already points at the replacement, so this is
+# belt-and-braces against a crawler indexing the stub instead of the target.
+Disallow: /TOP10/
+Disallow: /TOP10_RFC/
+Disallow: /DEFENSES/
+Disallow: /COMPLIANCE/
+Disallow: /ATTESTATION/
+Disallow: /SIM_PREDICTS_REAL/
+Disallow: /ADOPTERS/
+Disallow: /COMMUNITY/
+Disallow: /MEASURE-2-7/
+
+Sitemap: https://docs.provael.com/sitemap.xml
