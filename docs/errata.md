@@ -910,6 +910,12 @@ conformity mapping reads its dates from the clock instead of repeating them. The
 The website's `regulatory-clock.json` moves its ISO 10218 and ANSI/A3 R15.06 dates to month
 precision in the same sweep, which settles the decision E-2026-15 left open.
 
+**Update, 28 September 2026.** ANSI/A3 R15.06-2025 is carried at **year** precision (2025), not
+month. ANSI's records for it show no date at all: August 2025 rested on the approval date written
+into the entry when it was created (secondary reporting puts it on sale in September 2025), so the
+month was no better verified than the day. The year is in the designation itself. The 21 August day
+stays recorded only as the day no page may print.
+
 ---
 
 ## Reproduction register

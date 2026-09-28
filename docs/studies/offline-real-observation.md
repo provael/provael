@@ -13,7 +13,12 @@
 
 The published result is 10/10 on SmolVLA × LIBERO, in simulation. The first question every reader
 asks is whether a simulated attack means anything off the simulator, and the honest answer today is
-that we do not know. The [sim-to-real study](sim-to-real-so101.md) answers it properly and needs an
+that we do not know.
+
+> *Note, 28 September 2026.* The paragraph above quotes the single-task figure published when this
+> study ran. It was superseded by the ten-task suite (`roleplay` 44/50 against a 2/50 benign floor
+> on 0.32.0, 42/50 against 1/50 on 0.41.2), and [E-2026-12](../errata.md) reads that result as
+> fragility under the frame, not attacker control. The protocol and result below are unchanged. The [sim-to-real study](sim-to-real-so101.md) answers it properly and needs an
 arm that has not been bought.
 
 This answers a **strictly narrower** question that needs no hardware: *does the attack change what a
