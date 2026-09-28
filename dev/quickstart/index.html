@@ -3002,7 +3002,7 @@ the tolerance <strong>and</strong> the two 95% Wilson CIs are disjoint, so small
 <span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
 <span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provael/provael@v0.44.0</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provael/provael@v0.45.0</span>
 <span class="w">        </span><span class="nt">with</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">attacks</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instruction,visual,injection</span>
 <span class="w">          </span><span class="nt">episodes</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10&quot;</span>
@@ -3131,7 +3131,7 @@ attack and all evidence output are cross-platform; only the LIBERO suite is Linu
 <code>-v "$PWD/runs:/home/provael/runs" ... --out runs/stub/</code> to keep the report after <code>--rm</code>.</p>
 <p>Or in CI, gating the build on the measured rate — SARIF goes to code scanning, and the job fails when
 the adversarial ASR exceeds your threshold or regresses past tolerance against a baseline:</p>
-<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provael/provael@v0.44.0</span>
+<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provael/provael@v0.45.0</span>
 <span class="w">  </span><span class="nt">with</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> policy</span><span class="p">:</span><span class="w"> </span><span class="nv">stub</span><span class="p p-Indicator">,</span><span class="nt"> suite</span><span class="p">:</span><span class="w"> </span><span class="nv">stub</span><span class="p p-Indicator">,</span><span class="nt"> asr-threshold</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0.5&quot;</span><span class="w"> </span><span class="p p-Indicator">}</span>
 </code></pre></div>
 <p><a href="https://github.com/marketplace/actions/provael-vla-red-team"><img alt="GitHub Marketplace" src="https://img.shields.io/badge/Marketplace-VLA%20red--team-blue.svg?logo=github" /></a></p>
@@ -3172,7 +3172,7 @@ from that denominator, so adding controls can never move the gate toward passing
 <span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
 <span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provael/provael@v0.44.0</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provael/provael@v0.45.0</span>
 <span class="w">        </span><span class="nt">with</span><span class="p">:</span>
 <span class="w">          </span><span class="c1"># `none` is the benign control: without it an ASR has no false-positive baseline,</span>
 <span class="w">          </span><span class="c1"># and the release gate cannot reach `pass`. It never moves the adversarial ASR.</span>

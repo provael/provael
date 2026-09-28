@@ -2884,6 +2884,12 @@ calibrated (<a href="https://github.com/provael/provael/issues/136">#136</a>): a
 hand-picked box would be a sixth measurement to discard, not a refresh. The lane's pin moved to
 0.44.0 with 0 of 80 banked, so on resumption it records under the release whose defaults match what
 it measures. The staleness stands, and this page says so rather than arranging for it not to.</p>
+<p><strong>Update, 28 September 2026: four behind, still <code>isStale: true</code>.</strong> 0.45.0 is the attestation-v2
+release (bundles bind <code>report.json</code>'s bytes and sign a KMS-sized record, the three-way calibration,
+the contact/force predicate, the corrected regulatory clock); it re-measured nothing, so
+<code>measuredWith</code> still reads 0.41.2 and <code>releasesBehind</code> reads 4 against a window of 2. The campaign
+is still paused until the predicate is calibrated (target 24 October 2026, #136), and the lane's pin
+moved to 0.45.0 with 0 of 80 banked.</p>
 <h3 id="what-changed-instead">What changed instead</h3>
 <p>The <strong>claim</strong> moved, not the threshold. <code>STALE_DAYS</code> is still 7, because seven days genuinely is old
 for a currency claim and the badge reddening at that point is correct. What was wrong was the
