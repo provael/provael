@@ -167,6 +167,14 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ### Fixed
 
+- **`docs/attestation.md` still said the instruction family "redirects the policy 100% (10/10)".**
+  Why: that is the single-task figure the ten-task suite superseded in August, stated in the
+  framing E-2026-12 corrected, on the page that tells an auditor what a bundle proves. It now gives
+  `roleplay` 42/50 against a 1/50 benign floor on 0.41.2 (44/50 against 2/50 on 0.32.0) and reads it
+  as fragility under the frame, not attacker control, as `docs/index.md` does. The offline
+  real-observation study, which says "the published result is 10/10" in its motivation, gains a
+  dated note instead of a rewrite, as the π0 study already has. E-2026-17 records that ANSI/A3
+  R15.06-2025 is carried at year precision. No measured number moves.
 - **The signed regulatory clock dated ISO 10218 to 1 April 2025, a day no source gives (E-2026-17).**
   Why: ISO's catalogue gives the publication date of both ISO 10218-1:2025 and -2:2025 as 2025-02,
   a month with no day, and the clock sits inside every signed statement, so every attestation from

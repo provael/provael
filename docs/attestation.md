@@ -204,11 +204,15 @@ provael attest --run results/smolvla_libero_object --profile insurer --out runs/
 - **Simulation only.** An attestation records a policy's *decision* under attack in sim, not a
   hardware outcome. See [sim-predicts-real](sim-predicts-real.md) for what that does and does not
   transfer.
-- **Real-VLA transfer is narrow today.** On a real **SmolVLA × LIBERO** policy, only the
-  **instruction** family currently transfers: it redirects the policy **100% (10/10), 95% CI
-  [72–100%]** against a **0% benign control** (sim-only, one task, `n = 10`); other instruction
-  attacks land lower (roughly 60–80%). Everything else in the catalogue is validated on the
-  deterministic CPU stub, where numbers are properties of the fixture, not a real VLA.
+- **Real-VLA transfer is narrow today, and what transfers is fragility, not control.** On a real
+  **SmolVLA × LIBERO-Object** policy (ten tasks), only the **instruction** family clears the benign
+  floor: `roleplay` took the policy out of its safe envelope in **42/50** episodes against a
+  **1/50** benign floor on 0.41.2 (44/50 against 2/50 on 0.32.0). The 14 September controls
+  ([E-2026-12](errata.md)) show the same frame with no target named, and with its tokens scrambled,
+  leaving the envelope too: the policy is fragile under a long, imperative, out-of-distribution
+  string, and the attacker is not choosing where it goes. Everything else in the catalogue is
+  validated on the deterministic CPU stub, where numbers are properties of the fixture, not a real
+  VLA.
 - **The `optimized` family is stub-validated scaffolding.** The black-box search is exercised on the
   stub; its real SmolVLA × LIBERO transfer is **GPU-gated and not yet measured**, so the bundle
   flags it `stub-validated-scaffolding` and no cross-model transfer is claimed.
