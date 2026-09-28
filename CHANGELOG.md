@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format is based on
 the entries below are the ones a reader arriving today needs, newest at the top. Every heading is a
 release the tag exists for; the Unreleased section holds what is merged and not yet cut.
 
+- **0.45.0 (28 Sep 2026)** — attestation v2: bundles bind `report.json`'s bytes and sign a 306-byte
+  record a KMS key can sign (0.44 cannot verify v2; v1 still verifies); three-way calibration
+  (schema 7); a contact/force predicate (unmeasured); the ML-BOM names the policy; Meta-World is
+  scaffolding; the signed clock's ISO 10218 date corrected (E-2026-17). No published number moves.
 - **0.44.0 (20 Sep 2026)** — hygiene and scope: `full-sweep` on a real policy narrows to measured
   families, `certify` becomes `dossier`, the machinery route is reframed. No measured number moves.
 - **0.43.0 (19 Sep 2026)** — a release verdict is made only under a named acceptance protocol
@@ -26,6 +30,22 @@ Corrections to published numbers live in [docs/errata.md](docs/errata.md), not h
 narrative belongs there too, and from 0.44.0 entries say what changed and why, in that order.
 
 ## [Unreleased]
+
+## [0.45.0] — 2026-09-28
+
+The attestation-format release. A signed bundle now binds the exact bytes of `report.json`, and its
+Ed25519 signature covers a 306-byte record that names the statement, so a key held in AWS KMS can
+sign it (`provael-attestation/v2`; a 0.44.0 verifier cannot check a v2 bundle, so upgrade verifiers
+before issuers, and v1 bundles keep verifying). Beside it: `provael calibrate` splits benign
+rollouts three ways by default (report schema 7), a second predicate for contact and force events
+is wired and unmeasured, the ML-BOM describes the policy rather than the tool, Meta-World is
+declared scaffolding (4 runnable / 3 scaffolding suites), three ATLAS tactic names are corrected
+(E-2026-16), and the signed regulatory clock carries ISO 10218 at the month ISO gives (E-2026-17,
+ruleset `/6`). **No previously published number moves**; three 18 September workstation
+measurements are added beside the headline, each with what it does not show. The published
+measurement is still the 14 September run on 0.41.2, now four releases behind a window of two:
+`watch/publish-freshness.json` reads `isStale: true`, and the campaign stays paused until the
+predicate is calibrated (#136).
 
 ### Added
 

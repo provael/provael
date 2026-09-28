@@ -136,10 +136,12 @@ def test_the_committed_ledger_is_past_the_window_today_and_says_so() -> None:
     release, it re-measured nothing, the scheduled campaign is PAUSED until the keep-out predicate is
     calibrated (#136) because another shard under the hand-picked box would be a sixth discarded
     measurement, and the CHANGELOG, docs/standards/last-measured.md and watch/publish-freshness.json
-    (`isStale: true`) all say so. So this test now guards THAT state — three behind, disclosed —
+    (`isStale: true`) all say so. So this test now guards THAT state — past the window, disclosed —
     and fails the day either half changes: a real campaign moving the measurement (news; update the
     version below and the CHANGELOG), or a release shipping while the freshness artifact still says
-    the window is closed (a lie by omission the artifact exists to prevent).
+    the window is closed (a lie by omission the artifact exists to prevent). 0.45.0 (28 September
+    2026) re-measured nothing either, so it ships four behind, and last-measured.md carries a dated
+    line saying so; each release past the window adds one.
     """
     import json
 
@@ -166,6 +168,10 @@ def test_the_committed_ledger_is_past_the_window_today_and_says_so() -> None:
     last_measured = (_ROOT / "docs" / "standards" / "last-measured.md").read_text(encoding="utf-8")
     assert "isStale: true" in last_measured and "20 September 2026" in last_measured, (
         "docs/standards/last-measured.md must carry the dated update that the window reopened"
+    )
+    assert f"`releasesBehind` reads {gap} against" in last_measured, (
+        f"docs/standards/last-measured.md must say this release ships {gap} behind; add a dated "
+        "update line when a release widens the gap"
     )
 
 

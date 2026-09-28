@@ -216,6 +216,13 @@ hand-picked box would be a sixth measurement to discard, not a refresh. The lane
 0.44.0 with 0 of 80 banked, so on resumption it records under the release whose defaults match what
 it measures. The staleness stands, and this page says so rather than arranging for it not to.
 
+**Update, 28 September 2026: four behind, still `isStale: true`.** 0.45.0 is the attestation-v2
+release (bundles bind `report.json`'s bytes and sign a KMS-sized record, the three-way calibration,
+the contact/force predicate, the corrected regulatory clock); it re-measured nothing, so
+`measuredWith` still reads 0.41.2 and `releasesBehind` reads 4 against a window of 2. The campaign
+is still paused until the predicate is calibrated (target 24 October 2026, #136), and the lane's pin
+moved to 0.45.0 with 0 of 80 banked.
+
 ### What changed instead
 
 The **claim** moved, not the threshold. `STALE_DAYS` is still 7, because seven days genuinely is old
