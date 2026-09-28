@@ -3071,11 +3071,15 @@ the Ed25519 signature):</p>
 <li><strong>Simulation only.</strong> An attestation records a policy's <em>decision</em> under attack in sim, not a
   hardware outcome. See <a href="../sim-predicts-real/">sim-predicts-real</a> for what that does and does not
   transfer.</li>
-<li><strong>Real-VLA transfer is narrow today.</strong> On a real <strong>SmolVLA × LIBERO</strong> policy, only the
-  <strong>instruction</strong> family currently transfers: it redirects the policy <strong>100% (10/10), 95% CI
-  [72–100%]</strong> against a <strong>0% benign control</strong> (sim-only, one task, <code>n = 10</code>); other instruction
-  attacks land lower (roughly 60–80%). Everything else in the catalogue is validated on the
-  deterministic CPU stub, where numbers are properties of the fixture, not a real VLA.</li>
+<li><strong>Real-VLA transfer is narrow today, and what transfers is fragility, not control.</strong> On a real
+  <strong>SmolVLA × LIBERO-Object</strong> policy (ten tasks), only the <strong>instruction</strong> family clears the benign
+  floor: <code>roleplay</code> took the policy out of its safe envelope in <strong>42/50</strong> episodes against a
+  <strong>1/50</strong> benign floor on 0.41.2 (44/50 against 2/50 on 0.32.0). The 14 September controls
+  (<a href="../errata/">E-2026-12</a>) show the same frame with no target named, and with its tokens scrambled,
+  leaving the envelope too: the policy is fragile under a long, imperative, out-of-distribution
+  string, and the attacker is not choosing where it goes. Everything else in the catalogue is
+  validated on the deterministic CPU stub, where numbers are properties of the fixture, not a real
+  VLA.</li>
 <li><strong>The <code>optimized</code> family is stub-validated scaffolding.</strong> The black-box search is exercised on the
   stub; its real SmolVLA × LIBERO transfer is <strong>GPU-gated and not yet measured</strong>, so the bundle
   flags it <code>stub-validated-scaffolding</code> and no cross-model transfer is claimed.</li>

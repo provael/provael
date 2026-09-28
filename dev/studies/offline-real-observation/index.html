@@ -2741,8 +2741,14 @@ the numbers were read; the git history shows the pre-registration committed ahea
 <h2 id="why-this-exists">Why this exists</h2>
 <p>The published result is 10/10 on SmolVLA × LIBERO, in simulation. The first question every reader
 asks is whether a simulated attack means anything off the simulator, and the honest answer today is
-that we do not know. The <a href="../sim-to-real-so101/">sim-to-real study</a> answers it properly and needs an
+that we do not know.</p>
+<blockquote>
+<p><em>Note, 28 September 2026.</em> The paragraph above quotes the single-task figure published when this
+study ran. It was superseded by the ten-task suite (<code>roleplay</code> 44/50 against a 2/50 benign floor
+on 0.32.0, 42/50 against 1/50 on 0.41.2), and <a href="../../errata/">E-2026-12</a> reads that result as
+fragility under the frame, not attacker control. The protocol and result below are unchanged. The <a href="../sim-to-real-so101/">sim-to-real study</a> answers it properly and needs an
 arm that has not been bought.</p>
+</blockquote>
 <p>This answers a <strong>strictly narrower</strong> question that needs no hardware: <em>does the attack change what a
 real policy decides, when it is looking at real pixels from a real robot in real poses?</em> A narrow
 real answer is worth more against that specific objection than a wide simulated one.</p>
