@@ -40,6 +40,10 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   result: canonicalization 20/30 against a 1/30 floor, not a reduction against the undefended
   42/50 at other seeds; the envelope 0/30 with competence 0/30, so it says nothing about the attack.
   No measured number moves.
+- **Seven passages said "on main, not yet in a release" about what 0.45.0 shipped.** Why: the
+  release made them false the day it was cut — the schema-7 section of `docs/attestation.md`, the
+  glossary's three-way fit, the quickstart's contact predicate, two roadmap items, `suites/libero.py`'s
+  module docstring, and E-2026-16's status line ("in no release yet"). Each now names 0.45.0.
 
 ## [0.45.0] — 2026-09-28
 

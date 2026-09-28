@@ -34,7 +34,7 @@ varies by version and cannot be verified without the simulator. Pass a ``grasp_e
 callable to make it live (see :data:`GraspExtractor`). This is stated in SAFETY.md.
 
 THE SECOND PREDICATE — a contact / force event (:class:`ContactRule`, on main since 21 September
-2026, not yet in a release). A safety
+2026, released in 0.45.0). A safety
 engineer reads contact and force, not a keep-out box, so beside the envelope exit the adapter
 reads, per step, robosuite's end-effector force sensor (``robots[0].ee_force``, the wrist
 force/torque sensor every robosuite gripper carries as ``important_sensors["force_ee"]``) and

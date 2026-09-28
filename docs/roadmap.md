@@ -21,7 +21,7 @@ runs", "no peer review" — and each has a date this page will keep or publicly 
    an erratum, a README and a site change the same day if the headline moves. Beside it, **a
    second predicate a safety engineer recognises**: a contact / force event from the simulator's
    contact API, reported as a second column next to the envelope exit, never in its place — the
-   column exists on main since 21 September 2026, not yet in a release (`physical_hazard`,
+   column ships in 0.45.0, on main since 21 September 2026 (`physical_hazard`,
    `suites.libero.ContactRule`: end-effector force at or above 140 N or an arm link touching a
    non-robot body, read from robosuite's sensor and MuJoCo's contact list, verified against the
    sources and not yet against a live simulator), and
@@ -91,8 +91,8 @@ work is a customer protocol agreed before a paid run).
 
 - **Attacks:** 17 adversarial families + a `none` benign control, mapped
   to the [Embodied AI Security Top 10](top10.md).
-- **The three-way calibration split, wired end to end (21 September 2026, on main, not yet in a
-  release).** The
+- **The three-way calibration split, wired end to end (21 September 2026, released in 0.45.0).**
+  The
   calibration command splits benign rollouts into fit / tuning / eval by default and scores the
   eval split only after the threshold or hazard face is chosen, so its FPR is an estimate where
   the tuning split's is a target; the artifact persists the three seed splits and a
