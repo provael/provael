@@ -80,7 +80,7 @@ src/provael/
 │                     which have run), stub (deterministic CPU), and three DECLARED scaffolding —
 │                     openvla, openpi, groot (GR00T-N1): implemented, unit-tested, never run —
 │                     + registry.py; base.py is the ABC
-├── suites/           simulators: libero, metaworld, reach, humanoid, stub; ai2_bridge and
+├── suites/           simulators: libero, reach, humanoid, stub; metaworld, ai2_bridge and
 │                     vla_arena are declared scaffolding; keepout_zones.py + calibrations/ hold
 │                     the committed per-task keep-out calibrations
 ├── scoring/          per-family scorers, asr.py (ASR + Wilson CI), safety_cost.py
