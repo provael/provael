@@ -16,8 +16,11 @@ Draft 1 (21 September 2026) fills the 14 September skeleton from the committed r
 compiles to four pages including references (the body ends on page 4, so the "4 pages excluding
 references" rule holds with margin) and passes `check_anonymity.sh` — the style writes a proceedings
 `pdfsubject`, an "Anonymous Submission" `pdfauthor` and the `\keywords` line into `pdfkeywords`, and
-`paper.tex` clears all four after the style so the gate's empty-metadata rule still holds. Still to
-do before 1 October: fold in the calibrated-predicate result if the dawn run lands in time (it is
-written as "reported separately"), a read-through by the author, and the OpenReview upload.
+`paper.tex` clears all four after the style so the gate's empty-metadata rule still holds.
+
+Submitted to SPAIS@CoRL 2026 on OpenReview before the deadline; notification is due 17 October 2026,
+when the OpenReview id and the decision go here. The committed `paper.pdf` was last rebuilt in
+d54c965 (#299, 27 September 2026). The calibrated predicate is not in the submitted paper: its
+re-fit is due 24 October 2026 (#136) and will be published whichever way it comes out.
 
 Build (needs `tectonic`): `tectonic -X compile paper.tex && ./check_anonymity.sh`

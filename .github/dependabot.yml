@@ -20,3 +20,11 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
     labels: ["dependencies", "python"]
+    # huggingface-hub 2.x resolves on neither path that installs it. The leaderboard Space runs
+    # gradio 6.23.1 (sdk_version in leaderboard/README.md), which requires >=1.16.0,<2.0, and
+    # lerobot 0.5.1, pinned for the GPU path, requires >=1.0.0,<2.0.0. #311 raised the Space's
+    # floor to >=2.0.0, which the Space could not have installed. Lift this once both have moved
+    # (gradio 6.29.0 already accepts 2.x; lerobot stays at 0.5.1 on purpose).
+    ignore:
+      - dependency-name: "huggingface-hub"
+        update-types: ["version-update:semver-major"]

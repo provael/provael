@@ -31,8 +31,31 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
+### Changed
+
+- **Dependabot no longer proposes huggingface-hub major versions.** Why: #311 raised the
+  leaderboard Space's floor to `huggingface_hub>=2.0.0`, and neither place that installs the package
+  resolves with 2.x. The Space runs gradio 6.23.1 (`sdk_version` in `leaderboard/README.md`), which
+  requires `huggingface-hub>=1.16.0,<2.0`, and lerobot 0.5.1, pinned for the GPU path, requires
+  `>=1.0.0,<2.0.0`; `uv pip compile` with 2.1.1, the newest 2.x, is unsatisfiable against each.
+  `.github/dependabot.yml` now ignores huggingface-hub majors with that reason beside the rule, and
+  #311 is closed. The rule lifts once the Space's gradio and the lerobot pin have both moved
+  (gradio 6.29.0 already accepts 2.x).
+- Dependency bumps, taken from Dependabot #310 and #312 into this change so they land with it:
+  `astral-sh/setup-uv` 10.0.1 → 10.2.0, and 5.4.2 → 10.2.0 in the two leaderboard workflows that
+  were still on v5; `github/codeql-action/upload-sarif` 4.38.1 → 4.38.2. The two v5 workflows are
+  manual-only and pass setup-uv nothing but `enable-cache: true`, and no workflow here runs on the
+  `pull_request_target`, `workflow_run` or `release` events where v10 turns the cache off.
+
 ### Fixed
 
+- **The SPAIS paper README kept its 1 October to-do list after the deadline passed.** Why: nothing
+  read the date, so the repository could not say whether the paper went in, and the list still
+  implied the calibrated re-fit could land before 1 October when the roadmap dates it to
+  24 October 2026. `paper/spais/README.md` and the roadmap's proof 3 now record the submission and
+  the 17 October 2026 notification, the community page's two closed calls say they closed, and
+  `tests/test_docs_no_past_todo.py` fails when a paper README or the roadmap's Now section keeps a
+  to-do dated in the past. No measured number moves.
 - **The studies index said neither defense had a real-policy defended arm committed.** Why: 0.45.0
   counts two (`realPolicyDefenses` 0 → 2), both committed on 18 September under `results/`, and the
   index row for each still read "no real-policy defended arm committed". The rows now say an arm is

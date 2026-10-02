@@ -38,20 +38,21 @@ here, not a failure to hide.
 
 ## Where this project participates
 
-*Accurate as of 2 September 2026. The dates below are other people's deadlines and will go stale —
+*Accurate as of 2 October 2026. The dates below are other people's deadlines and will go stale —
 check the linked source before relying on one.*
 
 **Community indexes.** Provael has open submissions to a number of community-maintained lists of
 embodied-AI and ML-security tooling. Those are other people's repositories on other people's
 schedules, so the honest statement is that the submissions are open, not that they have all landed.
 
-**Open calls this work is aimed at.**
+**Calls this work was aimed at, both now closed.**
 
 - **NIST AI Standards "Zero Drafts"** — the initial public draft on public-facing AI documentation
-  is open for comment; NIST will consider input received by **16 September 2026**. See
+  was open for comment until **16 September 2026**. See
   [the project page](https://www.nist.gov/artificial-intelligence/nists-ai-standards-zero-drafts-pilot-project-accelerate-standardization).
 - **SPAIS 2026 — The Science of Physical AI Safety**, a CoRL workshop
-  ([spais-ws.org](https://spais-ws.org/)). Submissions close **1 October 2026**. Its third question
+  ([spais-ws.org](https://spais-ws.org/)). Submissions closed **1 October 2026**, and a four-page
+  paper from this project was submitted; notification is due **17 October 2026**. Its third question
   asks whether robot foundation models need evaluation techniques meaningfully different from both
   LLMs and classical robotics, which is the question this tool answers in one narrow way. Worth
   stating plainly: the call is scoped to interpretability, alignment, control and evaluation, it
