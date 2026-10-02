@@ -33,7 +33,8 @@ runs", "no peer review" — and each has a date this page will keep or publicly 
    blockers below stand until the arm, the inline supply cut and the voltage trace exist. Then the
    n = 5 protocol with SmolVLA, then 30 trials, per-trial logs and video committed, the result
    published whichever way it comes out.
-3. **Peer review — the SPAIS@CoRL 4-pager by 1 October 2026 AoE**, around the measurement
+3. **Peer review — the SPAIS@CoRL 4-pager by 1 October 2026 AoE** (submitted before the deadline;
+   notification 17 October 2026), around the measurement
    discipline (benign controls, Wilson and task-clustered intervals, published nulls, errata, the
    π0.5 null); arXiv in November regardless of the decision, the ID into `CITATION.cff` and the
    README. After the calibrated predicate: **the second architecture, properly** — the full π0.5
