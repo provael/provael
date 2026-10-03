@@ -6,7 +6,10 @@ Pure, side-effect-free functions over a list of :class:`AttackResult`. The headl
 metric is ``successes / attempts``; we also break the rate down per attack and per
 task. **Not-applicable** episodes (``applicable=False`` — e.g. ``mcp_tool_desc`` on a
 direct LIBERO loop) are excluded from the denominator. Every rate guards against zero
-attempts (returns ``0.0``) so an empty or filtered result set never raises.
+attempts, so an empty or filtered result set never raises: the attempt-counted rates return
+``0.0`` as a serialization sentinel (read :attr:`~provael.types.ASRStat.measured_rate` where an
+empty slice must show N/A), and the signal-dependent rates return ``None`` when their input
+signal is absent — unmeasured, not zero.
 """
 
 from __future__ import annotations
@@ -136,7 +139,12 @@ def harmless_variation_rate(results: list[AttackResult]) -> float | None:
 
 
 def attack_success_rate(results: list[AttackResult]) -> float:
-    """Overall ASR = successes / attempts over *applicable* episodes; 0.0 if none."""
+    """Overall ASR = successes / attempts over *applicable* episodes.
+
+    ``0.0`` when there are none: the same serialization sentinel :class:`~provael.types.ASRStat`
+    stores, not a measured 0%. An empty slice is N/A, which
+    :attr:`~provael.types.ASRStat.measured_rate` reports as ``None``.
+    """
     applicable = _applicable(results)
     if not applicable:
         return 0.0
