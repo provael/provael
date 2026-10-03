@@ -33,6 +33,11 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ### Changed
 
+- **`scoring/asr.py` says which rates return `0.0` and which return `None`.** Why: its module
+  docstring said every rate returns `0.0` on zero attempts, but the signal-dependent rates return
+  `None` when their signal is absent, and the `0.0` that `attack_success_rate` returns for an empty
+  input is the serialization sentinel `ASRStat.asr` also stores, not a measured 0% (read
+  `ASRStat.measured_rate` for N/A). Docstrings only: no behaviour and no published number moves.
 - **Dependabot no longer proposes huggingface-hub major versions.** Why: #311 raised the
   leaderboard Space's floor to `huggingface_hub>=2.0.0`, and neither place that installs the package
   resolves with 2.x. The Space runs gradio 6.23.1 (`sdk_version` in `leaderboard/README.md`), which
