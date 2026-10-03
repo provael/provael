@@ -28,10 +28,10 @@ concurrency:
 #   package build + metadata ........ `build` (uv build + twine check)
 #   docs strict ..................... .github/workflows/docs.yml
 #   optional integration ............ gated (PROVAEL_INTEGRATION); skips here. The real-model path
-#                                     runs in gpu-scheduled.yml (scheduled, and only when the
-#                                     ENABLE_GPU_SCHEDULED repo variable is "true"), NOT as a release
-#                                     gate — release.yml re-runs this CPU gate plus a tag/version
-#                                     match, but it does not run the GPU integration tests.
+#                                     runs in gpu-scheduled.yml (dispatch only: its schedule is
+#                                     paused until the keep-out predicate is calibrated, #136), NOT
+#                                     as a release gate — release.yml re-runs this CPU gate plus a
+#                                     tag/version match, but it does not run the GPU integration tests.
 jobs:
   check:
     # The matrix value is in the name because GitHub renders a custom job name verbatim: without it
@@ -123,7 +123,7 @@ jobs:
       - name: Leaderboard staleness is declared, not implied
         run: uv run python scripts/check_leaderboard_staleness.py
 
-      # COVERAGE IS MEASURED AND PUBLISHED, not asserted. The repo had 90 test modules (122 now) and no
+      # COVERAGE IS MEASURED AND PUBLISHED, not asserted. The repo had 90 test modules and no
       # figure anywhere, which is exactly the shape of claim this project refuses to accept from
       # anyone else: "well tested" with no denominator.
       #

@@ -13,7 +13,7 @@ WHY THIS IS A MIRROR AND NOT A SHARED CONSTANT. ``security.txt`` lives in the we
 served by Cloudflare; ``SECURITY.md`` lives here. Different repos, different runtimes, no import
 path between them — the same situation as the lead contract, which is likewise mirrored with a
 drift test on each side rather than packaged. Each side pins the literal and tests its own copy.
-Change one, change both; the website's counterpart lives in ``scripts/check-facts.mjs``.
+Change one, change both; the website's counterpart lives in ``scripts/check-routes.mjs``.
 
 Note this deliberately does NOT assert the address is unique to security. ``hello@provael.com`` also
 receives sales and support, which is a real weakness on a site selling security services and is
