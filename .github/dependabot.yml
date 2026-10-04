@@ -28,3 +28,12 @@ updates:
     ignore:
       - dependency-name: "huggingface-hub"
         update-types: ["version-update:semver-major"]
+      # datasets 5.x resolves on neither path that installs it: lerobot 0.5.1, pinned for the GPU
+      # path in [lerobot] and [hardware], requires >=4.0.0,<5.0.0, so the 5.0.1 security fix for
+      # GHSA-379c-qx7v-6h59 is unsatisfiable (Dependabot Updates run 97,
+      # dependency_file_not_resolvable). `versions`, not `update-types`: GitHub documents that
+      # update-types never affects security updates, and run 97 was one. A 4.x fix would still be
+      # proposed. Lift this when the lerobot pin moves, which waits on the real-arm run
+      # (docs/roadmap.md, item 2): [hardware] gives that run the same pinned lerobot as the policy.
+      - dependency-name: "datasets"
+        versions: [">=5"]
