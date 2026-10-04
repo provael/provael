@@ -46,6 +46,10 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   `.github/dependabot.yml` now ignores huggingface-hub majors with that reason beside the rule, and
   #311 is closed. The rule lifts once the Space's gradio and the lerobot pin have both moved
   (gradio 6.29.0 already accepts 2.x).
+- **Dependabot no longer proposes datasets updates the lerobot 0.5.1 pin cannot install.** Why: the
+  update for datasets failed on main (run 97), and the pin is held on purpose until the arm run.
+  The rule ignores `versions: [">=5"]` rather than an update type, because update types never
+  apply to security updates and run 97 was one; a 4.x fix would still be proposed.
 - Dependency bumps, taken from Dependabot #310 and #312 into this change so they land with it:
   `astral-sh/setup-uv` 10.0.1 → 10.2.0, and 5.4.2 → 10.2.0 in the two leaderboard workflows that
   were still on v5; `github/codeql-action/upload-sarif` 4.38.1 → 4.38.2. The two v5 workflows are
