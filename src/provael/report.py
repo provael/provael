@@ -289,9 +289,10 @@ def to_markdown(report: RunReport, decision: ReleaseDecision | None = None) -> s
         lines.append("## Significance (Benjamini-Hochberg FDR)")
         lines.append("")
         lines.append(
-            "> Each attack is tested (one-sided exact binomial) against the benign baseline FPR, "
-            "then BH-corrected across the family — so **significant** means *survives* "
-            "multiple-comparison control at q ≤ 0.05, not beat the baseline once."
+            "> Each attack's counts are tested (one-sided Fisher exact) against the benign control "
+            "arm's own counts, so the control's sampling noise counts too, then BH-corrected "
+            "across the family — so **significant** means *survives* multiple-comparison control "
+            "at q ≤ 0.05, not beat the baseline once."
         )
         lines.append("")
         lines.append("| attack | q-value (BH) | significant |")

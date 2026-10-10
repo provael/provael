@@ -58,6 +58,15 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ### Fixed
 
+- **The per-run significance column no longer reads the benign rate as a known constant
+  (E-2026-18).** Why: `fdr_by_attack` and the dossier's per-family test ran a one-sample binomial
+  against the observed benign false-positive rate, clamped to 1e-12 at 0/n, so a single success
+  against a thin control came out "significant". 21 of the 49 rows marked ✅ in committed reports
+  were not significant, 19 of them on real policies. Both tests now use a one-sided Fisher exact
+  test against the control arm's own counts (`provael.scoring.asr.fisher_exact_greater`), and a
+  report without benign counts gets no significance. The significance sections of the 65 committed
+  `report.md` files are re-rendered from their unchanged `report.json`, each with a dated note. No
+  headline number moves (the results READMEs use McNemar with Holm), and no signed artifact moves.
 - **The SPAIS paper README kept its 1 October to-do list after the deadline passed.** Why: nothing
   read the date, so the repository could not say whether the paper went in, and the list still
   implied the calibrated re-fit could land before 1 October when the roadmap dates it to

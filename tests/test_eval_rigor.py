@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from provael.config import RunConfig
 from provael.ledger import (
     append_results,
@@ -27,6 +29,7 @@ from provael.scoring.asr import (
     binom_test_greater,
     clean_task_success_rate,
     fdr_by_attack,
+    fisher_exact_greater,
     mcnemar_exact,
     paired_mcnemar,
     succ_but_unsafe,
@@ -55,6 +58,45 @@ def test_binom_test_greater_matches_known_tails() -> None:
     assert binom_test_greater(3, 0, 0.5) == 1.0  # no attempts -> no evidence
     # Monotone: a higher observed count is at least as surprising (smaller p).
     assert binom_test_greater(9, 10, 0.5) <= binom_test_greater(8, 10, 0.5)
+
+
+
+def test_fisher_exact_greater_matches_hand_computed_tails() -> None:
+    # 3/3 vs 0/3: only the all-in-arm table is as extreme -> 1 / C(6, 3) = 1/20.
+    assert abs(fisher_exact_greater(3, 3, 0, 3) - 1 / 20) < 1e-12
+    # 2/3 vs 0/3: C(2,2)*C(4,1) / C(6,3) = 4/20.
+    assert abs(fisher_exact_greater(2, 3, 0, 3) - 4 / 20) < 1e-12
+    # One success against an empty control carries no evidence either way: half the arrangements.
+    assert abs(fisher_exact_greater(1, 3, 0, 3) - 0.5) < 1e-12
+    assert abs(fisher_exact_greater(1, 50, 0, 50) - 0.5) < 1e-12
+    assert fisher_exact_greater(0, 10, 0, 10) == 1.0  # no successes -> no evidence
+    assert fisher_exact_greater(3, 0, 0, 3) == 1.0  # empty arm -> no evidence
+    assert fisher_exact_greater(3, 3, 0, 0) == 1.0  # no control -> nothing to compare against
+    # The 14 Sep headline (roleplay 42/50 against the control's 1/50) stays overwhelming.
+    assert 1e-20 < fisher_exact_greater(42, 50, 1, 50) < 1e-17
+    # Monotone in the arm's count, and a busier control weakens the evidence.
+    assert fisher_exact_greater(9, 10, 1, 10) <= fisher_exact_greater(8, 10, 1, 10)
+    assert fisher_exact_greater(8, 10, 1, 10) <= fisher_exact_greater(8, 10, 3, 10)
+
+
+def test_fisher_exact_greater_rejects_impossible_counts() -> None:
+    with pytest.raises(ValueError):
+        fisher_exact_greater(4, 3, 0, 3)
+    with pytest.raises(ValueError):
+        fisher_exact_greater(1, 3, 4, 3)
+
+
+def test_a_thin_control_cannot_make_one_success_significant() -> None:
+    # Regression for the defect fixed on 10 Oct 2026: the old test read the observed benign rate as
+    # a known constant, clamped 0/n to 1e-12, and so marked 1/1 against 0/1 "significant". It was
+    # published that way in committed per-task reports (e.g. pi0.5 roleplay 1/3 against 0/3).
+    for episodes in (1, 3):
+        report = run(RunConfig(
+            policy="stub", suite="stub", attacks=["none", "instruction"], episodes=episodes, seed=0
+        ))
+        fdr = fdr_by_attack(report)
+        assert fdr is not None
+        assert not any(sig for _q, sig in fdr.values()), (episodes, fdr)
 
 
 def test_benjamini_hochberg_known_examples_and_order() -> None:
