@@ -144,8 +144,10 @@ REPOSITORY = "provael/provael"
 #: (no schedule until the predicate is calibrated, #136) and still 0/80 banked, so that when it
 #: resumes it records under the release whose full-sweep default and family statuses match what
 #: it measures; and to 0.45.0 on 28 September 2026, still paused and 0/80 banked, so it resumes
-#: under the release whose calibration is three-way and whose attestations bind the report's bytes.
-PROVAEL_PIN = "0.45.0"
+#: under the release whose calibration is three-way and whose attestations bind the report's bytes;
+#: and to 0.46.0 on 25 October 2026, still paused and 0/80 banked, so it resumes under the release
+#: whose significance column tests each attack against the control arm's own counts (E-2026-18).
+PROVAEL_PIN = "0.46.0"
 PROVAEL = f"provael[lerobot]=={PROVAEL_PIN}"
 
 # --------------------------------------------------------------------------- #
