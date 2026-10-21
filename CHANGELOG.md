@@ -8,9 +8,9 @@ All notable changes to this project are documented here. The format is based on
 the entries below are the ones a reader arriving today needs, newest at the top. Every heading is a
 release the tag exists for; the Unreleased section holds what is merged and not yet cut.
 
-- **0.46.0 (21 Oct 2026)** — hygiene: significance is tested against the control arm's own counts
-  (E-2026-18; 21 of the 49 ✅ rows were not). No headline number moves. The published measurement,
-  14 September on 0.41.2, is uncalibrated and five minor releases behind (`releasesBehind` 5).
+- **0.46.0 (21 Oct 2026)** — hygiene, `pillow>=13.0` for nine advisories, and significance tested
+  against the control arm's own counts (E-2026-18; 21 of the 49 ✅ rows were not). No headline number
+  moves; the published measurement (0.41.2, uncalibrated) is five minor releases behind.
 - **0.45.0 (28 Sep 2026)** — attestation v2: bundles bind `report.json`'s bytes and sign a 306-byte
   record a KMS key can sign (0.44 cannot verify v2; v1 still verifies); three-way calibration
   (schema 7); a contact/force predicate (unmeasured); the ML-BOM names the policy; Meta-World is
@@ -36,15 +36,16 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 A hygiene release. The per-run significance column now tests each attack against the benign control
 arm's own counts with a one-sided Fisher exact test (E-2026-18): 21 of the 49 rows the old test
 marked ✅ were not significant, 19 of them on real policies, and the significance sections of the 65
-committed `report.md` files are re-rendered with a dated note. Beside it: two Dependabot rules for
-updates the current pins cannot install (huggingface-hub 2.x, datasets 5), docs and docstrings that
-had fallen behind what 0.45.0 shipped, and the Action's SARIF uploads on
-`github/codeql-action/upload-sarif` 4.38.3. **No headline number moves** (the results READMEs use
-McNemar with Holm, and no signed artifact moves), but the q-values and check marks in those 65
-reports do. The published measurement is still the 14 September run on 0.41.2, still uncalibrated,
-now five minor releases behind a window of two (six tags, since 0.42.1 was a patch):
-`watch/publish-freshness.json` reads `releasesBehind: 5` and `isStale: true`, and the campaign stays
-paused until the predicate is calibrated (#136).
+committed `report.md` files are re-rendered with a dated note. It also raises the `pillow` floor to
+`>=13.0` and moves the lockfile to 13.0.0, for nine advisories against 12.3.0 published on 20
+October 2026. Beside them: two Dependabot rules for updates the current pins cannot install
+(huggingface-hub 2.x, datasets 5), docs and docstrings that had fallen behind what 0.45.0 shipped,
+and the Action's SARIF uploads on `github/codeql-action/upload-sarif` 4.38.3. **No headline number
+moves** (the results READMEs use McNemar with Holm, and no signed artifact moves), but the q-values
+and check marks in those 65 reports do. The published measurement is still the 14 September run on
+0.41.2, still uncalibrated, now five minor releases behind a window of two (six tags, since 0.42.1
+was a patch): `watch/publish-freshness.json` reads `releasesBehind: 5` and `isStale: true`, and the
+campaign stays paused until the predicate is calibrated (#136).
 
 ### Changed
 
@@ -74,6 +75,15 @@ paused until the predicate is calibrated (#136).
 
 ### Fixed
 
+- **`pillow` floor raised `>=12.3` → `>=13.0`, and the lockfile moved 12.3.0 → 13.0.0.** Why: nine
+  advisories against 12.3.0 were published on 20 October 2026 (OSV, all fixed in 13.0.0), among
+  them a heap buffer overflow in the JPEG decoder and out-of-bounds reads in the TIFF decoder, and
+  the CI audit failed on them. `pillow` is a direct runtime dependency and Provael decodes and
+  perturbs camera frames, so this repeats the July raise (`>=10` → `>=12.3`). With the old floor a
+  fresh `pip install` already resolved 13.0.0 (out since 16 October), but an environment that held
+  12.x kept it, and the container image installs the lockfile, so it shipped 12.3.0. 13.0.0's
+  backwards-incompatible changes (Python 3.10 dropped, `fromarray`'s data-type `mode`, I-mode PNG
+  saving, four removed attributes) touch nothing Provael calls, and every extra re-resolves on it.
 - **The per-run significance column no longer reads the benign rate as a known constant
   (E-2026-18).** Why: `fdr_by_attack` and the dossier's per-family test ran a one-sample binomial
   against the observed benign false-positive rate, clamped to 1e-12 at 0/n, so a single success

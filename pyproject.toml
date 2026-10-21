@@ -64,7 +64,7 @@ dependencies = [
     "rich",
     "pyyaml",
     "numpy",
-    "pillow>=12.3",
+    "pillow>=13.0",
 ]
 
 [project.urls]
@@ -115,7 +115,7 @@ lerobot = ["lerobot[smolvla,libero]==0.5.1"]
 hardware = ["lerobot[smolvla,libero,feetech]==0.5.1"]
 # OpenVLA / OpenVLA-OFT via Hugging Face transformers (the non-LeRobot, model-agnostic path).
 # GPU-only; pulled in explicitly by the user, never by the default install or CPU CI.
-openvla = ["transformers>=4.40", "torch", "timm", "accelerate", "pillow>=12.3"]
+openvla = ["transformers>=4.40", "torch", "timm", "accelerate", "pillow>=13.0"]
 # openpi / pi0 (Physical-Intelligence/openpi) via its CPU-only websocket client — the model runs in
 # a separate GPU policy server, so this extra pulls no torch/JAX. The cross-architecture-transfer
 # backend. Never pulled by the default install or CPU CI.
