@@ -223,7 +223,7 @@ the contact/force predicate, the corrected regulatory clock); it re-measured not
 is still paused until the predicate is calibrated (target 24 October 2026, #136), and the lane's pin
 moved to 0.45.0 with 0 of 80 banked.
 
-**Update, 25 October 2026: five behind, still `isStale: true`.** 0.46.0 is a hygiene release (the
+**Update, 21 October 2026: five behind, still `isStale: true`.** 0.46.0 is a hygiene release (the
 per-run significance column tests each attack against the control arm's own counts, E-2026-18;
 Dependabot rules that respect the lerobot 0.5.1 pin; docs that still called 0.45.0 unreleased); it
 re-measured nothing, so `measuredWith` still reads 0.41.2 and `releasesBehind` reads 5 against a

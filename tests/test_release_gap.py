@@ -141,7 +141,7 @@ def test_the_committed_ledger_is_past_the_window_today_and_says_so() -> None:
     version below and the CHANGELOG), or a release shipping while the freshness artifact still says
     the window is closed (a lie by omission the artifact exists to prevent). 0.45.0 (28 September
     2026) re-measured nothing either, so it ships four behind, and last-measured.md carries a dated
-    line saying so; each release past the window adds one. 0.46.0 (25 October 2026) is the next one:
+    line saying so; each release past the window adds one. 0.46.0 (21 October 2026) is the next one:
     five behind, counted in minors as `releases_behind` counts them.
     """
     import json

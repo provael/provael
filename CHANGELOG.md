@@ -8,7 +8,7 @@ All notable changes to this project are documented here. The format is based on
 the entries below are the ones a reader arriving today needs, newest at the top. Every heading is a
 release the tag exists for; the Unreleased section holds what is merged and not yet cut.
 
-- **0.46.0 (25 Oct 2026)** — hygiene: significance is tested against the control arm's own counts
+- **0.46.0 (21 Oct 2026)** — hygiene: significance is tested against the control arm's own counts
   (E-2026-18; 21 of the 49 ✅ rows were not). No headline number moves. The published measurement,
   14 September on 0.41.2, is uncalibrated and five minor releases behind (`releasesBehind` 5).
 - **0.45.0 (28 Sep 2026)** — attestation v2: bundles bind `report.json`'s bytes and sign a 306-byte
@@ -31,7 +31,7 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
-## [0.46.0] — 2026-10-25
+## [0.46.0] — 2026-10-21
 
 A hygiene release. The per-run significance column now tests each attack against the benign control
 arm's own counts with a one-sided Fisher exact test (E-2026-18): 21 of the 49 rows the old test
