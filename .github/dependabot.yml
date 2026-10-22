@@ -35,5 +35,41 @@ updates:
       # update-types never affects security updates, and run 97 was one. A 4.x fix would still be
       # proposed. Lift this when the lerobot pin moves, which waits on the real-arm run
       # (docs/roadmap.md, item 2): [hardware] gives that run the same pinned lerobot as the policy.
+      # Security jobs never read this entry, though: they run as "uv", so the uv entry below
+      # repeats this rule where they look.
       - dependency-name: "datasets"
         versions: [">=5"]
+
+  # Security updates for the same lockfile. Dependabot runs this repo's security jobs as the "uv"
+  # package manager, and a job reads only the entry whose package-ecosystem matches it: the jobs on
+  # 17, 18 and 21 October 2026 printed "ignore-conditions":[] with the rules above in place. Limit
+  # 0 turns version updates off for this entry, so it shapes security updates only and the pip
+  # entry keeps the version updates it opens. Every rule below is an update the lerobot 0.5.1 pin
+  # ([lerobot] and [hardware] in pyproject.toml) cannot install, each a security job that failed on
+  # main with dependency_file_not_resolvable. Those extras, and [openvla] through the shared lock,
+  # keep the advised versions until the pin moves (docs/roadmap.md, item 2); lift these with it.
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "python"]
+    ignore:
+      # lerobot 0.5.1 requires datasets>=4.0.0,<5.0.0.
+      - dependency-name: "datasets"
+        versions: [">=5"]
+      # Every datasets 4.x caps fsspec[http] at <=2026.2.0, so the same pin holds fsspec.
+      - dependency-name: "fsspec"
+        versions: [">2026.2.0"]
+      # lerobot 0.5.1 requires torch>=2.7,<2.11.0.
+      - dependency-name: "torch"
+        versions: [">=2.11"]
+      # lerobot 0.5.1 pins transformers==5.3.0 (its transformers-dep extra, through [libero]).
+      - dependency-name: "transformers"
+        versions: [">5.3.0"]
+      # lerobot 0.5.1 requires diffusers>=0.27.2,<0.36.0.
+      - dependency-name: "diffusers"
+        versions: [">=0.36"]
+      # lerobot 0.5.1 requires setuptools>=71.0.0,<81.0.0.
+      - dependency-name: "setuptools"
+        versions: [">=81"]

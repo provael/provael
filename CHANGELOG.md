@@ -31,6 +31,17 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
+### Changed
+
+- **Dependabot's security jobs now read ignore rules.** Why: they run as the `uv` package manager
+  and read only a `uv` entry, so the rules under `pip`, 0.46.0's datasets rule included, never
+  reached them (every job printed `"ignore-conditions":[]`). A security-only `uv` entry
+  (`open-pull-requests-limit: 0`) now carries one rule for each update the lerobot 0.5.1 pin cannot
+  install, with the blocking requirement beside it: torch, transformers, diffusers and setuptools
+  (four `dependency_file_not_resolvable` jobs on 21 October 2026), datasets and fsspec. The
+  `[lerobot]`, `[hardware]` and `[openvla]` extras keep the advised versions until that pin moves;
+  the default install carries none of them.
+
 ## [0.46.0] — 2026-10-21
 
 A hygiene release. The per-run significance column now tests each attack against the benign control
