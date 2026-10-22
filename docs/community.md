@@ -52,9 +52,10 @@ schedules, so the honest statement is that the submissions are open, not that th
   [the project page](https://www.nist.gov/artificial-intelligence/nists-ai-standards-zero-drafts-pilot-project-accelerate-standardization).
 - **SPAIS 2026 — The Science of Physical AI Safety**, a CoRL workshop
   ([spais-ws.org](https://spais-ws.org/)). Submissions closed **1 October 2026**, and a four-page
-  paper from this project was submitted; notification is due **17 October 2026**. Its third question
-  asks whether robot foundation models need evaluation techniques meaningfully different from both
-  LLMs and classical robotics, which is the question this tool answers in one narrow way. Worth
+  paper from this project was submitted and was not accepted (notified **17 October 2026**). Its
+  third question asks whether robot foundation models need evaluation techniques meaningfully
+  different from both LLMs and classical robotics, which is the question this tool answers in one
+  narrow way. Worth
   stating plainly: the call is scoped to interpretability, alignment, control and evaluation, it
   does not name red-teaming or hardware-in-the-loop as topics, and Provael has **no hardware result
   of any kind** — so it speaks to part of what that workshop is asking and not the rest.

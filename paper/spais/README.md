@@ -18,8 +18,8 @@ references" rule holds with margin) and passes `check_anonymity.sh` — the styl
 `pdfsubject`, an "Anonymous Submission" `pdfauthor` and the `\keywords` line into `pdfkeywords`, and
 `paper.tex` clears all four after the style so the gate's empty-metadata rule still holds.
 
-Submitted to SPAIS@CoRL 2026 on OpenReview before the deadline; notification is due 17 October 2026,
-when the OpenReview id and the decision go here. The committed `paper.pdf` was last rebuilt in
+Submitted to SPAIS@CoRL 2026 on OpenReview before the deadline as submission #35; not accepted,
+notified 17 October 2026. The committed `paper.pdf` was last rebuilt in
 d54c965 (#299, 27 September 2026). The calibrated predicate is not in the submitted paper: its
 re-fit is due 24 October 2026 (#136) and will be published whichever way it comes out.
 
