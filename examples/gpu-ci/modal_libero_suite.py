@@ -343,9 +343,16 @@ STAGES: dict[str, dict[str, str]] = {
     #
     # 5,400 s gives ~35% headroom. The ceiling goes from ~$8 to ~$12 and the plan step prints it
     # before anything is billed.
+    #
+    # THE BASE SEED LIVES HERE, not as a literal in the command below, because the plan step reads
+    # it. `--seed 0 --seeds 20` rolls out seeds 0-19, which `provael calibrate` splits three ways:
+    # fit 0-6, tuning 7-13 (where the roleplay arm runs), eval 14-19. The published headline run,
+    # still uncalibrated, scored seeds 0-4, so a calibrated re-run on those seeds would score its
+    # benign floor on episodes the envelope was fitted on. `scripts/gpu_arm_plan.py` refuses the
+    # dispatch until the fit or the re-run moves off them (#136).
     "calibrate": {
         "tasks": ALL_TASKS, "attacks": "none", "attack": "roleplay",
-        "seeds": "20", "episodes_per_seed": "1", "timeout": "5400",
+        "seeds": "20", "seed": "0", "episodes_per_seed": "1", "timeout": "5400",
     },
     "control": {
         "tasks": ALL_TASKS, "attacks": "none,roleplay,control",
@@ -575,7 +582,8 @@ def redteam(stage: str, task: str | None = None) -> str:
             # the published number is about. Widening it is a budget question, not a design one.
             "--attack", cfg.get("attack", "roleplay"),
             "--horizon", "280",
-            "--seed", "0",
+            # From STAGES, so the seeds the plan step checked are the seeds this rolls out.
+            "--seed", cfg["seed"],
             "--target-fpr", "0.05",
             "--out", out,
         ]

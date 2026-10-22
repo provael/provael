@@ -142,7 +142,10 @@ jobs:
         # wrong twice in twenty lines — both bugs of a kind that only shows up on a dispatch, in
         # the step whose whole job is to speak before spending. Same reason the Action's gate logic
         # sits in scripts/action/ rather than inside action.yml: so it can be tested.
-        # Stdlib only, so no install step is needed before it runs.
+        # It imports provael for the calibrate stage's seed split, so it runs after the install
+        # step above. For `calibrate` it also refuses, exiting non-zero, when the stage would roll
+        # out a seed the published headline run scored (#136); `pipefail` turns that into a failed
+        # step, and the arm below never starts.
         #
         # `shell: bash` + `pipefail` are load-bearing here, not hygiene: the pipe into `tee` would
         # otherwise hand the step TEE's exit status, so a plan script that crashed would leave the
