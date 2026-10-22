@@ -21,7 +21,7 @@ eighteen-name family list under a "19 families" label in README.md. The table be
     pilot             2  x  4  x  2  x 1   =     16     0.5       ~$0.41  31 min   (RUN)
     suite            10  x  2  x  5  x 1   =    100     3.2       ~$2.55  ~20 min sharded
     calibrate        10  x  1  x 20  x 1   =    200     6.3       ~$5     ~0.6 h sharded
-                                                    hard ceiling ~$8  (10 x 1 h timeout)
+                                                    hard ceiling ~$11.99 (10 x 1.5 h timeout)
     probe            10  x  8  x  3  x 1   =    240     7.6       ~$6.11  ~45 min sharded
     control          10  x  4  x  5  x 1   =    200     6.3       ~$6.15   ~1.1 h sharded
                                                     hard ceiling ~$12 (10 x 1.5 h timeout)
