@@ -144,7 +144,8 @@ jobs:
         # sits in scripts/action/ rather than inside action.yml: so it can be tested.
         # It imports provael for the calibrate stage's seed split, so it runs after the install
         # step above. For `calibrate` it also refuses, exiting non-zero, when the stage would roll
-        # out a seed the published headline run scored (#136); `pipefail` turns that into a failed
+        # out a seed the published headline run scored, or start a task's fit on the scene that
+        # run's first episode on the task started from (#136); `pipefail` turns that into a failed
         # step, and the arm below never starts.
         #
         # `shell: bash` + `pipefail` are load-bearing here, not hygiene: the pipe into `tee` would

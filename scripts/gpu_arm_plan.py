@@ -26,6 +26,15 @@ had scored 0-4 (#136). This step already runs before anything bills, so it check
 and exits non-zero, which stops the workflow before the arm starts. The headline's seeds are read
 from its own records; the split comes from :mod:`provael.calibration`, so this step needs provael
 installed, which the workflow does first.
+
+AND ON STARTING SCENES (23 October 2026). Disjoint seeds were not enough. Under lerobot 0.5.1 a
+LIBERO env picks each episode's starting scene from a reset counter the seed never reaches, and a
+fresh env starts it at init state 0 (:data:`LEROBOT_RULE_VERSION` says where that was read). Every
+task of the headline run, still uncalibrated, started in a fresh env, and so does every task's
+fit, so the first fit rollout starts where the headline's first episode on that task did, whatever
+``seed`` the stage passes. The step refuses that from the same records. Past each task's first
+episode the records cannot say which scene an episode started from, and the refusal says what
+they would need.
 """
 
 from __future__ import annotations
@@ -49,6 +58,27 @@ L4_USD_PER_HOUR = 0.7992
 #: The signed board's pointer to the committed run the published headline rests on. Read, not
 #: retyped, so the day a calibrated re-run becomes the board's source the seed check follows it.
 BOARD_SOURCE = Path("leaderboard") / "results" / "source.json"
+
+#: How lerobot picks a LIBERO episode's starting scene, read from ``lerobot/envs/libero.py`` in the
+#: 0.5.1 wheel, the version the ``[lerobot]`` extra pins (as it did at 0.41.2, the headline run's
+#: release), rather than assumed:
+#:
+#: * ``self.init_state_id = self.episode_index`` (line 151), and ``_make_env_fns`` gives the one
+#:   sub-env of an ``n_envs=1`` vector ``episode_index=0`` (lines 386-387). The LIBERO adapter
+#:   builds exactly that, one env per task (``make_env(cfg, n_envs=1)``).
+#: * ``reset`` loads ``self._init_states[self.init_state_id % len(self._init_states)]`` and then
+#:   adds ``n_envs`` (lines 149 and 300-302): one state per reset, of the 50 each libero_object
+#:   task's init file holds in the locked hf-libero 0.1.4.
+#: * ``step`` calls ``self.reset()`` itself when an episode terminates (lines 331 and 341-348), so
+#:   an episode that ends in task success uses up a second state before the next reset.
+#: * The seed reaches ``self._env.seed(seed)`` (line 298) and nothing that picks the state.
+#:
+#: ``tests/test_gpu_arm_seed_overlap.py`` fails if the pin moves or the adapter starts choosing the
+#: state itself, because either would make this the wrong rule.
+LEROBOT_RULE_VERSION = "0.5.1"
+
+#: The init state a fresh LIBERO env's first reset loads, by the rule above.
+FIRST_INIT_STATE = 0
 
 
 class _Inert:
@@ -124,6 +154,15 @@ def _span(seeds: list[int]) -> str:
     return ",".join(str(seed) for seed in seeds)
 
 
+def _task_span(tasks: list[str]) -> str:
+    """``libero_object/0-9`` for numbered tasks of one suite, otherwise the tasks listed."""
+    parts = [task.rpartition("/") for task in tasks]
+    suites = {suite for suite, _, _ in parts}
+    if len(suites) == 1 and all(sep and number.isdigit() for _, sep, number in parts):
+        return f"{suites.pop()}/{_span(sorted(int(number) for _, _, number in parts))}"
+    return ", ".join(tasks)
+
+
 def headline_seeds(root: Path = ROOT) -> tuple[str, list[int], int]:
     """The headline run's directory, every seed its episode records used, and how many records.
 
@@ -156,14 +195,70 @@ def calibrate_splits(cfg: dict[str, str]) -> dict[str, list[int]]:
     return {"fit": fit, "tuning": tuning, "eval": held_out}
 
 
+def headline_first_scenes(root: Path = ROOT) -> tuple[str, dict[str, int]]:
+    """Each task the headline run scored, and the init state its first episode started from.
+
+    A run's records are in plan order, and a task's first planned episode is that task's first
+    reset in whichever process measured it, a resumed one included, so by the rule above it started
+    at :data:`FIRST_INIT_STATE`. Nothing after it can be placed from the records: they carry no
+    starting scene, and a resumed shard restarts the counter without a trace in ``report.json``.
+    """
+    run = json.loads((root / BOARD_SOURCE).read_text(encoding="utf-8"))["run"]
+    first: dict[str, int] = {}
+    for report in sorted((root / run).glob("*/report.json")):
+        for record in json.loads(report.read_text(encoding="utf-8"))["results"]:
+            first.setdefault(str(record["task"]), FIRST_INIT_STATE)
+    return run, first
+
+
+def scene_check(cfg: dict[str, str], root: Path = ROOT) -> tuple[bool, str]:
+    """Whether a `calibrate` stage's fit starts on a scene the headline run scored, as Markdown.
+
+    Each task's fit starts in a fresh env (one container per task, and ``provael calibrate`` rolls
+    the fit split before the others), so its first rollout starts at :data:`FIRST_INIT_STATE`
+    whatever seed the stage passes. A task whose first scored episode started there refuses.
+    """
+    run, first = headline_first_scenes(root)
+    fit_first = FIRST_INIT_STATE
+    shared = [task for task in cfg["tasks"].split(",") if first.get(task) == fit_first]
+    lines = [
+        "#### Starting scenes",
+        "",
+        f"Under lerobot {LEROBOT_RULE_VERSION} a LIBERO env picks each episode's starting scene "
+        "from a reset counter the seed never reaches: a fresh env loads init state "
+        f"{FIRST_INIT_STATE} first and moves one state on per reset, two after an episode that "
+        "ends in task success. Each task's fit starts in a fresh env and rolls its fit split "
+        f"first, so its first rollout starts at init state {fit_first} whatever `seed` is. "
+        f"`{run}` scored {_task_span(sorted(first))}, and its first episode on each started at "
+        f"init state {FIRST_INIT_STATE} for the same reason.",
+        "",
+    ]
+    if shared:
+        lines.append(
+            "**Refused:** the fit would start at the init state the headline's first episode "
+            f"started from on {_task_span(shared)}. No `seed` moves it (#136). Nothing has been "
+            "billed."
+        )
+    else:
+        lines.append("No shared scene: this calibration fits no task the headline run scored.")
+    lines += [
+        "",
+        "Past each task's first episode the headline's scenes cannot be read from its records: "
+        "they carry no starting scene, and a resumed shard restarts the counter without a trace "
+        "in `report.json`. Each record would need the init state its reset loaded.",
+    ]
+    return not shared, "\n".join(lines)
+
+
 def seed_check(stage: str, cfg: dict[str, str], root: Path = ROOT) -> tuple[bool, str]:
     """Whether a dispatch may run as far as its seeds go, and the Markdown that says why.
 
     Only `calibrate` fits anything, so every other stage passes with nothing to say. Any seed the
     stage rolls out that the headline run scored refuses the dispatch, whichever split it lands in.
 
-    It compares SEEDS. Under lerobot 0.5.1 LIBERO picks each episode's starting scene from a reset
-    counter, not from the seed, so disjoint seeds are necessary here and not yet sufficient.
+    It compares SEEDS, then STARTING SCENES through :func:`scene_check`. Under lerobot 0.5.1 LIBERO
+    picks each episode's starting scene from a reset counter, not from the seed, so disjoint seeds
+    are necessary and not sufficient.
     """
     if stage != "calibrate":
         return True, ""
@@ -192,12 +287,9 @@ def seed_check(stage: str, cfg: dict[str, str], root: Path = ROOT) -> tuple[bool
         )
     else:
         lines.append("No overlap: this calibration rolls out no seed the headline run scored.")
-    lines += [
-        "",
-        "This compares seeds. Under lerobot 0.5.1 LIBERO picks each episode's starting scene from "
-        "a reset counter rather than the seed, so disjoint seeds do not yet mean disjoint scenes.",
-    ]
-    return not where, "\n".join(lines)
+    scenes_ok, scenes = scene_check(cfg, root)
+    lines += ["", scenes]
+    return not where and scenes_ok, "\n".join(lines)
 
 
 def main(argv: list[str] | None = None) -> int:

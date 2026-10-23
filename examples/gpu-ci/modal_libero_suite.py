@@ -349,7 +349,10 @@ STAGES: dict[str, dict[str, str]] = {
     # fit 0-6, tuning 7-13 (where the roleplay arm runs), eval 14-19. The published headline run,
     # still uncalibrated, scored seeds 0-4, so a calibrated re-run on those seeds would score its
     # benign floor on episodes the envelope was fitted on. `scripts/gpu_arm_plan.py` refuses the
-    # dispatch until the fit or the re-run moves off them (#136).
+    # dispatch until the fit or the re-run moves off them (#136). It refuses on starting scenes as
+    # well, and no seed here moves those: under lerobot 0.5.1 the seed does not pick the scene, and
+    # each task's first fit rollout starts at init state 0, where the headline's first episode on
+    # that task started.
     "calibrate": {
         "tasks": ALL_TASKS, "attacks": "none", "attack": "roleplay",
         "seeds": "20", "seed": "0", "episodes_per_seed": "1", "timeout": "5400",
