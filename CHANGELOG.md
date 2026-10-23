@@ -41,6 +41,19 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   (four `dependency_file_not_resolvable` jobs on 21 October 2026), datasets and fsspec. The
   `[lerobot]`, `[hardware]` and `[openvla]` extras keep the advised versions until that pin moves;
   the default install carries none of them.
+- **The GPU arm's plan step refuses a calibrate dispatch that rolls out a seed the headline run
+  scored, read from that run's records (#335).** Why: the stage fitted on seeds 0-6 and the
+  headline, still uncalibrated, scored 0-4, so a calibrated re-run on those seeds would score its
+  benign floor on episodes the envelope was fitted on.
+
+### Fixed
+
+- **The calibrate stage's cost line priced a one-hour timeout (#334).** Why: the timeout has been
+  5,400 s since the fit gained its attacked arm, so the example's table said ~$8 where the plan step
+  prints ~$11.99. It now says ~$11.99 (10 x 1.5 h), and a test ties every ceiling line to its stage.
+- **The roadmap's peer-review proof still said the SPAIS notification was due (#336).** Why: the
+  workshop did not accept the paper (notified 17 October 2026). The roadmap, the paper's README and
+  the community page now say so, and the arXiv posting in November stands.
 
 ## [0.46.0] — 2026-10-21
 
