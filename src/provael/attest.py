@@ -523,6 +523,7 @@ _RESULT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     3: ("trajectory",),
     4: ("weight_corruption",),
     5: ("policy_seed",),
+    8: ("init_state",),
 }
 
 #: TOP-LEVEL report fields introduced by each schema version — the same contract as

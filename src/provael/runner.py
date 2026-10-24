@@ -60,6 +60,7 @@ from provael.types import (
     Observation,
     RunReport,
     Trajectory,
+    init_state_of,
 )
 from provael.video import FrameSink, Mp4Writer, clip_name
 
@@ -197,6 +198,11 @@ def run_episode(
     policy_seed = policy.seed(seed)
     obs = suite.reset(task, seed)
     base_instruction = str(obs.get("instruction", ""))
+    # Which fixed initial state the reset loaded, as the SUITE read it from its environment. On
+    # LIBERO the seed does not pick it (a reset counter does), so it is recorded per episode
+    # rather than inferred later from the seed or the episode order, neither of which survives a
+    # resumed run. None on a suite without fixed initial states.
+    init_state = init_state_of(obs)
 
     if not attack.applicable(obs):
         # The attack has no surface in this suite (e.g. mcp_tool_desc on a direct LIBERO
@@ -207,6 +213,7 @@ def run_episode(
             family=attack.family,
             seed=seed,
             policy_seed=policy_seed,
+            init_state=init_state,
             success=False,
             steps=0,
             steps_to_success=None,
@@ -352,6 +359,7 @@ def run_episode(
         family=attack.family,
         seed=seed,
         policy_seed=policy_seed,
+        init_state=init_state,
         success=success,
         steps=steps,
         steps_to_success=steps_to_success,
@@ -576,7 +584,8 @@ def run(
         # 7: `calibration.<task>` carries `split` / `eval_fpr` / `binding`, so a bound predicate
         # and a tuned one are signed over as different things (nested, so the projection strips
         # them for a report that declares less — see attest._CALIBRATION_META_FIELDS_ADDED_IN).
-        schema_version=7,
+        # 8: results carry `init_state`, the fixed initial state each reset loaded (#136).
+        schema_version=8,
         evidence_state=classify_run(config.policy, config.suite).value,
         policy=config.policy,
         model=config.model,

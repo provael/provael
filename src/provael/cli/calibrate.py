@@ -82,6 +82,16 @@ def calibrate(
             "so — see `provael doctor`.",
         ),
     ] = None,
+    init_state_offset: Annotated[
+        int,
+        typer.Option(
+            min=0,
+            help="Fixed initial state each task's fit starts from, for a suite that walks a list "
+            "of them (LIBERO). The seed does not pick the scene there; a reset counter does, and "
+            "this only moves where it starts — one state per rollout after it, two after a "
+            "success. 0 is lerobot's own start. The plan step for the GPU arm checks it (#136).",
+        ),
+    ] = 0,
     out: Annotated[
         Path, typer.Option(help="Output directory for calibration artifacts.")
     ] = Path("calib"),
@@ -93,7 +103,7 @@ def calibrate(
         calibrations = calibrate_suite(
             policy, suite, _split_csv(tasks), seed_list,
             target_fpr=target_fpr, horizon=horizon, tool_version=__version__, model=model,
-            attack_name=attack, split=split_value,
+            attack_name=attack, split=split_value, init_state_offset=init_state_offset,
         )
     except (MissingLeRobotError, IncompatiblePolicyError) as exc:
         _fail(str(exc))

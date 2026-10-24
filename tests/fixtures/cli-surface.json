@@ -1354,6 +1354,16 @@
      "secondary_opts": []
     },
     {
+     "help": "Fixed initial state each task's fit starts from, for a suite that walks a list of them (LIBERO). The seed does not pick the scene there; a reset counter does, and this only moves where it starts \u2014 one state per rollout after it, two after a success. 0 is lerobot's own start. The plan step for the GPU arm checks it (#136).",
+     "is_flag": false,
+     "name": "init_state_offset",
+     "opts": [
+      "--init-state-offset"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
      "help": "Output directory for calibration artifacts.",
      "is_flag": false,
      "name": "out",

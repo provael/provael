@@ -63,6 +63,7 @@ from provael.types import (
     CalibrationMeta,
     State,
     TransferTest,
+    init_state_of,
 )
 
 if TYPE_CHECKING:
@@ -497,6 +498,13 @@ class Calibration(BaseModel):
     #: 0.40.0 — including the ten `libero_object` zones of 6 September 2026, whose rollouts were
     #: never offered a seed at all. Both are unreproducible; only the first was measured to be.
     policy_seeds: list[int | None] = Field(default_factory=list)
+    #: Which fixed initial state each rollout's reset loaded, in the order of ``policy_seeds``
+    #: (fit, tuning, eval, then the attacked arm), as the suite read it from its environment. On
+    #: LIBERO the seed does not pick the scene, so this is the record of which scenes the predicate
+    #: was fitted and chosen on, the thing a scored run's recorded ``init_state`` is compared with
+    #: (#136). ``None`` in a slot: the suite has no fixed initial states. An empty list: the
+    #: artifact predates this field.
+    init_states: list[int | None] = Field(default_factory=list)
     #: How the spatial hazard face was chosen, and whether an adversarial arm chose it. ``None``
     #: for a scalar predicate, and for every spatial calibration fitted before 0.41.0 — those were
     #: all placed on the same hardcoded face without looking at where an attack goes.
@@ -658,8 +666,14 @@ def collect_benign_signals(
     seeds: Sequence[int],
     horizon: int,
     attack: Attack | None = None,
+    *,
+    init_states: list[int | None] | None = None,
 ) -> tuple[list[list[Signal]], list[int | None]]:
     """Run rollouts and return each episode's signals AND the seed the policy applied.
+
+    ``init_states``, when given, collects the fixed initial state each rollout's reset loaded (see
+    :func:`provael.types.init_state_of`), in rollout order. A caller-owned list rather than a third
+    return value, so the two callers that unpack a pair keep working.
 
     ``attack`` is ``None`` for the benign arm, which is what the name says and what this was for
     its whole life. Passing one runs the ADVERSARIAL arm, which :func:`fit_spatial_zone` needs to
@@ -695,6 +709,8 @@ def collect_benign_signals(
         policy.reset()
         policy_seeds.append(policy.seed(seed))
         obs = suite.reset(task, seed)
+        if init_states is not None:
+            init_states.append(init_state_of(obs))
         instruction = str(obs.get("instruction", ""))
         signals: list[Signal] = []
         for _ in range(horizon):
@@ -766,9 +782,13 @@ def calibrate_one(
     nothing here re-fits on the eval seeds, because a threshold moved to satisfy its own evaluation
     would turn that split back into tuning data.
     """
-    fit_eps, fit_applied = collect_benign_signals(policy, suite, task, fit_seeds, horizon)
+    # One list across every arm, so it lines up with `policy_seeds`: fit, tuning, eval, attacked.
+    init_states: list[int | None] = []
+    fit_eps, fit_applied = collect_benign_signals(
+        policy, suite, task, fit_seeds, horizon, init_states=init_states
+    )
     holdout_eps, holdout_applied = collect_benign_signals(
-        policy, suite, task, holdout_seeds, horizon
+        policy, suite, task, holdout_seeds, horizon, init_states=init_states
     )
     eval_list = list(eval_seeds or [])
     if set(eval_list) & (set(fit_seeds) | set(holdout_seeds)):
@@ -779,7 +799,9 @@ def calibrate_one(
     eval_eps: list[list[Signal]] = []
     eval_applied: list[int | None] = []
     if eval_list:
-        eval_eps, eval_applied = collect_benign_signals(policy, suite, task, eval_list, horizon)
+        eval_eps, eval_applied = collect_benign_signals(
+            policy, suite, task, eval_list, horizon, init_states=init_states
+        )
     n_benign = len(fit_seeds) + len(holdout_seeds) + len(eval_list)
     policy_seeds = fit_applied + holdout_applied + eval_applied
     split: Split = "three-way" if eval_list else "two-way"
@@ -790,7 +812,7 @@ def calibrate_one(
     adversarial: list[list[list[float]]] = []
     if attack is not None:
         adv_eps, adv_applied = collect_benign_signals(
-            policy, suite, task, holdout_seeds, horizon, attack=attack
+            policy, suite, task, holdout_seeds, horizon, attack=attack, init_states=init_states
         )
         adversarial = _trajectories(adv_eps)
         policy_seeds += adv_applied
@@ -818,6 +840,7 @@ def calibrate_one(
             envelope=envelope, keep_out_zones=zones,
             target_fpr=target_fpr, benign_fpr=benign_fpr, n_benign=n_benign,
             fit_seeds=fit_seeds, holdout_seeds=holdout_seeds, policy_seeds=policy_seeds,
+            init_states=init_states,
             spatial_fit=spatial_fit, tool_version=tool_version,
             split=split, eval_seeds=eval_list, eval_fpr=spatial_eval_fpr,
             binding=(
@@ -834,6 +857,7 @@ def calibrate_one(
         signal_key="danger", threshold=threshold,
         target_fpr=target_fpr, benign_fpr=benign_fpr, n_benign=n_benign,
         fit_seeds=fit_seeds, holdout_seeds=holdout_seeds, policy_seeds=policy_seeds,
+        init_states=init_states,
         tool_version=tool_version,
         split=split, eval_seeds=eval_list, eval_fpr=scalar_eval_fpr,
         binding=bind("scalar", scalar_eval_fpr, threshold) if scalar_eval_fpr is not None else None,
@@ -852,8 +876,15 @@ def calibrate_suite(
     model: str | None = None,
     attack_name: str | None = None,
     split: Split = "three-way",
+    init_state_offset: int = 0,
 ) -> dict[str, Calibration]:
     """Calibrate every requested task of ``(policy, suite)`` from benign rollouts.
+
+    ``init_state_offset`` starts each task's walk through its fixed initial states there instead
+    of at 0 (:meth:`~provael.suites.base.SuiteAdapter.start_init_states_at`), so the fit can begin
+    past the states a scored run used (#136); the states each rollout actually started from are
+    recorded in ``Calibration.init_states``. A suite with no fixed initial states refuses a
+    non-zero offset rather than fitting on scenes nobody asked for.
 
     Builds the policy/suite via the registries (so the gated LIBERO/SmolVLA errors surface
     exactly as in ``attack``), splits the seeds three ways into fit / tuning / eval by default
@@ -878,6 +909,13 @@ def calibrate_suite(
 
     policy = make_policy(policy_name, model=model)
     suite = make_suite(suite_name, tasks=list(tasks) if tasks is not None else None)
+    # Before anything builds an env: the offset applies to each task env built after it is set.
+    if init_state_offset and not suite.start_init_states_at(init_state_offset):
+        raise ValueError(
+            f"--init-state-offset {init_state_offset} asks suite {suite_name!r} to start its fixed "
+            "initial states elsewhere, and it keeps none; refusing to fit on scenes that were not "
+            "asked for"
+        )
     features = suite.features()
     if features is not None:
         policy.set_features(features)

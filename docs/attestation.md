@@ -138,6 +138,15 @@ The three keys sit inside a nested model rather than at the top of the report, s
 strips them for any report that declares a schema below 7 (`attest._CALIBRATION_META_FIELDS_ADDED_IN`)
 and every earlier attestation keeps verifying.
 
+### Which scene each episode started from (schema 8)
+
+On main since 24 October 2026, not yet in a release. Each episode in the signed `report.json`
+carries `init_state`: which of the task's fixed initial states its reset loaded, read back from the
+environment. On LIBERO the seed does not pick the scene (a reset counter does), so two episodes at
+one seed can start from different scenes, and only this field records which ran. It is signed over
+with the rest of the episode; the projection strips it for any report that declares a schema below
+8 (`attest._RESULT_FIELDS_ADDED_IN`), so every earlier attestation keeps verifying.
+
 ### The regulatory clock
 
 Factual application dates, carried so the evidence is legible against the calendar buyers care

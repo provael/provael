@@ -23,6 +23,13 @@ introspecting the installed ``lerobot==0.5.1`` package. Confirmed:
     ``(3,)`` (batched ``(n_envs, 3)`` through the VectorEnv); action space is a
     continuous ``Box(-1, 1, shape=(7,))`` — LIBERO action dim 7.
   * Task suites: ``libero_object | libero_spatial | libero_goal | libero_10``.
+  * The scene is NOT picked by the seed. ``LiberoEnv.reset`` loads
+    ``self._init_states[self.init_state_id % len(self._init_states)]`` and then adds
+    ``self._reset_stride`` (``n_envs``) to ``init_state_id``; a fresh env starts the counter at its
+    ``episode_index`` (0 here), and ``step`` resets again on termination. The adapter reads the
+    state each reset loaded back from that counter (``init_state`` on the observation, then on
+    every episode record) and can start a new env's counter elsewhere
+    (:meth:`LiberoSuiteAdapter.start_init_states_at`); it never chooses a state per episode.
 
 RED-TEAM PREDICATE (not real-world harm): LIBERO is benign tabletop manipulation. We
 do **not** measure physical harm; we measure whether an attack *redirected* the policy
@@ -285,6 +292,26 @@ def _first(value: Any) -> Any:
     return arr[0] if arr.ndim >= 1 and arr.shape[0] == 1 else arr
 
 
+def _loaded_init_state(env: Any) -> int | None:
+    """The fixed initial state the sub-env's last reset loaded, read back from lerobot's counter.
+
+    lerobot 0.5.1 loads ``_init_states[init_state_id % len(_init_states)]`` and only then adds
+    ``_reset_stride`` (``n_envs``), so the state just loaded is the counter less the stride, modulo
+    the number of states. All three are read from the env after the reset; nothing is recomputed
+    from the seed or the episode order, which cannot say where the counter stood. ``None`` when
+    the env keeps no fixed initial states (``init_states=False``) or exposes no counter.
+    """
+    try:
+        (counter,) = env.get_attr("init_state_id")
+        (stride,) = env.get_attr("_reset_stride")
+        (states,) = env.get_attr("_init_states")
+    except AttributeError:
+        return None
+    if states is None or len(states) == 0:
+        return None
+    return int((int(counter) - int(stride)) % len(states))
+
+
 class LiberoSuiteAdapter(SuiteAdapter):
     """Wraps a real LeRobot LIBERO env behind our :class:`SuiteAdapter` interface."""
 
@@ -318,6 +345,8 @@ class LiberoSuiteAdapter(SuiteAdapter):
         self._task: str = f"{task_suite}/{self.task_ids[0]}"
         self._seed = 0
         self._step = 0
+        self._init_state: int | None = None
+        self._init_state_offset = 0
 
     @staticmethod
     def lerobot_available() -> bool:
@@ -436,6 +465,11 @@ class LiberoSuiteAdapter(SuiteAdapter):
         env = self._envs.get(task)
         if env is None:
             env = self._build_env(task_id)
+            if self._init_state_offset:
+                # A FRESH env only, before its first reset, so lerobot starts walking this task's
+                # initial states here instead of at 0. A plain attribute set through gymnasium's
+                # VectorEnv API: lerobot itself is not patched.
+                env.set_attr("init_state_id", self._init_state_offset)
             self._envs[task] = env
         self._active = env
         self._task = task
@@ -443,7 +477,21 @@ class LiberoSuiteAdapter(SuiteAdapter):
         self._step = 0
         self._instruction = self._resolve_instruction(env)
         obs, _info = env.reset(seed=[seed])  # VectorEnv: seeds is a per-env list
+        self._init_state = _loaded_init_state(env)
         return self._observation(obs)
+
+    def start_init_states_at(self, offset: int) -> bool:
+        """Start each task env this adapter builds from now on at fixed initial state ``offset``.
+
+        lerobot walks a task's initial states with a counter that a fresh env starts at 0. This
+        moves where it starts, once, so a calibration fit can begin past the states a scored run
+        used (#136). It does not choose a state per episode: the counter still moves one state per
+        reset and two after a success, and an env already built keeps its counter.
+        """
+        if offset < 0:
+            raise ValueError(f"an init state offset is a non-negative index, got {offset}")
+        self._init_state_offset = offset
+        return True
 
     def _resolve_instruction(self, env: Any) -> str:
         """Use the env's REAL task language as the base instruction.
@@ -560,6 +608,9 @@ class LiberoSuiteAdapter(SuiteAdapter):
             "task": self._task,
             "instruction": self._instruction,
             "seed": self._seed,
+            # The initial state the last reset loaded, read from the env (None if unreadable).
+            # The runner copies it onto the episode record; the seed beside it does not pick it.
+            "init_state": self._init_state,
             "step": self._step,
             "ee_pos": self._ee_pos(obs),
             "raw": obs,  # full lerobot obs for a real policy adapter to consume

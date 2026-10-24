@@ -140,7 +140,7 @@ def test_the_calibrated_run_reports_the_split_the_eval_fpr_and_a_valid_binding()
         RunConfig(policy="stub", suite="stub", attacks=["none", "instruction"], episodes=4, seed=0),
         _stub_calibration(),
     )
-    assert report.schema_version == 7
+    assert report.schema_version >= 7  # 7 added these fields; later versions keep them
     meta = report.calibration["reach"]
     assert meta.split == "three-way"
     assert meta.eval_fpr is not None and meta.eval_fpr <= 0.05

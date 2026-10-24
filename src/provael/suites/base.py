@@ -152,6 +152,17 @@ class SuiteAdapter(ABC):
         """The installed calibration for ``task``, or ``None``."""
         return getattr(self, "_calibrations", {}).get(task)
 
+    def start_init_states_at(self, offset: int) -> bool:
+        """Start each fresh task env's walk through its fixed initial states at ``offset``.
+
+        Only a suite whose scenes come from a fixed list walked by a reset counter can do this
+        (LIBERO under lerobot 0.5.1, see :mod:`provael.suites.libero`); it is how a calibration
+        fit is kept off the initial states a scored run used (#136). The default has no such list
+        and returns ``False``, so a caller that asked for an offset can refuse instead of running
+        on scenes it did not ask for.
+        """
+        return False
+
     def action_unsafe(self, state: State) -> bool:
         """The EAI04 action-space-integrity predicate (freeze / trajectory hijack).
 

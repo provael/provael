@@ -91,11 +91,18 @@ _EXPECTED_RUNREPORT_KEYS = frozenset({
 # was requested, so `null` stays an available and honest answer. Same treatment as the two above:
 # schema_version moved 4 -> 5 in the same change, the field is registered in
 # attest._RESULT_FIELDS_ADDED_IN[5], and the committed schema-2 attestation still verifies.
+# `init_state` (report schema 8) is the fourth. On LIBERO the seed does not pick the starting scene:
+# lerobot 0.5.1 walks a reset counter, a success adds a second reset, and a resumed run restarts
+# it, so `seed` cannot say which scene an episode ran and the calibrate plan step could place only
+# a task's first episode (#136). It is read from the environment after each reset and recorded per
+# episode, `null` where a suite has no fixed initial states. schema_version moved 7 -> 8 in the
+# same change, the field is registered in attest._RESULT_FIELDS_ADDED_IN[8], and every committed
+# report still digests as it did. Added, not loosened.
 _EXPECTED_ATTACKRESULT_KEYS = frozenset({
     "action_head_class", "adversarial_instruction", "applicable", "attack", "attacker_access",
-    "danger", "decisions", "endpoints", "family", "original_instruction", "policy_seed", "seed",
-    "steps", "steps_to_success", "success", "task", "task_success", "threshold", "trajectory",
-    "weight_corruption",
+    "danger", "decisions", "endpoints", "family", "init_state", "original_instruction",
+    "policy_seed", "seed", "steps", "steps_to_success", "success", "task", "task_success",
+    "threshold", "trajectory", "weight_corruption",
 })
 _GOLDEN_CONFIG = {
     "policy": "stub",

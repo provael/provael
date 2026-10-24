@@ -45,6 +45,19 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   scored, read from that run's records (#335).** Why: the stage fitted on seeds 0-6 and the
   headline, still uncalibrated, scored 0-4, so a calibrated re-run on those seeds would score its
   benign floor on episodes the envelope was fitted on.
+- **Each LIBERO episode records the init state its reset loaded (`init_state`, report schema 8).**
+  Why: the starting scene follows a reset counter the seed never reaches, so without it the
+  calibrate check could only place a task's first episode (#136). The adapter reads the state back
+  from lerobot's counter after every reset, so a resumed run is recorded as it ran, and calibration
+  artifacts record it for every rollout. Older reports load as before and their digests do not move.
+- **The calibrate plan step compares the fit's planned init states with the ones a scored run
+  recorded, per task.** Why: the opening-scene check (#339) could see only each task's first
+  episode; with recorded states it refuses on any overlap and names an offset that would clear
+  them. A run whose records carry none, the uncalibrated headline among them, keeps that check.
+- **`provael calibrate --init-state-offset` starts each task's fit at a chosen init state.** Why:
+  so a fit can begin past the states a scored run recorded. The GPU arm's stage carries it at 0;
+  the plan step refuses a non-zero offset against a run without recorded init states, and while
+  the image installs provael 0.46.0, whose `calibrate` has no such flag.
 
 ### Fixed
 
