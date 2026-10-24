@@ -876,6 +876,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#which-scene-each-episode-started-from-schema-8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which scene each episode started from (schema 8)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-regulatory-clock" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2795,6 +2806,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#which-scene-each-episode-started-from-schema-8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which scene each episode started from (schema 8)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-regulatory-clock" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3011,6 +3033,13 @@ FPR was measured afterwards therefore digest differently, which is the point of 
 The three keys sit inside a nested model rather than at the top of the report, so the projection
 strips them for any report that declares a schema below 7 (<code>attest._CALIBRATION_META_FIELDS_ADDED_IN</code>)
 and every earlier attestation keeps verifying.</p>
+<h3 id="which-scene-each-episode-started-from-schema-8">Which scene each episode started from (schema 8)</h3>
+<p>On main since 24 October 2026, not yet in a release. Each episode in the signed <code>report.json</code>
+carries <code>init_state</code>: which of the task's fixed initial states its reset loaded, read back from the
+environment. On LIBERO the seed does not pick the scene (a reset counter does), so two episodes at
+one seed can start from different scenes, and only this field records which ran. It is signed over
+with the rest of the episode; the projection strips it for any report that declares a schema below
+8 (<code>attest._RESULT_FIELDS_ADDED_IN</code>), so every earlier attestation keeps verifying.</p>
 <h3 id="the-regulatory-clock">The regulatory clock</h3>
 <p>Factual application dates, carried so the evidence is legible against the calendar buyers care
 about. Dates only — no claim of conformity. Each entry states the precision its date is verified to
