@@ -165,6 +165,16 @@
      "secondary_opts": []
     },
     {
+     "help": "Pin each episode's starting scene on a suite with a fixed list of initial states (LIBERO): the episode at seed s starts from state (START + s) mod their number, for every arm and repeat, whatever the episode before it did. Off by default, where lerobot walks the list with a reset counter the seed never reaches. A suite without such a list refuses it. The GPU arm's plan step checks the pinned states against the calibration fit's (#136).",
+     "is_flag": false,
+     "name": "pin_init_states",
+     "opts": [
+      "--pin-init-states"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
      "help": "Max timesteps per episode.",
      "is_flag": false,
      "name": "horizon",

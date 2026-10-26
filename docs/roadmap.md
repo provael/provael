@@ -11,7 +11,15 @@ Nothing else gets built until these exist, unless a named prospect asks for it o
 removes an objection that blocks every sale — "your unsafe definition is arbitrary", "zero hardware
 runs", "no peer review" — and each has a date this page will keep or publicly miss.
 
-1. **A calibrated predicate — target 24 October 2026** ([#136](https://github.com/provael/provael/issues/136)).
+1. **A calibrated predicate — target 24 October 2026, missed; new target 14 November 2026**
+   ([#136](https://github.com/provael/provael/issues/136)).
+   Status, 26 October 2026: a new run records the init state each episode's reset loaded (report
+   schema 8); `provael calibrate --init-state-offset` starts a fit past a chosen state; the GPU
+   arm's plan step refuses a fit on the published headline's seeds or opening scene, and a scored
+   stage whose pinned scenes meet the fit's; and `provael attack --pin-init-states` takes each
+   episode's scene from its seed. All of it is on main, not yet in a release. Nothing has been
+   re-run: the published headline is unchanged and still uncalibrated, and the scheduled campaign is
+   still paused.
    The hand-picked keep-out box fires on 4–5% of benign episodes; ten per-task fits are withheld
    rather than adopted, and a benign-only fit cannot choose the face an attack leaves through. What
    is owed: fit the keep-out zone per task from the benign reachable bounds at a target FPR of 1%
@@ -240,7 +248,7 @@ comparison here would be reporting a hardware fault as a finding.
 
 ## Planned (contributions welcome) — every item conditional
 
-- **Real-policy calibration validity (conditional on the 24 October re-run).** The three-way
+- **Real-policy calibration validity (conditional on the 14 November re-run).** The three-way
   calibration path is shipped (see Shipped); what has not happened is the condition that matters,
   a fresh supported real-policy calibration run under it. Until that lands every real-policy
   number is measured under the uncalibrated default box, no real-policy calibration validity is

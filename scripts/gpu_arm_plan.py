@@ -43,6 +43,13 @@ states are compared with the recorded ones, per task, and any overlap refuses; w
 (every committed run so far), the opening-scene rule above stands, and a fit that starts past the
 opening scene is refused as unplaceable rather than waved through on the one scene that can be
 placed.
+
+AND ON PINNED SCENES (26 October 2026). A scored stage can carry ``pin_init_states``, and its
+command then passes ``provael attack --pin-init-states``: the episode at seed s starts from init
+state (pin + s) mod 50, set before every reset, whatever its arm or the episode before it. Its
+scenes are known before it runs, so its plan compares them, per task, with the calibrate stage's
+fit window and refuses on any shared state, which is what keeps the fit and the re-run on different
+scenes by construction. It also refuses while the image installs a release without the flag.
 """
 
 from __future__ import annotations
@@ -75,7 +82,9 @@ BOARD_SOURCE = Path("leaderboard") / "results" / "source.json"
 #:   sub-env of an ``n_envs=1`` vector ``episode_index=0`` (lines 386-387). The LIBERO adapter
 #:   builds exactly that, one env per task (``make_env(cfg, n_envs=1)``), reads the state each
 #:   reset loaded back from the counter, and can move where a fresh env's counter starts
-#:   (``init_state_offset``); it never picks a state per episode.
+#:   (``init_state_offset``). Left alone it never picks a state per episode; a stage that pins
+#:   its scenes (``pin_init_states``) sets the counter before every reset instead, so the seed
+#:   picks the state and the walk below no longer applies to it.
 #: * ``reset`` loads ``self._init_states[self.init_state_id % len(self._init_states)]`` and then
 #:   adds ``n_envs`` (lines 149 and 300-302): one state per reset, of the 50 each libero_object
 #:   task's init file holds in the locked hf-libero 0.1.4.
@@ -100,6 +109,11 @@ INIT_STATES = 50
 #: installs ``PROVAEL_PIN``, and while that is at or below this version a container handed the flag
 #: would exit on an unknown option after billing had started, so the plan step refuses first.
 LAST_RELEASE_WITHOUT_OFFSET = "0.46.0"
+
+#: The newest provael RELEASE whose ``attack`` has no ``--pin-init-states``, which reached main
+#: after it. A past release, so this never needs updating either; the plan step refuses a stage
+#: that pins its scenes while ``PROVAEL_PIN`` is at or below it, for the same reason as above.
+LAST_RELEASE_WITHOUT_PIN = "0.46.0"
 
 
 class _Inert:
@@ -405,18 +419,91 @@ def scene_check(cfg: dict[str, str], root: Path = ROOT) -> tuple[bool, str]:
     return not refusals, "\n".join(lines)
 
 
-def seed_check(stage: str, cfg: dict[str, str], root: Path = ROOT) -> tuple[bool, str]:
+def pinned_init_states(cfg: dict[str, str]) -> list[int]:
+    """Every init state a stage that pins its scenes starts an episode from, on each task.
+
+    The episode at seed ``s`` starts from ``(pin_init_states + s) mod 50`` whatever its arm or
+    repeat (``LiberoSuiteAdapter.pin_init_states``), so the states follow from the stage's seeds
+    alone: ``seeds`` of them from ``seed``, 0 when the stage names none, as its command does.
+    """
+    start, base = int(cfg["pin_init_states"]), int(cfg.get("seed", "0"))
+    return sorted({(start + seed) % INIT_STATES for seed in range(base, base + int(cfg["seeds"]))})
+
+
+def pinned_scene_check(cfg: dict[str, str], fit: dict[str, str]) -> tuple[bool, str]:
+    """Whether a stage that pins its scenes can start an episode where the fit can, as Markdown.
+
+    Per task, over the tasks both stages run: the stage's pinned states
+    (:func:`pinned_init_states`) against the `calibrate` stage ``fit``'s window
+    (:func:`fit_init_states`). Any state in both refuses, and so does an image whose provael
+    predates ``--pin-init-states``. Both ranges are printed either way.
+    """
+    states, window = pinned_init_states(cfg), fit_init_states(fit)
+    tasks = cfg["tasks"].split(",")
+    fitted = fit["tasks"].split(",")
+    shared = [task for task in tasks if task in fitted]
+    base = int(cfg.get("seed", "0"))
+    seeds = list(range(base, base + int(cfg["seeds"])))
+    lines = [
+        "#### Starting scenes",
+        "",
+        "This stage pins each episode's starting scene: the episode at seed s starts from init "
+        f"state ({cfg['pin_init_states']} + s) mod {INIT_STATES} on every task and in every arm, "
+        f"whatever the episode before it did. Seeds {_span(seeds)} put it on init states "
+        f"{_ranges(states)} of {_task_span(tasks)}.",
+        "",
+        f"`calibrate` fits {_task_span(fitted)} from init state "
+        f"{int(fit.get('init_state_offset', '0'))}, one or two states on per rollout, so its fit's "
+        f"rollouts can start from init states {_ranges(window)} on each task. The tuning split "
+        "and the attacked arm follow the fit and are not planned here.",
+    ]
+    refusals: list[str] = []
+    overlap = sorted(set(states) & set(window))
+    if shared and overlap:
+        refusals.append(
+            f"**Refused:** init states {_ranges(overlap)} are pinned here and inside the fit's "
+            f"window, on {_task_span(shared)}, so this stage would score episodes on scenes the "
+            "envelope was fitted on (#136). Move `pin_init_states` here or `init_state_offset` in "
+            "`calibrate`. Nothing has been billed."
+        )
+    if _release(image_pin()) <= _release(LAST_RELEASE_WITHOUT_PIN):
+        refusals.append(
+            f"**Refused:** the GPU image installs provael {image_pin()}, and no release up to "
+            f"{LAST_RELEASE_WITHOUT_PIN} takes `--pin-init-states`, so every container would exit "
+            "on an unknown option after billing had started. Move `PROVAEL_PIN` to a release that "
+            "has it first. Nothing has been billed."
+        )
+    if not shared:
+        lines += ["", "No shared scene: `calibrate` fits none of this stage's tasks."]
+    elif not overlap:
+        lines += [
+            "",
+            f"No shared scene: on each of {_task_span(shared)} the pinned states and the fit's "
+            "window are disjoint.",
+        ]
+    for refusal in refusals:
+        lines += ["", refusal]
+    return not refusals, "\n".join(lines)
+
+
+def seed_check(
+    stage: str, cfg: dict[str, str], root: Path = ROOT, fit: dict[str, str] | None = None
+) -> tuple[bool, str]:
     """Whether a dispatch may run as far as its seeds go, and the Markdown that says why.
 
-    Only `calibrate` fits anything, so every other stage passes with nothing to say. Any seed the
-    stage rolls out that the headline run scored refuses the dispatch, whichever split it lands in.
+    Only `calibrate` fits anything, so another stage passes with nothing to say unless it pins its
+    scenes; then :func:`pinned_scene_check` holds them against ``fit``, the `calibrate` stage
+    (read from the example when not given). For `calibrate`, any seed the stage rolls out that the
+    headline run scored refuses the dispatch, whichever split it lands in.
 
     It compares SEEDS, then STARTING SCENES through :func:`scene_check`. Under lerobot 0.5.1 LIBERO
     picks each episode's starting scene from a reset counter, not from the seed, so disjoint seeds
     are necessary and not sufficient.
     """
     if stage != "calibrate":
-        return True, ""
+        if "pin_init_states" not in cfg:
+            return True, ""
+        return pinned_scene_check(cfg, fit if fit is not None else stages()["calibrate"])
     run, scored, n_records = headline_seeds(root)
     splits = calibrate_splits(cfg)
     rolled = sorted(seed for seeds in splits.values() for seed in seeds)

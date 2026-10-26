@@ -29,7 +29,9 @@ introspecting the installed ``lerobot==0.5.1`` package. Confirmed:
     ``episode_index`` (0 here), and ``step`` resets again on termination. The adapter reads the
     state each reset loaded back from that counter (``init_state`` on the observation, then on
     every episode record) and can start a new env's counter elsewhere
-    (:meth:`LiberoSuiteAdapter.start_init_states_at`); it never chooses a state per episode.
+    (:meth:`LiberoSuiteAdapter.start_init_states_at`). By default it never chooses a state per
+    episode; a run that pins its scenes (:meth:`LiberoSuiteAdapter.pin_init_states`) sets the
+    counter before every reset, so the seed picks the state and the read-back is checked.
 
 RED-TEAM PREDICATE (not real-world harm): LIBERO is benign tabletop manipulation. We
 do **not** measure physical harm; we measure whether an attack *redirected* the policy
@@ -312,6 +314,34 @@ def _loaded_init_state(env: Any) -> int | None:
     return int((int(counter) - int(stride)) % len(states))
 
 
+def _check_pinned(env: Any, task: str, seed: int, pinned: int, loaded: int | None) -> None:
+    """Raise unless the reset loaded the state the pin asked for.
+
+    The pin goes in as lerobot's counter, which lerobot takes modulo the number of states, so the
+    state asked for is ``pinned % len(_init_states)``. A reset that loaded any other one, from a
+    lerobot whose rule moved or an env that keeps no fixed initial states and never reads the
+    counter, must not be recorded as pinned: the plan step placed the run on the states it asked
+    for, so an episode anywhere else would sit in the report under a scene nobody chose.
+    """
+    try:
+        (states,) = env.get_attr("_init_states")
+    except AttributeError:
+        states = None
+    if states is None or len(states) == 0:
+        raise RuntimeError(
+            f"{task} at seed {seed}: the run pins each episode's init state, and this env keeps "
+            "no fixed initial states to pin. Refusing to record an episode on a scene nobody chose."
+        )
+    wanted = pinned % len(states)
+    if loaded != wanted:
+        raise RuntimeError(
+            f"{task} at seed {seed}: the pin asked lerobot to load init state {wanted}, and its "
+            f"reset loaded {loaded}. Its reset no longer loads _init_states[init_state_id % N], "
+            "the lerobot 0.5.1 rule the pin relies on; refusing to record an episode on a scene "
+            "nobody chose."
+        )
+
+
 class LiberoSuiteAdapter(SuiteAdapter):
     """Wraps a real LeRobot LIBERO env behind our :class:`SuiteAdapter` interface."""
 
@@ -347,6 +377,7 @@ class LiberoSuiteAdapter(SuiteAdapter):
         self._step = 0
         self._init_state: int | None = None
         self._init_state_offset = 0
+        self._init_state_pin: int | None = None
 
     @staticmethod
     def lerobot_available() -> bool:
@@ -471,6 +502,14 @@ class LiberoSuiteAdapter(SuiteAdapter):
                 # VectorEnv API: lerobot itself is not patched.
                 env.set_attr("init_state_id", self._init_state_offset)
             self._envs[task] = env
+        pinned: int | None = None
+        if self._init_state_pin is not None:
+            # EVERY reset, cached env or fresh, so the seed picks the state and nothing an earlier
+            # episode did can move it: lerobot's `step` resets itself on a success and loads the
+            # next state, and this reset loads the pinned one over it. lerobot takes the counter
+            # modulo the number of states, so the sum goes in unreduced.
+            pinned = self._init_state_pin + seed
+            env.set_attr("init_state_id", pinned)
         self._active = env
         self._task = task
         self._seed = seed
@@ -478,6 +517,8 @@ class LiberoSuiteAdapter(SuiteAdapter):
         self._instruction = self._resolve_instruction(env)
         obs, _info = env.reset(seed=[seed])  # VectorEnv: seeds is a per-env list
         self._init_state = _loaded_init_state(env)
+        if pinned is not None:
+            _check_pinned(env, task, seed, pinned, self._init_state)
         return self._observation(obs)
 
     def start_init_states_at(self, offset: int) -> bool:
@@ -491,6 +532,21 @@ class LiberoSuiteAdapter(SuiteAdapter):
         if offset < 0:
             raise ValueError(f"an init state offset is a non-negative index, got {offset}")
         self._init_state_offset = offset
+        return True
+
+    def pin_init_states(self, start: int) -> bool:
+        """Load fixed initial state ``(start + seed) mod N`` at every reset from now on.
+
+        The counter is set before each reset rather than left to walk, so the seed picks the scene:
+        every arm and every repeat at one seed starts from the same state, a success inside
+        ``step`` (which makes lerobot load the next state itself) cannot move the next episode's,
+        and a resumed process loads what the uninterrupted one would have. The state each reset
+        loaded is read back as always and checked against the one asked for. A pin decides every
+        reset, so a :meth:`start_init_states_at` offset set as well changes nothing.
+        """
+        if start < 0:
+            raise ValueError(f"an init state pin is a non-negative index, got {start}")
+        self._init_state_pin = start
         return True
 
     def _resolve_instruction(self, env: Any) -> str:

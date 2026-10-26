@@ -425,6 +425,16 @@ def run(
     suite = make_suite(config.suite, tasks=config.tasks)
     if calibrations:
         suite.set_calibration(calibrations)
+    # Before any env is built or reset. A suite with no fixed list of initial states has no scene
+    # to pin, and running it anyway would put scenes nobody asked for under a config that says
+    # they were pinned. NotImplementedError because that is what it is: the suite does not
+    # implement the capability, and the CLI already turns it into a one-line refusal.
+    if config.pin_init_states is not None and not suite.pin_init_states(config.pin_init_states):
+        raise NotImplementedError(
+            f"--pin-init-states {config.pin_init_states} asks suite {config.suite!r} to start each "
+            "episode from a fixed initial state chosen by its seed, and it keeps no fixed initial "
+            "states; refusing to run on scenes that were not asked for"
+        )
 
     # Exchange env features once (no-op for the stub: features() returns None).
     features = suite.features()

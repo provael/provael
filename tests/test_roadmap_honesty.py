@@ -16,11 +16,17 @@ WHAT THIS CAN AND CANNOT CATCH. It compares the Planned section against the CLI'
 which is the strongest machine-readable statement of what the tool does. It cannot catch a planned
 item that is shipped without a command — that is a judgement call, and the test says so rather than
 pretending to cover it.
+
+AND A PASSED DATE IS NOT LEFT STANDING (26 October 2026). The Now section gives each proof a date
+"this page will keep or publicly miss". Proof 1's "target 24 October 2026" passed with no re-run and
+the heading still read as a live promise; nothing failed. The last tests below hold every
+``target <day> <Month> <year>`` in a numbered Now item to a verdict once its day is past.
 """
 
 from __future__ import annotations
 
 import re
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pytest
@@ -172,3 +178,127 @@ def test_no_registered_attack_family_is_listed_as_planned() -> None:
         f"SAFETY.md in the same commit — it enumerates the families and their threat models, so a "
         f"family it does not know about is a safety document that is wrong, not merely stale."
     )
+
+
+#: Month names as this repository writes dates, day first.
+_MONTHS = (
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+)
+
+#: A proof's dated promise, "target 24 October 2026", with any whitespace between the words, a line
+#: break included. A target always carries its year on this page, so the pattern requires one.
+_TARGET = re.compile(
+    r"\btarget\s+(\d{1,2})\s+(" + "|".join(_MONTHS) + r")\s+(\d{4})\b", re.IGNORECASE
+)
+
+#: The verdict a past target needs, BESIDE its date: only spaces and punctuation may come between,
+#: as in "target 24 October 2026, missed; new target 14 November 2026". Anywhere in the item would
+#: not do. Once an item said "missed" for one date it would wave every later date of the same item
+#: through, so the second miss would pass in silence, which is the failure this guard exists for.
+_VERDICT_BESIDE = re.compile(r"[\s,;:()\[\]—–-]*(?:missed|delivered)\b", re.IGNORECASE)
+
+
+def now_items(text: str) -> list[tuple[str, int, str]]:
+    """Each numbered item of the roadmap's ``## Now`` section, as ``(number, first line, text)``.
+
+    An item runs from its ``N.`` line through the indented and blank lines under it, and ends at
+    the next line that starts in the first column: the next item, or the prose after the list.
+    """
+    lines = text.splitlines()
+    heading = next((i for i, line in enumerate(lines) if line.startswith("## Now")), None)
+    assert heading is not None, "no '## Now' heading in docs/roadmap.md; this test reads it"
+    items: list[tuple[str, int, list[str]]] = []
+    current: list[str] | None = None
+    for index in range(heading + 1, len(lines)):
+        line = lines[index]
+        if line.startswith("## "):
+            break
+        numbered = re.match(r"(\d+)\.\s", line)
+        if numbered:
+            current = [line]
+            items.append((numbered.group(1), index + 1, current))
+        elif current is not None and (not line.strip() or line[0].isspace()):
+            current.append(line)
+        else:
+            current = None
+    return [(number, first, "\n".join(body)) for number, first, body in items]
+
+
+def unannounced_targets(text: str, today: date) -> list[str]:
+    """Every target in a Now item whose day is before ``today`` with no verdict beside it."""
+    offenders: list[str] = []
+    for number, first, item in now_items(text):
+        for m in _TARGET.finditer(item):
+            line = first + item.count("\n", 0, m.start())
+            phrase = " ".join(m.group(0).split())
+            try:
+                due = date(int(m.group(3)), _MONTHS.index(m.group(2).lower()) + 1, int(m.group(1)))
+            except ValueError:
+                offenders.append(f"line {line}, item {number}: '{phrase}' is not a calendar date")
+                continue
+            if due < today and _VERDICT_BESIDE.match(item, m.end()) is None:
+                offenders.append(
+                    f"line {line}, item {number}: '{phrase}' passed on {due.isoformat()} with "
+                    "neither 'missed' nor 'delivered' beside it"
+                )
+    return offenders
+
+
+def test_no_now_item_leaves_a_past_target_without_a_verdict() -> None:
+    """The real page, against today's UTC date: it reads the clock on purpose.
+
+    That is what "keep or publicly miss" means. The day a target passes with nothing said, main goes
+    red without a commit, the way the freshness badge goes stale on its own instead of waiting for
+    someone to remember.
+    """
+    today = datetime.now(UTC).date()
+    offenders = unannounced_targets(ROADMAP.read_text(encoding="utf-8"), today)
+    assert not offenders, (
+        f"docs/roadmap.md's Now section has a target before today ({today.isoformat()}) that says "
+        "neither 'missed' nor 'delivered'. The page promises to keep each date or miss it in "
+        "public: write the verdict right after the date, and a new target if there is one.\n  "
+        + "\n  ".join(offenders)
+    )
+
+
+_FIXTURE = (
+    "# Roadmap\n\n## Now: the proofs\n\nEach has a date.\n\n"
+    "1. **A proof — target 24 October 2026{verdict}**\n"
+    "   ([#1](https://example.org/1)). Body text.\n"
+    "2. **Another proof — target 1 December 2026**.\n\n"
+    "Still owed alongside them, a target 1 January 2026 in prose, which is not an item.\n\n"
+    "## Shipped\n\n1. **Done — target 1 March 2026**.\n"
+)
+
+
+def test_a_past_target_without_a_verdict_fails() -> None:
+    text = _FIXTURE.format(verdict="")
+    assert unannounced_targets(text, date(2026, 10, 26)) == [
+        "line 7, item 1: 'target 24 October 2026' passed on 2026-10-24 with neither 'missed' nor "
+        "'delivered' beside it"
+    ]
+
+
+def test_a_past_target_marked_missed_passes() -> None:
+    text = _FIXTURE.format(verdict=", missed; new target 14 November 2026")
+    assert unannounced_targets(text, date(2026, 10, 26)) == []
+
+
+def test_a_verdict_answers_only_the_date_it_stands_beside() -> None:
+    """The second miss of one item still fails, though the item already says "missed" once."""
+    text = _FIXTURE.format(verdict=", missed; new target 14 November 2026")
+    assert unannounced_targets(text, date(2026, 11, 15)) == [
+        "line 7, item 1: 'target 14 November 2026' passed on 2026-11-14 with neither 'missed' "
+        "nor 'delivered' beside it"
+    ]

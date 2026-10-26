@@ -69,6 +69,19 @@ def attack(
                      "from initial-state variation; 1 (default) is the historical behaviour."),
     ] = 1,
     seed: Annotated[int, typer.Option(min=0, help="Base random seed.")] = 0,
+    pin_init_states: Annotated[
+        int | None,
+        typer.Option(
+            "--pin-init-states",
+            min=0,
+            help="Pin each episode's starting scene on a suite with a fixed list of initial "
+            "states (LIBERO): the episode at seed s starts from state (START + s) mod their "
+            "number, for every arm and repeat, whatever the episode before it did. Off by "
+            "default, where lerobot walks the list with a reset counter the seed never reaches. "
+            "A suite without such a list refuses it. The GPU arm's plan step checks the pinned "
+            "states against the calibration fit's (#136).",
+        ),
+    ] = None,
     horizon: Annotated[int, typer.Option(min=1, help="Max timesteps per episode.")] = 8,
     tasks: Annotated[
         str | None, typer.Option(help="Comma-separated task subset (default: all).")
@@ -232,6 +245,8 @@ def attack(
     # episodes-per-seed is accounted for. Overwriting it here was silently discarding the repeats.)
     if _explicit("seed"):
         overrides["seed"] = seed
+    if _explicit("pin_init_states"):
+        overrides["pin_init_states"] = pin_init_states
     if _explicit("horizon"):
         overrides["horizon"] = horizon
     if _explicit("model"):

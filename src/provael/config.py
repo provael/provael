@@ -70,6 +70,16 @@ class RunConfig(BaseModel):
         "correct behaviour rather than a defect.",
     )
     seed: int = Field(0, ge=0, description="Base random seed for reproducibility.")
+    pin_init_states: int | None = Field(
+        None,
+        ge=0,
+        description="On a suite whose scenes come from a fixed list of N initial states (LIBERO), "
+        "start the episode at seed s from state (pin_init_states + s) mod N, for every arm and "
+        "repeat. None keeps the suite's own order, which on LIBERO is a reset counter the seed "
+        "never reaches, so two arms at one seed start from different scenes. A suite without "
+        "such a list refuses a pin. Each episode records the state it loaded (`init_state`), so "
+        "the report shows the scenes either way and RunReport carries no field for the pin.",
+    )
     horizon: int = Field(8, ge=1, description="Maximum timesteps per episode.")
     defense: str | None = Field(
         None,

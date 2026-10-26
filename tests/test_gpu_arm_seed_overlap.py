@@ -79,8 +79,12 @@ def test_the_committed_calibrate_stage_is_refused(capsys: pytest.CaptureFixture[
 
 
 def test_only_calibrate_is_seed_checked(capsys: pytest.CaptureFixture[str]) -> None:
-    """Attack stages fit nothing, so a seed they share with the headline is not leakage."""
-    assert plan_module.main(["control"]) == 0
+    """Attack stages fit nothing, so a seed they share with the headline is not leakage.
+
+    `suite` rather than `control` since 26 October 2026: `control` pins its scenes now, and a
+    stage that pins is checked against the fit (see the pinned-scene tests below).
+    """
+    assert plan_module.main(["suite"]) == 0
     out = capsys.readouterr().out
     assert "Seeds" not in out
     assert "scenes" not in out
@@ -144,8 +148,13 @@ def test_the_scene_rule_is_the_one_the_adapter_runs() -> None:
     each record), and when a calibrate stage passes `init_state_offset` it sets where a FRESH env's
     counter starts, once, through gymnasium's `set_attr`, so a fit can begin past the states a
     scored run recorded (#136). It still never picks a state per episode: the counter moves one per
-    reset and two after a success, which is what `fit_init_states` plans with. So this now fails
-    if the counter is written anywhere but that one place.
+    reset and two after a success, which is what `fit_init_states` plans with.
+
+    AND AGAIN, 26 October 2026, on purpose. A scored run can pin its scenes
+    (`--pin-init-states`): the adapter then sets the counter before EVERY reset, so the seed picks
+    the state, and checks the state it read back. That is a second `set_attr`, and the only one
+    that picks a state per episode; the calibrate stage never pins, so its fit still walks as
+    `fit_init_states` plans. So this fails if the counter is written anywhere but those two places.
     """
     pyproject = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))
     pins = pyproject["project"]["optional-dependencies"]["lerobot"]
@@ -156,7 +165,9 @@ def test_the_scene_rule_is_the_one_the_adapter_runs() -> None:
     adapter = (REPO / "src" / "provael" / "suites" / "libero.py").read_text(encoding="utf-8")
     assert "make_env(cfg, n_envs=1)" in adapter
     assert 'get_attr("init_state_id")' in adapter
-    assert adapter.count('set_attr("init_state_id"') == 1
+    assert adapter.count('set_attr("init_state_id"') == 2
+    assert 'set_attr("init_state_id", self._init_state_offset)' in adapter
+    assert 'set_attr("init_state_id", pinned)' in adapter
     assert re.search(r"\.init_state_id\s*=", adapter) is None, "a direct write to the counter"
 
 
@@ -278,3 +289,94 @@ def test_the_committed_offset_is_lerobots_own_start() -> None:
     """0 until a scored run records init states and the image takes the flag; the plan step says why."""
     assert plan_module.stages()["calibrate"]["init_state_offset"] == "0"
 
+
+
+# PINNED SCENES (26 October 2026). A scored stage that carries `pin_init_states` starts the episode
+# at seed s from init state (pin + s) mod 50, set before every reset, so its scenes are known before
+# it runs and the plan compares them, per task, with the calibrate stage's fit window.
+
+_FIT = {"tasks": "libero_object/0,libero_object/1", "seed": "100", "seeds": "20"}
+
+
+def _pinned(pin: str, tasks: str = "libero_object/0,libero_object/1") -> dict[str, str]:
+    return {"tasks": tasks, "seeds": "5", "pin_init_states": pin}
+
+
+def test_pinned_states_follow_the_seeds_alone() -> None:
+    """One state per seed, whatever the arms: five seeds from 0 at pin 45 are 45-49."""
+    assert plan_module.pinned_init_states(_pinned("45")) == [45, 46, 47, 48, 49]
+    # Seeds 3-7 from pin 45 run past the last state and wrap: 48, 49, then 0, 1, 2.
+    assert plan_module.pinned_init_states({**_pinned("45"), "seed": "3"}) == [0, 1, 2, 48, 49]
+
+
+def test_disjoint_pinned_states_pass_and_print_both_ranges(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(plan_module, "image_pin", lambda: "0.47.0")
+    ok, text = plan_module.pinned_scene_check(_pinned("13"), _FIT)
+    assert ok, text
+    assert "init states 13-17 of libero_object/0-1" in text
+    assert "can start from init states 0-12 on each task" in text
+    assert "No shared scene" in text
+
+
+def test_pinned_states_inside_the_fit_window_refuse(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pin 10 puts seeds 0-4 on 10-14; the fit's rollouts can start anywhere in 0-12."""
+    monkeypatch.setattr(plan_module, "image_pin", lambda: "0.47.0")
+    ok, text = plan_module.pinned_scene_check(_pinned("10"), _FIT)
+    assert not ok
+    assert "init states 10-12 are pinned here and inside the fit's window" in text
+    assert "on libero_object/0-1" in text
+    # Wrapped past the last state, 48 + 4 lands on 2, inside the window again.
+    ok, text = plan_module.pinned_scene_check(_pinned("48"), _FIT)
+    assert not ok
+    assert "init states 0-2 are pinned here" in text
+
+
+def test_a_pinned_stage_on_tasks_the_fit_never_runs_passes(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(plan_module, "image_pin", lambda: "0.47.0")
+    ok, text = plan_module.pinned_scene_check(_pinned("0", tasks="libero_object/5"), _FIT)
+    assert ok, text
+    assert "fits none of this stage's tasks" in text
+
+
+def test_a_pin_needs_an_image_whose_provael_takes_the_flag(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(plan_module, "image_pin", lambda: "0.46.0")
+    ok, text = plan_module.pinned_scene_check(_pinned("13"), _FIT)
+    assert not ok
+    assert "takes `--pin-init-states`" in text
+    assert "No shared scene" in text  # the scenes are clear; only the image refuses
+
+
+def test_the_committed_control_stage_pins_clear_of_the_fit(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """45-49 against the committed fit's 0-12: clear, and refused only by the 0.46.0 image.
+
+    This is the state on main until a release carries `--pin-init-states` and `PROVAEL_PIN` moves
+    to it. The change that moves the pin updates this test with it.
+    """
+    assert plan_module.stages()["control"]["pin_init_states"] == "45"
+    assert plan_module.main(["control"]) == 1
+    out = capsys.readouterr().out
+    assert "Seeds 0-4 put it on init states 45-49 of libero_object/0-9" in out
+    assert "can start from init states 0-12 on each task" in out
+    assert "No shared scene" in out
+    assert "takes `--pin-init-states`" in out
+
+
+def test_the_container_passes_the_pin_and_the_seed_the_plan_reads() -> None:
+    """The pinned states are worked out from the stage's `pin_init_states` and `seed`, so the
+    `provael attack` command must pass both from STAGES, not literals."""
+    tree = ast.parse(EXAMPLE.read_text(encoding="utf-8"))
+    pin = seed = None
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.List) or not node.elts:
+            continue
+        words = [elt.value if isinstance(elt, ast.Constant) else None for elt in node.elts]
+        if words[:2] == ["provael", "attack"]:
+            seed = ast.unparse(node.elts[words.index("--seed") + 1])
+        if words[0] == "--pin-init-states":
+            pin = ast.unparse(node.elts[1])
+    assert seed == "cfg.get('seed', '0')", seed
+    assert pin == "cfg['pin_init_states']", pin

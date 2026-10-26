@@ -9,6 +9,10 @@ and ``step`` resets again when an episode ends in success). Until report schema 
 which scene ran, so the calibrate plan step could place only a task's first episode (#136). These
 tests drive the real adapter over a fake of that counter, so no simulator is needed: the adapter
 must read the state back from the env, never work it out from the seed or the episode order.
+
+AND A PINNED RUN (26 October 2026). `--pin-init-states` sets the counter before every reset, so
+the episode at seed s loads (pin + s) mod 50 in every arm, whatever the episode before it did; the
+state it read back is still the one recorded, and checked against the one asked for.
 """
 
 from __future__ import annotations
@@ -27,10 +31,11 @@ from provael.attacks.registry import make_attack
 from provael.calibration import calibrate_one, calibrate_suite, collect_benign_signals
 from provael.campaign import check_provenance
 from provael.cli import app
+from provael.config import RunConfig
 from provael.execution import report_digest
 from provael.ledger import append_trial, record_of, results_for
 from provael.policies.stub import StubPolicy
-from provael.runner import run_episode
+from provael.runner import run, run_episode
 from provael.suites.libero import LiberoSuiteAdapter
 from provael.suites.stub import StubSuite
 from provael.types import Observation, RunReport
@@ -263,3 +268,123 @@ def test_the_cli_takes_the_offset_and_refuses_it_where_it_cannot_apply(tmp_path:
     )
     assert result.exit_code != 0
     assert "keeps none" in result.output
+
+
+class _SelfCountingLiberoEnv(_FakeLiberoEnv):
+    """A lerobot whose reset loads from a counter of its own and ignores the one the pin set: the
+    rule the pin relies on moved, which must raise rather than be recorded as pinned."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._own = 0
+
+    def reset(self, seed: int | None = None) -> tuple[dict[str, Any], dict[str, Any]]:
+        self.init_state_id = self._own + self._reset_stride
+        self._own += 1
+        self._t = 0
+        return _OBS, {"is_success": False}
+
+
+def test_pinned_episodes_load_start_plus_seed_even_after_a_success_inside_step(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unpinned, these three successes walk 0, 2, 4 (see the success test above); pinned, 20-22."""
+    adapter, built = _adapter(monkeypatch, _FakeLiberoEnv(success_at=3))
+    assert adapter.pin_init_states(20) is True
+    policy, attack = _SevenDofPolicy(), make_attack("none")
+    episodes = [run_episode(policy, adapter, attack, TASK, seed=seed, horizon=10) for seed in (0, 1, 2)]
+    assert all(episode.task_success for episode in episodes)
+    assert [episode.init_state for episode in episodes] == [20, 21, 22]
+    assert len(built) == 1, "one cached env, its counter set again before every reset"
+
+
+def test_every_arm_at_a_seed_starts_from_the_same_pinned_scene(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """What the pin is for: the (task, seed) cell a paired test reads holds one scene, repeats too."""
+    adapter, _ = _adapter(monkeypatch, _FakeLiberoEnv(success_at=2))
+    adapter.pin_init_states(0)
+    policy = _SevenDofPolicy()
+    states = [
+        run_episode(policy, adapter, make_attack(name), TASK, seed=seed, horizon=4).init_state
+        for name in ("none", "roleplay")
+        for seed in (3, 3, 4)
+    ]
+    assert states == [3, 3, 4, 3, 3, 4]
+
+
+def test_a_pin_wraps_modulo_the_number_of_states(monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter, _ = _adapter(monkeypatch, _FakeLiberoEnv())
+    adapter.pin_init_states(48)
+    assert adapter.reset(TASK, seed=3)["init_state"] == 1
+
+
+def test_a_pinned_reset_that_loads_another_state_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter, _ = _adapter(monkeypatch, _SelfCountingLiberoEnv())
+    adapter.pin_init_states(20)
+    with pytest.raises(RuntimeError, match="load init state 20, and its reset loaded 0"):
+        adapter.reset(TASK, seed=0)
+
+
+def test_a_pin_on_an_env_without_fixed_init_states_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter, _ = _adapter(monkeypatch, _FakeLiberoEnv(fixed=False))
+    adapter.pin_init_states(20)
+    with pytest.raises(RuntimeError, match="keeps no fixed initial states to pin"):
+        adapter.reset(TASK, seed=0)
+
+
+def test_a_pin_is_a_non_negative_index(monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter, _ = _adapter(monkeypatch, _FakeLiberoEnv())
+    with pytest.raises(ValueError, match="non-negative"):
+        adapter.pin_init_states(-1)
+
+
+def _pinned_run(
+    monkeypatch: pytest.MonkeyPatch, config: RunConfig, ledger: Path | None = None
+) -> RunReport:
+    """The runner over the real adapter on a FRESH fake env, as a new process would build it."""
+    adapter, _ = _adapter(monkeypatch, _FakeLiberoEnv(success_at=2))
+    monkeypatch.setattr(adapter, "features", lambda: None)
+    monkeypatch.setattr("provael.runner.make_suite", lambda *_args, **_kwargs: adapter)
+    monkeypatch.setattr("provael.runner.make_policy", lambda *_args, **_kwargs: _SevenDofPolicy())
+    return run(config, ledger_path=ledger)
+
+
+def test_a_pinned_run_records_one_scene_per_seed_and_resumes_onto_it(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Through the runner: two arms, three seeds, every episode ending in success.
+
+    Each seed's scene is the same in both arms. A process that resumes after two episodes starts a
+    fresh env, whose counter is back at 0; pinned, it still loads what the uninterrupted run did.
+    """
+    config = RunConfig(
+        policy="stub", suite="libero", attacks=["none", "roleplay"], tasks=[TASK], episodes=3,
+        horizon=4, pin_init_states=10,
+    )
+    whole = _pinned_run(monkeypatch, config)
+    assert [(r.attack, r.seed, r.init_state) for r in whole.results] == [
+        ("none", 0, 10), ("none", 1, 11), ("none", 2, 12),
+        ("roleplay", 0, 10), ("roleplay", 1, 11), ("roleplay", 2, 12),
+    ]
+    ledger = tmp_path / "ledger.jsonl"
+    for index, episode in enumerate(whole.results[:2]):
+        append_trial(ledger, record_of(episode, trial_index=index))
+    resumed = _pinned_run(monkeypatch, config, ledger)
+    assert [r.init_state for r in resumed.results] == [r.init_state for r in whole.results]
+
+
+def test_a_pin_on_a_suite_without_fixed_init_states_is_refused() -> None:
+    config = RunConfig(policy="stub", suite="stub", attacks=["none"], episodes=1, pin_init_states=3)
+    with pytest.raises(NotImplementedError, match="keeps no fixed initial states"):
+        run(config)
+
+
+def test_the_cli_takes_the_pin_and_refuses_it_where_it_cannot_apply(tmp_path: Path) -> None:
+    result = CliRunner().invoke(
+        app,
+        ["attack", "--attacks", "none", "--episodes", "1", "--pin-init-states", "3",
+         "--out", str(tmp_path)],
+    )
+    assert result.exit_code != 0
+    assert "keeps no fixed initial states" in result.output

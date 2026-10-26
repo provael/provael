@@ -58,6 +58,14 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   so a fit can begin past the states a scored run recorded. The GPU arm's stage carries it at 0;
   the plan step refuses a non-zero offset against a run without recorded init states, and while
   the image installs provael 0.46.0, whose `calibrate` has no such flag.
+- **`provael attack --pin-init-states START` takes each LIBERO episode's starting scene from its
+  seed: the episode at seed s starts from init state (START + s) mod 50, in every arm.** Why:
+  otherwise lerobot's reset counter picks the scene, so a scored run's scenes depended on what the
+  episodes before it did. Pinned, they are known before the run, and every arm at a seed shares one.
+  The adapter sets the counter before every reset and raises if the state it reads back is not the
+  one asked for. The GPU arm's plan step refuses a pinned stage whose states meet the calibrate
+  fit's window. The `control` stage pins at 45 (states 45-49, clear of the fit's 0-12), and its
+  plan is refused while the image installs provael 0.46.0, which lacks the flag.
 
 ### Fixed
 
@@ -67,6 +75,10 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 - **The roadmap's peer-review proof still said the SPAIS notification was due (#336).** Why: the
   workshop did not accept the paper (notified 17 October 2026). The roadmap, the paper's README and
   the community page now say so, and the arXiv posting in November stands.
+- **The roadmap says the 24 October 2026 date for #136 was missed, and gives the new target, 14
+  November 2026.** Why: the page promises to keep each date or miss it in public. A test now fails
+  on any past target in its Now section without "missed" or "delivered" beside it. Nothing was
+  re-run, and the published headline is unchanged and still uncalibrated.
 
 ## [0.46.0] — 2026-10-21
 

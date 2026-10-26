@@ -365,9 +365,24 @@ STAGES: dict[str, dict[str, str]] = {
         "seeds": "20", "seed": "0", "init_state_offset": "0", "episodes_per_seed": "1",
         "timeout": "5400",
     },
+    # PINNED SCENES, because this is the stage the calibrated re-run repeats: roleplay plus the
+    # four controls, against `none` (#136). Under lerobot 0.5.1 a LIBERO env walks its 50 fixed
+    # initial states with a reset counter the seed never reaches, so two arms at one seed start
+    # from different scenes unless the run pins them. `pin_init_states` takes the scene from the
+    # seed instead: the episode at seed s starts from init state (45 + s) mod 50 on every task, for
+    # every arm, so McNemar's (task, seed) pairs share one.
+    #
+    # WHY 45. Seeds 0-4 land on 45-49, as far along the list as five seeds go. The plan step checks
+    # them against the calibrate stage's fit window (0-12, from its offset of 0) per task and
+    # refuses on any overlap; the fit's tuning, eval and attacked rollouts walk on from there and
+    # nothing plans them, so the end of the list is the last place they reach.
+    #
+    # Only a stage that carries the key passes `--pin-init-states` (see the command below), and the
+    # plan step refuses this one while PROVAEL_PIN is a release whose `attack` has no such flag.
     "control": {
         "tasks": ALL_TASKS, "attacks": "none,roleplay,control",
         "seeds": "5", "episodes_per_seed": "1", "timeout": "5400",
+        "pin_init_states": "45",
     },
     # THE NEXT ARM, and the only optimized family with a measured basis for asking.
     #
@@ -636,7 +651,10 @@ def redteam(stage: str, task: str | None = None) -> str:
         "--seeds", cfg["seeds"],
         "--episodes-per-seed", cfg["episodes_per_seed"],
         "--horizon", "280",
-        "--seed", "0",
+        # 0 unless a stage says otherwise (none does today). Read from STAGES rather than written
+        # here so a pinned stage's scenes, which the plan step works out from its seeds, are the
+        # scenes the containers load.
+        "--seed", cfg.get("seed", "0"),
         "--out", out,
         # The module docstring has said since 0.37 that sharding "composes with --resume"; until
         # this line, nothing passed it, so a re-dispatched shard started from episode one. The
@@ -650,6 +668,12 @@ def redteam(stage: str, task: str | None = None) -> str:
     # every earlier run of the same name.
     if "query_budget" in cfg:
         cmd += ["--query-budget", cfg["query_budget"]]
+    # The same rule for a scene pin: it changes which scene every episode starts from, so it is
+    # passed only where a stage declares it. The plan step reads the same key, checks the pinned
+    # states against the calibrate stage's fit before anything bills, and refuses while the image's
+    # release predates the flag.
+    if "pin_init_states" in cfg:
+        cmd += ["--pin-init-states", cfg["pin_init_states"]]
     # Say which stage the CONTAINER thinks it is running. The stage bug above was invisible
     # precisely because nothing in the output named the stage, so a wrong-stage run read as a
     # right one.

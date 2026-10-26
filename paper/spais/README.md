@@ -21,6 +21,7 @@ references" rule holds with margin) and passes `check_anonymity.sh` — the styl
 Submitted to SPAIS@CoRL 2026 on OpenReview before the deadline as submission #35; not accepted,
 notified 17 October 2026. The committed `paper.pdf` was last rebuilt in
 d54c965 (#299, 27 September 2026). The calibrated predicate is not in the submitted paper: its
-re-fit is due 24 October 2026 (#136) and will be published whichever way it comes out.
+re-fit was due 24 October 2026 and missed that date; the new target is 14 November 2026 (#136), and
+the result will be published whichever way it comes out.
 
 Build (needs `tectonic`): `tectonic -X compile paper.tex && ./check_anonymity.sh`

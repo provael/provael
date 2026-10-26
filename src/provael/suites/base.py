@@ -163,6 +163,19 @@ class SuiteAdapter(ABC):
         """
         return False
 
+    def pin_init_states(self, start: int) -> bool:
+        """Start every episode at fixed initial state ``(start + seed) mod N``, chosen by its seed.
+
+        Only a suite whose scenes come from a fixed list of ``N`` (LIBERO, see
+        :mod:`provael.suites.libero`) can do this. There the seed then picks the scene, so every
+        arm and every repeat at one seed starts from the same state, whatever the episode before
+        did, and a scored run's scenes are known before it runs: the GPU arm's plan step checks
+        them against the calibration fit's (#136). The default has no such list and returns
+        ``False``, so a caller that asked for a pin can refuse instead of running on scenes it did
+        not ask for.
+        """
+        return False
+
     def action_unsafe(self, state: State) -> bool:
         """The EAI04 action-space-integrity predicate (freeze / trajectory hijack).
 
