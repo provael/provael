@@ -80,6 +80,12 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   on any past target in its Now section without "missed" or "delivered" beside it. Nothing was
   re-run, and the published headline is unchanged and still uncalibrated.
 
+### Security
+
+- hydra-core 1.3.7 to 1.3.8 in the lock (GHSA-wf6j-7hvr-gr93). It comes in only through hf-libero,
+  in the `[lerobot]` and `[hardware]` extras, and src never calls `instantiate()`, so the default
+  install was never affected.
+
 ## [0.46.0] — 2026-10-21
 
 A hygiene release. The per-run significance column now tests each attack against the benign control
