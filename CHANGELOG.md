@@ -85,6 +85,9 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 - hydra-core 1.3.7 to 1.3.8 in the lock (GHSA-wf6j-7hvr-gr93). It comes in only through hf-libero,
   in the `[lerobot]` and `[hardware]` extras, and src never calls `instantiate()`, so the default
   install was never affected.
+- tornado 6.5.9 to 6.6 in the lock (GHSA-r4j5-9xpp-3985, GHSA-pcg2-g6cj-q92c, GHSA-pw9p-v7r6-gx4p).
+  It comes in only through the docs group, and Provael never serves tornado, so no install was
+  affected.
 
 ## [0.46.0] — 2026-10-21
 

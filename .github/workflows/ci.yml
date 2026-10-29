@@ -289,3 +289,16 @@ jobs:
             --format requirements-txt -o audit-extras.txt
           uvx pip-audit==2.10.1 --progress-spinner off -r audit-extras.txt \
             --ignore-vuln GHSA-f7vj-73pm-m822
+
+      # The docs group is not what `pip install provael` resolves either: a dependency group never
+      # reaches the published metadata, and the docs toolchain never starts a tornado server. So
+      # this lane reports without gating too. `uv export` takes the default groups, so `dev` is in
+      # the gating lane above, but `docs` is not one: tornado 6.5.9 sat in the lock with three
+      # advisories (GHSA-r4j5-9xpp-3985 and two more, 28 October 2026, all fixed in 6.6) that no
+      # lane could see.
+      - name: Audit docs group (informational)
+        continue-on-error: true
+        run: |
+          uv export --only-group docs --no-emit-project --no-hashes --no-annotate --quiet \
+            --format requirements-txt -o audit-docs.txt
+          uvx pip-audit==2.10.1 --progress-spinner off -r audit-docs.txt
