@@ -45,11 +45,13 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   command left out `--seeds` and `--horizon`, so it ran the CLI defaults (10 episodes of 8 steps)
   rather than the published settings; it now carries `--seeds 5 --horizon 280` and says what the
   defaults do. `docs/attacks.md` still read the roleplay result as SmolVLA being redirected (88%,
-  44/50) and attributed the arms' separation to meaning, the reading E-2026-12 withdrew; it now gives
-  the 14 September run (42/50 against 1/50) and the control arms. The package docstring no longer calls
-  `PROVAEL_INTEGRATION` a gate on `provael attack`, which only records it, and a comment in
-  `mlbom.py` no longer dates ML-BOM to CycloneDX 1.6 (it entered the spec at 1.5). Eighteen in-page
-  links that used GitHub's heading ids now use the docs site's, so they land on their section.
+  44/50) and attributed the arms' separation to meaning, the reading E-2026-12 withdrew; it now
+  gives the 14 September run (42/50 against 1/50) and the control arms. The package docstring no
+  longer says SmolVLA runs are gated behind `PROVAEL_INTEGRATION`: `provael attack` on SmolVLA does
+  not read it (the studies, the GR00T adapter and the real-model tests do), and every run records
+  it. A comment in `mlbom.py` no longer dates ML-BOM to CycloneDX 1.6 (it entered the spec at 1.5).
+  Eighteen in-page links that used GitHub's heading ids now use the docs site's, so they land on
+  their section.
 - **Dependabot's security jobs now read ignore rules.** Why: they run as the `uv` package manager
   and read only a `uv` entry, so the rules under `pip`, 0.46.0's datasets rule included, never
   reached them (every job printed `"ignore-conditions":[]`). A security-only `uv` entry

@@ -9,8 +9,9 @@ policy into an *unsafe* state. The headline metric is the Attack Success Rate (A
 The core (abstractions, attacks, scoring, runner, report, CLI) runs on a plain CPU
 with no GPU and no model/dataset download, using a deterministic StubPolicy and
 StubSuite. Real VLA policies (e.g. SmolVLA via LeRobot) live behind the optional
-``provael[lerobot]`` extra. ``PROVAEL_INTEGRATION=1`` gates the studies under
-``provael.studies``; a ``provael attack`` run records it in its execution manifest.
+``provael[lerobot]`` extra. ``PROVAEL_INTEGRATION=1`` un-skips the real-model tests and gates
+the studies under ``provael.studies`` and the GR00T adapter; ``provael attack`` on SmolVLA does
+not read it, and every run records it in its execution manifest.
 """
 
 __version__ = "0.46.0"
