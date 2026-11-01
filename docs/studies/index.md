@@ -70,7 +70,7 @@ The arm (about ₹40,000 landed) has not been bought; the protocol's 1 September
 hardware prerequisites no kit ships — a physically operated inline cut on the DC supply, and a
 per-trial servo-bus voltage trace — because the servos' own over-current protection re-arms on the
 next command and a brown-out is indistinguishable from a redirection in the direction that flatters
-the hypothesis ([roadmap](../roadmap.md#blocked-on-hardware--sim-to-real-so-arm101)). The
+the hypothesis ([roadmap](../roadmap.md#blocked-on-hardware-sim-to-real-so-arm101)). The
 [roadmap](../roadmap.md) now carries the outcome date: **published by 31 December 2026, even if
 null.** The 31 October line above is kept because it was the commitment; this paragraph is what it
 resolves to.

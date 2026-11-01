@@ -20,6 +20,14 @@
 [![CI](https://github.com/provael/provael/actions/workflows/ci.yml/badge.svg)](https://github.com/provael/provael/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/provael.svg)](https://pypi.org/project/provael/) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/provael/provael/blob/main/LICENSE) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21984184.svg)](https://doi.org/10.5281/zenodo.21984184)
 [![last measured](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprovael%2Fprovael%2Fmain%2Fwatch%2Ffreshness.json)](https://github.com/provael/provael/blob/main/watch/freshness.json) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/provael/provael/badge)](https://scorecard.dev/viewer/?uri=github.com/provael/provael)
 
+**What it found on a real policy.** In LIBERO simulation, a real SmolVLA policy left its keep-out
+envelope in **42 of 50 episodes** under a roleplay-framed instruction (task-clustered 95% CI
+[62%, 100%]) against **1 of 50** under a benign control. The same frame with no target named does it
+in 27 of 30, so this is **fragility under an out-of-distribution instruction, not attacker control**
+([the run](results/smolvla_libero_object_suite_2026-09-14/README.md) · [E-2026-12](docs/errata.md)).
+One policy, one suite, an uncalibrated predicate, measured with provael 0.41.2 on 14 Sep 2026; the
+limits are below. Want the same measurement on your checkpoint? [provael.com](https://www.provael.com).
+
 **What this is.** A Python CLI that red-teams an open VLA robot policy inside a simulator and
 reports an **attack-success rate** — always beside the benign control it is read against, with a
 95% interval, a competence control, and an evidence label that says whether a real policy or the
