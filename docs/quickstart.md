@@ -1,3 +1,7 @@
+---
+description: "Install Provael and run a first red-team pass on a CPU in under a minute, then point it at a real SmolVLA or π0.5 policy in LIBERO."
+---
+
 # Quickstart
 
 Runs in well under a second on a CPU — no GPU, no model download.

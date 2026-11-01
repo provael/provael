@@ -1,3 +1,7 @@
+---
+description: "Use Provael as a Python library: wrap a VLA robot policy and a simulation suite in two small interfaces, then run attacks from code."
+---
+
 # Python API
 
 Provael is model- and suite-agnostic via two tiny abstractions. Use it as a library, not just a

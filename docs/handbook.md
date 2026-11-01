@@ -1,3 +1,7 @@
+---
+description: "Outline of a planned handbook on red-teaming VLA robot policies. No chapter is written yet; the outline shows what it will cover."
+---
+
 # The VLA Red-Teaming Handbook (outline)
 
 !!! warning "Not started"

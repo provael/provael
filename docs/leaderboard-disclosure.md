@@ -1,3 +1,7 @@
+---
+description: "What Provael commits to before it publishes an attack success rate for a robot policy it did not train."
+---
+
 # Measuring someone else's policy
 
 This page states what Provael does **before** publishing an attack-success rate for a policy it

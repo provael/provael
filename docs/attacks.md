@@ -1,3 +1,7 @@
+---
+description: "The attack families Provael registers against VLA robot policies: what each perturbs, its parameters and its Embodied AI Top 10 risk."
+---
+
 # Attack catalog
 
 **Seventeen** adversarial families of templated, auditable attacks plus two non-adversarial

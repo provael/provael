@@ -33,6 +33,14 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ### Changed
 
+- **The README leads with the measured result, and the main docs pages describe themselves.** Why:
+  its first screen showed a fixture demo, badges, the evidence formats and five limits, but never
+  the one real-policy result, so a visitor met the caveats before the number they qualify. A short
+  block now states it as the site and errata do (42 of 50 against 1 of 50 benign, task-clustered
+  95% CI [62%, 100%], fragility per E-2026-12) above "What this is". Seven docs pages (home,
+  quickstart, attacks, Python API, handbook, Top 10, leaderboard disclosure) carry their own
+  meta description; every page had shared the site's one, so search results could not tell them
+  apart.
 - **Dependabot's security jobs now read ignore rules.** Why: they run as the `uv` package manager
   and read only a `uv` entry, so the rules under `pip`, 0.46.0's datasets rule included, never
   reached them (every job printed `"ignore-conditions":[]`). A security-only `uv` entry

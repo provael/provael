@@ -1,3 +1,7 @@
+---
+description: "Red-team open Vision-Language-Action (VLA) robot policies in simulation and report an attack success rate beside its benign control. Apache-2.0."
+---
+
 # Provael™
 
 **Prove it. Prevail.** Red-team open **Vision-Language-Action (VLA)** robot policies in

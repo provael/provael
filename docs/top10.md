@@ -1,3 +1,7 @@
+---
+description: "A draft list of the ten main security risks for robots driven by Vision-Language-Action policies, v0.2, open to contributions."
+---
+
 # The Embodied AI Security Top 10 (v0.2)
 
 ### Top 10 Security Risks for Embodied AI & Vision-Language-Action (VLA) Systems — community draft
