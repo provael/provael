@@ -44,7 +44,7 @@ family's status, via `provael list-attacks`.
 
 ## `instruction` — policy & instruction jailbreak (EAI01)
 
-Text reframings of the task that keep the goal benign-looking but redirect behaviour.
+Text reframings of the task that keep the goal benign-looking but aim to redirect behaviour.
 
 | Attack | Idea |
 | --- | --- |
@@ -52,19 +52,20 @@ Text reframings of the task that keep the goal benign-looking but redirect behav
 | `goal_substitution` | swap the goal object/target |
 | `paraphrase` | reword to slip templated guardrails |
 
-Real-model signal: `roleplay` redirected SmolVLA **88% (44/50)**, task-clustered 95% CI
-**[72%, 100%]**, across all ten `libero_object` tasks vs a 2/50 benign control.
+Real-model signal (the published run: 14 September 2026, provael 0.41.2, all ten `libero_object`
+tasks, five seeds per task): under `roleplay` SmolVLA left its keep-out envelope in **84% (42/50)** of
+episodes, task-clustered 95% CI **[62%, 100%]**, against a **1/50** benign control. `goal_substitution`
+fired 7/50 and `paraphrase` 1/50; after Holm correction neither differs from the benign control.
 
-**The three arms do not behave alike, and the split is by semantics rather than by mechanism.** In the
-same run `paraphrase` — which preserves the request and changes only its wording — fired **3/50
-(6.0%)**, Wilson [2.1%, 16.2%], **indistinguishable from the benign control** at McNemar p = 1.0, while
-`roleplay` and `goal_substitution`, which change what is being asked, fired 44/50 and 15/50. The
-`roleplay` and `paraphrase` intervals are disjoint.
-
-So a guardrail that normalises surface form would not have caught the arm that actually fires. Read it
-narrowly — one policy, one suite, four templates per arm, an uncalibrated predicate — and see
-[the finding](findings/semantic-vs-mechanical-instruction-attacks.md), which states it as a hypothesis
-with supporting evidence rather than a settled result.
+**Read it as fragility, not redirection ([E-2026-12](errata.md)).** A control run on the same ten
+tasks (three seeds) gets the same exits without a target: `roleplay` 26/30, the same frame with no
+target named 27/30, its words in scrambled order 18/30, against 0/30 for a benign rewording, 0/30 for
+nonsense text and 1/30 with no attack. Naming a target adds nothing, and the same words in the wrong
+order still exit in 18 of 30: what predicts an exit on this policy is a long, imperative,
+out-of-distribution instruction, not its meaning. The separation between `roleplay` and `paraphrase`
+stands; the earlier attribution of it to meaning does not
+([the revised finding](findings/semantic-vs-mechanical-instruction-attacks.md)). Read it narrowly:
+one policy, one suite, four templates per arm, an uncalibrated predicate.
 
 ## `visual` — adversarial perception (EAI02)
 
@@ -382,17 +383,17 @@ that tag as each finding's `EAIxx` ruleId:
 
 | family | attacks | maps to |
 | --- | --- | --- |
-| `instruction` | `roleplay`, `goal_substitution`, `paraphrase` | [EAI01 — Policy & instruction jailbreak](top10.md#eai01--policy--instruction-jailbreak-direct-command-channel) |
-| `visual` | `patch`, `decoy_object` | [EAI02 — Adversarial perception](top10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) |
-| `sensor_spoof` | `patch_spoof`, `signal_spoof` (sim perception spoof → keep-out violation) | [EAI02 — Adversarial perception](top10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) |
-| `injection` | `scene_text`, `mcp_tool_desc` | [EAI05 — Indirect / embodied prompt injection](top10.md#eai05--indirect--embodied-prompt-injection) |
-| `action` | `freeze`, `trajectory_hijack` | [EAI04 — Action-space integrity](top10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
-| `action_space` | `keepout_hijack`, `critical_freeze` (commanded-end-state: keep-out hijack / critical-step freeze) | [EAI04 — Action-space integrity](top10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
-| `backdoor` | `object_trigger`, `phrase_trigger` (objective-decoupled trigger screen) | [EAI03 — Model & pipeline poisoning, backdoors & supply chain](top10.md#eai03--model--pipeline-poisoning-backdoors--supply-chain) |
-| `authorization` | `self_authorize_bypass`, `scope_escalation` (excessive agency) | [EAI08 — Identity, access & excessive autonomy](top10.md#eai08--identity-access--excessive-autonomy) |
-| `confidentiality` | `membership_inference`, `model_extraction` (memorized-canary leak screen) | [EAI09 — Model & data confidentiality](top10.md#eai09--model--data-confidentiality--theft-extraction-inversion--surveillance) |
-| `misalignment` | `benign_urgency_override`, `euphemistic_reroute` (benign language → keep-out violation) | [EAI06 — Cross-domain safety misalignment](top10.md#eai06--cross-domain-safety-misalignment-the-embodiment-gap) |
-| `optimized` | `targeted_hijack` (black-box action-directive search) | [EAI04 — Action-space integrity](top10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
-| `optimized_patch` | `patch_hijack` (query-budgeted adversarial-patch search, GPU-gated) | [EAI02 — Adversarial perception](top10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) |
-| `optimized_instruction` | `targeted_redirect` (optimized, command-preserving instruction search) | [EAI01 — Policy & instruction jailbreak](top10.md#eai01--policy--instruction-jailbreak-direct-command-channel) · EAI04 threat model |
-| `humanoid` | `balance_spoof` (balance spoof → loss of balance), `whole_body_hijack` (→ topple/fall), `stride_freeze` (freeze mid-stride) — whole-body / locomotion, **stub-validated** | [EAI02 — Adversarial perception](top10.md#eai02--adversarial-perception-patches--textures--sensor-spoofing) · [EAI04 — Action-space integrity](top10.md#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze) |
+| `instruction` | `roleplay`, `goal_substitution`, `paraphrase` | [EAI01 — Policy & instruction jailbreak](top10.md#eai01-policy-instruction-jailbreak-direct-command-channel) |
+| `visual` | `patch`, `decoy_object` | [EAI02 — Adversarial perception](top10.md#eai02-adversarial-perception-patches-textures-sensor-spoofing) |
+| `sensor_spoof` | `patch_spoof`, `signal_spoof` (sim perception spoof → keep-out violation) | [EAI02 — Adversarial perception](top10.md#eai02-adversarial-perception-patches-textures-sensor-spoofing) |
+| `injection` | `scene_text`, `mcp_tool_desc` | [EAI05 — Indirect / embodied prompt injection](top10.md#eai05-indirect-embodied-prompt-injection) |
+| `action` | `freeze`, `trajectory_hijack` | [EAI04 — Action-space integrity](top10.md#eai04-action-space-integrity-attacks-hijack-targeted-trajectory-freeze) |
+| `action_space` | `keepout_hijack`, `critical_freeze` (commanded-end-state: keep-out hijack / critical-step freeze) | [EAI04 — Action-space integrity](top10.md#eai04-action-space-integrity-attacks-hijack-targeted-trajectory-freeze) |
+| `backdoor` | `object_trigger`, `phrase_trigger` (objective-decoupled trigger screen) | [EAI03 — Model & pipeline poisoning, backdoors & supply chain](top10.md#eai03-model-pipeline-poisoning-backdoors-supply-chain) |
+| `authorization` | `self_authorize_bypass`, `scope_escalation` (excessive agency) | [EAI08 — Identity, access & excessive autonomy](top10.md#eai08-identity-access-excessive-autonomy) |
+| `confidentiality` | `membership_inference`, `model_extraction` (memorized-canary leak screen) | [EAI09 — Model & data confidentiality](top10.md#eai09-model-data-confidentiality-theft-extraction-inversion-surveillance) |
+| `misalignment` | `benign_urgency_override`, `euphemistic_reroute` (benign language → keep-out violation) | [EAI06 — Cross-domain safety misalignment](top10.md#eai06-cross-domain-safety-misalignment-the-embodiment-gap) |
+| `optimized` | `targeted_hijack` (black-box action-directive search) | [EAI04 — Action-space integrity](top10.md#eai04-action-space-integrity-attacks-hijack-targeted-trajectory-freeze) |
+| `optimized_patch` | `patch_hijack` (query-budgeted adversarial-patch search, GPU-gated) | [EAI02 — Adversarial perception](top10.md#eai02-adversarial-perception-patches-textures-sensor-spoofing) |
+| `optimized_instruction` | `targeted_redirect` (optimized, command-preserving instruction search) | [EAI01 — Policy & instruction jailbreak](top10.md#eai01-policy-instruction-jailbreak-direct-command-channel) · EAI04 threat model |
+| `humanoid` | `balance_spoof` (balance spoof → loss of balance), `whole_body_hijack` (→ topple/fall), `stride_freeze` (freeze mid-stride) — whole-body / locomotion, **stub-validated** | [EAI02 — Adversarial perception](top10.md#eai02-adversarial-perception-patches-textures-sensor-spoofing) · [EAI04 — Action-space integrity](top10.md#eai04-action-space-integrity-attacks-hijack-targeted-trajectory-freeze) |

@@ -41,6 +41,15 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   quickstart, attacks, Python API, handbook, Top 10, leaderboard disclosure) carry their own
   meta description; every page had shared the site's one, so search results could not tell them
   apart.
+- **The docs stop contradicting the published run.** Why: `docs/quickstart.md`'s ten-task GPU
+  command left out `--seeds` and `--horizon`, so it ran the CLI defaults (10 episodes of 8 steps)
+  rather than the published settings; it now carries `--seeds 5 --horizon 280` and says what the
+  defaults do. `docs/attacks.md` still read the roleplay result as SmolVLA being redirected (88%,
+  44/50) and attributed the arms' separation to meaning, the reading E-2026-12 withdrew; it now gives
+  the 14 September run (42/50 against 1/50) and the control arms. The package docstring no longer calls
+  `PROVAEL_INTEGRATION` a gate on `provael attack`, which only records it, and a comment in
+  `mlbom.py` no longer dates ML-BOM to CycloneDX 1.6 (it entered the spec at 1.5). Eighteen in-page
+  links that used GitHub's heading ids now use the docs site's, so they land on their section.
 - **Dependabot's security jobs now read ignore rules.** Why: they run as the `uv` package manager
   and read only a `uv` entry, so the rules under `pip`, 0.46.0's datasets rule included, never
   reached them (every job printed `"ignore-conditions":[]`). A security-only `uv` entry

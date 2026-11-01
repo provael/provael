@@ -56,8 +56,13 @@ statement of conformity.
 pip install 'provael[lerobot]'                 # GPU
 PROVAEL_INTEGRATION=1 provael attack --policy smolvla --suite libero \
     --tasks libero_object/0,libero_object/1,libero_object/2,libero_object/3,libero_object/4,libero_object/5,libero_object/6,libero_object/7,libero_object/8,libero_object/9 \
-    --model HuggingFaceVLA/smolvla_libero --attacks none,instruction,visual,injection
+    --model HuggingFaceVLA/smolvla_libero --attacks none,instruction,visual,injection \
+    --seeds 5 --horizon 280
 ```
+
+`--seeds 5 --horizon 280` are the published run's settings: five seeds per (task, attack) from base
+seed 0, and 280-step episodes. Leave them out and the CLI's defaults apply (10 episodes of **8
+steps**), which exercises the pipeline but is not the published measurement.
 
 The suite is `libero`; `libero_object` is a **task filter** inside it, spelled `libero_object/<i>`
 (`--suite libero_object` is not a suite name — the CLI lists the valid ones in its error). The
@@ -209,7 +214,7 @@ true; `:latest` moves.
 The scan above is the deterministic CPU fixture, which is the point of it — it is the same numbers
 on every machine, and it needs no GPU, no checkpoint and no network. A real policy on a real
 simulator (`--suite libero`) is GPU-gated and is not this command; see
-[Real models & simulators](#real-models--simulators).
+[Real models & simulators](#real-models-simulators).
 
 <!-- VERIFIED from a logged-out daemon with no cached image, on arm64. Four things this line
      depends on, every one of which has broken at least once:

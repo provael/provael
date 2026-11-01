@@ -36,7 +36,8 @@ from provael.types import RunReport
 #: Filename written into a run's output directory.
 ML_BOM_JSON = "report.mlbom.json"
 
-#: CycloneDX spec version — 1.6 introduced the ML-BOM model-card capability and is widely consumed.
+#: CycloneDX spec version emitted. ML-BOM (model cards) entered the spec at 1.5; 1.6 is the
+#: version this module writes, and is widely consumed.
 SPEC_VERSION = "1.6"
 
 #: Namespace of the UUIDv5 in :func:`serial_number`. Fixed forever: changing it would change the

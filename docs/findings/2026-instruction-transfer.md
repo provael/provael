@@ -209,7 +209,7 @@ sampler was not seeded when this ran, so this is **one draw**, not a reproducibl
 0.38.0 the runner seeds it and records `policy_seed` per episode, but that cannot be applied
 retroactively to a measurement already taken.
 [The full result](https://github.com/provael/provael/blob/main/results/smolvla_libero_object_suite/README.md) ·
-[Read the write-up](#the-finding) ·
+[Read the write-up](#the-finding-as-written-in-june-2026-superseded-twice-see-the-box-above) ·
 [Scope & honest limitations](https://github.com/provael/provael/blob/main/README.md#scope-and-honest-limitations).
 
 ### The 9 August 2026 table (0.32.0, L4) — the record the README used to lead with
