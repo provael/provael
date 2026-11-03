@@ -351,18 +351,19 @@ def test_a_pin_needs_an_image_whose_provael_takes_the_flag(monkeypatch: pytest.M
 def test_the_committed_control_stage_pins_clear_of_the_fit(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """45-49 against the committed fit's 0-12: clear, and refused only by the 0.46.0 image.
+    """45-49 against the committed fit's 0-12: clear, on an image whose `attack` takes the flag.
 
-    This is the state on main until a release carries `--pin-init-states` and `PROVAEL_PIN` moves
-    to it. The change that moves the pin updates this test with it.
+    Until 0.47.0 the plan refused this stage only because the image installed 0.46.0, which has no
+    `--pin-init-states`; the 0.47.0 release moved `PROVAEL_PIN` to the release that carries it, so
+    the plan passes. A pin moved back to a release without the flag fails here.
     """
     assert plan_module.stages()["control"]["pin_init_states"] == "45"
-    assert plan_module.main(["control"]) == 1
+    assert plan_module.main(["control"]) == 0
     out = capsys.readouterr().out
     assert "Seeds 0-4 put it on init states 45-49 of libero_object/0-9" in out
     assert "can start from init states 0-12 on each task" in out
     assert "No shared scene" in out
-    assert "takes `--pin-init-states`" in out
+    assert "Refused" not in out
 
 
 def test_the_container_passes_the_pin_and_the_seed_the_plan_reads() -> None:

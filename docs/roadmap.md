@@ -17,7 +17,7 @@ runs", "no peer review" — and each has a date this page will keep or publicly 
    schema 8); `provael calibrate --init-state-offset` starts a fit past a chosen state; the GPU
    arm's plan step refuses a fit on the published headline's seeds or opening scene, and a scored
    stage whose pinned scenes meet the fit's; and `provael attack --pin-init-states` takes each
-   episode's scene from its seed. All of it is on main, not yet in a release. Nothing has been
+   episode's scene from its seed. All of it ships in 0.47.0 (4 November 2026). Nothing has been
    re-run: the published headline is unchanged and still uncalibrated, and the scheduled campaign is
    still paused.
    The hand-picked keep-out box fires on 4–5% of benign episodes; ten per-task fits are withheld
