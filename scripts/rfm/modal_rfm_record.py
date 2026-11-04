@@ -49,7 +49,10 @@ import uuid
 
 import modal  # type: ignore[import-not-found, unused-ignore]
 
-REPO = pathlib.Path(__file__).resolve().parents[2]
+#: The checkout. Modal imports this module a second time inside the container, from /root/, where
+#: ``parents[2]`` does not exist and the checkout is the copy mounted at /src (``add_local_dir``
+#: below). Launch 856205289e47 died on exactly that import on 4 November 2026.
+REPO = pathlib.Path(__file__).resolve().parents[2] if modal.is_local() else pathlib.Path("/src")
 sys.path.insert(0, str(REPO / "scripts" / "rfm"))
 
 import rfm_plan as plan  # noqa: E402 - stdlib only, beside this file
@@ -81,8 +84,13 @@ def _ignore(path: pathlib.Path) -> bool:
     return not (inside or parent_of_kept)
 
 
-COMMIT = _git("rev-parse", "--short", "HEAD")
-DIRTY = bool(_git("status", "--porcelain", "--untracked-files=no"))
+#: Read from git on the launching machine. The container's copy has no .git, so there they come
+#: from the environment the image was built with, which keeps the image definition the same on
+#: both sides of the import.
+COMMIT = (_git("rev-parse", "--short", "HEAD") if modal.is_local()
+          else os.environ.get("PROVAEL_COMMIT", ""))
+DIRTY = (bool(_git("status", "--porcelain", "--untracked-files=no")) if modal.is_local()
+         else os.environ.get("PROVAEL_SOURCE_DIRTY") == "1")
 
 volume = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)
 cache = modal.Volume.from_name(CACHE_VOLUME, create_if_missing=True)

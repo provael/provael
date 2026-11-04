@@ -18,9 +18,10 @@ import importlib.util
 import json
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
-from types import ModuleType, SimpleNamespace
+from types import FunctionType, ModuleType, SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -155,6 +156,45 @@ def test_the_modal_function_takes_its_limits_from_the_plan() -> None:
     assert 0 < plan.MODAL_CPU_REQUEST_CORES <= plan.MODAL_CPU_CORES
     assert 0 < plan.MODAL_MEMORY_REQUEST_MIB <= plan.MODAL_MEMORY_MIB
     assert plan.MODAL_GPU == "L4"
+
+
+def test_the_modal_script_imports_inside_the_container(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Modal re-imports the script from /root/ in the container, with no checkout around it.
+
+    Launch 856205289e47 (4 November 2026) waited 23 minutes for an L4 and then died on the import:
+    ``Path(__file__).parents[2]`` does not exist under /root/. The re-import here runs under a stub
+    of modal that answers ``is_local()`` with False, and with git unreachable.
+    """
+
+    class _Chain:
+        """Every modal object: an attribute or a call returns the chain, a decorator its function."""
+
+        def __getattr__(self, name: str) -> _Chain:
+            return self
+
+        def __call__(self, *args: object, **kwargs: object) -> object:
+            if len(args) == 1 and not kwargs and isinstance(args[0], FunctionType):
+                return args[0]
+            return self
+
+    stub = ModuleType("modal")
+    stub.__getattr__ = lambda name: _Chain()
+    stub.is_local = lambda: False
+    monkeypatch.setitem(sys.modules, "modal", stub)
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    monkeypatch.setenv("PROVAEL_COMMIT", "abc1234")
+    monkeypatch.setenv("PROVAEL_SOURCE_DIRTY", "0")
+
+    def no_git(*args: object, **kwargs: object) -> None:
+        raise AssertionError(f"the container has no checkout to run git in: {args!r}")
+
+    monkeypatch.setattr(subprocess, "run", no_git)
+    source = (RFM / "modal_rfm_record.py").read_text(encoding="utf-8")
+    namespace: dict[str, object] = {"__name__": "modal_rfm_record",
+                                    "__file__": "/root/modal_rfm_record.py"}
+    exec(compile(source, "/root/modal_rfm_record.py", "exec"), namespace)  # noqa: S102
+    assert namespace["REPO"] == Path("/src")
+    assert namespace["COMMIT"] == "abc1234" and namespace["DIRTY"] is False
 
 
 # -- determinism ---------------------------------------------------------------------------------
