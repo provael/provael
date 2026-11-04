@@ -59,16 +59,24 @@ def select_seed(outcomes: Sequence[tuple[int, bool]]) -> int | None:
 # --------------------------------------------------------------------------------------------- #
 # Modal cost model. Prices read from https://modal.com/pricing on 4 November 2026: Nvidia L4
 # $0.000222/s, CPU $0.0000131 per physical core per second, memory $0.00000222 per GiB per second.
-# Modal bills CPU and memory at max(request, use); the function requests and caps both, so the
-# per-second rate below is an upper bound on what it can bill while it runs.
+# Modal bills CPU and memory at max(request, use), and use cannot pass a cap (CPU is throttled at
+# its limit, memory over its limit is OOM-killed); the function caps both above a smaller request,
+# so the per-second rate below, computed from the caps, is an upper bound on what it can bill.
 # --------------------------------------------------------------------------------------------- #
 
 MODAL_GPU = "L4"
 MODAL_GPU_USD_PER_S = 0.000222
 MODAL_CPU_USD_PER_CORE_S = 0.0000131
 MODAL_MEM_USD_PER_GIB_S = 0.00000222
+#: The caps. The bill is computed from these, so lowering a request never raises it.
 MODAL_CPU_CORES = 4.0
 MODAL_MEMORY_MIB = 16384
+#: The requests, which decide where the function can be placed. On 4 November 2026 a request of the
+#: full caps (4 cores, 16 GiB) sat unscheduled for over 15 minutes ("waiting to be scheduled on a
+#: GPU_L4 worker"), while the product's L4 lanes run on Modal's default reservation and the one
+#: measured `cpu=4` reservation bought no speed-up (examples/gpu-ci/modal_libero_suite.py, 14 Sep).
+MODAL_CPU_REQUEST_CORES = 1.0
+MODAL_MEMORY_REQUEST_MIB = 4096
 MODAL_TIMEOUT_S = 5400
 #: A GPU function on Modal is always preemptible, and Modal restarts a preempted input on the same
 #: input. The function counts its attempts per launch on the Volume and refuses one past this, so a
@@ -89,7 +97,7 @@ COMPOSE_SECONDS = 300.0
 
 
 def modal_usd_per_second() -> float:
-    """What one second of the recording function can cost at its requested and capped resources."""
+    """What one second of the recording function can cost at most: every resource at its cap."""
     return (
         MODAL_GPU_USD_PER_S
         + MODAL_CPU_CORES * MODAL_CPU_USD_PER_CORE_S
@@ -127,8 +135,9 @@ def cost_summary() -> str:
     likely = modal_plan_seconds(1, benign_steps=220)
     worst = modal_plan_seconds(len(SELECTION_SEEDS))
     return (
-        f"Modal {MODAL_GPU}, {MODAL_CPU_CORES:g} CPU cores and {MODAL_MEMORY_MIB // 1024} GiB, "
-        f"requested and capped: at most ${rate:.6f}/s (${rate * 3600:.2f}/h).\n"
+        f"Modal {MODAL_GPU}, capped at {MODAL_CPU_CORES:g} CPU cores and "
+        f"{MODAL_MEMORY_MIB // 1024} GiB (requested {MODAL_CPU_REQUEST_CORES:g} and "
+        f"{MODAL_MEMORY_REQUEST_MIB // 1024}): at most ${rate:.6f}/s (${rate * 3600:.2f}/h).\n"
         f"Expected: {likely / 60:.0f} min (${likely * rate:.2f}) if seed 0 leaves the envelope; "
         f"{worst / 60:.0f} min (${worst * rate:.2f}) if all {len(SELECTION_SEEDS)} seeds are "
         "needed.\n"
@@ -145,9 +154,11 @@ __all__ = [
     "HORIZON",
     "MODAL_BUDGET_USD",
     "MODAL_CPU_CORES",
+    "MODAL_CPU_REQUEST_CORES",
     "MODAL_GPU",
     "MODAL_MAX_ATTEMPTS",
     "MODAL_MEMORY_MIB",
+    "MODAL_MEMORY_REQUEST_MIB",
     "MODAL_TIMEOUT_S",
     "OUTPUT_DIR",
     "PIN_START",

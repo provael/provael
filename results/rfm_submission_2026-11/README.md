@@ -152,8 +152,10 @@ runs the same campaign on one L4, and copies the outputs back here (without `tra
 everything.
 
 Cost, from Modal's pricing page as read on 4 November 2026 (L4 $0.000222 a second, CPU $0.0000131
-per core per second, memory $0.00000222 per GiB per second): the function requests and caps 4 cores
-and 16 GiB, so it bills at most $0.000310 a second ($1.12 an hour). Expected about 29 minutes
+per core per second, memory $0.00000222 per GiB per second): the function caps CPU and memory at 4
+cores and 16 GiB (it requests 1 core and 4 GiB, which decides where it can be placed; Modal bills
+the larger of request and use, and use cannot pass the cap), so it bills at most $0.000310 a second
+($1.12 an hour). Expected about 29 minutes
 ($0.53) if seed 0 leaves the envelope, about 58 minutes ($1.07) if all five seeds are needed, at
 the slowest measured L4 rate of 0.77 seconds per step. A GPU function on Modal is always
 preemptible and a preempted input restarts, so the function counts attempts per launch and refuses

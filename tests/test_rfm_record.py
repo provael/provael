@@ -149,8 +149,11 @@ def test_the_modal_function_takes_its_limits_from_the_plan() -> None:
     assert isinstance(decorator, ast.Call)
     kwargs = {kw.arg: ast.unparse(kw.value) for kw in decorator.keywords}
     assert kwargs["gpu"] == "plan.MODAL_GPU" and kwargs["timeout"] == "plan.MODAL_TIMEOUT_S"
-    assert kwargs["cpu"] == "(plan.MODAL_CPU_CORES, plan.MODAL_CPU_CORES)"
-    assert kwargs["memory"] == "(plan.MODAL_MEMORY_MIB, plan.MODAL_MEMORY_MIB)"
+    assert kwargs["cpu"] == "(plan.MODAL_CPU_REQUEST_CORES, plan.MODAL_CPU_CORES)"
+    assert kwargs["memory"] == "(plan.MODAL_MEMORY_REQUEST_MIB, plan.MODAL_MEMORY_MIB)"
+    # The bill is computed from the caps, which bound it only while no request exceeds its cap.
+    assert 0 < plan.MODAL_CPU_REQUEST_CORES <= plan.MODAL_CPU_CORES
+    assert 0 < plan.MODAL_MEMORY_REQUEST_MIB <= plan.MODAL_MEMORY_MIB
     assert plan.MODAL_GPU == "L4"
 
 

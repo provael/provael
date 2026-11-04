@@ -21,8 +21,8 @@ after every episode, and a completed episode is never re-run, so a preemption re
 
 WHAT IT COSTS, from https://modal.com/pricing as read on 4 November 2026 (L4 $0.000222/s, CPU
 $0.0000131 per core per second, memory $0.00000222 per GiB per second; Modal bills CPU and memory
-at max(request, use), and both are requested and capped here): at most $0.000310 per second
-($1.12 an hour). Expected about 29 minutes ($0.53) when seed 0 leaves the envelope, about 58
+at max(request, use), and both are capped here above a smaller request): at most $0.000310 per
+second ($1.12 an hour). Expected about 29 minutes ($0.53) when seed 0 leaves the envelope, about 58
 minutes ($1.07) when all five seeds are needed (``rfm_plan.modal_plan_seconds``, at the slowest
 measured 0.77 s per step). A GPU function on Modal cannot opt out of preemption, and a preempted
 input is restarted, so the timeout alone bounds one attempt, not the bill: the function counts its
@@ -120,8 +120,8 @@ app = modal.App(APP_NAME, image=image)
 
 @app.function(
     gpu=plan.MODAL_GPU,
-    cpu=(plan.MODAL_CPU_CORES, plan.MODAL_CPU_CORES),
-    memory=(plan.MODAL_MEMORY_MIB, plan.MODAL_MEMORY_MIB),
+    cpu=(plan.MODAL_CPU_REQUEST_CORES, plan.MODAL_CPU_CORES),
+    memory=(plan.MODAL_MEMORY_REQUEST_MIB, plan.MODAL_MEMORY_MIB),
     timeout=plan.MODAL_TIMEOUT_S,
     volumes={"/runs": volume, "/cache": cache},
 )
