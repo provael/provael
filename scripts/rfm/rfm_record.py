@@ -926,8 +926,15 @@ def campaign(
     after_each: Callable[[], None] | None = None,
     compose_anyway: bool = False,
     preset: str = video.PRESET,
+    draw_boundary: bool = False,
 ) -> int:
-    """The whole plan, resumable: a completed episode is never re-run. Returns an exit code."""
+    """The whole plan, resumable: a completed episode is never re-run. Returns an exit code.
+
+    ``draw_boundary`` is off by default (operator decision, 4 November 2026): the predicate
+    fires when the end-effector enters the default box, which the product reads as leaving the
+    benign envelope, so a drawn box would show the arm entering a box under a marker that says
+    it left an envelope.
+    """
     out.mkdir(parents=True, exist_ok=True)
     state: dict[str, Any] = {"kind": "rfm-campaign", "synthetic": synthetic,
                              "selection_seeds": list(SELECTION_SEEDS), "roleplay_runs": []}
@@ -996,7 +1003,7 @@ def campaign(
         return 4
 
     composed = compose(episodes / f"roleplay_seed{selected}", episodes / f"benign_seed{selected}",
-                       out, preset=preset)
+                       out, preset=preset, draw_boundary=draw_boundary)
     state["videos"] = {k: {"file": v["file"], "sha256": v["sha256"], "bytes": v["bytes"]}
                        for k, v in composed["videos"].items()}
     state["result"] = "composed"
@@ -1045,6 +1052,9 @@ def _parser() -> argparse.ArgumentParser:
         cp.add_argument("--compose-anyway", action="store_true")
         cp.add_argument("--horizon", type=int, default=HORIZON)
         cp.add_argument("--preset", default=video.PRESET)
+        cp.add_argument("--draw-boundary", action="store_true",
+                        help="draw the default keep-out box when its projection check passes "
+                             "(off by default)")
     return parser
 
 
@@ -1072,7 +1082,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     return campaign(args.out, synthetic=args.command == "synthetic",
                     strict_determinism=args.strict_determinism, horizon=args.horizon,
-                    compose_anyway=args.compose_anyway, preset=args.preset)
+                    compose_anyway=args.compose_anyway, preset=args.preset,
+                    draw_boundary=args.draw_boundary)
 
 
 if __name__ == "__main__":
