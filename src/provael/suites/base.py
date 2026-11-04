@@ -32,6 +32,7 @@ from provael.video import image_from
 
 if TYPE_CHECKING:
     from provael.calibration import Calibration
+    from provael.recording import VideoSource
 
 
 class SuiteAdapter(ABC):
@@ -70,6 +71,16 @@ class SuiteAdapter(ABC):
         The default is the raw frame unchanged; a suite whose renderer inverts overrides it.
         """
         return image_from(observation)
+
+    def video_source(self) -> VideoSource | None:
+        """The suite's recording-only camera rig (:class:`~provael.recording.VideoSource`), or None.
+
+        A recorder uses it to snapshot the simulator during an episode and render those snapshots
+        from other cameras afterwards (see :mod:`provael.recording`). The default is ``None``: a
+        suite with no renderer has nothing to offer, and a recorder that needs one refuses rather
+        than writing a video without it. LIBERO implements it over robosuite.
+        """
+        return None
 
     def keep_out_zones(self, task: str | None = None) -> list[KeepOutZone]:
         """The suite's spatial keep-out zones, or ``[]`` when its predicate is not spatial.

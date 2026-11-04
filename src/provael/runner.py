@@ -19,6 +19,7 @@ time, so the same config always yields a byte-identical report.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -38,6 +39,7 @@ from provael.evidence import classify_run
 from provael.ledger import TrialKey, append_trial, completed_keys, record_of, results_for
 from provael.policies.base import InputGradientProvider, PolicyAdapter
 from provael.policies.registry import make_policy
+from provael.recording import EpisodeRecorder
 from provael.scoring.asr import (
     adversarial_asr,
     asr_std,
@@ -59,10 +61,18 @@ from provael.types import (
     EaiTag,
     Observation,
     RunReport,
+    State,
     Trajectory,
     init_state_of,
 )
 from provael.video import FrameSink, Mp4Writer, clip_name
+
+#: Builds the recorder for one episode from ``(task, seed, attack name)``; see :func:`run`.
+RecorderFactory = Callable[[str, int, str], EpisodeRecorder]
+
+
+class NonFiniteActionError(ValueError):
+    """A policy emitted NaN or inf. Raised, never scored: see :func:`run_episode`."""
 
 
 def _configure_optimized(
@@ -160,6 +170,129 @@ def _configure_zones(attacks: list[Attack], suite: SuiteAdapter, task: str) -> N
             attack.keep_out_zones = suite.keep_out_zones(task)
 
 
+def _advance(
+    policy: PolicyAdapter,
+    suite: SuiteAdapter,
+    attack: Attack,
+    base_instruction: str,
+    obs: Observation,
+    *,
+    task: str,
+    seed: int,
+    step: int,
+    defense: Defense | None,
+    audit_sink: list[dict[str, str]] | None,
+    recorder: EpisodeRecorder | None,
+) -> tuple[str, Observation, Action, Observation, bool, State]:
+    """One step of the episode loop: perturb, defend, act, reject non-finite, filter, execute.
+
+    The single implementation of a step, shared by the scored loop of :func:`run_episode` and the
+    recording-only steps past its verdict, so the two cannot drift apart. Returns
+    ``(instruction the policy saw, observation it saw, executed action, next observation, done,
+    state)``. Everything a step SCORES stays in the caller.
+    """
+    adversarial_instruction, adv_obs = attack.perturb(base_instruction, obs)
+    # The defense sits HERE and nowhere else: after the attack has produced what the policy
+    # would otherwise receive, before the policy receives it. That is the deployment position,
+    # so a credited result is a claim about a mitigation someone could actually install.
+    #
+    # `adversarial_instruction` is deliberately reassigned, so the recorded instruction is what
+    # the policy ACTUALLY saw. Recording the pre-defense text would make `report.json` describe
+    # an input that was never used.
+    if defense is not None and defense.applicable(adv_obs):
+        if audit_sink is not None:
+            audit_sink.append(
+                {
+                    "task": task,
+                    "attack": attack.name,
+                    "seed": str(seed),
+                    "step": str(step),
+                    **defense.audit(adversarial_instruction),
+                }
+            )
+        adversarial_instruction, adv_obs = defense.apply(adversarial_instruction, adv_obs)
+    if recorder is not None:
+        # Before the policy acts, so a snapshot the recorder takes is the instant it observed.
+        recorder.observed(step, adv_obs)
+    action = policy.act(adv_obs, adversarial_instruction)
+    # Every unsafe predicate downstream is a threshold comparison, and EVERY comparison against
+    # NaN is False — so a policy emitting NaN would score SAFE on all axes and the episode would
+    # be reported as a benign success. Reject non-finite actions at the one boundary they all
+    # cross rather than trusting each predicate to notice. This is a real failure mode for a
+    # real policy (a diverged or numerically unstable head), and silently scoring it safe is the
+    # worst possible outcome for a safety tool.
+    if not np.all(np.isfinite(np.asarray(action, dtype=np.float64))):
+        raise NonFiniteActionError(
+            f"policy '{policy.name}' emitted a non-finite action (NaN/inf) at step {step} of "
+            f"task {task!r} seed {seed}. Refusing to score it: every unsafe threshold "
+            "comparison against NaN is False, so this episode would be recorded as safe."
+        )
+    # The action-side defense sits HERE and nowhere else: after the policy has committed to a
+    # command, before the suite executes it. That is the only position an operator could
+    # actually install a monitor in — everything upstream is the model, everything downstream
+    # is the robot — so a credited action-side result is a claim about something installable.
+    #
+    # Strictly AFTER the non-finite rejection above, which must keep running against the RAW
+    # policy output. Filtering first would let a clamp launder a NaN into a finite value and
+    # hide a diverged head: the episode would then be scored safe, which is the exact failure
+    # that block exists to prevent. A defense must never be able to buy safety by concealing
+    # the policy's own numerical collapse.
+    if defense is not None and defense.applicable(adv_obs):
+        filtered_action = defense.filter_action(action, adv_obs)
+        if audit_sink is not None:
+            audit_sink.append(
+                {
+                    "task": task,
+                    "attack": attack.name,
+                    "seed": str(seed),
+                    "step": str(step),
+                    **defense.audit_action(action, filtered_action),
+                }
+            )
+        action = filtered_action
+    next_obs, done, state = suite.step(action)
+    return adversarial_instruction, adv_obs, action, next_obs, done, state
+
+
+def _record_past_verdict(
+    policy: PolicyAdapter,
+    suite: SuiteAdapter,
+    attack: Attack,
+    base_instruction: str,
+    obs: Observation,
+    *,
+    task: str,
+    seed: int,
+    first_step: int,
+    horizon: int,
+    defense: Defense | None,
+    recorder: EpisodeRecorder,
+) -> str:
+    """Keep stepping after the verdict for ``recorder`` alone; return why the recording ended.
+
+    Called only after the episode's :class:`~provael.types.AttackResult` has been built, so nothing
+    here can reach a measured field. The steps are the same steps (:func:`_advance`) with nothing
+    scored: no decision, no latch, no calibration sample and no defense audit line, because the
+    defense log describes the scored episode. The predicate is still evaluated, through the same
+    :meth:`~provael.suites.base.SuiteAdapter.evaluate_unsafe`, so a viewer can be told where the arm
+    is; that answer goes to the recorder and nowhere else. A NaN past the verdict stops the
+    recording instead of raising: the scored episode is complete and must not be lost to a step
+    that is not part of it.
+    """
+    for t in range(first_step, horizon + 1):
+        try:
+            _, _, action, obs, done, state = _advance(
+                policy, suite, attack, base_instruction, obs,
+                task=task, seed=seed, step=t, defense=defense, audit_sink=None, recorder=recorder,
+            )
+        except NonFiniteActionError:
+            return "non-finite action"
+        recorder.stepped(t, action, unsafe=suite.evaluate_unsafe(state), scored=False)
+        if done:
+            return "done"
+    return "horizon"
+
+
 def run_episode(
     policy: PolicyAdapter,
     suite: SuiteAdapter,
@@ -171,6 +304,7 @@ def run_episode(
     defense: Defense | None = None,
     audit_sink: list[dict[str, str]] | None = None,
     frame_sink: FrameSink | None = None,
+    recorder: EpisodeRecorder | None = None,
 ) -> AttackResult:
     """Play a single episode and return its :class:`AttackResult`.
 
@@ -188,6 +322,12 @@ def run_episode(
     ``frame_sink``, when given, receives per step the image the policy was actually shown (after
     the attack and any defense) and whether that step was scored unsafe — the episode's clip, see
     :mod:`provael.video`. Same rule as ``audit_sink``: caller-owned, never part of the report.
+
+    ``recorder``, when given, observes every step for a video (:mod:`provael.recording`). If it
+    asks to continue past the verdict, the episode keeps stepping after the first unsafe step until
+    the horizon or the suite's own end of episode — for the recorder only. The result is built from
+    the scored loop before any of those steps runs, so it is the result this function returns
+    without a recorder: the same steps, the same verdict, the same every field.
     """
     policy.reset()  # clear per-episode policy state (e.g. SmolVLA's action-chunk queue)
     # Seed the POLICY as well as the environment. `suite.reset` has always seeded the env; the
@@ -203,11 +343,13 @@ def run_episode(
     # rather than inferred later from the seed or the episode order, neither of which survives a
     # resumed run. None on a suite without fixed initial states.
     init_state = init_state_of(obs)
+    if recorder is not None:
+        recorder.begin(suite, task=task, seed=seed, attack=attack.name)
 
     if not attack.applicable(obs):
         # The attack has no surface in this suite (e.g. mcp_tool_desc on a direct LIBERO
         # loop). Record it as not-applicable; scoring excludes it from the ASR denominator.
-        return AttackResult(
+        skipped = AttackResult(
             task=task,
             attack=attack.name,
             family=attack.family,
@@ -225,8 +367,12 @@ def run_episode(
             attacker_access=attack.attacker_access,
             action_head_class=policy.action_head_class or attack.action_head_class,
         )
+        if recorder is not None:
+            recorder.finish(suite, skipped, ended_by="not applicable")
+        return skipped
 
     success = False
+    done = False
     steps_to_success: int | None = None
     adversarial_instruction = base_instruction
     danger = 0.0
@@ -243,63 +389,13 @@ def run_episode(
 
     for t in range(1, horizon + 1):
         steps = t
-        adversarial_instruction, adv_obs = attack.perturb(base_instruction, obs)
-        # The defense sits HERE and nowhere else: after the attack has produced what the policy
-        # would otherwise receive, before the policy receives it. That is the deployment position,
-        # so a credited result is a claim about a mitigation someone could actually install.
-        #
-        # `adversarial_instruction` is deliberately reassigned, so the recorded instruction is what
-        # the policy ACTUALLY saw. Recording the pre-defense text would make `report.json` describe
-        # an input that was never used.
-        if defense is not None and defense.applicable(adv_obs):
-            if audit_sink is not None:
-                audit_sink.append(
-                    {
-                        "task": task,
-                        "attack": attack.name,
-                        "seed": str(seed),
-                        "step": str(t),
-                        **defense.audit(adversarial_instruction),
-                    }
-                )
-            adversarial_instruction, adv_obs = defense.apply(adversarial_instruction, adv_obs)
-        action = policy.act(adv_obs, adversarial_instruction)
-        # Every unsafe predicate downstream is a threshold comparison, and EVERY comparison against
-        # NaN is False — so a policy emitting NaN would score SAFE on all axes and the episode would
-        # be reported as a benign success. Reject non-finite actions at the one boundary they all
-        # cross rather than trusting each predicate to notice. This is a real failure mode for a
-        # real policy (a diverged or numerically unstable head), and silently scoring it safe is the
-        # worst possible outcome for a safety tool.
-        if not np.all(np.isfinite(np.asarray(action, dtype=np.float64))):
-            raise ValueError(
-                f"policy '{policy.name}' emitted a non-finite action (NaN/inf) at step {t} of "
-                f"task {task!r} seed {seed}. Refusing to score it: every unsafe threshold "
-                "comparison against NaN is False, so this episode would be recorded as safe."
-            )
-        # The action-side defense sits HERE and nowhere else: after the policy has committed to a
-        # command, before the suite executes it. That is the only position an operator could
-        # actually install a monitor in — everything upstream is the model, everything downstream
-        # is the robot — so a credited action-side result is a claim about something installable.
-        #
-        # Strictly AFTER the non-finite rejection above, which must keep running against the RAW
-        # policy output. Filtering first would let a clamp launder a NaN into a finite value and
-        # hide a diverged head: the episode would then be scored safe, which is the exact failure
-        # that block exists to prevent. A defense must never be able to buy safety by concealing
-        # the policy's own numerical collapse.
-        if defense is not None and defense.applicable(adv_obs):
-            filtered_action = defense.filter_action(action, adv_obs)
-            if audit_sink is not None:
-                audit_sink.append(
-                    {
-                        "task": task,
-                        "attack": attack.name,
-                        "seed": str(seed),
-                        "step": str(t),
-                        **defense.audit_action(action, filtered_action),
-                    }
-                )
-            action = filtered_action
-        obs, done, state = suite.step(action)
+        # Perturb, defend, act, reject a non-finite action, filter, execute: see _advance, which
+        # the recording-only steps past the verdict share so the two loops cannot drift apart.
+        adversarial_instruction, adv_obs, action, obs, done, state = _advance(
+            policy, suite, attack, base_instruction, obs,
+            task=task, seed=seed, step=t, defense=defense, audit_sink=audit_sink,
+            recorder=recorder,
+        )
 
         danger = float(state.get("danger", danger))
         threshold = float(state.get("threshold", threshold))
@@ -345,6 +441,8 @@ def run_episode(
             shown = suite.display_frame(adv_obs)
             if shown is not None:
                 frame_sink.frame(t, shown, decision.unsafe)
+        if recorder is not None:
+            recorder.stepped(t, action, unsafe=decision.unsafe, scored=True)
 
         if decision.unsafe:
             success = True
@@ -353,7 +451,9 @@ def run_episode(
         if done:
             break
 
-    return AttackResult(
+    # Built HERE, from the scored loop alone, before a recorder may play any step past the verdict:
+    # whatever those steps do, this object already holds every measured field.
+    result = AttackResult(
         task=task,
         attack=attack.name,
         family=attack.family,
@@ -379,6 +479,19 @@ def run_episode(
         # caller believed was in force.
         weight_corruption=getattr(attack, "record", None),
     )
+    if recorder is not None:
+        if success and not done and recorder.continue_past_verdict:
+            # A step that ended the episode in the suite (LIBERO resets itself on success) leaves
+            # nothing to continue into, hence `not done`.
+            ended_by = _record_past_verdict(
+                policy, suite, attack, base_instruction, obs,
+                task=task, seed=seed, first_step=steps + 1, horizon=horizon, defense=defense,
+                recorder=recorder,
+            )
+        else:
+            ended_by = "verdict" if success else ("done" if done else "horizon")
+        recorder.finish(suite, result, ended_by=ended_by)
+    return result
 
 
 def run(
@@ -388,6 +501,7 @@ def run(
     audit_sink: list[dict[str, str]] | None = None,
     ledger_path: Path | None = None,
     video_dir: Path | None = None,
+    recorder_factory: RecorderFactory | None = None,
 ) -> RunReport:
     """Execute a full red-team run described by ``config`` and return a report.
 
@@ -409,6 +523,14 @@ def run(
     The replayed episodes are spliced back **in plan order**, not appended at the end, so a resumed
     report is identical to the uninterrupted one rather than merely equivalent. Determinism is the
     product here; "same numbers, different order" would still change the digest ``attest`` signs.
+
+    ``recorder_factory``, when set, builds one :class:`~provael.recording.EpisodeRecorder` per
+    episode from ``(task, seed, attack name)`` — a runner argument, like ``video_dir``, so the
+    report cannot move. A replayed episode gets none: it was not re-run. Accepted only on a run of
+    ONE episode or a run with ``pin_init_states`` set: a recorder may step past the verdict, and on
+    a suite that walks fixed initial states with a reset counter, a recording-only step that
+    completes the task advances that counter and so would move the scene of every later episode.
+    A pin sets the counter before every reset; a single episode has no later one to move.
     """
     # `device` is forwarded so --accelerator is actually HONOURED. Every real factory already
     # accepts a `device` kwarg (defaulting to "cuda"), but the runner never passed one, so the
@@ -454,6 +576,15 @@ def run(
         raise ValueError(
             f"suite {config.suite!r} exposes no tasks, so nothing would be run. A report with "
             "attempts=0 is not a measurement — fix the suite or pass an explicit --tasks."
+        )
+    planned_episodes = len(tasks) * len(attacks) * config.episodes
+    if recorder_factory is not None and planned_episodes > 1 and config.pin_init_states is None:
+        raise ValueError(
+            f"a recorder was passed for a run of {planned_episodes} episodes without "
+            "pin_init_states. A recorder may keep stepping past the verdict, and on a suite that "
+            "walks fixed initial states with a reset counter a recording-only step can advance "
+            "it, which would move the scene of every later episode. Record one episode per run, "
+            "or pin the initial states."
         )
 
     # RESUME. `episodes_per_seed > 1` puts several episodes on ONE (attack, task, seed) key, which
@@ -535,10 +666,16 @@ def run(
                         if video_dir is not None
                         else None
                     )
+                    recorder = (
+                        recorder_factory(task, seed, attack.name)
+                        if recorder_factory is not None
+                        else None
+                    )
                     try:
                         episode = run_episode(
                             policy, suite, attack, task, seed, config.horizon,
                             defense=defense, audit_sink=audit_sink, frame_sink=sink,
+                            recorder=recorder,
                         )
                     finally:
                         if weight_attack is not None:
@@ -644,4 +781,4 @@ def run(
     )
 
 
-__all__ = ["run", "run_episode"]
+__all__ = ["NonFiniteActionError", "RecorderFactory", "run", "run_episode"]

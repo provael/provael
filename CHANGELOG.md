@@ -31,6 +31,23 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
+### Added
+
+- **A recorder that watches an episode for a video and cannot move its report**
+  (`provael.recording`). `run` and `run_episode` take one as a runner argument, like `video_dir`.
+  It sees every step and may keep the episode stepping past the verdict, for frames only; the
+  result is built from the scored loop before any such step runs, so a recorded run and a plain one
+  write the same `report.json` (tested byte for byte). `run` refuses a recorder on a run of more
+  than one episode without `pin_init_states`, because a step past the verdict that completes a
+  LIBERO task advances lerobot's scene counter. `SuiteAdapter.video_source()` is the optional
+  camera rig a recorder renders from: LIBERO implements it over robosuite, copying the simulator
+  state at every step and rendering after the episode, because a larger render resizes the
+  offscreen buffer the policy's own camera uses. It also gives each camera's world-to-pixel
+  projection, which a caller may draw from only after `check_projection` has tested it against
+  robosuite's own segmentation render. A NaN action now raises `NonFiniteActionError`, a
+  `ValueError` as before. The tooling that records the RFM Safety Failures video is
+  `scripts/rfm/` and does not ship in the package.
+
 ## [0.47.0] — 2026-11-04
 
 This release carries the init-state recording, the offset and pin flags and the plan-step refusals

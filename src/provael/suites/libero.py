@@ -71,7 +71,7 @@ from __future__ import annotations
 import builtins
 import importlib.util
 import os
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from typing import Any
 
 import numpy as np
@@ -79,6 +79,7 @@ import numpy.typing as npt
 from pydantic import BaseModel, Field
 
 from provael.policies.lerobot_adapter import MissingLeRobotError
+from provael.recording import CameraProjection, Segmentation
 from provael.scoring.action_schema import SEVEN_DOF_DELTA_SCHEMA, ActionSchema
 from provael.suites.base import SuiteAdapter
 from provael.suites.keepout_zones import DEFAULT_KEEP_OUT_ZONE, KeepOutZone, zones_for
@@ -659,6 +660,10 @@ class LiberoSuiteAdapter(SuiteAdapter):
         image = image_from(observation)
         return None if image is None else np.ascontiguousarray(image[::-1, ::-1])
 
+    def video_source(self) -> LiberoVideoSource:
+        """This env's robosuite simulator as a recording-only camera rig (see the class)."""
+        return LiberoVideoSource(self)
+
     def _observation(self, obs: Observation) -> Observation:
         observation: Observation = {
             "task": self._task,
@@ -779,6 +784,147 @@ class LiberoSuiteAdapter(SuiteAdapter):
         }
 
 
+#: robosuite's segmentation render labels every pixel ``(objtype, objid)``; a geom's object type is
+#: ``mujoco.mjtObj.mjOBJ_GEOM``, which is 5. A literal, so the CPU build never imports mujoco.
+_MJOBJ_GEOM = 5
+
+#: The robosuite camera behind the policy's primary image: lerobot 0.5.1's LIBERO wrapper renames
+#: ``agentview_image`` to ``image`` (and ``robot0_eye_in_hand_image`` to ``image2``). The recorder
+#: checks it empirically: a render of this camera at the observation's size is compared with the
+#: frame the policy received at the same state.
+POLICY_CAMERA = "agentview"
+
+
+def _triple(values: Any) -> tuple[float, float, float]:
+    flat = [float(v) for v in np.asarray(values, dtype=np.float64).reshape(-1)]
+    if len(flat) != 3:
+        raise ValueError(f"expected three coordinates, got {len(flat)}")
+    return flat[0], flat[1], flat[2]
+
+
+class LiberoVideoSource:
+    """The LIBERO env's robosuite simulator as a recording-only camera rig.
+
+    THE ATTRIBUTE CHAIN is the one the contact predicate uses
+    (:meth:`LiberoSuiteAdapter._robosuite_env`): LeRobot's ``LiberoEnv`` → LIBERO's
+    ``OffScreenRenderEnv`` → the robosuite env and its ``MjSim``. Unlike the predicate, a recording
+    cannot degrade to "not measured" when the chain breaks — a video without its frames is not a
+    video — so every method here raises when the simulator is unreachable.
+
+    WHAT IS READ, from robosuite 1.4.0's ``binding_utils`` (read 4 November 2026):
+    ``MjSim.get_state()`` copies ``time``, ``qpos`` and ``qvel`` and ``flatten()`` concatenates
+    them in that order; ``set_state_from_flattened`` writes the three back and leaves ``forward()``
+    to the caller; ``MjSim.render(width, height, camera_name=..., segmentation=...)`` returns the
+    pixels as OpenGL reads them (row 0 at the bottom) and resizes the shared offscreen buffer when
+    asked for an image larger than it. That last fact is why :meth:`render` is called only after
+    the episode has finished acting, from snapshots: the policy's camera renders through the same
+    buffer.
+
+    ORIENTATION. Both a render and an observation image come out of that readout bottom row first,
+    so :meth:`upright` flips the rows and nothing else; the result is the scene as the camera sees
+    it. The policy's own input is a different orientation: lerobot's ``LiberoProcessorStep`` flips
+    both axes of the raw frame, which leaves the scene mirrored left to right — the milk carton in
+    ``results/smolvla_libero_object_clip_2026-09-14/pair.mp4`` reads "dliM" — and that is the frame
+    :meth:`LiberoSuiteAdapter.display_frame` writes for ``--video-dir`` clips.
+    """
+
+    def __init__(self, adapter: LiberoSuiteAdapter) -> None:
+        self._adapter = adapter
+
+    def _sim(self) -> Any:
+        rs = self._adapter._robosuite_env()
+        if rs is None:
+            raise RuntimeError(
+                "recording needs robosuite's simulator under the LeRobot LIBERO env "
+                "(vec_env.envs[0]._env.env.sim), and that chain did not resolve. Refusing to "
+                "record: a video without its frames would be passed off as complete."
+            )
+        return rs.sim
+
+    def cameras(self) -> list[str]:
+        model = self._sim().model
+        return [str(model.camera_id2name(i)) for i in range(int(model.ncam))]
+
+    def snapshot(self) -> npt.NDArray[np.float64]:
+        state = self._sim().get_state().flatten()
+        return np.array(state, dtype=np.float64, copy=True).reshape(-1)
+
+    def upright(self, frame: npt.NDArray[Any]) -> npt.NDArray[Any]:
+        return np.ascontiguousarray(np.asarray(frame)[::-1])
+
+    def _restore(self, sim: Any, snapshot: npt.NDArray[np.float64]) -> None:
+        state = np.asarray(snapshot, dtype=np.float64).reshape(-1)
+        size = 1 + int(sim.model.nq) + int(sim.model.nv)
+        if state.size != size:
+            raise ValueError(
+                f"a snapshot holds {state.size} values and this scene's state holds {size} "
+                "(time + qpos + qvel); it was taken from a different model"
+            )
+        sim.set_state_from_flattened(state)
+        sim.forward()
+
+    def render(
+        self,
+        snapshots: Sequence[npt.NDArray[np.float64]],
+        cameras: Sequence[str],
+        width: int,
+        height: int,
+    ) -> Iterator[dict[str, npt.NDArray[np.uint8]]]:
+        sim = self._sim()
+        for snapshot in snapshots:
+            self._restore(sim, snapshot)
+            yield {
+                camera: self.upright(
+                    np.asarray(
+                        sim.render(width=width, height=height, camera_name=camera),
+                        dtype=np.uint8,
+                    )
+                )
+                for camera in cameras
+            }
+
+    def projection(self, camera: str, width: int, height: int) -> CameraProjection | None:
+        sim = self._sim()
+        model, data = sim.model, sim.data
+        cam_id = int(model.camera_name2id(camera))
+        sensor = getattr(model, "cam_sensorsize", None)
+        if sensor is not None and np.any(np.asarray(sensor, dtype=np.float64)[cam_id] > 0.0):
+            # A camera given by sensor size and focal length, not the fovy pinhole implemented here.
+            return None
+        rot = np.asarray(data.cam_xmat[cam_id], dtype=np.float64).reshape(3, 3)
+        return CameraProjection(
+            camera=camera,
+            width=width,
+            height=height,
+            position=_triple(data.cam_xpos[cam_id]),
+            rotation=(_triple(rot[0]), _triple(rot[1]), _triple(rot[2])),
+            fovy_deg=float(model.cam_fovy[cam_id]),
+        )
+
+    def segmentation(
+        self, snapshot: npt.NDArray[np.float64], camera: str, width: int, height: int
+    ) -> Segmentation | None:
+        sim = self._sim()
+        self._restore(sim, snapshot)
+        try:
+            raw = np.asarray(
+                sim.render(width=width, height=height, camera_name=camera, segmentation=True)
+            )
+        except Exception:  # noqa: BLE001 - no segmentation render means no proof, so no drawing
+            return None
+        if raw.ndim != 3 or raw.shape[-1] != 2:
+            return None
+        ids = np.where(raw[..., 0] == _MJOBJ_GEOM, raw[..., 1], -1).astype(np.int32)
+        ids = self.upright(ids)
+        present = sorted(int(g) for g in np.unique(ids).tolist() if g >= 0)
+        return Segmentation(
+            camera=camera,
+            ids=ids,
+            centers={g: _triple(sim.data.geom_xpos[g]) for g in present},
+            names={g: str(sim.model.geom_id2name(g) or f"geom{g}") for g in present},
+        )
+
+
 __all__ = [
     "LIBERO_TASK_SUITES",
     "LIBERO_ACTION_DIM",
@@ -790,4 +936,6 @@ __all__ = [
     "ContactRule",
     "LiberoRedTeamRules",
     "LiberoSuiteAdapter",
+    "LiberoVideoSource",
+    "POLICY_CAMERA",
 ]
