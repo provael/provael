@@ -147,7 +147,7 @@ REPOSITORY = "provael/provael"
 #: under the release whose calibration is three-way and whose attestations bind the report's bytes;
 #: and to 0.46.0 on 21 October 2026, still paused and 0/80 banked, so it resumes under the release
 #: whose significance column tests each attack against the control arm's own counts (E-2026-18);
-#: and to 0.47.0 on 4 November 2026, still paused and 0/80 banked, so it resumes under the release
+#: and to 0.47.0 on 7 November 2026, still paused and 0/80 banked, so it resumes under the release
 #: whose LIBERO episodes record the init state their reset loaded (report schema 8).
 PROVAEL_PIN = "0.47.0"
 PROVAEL = f"provael[lerobot]=={PROVAEL_PIN}"

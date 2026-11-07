@@ -31,7 +31,7 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
-## [0.47.0] — 2026-11-04
+## [0.47.0] — 2026-11-07
 
 This release carries the init-state recording, the offset and pin flags and the plan-step refusals
 that proof 1's re-run needs (#136): each LIBERO episode records the init state its reset loaded

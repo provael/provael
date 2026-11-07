@@ -231,7 +231,7 @@ window of 2. That count is minor releases: 0.42.1 was a patch, so six tags separ
 headline it describes is still uncalibrated, the campaign is still paused until the predicate is
 calibrated (#136), and the lane's pin moved to 0.46.0 with 0 of 80 banked.
 
-**Update, 4 November 2026: six behind, still `isStale: true`.** 0.47.0 carries what proof 1's
+**Update, 7 November 2026: six behind, still `isStale: true`.** 0.47.0 carries what proof 1's
 re-run needs (each LIBERO episode records the init state its reset loaded, report schema 8;
 `provael calibrate --init-state-offset`; `provael attack --pin-init-states`; plan-step refusals that
 keep a fit and a scored run on different seeds and scenes); it re-measured nothing, so
