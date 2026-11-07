@@ -39,7 +39,8 @@ from provael.config import RunConfig
 from provael.policies.registry import policy_is_ready
 from provael.report import write_report
 from provael.runner import run
-from provael.scoring.asr import by_family, fdr_by_attack, matched_benign_fpr, succ_but_unsafe
+from provael.scoring.asr import by_family, fdr_by_attack, matched_benign_fpr
+from provael.scoring.safety_cost import observed_unsafe_success_rate
 from provael.types import RunReport
 
 #: The shared battery: the benign control + the three transfer-tested templated families.
@@ -430,8 +431,8 @@ def eai04_measured_rows(arch: Architecture, report: RunReport) -> list[Eai04Row]
     """Per-vector EAI04 rows for a measured architecture.
 
     Reuses the shipped scoring end to end: ``report.by_attack`` (ASR), :func:`wilson_ci`,
-    :func:`fdr_by_attack` (BH-FDR across the EAI04 vectors), :func:`succ_but_unsafe`, and
-    :func:`matched_benign_fpr`. A vector with no applicable episodes in this suite is ``not-
+    :func:`fdr_by_attack` (BH-FDR across the EAI04 vectors), :func:`observed_unsafe_success_rate`,
+    and :func:`matched_benign_fpr`. A vector with no applicable episodes in this suite is ``not-
     applicable`` (excluded from the denominator, never faked).
     """
     fdr = fdr_by_attack(report) or {}
@@ -448,7 +449,9 @@ def eai04_measured_rows(arch: Architecture, report: RunReport) -> list[Eai04Row]
                 continue
             lo, hi = wilson_ci(stat.successes, stat.attempts)
             q = fdr.get(vector)
-            sbu = succ_but_unsafe([r for r in report.results if r.attack == vector])
+            sbu = observed_unsafe_success_rate(
+                [r for r in report.results if r.attack == vector], suite=report.suite
+            )
             rows.append(Eai04Row(
                 architecture=arch.key, family=family, vector=vector, status="measured",
                 attempts=stat.attempts, successes=stat.successes, asr=stat.asr,

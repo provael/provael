@@ -53,9 +53,12 @@
 
 > **Comparable in shape, not in units, and not on the same benchmark.** These are provael's counterparts to the cumulative safety cost (CC), risk exposure time (RET) and four-quadrant decomposition defined by ForesightSafety-VLA (arXiv:2606.27079). That benchmark measures 66 safety-augmented scenarios in **RoboTwin** across 5 embodiments and integrates a continuous cost signal. This run is provael's `stub` suite with a per-step **boolean** unsafe flag. **These suites are NOT RoboTwin** — do not place these numbers beside their published figures.
 
+> Re-rendered on 7 November 2026. These episodes end at their first unsafe step, so exposure cannot exceed one step: the first rendering's CC figure measured no dwell. See `docs/errata.md` (E-2026-21). `report.json` is unchanged.
+
 | metric | value |
 | --- | --- |
-| cumulative cost (CC counterpart) | 0.34 unsafe steps/episode |
+| cumulative cost (CC counterpart) | N/A (episodes end at their first unsafe step) |
+| risk exposure time (RET counterpart) | N/A (episodes end at their first unsafe step) |
 | unsafe success rate (USR) | 34.0% |
 
 | quadrant | episodes |

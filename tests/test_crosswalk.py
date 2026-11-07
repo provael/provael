@@ -39,6 +39,7 @@ from provael.crosswalk import (
 )
 from provael.eai import CATALOG, EaiCoverage
 from provael.runner import run
+from provael.scoring.safety_cost import ENDS_AT_FIRST_UNSAFE_STEP, FIXED_HORIZON
 
 runner = CliRunner()
 
@@ -298,7 +299,7 @@ def test_foresight_emits_cc_and_ret_per_mapped_category() -> None:
     it would pass forever while measuring nothing, which is the vacuous-guard failure this repo has
     been bitten by before. A stub run carries decisions, so it can prove the wiring actually works.
     """
-    rows = cw_mod.foresight_category_metrics(_report())
+    rows = cw_mod.foresight_category_metrics(_report(), termination=FIXED_HORIZON)
     assert rows, "no ForesightSafety category maps onto a provael family any more"
     required = {
         "id", "category", "coverage", "families_mapped", "families_in_this_run",
@@ -319,6 +320,22 @@ def test_foresight_emits_cc_and_ret_per_mapped_category() -> None:
     assert any(r["risk_exposure_time_total_unsafe_steps"] is not None for r in exercised), (
         "no exercised category reported a RET"
     )
+
+
+def test_foresight_reports_no_exposure_a_first_event_run_could_not_observe() -> None:
+    """E-2026-21: an episode that stops at its first unsafe step has no dwell to count."""
+    report = _report()
+    for row in cw_mod.foresight_category_metrics(report):
+        if row["attempts"]:
+            assert row["cumulative_cost_unsafe_steps_per_episode"] is None
+            assert row["risk_exposure_time_total_unsafe_steps"] is None
+            assert "first unsafe step" in str(row["unmeasured_reason"])
+    measured = cw_mod.foresight_metrics(report)
+    assert measured["cumulative_cost_unsafe_steps_per_episode"] is None
+    assert measured["exposure_not_observed"] == ENDS_AT_FIRST_UNSAFE_STEP
+    assert cw_mod.foresight_metrics(report, termination=FIXED_HORIZON)[
+        "cumulative_cost_unsafe_steps_per_episode"
+    ] is not None
 
 
 def test_foresight_unexercised_category_is_null_never_zero() -> None:

@@ -17,17 +17,26 @@ remainder was safe.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from provael.config import RunConfig
 from provael.runner import run
 from provael.scoring.safety_cost import (
+    ENDS_AT_FIRST_UNSAFE_STEP,
+    ENDS_AT_SUCCESS_OR_EXIT,
+    FIXED_HORIZON,
     QUADRANT_KEYS,
     SAFE_SUCCESS,
     TASK_SUCCESS_UNMEASURED,
     UNSAFE_SUCCESS,
     cumulative_cost,
+    exposure_unobservable,
+    observed_unsafe_success_rate,
     quadrant_counts,
     risk_exposure_time,
     unsafe_success_rate,
+    unsafe_success_unobservable,
 )
 from provael.types import AttackResult, Decision
 
@@ -182,3 +191,93 @@ def test_quadrant_closes_on_a_real_run() -> None:
                            episodes=5, seed=0))
     applicable = sum(1 for r in report.results if r.applicable)
     assert sum(quadrant_counts(report.results).values()) == applicable
+
+
+# ------------------------------------------------------------------------------------------------
+# What a run could observe (E-2026-21)
+# ------------------------------------------------------------------------------------------------
+
+RESULTS = Path(__file__).resolve().parent.parent / "results"
+
+
+def test_a_first_event_libero_run_observes_none_of_the_three() -> None:
+    assert exposure_unobservable("libero") == ENDS_AT_SUCCESS_OR_EXIT
+    assert unsafe_success_unobservable("libero") == ENDS_AT_SUCCESS_OR_EXIT
+
+
+def test_the_stub_loses_exposure_but_keeps_unsafe_success() -> None:
+    """Its episodes stop at the first unsafe step and run on after task success latches."""
+    assert exposure_unobservable("stub") == ENDS_AT_FIRST_UNSAFE_STEP
+    assert unsafe_success_unobservable("stub") is None
+
+
+def test_a_fixed_horizon_run_observes_all_three() -> None:
+    assert exposure_unobservable("libero", FIXED_HORIZON) is None
+    assert unsafe_success_unobservable("libero", FIXED_HORIZON) is None
+
+
+def test_observed_rate_is_null_on_first_event_libero_and_the_old_value_past_it() -> None:
+    results = [_result(success=True, task_success=True), _result(success=False, task_success=True)]
+    assert observed_unsafe_success_rate(results, suite="libero") is None
+    assert observed_unsafe_success_rate(results, suite="libero", termination=FIXED_HORIZON) == 0.5
+    assert observed_unsafe_success_rate(results, suite="stub") == 0.5
+
+
+def test_a_stub_run_keeps_its_rate_in_the_report() -> None:
+    report = run(RunConfig(policy="stub", suite="stub", attacks=["none", "instruction"], episodes=2))
+    assert report.succ_but_unsafe == unsafe_success_rate(report.results)
+
+
+def test_no_committed_real_policy_episode_could_show_what_the_erratum_says_it_cannot() -> None:
+    """The evidence behind E-2026-21, recomputed. A fixed-horizon run must filter itself out here."""
+    both = logged = unsafe = over_one = 0
+    for path in RESULTS.rglob("report.json"):
+        report = json.loads(path.read_text(encoding="utf-8"))
+        if report.get("policy") == "stub" or report.get("suite") != "libero":
+            continue
+        for row in report["results"]:
+            both += bool(row.get("success") and row.get("task_success"))
+            if row.get("decisions"):
+                logged += 1
+                count = sum(1 for d in row["decisions"] if d.get("unsafe"))
+                unsafe += count > 0
+                over_one += count > 1
+    assert logged and unsafe, "no real-policy decision log left to check; the guard went vacuous"
+    assert both == 0
+    assert over_one == 0
+
+
+def _committed_report_mds() -> list[tuple[Path, str]]:
+    found = []
+    for path in sorted(RESULTS.rglob("report.md")):
+        data = json.loads((path.parent / "report.json").read_text(encoding="utf-8"))
+        found.append((path, str(data.get("suite"))))
+    return found
+
+
+def test_no_committed_libero_report_md_prints_these_metrics_as_numbers() -> None:
+    """The 65 re-rendered files. A number here reads as "looked and found none"."""
+    checked = 0
+    for path, suite in _committed_report_mds():
+        if suite != "libero":
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "## Process-level safety cost" not in text:
+            continue
+        checked += 1
+        for row in ("Succ-But-Unsafe", "cumulative cost (CC counterpart)",
+                    "risk exposure time (RET counterpart)", "unsafe success rate (USR)",
+                    "unsafe success"):
+            assert f"| {row} | N/A ({ENDS_AT_SUCCESS_OR_EXIT}) |" in text, f"{path}: {row}"
+    assert checked, "no committed LIBERO report.md was checked"
+
+
+def test_committed_stub_report_mds_report_no_exposure_as_a_number() -> None:
+    checked = 0
+    for path, suite in _committed_report_mds():
+        text = path.read_text(encoding="utf-8")
+        if suite == "libero" or "## Process-level safety cost" not in text:
+            continue
+        checked += 1
+        assert f"| cumulative cost (CC counterpart) | N/A ({ENDS_AT_FIRST_UNSAFE_STEP}) |" in text
+    assert checked, "no committed stub report.md was checked"
