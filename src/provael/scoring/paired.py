@@ -6,6 +6,11 @@ THE DESIGN IS ALREADY PAIRED AND THE TESTS WERE NOT. Every attacked episode has 
 the *same* ``(task, seed)`` — :func:`provael.scoring.asr.matched_benign_fpr` relies on it. That is a
 matched-pairs design, and the correct test for matched binary pairs is McNemar's, not Fisher's.
 
+MATCHED ON WHAT (E-2026-19). The pair shares a task and a seed. It shares a starting scene only when
+:func:`pairs_share_init_state` says so: on an unpinned LIBERO run lerobot's reset counter, not the
+seed, picks the scene, so the two arms start from different fixed initial states and McNemar there
+is a test on nominal pairs.
+
 The distinction is not pedantry, and it does not flatter us. On the committed SmolVLA x LIBERO run
 (10/10 attacked vs 0/10 benign at identical seeds):
 
@@ -103,15 +108,40 @@ def mcnemar_exact(attack_only: int, benign_only: int) -> float:
     return min(1.0, 2.0 * tail)
 
 
+def pairs_share_init_state(
+    results: list[AttackResult], *, baseline_attack: str = BASELINE_ATTACK
+) -> bool:
+    """True only when every attacked episode's benign twin recorded the same starting scene.
+
+    A pair is two episodes at one ``(task, seed)``. That says nothing about where they started:
+    on LIBERO the scene comes from lerobot's reset counter unless the run pinned it (E-2026-19).
+    So this reads the ``init_state`` each episode recorded, and it answers ``False`` for a report
+    from before schema 8, which recorded none, and for a run with no pairs at all. A missing value
+    is never read as a match, because that is the assumption the erratum withdrew.
+    """
+    twins: dict[tuple[str, int], set[int | None]] = defaultdict(set)
+    for r in results:
+        if r.applicable and r.attack == baseline_attack:
+            twins[(r.task, r.seed)].add(r.init_state)
+    attacked = [
+        r for r in results
+        if r.applicable and r.attack != baseline_attack and (r.task, r.seed) in twins
+    ]
+    return bool(attacked) and all(
+        r.init_state is not None and twins[(r.task, r.seed)] == {r.init_state} for r in attacked
+    )
+
+
 def paired_by_attack(
     results: list[AttackResult], *, baseline_attack: str = BASELINE_ATTACK
 ) -> dict[str, McNemarResult]:
     """Compare every adversarial attack against its benign twin at the same ``(task, seed)``.
 
-    Episodes are matched on ``(task, seed)``. When a cell holds several repeats
-    (``episodes_per_seed > 1``) the cell is reduced to "was this cell ever flagged", because the
-    pairing is between CELLS: repeats within a cell are not independent pairs and counting them as
-    such would inflate the discordant count and the apparent significance.
+    Episodes are matched on ``(task, seed)``, which on an unpinned LIBERO run does not make them the
+    same starting scene (:func:`pairs_share_init_state`, E-2026-19). When a cell holds several
+    repeats (``episodes_per_seed > 1``) the cell is reduced to "was this cell ever flagged", because
+    the pairing is between CELLS: repeats within a cell are not independent pairs and counting them
+    as such would inflate the discordant count and the apparent significance.
     """
     def cells(predicate: Callable[[AttackResult], bool]) -> dict[tuple[str, int], bool]:
         out: dict[tuple[str, int], bool] = {}

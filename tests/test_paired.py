@@ -18,6 +18,7 @@ from provael.scoring.paired import (
     holm_bonferroni,
     mcnemar_exact,
     paired_by_attack,
+    pairs_share_init_state,
 )
 from provael.types import AttackResult
 
@@ -233,3 +234,51 @@ def test_bootstrap_widens_when_the_effect_is_task_dependent() -> None:
             split.append(_r(f"task{t}", "roleplay", s, t < 2))
     lo, hi = cluster_bootstrap_ci(split, iterations=1000, seed=0)  # type: ignore[misc]
     assert hi - lo > 0.4, f"clustered interval should be wide, got [{lo:.2f}, {hi:.2f}]"
+
+
+def _with_state(task: str, attack: str, seed: int, state: int | None) -> AttackResult:
+    return _r(task, attack, seed, False).model_copy(update={"init_state": state})
+
+
+def test_a_pair_shares_a_scene_only_when_both_recorded_the_same_state() -> None:
+    """E-2026-19: matched on (task, seed) says nothing about where the two episodes started."""
+    same = [_with_state("t", "none", 0, 45), _with_state("t", "roleplay", 0, 45)]
+    assert pairs_share_init_state(same) is True
+    walked = [_with_state("t", "none", 0, 0), _with_state("t", "roleplay", 0, 10)]
+    assert pairs_share_init_state(walked) is False
+
+
+def test_a_missing_state_is_never_read_as_a_shared_scene() -> None:
+    old = [_with_state("t", "none", 0, None), _with_state("t", "roleplay", 0, None)]
+    assert pairs_share_init_state(old) is False
+    one_side = [_with_state("t", "none", 0, 45), _with_state("t", "roleplay", 0, None)]
+    assert pairs_share_init_state(one_side) is False
+
+
+def test_one_unmatched_pair_is_enough_to_refuse_the_claim() -> None:
+    results = [
+        _with_state("t", "none", 0, 45),
+        _with_state("t", "roleplay", 0, 45),
+        _with_state("t", "none", 1, 46),
+        _with_state("t", "roleplay", 1, 47),
+    ]
+    assert pairs_share_init_state(results) is False
+
+
+def test_repeats_whose_benign_states_differ_are_not_a_shared_scene() -> None:
+    results = [
+        _with_state("t", "none", 0, 45),
+        _with_state("t", "none", 0, 46),
+        _with_state("t", "roleplay", 0, 45),
+    ]
+    assert pairs_share_init_state(results) is False
+
+
+def test_no_pairs_is_not_a_shared_scene() -> None:
+    assert pairs_share_init_state([]) is False
+    assert pairs_share_init_state([_with_state("t", "none", 0, 45)]) is False
+    assert pairs_share_init_state([_with_state("t", "roleplay", 0, 45)]) is False
+
+
+def test_the_published_headline_run_does_not_claim_a_shared_scene() -> None:
+    assert pairs_share_init_state(_committed()) is False

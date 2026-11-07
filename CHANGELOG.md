@@ -31,6 +31,15 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
+### Changed
+
+- **Results READMEs say what a pair is matched on.** `scripts/gen_results_readme.py` prints "paired
+  at matched (task, seed, init state)" only when every pair recorded one equal init state, and
+  otherwise says the starting scenes are not matched; the delivery pack, the findings pages, the
+  quickstart and the paper sources carry the same caveat. Why: on an unpinned LIBERO run lerobot's
+  reset counter picks the scene, not the seed, so the published pairs share a task and a seed but
+  not a starting scene (E-2026-19). No number moves.
+
 ## [0.47.0] — 2026-11-07
 
 This release carries the init-state recording, the offset and pin flags and the plan-step refusals
