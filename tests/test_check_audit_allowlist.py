@@ -23,7 +23,7 @@ from typing import Any
 import pytest
 import yaml
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location(
     "check_audit_allowlist", REPO / "scripts" / "check_audit_allowlist.py"
 )
