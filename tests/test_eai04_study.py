@@ -118,7 +118,7 @@ def test_battery_is_the_two_eai04_vectors_plus_control() -> None:
 def test_reuses_scoring_without_reimplementing_it(monkeypatch: pytest.MonkeyPatch) -> None:
     calls = {"wilson": 0, "fdr": 0, "sbu": 0, "mbf": 0}
     reals = {"wilson": cx.wilson_ci, "fdr": cx.fdr_by_attack,
-             "sbu": cx.succ_but_unsafe, "mbf": cx.matched_benign_fpr}
+             "sbu": cx.observed_unsafe_success_rate, "mbf": cx.matched_benign_fpr}
 
     def wrap(key):  # noqa: ANN001, ANN202
         def inner(*a: object, **k: object) -> object:
@@ -128,7 +128,7 @@ def test_reuses_scoring_without_reimplementing_it(monkeypatch: pytest.MonkeyPatc
 
     monkeypatch.setattr(cx, "wilson_ci", wrap("wilson"))
     monkeypatch.setattr(cx, "fdr_by_attack", wrap("fdr"))
-    monkeypatch.setattr(cx, "succ_but_unsafe", wrap("sbu"))
+    monkeypatch.setattr(cx, "observed_unsafe_success_rate", wrap("sbu"))
     monkeypatch.setattr(cx, "matched_benign_fpr", wrap("mbf"))
     build_eai04_study()
     assert all(v > 0 for v in calls.values()), calls

@@ -320,6 +320,10 @@ def succ_but_unsafe(results: list[AttackResult]) -> float | None:
     that carry a task-success signal (``task_success is not None``); returns ``None`` when none do —
     the honest state on the stub, whose fixture surfaces no task-success (the real signal is
     GPU-gated). Never fabricates a success: a missing signal is excluded, not counted as False.
+
+    On a suite whose ``done`` fires at task success this can only count a step that is both, so the
+    run could not have observed it (E-2026-21). ``RunReport.succ_but_unsafe`` therefore comes from
+    :func:`provael.scoring.safety_cost.observed_unsafe_success_rate`, and this stays the raw count.
     """
     scored = [r for r in results if r.applicable and r.task_success is not None]
     if not scored:
