@@ -1,0 +1,52 @@
+{
+  "accelerator": "cuda",
+  "acceptance_protocol": null,
+  "action_schema_digest": null,
+  "attacks": [
+    "none"
+  ],
+  "checkpoint_digest": null,
+  "checkpoint_repo": "HuggingFaceVLA/smolvla_libero",
+  "checkpoint_revision": "6721902bc4d61e50a3bfdb11dfb4cb626f05d102",
+  "commit": "353ec59",
+  "defense": null,
+  "dep_lock_digest": "uv.lock:sha256:37f40ca12419652b40bcd35bf8fbca0c7b6aee7fd9a4b27d57969c9c2955a437",
+  "designation": "exploratory",
+  "deviations": [
+    "recorded for video: the recorder kept stepping past the verdict for frames only; report.json holds the scored episode, which ends at the verdict",
+    "torch determinism set by the recorder (the published runs set none of it): cudnn.deterministic=True, cudnn.benchmark=False, use_deterministic_algorithms=True (warn_only=True), CUBLAS_WORKSPACE_CONFIG=:4096:8"
+  ],
+  "diff_digest": null,
+  "dirty": null,
+  "ended_at": "2026-11-04T13:41:44Z",
+  "env": {
+    "MUJOCO_GL": "egl",
+    "PROVAEL_INTEGRATION": "1",
+    "PYOPENGL_PLATFORM": "egl"
+  },
+  "evidence_state": "real-episode",
+  "hardware": "x86_64; cpu=4; gpu=NVIDIA L4 (22591 MiB)",
+  "horizon": 280,
+  "manifest_schema_version": 3,
+  "missing_fields": [],
+  "network_policy": "offline-cpu-core",
+  "operator": null,
+  "os": "Linux 4.19.0-gvisor",
+  "package_version": "0.47.0",
+  "policy": "smolvla",
+  "precision": "bf16",
+  "protocol_id": "provael-redteam",
+  "protocol_version": "provael-redteam/v1",
+  "python_version": "3.12.10",
+  "release_verdict": "incomplete",
+  "report_digest": "996124d6ec35b6e1ce7ce712559b6c9980364d5aeb1dc7d671cf8a59ad65ea24",
+  "report_schema_version": 8,
+  "repository": "provael/provael",
+  "reviewer": null,
+  "run_id": "smolvla-libero-2026-11-04T13:41:44Z",
+  "seeds": 1,
+  "skipped_checks": [],
+  "started_at": "2026-11-04T13:38:52Z",
+  "suite": "libero",
+  "suite_config_digest": null
+}

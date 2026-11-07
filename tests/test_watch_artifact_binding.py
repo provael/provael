@@ -30,7 +30,13 @@ from pathlib import Path
 
 import pytest
 
-from provael.watch import EXECUTION_MANIFEST, REPORT, RESULTS_DIR, measurements_from_results
+from provael.watch import (
+    EXECUTION_MANIFEST,
+    RECORDING_DEVIATION,
+    REPORT,
+    RESULTS_DIR,
+    measurements_from_results,
+)
 
 #: Committed stub/CPU fixtures that predate this guard and legitimately carry no provenance. They
 #: cannot be retro-stamped: inventing an `ended_at` for them would fabricate the exact thing the
@@ -51,6 +57,12 @@ def _result_dirs() -> list[Path]:
 
 def _rel(path: Path) -> str:
     return path.relative_to(RESULTS_DIR.parent).as_posix()
+
+
+def _is_recording(result_dir: Path) -> bool:
+    """True when the run's manifest says it was made for a video. Read here from the file itself."""
+    manifest = json.loads((result_dir / EXECUTION_MANIFEST).read_text(encoding="utf-8"))
+    return any(str(d).startswith(RECORDING_DEVIATION) for d in manifest.get("deviations") or [])
 
 
 def _is_real_policy(result_dir: Path) -> bool:
@@ -117,10 +129,41 @@ def test_the_reader_sees_every_dated_result() -> None:
     directories carry it, which is precisely what happened. This compares what the badge can
     actually see against what is on disk.
     """
-    dated = [d for d in _result_dirs() if (d / EXECUTION_MANIFEST).is_file()]
+    dated = [
+        d for d in _result_dirs() if (d / EXECUTION_MANIFEST).is_file() and not _is_recording(d)
+    ]
     seen = len(measurements_from_results())
     assert seen == len(dated), (
         f"the badge reads {seen} measurement(s) but {len(dated)} dated result director"
         f"{'y' if len(dated) == 1 else 'ies'} are committed. A result the reader cannot see is a "
         f"measurement that does not exist as far as the badge is concerned."
     )
+
+
+def _write_run(root: Path, name: str, ended_at: str, deviations: list[str]) -> None:
+    run = root / name
+    run.mkdir()
+    (run / EXECUTION_MANIFEST).write_text(
+        json.dumps({"ended_at": ended_at, "policy": "smolvla", "deviations": deviations}),
+        encoding="utf-8",
+    )
+
+
+def test_a_run_recorded_for_a_video_is_not_a_measurement(tmp_path: Path) -> None:
+    """One newer recording must not date the badge, or the badge goes green on nothing re-measured."""
+    _write_run(tmp_path, "measured", "2026-09-14T10:00:00Z", [])
+    _write_run(tmp_path, "other_deviation", "2026-09-15T10:00:00Z", ["seeded by hand"])
+    _write_run(
+        tmp_path, "recording", "2026-11-04T13:38:38Z", [f"{RECORDING_DEVIATION}: frames only"]
+    )
+    seen = [r.measured_at for r in measurements_from_results(tmp_path)]
+    assert seen == ["2026-09-14T10:00:00Z", "2026-09-15T10:00:00Z"]
+
+
+def test_the_committed_recording_is_invisible_to_the_badge() -> None:
+    """Guard the guard: the folder has manifests, and every one of them is skipped."""
+    folder = RESULTS_DIR / "rfm_submission_2026-11"
+    manifests = sorted(folder.rglob(EXECUTION_MANIFEST))
+    assert manifests, f"no {EXECUTION_MANIFEST} under {folder}"
+    assert all(_is_recording(m.parent) for m in manifests)
+    assert measurements_from_results(folder) == []
