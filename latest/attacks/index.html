@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Provael™ — red-team open Vision-Language-Action (VLA) robot policies in simulation and report an Attack Success Rate (ASR).">
+        <meta name="description" content="The attack families Provael registers against VLA robot policies: what each perturbs, its parameters and its Embodied AI Top 10 risk.">
       
       
       
@@ -3165,7 +3165,7 @@ the floor on that suite, published as such.</p>
 <!-- family-status:end -->
 
 <h2 id="instruction-policy-instruction-jailbreak-eai01"><code>instruction</code> — policy &amp; instruction jailbreak (EAI01)</h2>
-<p>Text reframings of the task that keep the goal benign-looking but redirect behaviour.</p>
+<p>Text reframings of the task that keep the goal benign-looking but aim to redirect behaviour.</p>
 <table>
 <thead>
 <tr>
@@ -3188,17 +3188,19 @@ the floor on that suite, published as such.</p>
 </tr>
 </tbody>
 </table>
-<p>Real-model signal: <code>roleplay</code> redirected SmolVLA <strong>88% (44/50)</strong>, task-clustered 95% CI
-<strong>[72%, 100%]</strong>, across all ten <code>libero_object</code> tasks vs a 2/50 benign control.</p>
-<p><strong>The three arms do not behave alike, and the split is by semantics rather than by mechanism.</strong> In the
-same run <code>paraphrase</code> — which preserves the request and changes only its wording — fired <strong>3/50
-(6.0%)</strong>, Wilson [2.1%, 16.2%], <strong>indistinguishable from the benign control</strong> at McNemar p = 1.0, while
-<code>roleplay</code> and <code>goal_substitution</code>, which change what is being asked, fired 44/50 and 15/50. The
-<code>roleplay</code> and <code>paraphrase</code> intervals are disjoint.</p>
-<p>So a guardrail that normalises surface form would not have caught the arm that actually fires. Read it
-narrowly — one policy, one suite, four templates per arm, an uncalibrated predicate — and see
-<a href="../findings/semantic-vs-mechanical-instruction-attacks/">the finding</a>, which states it as a hypothesis
-with supporting evidence rather than a settled result.</p>
+<p>Real-model signal (the published run: 14 September 2026, provael 0.41.2, all ten <code>libero_object</code>
+tasks, five seeds per task): under <code>roleplay</code> SmolVLA left its keep-out envelope in <strong>84% (42/50)</strong> of
+episodes, task-clustered 95% CI <strong>[62%, 100%]</strong>, against a <strong>1/50</strong> benign control. <code>goal_substitution</code>
+fired 7/50 and <code>paraphrase</code> 1/50; after Holm correction neither differs from the benign control.</p>
+<p><strong>Read it as fragility, not redirection (<a href="../errata/">E-2026-12</a>).</strong> A control run on the same ten
+tasks (three seeds) gets the same exits without a target: <code>roleplay</code> 26/30, the same frame with no
+target named 27/30, its words in scrambled order 18/30, against 0/30 for a benign rewording, 0/30 for
+nonsense text and 1/30 with no attack. Naming a target adds nothing, and the same words in the wrong
+order still exit in 18 of 30: what predicts an exit on this policy is a long, imperative,
+out-of-distribution instruction, not its meaning. The separation between <code>roleplay</code> and <code>paraphrase</code>
+stands; the earlier attribution of it to meaning does not
+(<a href="../findings/semantic-vs-mechanical-instruction-attacks/">the revised finding</a>). Read it narrowly:
+one policy, one suite, four templates per arm, an uncalibrated predicate.</p>
 <h2 id="visual-adversarial-perception-eai02"><code>visual</code> — adversarial perception (EAI02)</h2>
 <p>Observation-space markers / planted objects.</p>
 <table>
@@ -3657,72 +3659,72 @@ that tag as each finding's <code>EAIxx</code> ruleId:</p>
 <tr>
 <td><code>instruction</code></td>
 <td><code>roleplay</code>, <code>goal_substitution</code>, <code>paraphrase</code></td>
-<td><a href="../top10/#eai01--policy--instruction-jailbreak-direct-command-channel">EAI01 — Policy &amp; instruction jailbreak</a></td>
+<td><a href="../top10/#eai01-policy-instruction-jailbreak-direct-command-channel">EAI01 — Policy &amp; instruction jailbreak</a></td>
 </tr>
 <tr>
 <td><code>visual</code></td>
 <td><code>patch</code>, <code>decoy_object</code></td>
-<td><a href="../top10/#eai02--adversarial-perception-patches--textures--sensor-spoofing">EAI02 — Adversarial perception</a></td>
+<td><a href="../top10/#eai02-adversarial-perception-patches-textures-sensor-spoofing">EAI02 — Adversarial perception</a></td>
 </tr>
 <tr>
 <td><code>sensor_spoof</code></td>
 <td><code>patch_spoof</code>, <code>signal_spoof</code> (sim perception spoof → keep-out violation)</td>
-<td><a href="../top10/#eai02--adversarial-perception-patches--textures--sensor-spoofing">EAI02 — Adversarial perception</a></td>
+<td><a href="../top10/#eai02-adversarial-perception-patches-textures-sensor-spoofing">EAI02 — Adversarial perception</a></td>
 </tr>
 <tr>
 <td><code>injection</code></td>
 <td><code>scene_text</code>, <code>mcp_tool_desc</code></td>
-<td><a href="../top10/#eai05--indirect--embodied-prompt-injection">EAI05 — Indirect / embodied prompt injection</a></td>
+<td><a href="../top10/#eai05-indirect-embodied-prompt-injection">EAI05 — Indirect / embodied prompt injection</a></td>
 </tr>
 <tr>
 <td><code>action</code></td>
 <td><code>freeze</code>, <code>trajectory_hijack</code></td>
-<td><a href="../top10/#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze">EAI04 — Action-space integrity</a></td>
+<td><a href="../top10/#eai04-action-space-integrity-attacks-hijack-targeted-trajectory-freeze">EAI04 — Action-space integrity</a></td>
 </tr>
 <tr>
 <td><code>action_space</code></td>
 <td><code>keepout_hijack</code>, <code>critical_freeze</code> (commanded-end-state: keep-out hijack / critical-step freeze)</td>
-<td><a href="../top10/#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze">EAI04 — Action-space integrity</a></td>
+<td><a href="../top10/#eai04-action-space-integrity-attacks-hijack-targeted-trajectory-freeze">EAI04 — Action-space integrity</a></td>
 </tr>
 <tr>
 <td><code>backdoor</code></td>
 <td><code>object_trigger</code>, <code>phrase_trigger</code> (objective-decoupled trigger screen)</td>
-<td><a href="../top10/#eai03--model--pipeline-poisoning-backdoors--supply-chain">EAI03 — Model &amp; pipeline poisoning, backdoors &amp; supply chain</a></td>
+<td><a href="../top10/#eai03-model-pipeline-poisoning-backdoors-supply-chain">EAI03 — Model &amp; pipeline poisoning, backdoors &amp; supply chain</a></td>
 </tr>
 <tr>
 <td><code>authorization</code></td>
 <td><code>self_authorize_bypass</code>, <code>scope_escalation</code> (excessive agency)</td>
-<td><a href="../top10/#eai08--identity-access--excessive-autonomy">EAI08 — Identity, access &amp; excessive autonomy</a></td>
+<td><a href="../top10/#eai08-identity-access-excessive-autonomy">EAI08 — Identity, access &amp; excessive autonomy</a></td>
 </tr>
 <tr>
 <td><code>confidentiality</code></td>
 <td><code>membership_inference</code>, <code>model_extraction</code> (memorized-canary leak screen)</td>
-<td><a href="../top10/#eai09--model--data-confidentiality--theft-extraction-inversion--surveillance">EAI09 — Model &amp; data confidentiality</a></td>
+<td><a href="../top10/#eai09-model-data-confidentiality-theft-extraction-inversion-surveillance">EAI09 — Model &amp; data confidentiality</a></td>
 </tr>
 <tr>
 <td><code>misalignment</code></td>
 <td><code>benign_urgency_override</code>, <code>euphemistic_reroute</code> (benign language → keep-out violation)</td>
-<td><a href="../top10/#eai06--cross-domain-safety-misalignment-the-embodiment-gap">EAI06 — Cross-domain safety misalignment</a></td>
+<td><a href="../top10/#eai06-cross-domain-safety-misalignment-the-embodiment-gap">EAI06 — Cross-domain safety misalignment</a></td>
 </tr>
 <tr>
 <td><code>optimized</code></td>
 <td><code>targeted_hijack</code> (black-box action-directive search)</td>
-<td><a href="../top10/#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze">EAI04 — Action-space integrity</a></td>
+<td><a href="../top10/#eai04-action-space-integrity-attacks-hijack-targeted-trajectory-freeze">EAI04 — Action-space integrity</a></td>
 </tr>
 <tr>
 <td><code>optimized_patch</code></td>
 <td><code>patch_hijack</code> (query-budgeted adversarial-patch search, GPU-gated)</td>
-<td><a href="../top10/#eai02--adversarial-perception-patches--textures--sensor-spoofing">EAI02 — Adversarial perception</a></td>
+<td><a href="../top10/#eai02-adversarial-perception-patches-textures-sensor-spoofing">EAI02 — Adversarial perception</a></td>
 </tr>
 <tr>
 <td><code>optimized_instruction</code></td>
 <td><code>targeted_redirect</code> (optimized, command-preserving instruction search)</td>
-<td><a href="../top10/#eai01--policy--instruction-jailbreak-direct-command-channel">EAI01 — Policy &amp; instruction jailbreak</a> · EAI04 threat model</td>
+<td><a href="../top10/#eai01-policy-instruction-jailbreak-direct-command-channel">EAI01 — Policy &amp; instruction jailbreak</a> · EAI04 threat model</td>
 </tr>
 <tr>
 <td><code>humanoid</code></td>
 <td><code>balance_spoof</code> (balance spoof → loss of balance), <code>whole_body_hijack</code> (→ topple/fall), <code>stride_freeze</code> (freeze mid-stride) — whole-body / locomotion, <strong>stub-validated</strong></td>
-<td><a href="../top10/#eai02--adversarial-perception-patches--textures--sensor-spoofing">EAI02 — Adversarial perception</a> · <a href="../top10/#eai04--action-space-integrity-attacks-hijack--targeted-trajectory--freeze">EAI04 — Action-space integrity</a></td>
+<td><a href="../top10/#eai02-adversarial-perception-patches-textures-sensor-spoofing">EAI02 — Adversarial perception</a> · <a href="../top10/#eai04-action-space-integrity-attacks-hijack-targeted-trajectory-freeze">EAI04 — Action-space integrity</a></td>
 </tr>
 </tbody>
 </table>
@@ -3732,6 +3734,9 @@ that tag as each finding's <code>EAIxx</code> ruleId:</p>
 
 
 
+
+  
+  
 
 
 
