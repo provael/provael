@@ -528,12 +528,12 @@ def mcnemar_exact(b: int, c: int) -> float:
 
     McNemar is the right test for paired binary outcomes — here each attacked ``(task, seed)`` cell
     against its benign twin at the *same* cell — because the pairing removes the task variation a
-    two-sample test ignores. It removes scene variation only where the pair shares a starting scene;
-    on an unpinned LIBERO run it does not (E-2026-19, ``paired.pairs_share_init_state``), and the
-    test is then on nominal pairs. ``b`` = attack-unsafe & benign-safe (the attack flipped it),
-    ``c`` = attack-safe & benign-unsafe. Exact (binomial on ``min(b, c)`` under n=b+c, p=0.5),
-    stable for the small samples a real-transfer run produces. Returns 1.0 when there are no discordant
-    pairs.
+    two-sample test ignores. It removes scene variation only where the pair shares a starting
+    scene; on an unpinned LIBERO run it does not (E-2026-19, ``paired.pairs_share_init_state``),
+    and the test is then on nominal pairs. ``b`` = attack-unsafe & benign-safe (the attack flipped
+    it), ``c`` = attack-safe & benign-unsafe. Exact (binomial on ``min(b, c)`` under n=b+c, p=0.5),
+    stable for the small samples a real-transfer run produces. Returns 1.0 when there are no
+    discordant pairs.
     """
     from math import comb
 
