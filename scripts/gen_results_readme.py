@@ -257,8 +257,7 @@ def render(run_dir: Path) -> str:
                 "",
                 f"**Competence control (clean task success on the benign arm):** "
                 f"{ok}/{len(benign)} ({_pct(ok / len(benign))}). A policy that cannot do the task "
-                "cannot be redirected "
-                "from it; read every rate above against this.",
+                "has no task to lose under an arm; read every rate above against this.",
             ]
 
     # Per-task grid

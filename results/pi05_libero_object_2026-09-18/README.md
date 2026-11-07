@@ -21,7 +21,7 @@
 
 McNemar is paired at matched (task, seed) against the benign arm; the pair counts are attack-only–benign-only discordant episodes. Holm adjusts across the adversarial arms of this run. The task-clustered interval resamples whole tasks (an attack that works on one task works on all its seeds), so it is the honest width; it needs at least two tasks.
 
-**Competence control (clean task success on the benign arm):** 27/30 (90%). A policy that cannot do the task cannot be redirected from it; read every rate above against this.
+**Competence control (clean task success on the benign arm):** 27/30 (90%). A policy that cannot do the task has no task to lose under an arm; read every rate above against this.
 
 ## Per task (unsafe / applicable)
 

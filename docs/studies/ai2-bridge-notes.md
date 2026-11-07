@@ -19,6 +19,14 @@
 > below are kept as written so the mistake is visible; read them with this box on top. The proxy is
 > roadmap item 6.1, after the calibrated predicate and the hardware run.
 
+> **Scope, 7 November 2026.** The AllenAI harness is capability-scoped by design: every axis asks
+> whether a policy does the task. In
+> [allenai/vla-evaluation-harness#139](https://github.com/allenai/vla-evaluation-harness/issues/139)
+> the maintainer said adversarial evaluation is out of scope for an in-repo integration "until there
+> is a fixed/versioned protocol, a publication, and independent reporting". So in-repo integration
+> waits for all three, and the downstream path through the public model-server interface is the one
+> to use until then.
+
 ## What was read
 
 [`allenai/vla-evaluation-harness`](https://github.com/allenai/vla-evaluation-harness), Apache-2.0.
