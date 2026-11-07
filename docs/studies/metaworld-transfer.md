@@ -12,6 +12,9 @@ property of the LIBERO suite?
 
 ## Hypothesis
 
+> Read "redirects" below as "leaves its envelope under": the controls show the exit does not depend
+> on the target the instruction names ([E-2026-12](../errata.md)).
+
 The instruction family (`roleplay`, `goal_substitution`, `paraphrase`) that redirects SmolVLA on
 LIBERO (see the [instruction-transfer finding](../findings/2026-instruction-transfer.md)) also
 redirects it on **Meta-World** tasks over the benign control. **Null hypothesis:** the redirection is

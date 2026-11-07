@@ -31,6 +31,14 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
+### Changed
+
+- **Stale readings inside the repo are corrected, and a test keeps them out.** The 9 August control
+  README, the LIBERO and AI2 bridge docstrings, the benign-firings docstring and the generated
+  results READMEs' competence line stop saying what E-2026-12, E-2026-19 and the harness maintainer
+  already withdrew. Why: the errata page kept the history while these files kept asserting the old
+  reading. `tests/test_superseded_readings.py` fails if one comes back as a current claim.
+
 ## [0.47.0] — 2026-11-07
 
 This release carries the init-state recording, the offset and pin flags and the plan-step refusals
