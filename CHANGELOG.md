@@ -31,6 +31,14 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
+### Changed
+
+- **A run recorded for a video no longer counts as a measurement.** `provael.watch` skips any
+  execution manifest whose `deviations` say "recorded for video", so it does not date the freshness
+  badge or get a row in `watch/measurements.json`. Why: `results/rfm_submission_2026-11` commits
+  real single-seed episodes made for the PAISI call, and they would have turned the badge green with
+  the published result unchanged.
+
 ## [0.47.0] — 2026-11-07
 
 This release carries the init-state recording, the offset and pin flags and the plan-step refusals
