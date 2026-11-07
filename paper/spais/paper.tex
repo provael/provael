@@ -41,7 +41,8 @@ a Length-Matched Scramble and a Second Architecture}
 \begin{abstract}
 An attack success rate on a vision-language-action (VLA) policy is a difference between two rates,
 and most published ones report only one of them. We report a paired evaluation in simulation in
-which every attacked episode has a benign twin at the same task and seed, and we add the two
+which every attacked episode has a benign twin at the same task and seed (not the same starting
+scene), and we add the two
 controls a reviewer asks for first. The first is a \emph{length-matched scramble}: the attack
 sentence with its target noun replaced and its token order destroyed, so that ``any long
 unfamiliar string derails the policy'' is a hypothesis with its own arm rather than an objection.
@@ -109,11 +110,13 @@ carry the \emph{control} role: they enter neither the attack rate nor the benign
 report that mixed them in would fail its own schema.
 
 \paragraph{Paired design, multiplicity, intervals.} Every attacked episode has a benign twin at the
-same task and seed, driven by the same policy and scored by the same predicate. Significance is the
+same task and seed, driven by the same policy and scored by the same predicate. The pair does not
+share a starting scene: LIBERO's reset counter, not the seed, picks the fixed initial state, and
+these runs did not record it, so the test is on nominal pairs. Significance is the
 exact McNemar test on the discordant (task, seed) pairs; Holm--Bonferroni is applied across the
 adversarial arms of a run, controlling the family-wise rate because a single row is quoted as a
 security finding. Intervals are Wilson on the pooled count and a bootstrap that resamples
-\emph{tasks}, not episodes, since episodes within a task share a scene, a layout and an instruction;
+\emph{tasks}, not episodes, since episodes within a task share a layout and an instruction;
 the clustered interval is the honest width and it declines to answer when fewer than two tasks are
 discordant. The headline runs five seeds per arm; the controls, the second architecture, the family
 probe and the further suites run three, and their reports carry \arm{preliminary} in their own

@@ -23,7 +23,7 @@ side saw the other, and the previous version of this note wrongly said the two f
 entry-for-entry. The website keeps the ID it published under; the same correction is recorded
 below as **E-2026-09**, so that every correction has an entry in the maintained source. E-2026-14
 was held for the LinkedIn correction below, written on 27 September 2026; the next free ID is
-**E-2026-19**.
+**E-2026-20**.
 
 ---
 
@@ -1005,6 +1005,86 @@ the arm against its benign counts with `fisher_exact_greater`.
 `fisher_exact_greater` ships with tests pinning hand-computed tails (3/3 against 0/3 is 1/20, 2/3
 against 0/3 is 0.2, 1/3 against 0/3 is 0.5). A regression test runs one and three episodes per arm
 and asserts that no arm can come out significant against a control that thin.
+
+## E-2026-19 — The published LIBERO pairs share a task and a seed, not a starting scene
+
+**Status:** corrected on `main` on 7 November 2026 · **no number moves**, and no signed artifact is
+affected
+**Date raised:** 7 November 2026. The mechanism was reported upstream on 26 July 2026
+([huggingface/lerobot#4152](https://github.com/huggingface/lerobot/issues/4152)). This project's
+author agreed on that thread on 8 August 2026 and said the per-arm initial-state indices would be
+published; `provael.suites.libero` has described the mechanism since 24 October 2026.
+**Window:** every committed LIBERO run so far, from 6 June 2026. None pinned its scenes:
+`provael attack --pin-init-states` first shipped in 0.47.0.
+**Affects:** every sentence that lets "matched pairs" or "benign twin" read as the same starting
+scene. Corrected here: the McNemar sentence in the generated results READMEs, the docstrings of
+`provael.scoring.paired` and `provael.scoring.asr`, `docs/findings/2026-instruction-transfer.md`,
+`docs/top10.md`, `docs/quickstart.md`, `PRIOR_ART.md` and the SPAIS, RoboPAD and VLM4RWD paper
+sources. One public post said it outright: "Same policy, same scenes, only the wording changed"
+([PKU-Alignment/VLA-Arena#31](https://github.com/PKU-Alignment/VLA-Arena/issues/31), 13 August 2026).
+
+### What was wrong
+
+Every attacked episode has a benign twin at the same task and the same seed. That is true and stays
+true. What was wrong is what the project let it imply: that the twin starts from the same scene, so
+the instruction is the only thing that differs. On LIBERO the seed does not pick the scene.
+
+- `provael.runner.run` loops over tasks, then attacks, then seeds, so one task's episodes run one
+  arm after another.
+- `LiberoSuiteAdapter.reset` caches one env per task, so those episodes share one reset counter.
+- lerobot 0.5.1's `LiberoEnv.reset` loads initial state `init_state_id % 50` and adds one to the
+  counter, and its `step` resets once more on termination. A task success therefore moves the
+  counter by two, and any other ending by one.
+
+Unpinned, the arms at one seed start from different fixed initial states. The 14 September 2026
+shards are report schema 5 and the 9 August 2026 shards schema 2, so neither records which state an
+episode started from. What follows is an inference from the documented counter, not a recorded
+value. In `results/smolvla_libero_object_suite_2026-09-14/libero_object_0` the benign arm ran first
+and all five of its episodes succeeded, so `none` started from states 0, 2, 4, 6 and 8, and
+`roleplay` from 10, 11, 12, 13 and 14: `none` seed 0 at state 0, `roleplay` seed 0 at state 10. In
+`results/smolvla_libero_object_clip_2026-09-14`, whose `pair.mp4` shows the two side by side, the
+same counter gives state 0 and state 2.
+
+### What is correct
+
+- "Matched pairs" means matched on task and seed only. The McNemar p-value is exact for those pairs,
+  and it is a test on nominal pairs: the pairing removes no scene-to-scene variation.
+- The floor and the arms were measured on different initial states, so these shards cannot separate
+  a scene effect from an instruction effect, and the size of any scene effect is unmeasured. At the
+  headline's size this does not change the reading. `paraphrase` ran later in the same walk and
+  exited 1 of 50, so starting from later states does not by itself produce exits (also an inference
+  from the counter).
+- `provael attack --pin-init-states` takes each episode's scene from its seed, and a report of schema
+  8 or later records the `init_state` each reset loaded. The pinned re-run owed under
+  [proof 1](roadmap.md) is what restores scene-matched pairs.
+
+### What this does and does not affect
+
+**No number moves.** 42/50 against 1/50 (14 September 2026), 44/50 against 2/50 (9 August 2026), and
+their McNemar and Holm figures all stand. The Wilson and task-clustered intervals never used the
+pairs. The effect does not lean on the pairing either: 41 discordant pairs one way and none the
+other, and E-2026-18 gives the unpaired one-sided Fisher p as about 7 × 10⁻¹⁹.
+
+**No signed artifact is affected.** Attestations and execution manifests bind `report.json`, which
+is unchanged. The regenerated results READMEs differ in one sentence.
+
+**What changes:** what a pair is. A clip from `provael compose-video` of an unpinned run shows two
+different starting scenes, and no earlier sentence that compares two arms "at the same seed" may be
+read as comparing them from one scene.
+
+### How to tell whether a copy you hold is affected
+
+A report of schema 8 or later records `init_state` on every LIBERO episode: a pair shares a scene
+only if its two values are equal. A report below schema 8 cannot tell you, so treat its pairs as
+matched on task and seed only. A results README that says "paired at matched (task, seed, init
+state)" had every pair checked; one that says "matched (task, seed)" did not.
+
+### What was changed to prevent recurrence
+
+`scripts/gen_results_readme.py` writes "matched (task, seed, init state)" only when every pair
+recorded one equal init state (`provael.scoring.paired.pairs_share_init_state`, which never reads a
+missing value as a match), and says what a run is not matched on otherwise. A test fails if a README
+generated for a run without matched init states says its pairs share a scene.
 
 ---
 
