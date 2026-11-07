@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format is based on
 the entries below are the ones a reader arriving today needs, newest at the top. Every heading is a
 release the tag exists for; the Unreleased section holds what is merged and not yet cut.
 
+- **0.47.0 (4 Nov 2026)** — what proof 1's re-run needs: each LIBERO episode records its init state
+  (schema 8), `calibrate --init-state-offset`, `attack --pin-init-states`, and plan-step refusals
+  that keep a fit off a scored run's seeds and scenes. Re-measures nothing, so it ships six behind.
 - **0.46.0 (21 Oct 2026)** — hygiene, `pillow>=13.0` for nine advisories, and significance tested
   against the control arm's own counts (E-2026-18; 21 of the 49 ✅ rows were not). No headline number
   moves; the published measurement (0.41.2, uncalibrated) is five minor releases behind.
@@ -17,19 +20,29 @@ release the tag exists for; the Unreleased section holds what is merged and not 
   scaffolding; the signed clock's ISO 10218 date corrected (E-2026-17). No published number moves.
 - **0.44.0 (20 Sep 2026)** — hygiene and scope: `full-sweep` on a real policy narrows to measured
   families, `certify` becomes `dossier`, the machinery route is reframed. No measured number moves.
-- **0.43.0 (19 Sep 2026)** — a release verdict is made only under a named acceptance protocol
-  (`--protocol`); without one every export says `incomplete — not assessed`. Evidence manifest v2
-  with the coverage counts in one convention (17 families, 39 attacks); π0.5 packaged as measured
-  (preliminary). The fourteen-item correction backlog, worked in order.
-- **Before 0.43** — 0.42.x (18–19 Sep 2026): π0.5's preliminary leg (roleplay 1/30 against 0/30,
-  no transfer claimed) and `E-2026-12`, fragility under the roleplay frame rather than attacker
-  control (the no-target frame exits at 27/30). 0.41.2 (9 Sep 2026), the 14 September run's tool:
+- **Before 0.44** — 0.43.0 (19 Sep 2026): a release verdict only under a named acceptance protocol
+  (`--protocol`) and evidence manifest v2 (17 families, 39 attacks). 0.42.x (18–19 Sep 2026): π0.5's
+  preliminary leg (roleplay 1/30 against 0/30, no transfer claimed) and `E-2026-12`, fragility under
+  the roleplay frame rather than attacker control. 0.41.2 (9 Sep 2026), the 14 September run's tool:
   roleplay 42/50 against 1/50, uncalibrated, on ten Object tasks; before it, the sharded suite.
 
 Corrections to published numbers live in [docs/errata.md](docs/errata.md), not here; an incident's
 narrative belongs there too, and from 0.44.0 entries say what changed and why, in that order.
 
 ## [Unreleased]
+
+## [0.47.0] — 2026-11-07
+
+This release carries the init-state recording, the offset and pin flags and the plan-step refusals
+that proof 1's re-run needs (#136): each LIBERO episode records the init state its reset loaded
+(report schema 8), `provael calibrate --init-state-offset` starts a fit past a chosen state,
+`provael attack --pin-init-states` takes each episode's scene from its seed, and the GPU arm's plan
+step refuses a dispatch that would put a fit and a scored run on the same seeds or scenes. Both GPU
+images now install 0.47.0 (`PROVAEL_PIN`), so the plan step no longer refuses the two flags for want
+of a release that has them. The published measurement does not move with it: nothing was
+re-measured, `measuredWith` (0.41.2) and `measuredAt` stay as they are, and the headline is still
+uncalibrated. `watch/publish-freshness.json` reads `releasesBehind: 6` and `isStale: true`, and the
+scheduled campaign stays paused.
 
 ### Changed
 

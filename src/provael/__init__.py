@@ -14,7 +14,7 @@ the studies under ``provael.studies`` and the GR00T adapter; ``provael attack`` 
 not read it, and every run records it in its execution manifest.
 """
 
-__version__ = "0.46.0"
+__version__ = "0.47.0"
 
 # ── The documented public surface ────────────────────────────────────────────
 #
