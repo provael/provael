@@ -1,0 +1,42 @@
+{
+  "dependencies": [
+    {"name": "rich", "version": "14.0.0", "vulns": []},
+    {
+      "name": "torch",
+      "version": "2.10.0",
+      "vulns": [
+        {
+          "id": "PYSEC-2026-139",
+          "fix_versions": [],
+          "aliases": ["BIT-pytorch-2026-4538", "CVE-2026-4538"],
+          "description": "Fixture: an advisory with no fixed version."
+        }
+      ]
+    },
+    {
+      "name": "diffusers",
+      "version": "0.35.2",
+      "vulns": [
+        {
+          "id": "PYSEC-2026-40",
+          "fix_versions": ["0.38.0"],
+          "aliases": ["GHSA-98h9-4798-4q5v", "CVE-2026-44513"],
+          "description": "Fixture: the first of two records for one advisory."
+        }
+      ]
+    },
+    {
+      "name": "fsspec",
+      "version": "2026.2.0",
+      "vulns": [
+        {
+          "id": "PYSEC-2026-4217",
+          "fix_versions": ["2026.6.0"],
+          "aliases": ["GHSA-27vj-qcqg-25rc", "CVE-2026-104851"],
+          "description": "Fixture: an advisory the list has never seen."
+        }
+      ]
+    }
+  ],
+  "fixes": []
+}

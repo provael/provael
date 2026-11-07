@@ -31,6 +31,13 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
+### Security
+
+- The GPU-extras audit in CI now fails on any advisory not on a reviewed allow-list
+  (`.github/pip-audit-extras-allowlist.toml`: each id with a reason, a reachability finding and a
+  review date). It could not fail before, so a new advisory in torch, transformers, diffusers,
+  accelerate, datasets, fsspec or setuptools printed a line and the merge went ahead.
+
 ## [0.47.0] — 2026-11-07
 
 This release carries the init-state recording, the offset and pin flags and the plan-step refusals

@@ -1,0 +1,129 @@
+# Reviewed allow-list for the GPU-extras audit in .github/workflows/ci.yml.
+#
+# The audit exports [lerobot], [openvla], [attest] and [hosted], runs pip-audit, and hands the JSON
+# to scripts/check_audit_allowlist.py, which fails on anything this file does not account for. One
+# table per advisory:
+#
+#   id         what pip-audit prints, or any alias of it (GHSA, CVE)
+#   package    as the audit names it
+#   version    the version the reason was written against; a bump asks for a fresh read
+#   reason     what was found in the code, not what seems likely
+#   reachable  "no" or "not assessed". "yes" fails the job: a reachable advisory goes in an issue,
+#              stays off this list, and leaves the lane failing until it is dealt with.
+#   review_by  a TOML date at most 60 days out; the job fails the day after it
+#   in_feed    optional, default true. false means neither PyPI's feed nor OSV maps this id to the
+#              package, so the audit cannot report it and its absence is not staleness. The job
+#              fails if the audit starts reporting it, because that is news worth reading.
+#
+# An entry the audit no longer reports fails the job as stale: remove it.
+#
+# Reasons below were written on 7 November 2026 against uv.lock, reading the wheels the lock pins
+# (lerobot 0.5.1, transformers 5.3.0, datasets 4.8.5, diffusers 0.35.2, accelerate 1.13.0,
+# fsspec 2026.2.0, setuptools 80.10.2, timm 1.0.27) and Provael's src, scripts and examples. They
+# describe the paths Provael's own calls take; they say nothing about code a model repo brings with
+# it under trust_remote_code.
+
+[[advisory]]
+id = "GHSA-f7vj-73pm-m822"
+package = "lerobot"
+version = "0.5.1"
+reason = "LeRobot PolicyServer pickle RCE. Unreachable through Provael: the [lerobot] extra is used in-process for policy loading and the LIBERO simulator; no gRPC/PolicyServer is ever started. No released lerobot carries a fix (PR #3048 open, the advisory lists no patched version), and the 0.5.1 pin is a bounded exception documented in SECURITY.md and pyproject.toml. Re-examine when the pin moves. Update, 7 November 2026: PR #3048 closed unmerged on 7 October."
+reachable = "no"
+review_by = 2027-01-05
+in_feed = false
+
+[[advisory]]
+id = "PYSEC-2026-3804"
+package = "accelerate"
+version = "1.13.0"
+reason = "The traversal is in load_checkpoint_in_model and load_checkpoint_and_dispatch, and nothing here calls them: src never imports accelerate, lerobot 0.5.1 imports only Accelerator and set_seed, and transformers 5.3.0 has no call to either."
+reachable = "no"
+review_by = 2027-01-05
+
+[[advisory]]
+id = "PYSEC-2026-3716"
+package = "datasets"
+version = "4.8.5"
+reason = "The traversal needs a folder-based builder and then save_to_disk or push_to_hub, and lerobot 0.5.1 reads parquet through Dataset.from_parquet with no folder builder, while src, scripts and examples call neither save method."
+reachable = "no"
+review_by = 2027-01-05
+
+[[advisory]]
+id = "PYSEC-2026-2446"
+package = "diffusers"
+version = "0.35.2"
+reason = "The trust_remote_code bypass is in DiffusionPipeline.from_pretrained, which nothing here calls: src never imports diffusers, and lerobot 0.5.1 imports only its schedulers, get_scheduler and the GR00T action-head modules."
+reachable = "no"
+review_by = 2027-01-05
+
+[[advisory]]
+id = "PYSEC-2026-40"
+package = "diffusers"
+version = "0.35.2"
+reason = "The custom_pipeline and local-snapshot bypasses are in DiffusionPipeline.from_pretrained, which nothing here calls: src never imports diffusers, and lerobot 0.5.1 imports only its schedulers, get_scheduler and the GR00T action-head modules."
+reachable = "no"
+review_by = 2027-01-05
+
+[[advisory]]
+id = "PYSEC-2026-41"
+package = "diffusers"
+version = "0.35.2"
+reason = "The None.py lookup is in DiffusionPipeline.from_pretrained, which nothing here calls: src never imports diffusers, and lerobot 0.5.1 imports only its schedulers, get_scheduler and the GR00T action-head modules."
+reachable = "no"
+review_by = 2027-01-05
+
+[[advisory]]
+id = "PYSEC-2026-4217"
+package = "fsspec"
+version = "2026.2.0"
+reason = "The template sink is in ReferenceFileSystem, which nothing here opens: src never imports fsspec, datasets 4.8.5 never names it, and lerobot 0.5.1's one fsspec.open (datasets/video_utils.py) takes a path under a local pathlib root."
+reachable = "no"
+review_by = 2027-01-05
+
+[[advisory]]
+id = "PYSEC-2026-3447"
+package = "setuptools"
+version = "80.10.2"
+reason = "The bypass is in FileList when an sdist is built on macOS, and setuptools 80.10.2 is only a runtime dependency here (lerobot, torch, and tensorboard through robomimic), while Provael's own sdist builds with hatchling."
+reachable = "no"
+review_by = 2027-01-05
+
+[[advisory]]
+id = "GHSA-xmj3-9gf7-h52w"
+package = "setuptools"
+version = "80.10.2"
+reason = "The write is in Wheel.install_as_egg on Windows, which src, scripts, examples and lerobot 0.5.1 never call, and every real-policy lane runs on Linux."
+reachable = "no"
+review_by = 2027-01-05
+
+[[advisory]]
+id = "PYSEC-2026-139"
+package = "torch"
+version = "2.10.0"
+reason = "The advisory names the pt2 loading handler, and src, scripts, examples, lerobot 0.5.1, transformers 5.3.0 and timm 1.0.27 never call torch.export.load or open a .pt2 file."
+reachable = "no"
+review_by = 2027-01-05
+
+[[advisory]]
+id = "PYSEC-2025-194"
+package = "torch"
+version = "2.10.0"
+reason = "The corruption is in torch.jit.script, which src, scripts, examples and lerobot 0.5.1 never call, and transformers 5.3.0 and timm 1.0.27 use it only on their own fixed source, never on input from a checkpoint."
+reachable = "no"
+review_by = 2027-01-05
+
+[[advisory]]
+id = "PYSEC-2026-3929"
+package = "transformers"
+version = "5.3.0"
+reason = "The write is in tokenizer and processor save_pretrained, which src, scripts and examples never call, and lerobot 0.5.1 saves these only in its training and migration code."
+reachable = "no"
+review_by = 2027-01-05
+
+[[advisory]]
+id = "PYSEC-2026-4174"
+package = "transformers"
+version = "5.3.0"
+reason = "The write is in load_custom_generate, and generate(custom_generate=...) is never called here, while from_pretrained reaches it only when trust_remote_code is true, which in src only the OpenVLA adapter passes, as its explicit consent."
+reachable = "no"
+review_by = 2027-01-05

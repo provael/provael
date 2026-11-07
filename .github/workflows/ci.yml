@@ -268,9 +268,18 @@ jobs:
             || { echo "::error::export produced no runtime deps — the audit would be vacuous"; exit 1; }
           uvx pip-audit==2.10.1 --strict --progress-spinner off -r audit-default.txt
 
-      # The GPU extras are not what `pip install provael` resolves, and torch advisories routinely
-      # have no fixed version, so this lane reports without gating. `lerobot` and `openpi` are
-      # declared conflicts and cannot be exported together.
+      # The GPU extras are not what `pip install provael` resolves, but [lerobot], [openvla],
+      # [attest] and [hosted] load in-process, so a new advisory in them has to stop a merge. Failing
+      # on every advisory would not do that: torch and transformers advisories routinely have no
+      # fixed version, lerobot's 0.5.1 pin holds most of the rest back, and a detector that is always
+      # red reports nothing. So known ids sit in .github/pip-audit-extras-allowlist.toml, each with a
+      # reason, a reachability finding and a review date, and scripts/check_audit_allowlist.py fails
+      # on an id not on the list, a review date that has passed, and an entry the audit no longer
+      # reports. `lerobot` and `openpi` are declared conflicts and cannot be exported together.
+      #
+      # `|| true` sits on pip-audit alone, because it exits 1 whenever it finds anything, which is
+      # the normal case here. It exits 1 on a crash too, but a crash writes no JSON and the checker
+      # refuses a missing or empty report, so the verdict is always the checker's.
       #
       # ALLOW-LIST, with the justification beside the id (4.9, 20 September 2026):
       #   GHSA-f7vj-73pm-m822 / CVE-2026-25874 — LeRobot PolicyServer pickle RCE. Unreachable
@@ -278,25 +287,28 @@ jobs:
       #   simulator; no gRPC/PolicyServer is ever started. No released lerobot carries a fix (PR
       #   #3048 open, the advisory lists no patched version), and the 0.5.1 pin is a bounded
       #   exception documented in SECURITY.md and pyproject.toml. Re-examine when the pin moves.
-      # Ignoring it here keeps this lane's output legible for anything NEW; the lane still does not
-      # gate, because torch advisories without a fixed version would make it chronically red, and a
-      # detector that is always red reports nothing.
-      - name: Audit GPU extras (informational)
-        continue-on-error: true
+      # Update, 7 November 2026: PR #3048 closed unmerged on 7 October. Neither PyPI's feed nor OSV
+      # maps this id to lerobot, so the `--ignore-vuln` that used to sit here filtered nothing and
+      # the audit cannot report it. The list carries it with `in_feed = false`.
+      - name: Audit GPU extras (allow-listed)
         run: |
           uv export --extra lerobot --extra openvla --extra attest --extra hosted \
             --no-emit-project --no-hashes --no-annotate --quiet \
             --format requirements-txt -o audit-extras.txt
-          uvx pip-audit==2.10.1 --progress-spinner off -r audit-extras.txt \
-            --ignore-vuln GHSA-f7vj-73pm-m822
+          grep -qE '^torch==' audit-extras.txt \
+            || { echo "::error::export produced no GPU deps — the audit would be vacuous"; exit 1; }
+          uvx pip-audit==2.10.1 --progress-spinner off --format json -o audit-extras.json \
+            -r audit-extras.txt || true
+          uv run --no-project python scripts/check_audit_allowlist.py audit-extras.json
 
       # The docs group is not what `pip install provael` resolves either: a dependency group never
       # reaches the published metadata, and the docs toolchain never starts a tornado server. So
       # this lane reports without gating too. `uv export` takes the default groups, so `dev` is in
       # the gating lane above, but `docs` is not one: tornado 6.5.9 sat in the lock with three
       # advisories (GHSA-r4j5-9xpp-3985 and two more, 28 October 2026, all fixed in 6.6) that no
-      # lane could see.
+      # lane could see. `!cancelled()` so that a red lane above does not hide this one.
       - name: Audit docs group (informational)
+        if: ${{ !cancelled() }}
         continue-on-error: true
         run: |
           uv export --only-group docs --no-emit-project --no-hashes --no-annotate --quiet \
