@@ -8,7 +8,7 @@ All notable changes to this project are documented here. The format is based on
 the entries below are the ones a reader arriving today needs, newest at the top. Every heading is a
 release the tag exists for; the Unreleased section holds what is merged and not yet cut.
 
-- **0.47.0 (4 Nov 2026)** — what proof 1's re-run needs: each LIBERO episode records its init state
+- **0.47.0 (7 Nov 2026)** — what proof 1's re-run needs: each LIBERO episode records its init state
   (schema 8), `calibrate --init-state-offset`, `attack --pin-init-states`, and plan-step refusals
   that keep a fit off a scored run's seeds and scenes. Re-measures nothing, so it ships six behind.
 - **0.46.0 (21 Oct 2026)** — hygiene, `pillow>=13.0` for nine advisories, and significance tested
@@ -30,6 +30,46 @@ Corrections to published numbers live in [docs/errata.md](docs/errata.md), not h
 narrative belongs there too, and from 0.44.0 entries say what changed and why, in that order.
 
 ## [Unreleased]
+
+### Changed
+
+- **A run recorded for a video no longer counts as a measurement.** `provael.watch` skips any
+  execution manifest whose `deviations` say "recorded for video", so it does not date the freshness
+  badge or get a row in `watch/measurements.json`. Why: `results/rfm_submission_2026-11` commits
+  real single-seed episodes made for the PAISI call, and they would have turned the badge green with
+  the published result unchanged.
+- **Results READMEs say what a pair is matched on.** `scripts/gen_results_readme.py` prints "paired
+  at matched (task, seed, init state)" only when every pair recorded one equal init state, and
+  otherwise says the starting scenes are not matched; the delivery pack, the findings pages, the
+  quickstart and the paper sources carry the same caveat. Why: on an unpinned LIBERO run lerobot's
+  reset counter picks the scene, not the seed, so the published pairs share a task and a seed but
+  not a starting scene (E-2026-19). No number moves.
+- **Metrics a run could not observe print N/A with the reason.** On LIBERO, `report.md`, the dossier
+  and the ForesightSafety crosswalk print Succ-But-Unsafe, USR, RET and CC as N/A, and a new
+  `report.json` carries `succ_but_unsafe: null`. Why: an episode ends at the first of task success or
+  envelope exit, so an episode cannot be both and cannot stay unsafe past one step, and the printed
+  0.0% read as "looked and found none" (E-2026-21). On the stub, RET and CC print N/A and
+  Succ-But-Unsafe stays. No headline number moves and older `report.json` files are unchanged.
+- **Stale readings inside the repo are corrected, and a test keeps them out.** The 9 August control
+  README, the LIBERO and AI2 bridge docstrings, the benign-firings docstring and the generated
+  results READMEs' competence line stop saying what E-2026-12, E-2026-19 and the harness maintainer
+  already withdrew. Why: the errata page kept the history while these files kept asserting the old
+  reading. `tests/test_superseded_readings.py` fails if one comes back as a current claim.
+
+### Fixed
+
+- **The README's badges render, and its sentences match the repository again.** A missing blank
+  line after the demo caption made GitHub and PyPI print the badge row as literal Markdown. The
+  headline's Holm correction ran across six applicable arms, not seven; the McNemar figure says its
+  pairs share a task and a seed, not a starting scene (E-2026-19); `pi0` and `pi0fast` are
+  registered but never run here, which is neither scaffolding nor stub-validated; `make check`
+  matches CI bar CI's coverage floor; and the demo GIF is captioned as the July recording it is,
+  since its scorecard predates the release verdict. `PRIOR_ART.md` and the VLA-Arena crosswalk no
+  longer say provael holds the scene fixed (E-2026-19), the calibrations README says its ten fits
+  are present and withheld rather than absent, `scripts/render_keyid.py` stops looking for the
+  keyid line the README dropped on 19 September, and the summary above dates 0.47.0 to 7 November,
+  as its tag does. Why: the README is also the PyPI page, and each of these said something the
+  repository does not. No number moves.
 
 ### Security
 

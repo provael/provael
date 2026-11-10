@@ -19,7 +19,9 @@
 This pre-registers the **π0 leg** of the
 [cross-architecture transfer study](../findings/2026-cross-arch-transfer.md): does the instruction
 family that redirects SmolVLA also redirect a *different* VLA architecture, or is the redirection an
-artefact of one codebase's glue?
+artefact of one codebase's glue? (This text is as deposited. Read "redirects" as "leaves its envelope
+under": the controls show the exit does not depend on the target the instruction names,
+[E-2026-12](../errata.md).)
 
 ## Hypothesis
 

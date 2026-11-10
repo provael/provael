@@ -8,16 +8,17 @@ unit-tested, and **no benchmark has ever been run through it**. Nothing here may
 suite coverage, and the ~18 benchmarks the harness exposes are not Provael's until one of them has
 actually produced a run.
 
-WHY IT IS SCAFFOLDING RATHER THAN AN ADAPTER. The blocker is not effort, it is the harness's public
-surface. Provael scores :meth:`~provael.suites.base.SuiteAdapter.is_unsafe` on a per-step env
-``State``; the harness returns per-episode success and nothing else. LIBERO's ``get_step_result``
-returns ``{"success": ...}`` and its recorder is field-filtered to
-``frozenset({"reward", "done", "success"})``. The end-effector pose exists inside the harness's
-``make_obs`` and flows *outward to the model server* — it never reaches a caller. So the keep-out
-predicate, the calibration signal and the EAI02/04/06 spatial predicates are all unreachable through
-the published API. A bridge that shipped anyway would report task success and call it safety.
+WHY IT IS SCAFFOLDING RATHER THAN AN ADAPTER. Provael scores
+:meth:`~provael.suites.base.SuiteAdapter.is_unsafe` on a per-step env ``State``, and this module
+was written for a caller-side route: the harness's ``get_step_result`` returns ``{"success": ...}``,
+so a bridge built that way would report task success and call it safety. The premise that the pose
+could not be had was wrong, and the harness maintainer said so
+(allenai/vla-evaluation-harness#127): with ``send_state`` the end-effector state reaches the
+model-server side every step, and ``StepRecorder`` is the public hook for a second writer. The
+supported route is a model-server proxy, roadmap work after the calibrated predicate and the
+hardware run, and not this adapter.
 
-Full interface notes, with the three ways round it and their costs, in
+Full interface notes, and the correction at the top of them, in
 ``docs/studies/ai2-bridge-notes.md``.
 
 WHAT IS ALREADY KNOWN TO WORK. The benign control arm — the thing this project will not publish a

@@ -23,7 +23,7 @@ side saw the other, and the previous version of this note wrongly said the two f
 entry-for-entry. The website keeps the ID it published under; the same correction is recorded
 below as **E-2026-09**, so that every correction has an entry in the maintained source. E-2026-14
 was held for the LinkedIn correction below, written on 27 September 2026; the next free ID is
-**E-2026-19**.
+**E-2026-22**.
 
 ---
 
@@ -726,6 +726,37 @@ clause too narrowly to catch this is part of the error.
 - The website's `errata.ts` mirrors this entry under the same ID in the same sweep; the pitch deck
   and the Manifund proposal are regenerated from the corrected sentences.
 
+**Update, 7 November 2026: the threads.** The correction above reached the repository and the site.
+It did not reach everything already posted in other projects' repositories. These posts still carry
+the superseded reading, or the 44/50 against 2/50 pair with no current figure beside it:
+
+| thread | posted | what it carries |
+| --- | --- | --- |
+| [mlcommons/ailuminate#37](https://github.com/mlcommons/ailuminate/issues/37) | 1 September | 44 of 50 against 2 in 50 |
+| [mitre-atlas/atlas-data#29](https://github.com/mitre-atlas/atlas-data/issues/29) | 12 September | "The policy executes the injected goal" |
+| [mitre-atlas/atlas-data#30](https://github.com/mitre-atlas/atlas-data/issues/30) | 12 September | 44/50 against a floor of 2 of 50 |
+| [MINT-SJTU/Evo-SOTA.io#59](https://github.com/MINT-SJTU/Evo-SOTA.io/issues/59) | 9 September | 10/10 against 0%, a one-task figure at n=10 |
+| [simpler-env/SimplerEnv#137](https://github.com/simpler-env/SimplerEnv/issues/137) | 13 September | 44 of 50 and McNemar p = 4.6e-13 |
+| [TheFatInsect/Awesome-Embodied-AI-Safety-Security#1](https://github.com/TheFatInsect/Awesome-Embodied-AI-Safety-Security/issues/1) | 6 September | 44/50 against 2/50 |
+| [x-zheng16/Awesome-Embodied-AI-Safety#8](https://github.com/x-zheng16/Awesome-Embodied-AI-Safety/pull/8) | 9 August | the 9 August table and "3 of 15 attack families" |
+| [huggingface/lerobot#4481](https://github.com/huggingface/lerobot/issues/4481) | 19 August | 88% against 4% |
+| [huggingface/lerobot#4152](https://github.com/huggingface/lerobot/issues/4152) | 31 August | 44 of 50 against 2 of 50 |
+| [robocurve/inspect-robots#439](https://github.com/robocurve/inspect-robots/issues/439) | 12 September | 44/50 against a floor of 2/50 |
+| [UKGovernmentBEIS/inspect_evals#2423](https://github.com/UKGovernmentBEIS/inspect_evals/issues/2423) | 12 September | a floor of 2/50 |
+| [NVIDIA/garak#2062](https://github.com/NVIDIA/garak/issues/2062) | 19 August | 44/50 against 2/50 |
+| [PKU-Alignment/VLA-Arena#34](https://github.com/PKU-Alignment/VLA-Arena/issues/34) | 12 September | 44/50 against a floor of 2/50 |
+| [dexmal/opendm#8](https://github.com/dexmal/opendm/issues/8) (closed) | 1 September | 44 of 50, "the text channel moving the action" |
+| [DravenALG/awesome-vla-wam#8](https://github.com/DravenALG/awesome-vla-wam/pull/8) (closed) | 1 September | 44/50 |
+| [PKU-Alignment/VLA-Arena#31](https://github.com/PKU-Alignment/VLA-Arena/issues/31) (closed) | 13 August | 44 of 50, read as a reword effect |
+
+Four are already corrected on the thread:
+[LiQiiiii/Awesome-VLA-Safety#7](https://github.com/LiQiiiii/Awesome-VLA-Safety/pull/7) (26 September),
+[robocurve/roboharm#2](https://github.com/robocurve/roboharm/issues/2) (25 September),
+[ZJUSCL/Awesome-Robot-Verifier#2](https://github.com/ZJUSCL/Awesome-Robot-Verifier/pull/2)
+(31 October) and
+[Lifelong-Robot-Learning/LIBERO#148](https://github.com/Lifelong-Robot-Learning/LIBERO/issues/148)
+(31 October). Figures posted that no committed run supports at all are in E-2026-20.
+
 ## E-2026-13 — www.provael.com: the measurement meta block contradicted itself on every page, and two surfaces paired an inclusive attack count with an exclusive family count
 
 **Status:** raised and corrected on the website on 18 September 2026 (provael/website PR "Make the
@@ -1005,6 +1036,209 @@ the arm against its benign counts with `fisher_exact_greater`.
 `fisher_exact_greater` ships with tests pinning hand-computed tails (3/3 against 0/3 is 1/20, 2/3
 against 0/3 is 0.2, 1/3 against 0/3 is 0.5). A regression test runs one and three episodes per arm
 and asserts that no arm can come out significant against a control that thin.
+
+## E-2026-19 — The published LIBERO pairs share a task and a seed, not a starting scene
+
+**Status:** corrected on `main` on 7 November 2026 · **no number moves**, and no signed artifact is
+affected
+**Date raised:** 7 November 2026. The mechanism was reported upstream on 26 July 2026
+([huggingface/lerobot#4152](https://github.com/huggingface/lerobot/issues/4152)). This project's
+author agreed on that thread on 8 August 2026 and said the per-arm initial-state indices would be
+published; `provael.suites.libero` has described the mechanism since 24 October 2026.
+**Window:** every committed LIBERO run so far, from 6 June 2026. None pinned its scenes:
+`provael attack --pin-init-states` first shipped in 0.47.0.
+**Affects:** every sentence that lets "matched pairs" or "benign twin" read as the same starting
+scene. Corrected here: the McNemar sentence in the generated results READMEs, the docstrings of
+`provael.scoring.paired` and `provael.scoring.asr`, `docs/findings/2026-instruction-transfer.md`,
+`docs/top10.md`, `docs/quickstart.md`, `PRIOR_ART.md` and the SPAIS, RoboPAD and VLM4RWD paper
+sources. One public post said it outright: "Same policy, same scenes, only the wording changed"
+([PKU-Alignment/VLA-Arena#31](https://github.com/PKU-Alignment/VLA-Arena/issues/31), 13 August 2026).
+
+### What was wrong
+
+Every attacked episode has a benign twin at the same task and the same seed. That is true and stays
+true. What was wrong is what the project let it imply: that the twin starts from the same scene, so
+the instruction is the only thing that differs. On LIBERO the seed does not pick the scene.
+
+- `provael.runner.run` loops over tasks, then attacks, then seeds, so one task's episodes run one
+  arm after another.
+- `LiberoSuiteAdapter.reset` caches one env per task, so those episodes share one reset counter.
+- lerobot 0.5.1's `LiberoEnv.reset` loads initial state `init_state_id % 50` and adds one to the
+  counter, and its `step` resets once more on termination. A task success therefore moves the
+  counter by two, and any other ending by one.
+
+Unpinned, the arms at one seed start from different fixed initial states. The 14 September 2026
+shards are report schema 5 and the 9 August 2026 shards schema 2, so neither records which state an
+episode started from. What follows is an inference from the documented counter, not a recorded
+value. In `results/smolvla_libero_object_suite_2026-09-14/libero_object_0` the benign arm ran first
+and all five of its episodes succeeded, so `none` started from states 0, 2, 4, 6 and 8, and
+`roleplay` from 10, 11, 12, 13 and 14: `none` seed 0 at state 0, `roleplay` seed 0 at state 10. In
+`results/smolvla_libero_object_clip_2026-09-14`, whose `pair.mp4` shows the two side by side, the
+same counter gives state 0 and state 2.
+
+### What is correct
+
+- "Matched pairs" means matched on task and seed only. The McNemar p-value is exact for those pairs,
+  and it is a test on nominal pairs: the pairing removes no scene-to-scene variation.
+- The floor and the arms were measured on different initial states, so these shards cannot separate
+  a scene effect from an instruction effect, and the size of any scene effect is unmeasured. At the
+  headline's size this does not change the reading. `paraphrase` ran later in the same walk and
+  exited 1 of 50, so starting from later states does not by itself produce exits (also an inference
+  from the counter).
+- `provael attack --pin-init-states` takes each episode's scene from its seed, and a report of schema
+  8 or later records the `init_state` each reset loaded. The pinned re-run owed under
+  [proof 1](roadmap.md) is what restores scene-matched pairs.
+
+### What this does and does not affect
+
+**No number moves.** 42/50 against 1/50 (14 September 2026), 44/50 against 2/50 (9 August 2026), and
+their McNemar and Holm figures all stand. The Wilson and task-clustered intervals never used the
+pairs. The effect does not lean on the pairing either: 41 discordant pairs one way and none the
+other, and E-2026-18 gives the unpaired one-sided Fisher p as about 7 × 10⁻¹⁹.
+
+**No signed artifact is affected.** Attestations and execution manifests bind `report.json`, which
+is unchanged. The regenerated results READMEs differ in one sentence.
+
+**What changes:** what a pair is. A clip from `provael compose-video` of an unpinned run shows two
+different starting scenes, and no earlier sentence that compares two arms "at the same seed" may be
+read as comparing them from one scene.
+
+### How to tell whether a copy you hold is affected
+
+A report of schema 8 or later records `init_state` on every LIBERO episode: a pair shares a scene
+only if its two values are equal. A report below schema 8 cannot tell you, so treat its pairs as
+matched on task and seed only. A results README that says "paired at matched (task, seed, init
+state)" had every pair checked; one that says "matched (task, seed)" did not.
+
+### What was changed to prevent recurrence
+
+`scripts/gen_results_readme.py` writes "matched (task, seed, init state)" only when every pair
+recorded one equal init state (`provael.scoring.paired.pairs_share_init_state`, which never reads a
+missing value as a match), and says what a run is not matched on otherwise. A test fails if a README
+generated for a run without matched init states says its pairs share a scene.
+
+## E-2026-20 — Figures and capabilities posted in other projects' threads that this repository does not support
+
+**Status:** recorded on 7 November 2026 · the posts are not yet corrected on their threads · **no
+figure in this repository, on the site or in a signed artifact moves**
+**Date raised:** 7 November 2026, from a review of six months of this project's public comments
+**Window:** posts from 12 August to 21 September 2026
+**Affects:** the posts below, written by this project's author in other projects' issue trackers.
+E-2026-14 is the precedent for recording a correction to a post here.
+
+### What was wrong
+
+Each of these states a figure, a capability or a command that no committed artifact supports. The
+repository's rule that a number traces to a committed artifact already covered outreach, and these
+posts broke it.
+
+| where and when | what it said | what the repository supports |
+| --- | --- | --- |
+| [NVIDIA/garak#2062](https://github.com/NVIDIA/garak/issues/2062), 19 August | Wilson intervals of [76.4%, 94.3%] on 44/50 and [0.6%, 13.8%] on 2/50 | `provael.calibration.wilson_ci` gives [76.2%, 94.4%] and [1.1%, 13.5%]. The posted pair was typed by hand: Wilson with continuity correction, Clopper-Pearson, Jeffreys, Agresti-Coull, Wald and arcsine do not give it either. |
+| [robocurve/inspect-robots#439](https://github.com/robocurve/inspect-robots/issues/439), [UKGovernmentBEIS/inspect_evals#2423](https://github.com/UKGovernmentBEIS/inspect_evals/issues/2423), [ZJUSCL/Awesome-Robot-Verifier#1](https://github.com/ZJUSCL/Awesome-Robot-Verifier/issues/1) and the opening post of [PKU-Alignment/VLA-Arena#34](https://github.com/PKU-Alignment/VLA-Arena/issues/34), all 12 September | "3 of 16 attack families transfer to a real hosted model", in those words or close to them | That day the registry held 17 adversarial families (since 1 September, E-2026-09). Three had run on one open policy, run locally in simulation rather than hosted, and one separated from the floor. Today `watch/registry.json` says 8 of 17 families on a real policy and 2 real policies, and the README says one transferred. VLA-Arena#34's comment of 19 September corrected the family count; the opening post still carries it. |
+| [huggingface/lerobot#4619](https://github.com/huggingface/lerobot/issues/4619) and [Lifelong-Robot-Learning/LIBERO#152](https://github.com/Lifelong-Robot-Learning/LIBERO/issues/152), 12 September | 16 perturbation families against 4 open policies, with subtracting the floor changing the conclusion in 13 of the 16 | No committed run supports either figure. `results/cross_arch_transfer/summary.json` has three stub rows and six pending rows, for SmolVLA and π0. |
+| [openvla/openvla#347](https://github.com/openvla/openvla/issues/347), 13 September | "Across 19 perturbation families", with subtracting the floor removing the effect "for most families" | 19 is `familiesTotal`, which counts the benign baseline and the control family; adversarial families are 17. No committed run supports the per-family claim. |
+| [mani-skill/ManiSkill#1488](https://github.com/mani-skill/ManiSkill/issues/1488), 13 September | "I have a ManiSkill adapter" | No ManiSkill suite exists under `src/provael/suites/`. |
+| [huggingface/lerobot#4548](https://github.com/huggingface/lerobot/issues/4548), 21 September | `provael run`, `--task-suite`, `--attack`, and `provael report --format markdown` over two directories | None of these exist. The commands are `provael attack --policy smolvla --model HuggingFaceVLA/smolvla_libero --suite libero --tasks libero_object/0,...,libero_object/9 --attacks none,paraphrase --seeds 5 --horizon 280 --out runs/para/`, then `provael report --in runs/para`, which takes one directory. |
+| [robocasa/robocasa#224](https://github.com/robocasa/robocasa/issues/224), 12 September | An unperturbed failure rate of 2 to 9 out of 50 on five kitchen tasks, a bias of 4 to 18 percent, and "per-task numbers" at provael.com/results | Measured outside this repository. There is no committed run and no RoboCasa suite, and that page carries no RoboCasa figure. The scorer fix in [robocasa/robocasa#225](https://github.com/robocasa/robocasa/pull/225) may also move them. They are withheld under the rule that a figure whose source cannot be checked is not printed. |
+| [openvla/openvla#342](https://github.com/openvla/openvla/issues/342), 18 August | "What I do is reset the env per episode rather than per task, and record the fixture body_pos into the run artifact" | `LiberoSuiteAdapter` caches one env per task, and no run records `body_pos`. A report records the init-state index from schema 8 (E-2026-19). |
+| [huggingface/lerobot#4152](https://github.com/huggingface/lerobot/issues/4152), 12 August | "What I ended up doing": pinning the initial-state sequence to the seed, and emitting a manifest of the states visited | Neither existed then. Init-state recording landed on 24 October 2026 and pinning on 26 October 2026, and both shipped in 0.47.0. |
+
+### What is correct
+
+The right-hand column. The current published figures are `roleplay` 42/50 against a benign floor of
+1/50 (14 September 2026, provael 0.41.2; Wilson [0.4%, 10.5%] for the floor; McNemar p = 9.1e-13, 41
+discordant pairs to 0), and 8 of 17 adversarial families run on a real policy across 2 policies, all
+in simulation. E-2026-12 gives the reading and E-2026-19 what a pair is matched on.
+
+### What this does and does not affect
+
+**No published number moves.** Nothing in this repository, on the site or in a signed artifact
+carried these figures. The posts are what is wrong, and they stay wrong on their threads until each
+gets a correction that cites this ID.
+
+### How to tell whether a figure you hold is affected
+
+A figure from a thread that names no committed run is not evidence. Check an interval against
+`provael.calibration.wilson_ci`, a count against `watch/registry.json`, and a rate against the run's
+`README.md` under `results/`.
+
+### What was changed to prevent recurrence
+
+`tests/test_calibration.py` pins `wilson_ci` at 44/50, 2/50 and 1/50 to four decimals, so any
+interval quoted from now on can be checked against one helper.
+
+## E-2026-21 — Succ-But-Unsafe, risk exposure time and cumulative cost cannot be observed when an episode ends at its first event
+
+**Status:** corrected on `main` on 7 November 2026 · **no headline number moves** · `report.json` files
+are unchanged, and 69 committed `report.md` files are re-rendered with a dated note: 65 on 7 November
+2026, and on 10 November the four of the PAISI recording (`results/rfm_submission_2026-11`), which
+landed after
+**Date raised:** 7 November 2026
+**Window:** Succ-But-Unsafe from 0.16.0 (15 July 2026), and CC, RET and the quadrant from 0.30.0
+(1 August 2026)
+**Affects:** the Succ-But-Unsafe row, the process-level safety-cost table and the `unsafe success`
+quadrant row of `report.md`; the `succ_but_unsafe` fields of `dossier.json` and the EAI04 study; CC
+and RET in the ForesightSafety crosswalk and on its page. One public post said it outright:
+"Episodes that both completed the task and breached the envelope: 0 out of 400"
+([PKU-Alignment/VLA-Arena#31](https://github.com/PKU-Alignment/VLA-Arena/issues/31), 17 August 2026).
+
+### What was wrong
+
+The runner stops an episode at its first unsafe step and at `done`. On LIBERO `done` fires at task
+success, so every episode ends at the first of an envelope exit or a task success. Three published
+metrics need an episode to go on past that point:
+
+- **Succ-But-Unsafe and USR** ask whether an episode both completed the task and left the envelope.
+  Only a single step that is both could count, so the rate printed 0.0% whether or not the policy
+  ever does it.
+- **RET** was documented as dwell: "two episodes that both end unsafe are not equivalent if one spent
+  one step over the line and the other forty". Every episode stops at its first unsafe step, so RET
+  is 0 or 1 and measures no dwell.
+- **CC** is the mean of RET, so it equals the unsafe rate.
+
+Across the 1,660 applicable episodes in the committed real-policy LIBERO runs, none is both a success
+and an exit. In the 1,040 with decision logs, all 175 unsafe episodes have exactly one unsafe step.
+
+### What is correct
+
+- On LIBERO these metrics are unobserved, not zero. `report.md`, `dossier.json` and the crosswalk print
+  them as N/A with the reason "episodes end at the first of task success or envelope exit", and a new
+  LIBERO `report.json` carries `succ_but_unsafe: null`.
+- A first-event run cannot say whether a policy ever completes a task and breaches its envelope.
+  Neither the 0.0% nor "0 out of 400" means it does not.
+- The stub keeps its Succ-But-Unsafe, because it steps on after its task-success signal latches. Its
+  CC and RET print N/A too, with the reason "episodes end at their first unsafe step".
+- The functions in `provael.scoring.safety_cost` are right for a run that steps past both events. No
+  such run mode exists yet.
+
+### What this does and does not affect
+
+**No headline number moves.** The envelope-exit rates, the floor, the intervals and the McNemar figures
+do not use these metrics.
+
+**No signed artifact is affected.** Attestations and execution manifests bind `report.json`, which is
+unchanged, stored `0.0` included. `report.md` is a rendering of it.
+
+**Two published rates carry the same limit, and they stand as recorded.** Task success under an arm is
+cut short by the exit: `roleplay`'s 0/50 in the 14 September 2026 headline counts 42 episodes that
+stopped at the exit and could not finish, and 8 that reached the horizon without finishing. And the
+floor was observed over a shorter window than the arms: 48 of the 50 benign episodes stopped at task
+success after a mean of 150 steps, where `goal_substitution` and `paraphrase` ran a mean of 258.8 and
+277.5 of 280 steps, so a benign exit after a success cannot be seen.
+
+### How to tell whether a copy you hold is affected
+
+A LIBERO `report.md` that prints Succ-But-Unsafe or CC as a number was rendered before this correction,
+as is any `dossier.json` that carries a `succ_but_unsafe` number for a LIBERO run. Re-render it from its
+`report.json` with a release that carries this correction.
+
+### What was changed to prevent recurrence
+
+`provael.scoring.safety_cost` gained `exposure_unobservable` and `unsafe_success_unobservable`, and
+every emitter asks them before it prints a number. Tests show N/A with the reason on a first-event run
+and the old values on a synthetic fixed-horizon one. Another recomputes the evidence above from the
+committed runs, and another fails if a committed LIBERO `report.md` prints these metrics as numbers.
 
 ---
 

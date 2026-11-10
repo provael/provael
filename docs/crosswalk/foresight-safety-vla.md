@@ -140,23 +140,24 @@ inversion, now inspectable in an artifact rather than asserted in prose.
 
 **CC and RET are `null` in that committed artifact, and that is correct.** The reference run
 predates the per-step decision log, so every episode in it reports *unmeasured* exposure rather than
-zero. Those fields populate on any run that carries decisions; they are empty here because the one
-real-policy run provael owns cannot supply them, which is a fact about the artifact and not about
-the policy. Reading those nulls as "no unsafe dwell" would be exactly the error the rule below
-exists to prevent.
+zero. A run that carries decisions reports them as `null` too, with the reason beside them, because
+every run so far stops at its first unsafe step and has no dwell to count
+([E-2026-21](../errata.md)). Reading those nulls as "no unsafe dwell" would be exactly the error the
+rule below exists to prevent.
 
 ## The metrics: CC, RET, and the quadrant
 
 Beyond binary success, ForesightSafety-VLA measures process-level risk through **cumulative safety
 cost (CC)** and **risk exposure time (RET)**, plus a four-quadrant decomposition into safe success
-(SSR), unsafe success (USR), safe failure (SFR) and unsafe failure (UFR). Provael now reports its own
-counterparts, in `provael.scoring.safety_cost` and in every `report.md`:
+(SSR), unsafe success (USR), safe failure (SFR) and unsafe failure (UFR). Provael has counterparts
+in `provael.scoring.safety_cost`, and `report.md` prints them as N/A with the reason wherever the
+run could not have observed them:
 
 | Metric | Provael's counterpart | Comparable? |
 | --- | --- | --- |
-| **RET** — risk exposure time | Count of timesteps flagged unsafe in the episode's `Decision` log | Same shape. Dwell, not a flag: two episodes that both end unsafe are not equivalent if one spent one step over the line and the other forty |
-| **CC** — cumulative safety cost | **Mean unsafe steps per episode** | **No.** Their CC integrates a *continuous* cost signal; provael's per-step signal is a **boolean**. Same question, different units |
-| **USR** — unsafe success rate | Task completed **and** safety violated | Same definition. It is numerically the same quantity provael already reports as **Succ-But-Unsafe** — one quantity, two names, deliberately not two implementations |
+| **RET** — risk exposure time | Count of timesteps flagged unsafe in the episode's `Decision` log | Same shape only on a run that steps past its first unsafe step. **Every provael run so far stops there, so this is 0 or 1 per episode and measures no dwell ([E-2026-21](../errata.md))** |
+| **CC** — cumulative safety cost | **Mean unsafe steps per episode** | **No.** Their CC integrates a *continuous* cost signal; provael's per-step signal is a **boolean**. Under first-event termination it equals the unsafe rate, so it reports N/A ([E-2026-21](../errata.md)) |
+| **USR** — unsafe success rate | Task completed **and** safety violated | Same definition, and one quantity with **Succ-But-Unsafe** under two names. On LIBERO an episode ends at the first of task success or envelope exit, so neither can be observed and both report N/A ([E-2026-21](../errata.md)) |
 | Quadrant | SSR / USR / SFR / UFR counts, plus `task_success_unmeasured` | Same partition, with one extra bucket — see below |
 
 **Provael's suites are not RoboTwin.** No number on this page or in a `report.md` may be placed in a

@@ -1,0 +1,31 @@
+{
+  "baseline_deterministic": true,
+  "kind": "identical-actions-check",
+  "plain_a_vs_plain_b": {
+    "compared_steps": 280,
+    "first_differing_step": null,
+    "identical": true,
+    "lengths": [
+      280,
+      280
+    ],
+    "max_abs_difference_at_first": null
+  },
+  "plain_a_vs_recorded": {
+    "compared_steps": 280,
+    "first_differing_step": null,
+    "identical": true,
+    "lengths": [
+      280,
+      280
+    ],
+    "max_abs_difference_at_first": null
+  },
+  "recording_identical": true,
+  "runs": {
+    "plain_a": "/runs/rfm_submission_2026-11/checks/roleplay_seed0_plain_a",
+    "plain_b": "/runs/rfm_submission_2026-11/checks/roleplay_seed0_plain_b",
+    "recorded": "/runs/rfm_submission_2026-11/episodes/roleplay_seed0"
+  },
+  "verdict": "IDENTICAL: the recorded run emitted exactly the actions of two plain runs (identical over 280 steps)."
+}

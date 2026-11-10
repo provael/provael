@@ -33,7 +33,9 @@ PUBKEY = REPO / "leaderboard" / "results" / "leaderboard.pub"
 #: The documentation surfaces that restate the keyid. The sweep test guards the whole tree; this
 #: list only says where a rewrite is *expected* — a file here with no match is an error, because
 #: it means the verify example lost its expected-output line.
-TARGETS = ("README.md", "docs/leaderboard.md")
+#: README.md left this list on 10 Nov 2026: e672532 (19 Sep) moved its verify example to
+#: docs/leaderboard.md, so it had no keyid line and the script exited 2 on it.
+TARGETS = ("docs/leaderboard.md",)
 
 _KEYID_RE = re.compile(r"(keyid[ \t]*`?)([0-9a-f]{16})\b")
 

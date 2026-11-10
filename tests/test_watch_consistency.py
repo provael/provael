@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 from provael.coverage import coverage, coverage_json
-from provael.watch import task_suite_of
+from provael.watch import is_recording, task_suite_of
 
 ROOT = Path(__file__).resolve().parents[1]
 WATCH = ROOT / "watch"
@@ -45,10 +45,12 @@ def test_registry_json_is_the_coverage_counter_output() -> None:
 
 def test_the_ledger_has_one_row_per_committed_manifest_and_carries_the_new_facts() -> None:
     ledger = _load("measurements.json")
-    manifests = [
-        p for p in sorted((ROOT / "results").rglob("execution-manifest.json"))
-        if json.loads(p.read_text(encoding="utf-8")).get("ended_at")
+    read = [
+        json.loads(p.read_text(encoding="utf-8"))
+        for p in sorted((ROOT / "results").rglob("execution-manifest.json"))
     ]
+    # A run recorded for a video is committed but is not a measurement (`watch.is_recording`).
+    manifests = [m for m in read if m.get("ended_at") and not is_recording(m)]
     assert ledger["measurementCount"] == len(ledger["measurements"]) == len(manifests)
     required = {
         "model", "adversarialSuccesses", "adversarialAttempts", "benignSuccesses", "benignAttempts",

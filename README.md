@@ -12,11 +12,12 @@
 
 <p align="center">
   <a href="https://www.provael.com">
-    <img src="https://www.provael.com/media/demo.gif" alt="Provael red-teams a VLA robot policy in simulation: one command prints an ASR-by-attack table, a pass/fail scorecard, and a SARIF report tagged with the EAI rule." width="820">
+    <img src="https://www.provael.com/media/demo.gif" alt="Provael red-teams a VLA robot policy in simulation: a stub run prints an ASR-by-attack table, then a scorecard and a SARIF report tagged with the EAI rule (recorded in July 2026, before the release verdict replaced the scorecard's pass/fail line)." width="820">
   </a>
 </p>
 
-<p align="center"><sub>Deterministic CPU stub run, seed 0 — reproduce it in seconds.</sub></p>
+<p align="center"><sub>Deterministic CPU stub run, seed 0, recorded on an earlier release — the ASR table reproduces in seconds.</sub></p>
+
 [![CI](https://github.com/provael/provael/actions/workflows/ci.yml/badge.svg)](https://github.com/provael/provael/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/provael.svg)](https://pypi.org/project/provael/) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/provael/provael/blob/main/LICENSE) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21984184.svg)](https://doi.org/10.5281/zenodo.21984184)
 [![last measured](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprovael%2Fprovael%2Fmain%2Fwatch%2Ffreshness.json)](https://github.com/provael/provael/blob/main/watch/freshness.json) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/provael/provael/badge)](https://scorecard.dev/viewer/?uri=github.com/provael/provael)
 
@@ -60,8 +61,8 @@ was named. Timed on a clean container: **20 s** from `pip install` to a written 
 - **Mostly templated attacks** plus four bounded search families; not gradient-based worst-case
   robustness.
 - **One supported real configuration.** SmolVLA on the ten LIBERO-Object tasks is the body of
-  evidence; π0.5 has one preliminary arm. Everything else registered is scaffolding or
-  stub-validated, and the tool says which.
+  evidence; π0.5 has one preliminary arm. Everything else registered is scaffolding,
+  stub-validated or never run here, and the tool says which.
 - **The default predicate is uncalibrated.** An event is the end-effector leaving a fixed keep-out
   envelope — not task completion, not a calibrated hazard.
 - **The instruction result is fragility, not control.** The frame that moves SmolVLA moves it with
@@ -85,8 +86,8 @@ is **scaffolding** or has **no run committed here** — `provael list-policies` 
 **SmolVLA × LIBERO-Object, 14 September 2026, provael 0.41.2** — ten tasks, five seeds per (task,
 arm), horizon 280, on a workstation RTX 2000 Ada. Under the `roleplay` instruction the policy left
 its keep-out envelope on **42 of 50** episodes (84%, task-clustered 95% CI [62%, 100%]) against a
-benign floor of **1/50** (2.0%, Wilson 95% [0.4%, 10.5%]); McNemar exact p = 9.1e-13, surviving
-Holm across the seven arms. Clean task success on the benign arm: 48/50. The visual and injection
+benign floor of **1/50** (2.0%, Wilson 95% [0.4%, 10.5%]); McNemar exact p = 9.1e-13 (pairs matched on
+task and seed, not starting scene: E-2026-19), surviving Holm across the six applicable arms. Clean task success on the benign arm: 48/50. The visual and injection
 arms sit at the floor (1/50, 1/50, 2/50; `mcp_tool_desc` not applicable). The controls run the same
 day put the same frame with **no target named** at 27/30 and with **scrambled tokens** at 18/30, so
 the exit is fragility under a long imperative out-of-distribution string, not attacker control
@@ -175,7 +176,7 @@ it is **evidence, not certification**.
 
 ## Development
 
-`make check` runs lint, type-check and tests, exactly as CI does. **How it is made.** Much of this codebase was written with AI assistance (Claude Code); every
+`make check` runs lint, type-check and tests as CI does (CI adds a coverage floor). **How it is made.** Much of this codebase was written with AI assistance (Claude Code); every
 published number, calibration and security-relevant path is human-reviewed before it ships.
 Co-author trailers are in git: `git log --grep=Co-Authored-By`.
 

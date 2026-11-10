@@ -48,6 +48,7 @@ from provael.scoring.paired import (  # noqa: E402
     cluster_bootstrap_ci,
     holm_bonferroni,
     paired_by_attack,
+    pairs_share_init_state,
 )
 from provael.types import AttackResult  # noqa: E402
 
@@ -101,6 +102,21 @@ def _dates(shards: list[Shard]) -> str:
 def _field(shards: list[Shard], key: str) -> str:
     values = sorted({str(m.get(key)) for _, _, m in shards if m and m.get(key) is not None})
     return ", ".join(values) if values else "not recorded"
+
+
+def _pairing(results: list[AttackResult], suite: str) -> str:
+    """What this run's pairs are matched on, from what its shards recorded (E-2026-19).
+
+    "Matched" read as "the same starting scene" for months. Only a run whose every pair recorded one
+    equal init state gets to say so; anything else says what it is matched on and what it is not.
+    """
+    if pairs_share_init_state(results):
+        return "matched (task, seed, init state)"
+    recorded = any(r.init_state is not None for r in results)
+    scenes = "recorded and not all equal" if recorded else "not recorded"
+    if "libero" in suite:
+        scenes += " and not matched under lerobot 0.5.1's reset counter (E-2026-19)"
+    return f"matched (task, seed); starting scenes {scenes}"
 
 
 def render(run_dir: Path) -> str:
@@ -208,10 +224,11 @@ def render(run_dir: Path) -> str:
             )
     lines += [
         "",
-        "McNemar is paired at matched (task, seed) against the benign arm; the pair counts are "
-        "attack-only–benign-only discordant episodes. Holm adjusts across the adversarial arms of "
-        "this run. The task-clustered interval resamples whole tasks (an attack that works on one "
-        "task works on all its seeds), so it is the honest width; it needs at least two tasks.",
+        f"McNemar is paired at {_pairing(results, suite)}. It runs against the benign arm; the "
+        "pair counts are attack-only–benign-only discordant episodes. Holm adjusts across the "
+        "adversarial arms of this run. The task-clustered interval resamples whole tasks (an "
+        "attack that works on one task works on all its seeds), so it is the honest width; it "
+        "needs at least two tasks.",
     ]
 
     # The second predicate: contact events, beside the envelope exit and never pooled with it.
@@ -257,8 +274,7 @@ def render(run_dir: Path) -> str:
                 "",
                 f"**Competence control (clean task success on the benign arm):** "
                 f"{ok}/{len(benign)} ({_pct(ok / len(benign))}). A policy that cannot do the task "
-                "cannot be redirected "
-                "from it; read every rate above against this.",
+                "has no task to lose under an arm; read every rate above against this.",
             ]
 
     # Per-task grid

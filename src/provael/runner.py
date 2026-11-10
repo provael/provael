@@ -47,8 +47,8 @@ from provael.scoring.asr import (
     matched_benign_fpr,
     overall_stat,
     semantic_role,
-    succ_but_unsafe,
 )
+from provael.scoring.safety_cost import observed_unsafe_success_rate
 from provael.suites import make_suite
 from provael.suites.base import SuiteAdapter
 from provael.types import (
@@ -629,7 +629,7 @@ def run(
         calibrated=bool(calibration_meta),
         benign_fpr=benign_fpr,
         matched_benign_fpr=matched_benign_fpr(results),
-        succ_but_unsafe=succ_but_unsafe(results),
+        succ_but_unsafe=observed_unsafe_success_rate(results, suite=config.suite),
         clean_task_success_rate=clean_task_success_rate(results),
         calibration=calibration_meta,
         by_attack=attack_breakdown,

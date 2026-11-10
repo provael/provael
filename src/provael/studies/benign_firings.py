@@ -26,8 +26,9 @@ reported too, as :attr:`TaskFiring` counts, but as description rather than infer
 
 WHAT THIS DELIBERATELY DOES NOT DO. It does not propose a corrected zone. Locating a boundary
 error is not the same as knowing where the boundary belongs, and the second needs the benign
-end-effector poses — which no committed LIBERO report carries (they all predate report schema 3;
-see :class:`provael.types.Trajectory`). Emitting a zone from this evidence would be picking a
+end-effector poses. The 14 September 2026 suite and control shards carry them (report schema 5, a
+:class:`provael.types.Trajectory` on every applicable episode, 80 of them benign), and
+:mod:`provael.workspace` reads them. Emitting a zone from this firing evidence would be picking a
 constant and calling it a calibration, which is the original bug.
 """
 

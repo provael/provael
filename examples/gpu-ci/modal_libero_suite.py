@@ -255,7 +255,8 @@ STAGES: dict[str, dict[str, str]] = {
     #
     # SIX SEEDS, ONE EPISODE EACH — not 5 seeds x 2 repeats, which costs the same and measures less.
     # `paired_by_attack` reduces a (task, seed) cell to "was this cell ever flagged" because repeats
-    # at one seed are the same initial state and not independent pairs. So repeats add ZERO McNemar
+    # at one seed are one cell and not independent pairs (not the same initial state on LIBERO,
+    # unless the run pins it: E-2026-19). So repeats add ZERO McNemar
     # pairs and zero power to the headline statistic; seeds add one pair each. Repeats are only
     # worth buying once something actually decomposes seed variance from policy stochasticity, and
     # nothing does yet.
