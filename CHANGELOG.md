@@ -40,6 +40,15 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   what v2 is planned to change, and the README's "Reading any result" line links it. Why: every
   manifest named a protocol that no page described, so a reader comparing harnesses had to rebuild
   it from the code.
+- **The board's signing key and signed bytes are documented.** `docs/leaderboard.md` says what
+  `provael leaderboard verify` checks and what it does not, where the private key is stored (where
+  it was generated is not recorded in the repository), how to pin the public key out of band, how to
+  rotate it, what revocation means for rows already signed, and the exact bytes the signature
+  covers, which are not RFC 8785. A test pins those bytes against the page, and the page's rebuild
+  example now reads its run from `source.json` and keeps the rows' attribution. Why: offline
+  verification is only as good as the key a verifier already holds, and the page had readers
+  download the key beside the board. No board, signature or verify behaviour changes; failing on
+  what verify does not check, and moving to RFC 8785, wait for the next board schema change.
 
 ### Changed
 

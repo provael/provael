@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from provael.attest import generate_private_key_pem, public_key_pem
+from provael.attest import canonical_json, generate_private_key_pem, public_key_pem
 from provael.cli import app
 from provael.config import RunConfig
 from provael.leaderboard import (
@@ -633,3 +633,31 @@ def test_the_staleness_gate_fails_on_undeclared_staleness_only() -> None:
         assert problems and "stale=None" in problems[0]
     finally:
         undeclared.unlink()
+
+
+#: The bytes `docs/leaderboard.md` says a board is signed over, one value at a time. RFC 8785 would
+#: give `1`, `1e-7`, `18446744073709552000` and a UTF-8 `é` for the same four values.
+_CANONICAL_VECTORS: dict[str, tuple[object, str]] = {
+    "non-ASCII text": ("café", '"caf\\u00e9"'),
+    "1.0": (1.0, "1.0"),
+    "1e-7": (1e-7, "1e-07"),
+    "2**64": (2**64, "18446744073709551616"),
+}
+
+
+@pytest.mark.parametrize("name", sorted(_CANONICAL_VECTORS))
+def test_the_signed_bytes_are_python_json_and_the_docs_print_them(name: str) -> None:
+    """A board is signed over `canonical_json`, and the docs print what that is, value for value.
+
+    It is `json.dumps(sort_keys=True, separators=(",", ":"))` with ASCII escapes, which is not
+    RFC 8785. A verifier who reaches for a JCS library serialises the same board to other bytes and
+    gets INVALID, so `docs/leaderboard.md` tabulates the difference, and this holds the page and the
+    function to the same values. Moving to RFC 8785 re-signs every board, so it waits for a board
+    schema change and moves this table, the docs table and the signature's algorithm label together.
+    """
+    value, expected = _CANONICAL_VECTORS[name]
+    assert canonical_json({"v": value}) == f'{{"v":{expected}}}'.encode("ascii")
+    page = (Path(__file__).resolve().parent.parent / "docs" / "leaderboard.md").read_text(
+        encoding="utf-8"
+    )
+    assert f"`{expected}`" in page, f"docs/leaderboard.md no longer prints the {name} vector"
