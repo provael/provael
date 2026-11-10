@@ -26,7 +26,7 @@ from provael.calibration import describe_calibration, wilson_ci
 from provael.eai import CATALOG
 from provael.endpoints import PHYSICAL_HAZARD
 from provael.evidence import evidence_state_of
-from provael.scoring.asr import benign_control, endpoint_by_attack, fdr_by_attack
+from provael.scoring.asr import benign_control, endpoint_by_attack, fdr_by_attack, report_rates
 from provael.scoring.safety_cost import (
     FIRST_EVENT,
     QUADRANT_KEYS,
@@ -39,7 +39,7 @@ from provael.scoring.safety_cost import (
     unsafe_success_rate,
     unsafe_success_unobservable,
 )
-from provael.types import ASRStat, RunReport
+from provael.types import ASRStat, RateStat, RunReport
 from provael.verdict import ReleaseDecision, acceptance_line, release_verdict
 
 REPORT_JSON = "report.json"
@@ -67,6 +67,23 @@ def _endpoint_cell(stat: ASRStat | None) -> str:
         f"{stat.successes}/{stat.attempts} ({100.0 * stat.asr:.1f}%) "
         f"[{100.0 * lo:.0f}–{100.0 * hi:.0f}%]"
     )
+
+
+def _interval_of(stat: RateStat | None) -> tuple[float, float] | None:
+    """A RateStat's interval as ``(low, high)``, or None for an N/A slice."""
+    if stat is None or stat.interval is None:
+        return None
+    return (stat.interval.low, stat.interval.high)
+
+
+def _unjudged_note(report: RunReport, stat: RateStat | None) -> str:
+    """`` · unjudged N`` beside a rate on a schema-9 report; nothing on an earlier one.
+
+    An earlier report recorded no verdict, so a 0 printed for it would be a claim nobody made.
+    """
+    if report.schema_version < 9 or stat is None:
+        return ""
+    return f" · unjudged {stat.n_unjudged}"
 
 
 def _fmt_ci(ci: tuple[float, float] | None) -> str:
@@ -188,12 +205,19 @@ def to_markdown(
         lines.append(f"| accelerator / precision | `{acc}` / `{prec}` |")
     adv_rate, adv_s, adv_n = report.adversarial_headline()
     adv_pct = "N/A" if adv_n == 0 else f"{100.0 * adv_rate:.1f}%"
-    adv_ci = wilson_ci(adv_s, adv_n) if adv_n else None
-    lines.append(f"| **adversarial ASR** (benign excluded) | **{adv_pct} ({adv_s}/{adv_n})** |")
+    # Every interval comes from the one resolver (P1.6); on a schema-9 report each rate also says
+    # how many unjudged episodes it left out, beside it.
+    rates = report_rates(report)
+    adv_ci = _interval_of(rates.adversarial)
+    lines.append(
+        f"| **adversarial ASR** (benign excluded) | **{adv_pct} ({adv_s}/{adv_n})**"
+        f"{_unjudged_note(report, rates.adversarial)} |"
+    )
     lines.append(f"| adversarial ASR 95% CI (Wilson, episode-level) | {_fmt_ci(adv_ci)} |")
     lines.append(
         f"| all-episode observed-unsafe (benign incl.) | "
-        f"{100.0 * report.asr:.1f}% ({report.successes}/{report.attempts}) |"
+        f"{100.0 * report.asr:.1f}% ({report.successes}/{report.attempts})"
+        f"{_unjudged_note(report, rates.all_episodes)} |"
     )
     lines.append(f"| all-episode 95% CI (Wilson, episode-level) | {_fmt_ci(report.ci95)} |")
     lines.append(f"| all-episode anytime-valid CI | {_fmt_ci(report.anytime_ci)} |")
@@ -210,7 +234,7 @@ def to_markdown(
         counts = f" ({benign.successes}/{benign.attempts})" if benign.attempts else ""
         lines.append(
             f"| **benign baseline FPR** (the ASR's control arm) | "
-            f"**{100.0 * benign.rate:.1f}%{counts}** |"
+            f"**{100.0 * benign.rate:.1f}%{counts}**{_unjudged_note(report, benign.stat)} |"
         )
         lines.append(
             "| benign FPR 95% CI (Wilson) | "
@@ -230,6 +254,13 @@ def to_markdown(
         lines.append(f"| Succ-But-Unsafe | N/A ({sbu_why}) |")
     elif report.succ_but_unsafe is not None:
         lines.append(f"| Succ-But-Unsafe | {100.0 * report.succ_but_unsafe:.1f}% |")
+    if report.schema_version >= 9:
+        # Schema 9 records how each episode ended and whether it was judged. Printed only there:
+        # an earlier report recorded neither, and a 0 printed for it would be a claim nobody made.
+        lines.append(
+            f"| unjudged episodes (excluded from every rate above) | {unjudged_count(report)} |"
+        )
+        lines.append(f"| how episodes ended | {termination_mix(report)} |")
     lines.append("")
     reasons = " ".join(r if r.endswith(".") else f"{r}." for r in decision.reasons)
     lines.append(f"> **Release decision.** {reasons}")
@@ -331,7 +362,7 @@ def to_markdown(
         lines.append("| --- | --- |")
         exposure_why = exposure_unobservable(report.suite, termination)
         exposures = [
-            ret for ret in (risk_exposure_time(r) for r in report.results if r.applicable)
+            ret for ret in (risk_exposure_time(r) for r in report.results if r.scored)
             if ret is not None
         ]
         if cc is None:
@@ -454,11 +485,31 @@ def benign_control_text(report: RunReport) -> str:
     return text
 
 
+def unjudged_count(report: RunReport) -> int:
+    """Applicable episodes that every rate excluded because they were not judged (schema 9)."""
+    return sum(1 for r in report.results if r.applicable and not r.scored)
+
+
+def termination_mix(report: RunReport) -> str:
+    """How the episodes ended, as ``"horizon 3, task_success 2"`` (schema 9), or "not recorded"."""
+    counts: dict[str, int] = {}
+    for result in report.results:
+        if result.termination is not None:
+            counts[result.termination] = counts.get(result.termination, 0) + 1
+    return ", ".join(f"{k} {v}" for k, v in sorted(counts.items())) or "not recorded"
+
+
 def render_summary(report: RunReport, console: Console | None = None) -> None:
     """Print the ASR table and the headline ASR line to ``console`` (or a fresh one)."""
     console = console or Console()
     console.print(build_summary_table(report))
     console.print(f"[bold]{report.headline()}[/bold]")
+    if report.schema_version >= 9:
+        # Beside the headline, as garak#2136 asked of the main report line: what the rate left out.
+        console.print(
+            f"unjudged: {unjudged_count(report)} episode(s), excluded from every rate · ended: "
+            f"{termination_mix(report)}"
+        )
     if report.clean_task_success_rate is not None:
         console.print(
             "clean-task-success (benign control): "
@@ -489,4 +540,6 @@ __all__ = [
     "load_report",
     "build_summary_table",
     "render_summary",
+    "termination_mix",
+    "unjudged_count",
 ]

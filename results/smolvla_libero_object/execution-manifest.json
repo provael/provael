@@ -27,19 +27,21 @@
   "evidence_state": "legacy-unverified",
   "hardware": null,
   "horizon": 280,
-  "manifest_schema_version": 3,
+  "manifest_schema_version": 4,
   "missing_fields": [
     "python_version",
     "os",
     "dep_lock_digest",
     "hardware",
     "accelerator",
-    "precision"
+    "precision",
+    "package_versions"
   ],
   "network_policy": "offline-cpu-core",
   "operator": null,
   "os": null,
   "package_version": "0.15.0",
+  "package_versions": null,
   "policy": "smolvla",
   "precision": null,
   "protocol_id": "provael-redteam",

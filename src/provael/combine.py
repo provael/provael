@@ -43,11 +43,13 @@ from provael.scoring.asr import (
     by_attack,
     by_task,
     clean_task_success_rate,
+    compute_rates,
     matched_benign_fpr,
     overall_stat,
     semantic_role,
     succ_but_unsafe,
 )
+from provael.scoring.paired import scene_pairing
 from provael.types import RunReport
 
 #: Fields every shard of one experiment must agree on. A difference in any of them means the shards
@@ -164,11 +166,17 @@ def combine_reports(reports: list[RunReport]) -> RunReport:
         # Calibrated only if EVERY shard was. One uncalibrated task means the pooled predicate is
         # not calibrated, and the weaker claim is the true one.
         calibrated=all(r.calibrated for r in reports),
-        benign_fpr=baseline.asr if baseline is not None else None,
+        benign_fpr=baseline.measured_rate if baseline is not None else None,
         matched_benign_fpr=matched_benign_fpr(results),
         succ_but_unsafe=succ_but_unsafe(results),
         clean_task_success_rate=clean_task_success_rate(results),
         calibration={k: v for r in reports for k, v in r.calibration.items()},
+        # Schema 9: one entry per task, from the shard that ran it; the pairing is recomputed over
+        # the pooled episodes like every other derived quantity (a pre-9 view carries neither).
+        sim_model_digests={k: v for r in reports for k, v in r.sim_model_digests.items()},
+        scene_pairing=scene_pairing(results) if head.schema_version >= 9 else None,
+        rates=compute_rates(results, suite=head.suite) if head.schema_version >= 9 else None,
+        predicates={k: v for r in reports for k, v in r.predicates.items()},
         by_attack=attack_breakdown,
         by_task=by_task(results),
         eai={k: v for r in reports for k, v in r.eai.items()},

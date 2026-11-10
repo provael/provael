@@ -311,13 +311,14 @@ def _emit_execution_manifest(
     from datetime import timedelta
 
     from provael.execution import build_execution_manifest, to_execution_manifest_json
+    from provael.runtime_versions import installed_versions
 
     end = datetime.now(UTC)
     start = end - timedelta(seconds=elapsed)
     fmt = "%Y-%m-%dT%H:%M:%SZ"
     # The manifest's checkpoint fields come from the DEPLOYED identity the adapter resolved
     # (issue #227), not from the request — they were never filled before, because nothing
-    # resolved them.
+    # resolved them. The weight file's digest joins them at report schema 9.
     deployed = report.deployed_policy
     manifest = build_execution_manifest(
         report,
@@ -328,6 +329,8 @@ def _emit_execution_manifest(
         repository=_repository(),
         checkpoint_repo=deployed.checkpoint if deployed is not None else None,
         checkpoint_revision=deployed.checkpoint_revision if deployed is not None else None,
+        checkpoint_digest=deployed.weights_digest if deployed is not None else None,
+        package_versions=installed_versions(),
         commit=_git_commit(),
         dep_lock_digest=_dep_lock_digest(),
         python_version=platform.python_version(),

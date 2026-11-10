@@ -75,7 +75,7 @@ def test_registry_counts_use_coverages_convention() -> None:
         reg["attacks_adversarial"] + reg["attacks_baseline"] + reg["attacks_control"]
     )
     assert reg["attacks_baseline"] == 1  # exactly one benign baseline
-    assert reg["attacks_control"] == 4  # the harmless-variation arms
+    assert reg["attacks_control"] == 5  # the harmless-variation arms
     assert reg["families_adversarial"] == reg["families_total"] - 2
     assert (reg["families_adversarial"], reg["attacks_adversarial"]) == (
         cov.adversarial_families, cov.adversarial_attacks

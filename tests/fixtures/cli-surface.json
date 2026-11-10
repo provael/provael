@@ -175,11 +175,31 @@
      "secondary_opts": []
     },
     {
+     "help": "JSON file naming the initial state each episode starts from, per task: {\"libero_object/0\": [3, 7], ...}, one entry per seed (every arm and repeat at seed index i starts from entry i) or, when the only arm is the benign baseline, one per episode. Any other arm needs one state per seed, so every arm at a seed starts from one scene. Exclusive with --pin-init-states; needs a suite with fixed initial states (LIBERO).",
+     "is_flag": false,
+     "name": "init_states",
+     "opts": [
+      "--init-states"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
      "help": "Max timesteps per episode.",
      "is_flag": false,
      "name": "horizon",
      "opts": [
       "--horizon"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Record a simulator exception during an episode as an UNJUDGED episode with its reason, instead of stopping the run. Every rate then excludes it and the report counts it beside the rate. Off by default.",
+     "is_flag": true,
+     "name": "record_episode_errors",
+     "opts": [
+      "--record-episode-errors"
      ],
      "required": false,
      "secondary_opts": []
@@ -350,6 +370,16 @@
      "name": "protocol",
      "opts": [
       "--protocol"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Before the run, command a +x end-effector delta for a few steps on the run's first task and refuse the run unless the end-effector moved along +x: a simulator applying deltas in another frame than it reports the pose in (robosuite issue 819). Uses an environment of its own, so the run's scenes are unchanged. Needs a suite that reports an end-effector position (LIBERO). Off by default.",
+     "is_flag": true,
+     "name": "preflight",
+     "opts": [
+      "--preflight"
      ],
      "required": false,
      "secondary_opts": []
@@ -1665,7 +1695,7 @@
    "short_help": null
   },
   {
-   "help": "Verify a checkpoint BEFORE loading it \u2014 a supply-chain control, not an ASR.\n\nFails closed: an unpinned digest and an un-opted-in pickle checkpoint both exit non-zero, so a\ngate that forgets to pin gets a failure rather than a silent pass. This produces a verdict, not\na rate; it does not reduce attack success (see `provael.integrity`).",
+   "help": "Verify a checkpoint BEFORE loading it \u2014 a supply-chain control, not an ASR.\n\nFails closed: an unpinned digest, an un-opted-in pickle checkpoint, and a checkpoint whose\nconfig or processor files would make lerobot fetch or run unreviewed code all exit non-zero,\nso a gate that forgets to pin gets a failure rather than a silent pass. The last is the check\n`provael attack` makes before it loads a LeRobot policy, and PROVAEL_TRUST_CHECKPOINT_CODE=1\naccepts it here as there. This produces a verdict, not a rate; it does not reduce attack\nsuccess (see `provael.integrity`).",
    "name": "verify-checkpoint",
    "params": [
     {
@@ -1679,7 +1709,7 @@
      "secondary_opts": []
     },
     {
-     "help": "Local path to the fetched checkpoint to hash and classify.",
+     "help": "Local path to the fetched checkpoint to hash, classify and read for code it would make lerobot fetch or run.",
      "is_flag": false,
      "name": "path",
      "opts": [

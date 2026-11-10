@@ -16,3 +16,10 @@ no code to fill the other three. That is the gap the scheduled lane's provenance
 (see `provael.campaign`); it is recorded here rather than back-filled, because provenance that is
 reconstructed after the run is not provenance. The `tool_version` and the checkpoint are in every
 report; the release's tag commit is public.
+
+The run did not record the checkpoint's runtime configuration: its reports are schema 5, which
+predates `deployed_policy`. Checked on the Hub on 10 November 2026, `HuggingFaceVLA/smolvla_libero`
+has not changed since 17 September 2025 (commit `6721902`), and its `config.json` sets
+`n_action_steps` 1, `chunk_size` 50 and `num_steps` 10. `lerobot/smolvla_libero`, the checkpoint
+huggingface/lerobot#4614 measured, is a different repository and ships `n_action_steps` 50. From
+report schema 9 a run records these settings itself, in `deployed_policy`.

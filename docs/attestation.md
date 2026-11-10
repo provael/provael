@@ -148,6 +148,57 @@ one seed can start from different scenes, and only this field records which ran.
 with the rest of the episode; the projection strips it for any report that declares a schema below
 8 (`attest._RESULT_FIELDS_ADDED_IN`), so every earlier attestation keeps verifying.
 
+### The rest of the deployed policy (schema 9)
+
+Not yet in a release: no report from 0.47.0 or earlier carries it. `deployed_policy` gains what
+else makes two loads of one checkpoint behave differently: the observation normaliser (its STATE
+and VISUAL modes and a digest over the statistics it applies), digests over the pre- and
+post-processor files and the weight file as lerobot loaded them (read from the local directory or
+the Hub cache, never the network), the rename map the pre-processor applied, the cameras in the
+order the policy reads them, the denoising steps and the control rate. A field the adapter cannot
+resolve is `null`. They sit inside a nested model, so the projection strips them for any report
+that declares a schema below 9 (`attest._DEPLOYED_POLICY_FIELDS_ADDED_IN`), and every earlier
+attestation keeps verifying. The execution manifest (manifest schema 4) records the installed
+versions of the simulator and policy stack and fills `checkpoint_digest` from the weight digest;
+`provael attack` and `provael doctor` warn when a `libero_spatial` run uses mujoco 3.4.0 or newer
+(the task suite the upstream report concerns; the lock itself resolves a later mujoco), or
+versions that differ from the `[lerobot]` resolution in `uv.lock`.
+
+Each episode also records the scene its reset left, read from the simulator after lerobot's settle
+steps: `scene_t0_digest` (sha256 over qpos, qvel and every body's position and orientation) and
+`scene_t0` (the non-robot bodies with their positions and yaw). `init_state` is an index; this is
+the scene, so whether a pair shared one is checked rather than assumed (E-2026-19). The report
+carries each task's compiled-model digest (`sim_model_digests`) and `scene_pairing`, the count of
+attacked episodes whose benign twin recorded the same state and scene. A pinned run
+(`--pin-init-states`, or `--init-states` with one state per seed) stops if two arms at one seed
+start from different scenes.
+
+Each episode says how it ended (`termination`: `unsafe_exit`, `task_success`, `horizon`,
+`env_truncated` or `error`), whether its outcome was established (`verdict`: `judged` or
+`unjudged`, with `unjudged_reason`), and what was observed (`observation`: whether an exit was
+`present`, `absent` or `not_established`, the vantage it was read from, and the steps observed,
+the horizon and the steps without a pose). A step whose pose is missing is unjudged rather than
+"outside every box", so an episode with one and no exit is not established. With
+`--record-episode-errors` a simulator exception during an episode is recorded as unjudged instead
+of stopping the run. Every rate excludes unjudged episodes from its numerator and denominator,
+and the report and console print the count beside them. A report before schema 9 records no
+verdict, and every applicable episode in it counts exactly as before.
+
+`rates` carries every published rate (the adversarial headline, the all-episode rate, the benign
+floor, the matched floor, clean task success, Succ-But-Unsafe, and each attack and task) as
+`successes`, `trials`, `rate`, an `interval` naming its `method` and `level`, and `n_unjudged`.
+The model refuses a numerator above its denominator and a rate that differs from
+`successes / trials` by more than 1e-6, so a numerator is never rebuilt from a rounded float.
+`provael.scoring.asr.report_rates` is the resolver the emitters read; for an older report it
+rebuilds the block from what the report stored, and the bare floats beside it stay.
+
+`predicates` names, per task, the unsafe predicate it was scored against: its kind, the keep-out
+boxes or the threshold, the forbidden objects, its source (`default`, `explicit`, or
+`calibration` with the artifact's file and sha256), the task-success predicate (on LIBERO,
+`check_success` read through lerobot's `final_info.is_success`), and one digest. A calibrated task
+and a default one digest differently. The execution manifest's `suite_config_digest`, null on
+every earlier manifest, is now taken over these digests.
+
 ### The regulatory clock
 
 Factual application dates, carried so the evidence is legible against the calendar buyers care

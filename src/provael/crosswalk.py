@@ -768,7 +768,7 @@ def foresight_metrics(report: RunReport, *, termination: str = FIRST_EVENT) -> d
     with no decision log was already ``None`` and gets no reason, so its artifact does not move.
     """
     results = report.results
-    per_episode = [risk_exposure_time(r) for r in results if r.applicable]
+    per_episode = [risk_exposure_time(r) for r in results if r.scored]
     measured_ret = [ret for ret in per_episode if ret is not None]
     usr_why = unsafe_success_unobservable(report.suite, termination)
     why = exposure_unobservable(report.suite, termination) if measured_ret else None
@@ -838,7 +838,7 @@ def foresight_category_metrics(
         if not c.families:
             continue  # nothing provael measures maps here; the coverage note already says so
         mapped = set(c.families)
-        subset = [r for r in report.results if r.family in mapped and r.applicable]
+        subset = [r for r in report.results if r.family in mapped and r.scored]
         present = sorted({r.family for r in subset})
         row: dict[str, object] = {
             "id": c.id,

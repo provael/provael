@@ -34,7 +34,14 @@ from provael.verdict import ReleaseDecision, release_verdict
 #: decision under that named protocol, ``incomplete`` when none was named, never a default gate's
 #: answer (0.43.0). A v2 manifest's ``release_verdict: pass`` was such an answer and must be read
 #: as "no protocol named" rather than as a decision.
-EXECUTION_MANIFEST_VERSION = 3
+#:
+#: 3 -> 4: added ``package_versions``, the installed versions of the simulator and policy stack
+#: (:data:`provael.runtime_versions.TRACKED_PACKAGES`). They change what a run measures (a comment
+#: on lerobot#2354 reports libero_spatial init states settling differently from mujoco 3.4.0) and
+#: depend on the machine, so they belong here and not in ``report.json``. ``checkpoint_digest``
+#: and ``suite_config_digest`` existed and were never filled; they are now filled from the
+#: report's deployed weight digest and its per-task predicates.
+EXECUTION_MANIFEST_VERSION = 4
 
 #: Environment-variable names allowed into the manifest. Anything else is dropped entirely; an
 #: allow-listed name whose value looks secret is redacted (belt and braces).
@@ -50,6 +57,10 @@ ENV_ALLOWLIST: tuple[str, ...] = (
     # claims, and only the environment distinguishes them. Recorded here rather than as a manifest
     # field for the reason stated above: a new field would invalidate every attestation ever issued.
     "PROVAEL_REQUIRE_CALIBRATED",
+    # Whether the run loaded a checkpoint the pre-load check refused, accepting code the checkpoint
+    # chose (provael.integrity.TRUST_CHECKPOINT_CODE_ENV). A run that passed the check and one that
+    # overrode it are different claims, and as above only the environment tells them apart.
+    "PROVAEL_TRUST_CHECKPOINT_CODE",
     "MUJOCO_GL",
     "PYOPENGL_PLATFORM",
     "PROVAEL_SMOLVLA_LIBERO_CKPT",
@@ -60,7 +71,7 @@ _REDACTED = "***REDACTED***"
 #: Provenance fields the caller SHOULD supply; any left None is reported in ``missing_fields``.
 _PROVENANCE_FIELDS = (
     "repository", "commit", "python_version", "os", "dep_lock_digest",
-    "hardware", "accelerator", "precision", "started_at", "ended_at",
+    "hardware", "accelerator", "precision", "started_at", "ended_at", "package_versions",
 )
 
 
@@ -102,13 +113,31 @@ class ExecutionManifest(BaseModel):
     hardware: str | None = None
     accelerator: str | None = None
     precision: str | None = None
+    package_versions: dict[str, str | None] | None = Field(
+        None,
+        description="Installed version of each package in "
+        "provael.runtime_versions.TRACKED_PACKAGES (lerobot, torch, transformers, mujoco, "
+        "robosuite, hf-libero, gymnasium, numpy), read with importlib.metadata; null for one "
+        "that is not installed. The whole field is null when the caller supplied none (manifest "
+        "schema >= 4).",
+    )
     # policy / suite
     policy: str
     checkpoint_repo: str | None = None
     checkpoint_revision: str | None = None
-    checkpoint_digest: str | None = None
+    checkpoint_digest: str | None = Field(
+        None,
+        description="sha256 of the weight file the policy loaded: the report's "
+        "`deployed_policy.weights_digest` (report schema >= 9). None when the adapter could not "
+        "locate it, or on an earlier report.",
+    )
     suite: str
-    suite_config_digest: str | None = None
+    suite_config_digest: str | None = Field(
+        None,
+        description="sha256 over the suite name and each task's predicate digest "
+        "(`report.predicates`, report schema >= 9): which predicate every task was scored "
+        "against, in one value. None for an earlier report.",
+    )
     # run
     seeds: int
     horizon: int
@@ -162,6 +191,22 @@ def report_digest(report: RunReport) -> str:
     return sha256_hex(canonical_json(report_projection(report)))
 
 
+def predicate_config_digest(report: RunReport) -> str | None:
+    """sha256 over the suite and each task's predicate digest, or None when none is recorded.
+
+    Taken over the digests, not the records, so it moves exactly when a task's predicate does: a
+    calibrated task and a default one give different values, and two runs scored against the same
+    boxes give the same one.
+    """
+    if not report.predicates:
+        return None
+    body = {
+        "suite": report.suite,
+        "predicates": {task: p.digest for task, p in sorted(report.predicates.items())},
+    }
+    return sha256_hex(canonical_json(body))
+
+
 def build_execution_manifest(
     report: RunReport,
     *,
@@ -178,6 +223,7 @@ def build_execution_manifest(
     hardware: str | None = None,
     accelerator: str | None = None,
     precision: str | None = None,
+    package_versions: dict[str, str | None] | None = None,
     checkpoint_repo: str | None = None,
     checkpoint_revision: str | None = None,
     checkpoint_digest: str | None = None,
@@ -203,10 +249,11 @@ def build_execution_manifest(
     decision = decision if decision is not None else release_verdict(report)
     accel = accelerator if accelerator is not None else report.accelerator
     prec = precision if precision is not None else report.precision
-    values: dict[str, str | bool | None] = {
+    values: dict[str, object] = {
         "repository": repository, "commit": commit, "python_version": python_version,
         "os": os_name, "dep_lock_digest": dep_lock_digest, "hardware": hardware,
         "accelerator": accel, "precision": prec, "started_at": started_at, "ended_at": ended_at,
+        "package_versions": package_versions,
     }
     missing = [name for name in _PROVENANCE_FIELDS if values.get(name) is None]
     return ExecutionManifest(
@@ -226,12 +273,19 @@ def build_execution_manifest(
         hardware=hardware,
         accelerator=accel,
         precision=prec,
+        package_versions=dict(package_versions) if package_versions is not None else None,
         policy=report.policy,
         checkpoint_repo=checkpoint_repo,
         checkpoint_revision=checkpoint_revision,
         checkpoint_digest=checkpoint_digest,
         suite=report.suite,
-        suite_config_digest=suite_config_digest,
+        # Filled from the report's predicates when the caller passes none (null on headline
+        # manifests before schema 9, because nothing recorded the predicate).
+        suite_config_digest=(
+            suite_config_digest
+            if suite_config_digest is not None
+            else predicate_config_digest(report)
+        ),
         seeds=report.seeds,
         horizon=report.horizon,
         attacks=list(report.attacks),
@@ -263,5 +317,6 @@ __all__ = [
     "redact_env",
     "report_digest",
     "build_execution_manifest",
+    "predicate_config_digest",
     "to_execution_manifest_json",
 ]

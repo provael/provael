@@ -252,6 +252,9 @@ provael leaderboard verify --in leaderboard.json --pubkey leaderboard.pub
 # -> leaderboard OK  keyid 8d62aa33ed5162f3
 ```
 
+That shows the board matches the key fetched beside it. Whether that key is the project's is a
+separate check: [pin it out of band](#pinning-the-key-out-of-band).
+
 A non-zero exit and `leaderboard signature INVALID` is the answer you should get if anything in the
 board was altered — including a single success count. That is the point: the numbers are covered by
 the signature, not merely published alongside it.
@@ -265,16 +268,145 @@ board is signed, the signature verifies **against that published key**, every do
 derived from the key file, and the board's stamp lags the newest released tag by at most **14
 days** — re-stamping is a GPU-free one-command operation, so the cost of staying current is low.
 
-Rebuild and re-sign:
+Rebuild and re-sign from the run the board names, with a key you hold:
 
 ```bash
-provael leaderboard build --real results/smolvla_libero_object_suite --sign --key provael-ed25519.pem \
-    --out leaderboard/results
-provael leaderboard verify --in leaderboard/results/leaderboard.json --pubkey leaderboard.pub
+run="$(python -c "import json; print(json.load(open('leaderboard/results/source.json'))['run'])")"
+provael leaderboard build --real "$run" --submitted-by provael --provenance maintainer-run \
+    --sign --key provael-ed25519.pem --out leaderboard/results
+provael leaderboard verify --in leaderboard/results/leaderboard.json --pubkey <that key's public half>
 ```
 
-Signing with an omitted `--key` uses an ephemeral key (integrity, not identity) and writes the
-public half next to the board.
+The project's own board is re-signed only by `leaderboard-restamp.yml` and
+`leaderboard-rebuild.yml`, which read the key from the repository secret. Leaving out
+`--submitted-by` and `--provenance` drops every row's attribution. Signing with an omitted `--key`
+uses an ephemeral key (integrity, not identity) and writes the public half next to the board.
+
+### What `leaderboard verify` checks, and what it does not
+
+`provael leaderboard verify` checks one thing: the Ed25519 signature over the board's canonical
+bytes ([below](#the-bytes-the-signature-covers)), against the key file you pass. It exits 0 with
+`leaderboard OK` when the signature holds, and 1 on an invalid signature or an unsigned board. It
+does not check:
+
+- that the key file is the project's key. [Pinning it](#pinning-the-key-out-of-band) is how you
+  know.
+- the keyid it prints. That id comes from the board's own `signature` block, which the signature
+  does not cover, so it names the key the board claims to be signed with. Compare key files, not
+  printed ids.
+- revocation or expiry. `provael attest --verify --trust-store` reads each key's `status` and
+  validity window from a trust store; `leaderboard verify` takes one key file and nothing else.
+- freshness. `stale` sits outside the signature on purpose
+  ([above](#staleness-is-a-field-not-a-banner-schema-v6)).
+
+Turning the first three into failures waits for the next board schema change, together with the
+canonical-bytes change below; neither is in the code today.
+
+### Where the key was made, and where it lives
+
+Where the current private key was generated is not recorded in the repository. The commit that
+introduced it, `215a925` on 30 July 2026 (#74), records why it exists: the previous private key was
+gone. Its only local copy had been deleted after it was stored as an Actions secret, under a name no
+workflow reads, and a secret cannot be read back. The commit re-signed the board with the new key
+and noted that the private key still had to be stored as `PROVAEL_SIGNING_KEY`. It does not say
+where the new key was made, or with what.
+
+The private key is stored as the repository's GitHub Actions secret `PROVAEL_SIGNING_KEY`, and
+`.gitignore` keeps `*.pem` and `*.key` out of git. Three workflows read it:
+`leaderboard-restamp.yml` and `leaderboard-rebuild.yml` sign the board with it, and
+`checkpoint-security-gate.yml` signs its regression attestations with it. Whether a copy exists outside that secret is not recorded in the
+repository.
+
+The public key is `leaderboard/results/leaderboard.pub`, and
+`git log --follow -- leaderboard/results/leaderboard.pub` lists every change to it: the current key
+arrived in `215a925`, and the retired one is in the history before it.
+
+### Pinning the key out of band
+
+A key downloaded beside the board proves only that the two files agree, and whoever can replace one
+can replace both. Pin the key once, from a source that does not share the board's fetch path, and
+check every later board against your copy:
+
+1. Get `leaderboard.pub` from two places that do not share a fetch path. `main` on GitHub is one. A
+   release's source archive on Zenodo is another (archiving began with v0.34.0, and the concept DOI
+   is in `CITATION.cff`), and so is a clone you already hold.
+2. Compare the full SHA-256 of the copies (`sha256sum leaderboard.pub`, or `shasum -a 256` on
+   macOS). The keyid on this page is only the first 16 hex characters of that digest. The digest
+   covers the file's bytes, so a checkout that rewrote line endings gives a different digest for the
+   same key; compare the base64 line of the PEM in that case.
+3. Keep the checked copy and pass it to every later check:
+   `provael leaderboard verify --in leaderboard.json --pubkey <your pinned copy>`.
+4. If a later board verifies only against a freshly downloaded key, the key has changed. Look for the
+   rotation on this page and in the [errata](errata.md) before you trust it. An unrecorded rotation
+   is the case the pin exists to catch.
+
+### Rotating the key
+
+1. Generate a new Ed25519 private key as a PKCS8 PEM. `provael.attest.generate_private_key_pem()`
+   returns one, and `provael.attest.public_key_pem()` derives its public half. The CLI has no
+   command that keeps a private key: `leaderboard build --sign` without `--key` signs with a
+   throwaway key and writes only the public half.
+2. On a branch, replace `leaderboard/results/leaderboard.pub` with the new public half and run
+   `uv run python scripts/render_keyid.py`, which rewrites the keyid on this page.
+   `tests/test_docs_keyid_matches_pubkey.py` fails on any keyid it missed.
+3. Store the private key as the `PROVAEL_SIGNING_KEY` secret, under exactly that name: #74 lost the
+   previous key to a secret stored under a name no workflow reads. From then on, a re-stamp
+   dispatched on `main` fails at its verify step until the branch merges, because `main` still
+   carries the old public key, so nothing signed with the new key can land beside the old one.
+4. Dispatch `leaderboard-restamp.yml` on the branch. It re-signs the board from the run
+   `source.json` names, verifies it against the branch's `leaderboard.pub`, refuses a result whose
+   `measured_with` or attribution moved or whose `stale` flag was cleared, and commits to the
+   branch.
+5. Record the rotation: a CHANGELOG line, and an erratum if a published surface named the old key
+   (E-2026-02 records what happened when one did). Say whether the old key was retired or revoked.
+6. Merge the branch as one PR. Leave the old public key in git history, so the signatures made with
+   it stay checkable.
+
+### Revocation, and the rows already signed
+
+`leaderboard verify` has no revocation input, so the maintainer revokes a key in public: by rotating
+it as above, and by recording the revoked key, the date and the reason in the [errata](errata.md).
+
+For rows already signed, that means:
+
+- The rows stay what they were. They are a pure function of the committed `report.json` files,
+  bound by `inputs_digest`, so rebuilding the board from the run `source.json` names gives the same
+  rows and the same digest ([how](#provenance-and-reproducibility)). #74 checked exactly that: rows
+  and `inputs_digest` identical, with only the signature, `generated_at` and `commit` moving.
+  Revocation withdraws the signature's word on who published them.
+- A signature carries no trusted time. `generated_at` sits inside the signed bytes, but the signer
+  writes it, so whoever holds a stolen key can sign a backdated board. After a revocation for
+  compromise, treat every board signed with that key as unsigned, whatever its date, and check its
+  rows by rebuilding them (the `inputs_digest` must match) or against the re-signed board.
+- A key retired without compromise, like the one #74 replaced (its private half was lost, not
+  leaked), leaves its earlier signatures as good as they were, because nobody holds it to sign with.
+
+### The bytes the signature covers
+
+The signature is Ed25519 over the DSSE pre-authentication encoding
+`DSSEv1 <type length> <type> <payload length> <payload>` (each length a byte count in decimal),
+with the payload type `application/vnd.provael.leaderboard+json`. It is stored base64-encoded in
+`signature.sig`. The payload is the board as JSON with `signature` removed, and with every field
+introduced after the board's own `schema_version` stripped (`_FIELDS_ADDED_IN` and
+`_ROW_FIELDS_ADDED_IN` in `src/provael/leaderboard.py`). `provael.attest.canonical_json` serialises
+it: Python's `json.dumps(obj, sort_keys=True, separators=(",", ":"))`, encoded as UTF-8. Python's
+default `ensure_ascii=True` turns every non-ASCII character into a `\uXXXX` escape, so the bytes are
+ASCII.
+
+That is not RFC 8785 (the JSON Canonicalization Scheme), and the two disagree on ordinary values:
+
+| value | the bytes Provael signs | RFC 8785 |
+| --- | --- | --- |
+| the string café | `"caf\u00e9"` | `"café"`, in UTF-8 |
+| the number 1.0 | `1.0` | `1` |
+| the number 1e-7 | `1e-07` | `1e-7` |
+| the integer 2^64 | `18446744073709551616` | `18446744073709552000` |
+
+A JCS library therefore serialises the same board to different bytes, and the signature does not
+verify over them; to check a board without Provael, reproduce the Python rules above.
+`tests/test_leaderboard.py` holds the Provael column to `canonical_json` and to this page. Moving to
+RFC 8785 would change the bytes of every board, and so every signature, so it needs a new signature
+algorithm label and a board schema version. It waits for the next board schema change.
 
 ## Open-core
 

@@ -101,7 +101,9 @@ slice, and the pack says so:
 
 **Reading any result:** the rate and its floor travel together; the endpoint is an envelope exit
 under the predicate the run names; `N/A` is not zero; a **release verdict exists only under a named
-protocol** (`--protocol`) — [how to read a result](docs/quickstart.md#how-to-read-a-result).
+protocol** (`--protocol`) — [how to read a result](docs/quickstart.md#how-to-read-a-result). The
+measurement protocol every execution manifest names, `provael-redteam/v1`, is written down in
+[docs/protocol.md](docs/protocol.md).
 
 ## Coverage: registered is not validated
 

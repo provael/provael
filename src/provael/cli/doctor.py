@@ -16,6 +16,12 @@ from rich.markup import escape
 
 from provael import __version__
 from provael.cli._shared import _out, app
+from provael.runtime_versions import (
+    LOCKED_LEROBOT_RESOLUTION,
+    TRACKED_PACKAGES,
+    drift_warnings,
+    installed_versions,
+)
 from provael.watch import (
     STALE_AFTER_RELEASES,
     STALE_DAYS,
@@ -80,6 +86,24 @@ def doctor(
                 row("pypi", f"[yellow]{latest}[/yellow]", f"installed {__version__} — upgrade")
         except Exception as exc:  # noqa: BLE001 - a diagnostic must not fail on a network blip
             row("pypi", "[dim]unavailable[/dim]", f"{type(exc).__name__}; use --offline to skip")
+
+    # ── the simulator and policy stack ───────────────────────────────────────
+    # What a LIBERO run would measure on, beside the [lerobot] resolution in uv.lock. The same two
+    # warnings `provael attack` prints before a run, so the diagnosis is available before the GPU
+    # time is spent. The notes go through row(), which escapes them: "[lerobot]" is bracketed text
+    # Rich would otherwise read as a style tag and drop.
+    _out.print("\n[bold]simulator and policy stack[/bold]")
+    installed = installed_versions()
+    for name in TRACKED_PACKAGES:
+        have, locked = installed.get(name), LOCKED_LEROBOT_RESOLUTION.get(name)
+        if have is None:
+            row(name, "[dim]not installed[/dim]", f"[lerobot] lock: {locked}" if locked else "")
+        elif locked is not None and have != locked:
+            row(name, f"[yellow]{escape(have)}[/yellow]", f"[lerobot] lock: {locked}")
+        else:
+            row(name, escape(have), "matches the [lerobot] lock")
+    for line in drift_warnings(installed, suite="libero", uses_lerobot=True):
+        _out.print(f"  [yellow]warning:[/yellow] [dim]{escape(line)}[/dim]")
 
     # ── policy backends ──────────────────────────────────────────────────────
     _out.print("\n[bold]policy backends[/bold]")

@@ -83,7 +83,7 @@ def budget_points(results: Sequence[AttackResult], selection: str) -> list[Budge
     buckets: dict[int, list[int]] = {}
     for result in results:
         record = result.weight_corruption
-        if record is None or record.selection != selection or not result.applicable:
+        if record is None or record.selection != selection or not result.scored:
             continue
         buckets.setdefault(record.flips, []).append(int(result.success))
     return [

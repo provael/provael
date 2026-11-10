@@ -9,7 +9,7 @@ For each ``(task, attack, episode)`` triple the runner plays one episode:
         adv_instruction, adv_obs = attack.perturb(base_instruction, obs)
         action = policy.act(adv_obs, adv_instruction)
         obs, done, state = suite.step(action)
-        if suite.is_unsafe(state): success at step t; stop
+        if suite.evaluate_step(state): success at step t; stop
         if done: stop
 
 Episode ``i`` of a ``(task, attack)`` pair uses ``seed = config.seed + i`` so a run
@@ -19,7 +19,9 @@ time, so the same config always yields a byte-identical report.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 
@@ -39,26 +41,37 @@ from provael.ledger import TrialKey, append_trial, completed_keys, record_of, re
 from provael.policies.base import InputGradientProvider, PolicyAdapter
 from provael.policies.registry import make_policy
 from provael.scoring.asr import (
+    BASELINE_FAMILY,
     adversarial_asr,
     asr_std,
     by_attack,
     by_task,
     clean_task_success_rate,
+    compute_rates,
     matched_benign_fpr,
     overall_stat,
     semantic_role,
 )
-from provael.scoring.safety_cost import observed_unsafe_success_rate
+from provael.scoring.paired import scene_pairing
+from provael.scoring.safety_cost import (
+    SUITES_ENDING_AT_TASK_SUCCESS,
+    observed_unsafe_success_rate,
+)
 from provael.suites import make_suite
 from provael.suites.base import SuiteAdapter
 from provael.types import (
+    FIXTURE_VANTAGE,
+    SIMULATOR_VANTAGE,
     Action,
     AttackResult,
     CalibrationMeta,
     Decision,
     EaiTag,
+    EpisodeCoverage,
+    EpisodeObservation,
     Observation,
     RunReport,
+    Termination,
     Trajectory,
     init_state_of,
 )
@@ -160,6 +173,100 @@ def _configure_zones(attacks: list[Attack], suite: SuiteAdapter, task: str) -> N
             attack.keep_out_zones = suite.keep_out_zones(task)
 
 
+class ScenePinError(RuntimeError):
+    """A run that pins one starting scene per seed saw two arms at one seed start apart."""
+
+
+class InitStatePlanError(ValueError):
+    """``--init-states`` does not fit the run's tasks, seeds or arms: refused before a run."""
+
+
+@dataclass(frozen=True)
+class _InitStatePlan:
+    """``--init-states``, checked against the run: which state each episode starts from."""
+
+    states: dict[str, list[int]]
+    seeds: int
+    episodes_per_seed: int
+
+    @property
+    def per_seed(self) -> bool:
+        """True when every task lists one state per seed, so each (task, seed) is one scene."""
+        return all(len(listed) == self.seeds for listed in self.states.values())
+
+    def state_for(self, task: str, seed_index: int, repeat: int) -> int:
+        listed = self.states[task]
+        if len(listed) == self.seeds:
+            return listed[seed_index]
+        return listed[seed_index * self.episodes_per_seed + repeat]
+
+
+def _init_state_plan(
+    config: RunConfig, tasks: list[str], attacks: list[Attack]
+) -> _InitStatePlan | None:
+    """Check ``config.init_states`` against the run before anything is loaded (P1.2).
+
+    One state per seed is a pin by name: every arm and repeat at a seed starts from that state,
+    so a pair at a seed shares a scene. One state per episode gives repeats at one seed different
+    scenes, which is fine for a benign-only run (LIBERO-Recovery's ask: run a list of initial
+    states as benign rollouts) and would break the pairing of any other arm, so it is refused there.
+    """
+    plan = config.init_states
+    if plan is None:
+        return None
+    # (A pin set as well is refused by RunConfig itself, before a run is built.)
+    unknown = sorted(set(plan) - set(tasks))
+    missing = [task for task in tasks if task not in plan]
+    if unknown or missing:
+        raise InitStatePlanError(
+            f"--init-states must list exactly the run's tasks: missing {missing}, not in the run "
+            f"{unknown}"
+        )
+    seeds = config.episodes // config.episodes_per_seed
+    benign_only = all(attack.family == BASELINE_FAMILY for attack in attacks)
+    for task in tasks:
+        count = len(plan[task])
+        if count == seeds or (count == config.episodes and benign_only):
+            continue
+        if not benign_only:
+            raise InitStatePlanError(
+                f"--init-states lists {count} state(s) for {task!r} and the run has {seeds} "
+                "seed(s). With any arm besides the benign baseline it must pin one state per seed, "
+                f"so every arm at a seed starts from one scene: list exactly {seeds}."
+            )
+        raise InitStatePlanError(
+            f"--init-states lists {count} state(s) for {task!r}; a benign-only run takes one per "
+            f"seed ({seeds}) or one per episode ({config.episodes})"
+        )
+    return _InitStatePlan(
+        states={task: list(plan[task]) for task in tasks},
+        seeds=seeds,
+        episodes_per_seed=config.episodes_per_seed,
+    )
+
+
+def _check_pinned_cell(
+    seen: dict[tuple[str, int], tuple[str, int | None, str | None]], episode: AttackResult
+) -> None:
+    """Raise unless ``episode`` started from the scene the first episode at its cell did.
+
+    Called only on a run that pins one scene per seed (``--pin-init-states``, or
+    ``--init-states`` with one state per seed). The adapter already refuses a reset that loaded
+    another init state; this compares what each reset left, init state and scene digest, across
+    the arms and repeats at one ``(task, seed)``, so a pinned pair that did not share a scene can
+    never be reported as one.
+    """
+    cell = (episode.task, episode.seed)
+    first = seen.setdefault(cell, (episode.attack, episode.init_state, episode.scene_t0_digest))
+    if (episode.init_state, episode.scene_t0_digest) != first[1:]:
+        raise ScenePinError(
+            f"{episode.task} at seed {episode.seed}: the run pins one starting scene per seed, "
+            f"and {episode.attack!r} started from init state {episode.init_state} (scene "
+            f"{episode.scene_t0_digest}) where {first[0]!r} started from {first[1]} (scene "
+            f"{first[2]}). Refusing to report pairs that did not share a scene."
+        )
+
+
 def run_episode(
     policy: PolicyAdapter,
     suite: SuiteAdapter,
@@ -171,6 +278,7 @@ def run_episode(
     defense: Defense | None = None,
     audit_sink: list[dict[str, str]] | None = None,
     frame_sink: FrameSink | None = None,
+    record_errors: bool = False,
 ) -> AttackResult:
     """Play a single episode and return its :class:`AttackResult`.
 
@@ -188,6 +296,13 @@ def run_episode(
     ``frame_sink``, when given, receives per step the image the policy was actually shown (after
     the attack and any defense) and whether that step was scored unsafe — the episode's clip, see
     :mod:`provael.video`. Same rule as ``audit_sink``: caller-owned, never part of the report.
+
+    ``record_errors`` turns an exception from ``suite.step`` into an episode recorded as
+    ``unjudged`` with its reason (``termination: error``), instead of an aborted shard (P1.3). Only
+    the step: a failure in ``reset`` still stops the run, because the reset is where the
+    configuration, the scene pin and the environment build are checked, and swallowing those would
+    turn a misconfigured run into a column of unjudged episodes. A non-finite action is the
+    policy's failure, not the simulator's, and still stops the run either way.
     """
     policy.reset()  # clear per-episode policy state (e.g. SmolVLA's action-chunk queue)
     # Seed the POLICY as well as the environment. `suite.reset` has always seeded the env; the
@@ -203,6 +318,11 @@ def run_episode(
     # rather than inferred later from the seed or the episode order, neither of which survives a
     # resumed run. None on a suite without fixed initial states.
     init_state = init_state_of(obs)
+    # The settled scene the reset left, read from the simulator (P1.2): what makes "this pair
+    # started from one scene" checkable after the fact. None on a suite with no simulator state.
+    scene = suite.scene_snapshot()
+    scene_t0_digest = scene.digest if scene is not None else None
+    scene_t0 = list(scene.bodies) if scene is not None else None
 
     if not attack.applicable(obs):
         # The attack has no surface in this suite (e.g. mcp_tool_desc on a direct LIBERO
@@ -214,6 +334,8 @@ def run_episode(
             seed=seed,
             policy_seed=policy_seed,
             init_state=init_state,
+            scene_t0_digest=scene_t0_digest,
+            scene_t0=scene_t0,
             success=False,
             steps=0,
             steps_to_success=None,
@@ -235,6 +357,11 @@ def run_episode(
     task_success: bool | None = None  # C2: only set if the suite surfaces a task-success signal
     hazard: bool | None = None  # the second predicate: only set if the suite surfaces contact/force
     decisions: list[Decision] = []
+    # P1.3: steps the predicate could not judge (its input was missing), how the loop ended, and a
+    # simulator failure recorded under `record_errors`.
+    steps_without_pose = 0
+    ended_by_suite: Termination | None = None
+    error: str | None = None
     # Per-step calibration signal, recorded for EVERY episode. Gated on nothing by design: the
     # input to a keep-out calibration was previously computed and discarded on every run, which is
     # what made #136 unfixable rather than merely unfixed, and an opt-in flag would recreate that
@@ -299,7 +426,16 @@ def run_episode(
                     }
                 )
             action = filtered_action
-        obs, done, state = suite.step(action)
+        try:
+            obs, done, state = suite.step(action)
+        except Exception as exc:  # noqa: BLE001 - re-raised unless the run asked to record it
+            if not record_errors:
+                raise
+            # Recorded, not swallowed: the episode is unjudged, its reason says what failed, and
+            # every rate excludes it and counts it beside the rate (never a silent shrink).
+            error = f"simulator exception at step {t}: {type(exc).__name__}: {exc}"
+            steps = t - 1
+            break
 
         danger = float(state.get("danger", danger))
         threshold = float(state.get("threshold", threshold))
@@ -331,11 +467,16 @@ def run_episode(
                 [float(signal)] if isinstance(signal, (int, float)) else [float(v) for v in signal]
             )
 
+        # The calibrated predicate if one is installed. None is a step it could not judge (a lost
+        # pose): logged as not unsafe, and counted, so the episode cannot read as "no exit".
+        verdict = suite.evaluate_step(state)
+        if verdict is None:
+            steps_without_pose += 1
         decision = Decision(
             step=t,
             instruction=adversarial_instruction,
             action=[float(x) for x in action.reshape(-1)],
-            unsafe=suite.evaluate_unsafe(state),  # calibrated predicate if one is installed
+            unsafe=verdict is True,
         )
         decisions.append(decision)
 
@@ -351,7 +492,36 @@ def run_episode(
             steps_to_success = decision.step
             break
         if done:
+            # On a suite whose `done` fires at task success (LIBERO) the step that ended it says
+            # whether it was success; any other `done` is the suite's own cap.
+            at_success = suite.name in SUITES_ENDING_AT_TASK_SUCCESS and bool(step_task_success)
+            ended_by_suite = "task_success" if at_success else "env_truncated"
             break
+
+    termination: Termination
+    if error is not None:
+        termination = "error"
+    elif success:
+        termination = "unsafe_exit"
+    else:
+        termination = ended_by_suite or "horizon"
+    reason: str | None = error
+    if error is None and not success and steps_without_pose:
+        reason = (
+            f"the predicate's input (the end-effector pose) was missing on {steps_without_pose} "
+            f"of {steps} executed step(s) and no exit was seen, so whether the episode left the "
+            "envelope is not established"
+        )
+    observed: Literal["present", "absent", "not_established"] = (
+        "present" if success else "not_established" if reason is not None else "absent"
+    )
+    observation = EpisodeObservation(
+        state=observed,
+        vantage=FIXTURE_VANTAGE if suite.is_fixture else SIMULATOR_VANTAGE,
+        coverage=EpisodeCoverage(
+            steps_observed=steps, horizon=horizon, steps_without_pose=steps_without_pose
+        ),
+    )
 
     return AttackResult(
         task=task,
@@ -360,6 +530,8 @@ def run_episode(
         seed=seed,
         policy_seed=policy_seed,
         init_state=init_state,
+        scene_t0_digest=scene_t0_digest,
+        scene_t0=scene_t0,
         success=success,
         steps=steps,
         steps_to_success=steps_to_success,
@@ -378,6 +550,10 @@ def run_episode(
         # a result records the corruption that was ACTUALLY in force when it ran, not one a
         # caller believed was in force.
         weight_corruption=getattr(attack, "record", None),
+        termination=termination,
+        verdict="unjudged" if reason is not None else "judged",
+        unjudged_reason=reason,
+        observation=observation,
     )
 
 
@@ -435,17 +611,7 @@ def run(
             "episode from a fixed initial state chosen by its seed, and it keeps no fixed initial "
             "states; refusing to run on scenes that were not asked for"
         )
-
-    # Exchange env features once (no-op for the stub: features() returns None).
-    features = suite.features()
-    if features is not None:
-        policy.set_features(features)
-
-    policy.load()
-
-    defense = make_defense(config.defense) if config.defense else None
     attacks = resolve_attacks(config.attacks)
-    _configure_optimized(attacks, policy, suite, config.query_budget)
     tasks = config.tasks if config.tasks is not None else suite.tasks()
     # `RunConfig` rejects an explicitly-empty `tasks`, but a suite that exposes none reaches the
     # same dead end: the triple loop below never executes and the report reads as a measured 0/0
@@ -455,6 +621,24 @@ def run(
             f"suite {config.suite!r} exposes no tasks, so nothing would be run. A report with "
             "attempts=0 is not a measurement — fix the suite or pass an explicit --tasks."
         )
+    # Checked against the run's tasks, seeds and arms before the policy loads, and then against
+    # the suite, which needs a fixed list of initial states to load a named one.
+    init_plan = _init_state_plan(config, tasks, attacks)
+    if init_plan is not None and not suite.choose_init_state(None):
+        raise NotImplementedError(
+            f"--init-states names the initial state of each episode, and suite {config.suite!r} "
+            "keeps no fixed initial states; refusing to run on scenes that were not asked for"
+        )
+
+    # Exchange env features once (no-op for the stub: features() returns None).
+    features = suite.features()
+    if features is not None:
+        policy.set_features(features)
+
+    policy.load()
+
+    defense = make_defense(config.defense) if config.defense else None
+    _configure_optimized(attacks, policy, suite, config.query_budget)
 
     # RESUME. `episodes_per_seed > 1` puts several episodes on ONE (attack, task, seed) key, which
     # the ledger cannot tell apart — pending_trials would dedup them and the run would quietly
@@ -480,8 +664,25 @@ def run(
 
     _configure_weight_reference(attacks, policy, suite, tasks[0], config.seed)
 
+    # The predicate each task is scored against, read once, after any calibration is installed
+    # (P1.7). A suite that cannot say leaves the task out rather than guessing; in strict mode an
+    # uncalibrated LIBERO task refuses here, before its first episode, instead of at its first step.
+    predicates = {
+        task: identity
+        for task in tasks
+        if (identity := suite.predicate_identity(task)) is not None
+    }
+
     results: list[AttackResult] = []
+    # Each task's compiled model, read before its first episode (see SuiteAdapter.sim_model_digest).
+    sim_models: dict[str, str | None] = {}
+    # A run that pins one scene per seed checks every episode against the first at its cell.
+    pins_cells = config.pin_init_states is not None or (
+        init_plan is not None and init_plan.per_seed
+    )
+    cell_scenes: dict[tuple[str, int], tuple[str, int | None, str | None]] = {}
     for task in tasks:
+        sim_models[task] = suite.sim_model_digest(task)
         # Re-point the spatial search at THIS task's geometry before anything runs against it.
         _configure_zones(attacks, suite, task)
         for attack in attacks:
@@ -503,7 +704,7 @@ def run(
                 )
             for seed_index in range(seeds):
                 seed = config.seed + seed_index
-                for _repeat in range(config.episodes_per_seed):
+                for repeat in range(config.episodes_per_seed):
                     # WEIGHT-INTEGRITY BRACKET, per episode. A parameter attack corrupts the
                     # policy for exactly one episode and MUST hand back clean weights afterwards.
                     #
@@ -521,7 +722,11 @@ def run(
                     key: TrialKey = (attack.name, task, seed)
                     if key in done_keys:
                         results.append(replay[key])
+                        if pins_cells:
+                            _check_pinned_cell(cell_scenes, replay[key])
                         continue
+                    if init_plan is not None:
+                        suite.choose_init_state(init_plan.state_for(task, seed_index, repeat))
                     weight_attack = (
                         attack if isinstance(attack, WeightIntegrityAttack) else None
                     )
@@ -539,6 +744,7 @@ def run(
                         episode = run_episode(
                             policy, suite, attack, task, seed, config.horizon,
                             defense=defense, audit_sink=audit_sink, frame_sink=sink,
+                            record_errors=config.record_episode_errors,
                         )
                     finally:
                         if weight_attack is not None:
@@ -549,6 +755,8 @@ def run(
                     if ledger_path is not None:
                         append_trial(ledger_path, record_of(episode, trial_index=len(results)))
                     results.append(episode)
+                    if pins_cells:
+                        _check_pinned_cell(cell_scenes, episode)
     overall = overall_stat(results)
     adversarial = adversarial_asr(results)  # headline ASR: benign control excluded by role
     attack_breakdown = by_attack(results)
@@ -572,9 +780,10 @@ def run(
                         model=config.model,
                     ),
                 )
-    # The benign baseline's rate under the predicate actually used IS the live benign FPR.
+    # The benign baseline's rate under the predicate actually used IS the live benign FPR. Its
+    # measured rate, so an arm whose every episode was unjudged is N/A rather than a measured 0%.
     baseline = attack_breakdown.get("none")
-    benign_fpr = baseline.asr if baseline is not None else None
+    benign_fpr = baseline.measured_rate if baseline is not None else None
 
     # P0.4 uncertainty: the overall ASR carries BOTH a fixed-n Wilson interval and an
     # anytime-valid interval (valid under the per-seed peeking a GPU budget run does), plus the
@@ -595,7 +804,13 @@ def run(
         # and a tuned one are signed over as different things (nested, so the projection strips
         # them for a report that declares less — see attest._CALIBRATION_META_FIELDS_ADDED_IN).
         # 8: results carry `init_state`, the fixed initial state each reset loaded (#136).
-        schema_version=8,
+        # 9: `deployed_policy` carries the rest of the runtime identity (normaliser, processor and
+        # weight digests, rename map, cameras, denoising steps, control rate), nested, so the
+        # projection strips it for a report that declares less (attest._DEPLOYED_POLICY_FIELDS_
+        # ADDED_IN); each result carries the scene its reset left (`scene_t0_digest`, `scene_t0`),
+        # and the report each task's model digest and how many pairs shared a scene; each result
+        # says how it ended and whether it was judged, and `rates` carries every rate as counts.
+        schema_version=9,
         evidence_state=classify_run(config.policy, config.suite).value,
         policy=config.policy,
         model=config.model,
@@ -632,6 +847,12 @@ def run(
         succ_but_unsafe=observed_unsafe_success_rate(results, suite=config.suite),
         clean_task_success_rate=clean_task_success_rate(results),
         calibration=calibration_meta,
+        sim_model_digests=sim_models,
+        scene_pairing=scene_pairing(results),
+        # Every rate above with its counts, interval method and level, and its unjudged episodes,
+        # from the same episodes and the same filters (P1.6).
+        rates=compute_rates(results, suite=config.suite),
+        predicates=predicates,
         by_attack=attack_breakdown,
         by_task=by_task(results),
         eai={
@@ -644,4 +865,4 @@ def run(
     )
 
 
-__all__ = ["run", "run_episode"]
+__all__ = ["InitStatePlanError", "ScenePinError", "run", "run_episode"]

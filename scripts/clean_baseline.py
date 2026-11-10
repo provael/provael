@@ -49,7 +49,7 @@ def _benign_success_rate(report: RunReport) -> float | None:
     rates = [
         bool(r.task_success)
         for r in report.results
-        if r.attack == "none" and r.applicable and r.task_success is not None
+        if r.attack == "none" and r.scored and r.task_success is not None
     ]
     return sum(rates) / len(rates) if rates else None
 

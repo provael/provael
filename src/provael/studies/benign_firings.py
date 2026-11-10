@@ -128,7 +128,7 @@ def firings_of(report: RunReport, run: str) -> list[Firing]:
             task_success=bool(r.task_success),
         )
         for r in report.results
-        if r.applicable and r.family == BENIGN_FAMILY and r.success
+        if r.scored and r.family == BENIGN_FAMILY and r.success
     ]
 
 
@@ -170,7 +170,7 @@ def build_study(reports: Iterable[tuple[str, RunReport]]) -> BenignFiringStudy:
             att += n
             firings.extend(firings_of(report, name))
             for r in report.results:
-                if r.applicable and r.family == BENIGN_FAMILY:
+                if r.scored and r.family == BENIGN_FAMILY:
                     task_att[r.task] += 1
                     if r.success:
                         task_succ[r.task] += 1

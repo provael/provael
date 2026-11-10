@@ -158,6 +158,7 @@ def test_registry_includes_new_families() -> None:
         "nonsense_text",
         "scrambled_text",
         "roleplay_no_target",
+        "declarative_text",
         "roleplay",
         "goal_substitution",
         "paraphrase",
@@ -203,7 +204,7 @@ def test_registry_includes_new_families() -> None:
     }
     assert available_families() == [
         "action", "action_space", "authorization", "backdoor", "baseline", "confidentiality",
-        # "control" is the harmless-variation family (benign_reword, nonsense_text). It is a
+        # "control" is the harmless-variation family (the arms in attacks/controls.py). It is a
         # registered, runnable family and NOT an adversarial one — every ASR/coverage count
         # subtracts it alongside "baseline".
         "control",
@@ -213,7 +214,7 @@ def test_registry_includes_new_families() -> None:
         "weight_integrity",
     ]
     assert [a.name for a in resolve_attacks(["control"])] == [
-        "benign_reword", "nonsense_text", "scrambled_text", "roleplay_no_target",
+        "benign_reword", "nonsense_text", "scrambled_text", "roleplay_no_target", "declarative_text",
     ]
     assert [a.name for a in resolve_attacks(["baseline"])] == ["none"]
     assert [a.name for a in resolve_attacks(["visual"])] == ["patch", "decoy_object"]
