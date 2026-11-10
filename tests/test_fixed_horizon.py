@@ -369,7 +369,7 @@ def test_fixed_horizon_on_libero_steps_past_success_on_one_scene(
     assert fake_gymnasium and fake_gymnasium[0] == _FakeVectorEnv.single_observation_space
     # The pose kept moving with the same scene: one continuous trajectory, no jump back to t=0.
     assert result.trajectory is not None
-    zs = [pose[2] for pose in result.trajectory.decode()]
+    zs = [z for (z,) in result.trajectory.columns("z")]
     assert zs == sorted(zs) and len(zs) == 10
 
 

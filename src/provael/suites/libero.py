@@ -131,6 +131,18 @@ LIBERO_TASK_SUITES: tuple[str, ...] = (
 #: LIBERO continuous action dimension (verified: Box(-1, 1, shape=(7,))).
 LIBERO_ACTION_DIM = 7
 
+#: What a LIBERO episode's trajectory records per step (P1.5): the end-effector position, its
+#: orientation as robosuite reports it (``robot0_eef_quat``, x-y-z-w order: robosuite 1.4.0
+#: ``robots/single_arm.py:308-309`` converts MuJoCo's w-x-y-z with ``to="xyzw"``), and the gripper
+#: opening in metres, the Panda's two finger joints apart (``robot0_gripper_qpos``,
+#: ``single_arm.py:318-319``; ``finger_joint1`` slides over [0, 0.04] and ``finger_joint2`` over
+#: [-0.04, 0], ``models/assets/grippers/panda_gripper.xml:30,40``). lerobot 0.5.1 passes both
+#: through as ``robot_state.eef.quat`` and ``robot_state.gripper.qpos``
+#: (``envs/libero.py:251-276``).
+LIBERO_TRAJECTORY_CHANNELS: tuple[str, ...] = (
+    "x", "y", "z", "qx", "qy", "qz", "qw", "gripper_opening",
+)
+
 #: A user-supplied callable that extracts the currently-grasped object's name from the
 #: live vec-env (e.g. by reading object poses from the underlying robosuite obs and
 #: testing gripper proximity/contact). Signature: ``(vec_env, observation) -> str | None``.
@@ -1003,6 +1015,24 @@ class LiberoSuiteAdapter(SuiteAdapter):
         ee_pos = state.get("ee_pos")
         return None if ee_pos is None else [float(v) for v in ee_pos]
 
+    def trajectory_channels(self) -> tuple[str, ...]:
+        """Position, orientation and gripper opening (:data:`LIBERO_TRAJECTORY_CHANNELS`)."""
+        return LIBERO_TRAJECTORY_CHANNELS
+
+    def trajectory_sample(self, state: State) -> list[float] | None:
+        """One row of :data:`LIBERO_TRAJECTORY_CHANNELS`; ``None`` without a position, as before.
+
+        An orientation or opening that could not be read is NaN in its column, never a guess.
+        """
+        ee_pos = state.get("ee_pos")
+        if ee_pos is None:
+            return None
+        quat = state.get("ee_quat")
+        opening = state.get("gripper_opening")
+        orientation = [float(v) for v in quat] if quat is not None else [math.nan] * 4
+        gripper = float(opening) if opening is not None else math.nan
+        return [*(float(v) for v in ee_pos), *orientation, gripper]
+
     # -- conversion helpers (verified obs structure) ------------------------
 
     def _ee_pos(self, obs: Observation) -> list[float] | None:
@@ -1010,6 +1040,22 @@ class LiberoSuiteAdapter(SuiteAdapter):
             return [float(v) for v in _first(obs["robot_state"]["eef"]["pos"]).reshape(-1)]
         except (KeyError, TypeError, IndexError):
             return None
+
+    def _ee_quat(self, obs: Observation) -> list[float] | None:
+        """The end-effector orientation, x-y-z-w (see :data:`LIBERO_TRAJECTORY_CHANNELS`)."""
+        try:
+            quat = [float(v) for v in _first(obs["robot_state"]["eef"]["quat"]).reshape(-1)]
+        except (KeyError, TypeError, IndexError, ValueError):
+            return None
+        return quat if len(quat) == 4 else None
+
+    def _gripper_opening(self, obs: Observation) -> float | None:
+        """The Panda's finger joints apart, in metres (see :data:`LIBERO_TRAJECTORY_CHANNELS`)."""
+        try:
+            qpos = [float(v) for v in _first(obs["robot_state"]["gripper"]["qpos"]).reshape(-1)]
+        except (KeyError, TypeError, IndexError, ValueError):
+            return None
+        return qpos[0] - qpos[1] if len(qpos) == 2 else None
 
     def _primary_image(self, obs: Observation) -> npt.NDArray[Any] | None:
         """Return the primary camera image (H, W, 3) uint8, or None if unavailable.
@@ -1135,6 +1181,9 @@ class LiberoSuiteAdapter(SuiteAdapter):
             "seed": self._seed,
             "step": self._step,
             "ee_pos": self._ee_pos(obs),
+            # P1.5: recorded in the trajectory beside the position (None when unread).
+            "ee_quat": self._ee_quat(obs),
+            "gripper_opening": self._gripper_opening(obs),
             "grasped_object": self._grasped_object(obs),
             # The second predicate's raw signals (None = not readable this step, see ContactRule).
             "ee_force_n": ee_force_n,
@@ -1164,6 +1213,7 @@ class LiberoSuiteAdapter(SuiteAdapter):
 __all__ = [
     "LIBERO_TASK_SUITES",
     "LIBERO_ACTION_DIM",
+    "LIBERO_TRAJECTORY_CHANNELS",
     "ISO_TS_15066_HANDS_QUASI_STATIC_N",
     "CONTACT_RULE_VERSION",
     "GraspExtractor",

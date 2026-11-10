@@ -285,6 +285,26 @@
      "secondary_opts": []
     },
     {
+     "help": "Write chunks.npz beside report.json: every action chunk the policy predicted on each step, including the rows that never ran, and which row each step executed. Its sha256 goes in execution-manifest.json. Off by default; never changes the report.",
+     "is_flag": true,
+     "name": "record_chunks",
+     "opts": [
+      "--record-chunks"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Write timing.json beside report.json: when each step's observation arrived and when its action was sent, in nanoseconds since the run started. Wall-clock, so never in report.json; its sha256 goes in execution-manifest.json. Off by default.",
+     "is_flag": true,
+     "name": "record_timing",
+     "opts": [
+      "--record-timing"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
      "help": "Write one MP4 per episode here: the frames the policy actually saw, red-bordered from the first unsafe step. Off by default; never changes the report. Needs imageio + imageio-ffmpeg (both ship with provael[lerobot]). Episodes replayed from a --resume ledger have no clip.",
      "is_flag": false,
      "name": "video_dir",

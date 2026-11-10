@@ -213,6 +213,17 @@ reset), and every episode carries `failure_cause`: `envelope_exit`, `collision` 
 predicate), `missed_grasp`, `dropped` or `timeout` where the signals can tell them apart, `null`
 where they cannot.
 
+Each `trajectory` names its columns (`channels`), so a reader never infers the stride: `x`, `y`,
+`z` on a spatial suite, `danger` on the stub, and on LIBERO the end-effector orientation (`qx`,
+`qy`, `qz`, `qw`) and the gripper opening in metres beside the position, NaN in a column a step
+could not read. A trajectory from before schema 9 names none and is read by its width, as before,
+and the projection strips `channels` from any report that declares less
+(`attest._TRAJECTORY_FIELDS_ADDED_IN`). Two sidecars are opt-in and stay out of `report.json`:
+`provael attack --record-chunks` writes `chunks.npz` (every action chunk the policy predicted,
+including the rows that never ran, and which row each step executed), and `--record-timing`
+writes `timing.json` (when each step's observation arrived and its action left, which is
+wall-clock). The execution manifest records each file's sha256 under `sidecars`.
+
 ### The regulatory clock
 
 Factual application dates, carried so the evidence is legible against the calendar buyers care

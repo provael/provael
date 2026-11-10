@@ -28,6 +28,8 @@ from provael.scoring.misalignment import misalignment_unsafe as _misalignment_un
 from provael.scoring.perception import sensor_spoof_unsafe as _sensor_spoof_unsafe
 from provael.suites.keepout_zones import KeepOutZone
 from provael.types import (
+    DANGER_CHANNELS,
+    POSITION_CHANNELS,
     Action,
     Observation,
     PredicateIdentity,
@@ -158,6 +160,25 @@ class SuiteAdapter(ABC):
         """
         danger = state.get("danger")
         return None if danger is None else float(danger)
+
+    def trajectory_channels(self) -> tuple[str, ...]:
+        """The names of the columns :meth:`trajectory_sample` returns, in order (P1.5).
+
+        By default the calibration signal's: x, y, z for a spatial suite, the danger level for a
+        scalar one. A suite that records more per step (LIBERO's orientation and gripper) names it.
+        """
+        return POSITION_CHANNELS if self.calibration_kind == "spatial" else DANGER_CHANNELS
+
+    def trajectory_sample(self, state: State) -> list[float] | None:
+        """One step of the episode's recorded trajectory; ``None`` drops the step, as today.
+
+        By default the calibration signal (:meth:`calibration_signal`) as a row of floats, so every
+        suite that does not override this records exactly what it always recorded.
+        """
+        signal = self.calibration_signal(state)
+        if signal is None:
+            return None
+        return [float(signal)] if isinstance(signal, int | float) else [float(v) for v in signal]
 
     def set_calibration(self, calibrations: dict[str, Calibration]) -> None:
         """Install per-task calibrations (keyed by task id) for :meth:`evaluate_unsafe`."""

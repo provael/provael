@@ -9,12 +9,14 @@ For each ``(task, attack, episode)`` triple the runner plays one episode:
         adv_instruction, adv_obs = attack.perturb(base_instruction, obs)
         action = policy.act(adv_obs, adv_instruction)
         obs, done, state = suite.step(action)
-        if suite.evaluate_step(state): success at step t; stop
+        if suite.evaluate_step(state): success at step t; stop (first-event)
         if done: stop
 
-Episode ``i`` of a ``(task, attack)`` pair uses ``seed = config.seed + i`` so a run
-is fully reproducible. The aggregated :class:`RunReport` contains no wall-clock
-time, so the same config always yields a byte-identical report.
+Under ``--termination fixed-horizon`` neither event stops the episode: the exit latches and the
+loop runs to the horizon. Episode ``i`` of a ``(task, attack)`` pair uses ``seed = config.seed + i``
+so a run is fully reproducible. The aggregated :class:`RunReport` contains no wall-clock
+time, so the same config always yields a byte-identical report; the opt-in chunk and timing
+sidecars (:mod:`provael.sidecars`) are filled into caller-owned logs and never reach it.
 """
 
 from __future__ import annotations
@@ -60,6 +62,7 @@ from provael.scoring.safety_cost import (
     SUITES_ENDING_AT_TASK_SUCCESS,
     observed_unsafe_success_rate,
 )
+from provael.sidecars import ChunkLog, TimingLog
 from provael.suites import make_suite
 from provael.suites.base import SuiteAdapter
 from provael.types import (
@@ -311,6 +314,8 @@ def run_episode(
     frame_sink: FrameSink | None = None,
     record_errors: bool = False,
     termination: str = FIRST_EVENT,
+    chunk_log: ChunkLog | None = None,
+    timing_log: TimingLog | None = None,
 ) -> AttackResult:
     """Play a single episode and return its :class:`AttackResult`.
 
@@ -341,6 +346,11 @@ def run_episode(
     are still logged and scored, so ``decisions`` measures dwell. The suite must already have
     accepted the mode (:meth:`~provael.suites.base.SuiteAdapter.set_termination`); there a
     ``done`` means only that it cannot go on.
+
+    ``chunk_log`` and ``timing_log`` (P1.5), when given, receive the action chunks the policy
+    predicted on each live step and when each step's observation arrived and its action left.
+    Same rule as ``audit_sink``: caller-owned, never part of the report; the clock is read only
+    into ``timing_log``.
     """
     fixed_horizon = termination == FIXED_HORIZON
     policy.reset()  # clear per-episode policy state (e.g. SmolVLA's action-chunk queue)
@@ -351,6 +361,7 @@ def run_episode(
     # never the value we asked for.
     policy_seed = policy.seed(seed)
     obs = suite.reset(task, seed)
+    observed_ns = timing_log.now() if timing_log is not None else 0
     base_instruction = str(obs.get("instruction", ""))
     # Which fixed initial state the reset loaded, as the SUITE read it from its environment. On
     # LIBERO the seed does not pick it (a reset counter does), so it is recorded per episode
@@ -431,7 +442,11 @@ def run_episode(
                     }
                 )
             adversarial_instruction, adv_obs = defense.apply(adversarial_instruction, adv_obs)
+        if chunk_log is not None:
+            chunk_log.before_act()  # chunks an attack's search queried for were never executed
         action = policy.act(adv_obs, adversarial_instruction)
+        if chunk_log is not None:
+            chunk_log.after_act(t)
         # Every unsafe predicate downstream is a threshold comparison, and EVERY comparison against
         # NaN is False — so a policy emitting NaN would score SAFE on all axes and the episode would
         # be reported as a benign success. Reject non-finite actions at the one boundary they all
@@ -467,6 +482,8 @@ def run_episode(
                     }
                 )
             action = filtered_action
+        if timing_log is not None:
+            timing_log.step(observed_ns, timing_log.now())
         try:
             obs, done, state = suite.step(action)
         except Exception as exc:  # noqa: BLE001 - re-raised unless the run asked to record it
@@ -477,6 +494,8 @@ def run_episode(
             error = f"simulator exception at step {t}: {type(exc).__name__}: {exc}"
             steps = t - 1
             break
+        if timing_log is not None:
+            observed_ns = timing_log.now()
 
         danger = float(state.get("danger", danger))
         threshold = float(state.get("threshold", threshold))
@@ -502,12 +521,11 @@ def run_episode(
 
         # Read BEFORE the unsafe check breaks the loop: the step that violates the envelope is the
         # most informative one in the trajectory, and a `break` placed above this would drop
-        # precisely that sample on every successful attack.
-        signal = suite.calibration_signal(state)
-        if signal is not None:
-            calib_samples.append(
-                [float(signal)] if isinstance(signal, (int, float)) else [float(v) for v in signal]
-            )
+        # precisely that sample on every successful attack. The suite names its columns (P1.5):
+        # the calibration signal, and on LIBERO the orientation and gripper opening beside it.
+        sample = suite.trajectory_sample(state)
+        if sample is not None:
+            calib_samples.append(sample)
 
         # The calibrated predicate if one is installed. None is a step it could not judge (a lost
         # pose): logged as not unsafe, and counted, so the episode cannot read as "no exit".
@@ -598,7 +616,11 @@ def run_episode(
         attacker_access=attack.attacker_access,
         action_head_class=policy.action_head_class or attack.action_head_class,
         decisions=decisions,
-        trajectory=Trajectory.encode(calib_samples) if calib_samples else None,
+        trajectory=(
+            Trajectory.encode(calib_samples, channels=suite.trajectory_channels())
+            if calib_samples
+            else None
+        ),
         # None for every input-channel family. Read from the attack rather than passed in, so
         # a result records the corruption that was ACTUALLY in force when it ran, not one a
         # caller believed was in force.
@@ -624,6 +646,8 @@ def run(
     audit_sink: list[dict[str, str]] | None = None,
     ledger_path: Path | None = None,
     video_dir: Path | None = None,
+    chunk_log: ChunkLog | None = None,
+    timing_log: TimingLog | None = None,
 ) -> RunReport:
     """Execute a full red-team run described by ``config`` and return a report.
 
@@ -645,6 +669,12 @@ def run(
     The replayed episodes are spliced back **in plan order**, not appended at the end, so a resumed
     report is identical to the uninterrupted one rather than merely equivalent. Determinism is the
     product here; "same numbers, different order" would still change the digest ``attest`` signs.
+
+    ``chunk_log`` and ``timing_log`` (P1.5) are the opt-in sidecars: the chunks the policy
+    predicted, which it hands over through
+    :meth:`~provael.policies.base.PolicyAdapter.record_chunks`, and per-step timing. Each
+    episode's entry is keyed by its position in ``results``; an episode replayed from the ledger
+    ran in another process and has none. Neither touches the report.
     """
     # `device` is forwarded so --accelerator is actually HONOURED. Every real factory already
     # accepts a `device` kwarg (defaulting to "cuda"), but the runner never passed one, so the
@@ -704,6 +734,10 @@ def run(
         policy.set_features(features)
 
     policy.load()
+    if chunk_log is not None:
+        # The adapter states what space its chunks are in, or None when it predicts none it can
+        # hand over; the sidecar records either answer.
+        chunk_log.space = policy.record_chunks(chunk_log.sink)
 
     defense = make_defense(config.defense) if config.defense else None
     _configure_optimized(attacks, policy, suite, config.query_budget)
@@ -809,12 +843,16 @@ def run(
                         if video_dir is not None
                         else None
                     )
+                    for log in (chunk_log, timing_log):
+                        if log is not None:
+                            log.start(len(results), task, attack.name, seed)
                     try:
                         episode = run_episode(
                             policy, suite, attack, task, seed, config.horizon,
                             defense=defense, audit_sink=audit_sink, frame_sink=sink,
                             record_errors=config.record_episode_errors,
                             termination=config.termination,
+                            chunk_log=chunk_log, timing_log=timing_log,
                         )
                     finally:
                         if weight_attack is not None:

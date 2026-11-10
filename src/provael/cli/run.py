@@ -47,6 +47,14 @@ from provael.runner import InitStatePlanError, ResumeModeError, ScenePinError, r
 from provael.runtime_versions import drift_warnings, installed_versions
 from provael.sarif import write_sarif
 from provael.scorecard import SCORECARD_MD, write_scorecard
+from provael.sidecars import (
+    CHUNKS_NPZ,
+    TIMING_JSON,
+    ChunkLog,
+    TimingLog,
+    write_chunks,
+    write_timing,
+)
 from provael.suites.libero import suite_and_ids_from_tasks
 from provael.verdict import write_decision
 
@@ -152,6 +160,24 @@ def attack(
                  "the file if absent. Not usable with --episodes-per-seed > 1.",
         ),
     ] = None,
+    record_chunks: Annotated[
+        bool,
+        typer.Option(
+            "--record-chunks",
+            help="Write chunks.npz beside report.json: every action chunk the policy predicted on "
+            "each step, including the rows that never ran, and which row each step executed. "
+            "Its sha256 goes in execution-manifest.json. Off by default; never changes the report.",
+        ),
+    ] = False,
+    record_timing: Annotated[
+        bool,
+        typer.Option(
+            "--record-timing",
+            help="Write timing.json beside report.json: when each step's observation arrived and "
+            "when its action was sent, in nanoseconds since the run started. Wall-clock, so never "
+            "in report.json; its sha256 goes in execution-manifest.json. Off by default.",
+        ),
+    ] = False,
     video_dir: Annotated[
         Path | None,
         typer.Option(
@@ -378,9 +404,13 @@ def attack(
     # The defense audit trail is collected here and written as a SIDECAR, never merged into
     # report.json — a field on RunReport would move the attestation subject digest.
     defense_audit: list[dict[str, str]] = []
+    # The opt-in sidecars (P1.5) are filled the same way, and written beside the report below.
+    chunk_log = ChunkLog() if record_chunks else None
+    timing_log = TimingLog() if record_timing else None
     try:
         report = run(
-            config, calibrations, audit_sink=defense_audit, ledger_path=resume, video_dir=video_dir
+            config, calibrations, audit_sink=defense_audit, ledger_path=resume,
+            video_dir=video_dir, chunk_log=chunk_log, timing_log=timing_log,
         )
     except (MissingLeRobotError, IncompatiblePolicyError) as exc:
         _fail(str(exc))
@@ -402,6 +432,18 @@ def attack(
 
     decision = _decide(report, acceptance)
     json_path, md_path = write_report(report, config.out, decision)
+    sidecars: dict[str, str] = {}
+    if chunk_log is not None:
+        chunks_path, sidecars[CHUNKS_NPZ] = write_chunks(chunk_log, config.out)
+        _out.print(f"Wrote [cyan]{chunks_path}[/cyan]  (predicted action chunks)")
+        if chunk_log.space is None:
+            _err.print(
+                f"[yellow]note:[/yellow] policy {config.policy!r} hands over no action chunks; "
+                "chunks.npz records the steps and no chunk."
+            )
+    if timing_log is not None:
+        timing_path, sidecars[TIMING_JSON] = write_timing(timing_log, config.out)
+        _out.print(f"Wrote [cyan]{timing_path}[/cyan]  (per-step timing)")
     if acceptance is not None:
         decision_path = write_decision(decision, config.out)
         _out.print(
@@ -409,7 +451,8 @@ def attack(
             f"[bold]{decision.verdict.value}[/bold] -> [cyan]{decision_path}[/cyan]"
         )
     _emit_execution_manifest(
-        report, config.out, elapsed=elapsed, defense=config.defense, decision=decision
+        report, config.out, elapsed=elapsed, defense=config.defense, decision=decision,
+        sidecars=sidecars or None,
     )
     if config.defense:
         log_path = _write_defense_log(defense_audit, config.out)

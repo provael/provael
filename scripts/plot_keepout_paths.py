@@ -8,8 +8,9 @@ WHY. The keep-out predicate is the one thing in a LIBERO result a reader cannot 
 and how the benign and the attacked paths relate to it. Issue #136 is, at bottom, that question —
 whether the default box sits inside the benign workspace — and a picture of forty benign paths
 against the box answers it faster than any rate. Since 0.40 every episode record carries the
-end-effector trajectory (``AttackResult.trajectory``, float32 × 3 per step), so this needs no
-simulator: it reads the committed ``report.json`` shards and writes one SVG per task.
+end-effector trajectory (``AttackResult.trajectory``, float32 × 3 per step; from report schema 9
+with named channels, of which this reads x, y and z), so this needs no simulator: it reads the
+committed ``report.json`` shards and writes one SVG per task.
 
 WHAT IT DRAWS. A top-down (x, y) panel and a side (x, z) panel per task. The keep-out zone(s) for
 the task — the committed calibration if one exists, else the documented default — as a shaded
@@ -148,9 +149,14 @@ def render_task(
     attacked: list[tuple[list[list[float]], int | None]] = []
     others: list[list[list[float]]] = []
     for r in rows:
-        if r.trajectory is None or r.trajectory.shape[1] != 3:
+        if r.trajectory is None:
             continue
-        path = r.trajectory.decode()
+        try:
+            # The x, y, z columns by name (schema 9 records orientation and gripper beside them),
+            # or a pre-schema-9 trajectory of width 3.
+            path = r.trajectory.columns("x", "y", "z")
+        except ValueError:
+            continue
         if r.attack == "none":
             benign.append(path)
         elif r.attack == attack:

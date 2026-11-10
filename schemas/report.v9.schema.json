@@ -1460,8 +1460,24 @@
       "type": "object"
     },
     "Trajectory": {
-      "description": "The per-step calibration signal of one episode, stored compactly.\n\nWHY THIS EXISTS AT ALL. Calibrating a keep-out zone needs the BENIGN end-effector envelope \u2014\nwhere the policy actually goes when nobody is attacking it \u2014 and that is the one input the\nrunner computed on every step and then threw away. :meth:`Suite.calibration_signal` has always\nreturned exactly this signal, and nothing ever persisted it, so every finished run left the\ncalibration no more possible than before it started. That is why issue #136 is *unfixable*\nrather than merely unfixed: the blocker is not GPU budget for the fit, it is that the data the\nfit consumes was never written down.\n\nWHY NOT JUST REUSE ``decisions``. ``Decision`` is a per-step JSON object and the ten-task suite\nalready sheds 1.9 MB per task of it before anything is committed. A second per-step JSON field\nwould be the same mistake twice. This is a homogeneous numeric array, so it is stored as one\nbase64 blob of zlib-compressed float32 \u2014 a few hundred poses collapse to a few hundred bytes,\nand the shape is carried explicitly so a reader never has to infer the stride.\n\nDETERMINISM. zlib at a fixed level over identical float32 bytes is byte-stable, so a report\ncarrying trajectories stays a pure function of its inputs and the attestation subject is\nunchanged in kind.",
+      "description": "The per-step calibration signal of one episode, stored compactly.\n\nWHY THIS EXISTS AT ALL. Calibrating a keep-out zone needs the BENIGN end-effector envelope \u2014\nwhere the policy actually goes when nobody is attacking it \u2014 and that is the one input the\nrunner computed on every step and then threw away. :meth:`Suite.calibration_signal` has always\nreturned exactly this signal, and nothing ever persisted it, so every finished run left the\ncalibration no more possible than before it started. That is why issue #136 is *unfixable*\nrather than merely unfixed: the blocker is not GPU budget for the fit, it is that the data the\nfit consumes was never written down.\n\nWHY NOT JUST REUSE ``decisions``. ``Decision`` is a per-step JSON object and the ten-task suite\nalready sheds 1.9 MB per task of it before anything is committed. A second per-step JSON field\nwould be the same mistake twice. This is a homogeneous numeric array, so it is stored as one\nbase64 blob of zlib-compressed float32 \u2014 a few hundred poses collapse to a few hundred bytes,\nand the shape is carried explicitly so a reader never has to infer the stride.\n\nDETERMINISM. zlib at a fixed level over identical float32 bytes is byte-stable, so a report\ncarrying trajectories stays a pure function of its inputs and the attestation subject is\nunchanged in kind.\n\nNAMED CHANNELS (schema 9, P1.5). A suite may record more than its calibration signal: LIBERO\nrecords the end-effector's orientation and the gripper opening beside its position. ``channels``\nnames every column, so a reader never infers the stride, and :meth:`calibration_signal` picks\nthe position or danger columns out of whatever else was recorded. A trajectory written before\nschema 9 names none and is read by its width, as it always was.",
       "properties": {
+        "channels": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The name of each column, in order, e.g. ['x', 'y', 'z', 'qx', 'qy', 'qz', 'qw', 'gripper_opening'] on LIBERO or ['danger'] on the stub; a column a step could not read is NaN there. None on a trajectory written before schema 9, where the width says which signal it is (3: x, y, z; 1: danger).",
+          "title": "Channels"
+        },
         "data": {
           "description": "base64(zlib(float32 little-endian, C-order)).",
           "title": "Data",
@@ -1475,7 +1491,7 @@
           "type": "string"
         },
         "shape": {
-          "description": "(steps, dims). dims is 3 for a spatial suite (x, y, z) and 1 for a scalar-danger suite, so a reader can tell the two apart without guessing.",
+          "description": "(steps, dims). Without `channels`, dims is 3 for a spatial suite (x, y, z) and 1 for a scalar-danger suite, so a reader can tell the two apart without guessing.",
           "maxItems": 2,
           "minItems": 2,
           "prefixItems": [

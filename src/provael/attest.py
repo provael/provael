@@ -565,6 +565,15 @@ _DEPLOYED_POLICY_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
 }
 
 
+#: Fields added to each result's `trajectory` block (`Trajectory`) by schema version, the same
+#: contract one level down again. Every committed report from schema 3 to 8 carries trajectories,
+#: and without this table each would dump `channels` as null, its canonical bytes would move, and
+#: the digest its execution manifest binds would stop matching.
+_TRAJECTORY_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
+    9: ("channels",),
+}
+
+
 def report_projection(report: RunReport | dict[str, Any]) -> dict[str, Any]:
     """The exact object every report digest is taken over, schema-aware.
 
@@ -601,6 +610,13 @@ def report_projection(report: RunReport | dict[str, Any]) -> dict[str, Any]:
             if isinstance(deployed, dict):
                 for name in names:
                     deployed.pop(name, None)
+    for version, names in _TRAJECTORY_FIELDS_ADDED_IN.items():
+        if declared < version:
+            for result in obj.get("results", []):
+                trajectory = result.get("trajectory") if isinstance(result, dict) else None
+                if isinstance(trajectory, dict):
+                    for name in names:
+                        trajectory.pop(name, None)
     return obj
 
 

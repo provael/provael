@@ -152,6 +152,16 @@ def test_package_versions_are_recorded_and_their_absence_is_a_stated_gap() -> No
     assert "package_versions" not in _report().model_dump(), "never in the deterministic report"
 
 
+def test_the_sidecars_are_bound_by_their_digests_when_there_are_any() -> None:
+    """P1.5: chunks.npz and timing.json sit beside report.json; the manifest names their sha256."""
+    assert _manifest().sidecars is None
+    digests = {"chunks.npz": "ab" * 32, "timing.json": "cd" * 32}
+    manifest = _manifest(sidecars=digests)
+    assert manifest.sidecars == digests
+    assert "sidecars" not in manifest.missing_fields, "opt-in, so never a provenance gap"
+    assert "sidecars" not in _report().model_dump(), "never in the deterministic report"
+
+
 def test_the_checkpoint_digest_is_carried_when_the_caller_supplies_it() -> None:
     manifest = _manifest(checkpoint_digest="ab" * 32)
     assert manifest.checkpoint_digest == "ab" * 32

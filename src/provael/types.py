@@ -83,6 +83,12 @@ class Decision(BaseModel):
     unsafe: bool = Field(..., description="Whether the resulting environment state was unsafe.")
 
 
+#: The calibration signal's channels (P1.5): a spatial suite's position, a scalar suite's danger
+#: level. A trajectory written before schema 9 names no channels and holds exactly one of these.
+POSITION_CHANNELS: tuple[str, ...] = ("x", "y", "z")
+DANGER_CHANNELS: tuple[str, ...] = ("danger",)
+
+
 class Trajectory(BaseModel):
     """The per-step calibration signal of one episode, stored compactly.
 
@@ -103,6 +109,12 @@ class Trajectory(BaseModel):
     DETERMINISM. zlib at a fixed level over identical float32 bytes is byte-stable, so a report
     carrying trajectories stays a pure function of its inputs and the attestation subject is
     unchanged in kind.
+
+    NAMED CHANNELS (schema 9, P1.5). A suite may record more than its calibration signal: LIBERO
+    records the end-effector's orientation and the gripper opening beside its position. ``channels``
+    names every column, so a reader never infers the stride, and :meth:`calibration_signal` picks
+    the position or danger columns out of whatever else was recorded. A trajectory written before
+    schema 9 names none and is read by its width, as it always was.
     """
 
     encoding: Literal["float32-zlib-b64"] = Field(
@@ -110,13 +122,34 @@ class Trajectory(BaseModel):
         "format is a new value rather than a silent reinterpretation of these bytes."
     )
     shape: tuple[int, int] = Field(
-        ..., description="(steps, dims). dims is 3 for a spatial suite (x, y, z) and 1 for a "
-        "scalar-danger suite, so a reader can tell the two apart without guessing."
+        ..., description="(steps, dims). Without `channels`, dims is 3 for a spatial suite (x, y, "
+        "z) and 1 for a scalar-danger suite, so a reader can tell the two apart without guessing."
     )
     data: str = Field(..., description="base64(zlib(float32 little-endian, C-order)).")
+    channels: list[str] | None = Field(
+        None,
+        description="The name of each column, in order, e.g. ['x', 'y', 'z', 'qx', 'qy', 'qz', "
+        "'qw', 'gripper_opening'] on LIBERO or ['danger'] on the stub; a column a step could not "
+        "read is NaN there. None on a trajectory written before schema 9, where the width says "
+        "which signal it is (3: x, y, z; 1: danger).",
+    )
+
+    @model_validator(mode="after")
+    def _channels_fit(self) -> Trajectory:
+        if self.channels is not None:
+            if len(self.channels) != self.shape[1]:
+                raise ValueError(
+                    f"trajectory names {len(self.channels)} channel(s) for {self.shape[1]} "
+                    "column(s)"
+                )
+            if len(set(self.channels)) != len(self.channels):
+                raise ValueError(f"trajectory channel names repeat: {self.channels}")
+        return self
 
     @classmethod
-    def encode(cls, samples: Sequence[Sequence[float]]) -> Trajectory:
+    def encode(
+        cls, samples: Sequence[Sequence[float]], channels: Sequence[str] | None = None
+    ) -> Trajectory:
         """Pack per-step samples. Every row must share a width; a ragged trajectory is a bug."""
         import base64
         import zlib
@@ -135,7 +168,41 @@ class Trajectory(BaseModel):
         return cls(
             shape=(int(arr.shape[0]), int(arr.shape[1])),
             data=base64.b64encode(blob).decode(),
+            channels=list(channels) if channels is not None else None,
         )
+
+    def channel_names(self) -> tuple[str, ...]:
+        """Every column's name: :attr:`channels`, or for a trajectory before schema 9 its signal.
+
+        Raises ``ValueError`` for an unnamed trajectory of any other width, which no suite wrote.
+        """
+        if self.channels is not None:
+            return tuple(self.channels)
+        legacy = {len(POSITION_CHANNELS): POSITION_CHANNELS, len(DANGER_CHANNELS): DANGER_CHANNELS}
+        names = legacy.get(self.shape[1])
+        if names is None:
+            raise ValueError(f"an unnamed trajectory of width {self.shape[1]} has no known layout")
+        return names
+
+    def columns(self, *names: str) -> list[list[float]]:
+        """The named columns, per step, in the order asked for."""
+        index = {name: i for i, name in enumerate(self.channel_names())}
+        missing = [name for name in names if name not in index]
+        if missing:
+            raise ValueError(f"trajectory has no channel(s) {missing}; it has {list(index)}")
+        picks = [index[name] for name in names]
+        return [[row[i] for i in picks] for row in self.decode()]
+
+    def calibration_signal(self) -> list[list[float]]:
+        """The per-step calibration signal: x, y, z on a spatial suite, danger on a scalar one.
+
+        What a keep-out fit or a workspace bound reads, whatever else the trajectory records.
+        """
+        names = self.channel_names()
+        for wanted in (POSITION_CHANNELS, DANGER_CHANNELS):
+            if all(name in names for name in wanted):
+                return self.columns(*wanted)
+        raise ValueError(f"trajectory carries no calibration signal; its channels are {names}")
 
     def decode(self) -> list[list[float]]:
         """Unpack back to plain floats. Raises if the payload disagrees with the declared shape."""

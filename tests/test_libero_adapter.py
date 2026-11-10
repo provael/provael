@@ -328,7 +328,7 @@ def test_a_fixed_horizon_benign_episode_runs_past_success_on_one_scene() -> None
     assert (result.steps, result.termination) == (horizon, "horizon")
     assert _loaded_init_state(suite._active) == result.init_state, "a reset ran inside the episode"
     assert result.trajectory is not None
-    poses = np.asarray(result.trajectory.decode())[:, :3]
+    poses = np.asarray(result.trajectory.columns("x", "y", "z"))
     jumps = np.linalg.norm(np.diff(poses, axis=0), axis=1)
     assert float(jumps.max()) < 0.05, f"the end effector jumped {jumps.max():.3f} m in one step"
     if not result.task_success:

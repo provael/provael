@@ -85,6 +85,15 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   `task_success_strict` endpoint. Why: a first-event run cannot observe those three metrics
   (E-2026-21), and LIBERO credits a held, tipped or one-frame placement as success. First-event
   stays the default and renders as before; no GPU run used it, and no number moves.
+- **Trajectories name their channels, and two opt-in sidecars record chunks and timing.** Each
+  `trajectory` carries `channels`; on LIBERO it records the end-effector orientation and the
+  gripper opening beside the position, and a trajectory from before schema 9 still decodes by its
+  width. `provael attack --record-chunks` writes `chunks.npz` (every predicted action chunk, the
+  rows that never ran included, and the row each step executed) and `--record-timing` writes
+  `timing.json` (per-step observation and dispatch times); the execution manifest records each
+  file's sha256 and neither enters `report.json`. Why: for the steps that ran, the report could
+  not tell a predicted action from an executed one, and a reader had to infer the trajectory's
+  stride. No number moves.
 
 ### Changed
 
