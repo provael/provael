@@ -270,3 +270,8 @@ It is not done, and it must not be. A stub run measures a fixture, not a policy.
 signal green with a run that re-measured nothing is the same category of error as rebuilding the
 board and calling it a measurement — the failure this page was written to prevent, wearing a
 different costume. The badge stays red until a real policy is re-measured.
+
+The same goes for a run recorded for a video. `results/rfm_submission_2026-11` holds real episodes
+on a real policy, with manifests dated 4 November 2026, and none of them refreshes this badge: a
+single-seed recording re-measures nothing the project publishes, so `provael.watch` skips any manifest
+whose `deviations` say "recorded for video", and it gets no row in the measurement ledger either.

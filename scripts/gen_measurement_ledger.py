@@ -54,6 +54,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from provael.watch import (  # noqa: E402  - after the sys.path insert above
     counts_as_measurement,
     displacement,
+    is_recording,
     measurements_from_results,
     task_suite_of,
 )
@@ -142,6 +143,8 @@ def _artifact_dirs() -> list[str]:
         ended = m.get("ended_at")
         if not isinstance(ended, str) or not ended:
             continue  # same skip as measurements_from_results, or the indices desynchronise
+        if is_recording(m):
+            continue  # likewise
         out.append(path.parent.relative_to(ROOT).as_posix())
     return out
 
