@@ -32,7 +32,7 @@ predicate: default (uncalibrated) · benign baseline FPR 0.0%
 
 ```bash
 provael list-policies         # 8 policies — 1 CPU (stub), 7 need a GPU extra, of which 3 are registered scaffolding; 2 have a committed real-model result (pi05, smolvla)
-provael list-attacks          # 44 attacks across 19 families (17 adversarial + 2 benign control): action/action_space/authorization/backdoor/confidentiality/gradient_patch/humanoid/injection/instruction/misalignment/optimized/optimized_instruction/optimized_patch/sensor_spoof/universal_patch/visual/weight_integrity/baseline/control
+provael list-attacks          # 45 attacks across 19 families (17 adversarial + 2 benign control): action/action_space/authorization/backdoor/confidentiality/gradient_patch/humanoid/injection/instruction/misalignment/optimized/optimized_instruction/optimized_patch/sensor_spoof/universal_patch/visual/weight_integrity/baseline/control
 provael list-suites           # 7 suites registered — 3 CPU fixtures, 1 gated real simulator, 3 scaffolding (never run)
 provael list-recipes          # named presets: quick / instruction-only / core-sweep / full-sweep / ci-gate
 provael list-reproductions    # FreezeVLA / OpenVLA-patch / BadVLA / RoboPAIR
@@ -305,7 +305,7 @@ Other commands:
 
 ```bash
 uv run provael list-policies            # stub (CPU); smolvla (needs the [lerobot] extra)
-uv run provael list-attacks             # 44 attacks across 19 families (17 adversarial + 2 benign control): action/action_space/authorization/backdoor/confidentiality/gradient_patch/humanoid/injection/instruction/misalignment/optimized/optimized_instruction/optimized_patch/sensor_spoof/universal_patch/visual/weight_integrity/baseline/control
+uv run provael list-attacks             # 45 attacks across 19 families (17 adversarial + 2 benign control): action/action_space/authorization/backdoor/confidentiality/gradient_patch/humanoid/injection/instruction/misalignment/optimized/optimized_instruction/optimized_patch/sensor_spoof/universal_patch/visual/weight_integrity/baseline/control
 uv run provael list-recipes             # named presets: quick / instruction-only / core-sweep / full-sweep / ci-gate
 uv run provael attack --recipe quick    # a recipe is the base config; explicit flags override it
 uv run provael report --in runs/stub/
