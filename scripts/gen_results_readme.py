@@ -54,6 +54,7 @@ from provael.scoring.paired import (  # noqa: E402
     cluster_bootstrap_ci,
     floor_cluster_bootstrap_ci,
     holm_bonferroni,
+    independent_difference_ci,
     paired_by_attack,
     paired_differences,
     pairs_share_init_state,
@@ -72,16 +73,27 @@ def _pct(x: float) -> str:
 
 
 def _pp(x: float) -> str:
-    """A difference in whole percentage points with its sign: ``+82``, ``-9``, ``0``."""
+    """A difference in whole percentage points with its sign: ``+82``, ``-9``, ``0``.
+
+    A nonzero value that would round to 0 keeps one decimal (``+0.3``), so a bound that stops just
+    short of zero is never printed as touching it.
+    """
     points = round(100.0 * x)
-    return "0" if points == 0 else f"{points:+d}"
+    if points == 0:
+        return "0" if x == 0 else f"{100.0 * x:+.1f}"
+    return f"{points:+d}"
+
+
+def _shard_dirs(run_dir: Path) -> list[Path]:
+    """``run_dir`` itself when it holds a ``report.json``, else each child directory that does."""
+    if (run_dir / "report.json").exists():
+        return [run_dir]
+    return sorted(p.parent for p in run_dir.glob("*/report.json"))
 
 
 def _load_shards(run_dir: Path) -> list[tuple[Path, dict[str, Any], dict[str, Any] | None]]:
     """``(shard_dir, report, manifest)`` for every ``report.json`` under ``run_dir``."""
-    candidates = [run_dir] if (run_dir / "report.json").exists() else sorted(
-        p.parent for p in run_dir.glob("*/report.json")
-    )
+    candidates = _shard_dirs(run_dir)
     shards = []
     for shard in candidates:
         report = json.loads((shard / "report.json").read_text(encoding="utf-8"))
@@ -243,6 +255,133 @@ def _competence(reports: list[dict[str, Any]]) -> list[str]:
             decision = "admitted" if row["admitted"] else "**refused**"
             refused = ", ".join(f"`{a}`" for a in row["refused"]) or "—"
             lines.append(f"| `{task}` | {done} | {decision} | {refused} |")
+    return lines
+
+
+def _per_seed(
+    seeds: list[int],
+    tasks: list[str],
+    arms: list[str],
+    by_attack: dict[str, list[AttackResult]],
+) -> list[str]:
+    """Per seed, pooled over tasks: each arm's unsafe count, and its range across seeds (P2.5).
+
+    A single run is one draw. The spread across its own seeds is the smallest yardstick a
+    difference between two runs, two simulators or a simulator and a robot has to clear before it
+    says anything (docs/sim-predicts-real.md). It needs two seeds, and two tasks to pool: on one
+    task a seed's count is a single episode and its range says nothing a rate could.
+    """
+    if len(seeds) < 2 or len(tasks) < 2:
+        return []
+    header = "| seed | " + " | ".join(f"`{a}`" for a in arms) + " |"
+    rule = "| ---: |" + " ---: |" * len(arms)
+    lines = ["", "## Per seed (unsafe / applicable, pooled over tasks)", "", header, rule]
+    rates: dict[str, list[float]] = {a: [] for a in arms}
+    for seed in seeds:
+        cells = []
+        for name in arms:
+            rows = [r for r in by_attack.get(name, []) if r.seed == seed and r.scored]
+            unsafe = sum(1 for r in rows if r.success)
+            if rows:
+                rates[name].append(unsafe / len(rows))
+            cells.append("—" if not rows else f"{unsafe}/{len(rows)}")
+        lines.append(f"| {seed} | " + " | ".join(cells) + " |")
+    spread = []
+    for name in arms:
+        seen = rates[name]
+        if not seen:
+            spread.append("—")
+        elif min(seen) == max(seen):
+            spread.append(f"{_pct(seen[0])} on every seed")
+        else:
+            spread.append(f"{_pct(min(seen))} to {_pct(max(seen))}")
+    lines += [
+        "| range across seeds | " + " | ".join(spread) + " |",
+        "",
+        "Each seed's count pools its tasks, and the range is the lowest and highest of them: the "
+        "within-simulator seed spread. A difference between two runs, two simulators, or a "
+        "simulator and a robot that sits inside it says nothing about either "
+        "([the rule](../../docs/sim-predicts-real.md)).",
+    ]
+    return lines
+
+
+def _configuration(shards: list[Shard]) -> tuple[object, ...]:
+    """What makes two runs one configuration: everything but the release and the date (P2.5).
+
+    The policy and checkpoint, the suite and horizon, whether the predicate was calibrated, the
+    defense the execution manifests record, and the design: every (task, arm, seed) cell with the
+    number of episodes it holds. Read from the raw shards, so a sibling run is compared without
+    parsing its episodes into models.
+    """
+    reports = [r for _, r, _ in shards]
+    cells: dict[tuple[str, str, int], int] = defaultdict(int)
+    for report in reports:
+        for row in report.get("results", []):
+            cells[(str(row["task"]), str(row["attack"]), int(row["seed"]))] += 1
+    return (
+        tuple(sorted({str(r.get("policy")) for r in reports})),
+        tuple(sorted({str(r.get("model")) for r in reports})),
+        tuple(sorted({str(r.get("suite")) for r in reports})),
+        tuple(sorted({str(r.get("horizon")) for r in reports})),
+        tuple(sorted({bool(r.get("calibrated")) for r in reports})),
+        tuple(sorted({str(m.get("defense")) for _, _, m in shards if m is not None})),
+        tuple(sorted(cells.items())),
+    )
+
+
+def _run_to_run(run_dir: Path, shards: list[Shard], arms: list[str]) -> list[str]:
+    """Each other committed run of this configuration, and per arm the difference (P2.5).
+
+    The yardstick for every cross-run, cross-simulator or sim-to-real claim: two runs of one
+    configuration differ by draw alone, so a difference elsewhere has to be read against this.
+    Found by comparing configurations across the sibling results directories, never declared.
+    """
+    key = _configuration(shards)
+    here = _results(shards)
+    lines: list[str] = []
+    for other in sorted(p for p in run_dir.parent.iterdir() if p.is_dir()):
+        if other.resolve() == run_dir.resolve() or not _shard_dirs(other):
+            continue
+        theirs = _load_shards(other)
+        if _configuration(theirs) != key:
+            continue
+        versions = ", ".join(sorted({str(r.get("tool_version")) for _, r, _ in theirs}))
+        where = other.resolve()
+        named = where.relative_to(ROOT).as_posix() if where.is_relative_to(ROOT) else other.name
+        if not lines:
+            lines += ["", "## Run to run"]
+        lines += [
+            "",
+            f"`{named}` ran this configuration on provael {versions} "
+            f"({_dates(theirs)}): the same policy and checkpoint, suite, tasks, arms, seeds, "
+            "horizon, predicate and defense. Per arm, this run's unsafe rate minus that run's:",
+            "",
+            "| arm | this run | that run | difference | 95% interval |",
+            "| --- | ---: | ---: | ---: | --- |",
+        ]
+        there = _results(theirs)
+        for name in arms:
+            mine = [r for r in here if r.attack == name and r.scored]
+            yours = [r for r in there if r.attack == name and r.scored]
+            if not mine or not yours:
+                lines.append(f"| `{name}` | not applicable | not applicable | — | — |")
+                continue
+            a, b = sum(r.success for r in mine), sum(r.success for r in yours)
+            low, high = independent_difference_ci(a, len(mine), b, len(yours))
+            lines.append(
+                f"| `{name}` | {a}/{len(mine)} ({_pct(a / len(mine))}) "
+                f"| {b}/{len(yours)} ({_pct(b / len(yours))}) "
+                f"| {_pp(a / len(mine) - b / len(yours))} pp | [{_pp(low)}, {_pp(high)}] |"
+            )
+    if lines:
+        lines += [
+            "",
+            "The interval is Newcombe's hybrid score for two independent proportions (method 10, "
+            "Statistics in Medicine 1998;17:873): the runs share a configuration and their seeds, "
+            "not their draws. Read a difference against the per-seed range above; one inside it is "
+            "what a single run varies by on its own.",
+        ]
     return lines
 
 
@@ -443,6 +582,8 @@ def render(run_dir: Path) -> str:
                 cells.append("—" if not rows else f"{unsafe}/{len(rows)}")
             lines.append(f"| `{task}` | " + " | ".join(cells) + " |")
     lines += _task_success_grid(tasks, arms, by_attack)
+    lines += _per_seed(seeds, tasks, arms, by_attack)
+    lines += _run_to_run(run_dir, shards, arms)
 
     shard_names = [
         f"`{(s.relative_to(run_dir) if s != run_dir else Path('.'))}/report.json`"

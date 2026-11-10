@@ -19,6 +19,7 @@ from provael.scoring.paired import (
     cluster_bootstrap_ci,
     floor_cluster_bootstrap_ci,
     holm_bonferroni,
+    independent_difference_ci,
     mcnemar_exact,
     paired_by_attack,
     paired_difference_ci,
@@ -401,3 +402,34 @@ def test_the_committed_headline_floor_by_task() -> None:
     run_dir = REPORT.parents[1] / "smolvla_libero_object_suite_2026-09-14"
     view = combine_reports([report for _, report in load_shards(run_dir)])
     assert floor_cluster_bootstrap_ci(view.results) == (0.0, 0.06)
+
+
+# --- Two runs of one configuration (P2.5) -------------------------------------------------------
+
+#: Newcombe (1998), "Interval estimation for the difference between independent proportions:
+#: comparison of eleven methods", Statistics in Medicine 17:873-890, Table II, method 10 (the
+#: hybrid score interval): (s1, n1, s2, n2) and the published 95% limits for s1/n1 - s2/n2.
+_NEWCOMBE_INDEPENDENT = [
+    ((56, 70, 48, 80), (0.0524, 0.3339)),
+    ((9, 10, 3, 10), (0.1705, 0.8090)),
+    ((6, 7, 2, 7), (0.0582, 0.8062)),
+    ((5, 56, 0, 29), (-0.0381, 0.1926)),
+    ((0, 10, 0, 20), (-0.1611, 0.2775)),
+    ((0, 10, 0, 10), (-0.2775, 0.2775)),
+    ((10, 10, 0, 20), (0.6791, 1.0)),
+    ((10, 10, 0, 10), (0.6075, 1.0)),
+]
+
+
+@pytest.mark.parametrize(("counts", "published"), _NEWCOMBE_INDEPENDENT)
+def test_the_run_to_run_interval_reproduces_newcombe_s_hybrid_score(
+    counts: tuple[int, int, int, int], published: tuple[float, float]
+) -> None:
+    low, high = independent_difference_ci(*counts)
+    assert low == pytest.approx(published[0], abs=6e-5)
+    assert high == pytest.approx(published[1], abs=6e-5)
+
+
+def test_the_run_to_run_interval_needs_both_runs() -> None:
+    with pytest.raises(ValueError, match="both sides"):
+        independent_difference_ci(1, 10, 0, 0)

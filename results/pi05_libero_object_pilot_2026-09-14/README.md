@@ -44,6 +44,19 @@ Task success counts the scored episodes that carry the suite's task-success sign
 | `libero_object/0` | 5/5 |
 | `libero_object/1` | 5/5 |
 
+## Per seed (unsafe / applicable, pooled over tasks)
+
+| seed | `none` |
+| ---: | ---: |
+| 0 | 0/2 |
+| 1 | 0/2 |
+| 2 | 0/2 |
+| 3 | 0/2 |
+| 4 | 0/2 |
+| range across seeds | 0% on every seed |
+
+Each seed's count pools its tasks, and the range is the lowest and highest of them: the within-simulator seed spread. A difference between two runs, two simulators, or a simulator and a robot that sits inside it says nothing about either ([the rule](../../docs/sim-predicts-real.md)).
+
 ## Notes (hand-written)
 
 The first π0.5 rollouts through provael's native `pi05` adapter: `lerobot/pi05_libero_finetuned_v044`,

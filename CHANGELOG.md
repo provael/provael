@@ -103,6 +103,16 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   committed 14 September shards: `roleplay` sits +82 points [+67, +90] above its benign twins and
   the floor's task-clustered interval is [0%, 6%]. The regenerated READMEs gain these columns; no
   number in them moves.
+- **The results READMEs print each run's seed spread, and the difference from a second run of the
+  same configuration.** A per-seed table gives each arm's unsafe count pooled over tasks and its
+  range across seeds. Where two committed runs share a configuration (found from their shards: the
+  policy and checkpoint, suite, horizon, predicate, defense and every task, arm and seed), a table
+  gives each arm's difference with Newcombe's hybrid score interval for independent proportions.
+  `docs/sim-predicts-real.md` adds the rule: no cross-simulator or sim-to-real claim without
+  per-robot trajectory calibration and the within-simulator seed spread as the yardstick. Why: a
+  single run is one draw. Recomputed from the shards, the published configuration's two runs put
+  `roleplay` at 44/50 on 0.32.0 and 42/50 on 0.41.2, a difference of -4 points [-18, +10]. No
+  number moves.
 
 ### Changed
 

@@ -242,6 +242,11 @@ def paired_by_attack(
 #: the phi coefficient of the paired 2x2 table with its numerator continuity-corrected.
 PAIRED_DIFFERENCE_METHOD = "newcombe-score (paired, method 10)"
 
+#: The interval :func:`independent_difference_ci` computes: Newcombe RG (1998), "Interval estimation
+#: for the difference between independent proportions: comparison of eleven methods", Statistics in
+#: Medicine 17:873-890, method 10 (the hybrid score interval).
+INDEPENDENT_DIFFERENCE_METHOD = "newcombe-hybrid-score (independent, method 10)"
+
 def _newcombe(
     p1: float, l1: float, u1: float, p2: float, l2: float, u2: float, phi: float
 ) -> tuple[float, float]:
@@ -287,6 +292,22 @@ def paired_difference_ci(
         numerator = max(numerator - n / 2.0, 0.0)
     phi = numerator / math.sqrt(margins) if margins else 0.0
     return _newcombe(p1, l1, u1, p2, l2, u2, phi)
+
+
+def independent_difference_ci(
+    successes_1: int, trials_1: int, successes_2: int, trials_2: int
+) -> tuple[float, float]:
+    """95% interval for rate 1 minus rate 2 from two independent samples (Newcombe's hybrid score).
+
+    For two RUNS of one configuration (P2.5): their episodes share a configuration, not a draw, so
+    they are not pairs of one another and phi is 0. Raises ``ValueError`` when either side has no
+    trials.
+    """
+    if trials_1 <= 0 or trials_2 <= 0:
+        raise ValueError("a difference needs trials on both sides")
+    l1, u1 = wilson_ci(successes_1, trials_1)
+    l2, u2 = wilson_ci(successes_2, trials_2)
+    return _newcombe(successes_1 / trials_1, l1, u1, successes_2 / trials_2, l2, u2, 0.0)
 
 
 @dataclass(frozen=True)
@@ -489,12 +510,14 @@ def floor_cluster_bootstrap_ci(
 
 __all__ = [
     "BASELINE_ATTACK",
+    "INDEPENDENT_DIFFERENCE_METHOD",
     "PAIRED_DIFFERENCE_METHOD",
     "McNemarResult",
     "PairedDifference",
     "cluster_bootstrap_ci",
     "floor_cluster_bootstrap_ci",
     "holm_bonferroni",
+    "independent_difference_ci",
     "mcnemar_exact",
     "paired_by_attack",
     "paired_difference_ci",
