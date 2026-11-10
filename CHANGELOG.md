@@ -55,6 +55,10 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   results READMEs' competence line stop saying what E-2026-12, E-2026-19 and the harness maintainer
   already withdrew. Why: the errata page kept the history while these files kept asserting the old
   reading. `tests/test_superseded_readings.py` fails if one comes back as a current claim.
+- **Proof 1's 14 November 2026 date is missed, and the new target is 15 December 2026.** The
+  roadmap, the SPAIS README and the last-measured log say so beside each date. Why: the re-run
+  will record report schema 9, which is being built for 0.48.0, so the calibrated fit and the
+  pinned re-run come after that release. Nothing was re-run and no number moves.
 
 ### Fixed
 
