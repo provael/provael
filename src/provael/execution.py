@@ -56,6 +56,10 @@ ENV_ALLOWLIST: tuple[str, ...] = (
     # claims, and only the environment distinguishes them. Recorded here rather than as a manifest
     # field for the reason stated above: a new field would invalidate every attestation ever issued.
     "PROVAEL_REQUIRE_CALIBRATED",
+    # Whether the run loaded a checkpoint the pre-load check refused, accepting code the checkpoint
+    # chose (provael.integrity.TRUST_CHECKPOINT_CODE_ENV). A run that passed the check and one that
+    # overrode it are different claims, and as above only the environment tells them apart.
+    "PROVAEL_TRUST_CHECKPOINT_CODE",
     "MUJOCO_GL",
     "PYOPENGL_PLATFORM",
     "PROVAEL_SMOLVLA_LIBERO_CKPT",

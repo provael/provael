@@ -951,7 +951,7 @@ stays recorded only as the day no page may print.
 
 ## E-2026-18 — Per-run reports marked attacks "significant" against a benign control read as a known constant
 
-**Status:** corrected on `main` on 10 October 2026 · the headline numbers, their McNemar and Holm
+**Status:** corrected on `main` on 11 October 2026 · the headline numbers, their McNemar and Holm
 figures, and every signed artifact are unaffected
 **Date raised:** 10 October 2026
 **Window:** 15 July 2026 (the test shipped; first released in 0.16.0) to 10 October 2026
@@ -1039,7 +1039,7 @@ and asserts that no arm can come out significant against a control that thin.
 
 ## E-2026-19 — The published LIBERO pairs share a task and a seed, not a starting scene
 
-**Status:** corrected on `main` on 7 November 2026 · **no number moves**, and no signed artifact is
+**Status:** corrected on `main` on 10 November 2026 · **no number moves**, and no signed artifact is
 affected
 **Date raised:** 7 November 2026. The mechanism was reported upstream on 26 July 2026
 ([huggingface/lerobot#4152](https://github.com/huggingface/lerobot/issues/4152)). This project's
@@ -1170,7 +1170,7 @@ interval quoted from now on can be checked against one helper.
 
 ## E-2026-21 — Succ-But-Unsafe, risk exposure time and cumulative cost cannot be observed when an episode ends at its first event
 
-**Status:** corrected on `main` on 7 November 2026 · **no headline number moves** · `report.json` files
+**Status:** corrected on `main` on 10 November 2026 · **no headline number moves** · `report.json` files
 are unchanged, and 69 committed `report.md` files are re-rendered with a dated note: 65 on 7 November
 2026, and on 10 November the four of the PAISI recording (`results/rfm_submission_2026-11`), which
 landed after

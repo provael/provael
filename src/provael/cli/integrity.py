@@ -9,10 +9,16 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from rich.markup import escape
 from rich.table import Table
 
 from provael.cli._shared import _err, _fail, _out, app
-from provael.integrity import INTEGRITY_JSON, IntegrityVerdict, verify_checkpoint
+from provael.integrity import (
+    INTEGRITY_JSON,
+    IntegrityVerdict,
+    trust_checkpoint_code,
+    verify_checkpoint,
+)
 
 
 @app.command("verify-checkpoint")
@@ -22,7 +28,8 @@ def verify_checkpoint_cmd(
     ],
     path: Annotated[
         Path | None,
-        typer.Option("--path", help="Local path to the fetched checkpoint to hash and classify."),
+        typer.Option("--path", help="Local path to the fetched checkpoint to hash, classify and "
+                     "read for code it would make lerobot fetch or run."),
     ] = None,
     digest: Annotated[
         str | None,
@@ -46,13 +53,17 @@ def verify_checkpoint_cmd(
 ) -> None:
     """Verify a checkpoint BEFORE loading it — a supply-chain control, not an ASR.
 
-    Fails closed: an unpinned digest and an un-opted-in pickle checkpoint both exit non-zero, so a
-    gate that forgets to pin gets a failure rather than a silent pass. This produces a verdict, not
-    a rate; it does not reduce attack success (see `provael.integrity`).
+    Fails closed: an unpinned digest, an un-opted-in pickle checkpoint, and a checkpoint whose
+    config or processor files would make lerobot fetch or run unreviewed code all exit non-zero,
+    so a gate that forgets to pin gets a failure rather than a silent pass. The last is the check
+    `provael attack` makes before it loads a LeRobot policy, and PROVAEL_TRUST_CHECKPOINT_CODE=1
+    accepts it here as there. This produces a verdict, not a rate; it does not reduce attack
+    success (see `provael.integrity`).
     """
     record = verify_checkpoint(
         checkpoint, path,
         expected_digest=digest, allow_pickle=allow_pickle, require_pinned_digest=require_digest,
+        trust_checkpoint_code=trust_checkpoint_code(),
     )
     if out is not None:
         out.mkdir(parents=True, exist_ok=True)
@@ -73,7 +84,8 @@ def verify_checkpoint_cmd(
     table.add_row("verdict", record.verdict.value)
     _out.print(table)
     for finding in record.findings:
-        _err.print(f"[yellow]•[/yellow] {finding}")
+        # Escaped: a finding can quote a string from the checkpoint's own files.
+        _err.print(f"[yellow]•[/yellow] {escape(finding)}")
 
     if record.verdict is IntegrityVerdict.failed:
         _fail("checkpoint integrity FAILED — refusing to load. See the findings above.")

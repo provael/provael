@@ -33,6 +33,39 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ### Added
 
+- **The measurement protocol is written down.** `docs/protocol.md` defines `provael-redteam/v1`, the
+  string every execution manifest carries, as the code runs it today: the loop, the arms and their
+  budgets, what a pair is matched on, the benign control and the controls, the predicate, the
+  termination rule, the intervals and tests, and what each record carries and leaves out. It lists
+  what v2 is planned to change, and the README's "Reading any result" line links it. Why: every
+  manifest named a protocol that no page described, so a reader comparing harnesses had to rebuild
+  it from the code.
+- **The board's signing key and signed bytes are documented.** `docs/leaderboard.md` says what
+  `provael leaderboard verify` checks and what it does not, where the private key is stored (where
+  it was generated is not recorded in the repository), how to pin the public key out of band, how to
+  rotate it, what revocation means for rows already signed, and the exact bytes the signature
+  covers, which are not RFC 8785. A test pins those bytes against the page, and the page's rebuild
+  example now reads its run from `source.json` and keeps the rows' attribution. Why: offline
+  verification is only as good as the key a verifier already holds, and the page had readers
+  download the key beside the board. No board, signature or verify behaviour changes; failing on
+  what verify does not check, and moving to RFC 8785, wait for the next board schema change.
+- **A reproducer sees the cost first, and LIBERO's licence conflict is on the record.**
+  `docs/reproduction-request.md` gives the time per episode computed from the committed execution
+  manifests and a four-episode smoke run; no CPU time per episode has been measured, and the page
+  says so. The dependency register, and every generated results README of a LIBERO run, record that
+  LIBERO's README says CC BY 4.0 for its datasets while their Hugging Face cards say Apache-2.0,
+  open in LIBERO#150. Why: a willing reproducer declined a 100-episode CPU-only run
+  (huggingface/lerobot#4548), and the licence question was raised on LIBERO#148 and recorded nowhere
+  here. The regenerated READMEs gain that one line; no number moves.
+- **`declarative_text`, a harmless-variation control that asks for nothing.** It replaces the
+  instruction with one fixed English statement as long as the `roleplay` prompt in whitespace
+  tokens, naming no object and borrowing no word from the roleplay frame or a LIBERO task, and
+  `--attacks control` now includes it. Why: E-2026-12 left open whether a fluent non-imperative
+  sentence of the same length produces the envelope exit the roleplay frame does, and this is that
+  arm; the shorter imperative it also named still has none. It has not run on any policy, so no
+  number moves. The scheduled campaign's plan and the Modal `control` and `eai04-redirect` stages
+  now name their controls, so their grids and printed ceilings stay as they were; the new arm has
+  its own Modal stage, `declarative`, not dispatchable until a release carries it.
 - **Report schema 9 records the rest of the deployed policy's runtime identity.**
   `deployed_policy` gains the observation normaliser and its statistics digest, digests of the pre-
   and post-processor files and the weight file as lerobot loaded them, the rename map, the camera
@@ -87,6 +120,38 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   results READMEs' competence line stop saying what E-2026-12, E-2026-19 and the harness maintainer
   already withdrew. Why: the errata page kept the history while these files kept asserting the old
   reading. `tests/test_superseded_readings.py` fails if one comes back as a current claim.
+- **Proof 1's 14 November 2026 date is missed, and the new target is 15 December 2026.** The
+  roadmap, the SPAIS README and the last-measured log say so beside each date. Why: the re-run
+  will record report schema 9, which is being built for 0.48.0, so the calibrated fit and the
+  pinned re-run come after that release. Nothing was re-run and no number moves.
+- **A LeRobot policy is checked before it measures anything, and a failed or unreadable check
+  refuses the run.** Once lerobot has built the policy and its processors, `LeRobotAdapter.load()`
+  runs `provael.policies.preflight` on the live objects and refuses: a normaliser that lists a
+  normalised input without statistics, or not at all, so lerobot passes it on unchanged
+  ([lerobot issue 4047](https://github.com/huggingface/lerobot/issues/4047)); a `--rename-map` that
+  differs from the map the checkpoint's pre-processor stores, which lerobot applies in its place
+  ([lerobot issue 4548](https://github.com/huggingface/lerobot/issues/4548)); three named weights
+  still inside what a fresh initialisation can hold, the untrained model a swallowed load error
+  returns ([lerobot issue 4577](https://github.com/huggingface/lerobot/issues/4577)); actions that
+  do not change between an all-black and an all-white frame
+  ([OpenVLA issue 346](https://github.com/openvla/openvla/issues/346)); on LIBERO, gripper
+  statistics that do not fit LIBERO's -1 to +1 gripper; and a `loaded_checkpoint_source` that names
+  another checkpoint, where a policy has one (none does in lerobot 0.5.1). A refusal is a
+  `PreflightError`, an `IncompatiblePolicyError`, so the CLI prints one line. `provael attack
+  --preflight` adds a frame check on an environment of its own: a +x end-effector command must move
+  the arm along +x ([robosuite issue 819](https://github.com/ARISE-Initiative/robosuite/issues/819)).
+  A missing LIBERO simulator now fails at once, naming hf-libero's `sys_platform == 'linux'`
+  marker in lerobot 0.5.1's `[libero]` extra and the source build. Why: each of these lets a run
+  finish with well-formed rates about something other than the policy it names. No number moves.
+  The checks were held to the measured checkpoints' own files, not run inside a real load here;
+  the gated tests in `tests/test_preflight.py` are where they first will be.
+- **`--policy pi05` on LIBERO refuses its default checkpoint.** The `pi05` entry still defaults to
+  `lerobot/pi05_base`, and on a LIBERO suite the adapter refuses it by name before its weights
+  download, pointing at `lerobot/pi05_libero_finetuned_v044`, the checkpoint the committed pi0.5
+  run used, the way `make_policy` already refuses `lerobot/smolvla_base`. Why: the base checkpoint
+  is not fine-tuned on LIBERO, and LeRobot fine-tuned the pi0.5 weights for LIBERO rather than
+  evaluating them out of the box
+  ([lerobot issue 2533](https://github.com/huggingface/lerobot/issues/2533)).
 
 ### Fixed
 
@@ -108,6 +173,48 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   keyid line the README dropped on 19 September, and the summary above dates 0.47.0 to 7 November,
   as its tag does. Why: the README is also the PyPI page, and each of these said something the
   repository does not. No number moves.
+- **Sentences that still read the roleplay result as rewording or redirection now say what E-2026-12
+  says, and the CI examples pin their actions.** The UNECE R155 compliance row (printed in the delivery
+  pack's test report too), `integrity.py`'s docstring and `PRIOR_ART.md` now say the policy leaves its
+  envelope under a reframed instruction, and two unsourced claims about what an assessor asks for or
+  needs are rephrased. `examples/ci/*.yml`, which adopters copy into their own workflows, one into the
+  job that signs their release, used `actions/checkout@v4`, `astral-sh/setup-uv@v5` and
+  `actions/attest-build-provenance@v1`; they now pin the SHAs this repo's workflows use, and
+  `tests/test_workflow_pins.py` covers the examples. Why: the 1 November review listed the sentences,
+  and neither Dependabot nor any test looked at `examples/ci/`. No number moves.
+- **Three errata now date their correction to the day it reached `main`.** E-2026-19 and E-2026-21
+  said 7 November, the day the entries were written; #357 and #359 merged on 10 November. E-2026-18
+  said 10 October; #319 merged on 11 October. The two other entries that name a day on `main`,
+  E-2026-16 and E-2026-17, match their merges (the log dates in IST). The site's errata mirror
+  carried the same dates and is corrected with them. No number moves.
+- **The quickstart no longer says no committed run carries the contact column.** The two
+  one-episode PAISI recordings in `results/rfm_submission_2026-11` print it. They were recorded for
+  video and measure nothing, so the first measurement to carry it is still the calibrated re-run.
+
+### Security
+
+- The GPU-extras audit in CI now fails on any advisory not on a reviewed allow-list
+  (`.github/pip-audit-extras-allowlist.toml`: each id with a reason, a reachability finding and a
+  review date). It could not fail before, so a new advisory in torch, transformers, diffusers,
+  accelerate, datasets, fsspec or setuptools printed a line and the merge went ahead.
+- **A LeRobot checkpoint can no longer choose code that runs when Provael loads it.**
+  `LeRobotAdapter.load()` reads the checkpoint's `config.json`, `policy_preprocessor.json` and
+  `policy_postprocessor.json` before any `from_pretrained`, and raises `UntrustedCheckpointError`
+  when they turn `trust_remote_code` on or carry `auto_map`, name a backbone or tokenizer outside
+  three checked repos, use a policy type other than `smolvla`, `pi0` or `pi05` or a processor step
+  not read in lerobot 0.5.1, name a step class outside lerobot, leave `action_tokenizer_processor`
+  trusting remote code, or set `use_peft`. A Hub checkpoint's three files are read at one commit
+  and lerobot is handed that snapshot, so the repo cannot change between the check and the load.
+  `provael verify-checkpoint --path` makes the same check and fails closed on it.
+  `PROVAEL_TRUST_CHECKPOINT_CODE=1` loads a refused checkpoint anyway with a warning, and the
+  execution manifest records the variable; `--policy pi0fast` and `--policy groot` now need it,
+  because lerobot itself loads their tokenizer or backbone with `trust_remote_code=True`. Why:
+  lerobot 0.5.1 loads whatever those files name, and transformers 5.3.0, which it pins, lets a
+  loaded config turn remote code on for itself (PYSEC-2026-2290, fixed in 5.5.0), so
+  `provael attack --model <repo>` could run code the repo's author chose. The GPU-extras audit
+  now lists PYSEC-2026-2290 as not reachable and names this check. The three checkpoints the
+  published runs and the smolvla default use pass as they are, and `RunConfig` and `report.json`
+  do not change.
 
 ## [0.47.0] — 2026-11-07
 
