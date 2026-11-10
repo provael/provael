@@ -34,6 +34,7 @@ nav:
   - First run, timed: first-run-transcript.md
   - Examples gallery: examples.md
   - Attack catalog: attacks.md
+  - Measurement protocol: protocol.md
   - Defenses: defenses.md
   - Leaderboard:
       - The board: leaderboard.md

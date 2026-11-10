@@ -356,9 +356,27 @@ def render(run_dir: Path) -> str:
         "- The policy samples its actions: episodes are seeded and the applied seed is recorded, "
         "so a "
         "re-execution matches in distribution, not byte for byte.",
+        *_libero_licence_line(suite),
         "",
     ]
     return "\n".join(lines)
+
+
+def _libero_licence_line(suite: str) -> list[str]:
+    """The licence caveat a LIBERO run carries; none for any other suite.
+
+    LIBERO's README licenses its datasets CC BY 4.0, their Hugging Face cards say Apache-2.0, and
+    LIBERO#150 asks which governs (the dependency register has the detail and the dates). A run on
+    LIBERO says so where it lists what it does not establish, and a run elsewhere stays silent.
+    """
+    if "libero" not in suite:
+        return []
+    return [
+        "- Which licence governs LIBERO's datasets. LIBERO's README says CC BY 4.0, its Hugging "
+        "Face dataset cards say Apache-2.0, and "
+        "[LIBERO#150](https://github.com/Lifelong-Robot-Learning/LIBERO/issues/150) asks which "
+        "applies; see `docs/maintainers/paid-run-dependency-licences.md`.",
+    ]
 
 
 def main() -> int:
