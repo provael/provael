@@ -205,6 +205,74 @@ class BitFlipRecord(BaseModel):
     """
 
 
+class SceneBody(BaseModel):
+    """One non-robot body of a scene right after its reset: where it stood and which way it faced.
+
+    Rounded to six decimals (a micron, a microradian) for reading. The episode's
+    ``scene_t0_digest`` is taken over the exact values, so two scenes that round alike and differ
+    still digest differently.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(..., description="The simulator's body name.")
+    pos: tuple[float, float, float] = Field(..., description="World position (x, y, z), metres.")
+    yaw: float = Field(
+        ..., description="Rotation about the world z axis, radians, from the body's quaternion."
+    )
+
+
+@dataclass(frozen=True)
+class SceneSnapshot:
+    """What a suite read from its simulator right after a reset: a digest and the bodies."""
+
+    digest: str
+    bodies: tuple[SceneBody, ...]
+
+
+#: How an episode ended (schema 9): the predicate fired (first-event termination stops there), the
+#: suite ended it at task success (LIBERO's ``done``), every horizon step ran, the suite ended it
+#: for another reason (its own step cap), or a simulator exception recorded under
+#: ``--record-episode-errors``.
+Termination = Literal["unsafe_exit", "task_success", "horizon", "env_truncated", "error"]
+
+#: Where the outcome of an episode was read from. Neither is an independent observer: both are
+#: the harness reading state it computed or simulated itself, in its own process, and a record
+#: that carries one says so rather than implying a third party watched.
+SIMULATOR_VANTAGE = "simulator state, read in the harness process"
+FIXTURE_VANTAGE = "fixture state, computed in the harness process"
+
+
+class EpisodeCoverage(BaseModel):
+    """How much of an episode the predicate actually saw: the denominator an absence claim needs."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    steps_observed: int = Field(..., ge=0, description="Executed steps whose state was read.")
+    horizon: int = Field(..., ge=1, description="The most steps the episode could have run.")
+    steps_without_pose: int = Field(
+        ...,
+        ge=0,
+        description="Executed steps the predicate could not judge because its input was missing "
+        "(the end-effector pose, on a spatial suite).",
+    )
+
+
+class EpisodeObservation(BaseModel):
+    """Whether an envelope exit was seen, from where, and over how much of the episode (P1.3).
+
+    ``present``: an exit was observed. ``absent``: the predicate judged every executed step and saw
+    none. ``not_established``: some step could not be judged and no exit was seen, which is never
+    the same claim as "no exit".
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    state: Literal["present", "absent", "not_established"]
+    vantage: str = Field(..., description="Where the outcome was read from (SIMULATOR_VANTAGE).")
+    coverage: EpisodeCoverage
+
+
 class AttackResult(BaseModel):
     """Outcome of a single episode: one ``(task, attack, seed)`` triple."""
 
@@ -289,6 +357,52 @@ class AttackResult(BaseModel):
         "`seed`; this field is the record of which scene ran (#136). Present from "
         "schema_version 8.",
     )
+    scene_t0_digest: str | None = Field(
+        None,
+        description="sha256 over the simulator state right after this episode's reset: qpos, "
+        "qvel, then every body's name, position and orientation, as float64. Two episodes started "
+        "from one scene only if these are equal; `init_state` is the index, this is the scene. "
+        "None where the suite exposes no simulator state (the stub) or the read failed. Present "
+        "from schema_version 9.",
+    )
+    scene_t0: list[SceneBody] | None = Field(
+        None,
+        description="The non-robot bodies of that scene with their positions and yaw, for reading "
+        "(rounded to 1e-6; the digest is over the exact values). None where `scene_t0_digest` is. "
+        "Present from schema_version 9.",
+    )
+    termination: Termination | None = Field(
+        None,
+        description="How the episode ended: 'unsafe_exit', 'task_success', 'horizon', "
+        "'env_truncated' or 'error' (see provael.types.Termination). None on a not-applicable "
+        "record, where no episode ran. Present from schema_version 9.",
+    )
+    verdict: Literal["judged", "unjudged"] | None = Field(
+        None,
+        description="'judged' when the envelope outcome was established, 'unjudged' when it was "
+        "not (a simulator exception, or a step the predicate could not judge with no exit seen), "
+        "the reason in `unjudged_reason`. An unjudged episode leaves every rate's numerator and "
+        "denominator and is counted beside it. None on a not-applicable record; a report before "
+        "schema 9 records none and every applicable episode in it counts, as it always did.",
+    )
+    unjudged_reason: str | None = Field(
+        None, description="Why the episode is unjudged; None when it was judged. Schema >= 9."
+    )
+    observation: EpisodeObservation | None = Field(
+        None,
+        description="Whether an exit was seen, the vantage it was read from, and the coverage "
+        "behind the claim (steps observed, horizon, steps without a pose). Schema >= 9.",
+    )
+
+    @property
+    def scored(self) -> bool:
+        """Whether this episode counts toward a rate: applicable, and not unjudged.
+
+        Every rate reads this rather than ``applicable``. A report before schema 9 records no
+        verdict, so every applicable episode in it is scored exactly as before and no committed
+        number moves.
+        """
+        return self.applicable and self.verdict != "unjudged"
 
 
 class ASRStat(BaseModel):
@@ -306,6 +420,32 @@ class ASRStat(BaseModel):
         serialization sentinel. Read this (not ``asr``) whenever a 0-attempt group must show N/A.
         """
         return self.asr if self.attempts > 0 else None
+
+
+class ScenePairing(BaseModel):
+    """Whether each attacked episode started from its benign twin's scene (schema 9, P1.2).
+
+    A pair is an applicable episode of any arm but the benign baseline, with the benign episodes
+    at its ``(task, seed)``. On LIBERO the seed does not pick the scene unless the run pins it
+    (E-2026-19), so a pair shares a task and a seed and may not share a starting scene; this says
+    how many did. A side that recorded nothing is unrecorded, never a match.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    pairs: int = Field(..., ge=0, description="Attacked episodes with a benign twin.")
+    init_state_matched: int = Field(
+        ..., ge=0, description="Pairs whose two sides recorded one equal `init_state`."
+    )
+    init_state_unrecorded: int = Field(
+        ..., ge=0, description="Pairs where either side recorded no `init_state`."
+    )
+    scene_matched: int = Field(
+        ..., ge=0, description="Pairs whose two sides recorded one equal `scene_t0_digest`."
+    )
+    scene_unrecorded: int = Field(
+        ..., ge=0, description="Pairs where either side recorded no `scene_t0_digest`."
+    )
 
 
 class EaiTag(BaseModel):
@@ -450,6 +590,40 @@ class ControllerConvention(BaseModel):
     )
 
 
+class InputNormaliser(BaseModel):
+    """How the policy's observation inputs were normalised on the way in (schema 9).
+
+    The input-side twin of :class:`ActionUnnormaliser`. The same checkpoint served with different
+    state statistics sees a different observation, and a pre-processor whose statistics never
+    loaded normalises nothing without saying so (lerobot#4047). Resolved from the pipeline that
+    executed, never from a model card.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    state_mode: str | None = Field(
+        None,
+        description="Normalisation mode applied to STATE inputs (e.g. 'MEAN_STD'). None when the "
+        "adapter could not resolve it.",
+    )
+    visual_mode: str | None = Field(
+        None,
+        description="Normalisation mode applied to VISUAL inputs (e.g. 'IDENTITY'). None when the "
+        "adapter could not resolve it.",
+    )
+    stats_digest: str | None = Field(
+        None,
+        description="sha256 over the canonical statistics the normaliser applies to observation "
+        "features (every statistic except the action's), exactly as loaded. None when it applies "
+        "none or they could not be read — never a placeholder value.",
+    )
+    source: str = Field(
+        ...,
+        description="Where the modes and statistics were read from, e.g. 'lerobot-preprocessor' "
+        "(the live pre-processing pipeline).",
+    )
+
+
 def _canonical_sha256(obj: Any) -> str:
     """sha256 of the canonical JSON (sorted keys, no whitespace) of ``obj``."""
     text = json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
@@ -491,11 +665,70 @@ class DeployedPolicy(BaseModel):
     )
     action_unnormaliser: ActionUnnormaliser | None = None
     controller_convention: ControllerConvention | None = None
+    # Schema 9: the rest of what makes two loads of one checkpoint executable-inequivalent. Every
+    # one is None where the adapter could not resolve it; registered in
+    # `attest._DEPLOYED_POLICY_FIELDS_ADDED_IN`, so a report declaring less digests without them.
+    input_normaliser: InputNormaliser | None = Field(
+        None,
+        description="The observation normaliser the policy's pre-processor applied: STATE and "
+        "VISUAL modes and a digest over their statistics (schema >= 9).",
+    )
+    preprocessor_digest: str | None = Field(
+        None,
+        description="sha256 over the pre-processor files the adapter loaded: the canonical JSON "
+        "list of [filename, sha256] pairs for the pipeline's config file and then each step's "
+        "state file, in load order, so a reader can rebuild it from per-file hashes (schema >= 9). "
+        "None when the files could not be located without the network.",
+    )
+    postprocessor_digest: str | None = Field(
+        None,
+        description="The same digest over the post-processor files (schema >= 9).",
+    )
+    weights_digest: str | None = Field(
+        None,
+        description="sha256 of the weight file the policy loaded (lerobot 0.5.1 loads exactly one, "
+        "`model.safetensors`), which is what `sha256sum` prints for it. Also fills the execution "
+        "manifest's `checkpoint_digest` (schema >= 9).",
+    )
+    rename_map: dict[str, str] | None = Field(
+        None,
+        description="The observation-key rename map the pre-processor applied, read from its "
+        "rename step: {} when it applies none (schema >= 9). None when unresolved.",
+    )
+    camera_keys: list[str] | None = Field(
+        None,
+        description="The camera inputs the policy consumed, in the order it consumes them (its "
+        "config's image features, after any rename). [] for a policy that reads no camera "
+        "(schema >= 9).",
+    )
+    denoising_steps: int | None = Field(
+        None,
+        description="Denoising (flow-integration) steps per predicted chunk, read from the policy "
+        "config (SmolVLA `num_steps`, pi0 / pi0.5 `num_inference_steps`). None for a head that has "
+        "no such setting or when it was not set explicitly (schema >= 9).",
+    )
+    control_rate_hz: int | None = Field(
+        None,
+        description="The environment control rate the adapter was configured with "
+        "(SuiteFeatures.fps), in Hz (schema >= 9).",
+    )
+    temporal_ensemble_coeff: float | None = Field(
+        None,
+        description="ACT's temporal-ensembling coefficient, where the policy has one; None for "
+        "every other policy (schema >= 9).",
+    )
+    discrete_state_input: bool | None = Field(
+        None,
+        description="Whether the state reaches the model as discrete tokens, where the policy "
+        "config carries that setting (openpi's pi0.5 does; no lerobot 0.5.1 config does, so it "
+        "is None there) (schema >= 9).",
+    )
     digest: str = Field(
         ...,
         description="sha256 over the canonical JSON of every other field. Equal digests mean the "
         "same deployed policy as far as the adapter could resolve it; the ExecutionManifest binds "
-        "the report (and so this block) by the report digest.",
+        "the report (and so this block) by the report digest. A schema-9 digest covers the "
+        "schema-9 fields too, so it is not comparable with one taken at schema 6 to 8.",
     )
 
     @classmethod
@@ -508,6 +741,16 @@ class DeployedPolicy(BaseModel):
         checkpoint_revision: str | None = None,
         action_unnormaliser: ActionUnnormaliser | None = None,
         controller_convention: ControllerConvention | None = None,
+        input_normaliser: InputNormaliser | None = None,
+        preprocessor_digest: str | None = None,
+        postprocessor_digest: str | None = None,
+        weights_digest: str | None = None,
+        rename_map: dict[str, str] | None = None,
+        camera_keys: Sequence[str] | None = None,
+        denoising_steps: int | None = None,
+        control_rate_hz: int | None = None,
+        temporal_ensemble_coeff: float | None = None,
+        discrete_state_input: bool | None = None,
     ) -> DeployedPolicy:
         """Construct with the digest derived from the fields — the only way to get a true one."""
         body: dict[str, Any] = {
@@ -521,6 +764,18 @@ class DeployedPolicy(BaseModel):
             "controller_convention": (
                 controller_convention.model_dump() if controller_convention is not None else None
             ),
+            "input_normaliser": (
+                input_normaliser.model_dump() if input_normaliser is not None else None
+            ),
+            "preprocessor_digest": preprocessor_digest,
+            "postprocessor_digest": postprocessor_digest,
+            "weights_digest": weights_digest,
+            "rename_map": dict(rename_map) if rename_map is not None else None,
+            "camera_keys": list(camera_keys) if camera_keys is not None else None,
+            "denoising_steps": denoising_steps,
+            "control_rate_hz": control_rate_hz,
+            "temporal_ensemble_coeff": temporal_ensemble_coeff,
+            "discrete_state_input": discrete_state_input,
         }
         return cls(**body, digest=_canonical_sha256(body))
 
@@ -660,7 +915,12 @@ class RunReport(BaseModel):
         "and whether its binding holds for this run (`calibration.<task>.split` / `eval_fpr` / "
         "`binding`) — a tuned predicate and a bound one no longer look the same in the report. "
         ">=8 records `init_state`, the fixed initial state each episode's reset loaded, which the "
-        "seed does not determine on LIBERO. "
+        "seed does not determine on LIBERO. >=9 records the rest of the deployed policy's runtime "
+        "identity (input normaliser, processor and weight digests, rename map, camera order, "
+        "denoising steps, control rate), each episode's starting scene (`scene_t0_digest`, "
+        "`scene_t0`), each task's compiled model digest and how many pairs shared a scene, and "
+        "how each episode ended (`termination`, `verdict`, `observation`); an unjudged episode "
+        "is excluded from every rate. "
         "Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed "
         "a calibration, because its trajectories do not exist.",
     )
@@ -750,6 +1010,19 @@ class RunReport(BaseModel):
     calibration: dict[str, CalibrationMeta] = Field(
         default_factory=dict, description="Per-task calibration metadata (calibrated tasks only)."
     )
+    sim_model_digests: dict[str, str | None] = Field(
+        default_factory=dict,
+        description="Per task: sha256 of the compiled simulator model's XML, read once per task "
+        "with every quoted path cut back past its site-packages directory, so it names the model "
+        "and not where Python is installed. null where the suite compiles no model (the stub). "
+        "Schema >= 9.",
+    )
+    scene_pairing: ScenePairing | None = Field(
+        None,
+        description="How many attacked episodes started from their benign twin's scene (schema "
+        ">= 9). A pinned run refuses to finish with a mismatch, so there every recorded pair "
+        "matches; an unpinned run reports what it got.",
+    )
 
     by_attack: dict[str, ASRStat] = Field(default_factory=dict)
     by_task: dict[str, ASRStat] = Field(default_factory=dict)
@@ -778,7 +1051,7 @@ class RunReport(BaseModel):
                 succ / att if att else 0.0
             )
             return rate, succ, att
-        adv = [r for r in self.results if r.applicable and r.family != "baseline"]
+        adv = [r for r in self.results if r.scored and r.family != "baseline"]
         att = len(adv)
         succ = sum(1 for r in adv if r.success)
         return (succ / att if att else 0.0), succ, att
@@ -786,9 +1059,10 @@ class RunReport(BaseModel):
     def benign_headline(self) -> tuple[float, int, int]:
         """(rate, successes, attempts) for the BENIGN control subset — the ASR's control arm.
 
-        The exact mirror of :meth:`adversarial_headline`: same ``applicable`` filter, same
-        ``family == "baseline"`` partition, opposite side of it. Every applicable episode is in
-        exactly one of the two, so the pair is a partition and not two overlapping views.
+        The exact mirror of :meth:`adversarial_headline`: same ``scored`` filter (applicable and
+        not unjudged), same ``family == "baseline"`` partition, opposite side of it. Every scored
+        episode is in exactly one of the two, so the pair is a partition and not two overlapping
+        views.
 
         WHY COUNTS AND NOT JUST ``benign_fpr``. ``benign_fpr`` is a bare rate, and a rate has no
         interval — 0/5 and 0/500 both serialise as ``0.0``. An attack-success rate is published
@@ -802,7 +1076,7 @@ class RunReport(BaseModel):
         which callers must render as N/A rather than as a measured 0% — an unmeasured floor and a
         measured floor of zero are different claims about the same number.
         """
-        ben = [r for r in self.results if r.applicable and r.family == "baseline"]
+        ben = [r for r in self.results if r.scored and r.family == "baseline"]
         att = len(ben)
         succ = sum(1 for r in ben if r.success)
         return (succ / att if att else 0.0), succ, att

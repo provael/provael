@@ -524,6 +524,9 @@ _RESULT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     4: ("weight_corruption",),
     5: ("policy_seed",),
     8: ("init_state",),
+    9: (
+        "scene_t0_digest", "scene_t0", "termination", "verdict", "unjudged_reason", "observation",
+    ),
 }
 
 #: TOP-LEVEL report fields introduced by each schema version — the same contract as
@@ -533,6 +536,7 @@ _RESULT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
 #: before schema 6 would verify as TAMPERED.
 _REPORT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     6: ("deployed_policy",),
+    9: ("sim_model_digests", "scene_pairing"),
 }
 
 #: Fields added to each `calibration.<task>` entry (`CalibrationMeta`) by schema version — the
@@ -543,6 +547,20 @@ _REPORT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
 #: calibrated task when this landed, which is why the guarantee is cheap to keep and worth keeping.
 _CALIBRATION_META_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     7: ("split", "eval_fpr", "binding"),
+}
+
+#: Fields added to the `deployed_policy` block (`DeployedPolicy`) by schema version — the
+#: calibration table's contract applied to the other nested model. Schema 9 added the rest of the
+#: runtime identity, and four committed schema-8 reports carry a `deployed_policy`
+#: (`results/rfm_submission_2026-11`): without this table they would dump the new keys as null,
+#: their canonical bytes would move, and the digest their execution manifests bind would stop
+#: matching.
+_DEPLOYED_POLICY_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
+    9: (
+        "input_normaliser", "preprocessor_digest", "postprocessor_digest", "weights_digest",
+        "rename_map", "camera_keys", "denoising_steps", "control_rate_hz",
+        "temporal_ensemble_coeff", "discrete_state_input",
+    ),
 }
 
 
@@ -576,6 +594,12 @@ def report_projection(report: RunReport | dict[str, Any]) -> dict[str, Any]:
                     if isinstance(meta, dict):
                         for name in names:
                             meta.pop(name, None)
+    for version, names in _DEPLOYED_POLICY_FIELDS_ADDED_IN.items():
+        if declared < version:
+            deployed = obj.get("deployed_policy")
+            if isinstance(deployed, dict):
+                for name in names:
+                    deployed.pop(name, None)
     return obj
 
 

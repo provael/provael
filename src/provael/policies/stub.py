@@ -272,6 +272,13 @@ class StubPolicy(PolicyAdapter):
                 action_dim=self.action_dim, chunk_size=1, n_action_steps=1, action_bounds=None,
                 pipeline=[],
             ),
+            # Schema 9. Two facts are certain by construction: nothing renames an observation
+            # key, and no camera frame is read (the instruction and the text channels the attacks
+            # write are the only inputs). Everything else stays None: there are no processor or
+            # weight files, no input normaliser, no denoising head, and the stub suite hands over
+            # no control rate.
+            rename_map={},
+            camera_keys=[],
         )
 
     # -- provael.attacks.weight_integrity.WeightAccessible ------------------------------------- #

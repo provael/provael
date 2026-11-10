@@ -58,7 +58,10 @@ for that shard, **with `decisions[]` removed**: the per-step action traces are 1
 and 19 MB is not a reasonable thing to put in a git history. Every field the statistics consume —
 `task`, `attack`, `seed`, `success`, `task_success`, `applicable`, `steps` — is retained, and
 re-running `paired.py` over these files reproduces `aggregate.json` exactly. The untrimmed
-artifacts are on the Modal Volume `provael-libero-runs`.
+artifacts are on the Modal Volume `provael-libero-runs`. The `execution-manifest.json` beside each
+file does not verify against it: provael 0.32.0 itself computes a different `report_digest` for all
+ten trimmed files (checked on 10 November 2026), which fits a digest taken before `decisions[]` was
+removed. Check a manifest against the untrimmed copy.
 
 `aggregate.json` — the cross-shard analysis. It is deliberately **not** shaped like a
 `report.json`: each shard's report is the attestable artifact whose digest is a pure function of

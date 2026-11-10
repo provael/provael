@@ -131,3 +131,62 @@ def test_committed_execution_manifest_is_honest_and_matches_a_fresh_build() -> N
     # drift guard vs the checked-in manifest
     fresh = to_execution_manifest_json(manifest)
     assert fresh == (_REAL / "execution-manifest.json").read_text(encoding="utf-8")
+
+
+def test_package_versions_are_recorded_and_their_absence_is_a_stated_gap() -> None:
+    """Manifest schema 4 (P1.1): the stack's versions live here, never in report.json."""
+    from provael.execution import EXECUTION_MANIFEST_VERSION
+    from provael.runtime_versions import TRACKED_PACKAGES, installed_versions
+
+    versions = installed_versions()
+    assert set(versions) == set(TRACKED_PACKAGES)
+    recorded = _manifest(package_versions=versions)
+    assert recorded.manifest_schema_version == EXECUTION_MANIFEST_VERSION == 4
+    assert recorded.package_versions == versions
+    assert "package_versions" not in recorded.missing_fields
+    # A package that is not installed is recorded as such, by name, not dropped.
+    partial = _manifest(package_versions={"lerobot": None, "numpy": "2.2.6"})
+    assert partial.package_versions == {"lerobot": None, "numpy": "2.2.6"}
+    gap = _manifest()
+    assert gap.package_versions is None and "package_versions" in gap.missing_fields
+    assert "package_versions" not in _report().model_dump(), "never in the deterministic report"
+
+
+def test_the_checkpoint_digest_is_carried_when_the_caller_supplies_it() -> None:
+    manifest = _manifest(checkpoint_digest="ab" * 32)
+    assert manifest.checkpoint_digest == "ab" * 32
+    assert _manifest().checkpoint_digest is None
+
+
+def test_every_committed_report_still_digests_to_the_manifest_beside_it() -> None:
+    """A schema bump must leave every committed report digesting to the digest its manifest binds.
+
+    The projection strips what a report did not declare (`attest._RESULT_FIELDS_ADDED_IN` and the
+    tables beside it), and this is the test that notices a field added without a registration,
+    at the top of the report, on an episode, or nested in `calibration` or `deployed_policy`.
+
+    The twenty shards of the two 9 August 2026 runs are excluded by name, not by schema: each
+    report.json there had ``decisions[]`` removed for size before it was committed, as both run
+    READMEs say, and provael 0.32.0 itself computes a different digest for all twenty committed
+    files than the manifest beside each holds (checked on 10 November 2026). That fits a digest
+    taken before the trim; either way no version reproduces it from these files. Any other trimmed
+    report still fails here.
+    """
+    import json
+
+    trimmed_runs = {"smolvla_libero_object_suite", "smolvla_libero_object_control"}
+    checked = 0
+    for path in sorted((_REAL.parent).rglob("report.json")):
+        manifest_path = path.parent / "execution-manifest.json"
+        if not manifest_path.is_file():
+            continue
+        if path.parent.parent.name in trimmed_runs:
+            assert all(
+                "decisions" not in result
+                for result in json.loads(path.read_text(encoding="utf-8"))["results"]
+            ), f"{path} is no longer trimmed; check it against its manifest instead"
+            continue
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        assert report_digest(load_report(path)) == manifest["report_digest"], path
+        checked += 1
+    assert checked >= 100, f"only {checked} committed reports were checked"

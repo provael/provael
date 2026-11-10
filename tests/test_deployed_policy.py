@@ -13,26 +13,42 @@ that the pure resolution helpers behave on fakes shaped like the real objects.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
-from provael.attest import _REPORT_FIELDS_ADDED_IN, _report_digest, report_projection
+from provael.attest import (
+    _DEPLOYED_POLICY_FIELDS_ADDED_IN,
+    _REPORT_FIELDS_ADDED_IN,
+    _report_digest,
+    report_projection,
+)
 from provael.cli import app
 from provael.combine import ShardMismatchError, combine_reports
 from provael.config import RunConfig
 from provael.policies.identity import (
+    camera_keys_of,
+    denoising_steps_of,
+    discrete_state_input_of,
+    input_normaliser_from_pipeline,
+    observation_stats_digest,
+    processor_files_digest,
+    rename_map_from_pipeline,
     revision_from_cache_path,
     stats_digest,
     step_names,
+    temporal_ensemble_coeff_of,
     unnormaliser_from_pipeline,
+    weights_file_digest,
 )
 from provael.policies.stub import STUB_CHECKPOINT, StubPolicy
+from provael.report import load_report
 from provael.runner import run
 from provael.test_report import to_test_report_markdown
-from provael.types import ActionUnnormaliser, DeployedPolicy
+from provael.types import ActionUnnormaliser, DeployedPolicy, InputNormaliser
 
 runner = CliRunner()
 
@@ -68,8 +84,9 @@ def test_report_carries_the_requested_checkpoint_and_the_deployed_policy_and_the
     )
     assert deployed.controller_convention is not None
     assert deployed.controller_convention.action_dim == StubPolicy().action_dim
-    # 6 introduced deployed_policy; 7 the calibration binding; 8 the per-episode init_state
-    assert report.schema_version == 8
+    # 6 introduced deployed_policy; 7 the calibration binding; 8 the per-episode init_state; 9 the
+    # rest of the deployed policy's runtime identity
+    assert report.schema_version == 9
 
 
 def test_the_digest_is_derived_from_the_fields_and_is_stable() -> None:
@@ -243,3 +260,169 @@ def test_the_execution_manifest_carries_the_resolved_checkpoint(tmp_path: Path) 
     assert report["model"] == "requested/alias"
     assert report["deployed_policy"]["checkpoint"] == STUB_CHECKPOINT
     assert report["deployed_policy"]["controller_convention"]["pipeline"] == []
+
+
+# --------------------------------------------------------------------------- #
+# schema 9: the rest of the runtime identity (P1.1)
+# --------------------------------------------------------------------------- #
+
+_SCHEMA_9_FIELDS = (
+    "input_normaliser", "preprocessor_digest", "postprocessor_digest", "weights_digest",
+    "rename_map", "camera_keys", "denoising_steps", "control_rate_hz",
+    "temporal_ensemble_coeff", "discrete_state_input",
+)
+
+
+def test_the_schema_9_fields_are_registered_and_stripped_below_9() -> None:
+    """Nested in `deployed_policy`, so the top-level tables do not reach them: their own does."""
+    assert _DEPLOYED_POLICY_FIELDS_ADDED_IN[9] == _SCHEMA_9_FIELDS
+    report = _report()
+    assert report.deployed_policy is not None
+    older = report.model_copy(update={"schema_version": 8})
+    projected = report_projection(older)["deployed_policy"]
+    assert not set(_SCHEMA_9_FIELDS) & set(projected)
+    blank = older.deployed_policy.model_copy(update=dict.fromkeys(_SCHEMA_9_FIELDS))  # type: ignore[union-attr]
+    assert _report_digest(older) == _report_digest(older.model_copy(update={"deployed_policy": blank}))
+    # At schema 9 they are signed over: a different weight file is a different subject.
+    moved = report.deployed_policy.model_copy(update={"weights_digest": "0" * 64})
+    assert _report_digest(report) != _report_digest(report.model_copy(update={"deployed_policy": moved}))
+
+
+def test_committed_schema_8_reports_with_a_deployed_policy_still_digest_as_bound() -> None:
+    """The four PAISI episodes (#356) carry a `deployed_policy` and a manifest binding its digest."""
+    paths = sorted(Path("results/rfm_submission_2026-11").rglob("report.json"))
+    assert len(paths) == 4
+    for path in paths:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        assert raw["schema_version"] == 8 and raw["deployed_policy"] is not None
+        manifest = json.loads((path.parent / "execution-manifest.json").read_text(encoding="utf-8"))
+        assert _report_digest(load_report(path)) == manifest["report_digest"], path
+
+
+def test_every_new_field_moves_the_identity_digest() -> None:
+    base = DeployedPolicy.build(adapter="smolvla", checkpoint="c")
+    changes: dict[str, object] = {
+        "input_normaliser": InputNormaliser(state_mode="MEAN_STD", source="t"),
+        "preprocessor_digest": "1" * 64, "postprocessor_digest": "2" * 64,
+        "weights_digest": "3" * 64, "rename_map": {"a": "b"},
+        "camera_keys": ["observation.images.image"], "denoising_steps": 10,
+        "control_rate_hz": 30, "temporal_ensemble_coeff": 0.01, "discrete_state_input": True,
+    }
+    assert set(changes) == set(_SCHEMA_9_FIELDS)
+    for name, value in changes.items():
+        changed = DeployedPolicy.build(adapter="smolvla", checkpoint="c", **{name: value})  # type: ignore[arg-type]
+        assert changed.digest != base.digest, name
+    # Camera ORDER is identity: the same two cameras swapped are a different deployment.
+    a = DeployedPolicy.build(adapter="smolvla", camera_keys=["x", "y"])
+    b = DeployedPolicy.build(adapter="smolvla", camera_keys=["y", "x"])
+    assert a.digest != b.digest
+
+
+def test_the_stub_records_only_what_is_certain() -> None:
+    deployed = _report().deployed_policy
+    assert deployed is not None
+    assert deployed.rename_map == {} and deployed.camera_keys == []
+    for name in set(_SCHEMA_9_FIELDS) - {"rename_map", "camera_keys"}:
+        assert getattr(deployed, name) is None, name
+
+
+class _NormalizerProcessorStep:
+    def get_config(self) -> dict[str, object]:
+        return {"norm_map": {"ACTION": "MEAN_STD", "STATE": "MEAN_STD", "VISUAL": "IDENTITY"}}
+
+    def state_dict(self) -> dict[str, _Tensor]:
+        return {
+            "action.mean": _Tensor([0.0]), "observation.state.mean": _Tensor([1.0, 2.0]),
+            "observation.state.std": _Tensor([3.0, 4.0]),
+        }
+
+
+class _RenameObservationsProcessorStep:
+    def __init__(self, mapping: dict[str, str]) -> None:
+        self._mapping = mapping
+
+    def get_config(self) -> dict[str, object]:
+        return {"rename_map": dict(self._mapping)}
+
+
+def test_the_input_normaliser_is_read_off_the_preprocessor_and_ignores_action_stats() -> None:
+    resolved = input_normaliser_from_pipeline(
+        _Pipeline(_DeviceProcessorStep(), _NormalizerProcessorStep()), source="lerobot-preprocessor"
+    )
+    assert resolved == InputNormaliser(
+        state_mode="MEAN_STD", visual_mode="IDENTITY",
+        stats_digest=observation_stats_digest(_NormalizerProcessorStep().state_dict()),
+        source="lerobot-preprocessor",
+    )
+    stats = _NormalizerProcessorStep().state_dict()
+    assert observation_stats_digest({**stats, "action.mean": _Tensor([9.0])}) == resolved.stats_digest
+    assert observation_stats_digest({"action.mean": _Tensor([0.0])}) is None
+    # The UNnormaliser is the action side and is never read as the input normaliser.
+    assert input_normaliser_from_pipeline(_Pipeline(_UnnormalizerProcessorStep()), source="x") is None
+    assert input_normaliser_from_pipeline(None, source="x") is None
+
+
+def test_the_rename_map_is_the_one_the_pipeline_applies() -> None:
+    swap = {"observation.images.image": "observation.images.image2"}
+    assert rename_map_from_pipeline(_Pipeline(_RenameObservationsProcessorStep(swap))) == swap
+    assert rename_map_from_pipeline(_Pipeline(_DeviceProcessorStep())) == {}
+    assert rename_map_from_pipeline(None) is None
+
+
+class _Config:
+    def __init__(self, **fields: object) -> None:
+        self.__dict__.update(fields)
+
+
+def test_the_policy_config_readers_record_only_explicit_settings() -> None:
+    smolvla = _Config(num_steps=10, image_features={"observation.images.image": 0,
+                                                    "observation.images.image2": 1})
+    pi05 = _Config(num_inference_steps=10)
+    diffusion = _Config(num_inference_steps=None, num_train_timesteps=100)
+    act = _Config(temporal_ensemble_coeff=0.01)
+    assert denoising_steps_of(smolvla) == 10 and denoising_steps_of(pi05) == 10
+    assert denoising_steps_of(diffusion) is None, "lerobot's fallback is not ours to apply"
+    assert camera_keys_of(None, smolvla) == ["observation.images.image", "observation.images.image2"]
+    assert camera_keys_of(_Config()) is None
+    assert temporal_ensemble_coeff_of(act) == 0.01 and temporal_ensemble_coeff_of(smolvla) is None
+    assert discrete_state_input_of(_Config(discrete_state_input=True)) is True
+    assert discrete_state_input_of(smolvla) is None
+
+
+def _checkpoint(root: Path) -> Path:
+    """A local checkpoint directory laid out the way lerobot 0.5.1 loads one."""
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "policy_preprocessor.json").write_text(json.dumps({"steps": [
+        {"registry_name": "device_processor"},
+        {"registry_name": "normalizer_processor", "state_file": "pre_step_1_normalizer.safetensors"},
+    ]}), encoding="utf-8")
+    (root / "pre_step_1_normalizer.safetensors").write_bytes(b"pre-stats")
+    (root / "policy_postprocessor.json").write_text(json.dumps({"steps": [
+        {"registry_name": "unnormalizer_processor", "state_file": "post_step_0.safetensors"},
+    ]}), encoding="utf-8")
+    (root / "post_step_0.safetensors").write_bytes(b"post-stats")
+    (root / "model.safetensors").write_bytes(b"weights")
+    return root
+
+
+def test_file_digests_are_rebuilt_from_per_file_hashes(tmp_path: Path) -> None:
+    root = _checkpoint(tmp_path / "ckpt")
+
+    def sha(name: str) -> str:
+        return hashlib.sha256((root / name).read_bytes()).hexdigest()
+
+    pairs = [["policy_preprocessor.json", sha("policy_preprocessor.json")],
+             ["pre_step_1_normalizer.safetensors", sha("pre_step_1_normalizer.safetensors")]]
+    expected = hashlib.sha256(json.dumps(pairs, separators=(",", ":")).encode()).hexdigest()
+    assert processor_files_digest(str(root), "policy_preprocessor.json") == expected
+    assert weights_file_digest(str(root)) == hashlib.sha256(b"weights").hexdigest()
+    # A state file the config names and the checkpoint lacks: half the pipeline is not the
+    # pipeline that ran, so the digest is unresolved rather than partial.
+    (root / "post_step_0.safetensors").unlink()
+    assert processor_files_digest(str(root), "policy_postprocessor.json") is None
+    assert processor_files_digest(str(tmp_path / "absent"), "policy_preprocessor.json") is None
+    assert weights_file_digest(str(tmp_path / "absent")) is None
+    # A changed statistic is a changed digest.
+    before = processor_files_digest(str(root), "policy_preprocessor.json")
+    (root / "pre_step_1_normalizer.safetensors").write_bytes(b"other-stats")
+    assert processor_files_digest(str(root), "policy_preprocessor.json") != before

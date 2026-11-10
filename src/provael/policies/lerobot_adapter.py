@@ -54,9 +54,19 @@ from provael.integrity import (
 )
 from provael.policies.base import PolicyAdapter
 from provael.policies.identity import (
+    POSTPROCESSOR_CONFIG,
+    PREPROCESSOR_CONFIG,
+    camera_keys_of,
+    denoising_steps_of,
+    discrete_state_input_of,
+    input_normaliser_from_pipeline,
+    processor_files_digest,
+    rename_map_from_pipeline,
     resolve_hub_revision,
     step_names,
+    temporal_ensemble_coeff_of,
     unnormaliser_from_pipeline,
+    weights_file_digest,
 )
 from provael.types import (
     IMAGE_KEY,
@@ -423,6 +433,12 @@ class LeRobotAdapter(PolicyAdapter):
         that :meth:`act` really applies; the controller convention from the policy config and the
         env post-processor between the policy and the simulator. The clamp is the one this adapter
         applies itself in :meth:`act`, so it is recorded as part of the convention.
+
+        Schema 9 adds the input side and the files (P1.1): the observation normaliser and its
+        statistics from the pre-processor, the rename map that pipeline applies, digests over the
+        processor and weight files as lerobot loaded them (from the local directory or the Hub
+        cache, never the network), the camera order and denoising steps from the policy's own
+        config, and the control rate the suite handed over.
         """
         pipeline = step_names(self._postprocess) + step_names(self._env_postprocess)
         cfg = policy_cfg
@@ -433,6 +449,12 @@ class LeRobotAdapter(PolicyAdapter):
             action_bounds=(-1.0, 1.0),
             pipeline=pipeline,
         )
+        # The policy's own config is the one its forward pass reads; the requested config is the
+        # fallback for an object that does not expose it.
+        live = getattr(policy, "config", None) or cfg
+        rename = rename_map_from_pipeline(self._preprocess)
+        if rename is None and self.rename_map is not None:
+            rename = dict(self.rename_map)
         return DeployedPolicy.build(
             adapter=self.name,
             policy_class=type(policy).__name__,
@@ -442,6 +464,18 @@ class LeRobotAdapter(PolicyAdapter):
                 self._postprocess, source="lerobot-postprocessor"
             ),
             controller_convention=convention,
+            input_normaliser=input_normaliser_from_pipeline(
+                self._preprocess, source="lerobot-preprocessor"
+            ),
+            preprocessor_digest=processor_files_digest(self.model_id, PREPROCESSOR_CONFIG),
+            postprocessor_digest=processor_files_digest(self.model_id, POSTPROCESSOR_CONFIG),
+            weights_digest=weights_file_digest(self.model_id),
+            rename_map=rename,
+            camera_keys=camera_keys_of(live, cfg),
+            denoising_steps=denoising_steps_of(live),
+            control_rate_hz=self._features.fps if self._features is not None else None,
+            temporal_ensemble_coeff=temporal_ensemble_coeff_of(live),
+            discrete_state_input=discrete_state_input_of(live),
         )
 
     def reset(self) -> None:

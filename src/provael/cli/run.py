@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import time
 from pathlib import Path
@@ -35,15 +36,18 @@ from provael.coverage import FIXTURE_POLICIES
 from provael.mlbom import ML_BOM_JSON, write_ml_bom
 from provael.oscal import OSCAL_JSON, write_oscal
 from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
+from provael.policies.registry import REQUIRES_LEROBOT
 from provael.recipes import FULL_SWEEP, fixture_only_families, full_sweep_attacks, load_recipe
 from provael.report import (
     render_summary,
     write_report,
 )
 from provael.reproductions import get_reproduction
-from provael.runner import run
+from provael.runner import InitStatePlanError, ScenePinError, run
+from provael.runtime_versions import drift_warnings, installed_versions
 from provael.sarif import write_sarif
 from provael.scorecard import SCORECARD_MD, write_scorecard
+from provael.suites.libero import suite_and_ids_from_tasks
 from provael.verdict import write_decision
 
 
@@ -82,7 +86,28 @@ def attack(
             "states against the calibration fit's (#136).",
         ),
     ] = None,
+    init_states: Annotated[
+        Path | None,
+        typer.Option(
+            "--init-states",
+            help="JSON file naming the initial state each episode starts from, per task: "
+            '{"libero_object/0": [3, 7], ...}, one entry per seed (every arm and repeat at seed '
+            "index i starts from entry i) or, when the only arm is the benign baseline, one per "
+            "episode. Any other arm needs one state per seed, so every arm at a seed starts from "
+            "one scene. Exclusive with --pin-init-states; needs a suite with fixed initial "
+            "states (LIBERO).",
+        ),
+    ] = None,
     horizon: Annotated[int, typer.Option(min=1, help="Max timesteps per episode.")] = 8,
+    record_episode_errors: Annotated[
+        bool,
+        typer.Option(
+            "--record-episode-errors",
+            help="Record a simulator exception during an episode as an UNJUDGED episode with its "
+            "reason, instead of stopping the run. Every rate then excludes it and the report "
+            "counts it beside the rate. Off by default.",
+        ),
+    ] = False,
     tasks: Annotated[
         str | None, typer.Option(help="Comma-separated task subset (default: all).")
     ] = None,
@@ -258,8 +283,16 @@ def attack(
         overrides["seed"] = seed
     if _explicit("pin_init_states"):
         overrides["pin_init_states"] = pin_init_states
+    if init_states is not None:
+        try:
+            overrides["init_states"] = json.loads(init_states.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            _fail(f"--init-states {init_states}: {exc}")
+            return
     if _explicit("horizon"):
         overrides["horizon"] = horizon
+    if _explicit("record_episode_errors"):
+        overrides["record_episode_errors"] = record_episode_errors
     if _explicit("model"):
         overrides["model"] = model
     if _explicit("rename_map"):
@@ -317,6 +350,20 @@ def attack(
     if protocol is not None and acceptance is None:
         return
 
+    # The stack the run is about to measure on. A warning, not a refusal: a different stack is a
+    # different measurement, and execution-manifest.json records the versions either way.
+    # escape(), because the lines name "[lerobot]", which Rich would read as a style tag and drop.
+    uses_lerobot = config.suite == "libero" or config.policy in REQUIRES_LEROBOT
+    task_suite = None
+    if config.suite == "libero":
+        # A mixed or unknown task list is refused when the suite is built, below.
+        with contextlib.suppress(ValueError):
+            task_suite = suite_and_ids_from_tasks(config.tasks or [])[0]
+    for line in drift_warnings(
+        installed_versions(), suite=config.suite, uses_lerobot=uses_lerobot, task_suite=task_suite
+    ):
+        _err.print(f"[yellow]warning:[/yellow] {escape(line)}")
+
     calibrations = None
     if calib is not None:
         calibrations = load_calibrations(calib, config.policy, config.suite)
@@ -353,6 +400,11 @@ def attack(
         _fail(str(exc).strip('"'))
         return
     except NotImplementedError as exc:
+        _fail(str(exc))
+        return
+    except (InitStatePlanError, ScenePinError) as exc:
+        # A plan that does not fit the run is refused before anything loads; a pinned run whose
+        # arms started from different scenes stops rather than writing pairs that are not pairs.
         _fail(str(exc))
         return
     elapsed = time.perf_counter() - started

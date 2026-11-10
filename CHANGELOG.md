@@ -66,6 +66,35 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   number moves. The scheduled campaign's plan and the Modal `control` and `eai04-redirect` stages
   now name their controls, so their grids and printed ceilings stay as they were; the new arm has
   its own Modal stage, `declarative`, not dispatchable until a release carries it.
+- **Report schema 9 records the rest of the deployed policy's runtime identity.**
+  `deployed_policy` gains the observation normaliser and its statistics digest, digests of the pre-
+  and post-processor files and the weight file as lerobot loaded them, the rename map, the camera
+  order, denoising steps, the control rate, and ACT's temporal-ensembling coefficient and openpi's
+  discrete-state flag where a policy has them; `null` where unresolved. The execution manifest
+  (schema 4) records the installed lerobot, torch, transformers, mujoco, robosuite, hf-libero,
+  gymnasium and numpy versions and fills `checkpoint_digest`, and `provael attack` and `provael
+  doctor` warn on mujoco 3.4.0 or newer for a `libero_spatial` run (the task suite the upstream
+  report is about) and on versions off the `[lerobot]` lock. Why:
+  two loads of one checkpoint can execute differently (normaliser statistics, a swapped camera, the
+  denoising budget), and none of it was in the artifact. Older reports load and digest unchanged.
+  No number moves.
+- **Each episode records the scene it started from, and a pinned run checks its pairs.** Report
+  schema 9 adds `scene_t0_digest` and `scene_t0` per episode (read from the simulator after the
+  reset), a compiled-model digest per task, and `scene_pairing`, the count of attacked episodes
+  whose benign twin started from the same state and scene. A run pinned with `--pin-init-states`
+  stops if two arms at one seed start apart, and `provael attack --init-states FILE` names the
+  initial state of each seed's episodes (or of each episode, in a benign-only run). Why: an equal
+  `init_state` is an equal index, not proof of an equal scene, and the published pairs recorded
+  neither (E-2026-19). No number moves; no committed run is re-scored.
+- **Each episode records how it ended and whether it was judged.** Report schema 9 adds
+  `termination`, `verdict` with `unjudged_reason`, and `observation` (exit present, absent or not
+  established, the vantage, and the steps observed, horizon and steps without a pose). The LIBERO
+  predicate now answers `None` for a step without a pose instead of `False`, and
+  `--record-episode-errors` records a simulator exception as an unjudged episode instead of
+  stopping the run. Every rate excludes unjudged episodes and the report prints the count beside
+  it. Why: a missing pose read as "never left the envelope", and a crash cost a whole shard. The
+  committed 14 September shards have a pose on every step of all 530 applicable episodes, so no
+  rate moves.
 
 ### Changed
 
@@ -126,6 +155,12 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ### Fixed
 
+- **The two 9 August runs say why their manifests do not verify.** Each `report.json` in
+  `results/smolvla_libero_object_suite` and `results/smolvla_libero_object_control` had
+  `decisions[]` removed for size before it was committed, and provael 0.32.0 itself computes a
+  different `report_digest` for all twenty files than the manifest beside each one holds. Both
+  READMEs now say so, and the test that holds every other committed report to its manifest names
+  these two runs instead of skipping every schema-2 report. No number moves.
 - **The README's badges render, and its sentences match the repository again.** A missing blank
   line after the demo caption made GitHub and PyPI print the badge row as literal Markdown. The
   headline's Holm correction ran across six applicable arms, not seven; the McNemar figure says its
