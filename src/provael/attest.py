@@ -545,6 +545,20 @@ _CALIBRATION_META_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     7: ("split", "eval_fpr", "binding"),
 }
 
+#: Fields added to the `deployed_policy` block (`DeployedPolicy`) by schema version — the
+#: calibration table's contract applied to the other nested model. Schema 9 added the rest of the
+#: runtime identity, and four committed schema-8 reports carry a `deployed_policy`
+#: (`results/rfm_submission_2026-11`): without this table they would dump the new keys as null,
+#: their canonical bytes would move, and the digest their execution manifests bind would stop
+#: matching.
+_DEPLOYED_POLICY_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
+    9: (
+        "input_normaliser", "preprocessor_digest", "postprocessor_digest", "weights_digest",
+        "rename_map", "camera_keys", "denoising_steps", "control_rate_hz",
+        "temporal_ensemble_coeff", "discrete_state_input",
+    ),
+}
+
 
 def report_projection(report: RunReport | dict[str, Any]) -> dict[str, Any]:
     """The exact object every report digest is taken over, schema-aware.
@@ -576,6 +590,12 @@ def report_projection(report: RunReport | dict[str, Any]) -> dict[str, Any]:
                     if isinstance(meta, dict):
                         for name in names:
                             meta.pop(name, None)
+    for version, names in _DEPLOYED_POLICY_FIELDS_ADDED_IN.items():
+        if declared < version:
+            deployed = obj.get("deployed_policy")
+            if isinstance(deployed, dict):
+                for name in names:
+                    deployed.pop(name, None)
     return obj
 
 

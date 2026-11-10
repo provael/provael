@@ -31,6 +31,20 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
+### Added
+
+- **Report schema 9 records the rest of the deployed policy's runtime identity.**
+  `deployed_policy` gains the observation normaliser and its statistics digest, digests of the pre-
+  and post-processor files and the weight file as lerobot loaded them, the rename map, the camera
+  order, denoising steps, the control rate, and ACT's temporal-ensembling coefficient and openpi's
+  discrete-state flag where a policy has them; `null` where unresolved. The execution manifest
+  (schema 4) records the installed lerobot, torch, transformers, mujoco, robosuite, hf-libero,
+  gymnasium and numpy versions and fills `checkpoint_digest`, and `provael attack` and `provael
+  doctor` warn on mujoco 3.4.0 or newer for LIBERO and on versions off the `[lerobot]` lock. Why:
+  two loads of one checkpoint can execute differently (normaliser statistics, a swapped camera, the
+  denoising budget), and none of it was in the artifact. Older reports load and digest unchanged.
+  No number moves.
+
 ### Changed
 
 - **A run recorded for a video no longer counts as a measurement.** `provael.watch` skips any

@@ -35,6 +35,7 @@ from provael.coverage import FIXTURE_POLICIES
 from provael.mlbom import ML_BOM_JSON, write_ml_bom
 from provael.oscal import OSCAL_JSON, write_oscal
 from provael.policies.lerobot_adapter import IncompatiblePolicyError, MissingLeRobotError
+from provael.policies.registry import REQUIRES_LEROBOT
 from provael.recipes import FULL_SWEEP, fixture_only_families, full_sweep_attacks, load_recipe
 from provael.report import (
     render_summary,
@@ -42,6 +43,7 @@ from provael.report import (
 )
 from provael.reproductions import get_reproduction
 from provael.runner import run
+from provael.runtime_versions import drift_warnings, installed_versions
 from provael.sarif import write_sarif
 from provael.scorecard import SCORECARD_MD, write_scorecard
 from provael.verdict import write_decision
@@ -305,6 +307,13 @@ def attack(
     acceptance = _load_protocol(protocol)
     if protocol is not None and acceptance is None:
         return
+
+    # The stack the run is about to measure on. A warning, not a refusal: a different stack is a
+    # different measurement, and execution-manifest.json records the versions either way.
+    # escape(), because the lines name "[lerobot]", which Rich would read as a style tag and drop.
+    uses_lerobot = config.suite == "libero" or config.policy in REQUIRES_LEROBOT
+    for line in drift_warnings(installed_versions(), suite=config.suite, uses_lerobot=uses_lerobot):
+        _err.print(f"[yellow]warning:[/yellow] {escape(line)}")
 
     calibrations = None
     if calib is not None:

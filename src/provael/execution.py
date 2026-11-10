@@ -34,7 +34,13 @@ from provael.verdict import ReleaseDecision, release_verdict
 #: decision under that named protocol, ``incomplete`` when none was named, never a default gate's
 #: answer (0.43.0). A v2 manifest's ``release_verdict: pass`` was such an answer and must be read
 #: as "no protocol named" rather than as a decision.
-EXECUTION_MANIFEST_VERSION = 3
+#:
+#: 3 -> 4: added ``package_versions``, the installed versions of the simulator and policy stack
+#: (:data:`provael.runtime_versions.TRACKED_PACKAGES`). They change what a run measures (from
+#: mujoco 3.4.0 the stored libero_spatial init states settle differently, lerobot#2354) and depend
+#: on the machine, so they belong here and not in ``report.json``. ``checkpoint_digest`` existed
+#: and was never filled; a CLI run fills it now from the report's deployed weights digest.
+EXECUTION_MANIFEST_VERSION = 4
 
 #: Environment-variable names allowed into the manifest. Anything else is dropped entirely; an
 #: allow-listed name whose value looks secret is redacted (belt and braces).
@@ -60,7 +66,7 @@ _REDACTED = "***REDACTED***"
 #: Provenance fields the caller SHOULD supply; any left None is reported in ``missing_fields``.
 _PROVENANCE_FIELDS = (
     "repository", "commit", "python_version", "os", "dep_lock_digest",
-    "hardware", "accelerator", "precision", "started_at", "ended_at",
+    "hardware", "accelerator", "precision", "started_at", "ended_at", "package_versions",
 )
 
 
@@ -102,11 +108,24 @@ class ExecutionManifest(BaseModel):
     hardware: str | None = None
     accelerator: str | None = None
     precision: str | None = None
+    package_versions: dict[str, str | None] | None = Field(
+        None,
+        description="Installed version of each package in "
+        "provael.runtime_versions.TRACKED_PACKAGES (lerobot, torch, transformers, mujoco, "
+        "robosuite, hf-libero, gymnasium, numpy), read with importlib.metadata; null for one "
+        "that is not installed. The whole field is null when the caller supplied none (manifest "
+        "schema >= 4).",
+    )
     # policy / suite
     policy: str
     checkpoint_repo: str | None = None
     checkpoint_revision: str | None = None
-    checkpoint_digest: str | None = None
+    checkpoint_digest: str | None = Field(
+        None,
+        description="sha256 of the weight file the policy loaded: the report's "
+        "`deployed_policy.weights_digest` (report schema >= 9). None when the adapter could not "
+        "locate it, or on an earlier report.",
+    )
     suite: str
     suite_config_digest: str | None = None
     # run
@@ -178,6 +197,7 @@ def build_execution_manifest(
     hardware: str | None = None,
     accelerator: str | None = None,
     precision: str | None = None,
+    package_versions: dict[str, str | None] | None = None,
     checkpoint_repo: str | None = None,
     checkpoint_revision: str | None = None,
     checkpoint_digest: str | None = None,
@@ -203,10 +223,11 @@ def build_execution_manifest(
     decision = decision if decision is not None else release_verdict(report)
     accel = accelerator if accelerator is not None else report.accelerator
     prec = precision if precision is not None else report.precision
-    values: dict[str, str | bool | None] = {
+    values: dict[str, object] = {
         "repository": repository, "commit": commit, "python_version": python_version,
         "os": os_name, "dep_lock_digest": dep_lock_digest, "hardware": hardware,
         "accelerator": accel, "precision": prec, "started_at": started_at, "ended_at": ended_at,
+        "package_versions": package_versions,
     }
     missing = [name for name in _PROVENANCE_FIELDS if values.get(name) is None]
     return ExecutionManifest(
@@ -226,6 +247,7 @@ def build_execution_manifest(
         hardware=hardware,
         accelerator=accel,
         precision=prec,
+        package_versions=dict(package_versions) if package_versions is not None else None,
         policy=report.policy,
         checkpoint_repo=checkpoint_repo,
         checkpoint_revision=checkpoint_revision,

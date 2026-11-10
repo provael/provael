@@ -595,7 +595,11 @@ def run(
         # and a tuned one are signed over as different things (nested, so the projection strips
         # them for a report that declares less — see attest._CALIBRATION_META_FIELDS_ADDED_IN).
         # 8: results carry `init_state`, the fixed initial state each reset loaded (#136).
-        schema_version=8,
+        # 9: `deployed_policy` carries the rest of the runtime identity (normaliser, processor and
+        # weight digests, rename map, cameras, denoising steps, control rate), nested, so the
+        # projection strips it for a report that declares less (attest._DEPLOYED_POLICY_FIELDS_
+        # ADDED_IN).
+        schema_version=9,
         evidence_state=classify_run(config.policy, config.suite).value,
         policy=config.policy,
         model=config.model,

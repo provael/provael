@@ -148,6 +148,21 @@ one seed can start from different scenes, and only this field records which ran.
 with the rest of the episode; the projection strips it for any report that declares a schema below
 8 (`attest._RESULT_FIELDS_ADDED_IN`), so every earlier attestation keeps verifying.
 
+### The rest of the deployed policy (schema 9)
+
+Not yet in a release: no report from 0.47.0 or earlier carries it. `deployed_policy` gains what
+else makes two loads of one checkpoint behave differently: the observation normaliser (its STATE
+and VISUAL modes and a digest over the statistics it applies), digests over the pre- and
+post-processor files and the weight file as lerobot loaded them (read from the local directory or
+the Hub cache, never the network), the rename map the pre-processor applied, the cameras in the
+order the policy reads them, the denoising steps and the control rate. A field the adapter cannot
+resolve is `null`. They sit inside a nested model, so the projection strips them for any report
+that declares a schema below 9 (`attest._DEPLOYED_POLICY_FIELDS_ADDED_IN`), and every earlier
+attestation keeps verifying. The execution manifest (manifest schema 4) records the installed
+versions of the simulator and policy stack and fills `checkpoint_digest` from the weight digest;
+`provael attack` and `provael doctor` warn when a LIBERO run uses mujoco 3.4.0 or newer, or
+versions that differ from the `[lerobot]` resolution in `uv.lock`.
+
 ### The regulatory clock
 
 Factual application dates, carried so the evidence is legible against the calendar buyers care

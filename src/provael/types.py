@@ -450,6 +450,40 @@ class ControllerConvention(BaseModel):
     )
 
 
+class InputNormaliser(BaseModel):
+    """How the policy's observation inputs were normalised on the way in (schema 9).
+
+    The input-side twin of :class:`ActionUnnormaliser`. The same checkpoint served with different
+    state statistics sees a different observation, and a pre-processor whose statistics never
+    loaded normalises nothing without saying so (lerobot#4047). Resolved from the pipeline that
+    executed, never from a model card.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    state_mode: str | None = Field(
+        None,
+        description="Normalisation mode applied to STATE inputs (e.g. 'MEAN_STD'). None when the "
+        "adapter could not resolve it.",
+    )
+    visual_mode: str | None = Field(
+        None,
+        description="Normalisation mode applied to VISUAL inputs (e.g. 'IDENTITY'). None when the "
+        "adapter could not resolve it.",
+    )
+    stats_digest: str | None = Field(
+        None,
+        description="sha256 over the canonical statistics the normaliser applies to observation "
+        "features (every statistic except the action's), exactly as loaded. None when it applies "
+        "none or they could not be read — never a placeholder value.",
+    )
+    source: str = Field(
+        ...,
+        description="Where the modes and statistics were read from, e.g. 'lerobot-preprocessor' "
+        "(the live pre-processing pipeline).",
+    )
+
+
 def _canonical_sha256(obj: Any) -> str:
     """sha256 of the canonical JSON (sorted keys, no whitespace) of ``obj``."""
     text = json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
@@ -491,11 +525,70 @@ class DeployedPolicy(BaseModel):
     )
     action_unnormaliser: ActionUnnormaliser | None = None
     controller_convention: ControllerConvention | None = None
+    # Schema 9: the rest of what makes two loads of one checkpoint executable-inequivalent. Every
+    # one is None where the adapter could not resolve it; registered in
+    # `attest._DEPLOYED_POLICY_FIELDS_ADDED_IN`, so a report declaring less digests without them.
+    input_normaliser: InputNormaliser | None = Field(
+        None,
+        description="The observation normaliser the policy's pre-processor applied: STATE and "
+        "VISUAL modes and a digest over their statistics (schema >= 9).",
+    )
+    preprocessor_digest: str | None = Field(
+        None,
+        description="sha256 over the pre-processor files the adapter loaded: the canonical JSON "
+        "list of [filename, sha256] pairs for the pipeline's config file and then each step's "
+        "state file, in load order, so a reader can rebuild it from per-file hashes (schema >= 9). "
+        "None when the files could not be located without the network.",
+    )
+    postprocessor_digest: str | None = Field(
+        None,
+        description="The same digest over the post-processor files (schema >= 9).",
+    )
+    weights_digest: str | None = Field(
+        None,
+        description="sha256 of the weight file the policy loaded (lerobot 0.5.1 loads exactly one, "
+        "`model.safetensors`), which is what `sha256sum` prints for it. Also fills the execution "
+        "manifest's `checkpoint_digest` (schema >= 9).",
+    )
+    rename_map: dict[str, str] | None = Field(
+        None,
+        description="The observation-key rename map the pre-processor applied, read from its "
+        "rename step: {} when it applies none (schema >= 9). None when unresolved.",
+    )
+    camera_keys: list[str] | None = Field(
+        None,
+        description="The camera inputs the policy consumed, in the order it consumes them (its "
+        "config's image features, after any rename). [] for a policy that reads no camera "
+        "(schema >= 9).",
+    )
+    denoising_steps: int | None = Field(
+        None,
+        description="Denoising (flow-integration) steps per predicted chunk, read from the policy "
+        "config (SmolVLA `num_steps`, pi0 / pi0.5 `num_inference_steps`). None for a head that has "
+        "no such setting or when it was not set explicitly (schema >= 9).",
+    )
+    control_rate_hz: int | None = Field(
+        None,
+        description="The environment control rate the adapter was configured with "
+        "(SuiteFeatures.fps), in Hz (schema >= 9).",
+    )
+    temporal_ensemble_coeff: float | None = Field(
+        None,
+        description="ACT's temporal-ensembling coefficient, where the policy has one; None for "
+        "every other policy (schema >= 9).",
+    )
+    discrete_state_input: bool | None = Field(
+        None,
+        description="Whether the state reaches the model as discrete tokens, where the policy "
+        "config carries that setting (openpi's pi0.5 does; no lerobot 0.5.1 config does, so it "
+        "is None there) (schema >= 9).",
+    )
     digest: str = Field(
         ...,
         description="sha256 over the canonical JSON of every other field. Equal digests mean the "
         "same deployed policy as far as the adapter could resolve it; the ExecutionManifest binds "
-        "the report (and so this block) by the report digest.",
+        "the report (and so this block) by the report digest. A schema-9 digest covers the "
+        "schema-9 fields too, so it is not comparable with one taken at schema 6 to 8.",
     )
 
     @classmethod
@@ -508,6 +601,16 @@ class DeployedPolicy(BaseModel):
         checkpoint_revision: str | None = None,
         action_unnormaliser: ActionUnnormaliser | None = None,
         controller_convention: ControllerConvention | None = None,
+        input_normaliser: InputNormaliser | None = None,
+        preprocessor_digest: str | None = None,
+        postprocessor_digest: str | None = None,
+        weights_digest: str | None = None,
+        rename_map: dict[str, str] | None = None,
+        camera_keys: Sequence[str] | None = None,
+        denoising_steps: int | None = None,
+        control_rate_hz: int | None = None,
+        temporal_ensemble_coeff: float | None = None,
+        discrete_state_input: bool | None = None,
     ) -> DeployedPolicy:
         """Construct with the digest derived from the fields — the only way to get a true one."""
         body: dict[str, Any] = {
@@ -521,6 +624,18 @@ class DeployedPolicy(BaseModel):
             "controller_convention": (
                 controller_convention.model_dump() if controller_convention is not None else None
             ),
+            "input_normaliser": (
+                input_normaliser.model_dump() if input_normaliser is not None else None
+            ),
+            "preprocessor_digest": preprocessor_digest,
+            "postprocessor_digest": postprocessor_digest,
+            "weights_digest": weights_digest,
+            "rename_map": dict(rename_map) if rename_map is not None else None,
+            "camera_keys": list(camera_keys) if camera_keys is not None else None,
+            "denoising_steps": denoising_steps,
+            "control_rate_hz": control_rate_hz,
+            "temporal_ensemble_coeff": temporal_ensemble_coeff,
+            "discrete_state_input": discrete_state_input,
         }
         return cls(**body, digest=_canonical_sha256(body))
 
@@ -660,7 +775,9 @@ class RunReport(BaseModel):
         "and whether its binding holds for this run (`calibration.<task>.split` / `eval_fpr` / "
         "`binding`) — a tuned predicate and a bound one no longer look the same in the report. "
         ">=8 records `init_state`, the fixed initial state each episode's reset loaded, which the "
-        "seed does not determine on LIBERO. "
+        "seed does not determine on LIBERO. >=9 records the rest of the deployed policy's runtime "
+        "identity (input normaliser, processor and weight digests, rename map, camera order, "
+        "denoising steps, control rate). "
         "Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed "
         "a calibration, because its trajectories do not exist.",
     )
