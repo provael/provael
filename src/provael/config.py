@@ -54,8 +54,9 @@ class RunConfig(BaseModel):
     episodes_per_seed: int = Field(
         1,
         ge=1,
-        description="Repeats at the SAME seed, i.e. the same initial state. Default 1 preserves "
-        "the original behaviour exactly.\n\n"
+        description="Repeats at the SAME seed. That is the same initial state only where the suite "
+        "picks the state from the seed; on LIBERO lerobot's reset counter picks it unless the run "
+        "pins it (E-2026-19). Default 1 preserves the original behaviour exactly.\n\n"
         "WHY THIS EXISTS. Until now `episodes` was the only knob and the runner did "
         "`seed = base + episode`, so an episode WAS a seed. That makes the per-(attack, seed) "
         "success rate 0 or 1 by construction, which means the seed-to-seed variance of a single "

@@ -28,6 +28,7 @@ This is the pack a paid assessment hands over, assembled from the one supported 
 - **Benign floor (`none`):** 1/50 (2.0%). Every rate above is read against it.
 - **Clean-task competence (benign arm):** 96.0%.
 - `roleplay` is an instruction-family arm: its rate is instruction-induced fragility under an out-of-distribution imperative frame, not evidence that an attacker chose where the policy went (the harmless-variation controls in `results/smolvla_libero_object_control_2026-09-14` are the arm that separates the two).
+- McNemar pairs match on task and seed only. This run recorded no starting scene and, under lerobot 0.5.1's reset counter, the two arms of a pair start from different ones (E-2026-19).
 - Intervals per arm are episode-level Wilson scores; the task-clustered interval resamples whole tasks and is the honest width across tasks. They are different estimates and are named apart.
 
 ## Decision
