@@ -81,6 +81,8 @@ BADGE_JSON = "freshness.json"
 #: manifest, and that the count this module sees matches the count on disk.
 REPORT = "report.json"
 EXECUTION_MANIFEST = "execution-manifest.json"
+#: How the video recorder marks a run in its manifest's ``deviations``. See :func:`is_recording`.
+RECORDING_DEVIATION = "recorded for video"
 
 
 class MeasurementRecord(BaseModel):
@@ -175,6 +177,21 @@ def _is_recorded(manifest: dict[str, object]) -> bool:
     return not ended.endswith("T00:00:00Z")
 
 
+def is_recording(manifest: dict[str, object]) -> bool:
+    """Whether a manifest belongs to a run made for a video rather than to measure anything.
+
+    Such a run is real and its artifacts belong under `results/`, but it re-measures nothing the
+    project publishes. Read as a measurement, one single-seed recording would turn the badge green
+    and open a new body in the ledger with the published result untouched, which is the error
+    :func:`counts_as_measurement` refuses for a fixture. Unlike a fixture it did run a real policy,
+    so it gets no ledger row rather than a row saying it measured no policy at all.
+    """
+    deviations = manifest.get("deviations")
+    return isinstance(deviations, list) and any(
+        str(item).startswith(RECORDING_DEVIATION) for item in deviations
+    )
+
+
 def measurements_from_results(results_dir: Path = RESULTS_DIR) -> list[MeasurementRecord]:
     """Measurements read from committed execution manifests.
 
@@ -197,6 +214,8 @@ def measurements_from_results(results_dir: Path = RESULTS_DIR) -> list[Measureme
         ended = m.get("ended_at")
         if not isinstance(ended, str) or not ended:
             continue  # a manifest with no end time measures nothing this badge can report
+        if is_recording(m):
+            continue
         report = path.parent / REPORT
         attempts = successes = 0
         asr = 0.0

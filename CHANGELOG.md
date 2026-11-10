@@ -33,6 +33,11 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ### Changed
 
+- **A run recorded for a video no longer counts as a measurement.** `provael.watch` skips any
+  execution manifest whose `deviations` say "recorded for video", so it does not date the freshness
+  badge or get a row in `watch/measurements.json`. Why: `results/rfm_submission_2026-11` commits
+  real single-seed episodes made for the PAISI call, and they would have turned the badge green with
+  the published result unchanged.
 - **Results READMEs say what a pair is matched on.** `scripts/gen_results_readme.py` prints "paired
   at matched (task, seed, init state)" only when every pair recorded one equal init state, and
   otherwise says the starting scenes are not matched; the delivery pack, the findings pages, the
