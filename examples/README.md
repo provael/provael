@@ -19,6 +19,7 @@ and `PROVAEL_INTEGRATION=1`.
 | — | [assessment/](assessment/) | The customer-run protocol template + a loadable acceptance protocol (`--protocol`) | < 1 s | CPU |
 | — | [delivery-pack/](delivery-pack/smolvla-libero-object-2026-09-14/) | The reference delivery pack, generated from the published body: findings, decision, manifest, digests, reproduction, retest | < 1 s | CPU |
 | — | [cosai-ws4-physical-action-record/](cosai-ws4-physical-action-record/) | One simulated action as a CoSAI WS4 evidence record, with what the run cannot show stated in it | seconds | CPU |
+| — | [rda-export/](rda-export/) | Per-step actions of the committed LIBERO runs as JSON keyed by task, seed and arm, for RDA's paired test | seconds | CPU |
 | — | [recipes/](recipes/) | Named run presets (`provael list-recipes` / `--recipe`) | < 1 s | CPU |
 | — | [integrations/](integrations/) | promptfoo / garak / PyRIT + SARIF aggregators | varies | — |
 | — | [ci/](ci/) | CI gates: GitHub / GitLab / Azure + regression-gate | — | — |
