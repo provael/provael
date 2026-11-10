@@ -169,6 +169,12 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ### Fixed
 
+- **The results READMEs say which arms Holm adjusts across.** They said "the adversarial arms of
+  this run" while the family the code adjusts holds every arm paired against `none`, the
+  harmless-variation controls included (in the 14 September control run, `roleplay` and its
+  controls). The generator now names the arms, says when controls are among them and which arms had
+  no pair, and a test holds every committed README to the code's family. Why: the sentence
+  described a family the code does not use. No number moves.
 - **The README's badges render, and its sentences match the repository again.** A missing blank
   line after the demo caption made GitHub and PyPI print the badge row as literal Markdown. The
   headline's Holm correction ran across six applicable arms, not seven; the McNemar figure says its

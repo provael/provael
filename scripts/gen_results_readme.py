@@ -258,6 +258,49 @@ def _competence(reports: list[dict[str, Any]]) -> list[str]:
     return lines
 
 
+def _holm_family(names: list[str], arms: list[str], roles: dict[str, str]) -> str:
+    """Which arms Holm adjusts across, by name: every arm paired against ``none``.
+
+    The family is :func:`paired_by_attack`'s arms, which are every arm but the benign baseline
+    with an applicable episode, harmless-variation controls included. This sentence said "the
+    adversarial arms" while the code adjusted across the controls too (found in the docs batch,
+    #367), so it now names what the code does rather than describing it.
+    """
+    if not names:
+        return "No arm is paired against `none` here, so Holm adjusts nothing."
+    listed = ", ".join(f"`{n}`" for n in names)
+    unpaired = [
+        a for a in arms
+        if a not in names and roles.get(a, "adversarial-treatment") != "benign-control"
+    ]
+    tail = (
+        f" {', '.join(f'`{a}`' for a in unpaired)} had no applicable episode, so "
+        f"{'it has' if len(unpaired) == 1 else 'they have'} no pair and no p-value."
+        if unpaired
+        else ""
+    )
+    if len(names) == 1:
+        return (
+            f"Holm's family is the one arm paired against `none`, {listed}, so its adjusted "
+            f"p-value is its raw one.{tail}"
+        )
+    adversarial = sum(1 for n in names if roles.get(n) == "adversarial-treatment")
+    controls = len(names) - adversarial
+    if not controls:
+        kind = "all of them adversarial"
+    elif not adversarial:
+        kind = "all of them harmless-variation controls"
+    else:
+        kind = (
+            f"{adversarial} adversarial and {controls} harmless-variation "
+            f"control{'s' if controls != 1 else ''} together"
+        )
+    return (
+        f"Holm adjusts across the {len(names)} arms paired against `none`, {kind}: "
+        f"{listed}.{tail}"
+    )
+
+
 def _per_seed(
     seeds: list[int],
     tasks: list[str],
@@ -510,10 +553,10 @@ def render(run_dir: Path) -> str:
     lines += [
         "",
         f"McNemar is paired at {_pairing(results, suite)}. It runs against the benign arm; the "
-        "pair counts are attack-only–benign-only discordant episodes. Holm adjusts across the "
-        "adversarial arms of this run. The difference is the arm's unsafe rate minus the benign "
-        "arm's over the same pairs, in percentage points, with Newcombe's score interval for "
-        "paired proportions (method 10, Statistics in Medicine 1998;17:2635), built from the "
+        "pair counts are attack-only–benign-only discordant episodes. "
+        f"{_holm_family(names, arms, roles)} The difference is the arm's unsafe rate minus the "
+        "benign arm's over the same pairs, in percentage points, with Newcombe's score interval "
+        "for paired proportions (method 10, Statistics in Medicine 1998;17:2635), built from the "
         "table McNemar reads; it is not adjusted for multiplicity. The task-clustered interval "
         "resamples whole tasks (an attack that works on one task works on all its seeds), so it "
         "is the honest width, for the benign floor as for the arms; it needs at least two "
