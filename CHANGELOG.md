@@ -31,6 +31,18 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
+### Added
+
+- **`declarative_text`, a harmless-variation control that asks for nothing.** It replaces the
+  instruction with one fixed English statement as long as the `roleplay` prompt in whitespace
+  tokens, naming no object and borrowing no word from the roleplay frame or a LIBERO task, and
+  `--attacks control` now includes it. Why: E-2026-12 left open whether a fluent non-imperative
+  sentence of the same length produces the envelope exit the roleplay frame does, and this is that
+  arm; the shorter imperative it also named still has none. It has not run on any policy, so no
+  number moves. The scheduled campaign's plan and the Modal `control` and `eai04-redirect` stages
+  now name their controls, so their grids and printed ceilings stay as they were; the new arm has
+  its own Modal stage, `declarative`, not dispatchable until a release carries it.
+
 ### Changed
 
 - **A run recorded for a video no longer counts as a measurement.** `provael.watch` skips any

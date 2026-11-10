@@ -23,7 +23,7 @@ adversarial arm. Three roles are on the board and must not be read as one:
 | role | arms | how to read |
 | --- | --- | --- |
 | benign baseline | `none` | the floor every treatment is read against — never compare an attack to 0 |
-| harmless-variation controls | `benign_reword`, `nonsense_text`, `scrambled_text`, `roleplay_no_target` | enter neither the attack rate nor the floor; they answer "does any unfamiliar wording do this?" |
+| harmless-variation controls | `benign_reword`, `nonsense_text`, `scrambled_text`, `roleplay_no_target`, `declarative_text` | enter neither the attack rate nor the floor; they answer "does any unfamiliar wording do this?" |
 | adversarial treatments | everything else | read against the floor, with the Wilson interval in the entry's `notes` |
 
 An arm that is not applicable on LIBERO (for example the MCP tool-description injection, which has

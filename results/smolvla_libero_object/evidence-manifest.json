@@ -222,8 +222,8 @@
   "registry": {
     "attacks_adversarial": 39,
     "attacks_baseline": 1,
-    "attacks_control": 4,
-    "attacks_total": 44,
+    "attacks_control": 5,
+    "attacks_total": 45,
     "defenses_measured_real_policy": 2,
     "defenses_total": 2,
     "defenses_with_study": 2,

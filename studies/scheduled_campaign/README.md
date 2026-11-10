@@ -26,7 +26,7 @@ their own lineages and are not part of the bar (`Campaign.task_suite`).
 | --- | --- | --- |
 | `policy`, `model`, `suite` | `smolvla`, `HuggingFaceVLA/smolvla_libero`, `libero` | the published body's own |
 | `tasks` | the ten `libero_object` tasks | the published body's own; a re-measurement must cover them |
-| `attacks` | `none,instruction,visual,injection,control` | every arm the published body ran, plus the harmless-variation controls registered since |
+| `attacks` | `none,instruction,visual,injection,benign_reword,nonsense_text,scrambled_text,roleplay_no_target` | every arm the published body ran, its control run's four harmless-variation controls among them. Named one by one since 10 November 2026 rather than as the `control` family, which gained a fifth arm (`declarative_text`) that day: the grid stays the one declared, and twelve arms a shard stays inside the timeout |
 | `seeds` | 8 | 880 planned attempts at the incumbent's own not-applicable rate (`mcp_tool_desc` never applies to SmolVLA), against a published body of 656 — the margin is for the 0.41.2 runs still to land from the workstation, since a body that grows past the plan makes the lane a probe again |
 | `horizon` | 280 | the published body's own |
 | `shardsPerRun` | 5 | the budget line: the per-run ceiling times the cadence fits the $30/month credit |

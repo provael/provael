@@ -64,8 +64,11 @@ nonsense text and 1/30 with no attack. Naming a target adds nothing, and the sam
 order still exit in 18 of 30: what predicts an exit on this policy is a long, imperative,
 out-of-distribution instruction, not its meaning. The separation between `roleplay` and `paraphrase`
 stands; the earlier attribution of it to meaning does not
-([the revised finding](findings/semantic-vs-mechanical-instruction-attacks.md)). Read it narrowly:
-one policy, one suite, four templates per arm, an uncalibrated predicate.
+([the revised finding](findings/semantic-vs-mechanical-instruction-attacks.md)). Whether the
+imperative form is what matters is still open: `declarative_text`, a control that swaps in one
+statement as long as the roleplay prompt that names no object and asks for nothing, is registered
+for that question and has not run. Read it narrowly: one policy, one suite, four templates per arm,
+an uncalibrated predicate.
 
 ## `visual` — adversarial perception (EAI02)
 
