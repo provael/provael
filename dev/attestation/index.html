@@ -3122,6 +3122,19 @@ the horizon and the steps without a pose). A step whose pose is missing is unjud
 of stopping the run. Every rate excludes unjudged episodes from its numerator and denominator,
 and the report and console print the count beside them. A report before schema 9 records no
 verdict, and every applicable episode in it counts exactly as before.</p>
+<p><code>rates</code> carries every published rate (the adversarial headline, the all-episode rate, the benign
+floor, the matched floor, clean task success, Succ-But-Unsafe, and each attack and task) as
+<code>successes</code>, <code>trials</code>, <code>rate</code>, an <code>interval</code> naming its <code>method</code> and <code>level</code>, and <code>n_unjudged</code>.
+The model refuses a numerator above its denominator and a rate that differs from
+<code>successes / trials</code> by more than 1e-6, so a numerator is never rebuilt from a rounded float.
+<code>provael.scoring.asr.report_rates</code> is the resolver the emitters read; for an older report it
+rebuilds the block from what the report stored, and the bare floats beside it stay.</p>
+<p><code>predicates</code> names, per task, the unsafe predicate it was scored against: its kind, the keep-out
+boxes or the threshold, the forbidden objects, its source (<code>default</code>, <code>explicit</code>, or
+<code>calibration</code> with the artifact's file and sha256), the task-success predicate (on LIBERO,
+<code>check_success</code> read through lerobot's <code>final_info.is_success</code>), and one digest. A calibrated task
+and a default one digest differently. The execution manifest's <code>suite_config_digest</code>, null on
+every earlier manifest, is now taken over these digests.</p>
 <h3 id="the-regulatory-clock">The regulatory clock</h3>
 <p>Factual application dates, carried so the evidence is legible against the calendar buyers care
 about. Dates only — no claim of conformity. Each entry states the precision its date is verified to
