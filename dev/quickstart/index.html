@@ -2978,8 +2978,10 @@ leg) is <code>measured</code>.</p>
 <p>Add <code>--video-dir clips/</code> to write one MP4 per episode — the frames the policy actually saw, after
 the attack and any defense, red-bordered from the first step the predicate fired. Recording never
 touches <code>report.json</code>. <code>provael compose-video clips/&lt;benign&gt;.mp4 clips/&lt;attacked&gt;.mp4 --out
-pair.mp4</code> puts the benign twin and the attacked episode of one task and seed side by side. Both
-need the <code>[lerobot]</code> extra's imageio + ffmpeg.</p>
+pair.mp4</code> puts the benign twin and the attacked episode of one task and seed side by side. On an
+unpinned LIBERO run those two episodes start from different scenes, because the reset counter picks
+the scene and not the seed (<a href="../errata/">E-2026-19</a>); pass <code>--pin-init-states</code> to <code>provael attack</code>
+when the pair has to share one. Both need the <code>[lerobot]</code> extra's imageio + ffmpeg.</p>
 <h2 id="name-the-acceptance-protocol-before-you-read-the-number">Name the acceptance protocol before you read the number</h2>
 <p>A run is a measurement; whether it is <em>acceptable</em> is a separate statement, made only against
 criteria written down and named beforehand. Pass an acceptance protocol (YAML or JSON) and every
