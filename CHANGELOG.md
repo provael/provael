@@ -49,6 +49,14 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   verification is only as good as the key a verifier already holds, and the page had readers
   download the key beside the board. No board, signature or verify behaviour changes; failing on
   what verify does not check, and moving to RFC 8785, wait for the next board schema change.
+- **A reproducer sees the cost first, and LIBERO's licence conflict is on the record.**
+  `docs/reproduction-request.md` gives the time per episode computed from the committed execution
+  manifests and a four-episode smoke run; no CPU time per episode has been measured, and the page
+  says so. The dependency register, and every generated results README of a LIBERO run, record that
+  LIBERO's README says CC BY 4.0 for its datasets while their Hugging Face cards say Apache-2.0,
+  open in LIBERO#150. Why: a willing reproducer declined a 100-episode CPU-only run
+  (huggingface/lerobot#4548), and the licence question was raised on LIBERO#148 and recorded nowhere
+  here. The regenerated READMEs gain that one line; no number moves.
 
 ### Changed
 
