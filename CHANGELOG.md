@@ -70,6 +70,15 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   keyid line the README dropped on 19 September, and the summary above dates 0.47.0 to 7 November,
   as its tag does. Why: the README is also the PyPI page, and each of these said something the
   repository does not. No number moves.
+- **Sentences that still read the roleplay result as rewording or redirection now say what E-2026-12
+  says, and the CI examples pin their actions.** The UNECE R155 compliance row (printed in the delivery
+  pack's test report too), `integrity.py`'s docstring and `PRIOR_ART.md` now say the policy leaves its
+  envelope under a reframed instruction, and two unsourced claims about what an assessor asks for or
+  needs are rephrased. `examples/ci/*.yml`, which adopters copy into their own workflows, one into the
+  job that signs their release, used `actions/checkout@v4`, `astral-sh/setup-uv@v5` and
+  `actions/attest-build-provenance@v1`; they now pin the SHAs this repo's workflows use, and
+  `tests/test_workflow_pins.py` covers the examples. Why: the 1 November review listed the sentences,
+  and neither Dependabot nor any test looked at `examples/ci/`. No number moves.
 
 ## [0.47.0] — 2026-11-07
 
