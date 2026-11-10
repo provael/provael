@@ -43,6 +43,7 @@ from __future__ import annotations
 
 import random
 from collections.abc import Callable, Sequence
+from typing import Any
 
 from provael.attacks._image import image_of, overlay_patch
 from provael.attacks.base import Attack
@@ -75,6 +76,7 @@ class OptimizedPatchHijack(Attack):
 
     name = "patch_hijack"
     family = FAMILY
+    parameters = ("target", "query_budget", "patch_fraction")
     eai_id = _EAI.id
     eai_name = _EAI.name
     #: INV-4: this is a black-box *query* search (not a white-box gradient attack — that variant is
@@ -100,6 +102,7 @@ class OptimizedPatchHijack(Attack):
         self._reset: Callable[[], None] | None = None
         # (task, seed) -> chosen patch marker (one search per episode)
         self._cache: dict[tuple[str, int], str] = {}
+        self._cache_reads: dict[tuple[str, int], dict[str, Any]] = {}  # the reads behind each
         #: Number of policy/surrogate queries the most recent search used (for budget tests).
         self.last_search_queries = 0
 
@@ -176,6 +179,9 @@ class OptimizedPatchHijack(Attack):
         if marker is None:
             marker = self._search(instruction, observation)
             self._cache[key] = marker
+            self._cache_reads[key] = self._audit_reads()
+        else:
+            self._audit_replay(self._cache_reads.get(key, {}))  # a repeat reuses this search
         patched = overlay_patch(image, marker, self.patch_fraction)
         # Instruction untouched: a resulting hijack is attributable to the perception channel.
         return instruction, {**observation, IMAGE_KEY: patched}

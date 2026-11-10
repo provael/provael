@@ -43,7 +43,13 @@ from provael.report import (
     write_report,
 )
 from provael.reproductions import get_reproduction
-from provael.runner import InitStatePlanError, ResumeModeError, ScenePinError, run
+from provael.runner import (
+    InitStatePlanError,
+    ResumeModeError,
+    ScenePinError,
+    UnreadParameterError,
+    run,
+)
 from provael.runtime_versions import drift_warnings, installed_versions
 from provael.sarif import write_sarif
 from provael.scorecard import SCORECARD_MD, write_scorecard
@@ -422,10 +428,11 @@ def attack(
     except NotImplementedError as exc:
         _fail(str(exc))
         return
-    except (InitStatePlanError, ScenePinError, ResumeModeError) as exc:
+    except (InitStatePlanError, ScenePinError, ResumeModeError, UnreadParameterError) as exc:
         # A plan that does not fit the run is refused before anything loads; a pinned run whose
         # arms started from different scenes stops rather than writing pairs that are not pairs;
-        # a ledger written under the other termination mode is not resumed into this one.
+        # a ledger written under the other termination mode is not resumed into this one; an
+        # attack setting that was never read is not reported as in force.
         _fail(str(exc))
         return
     elapsed = time.perf_counter() - started

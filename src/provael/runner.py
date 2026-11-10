@@ -37,6 +37,7 @@ from provael.calibration import Calibration, anytime_ci, binding_status, wilson_
 from provael.config import RunConfig
 from provael.defenses.base import Defense
 from provael.defenses.registry import make_defense
+from provael.delivery import DeliveryLog
 from provael.endpoints import PHYSICAL_HAZARD, TASK_SUCCESS_STRICT
 from provael.evidence import classify_run
 from provael.ledger import TrialKey, append_trial, completed_keys, record_of, results_for
@@ -189,6 +190,30 @@ class InitStatePlanError(ValueError):
 
 class ResumeModeError(ValueError):
     """A ``--resume`` ledger holds an episode that could not have run under this termination."""
+
+
+class UnreadParameterError(RuntimeError):
+    """An attack declares a parameter that was never read during an episode it ran (P1.8)."""
+
+
+def _check_parameters_read(attack: Attack, episode: AttackResult) -> None:
+    """Raise unless every parameter ``attack`` declares was read during ``episode``.
+
+    A setting that never reaches the code that applies it changes nothing while the report says it
+    was in force (a config key read nowhere, GR00T#745). An episode the attack had no surface in
+    ran nothing of it and is not checked.
+    """
+    if not episode.applicable or episode.delivered_inputs is None:
+        return
+    read = episode.delivered_inputs.parameters
+    unread = [name for name in attack.parameters if name not in read]
+    if unread:
+        raise UnreadParameterError(
+            f"{attack.name!r} declares {unread} and never read them during its episode at "
+            f"{episode.task} seed {episode.seed}: the setting never reached the code that applies "
+            "it, so the episode ran without it while the report would say it was in force. "
+            "Refusing to report it."
+        )
 
 
 @dataclass(frozen=True)
@@ -353,6 +378,9 @@ def run_episode(
     into ``timing_log``.
     """
     fixed_horizon = termination == FIXED_HORIZON
+    # P1.8: which declared parameters the attack reads this episode. Idempotent, so a weight
+    # corruption the runner applied before this call (and audited) still counts.
+    attack.audit_start()
     policy.reset()  # clear per-episode policy state (e.g. SmolVLA's action-chunk queue)
     # Seed the POLICY as well as the environment. `suite.reset` has always seeded the env; the
     # policy's own sampler ran off whatever state the process happened to be in, which is the
@@ -377,6 +405,7 @@ def run_episode(
     if not attack.applicable(obs):
         # The attack has no surface in this suite (e.g. mcp_tool_desc on a direct LIBERO
         # loop). Record it as not-applicable; scoring excludes it from the ASR denominator.
+        attack.audit_collect()  # nothing was delivered, so nothing is recorded
         return AttackResult(
             task=task,
             attack=attack.name,
@@ -419,6 +448,8 @@ def run_episode(
     # what made #136 unfixable rather than merely unfixed, and an opt-in flag would recreate that
     # the first time someone forgot to pass it. Cost is a few hundred floats per episode.
     calib_samples: list[list[float]] = []
+    # P1.8: what the policy is actually handed on each live step.
+    delivery = DeliveryLog()
 
     for t in range(1, horizon + 1):
         steps = t
@@ -442,6 +473,7 @@ def run_episode(
                     }
                 )
             adversarial_instruction, adv_obs = defense.apply(adversarial_instruction, adv_obs)
+        delivery.handed(t, adversarial_instruction, adv_obs)
         if chunk_log is not None:
             chunk_log.before_act()  # chunks an attack's search queried for were never executed
         action = policy.act(adv_obs, adversarial_instruction)
@@ -636,6 +668,7 @@ def run_episode(
             termination=ended,
             grasp=grasp,
         ),
+        delivered_inputs=delivery.finish(attack.audit_collect()),
     )
 
 
@@ -833,6 +866,8 @@ def run(
                     weight_attack = (
                         attack if isinstance(attack, WeightIntegrityAttack) else None
                     )
+                    # Audited from here: a weight attack reads its flip budget in `corrupt`.
+                    attack.audit_start()
                     if weight_attack is not None:
                         weight_attack.corrupt(policy, seed)
                     # One clip per episode when asked for (``--video-dir``): the frames the policy
@@ -855,10 +890,12 @@ def run(
                             chunk_log=chunk_log, timing_log=timing_log,
                         )
                     finally:
+                        attack.audit_collect()  # stop recording, however the episode ended
                         if weight_attack is not None:
                             weight_attack.restore(policy)
                         if sink is not None:
                             sink.close()
+                    _check_parameters_read(attack, episode)
                     # Append BEFORE the next episode starts, so a kill loses at most this one.
                     if ledger_path is not None:
                         append_trial(ledger_path, record_of(episode, trial_index=len(results)))
@@ -977,4 +1014,11 @@ def run(
     )
 
 
-__all__ = ["InitStatePlanError", "ResumeModeError", "ScenePinError", "run", "run_episode"]
+__all__ = [
+    "InitStatePlanError",
+    "ResumeModeError",
+    "ScenePinError",
+    "UnreadParameterError",
+    "run",
+    "run_episode",
+]

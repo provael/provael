@@ -94,6 +94,14 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   file's sha256 and neither enters `report.json`. Why: for the steps that ran, the report could
   not tell a predicted action from an executed one, and a reader had to infer the trajectory's
   stride. No number moves.
+- **Each episode records what the policy was handed, and an unread attack setting stops the run.**
+  Report schema 9 adds `delivered_inputs`: a sha256 per distinct instruction handed to the policy,
+  a rolling sha256 over the camera images handed to it, and the attack's declared parameters as
+  read. Every attack declares its settings (`Attack.parameters`); the benign arm declares none and
+  takes the same path, and the runner fails a run in which a declared setting was never read
+  during an episode the attack ran in. Why: a configured perturbation is not a delivered one, and
+  a setting that never reaches the code that reads it changes nothing while the report says it
+  was in force. Attack randomness stays local and seeded. No number moves.
 
 ### Changed
 

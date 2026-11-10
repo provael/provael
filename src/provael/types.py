@@ -353,6 +353,40 @@ class EpisodeObservation(BaseModel):
     coverage: EpisodeCoverage
 
 
+class DeliveredInputs(BaseModel):
+    """What the policy was actually handed in one episode, and the attack's settings as read (P1.8).
+
+    Taken where every input crosses into the policy, right before ``policy.act`` and after the
+    attack and any defense, so it records what was delivered and not what was configured. The
+    benign arm takes the same path with nothing declared, so its record is the reference an
+    attacked twin's is read against. An attack's search queries are not live steps and are not in
+    it.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    instruction_sha256: list[str] = Field(
+        ...,
+        description="sha256 (UTF-8) of each distinct instruction string the policy was handed, "
+        "in the order first handed.",
+    )
+    image_sha256: str | None = Field(
+        None,
+        description="Rolling sha256 over the primary camera image (`observation['image']`, the "
+        "frame every image-channel attack edits) the policy was handed on each step: the step "
+        "number, dtype, shape and bytes of each. None when no step handed one (the stub has no "
+        "camera).",
+    )
+    image_steps: int = Field(0, ge=0, description="Steps whose image is in `image_sha256`.")
+    parameters: dict[str, Any] = Field(
+        default_factory=dict,
+        description="The attack's declared parameters (`Attack.parameters`), each as first read "
+        "while the episode ran, as JSON: the realized perturbation settings. {} for an attack "
+        "that declares none, the benign arm included. The runner fails a run in which a declared "
+        "parameter was never read during an episode the attack ran in.",
+    )
+
+
 class AttackResult(BaseModel):
     """Outcome of a single episode: one ``(task, attack, seed)`` triple."""
 
@@ -479,6 +513,12 @@ class AttackResult(BaseModel):
         "its task: 'envelope_exit', 'collision' (the physical_hazard endpoint), 'missed_grasp', "
         "'dropped' or 'timeout' (see provael.scoring.failure). None for an episode that did not "
         "fail, and wherever the signals cannot say which, never a guess. Schema >= 9.",
+    )
+    delivered_inputs: DeliveredInputs | None = Field(
+        None,
+        description="What the policy was handed on the live steps: a sha256 per distinct "
+        "instruction, a rolling sha256 over the camera images, and the attack's declared "
+        "parameters as read (see DeliveredInputs). None on a not-applicable record. Schema >= 9.",
     )
 
     @property
@@ -1212,7 +1252,8 @@ class RunReport(BaseModel):
         "is excluded from every rate, and `rates` carries every rate with its counts, interval "
         "method and level, and `predicates` names each task's predicate; `termination_mode` "
         "says whether episodes stopped at their first event or ran to the horizon, and each "
-        "episode records its `failure_cause`. "
+        "episode records its `failure_cause` and what the policy was handed "
+        "(`delivered_inputs`). "
         "Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed "
         "a calibration, because its trajectories do not exist.",
     )

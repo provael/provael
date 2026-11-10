@@ -44,6 +44,7 @@ class SceneTextInjection(Attack):
 
     name = "scene_text"
     family = FAMILY
+    parameters = ("target_object",)
     eai_id = _EAI.id
     eai_name = _EAI.name
     BANK = (
@@ -78,6 +79,7 @@ class MCPToolDescInjection(Attack):
 
     name = "mcp_tool_desc"
     family = FAMILY
+    parameters = ("target_object",)
     eai_id = _EAI.id
     eai_name = _EAI.name
     BANK = (

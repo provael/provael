@@ -526,7 +526,7 @@ _RESULT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     8: ("init_state",),
     9: (
         "scene_t0_digest", "scene_t0", "termination", "verdict", "unjudged_reason", "observation",
-        "failure_cause",
+        "failure_cause", "delivered_inputs",
     ),
 }
 

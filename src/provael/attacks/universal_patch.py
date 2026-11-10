@@ -55,6 +55,7 @@ from __future__ import annotations
 
 import random
 from collections.abc import Callable, Sequence
+from typing import Any
 
 from provael.attacks._image import image_of, overlay_patch
 from provael.attacks.base import Attack
@@ -96,6 +97,7 @@ class UniversalPatchTransfer(Attack):
 
     name = "universal_patch"
     family = FAMILY
+    parameters = ("target", "query_budget", "patch_fraction")
     eai_id = _EAI.id
     eai_name = _EAI.name
     #: INV-4: a black-box query search over placements. NOT the white-box feature-space
@@ -133,6 +135,8 @@ class UniversalPatchTransfer(Attack):
         #: Queries the single fit used. Stays flat as episodes accumulate — asserted by the tests,
         #: because a number that grew with episodes would mean the patch was not actually universal.
         self.last_search_queries = 0
+        #: The parameter reads behind the fit, replayed on every episode that carries it (P1.8).
+        self._fit_reads: dict[str, Any] = {}
 
     def attach_oracle(self, query: Oracle, reset: Callable[[], None] | None = None) -> None:
         """Wire a policy-query oracle so the fit is a genuine black-box query search.
@@ -206,7 +210,10 @@ class UniversalPatchTransfer(Attack):
         if self.universal_marker is None:
             self.universal_marker = self._fit(instruction, observation)
             self.fit_key = key
-        elif key != self.fit_key and key != self._last_counted_key:
+            self._fit_reads = self._audit_reads()
+        else:
+            self._audit_replay(self._fit_reads)  # the frozen patch was fit under these settings
+        if key != self.fit_key and key != self._last_counted_key:
             # A held-out episode: the frozen patch is being carried to a frame it never queried.
             # Counted once per episode — perturb() runs on every step, so the increment is guarded
             # by the key changing rather than applied unconditionally.

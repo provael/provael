@@ -224,6 +224,15 @@ including the rows that never ran, and which row each step executed), and `--rec
 writes `timing.json` (when each step's observation arrived and its action left, which is
 wall-clock). The execution manifest records each file's sha256 under `sidecars`.
 
+`delivered_inputs` records what the policy was handed on an episode's live steps, taken at its
+input after the attack and any defense: the sha256 of each distinct instruction string, a rolling
+sha256 over the camera image of every step, and the attack's declared parameters
+(`Attack.parameters`) as they were read. An attack's search queries are not live steps and are not
+in it. The benign arm takes the same path with nothing declared, so its record is the one an
+attacked twin's is read against. A run in which a declared parameter was never read during an
+episode the attack ran in stops instead of writing a report, because a setting that never reaches
+the code that applies it changes nothing while the report would say it was in force.
+
 ### The regulatory clock
 
 Factual application dates, carried so the evidence is legible against the calendar buyers care

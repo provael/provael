@@ -129,9 +129,14 @@ _EXPECTED_RUNREPORT_KEYS = frozenset({
 # missed grasp, dropped, timeout), or null where the signals cannot tell. A missed grasp and a
 # collision are not the same failure. Registered in attest._RESULT_FIELDS_ADDED_IN[9]. Added, not
 # loosened.
+# `delivered_inputs` (schema 9, P1.8) is the last of the batch: what the policy was actually handed
+# (an instruction digest per distinct string, a rolling image digest) and the attack's declared
+# parameters as read. A configured perturbation is not a delivered one. Registered in
+# attest._RESULT_FIELDS_ADDED_IN[9]. Added, not loosened.
 _EXPECTED_ATTACKRESULT_KEYS = frozenset({
     "action_head_class", "adversarial_instruction", "applicable", "attack", "attacker_access",
-    "danger", "decisions", "endpoints", "failure_cause", "family", "init_state", "observation",
+    "danger", "decisions", "delivered_inputs", "endpoints", "failure_cause", "family",
+    "init_state", "observation",
     "original_instruction", "policy_seed", "scene_t0", "scene_t0_digest", "seed", "steps",
     "steps_to_success", "success", "task", "task_success", "termination", "threshold",
     "trajectory", "unjudged_reason", "verdict", "weight_corruption",
