@@ -104,6 +104,28 @@ def test_a_missing_state_is_not_read_as_a_match(tmp_path: Path) -> None:
     assert SHARED_SCENE not in _render_with_init_states(tmp_path, {"*": 45, "paraphrase": None})
 
 
+#: The caveat a LIBERO run lists among what it does not establish: LIBERO's README says CC BY 4.0
+#: for its datasets, their Hugging Face cards say Apache-2.0, and LIBERO#150 is open.
+LIBERO_LICENCE = "- Which licence governs LIBERO's datasets."
+
+
+def test_a_libero_run_says_its_dataset_licence_is_unsettled(tmp_path: Path) -> None:
+    text = _render(tmp_path)
+    block = text.split("## What this does not establish", 1)[1]
+    assert LIBERO_LICENCE in block
+    assert "Lifelong-Robot-Learning/LIBERO/issues/150" in block
+
+
+def test_a_run_off_libero_carries_no_libero_licence_line(tmp_path: Path) -> None:
+    run_dir = tmp_path / "stub"
+    shutil.copytree(ROOT / "results" / "optimized_targeted_hijack_stub", run_dir)
+    (run_dir / "README.md").unlink()
+    subprocess.run([sys.executable, str(SCRIPT), str(run_dir)], check=True, capture_output=True)
+    text = (run_dir / "README.md").read_text(encoding="utf-8")
+    assert "## What this does not establish" in text
+    assert LIBERO_LICENCE not in text
+
+
 def _generated_run_dirs() -> list[Path]:
     return [
         readme.parent

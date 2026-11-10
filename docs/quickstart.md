@@ -86,6 +86,14 @@ unpinned LIBERO run those two episodes start from different scenes, because the 
 the scene and not the seed ([E-2026-19](errata.md)); pass `--pin-init-states` to `provael attack`
 when the pair has to share one. Both need the `[lerobot]` extra's imageio + ffmpeg.
 
+Loading a LeRobot policy runs preflight checks that refuse the run rather than measure the wrong
+thing: a normaliser with no statistics loaded, a `--rename-map` that differs from the map the
+checkpoint stores, weights that still hold their initial values, actions that do not change between
+an all-black and an all-white frame, and, on LIBERO, a checkpoint whose gripper statistics do not
+fit LIBERO's -1 to +1 gripper. `lerobot/pi05_base`, the `pi05` default, is refused on LIBERO; pass
+`--model lerobot/pi05_libero_finetuned_v044`. Add `--preflight` to `provael attack` to check, in an
+environment of its own before the run, that a +x end-effector command moves the arm along +x.
+
 ## Name the acceptance protocol before you read the number
 
 A run is a measurement; whether it is *acceptable* is a separate statement, made only against
@@ -174,8 +182,9 @@ intended; it is tested on SmolVLA × LIBERO today. **Evidence, not certification
   **contact events** column next to the ASR with its own Wilson interval, counted only over the
   episodes that surfaced the signal; the stub has no contact API, so its reports say
   **not surfaced** rather than 0. The definition is `provael.suites.libero.ContactRule` and the
-  oracle version `contact-event/v1`; no committed run carries it yet — the first will be the
-  calibrated re-run.
+  oracle version `contact-event/v1`. No committed measurement carries it yet; the first will be
+  the calibrated re-run. The PAISI recordings in `results/rfm_submission_2026-11` print the column
+  (0/1 on each one-episode report), but they were recorded for video and measure nothing.
 - **The evidence state says how far a number was verified**: `stub`, `real-episode`, and never a
   higher rung without the bound evidence. Registered is not validated; `provael coverage` prints
   the difference.

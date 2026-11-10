@@ -19,7 +19,7 @@ PY := uv run python
 
 .DEFAULT_GOAL := help
 .PHONY: help install lint typecheck test check check-docs check-doc-counts fix-doc-counts \
-	check-links check-leaderboard check-issue-labels gen-registry gen-schemas \
+	check-links check-leaderboard check-issue-labels check-audit-allowlist gen-registry gen-schemas \
 	check-measurement-ledger gen-measurement-ledger check-release gen-release \
 	check-campaign gen-campaign check-provenance check-delivery-pack gen-delivery-pack \
 	hooks check-dco
@@ -106,6 +106,14 @@ check-leaderboard: ## Refuse a published board whose rows aged out silently
 
 check-issue-labels: ## Fail if an issue form declares a label that does not exist
 	$(PY) scripts/check_issue_labels.py
+
+# Deliberately not in check-docs. That target is every doc gate that runs offline on a fresh checkout.
+# This one needs an audit report nobody commits, and it reads today's date, so adding it would turn
+# check-docs red on a calendar day. CI runs it inside the audit job, right after pip-audit.
+AUDIT_JSON ?= audit-extras.json
+
+check-audit-allowlist: ## Check a saved pip-audit JSON (AUDIT_JSON=path) against the reviewed allow-list
+	$(PY) scripts/check_audit_allowlist.py $(AUDIT_JSON)
 
 # ── Generators (commit what they write) ──────────────────────────────────────
 
