@@ -3009,6 +3009,13 @@ pair.mp4</code> puts the benign twin and the attacked episode of one task and se
 unpinned LIBERO run those two episodes start from different scenes, because the reset counter picks
 the scene and not the seed (<a href="../errata/">E-2026-19</a>); pass <code>--pin-init-states</code> to <code>provael attack</code>
 when the pair has to share one. Both need the <code>[lerobot]</code> extra's imageio + ffmpeg.</p>
+<p>Loading a LeRobot policy runs preflight checks that refuse the run rather than measure the wrong
+thing: a normaliser with no statistics loaded, a <code>--rename-map</code> that differs from the map the
+checkpoint stores, weights that still hold their initial values, actions that do not change between
+an all-black and an all-white frame, and, on LIBERO, a checkpoint whose gripper statistics do not
+fit LIBERO's -1 to +1 gripper. <code>lerobot/pi05_base</code>, the <code>pi05</code> default, is refused on LIBERO; pass
+<code>--model lerobot/pi05_libero_finetuned_v044</code>. Add <code>--preflight</code> to <code>provael attack</code> to check, in an
+environment of its own before the run, that a +x end-effector command moves the arm along +x.</p>
 <h2 id="name-the-acceptance-protocol-before-you-read-the-number">Name the acceptance protocol before you read the number</h2>
 <p>A run is a measurement; whether it is <em>acceptable</em> is a separate statement, made only against
 criteria written down and named beforehand. Pass an acceptance protocol (YAML or JSON) and every
