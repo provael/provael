@@ -81,8 +81,10 @@ leg) is `measured`.
 Add `--video-dir clips/` to write one MP4 per episode — the frames the policy actually saw, after
 the attack and any defense, red-bordered from the first step the predicate fired. Recording never
 touches `report.json`. `provael compose-video clips/<benign>.mp4 clips/<attacked>.mp4 --out
-pair.mp4` puts the benign twin and the attacked episode of one task and seed side by side. Both
-need the `[lerobot]` extra's imageio + ffmpeg.
+pair.mp4` puts the benign twin and the attacked episode of one task and seed side by side. On an
+unpinned LIBERO run those two episodes start from different scenes, because the reset counter picks
+the scene and not the seed ([E-2026-19](errata.md)); pass `--pin-init-states` to `provael attack`
+when the pair has to share one. Both need the `[lerobot]` extra's imageio + ffmpeg.
 
 ## Name the acceptance protocol before you read the number
 

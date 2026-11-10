@@ -24,4 +24,7 @@ d54c965 (#299, 27 September 2026). The calibrated predicate is not in the submit
 re-fit was due 24 October 2026 and missed that date; the new target is 14 November 2026 (#136), and
 the result will be published whichever way it comes out.
 
+`paper.tex` gained the E-2026-19 sentences on the scene pairing on 7 November 2026, after submission.
+The committed `paper.pdf` is still the submitted build, so rebuild it before the arXiv posting.
+
 Build (needs `tectonic`): `tectonic -X compile paper.tex && ./check_anonymity.sh`

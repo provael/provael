@@ -806,9 +806,10 @@ def calibrate_one(
     policy_seeds = fit_applied + holdout_applied + eval_applied
     split: Split = "three-way" if eval_list else "two-way"
 
-    # The attacked arm reuses the HOLDOUT seeds, so the two arms are paired: the same initial
-    # states, differing only in whether the attack ran. An unpaired adversarial arm would confound
-    # "the attack redirects the policy" with "these seeds start somewhere else".
+    # The attacked arm reuses the HOLDOUT seeds, so the two arms are paired on task and seed. That
+    # is the same initial states only where the suite picks the state from the seed; on LIBERO the
+    # reset counter picks it unless the run pinned it (E-2026-19), and `init_states` below records
+    # which state each episode actually got.
     adversarial: list[list[list[float]]] = []
     if attack is not None:
         adv_eps, adv_applied = collect_benign_signals(

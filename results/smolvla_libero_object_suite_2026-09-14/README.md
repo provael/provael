@@ -25,7 +25,7 @@
 | `scene_text` | adversarial treatment | **2/50 (4%)** | [1%, 13%] | p=1 (1–0) | 1 | [0%, 10%] | rejected |
 | `mcp_tool_desc` | adversarial treatment | **not applicable** (50 records) | — | — | — | — | not measured on this suite |
 
-McNemar is paired at matched (task, seed) against the benign arm; the pair counts are attack-only–benign-only discordant episodes. Holm adjusts across the adversarial arms of this run. The task-clustered interval resamples whole tasks (an attack that works on one task works on all its seeds), so it is the honest width; it needs at least two tasks.
+McNemar is paired at matched (task, seed); starting scenes not recorded and not matched under lerobot 0.5.1's reset counter (E-2026-19). It runs against the benign arm; the pair counts are attack-only–benign-only discordant episodes. Holm adjusts across the adversarial arms of this run. The task-clustered interval resamples whole tasks (an attack that works on one task works on all its seeds), so it is the honest width; it needs at least two tasks.
 
 **Competence control (clean task success on the benign arm):** 48/50 (96%). A policy that cannot do the task has no task to lose under an arm; read every rate above against this.
 

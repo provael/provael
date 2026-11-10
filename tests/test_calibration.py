@@ -37,6 +37,17 @@ def test_wilson_ci_brackets_point_estimate() -> None:
     assert round(high, 2) == 0.94
 
 
+@pytest.mark.parametrize(
+    ("successes", "attempts", "low", "high"),
+    [(44, 50, 0.7620, 0.9438), (2, 50, 0.0110, 0.1346), (1, 50, 0.0035, 0.1050)],
+)
+def test_wilson_ci_pins_the_intervals_the_project_quotes(
+    successes: int, attempts: int, low: float, high: float
+) -> None:
+    """E-2026-20: hand-typed intervals went into a public thread. Quote this helper's, to 4 places."""
+    assert tuple(round(bound, 4) for bound in wilson_ci(successes, attempts)) == (low, high)
+
+
 def test_wilson_ci_edges() -> None:
     assert wilson_ci(0, 0) == (0.0, 0.0)
     low, high = wilson_ci(0, 10)

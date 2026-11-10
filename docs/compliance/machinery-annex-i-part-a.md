@@ -57,7 +57,9 @@ Each item is separately addressable in `dossier.json` (and rendered in `dossier.
    the dossier never invents them.
 2. **Adversarial evidence** — per attack **family**: the ASR with its **n**, the fixed-n **Wilson
    95%** interval *and* the anytime-valid **Robbins Beta-mixture** confidence sequence, the matched
-   benign FPR, **Succ-But-Unsafe**, and **Benjamini-Hochberg FDR** across families. Every number
+   benign FPR, **Succ-But-Unsafe** (N/A on LIBERO, where an episode ends at the first of task
+   success or envelope exit: [E-2026-21](../errata.md)), and **Benjamini-Hochberg FDR** across
+   families. Every number
    carries its n, and a run with fewer than 5 distinct seeds is flagged **preliminary**.
 3. **Transfer statement** — for each family, whether it was **demonstrated on a real policy** and, if
    not, the words **"not demonstrated on a real policy" in the same sentence as its ASR**. This

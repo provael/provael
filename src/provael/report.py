@@ -28,11 +28,16 @@ from provael.endpoints import PHYSICAL_HAZARD
 from provael.evidence import evidence_state_of
 from provael.scoring.asr import benign_control, endpoint_by_attack, fdr_by_attack
 from provael.scoring.safety_cost import (
+    FIRST_EVENT,
     QUADRANT_KEYS,
     TASK_SUCCESS_UNMEASURED,
+    UNSAFE_SUCCESS,
     cumulative_cost,
+    exposure_unobservable,
     quadrant_counts,
+    risk_exposure_time,
     unsafe_success_rate,
+    unsafe_success_unobservable,
 )
 from provael.types import ASRStat, RunReport
 from provael.verdict import ReleaseDecision, acceptance_line, release_verdict
@@ -150,7 +155,9 @@ class ReportArtifact:
         return hashlib.sha256(self.raw).hexdigest()
 
 
-def to_markdown(report: RunReport, decision: ReleaseDecision | None = None) -> str:
+def to_markdown(
+    report: RunReport, decision: ReleaseDecision | None = None, *, termination: str = FIRST_EVENT
+) -> str:
     """Render a report as a Markdown document.
 
     ``decision`` is the release decision the caller made (under a named protocol, or not assessed);
@@ -217,7 +224,11 @@ def to_markdown(report: RunReport, decision: ReleaseDecision | None = None) -> s
         )
     if report.matched_benign_fpr is not None:
         lines.append(f"| matched-benign FPR | {100.0 * report.matched_benign_fpr:.1f}% |")
-    if report.succ_but_unsafe is not None:
+    sbu_why = unsafe_success_unobservable(report.suite, termination)
+    has_task_signal = any(r.task_success is not None for r in report.results)
+    if sbu_why is not None and (report.succ_but_unsafe is not None or has_task_signal):
+        lines.append(f"| Succ-But-Unsafe | N/A ({sbu_why}) |")
+    elif report.succ_but_unsafe is not None:
         lines.append(f"| Succ-But-Unsafe | {100.0 * report.succ_but_unsafe:.1f}% |")
     lines.append("")
     reasons = " ".join(r if r.endswith(".") else f"{r}." for r in decision.reasons)
@@ -318,21 +329,33 @@ def to_markdown(report: RunReport, decision: ReleaseDecision | None = None) -> s
         lines.append("")
         lines.append("| metric | value |")
         lines.append("| --- | --- |")
-        cc_cell = (
-            "N/A (no per-step decision log)" if cc is None
-            else f"{cc:.2f} unsafe steps/episode"
-        )
+        exposure_why = exposure_unobservable(report.suite, termination)
+        exposures = [
+            ret for ret in (risk_exposure_time(r) for r in report.results if r.applicable)
+            if ret is not None
+        ]
+        if cc is None:
+            cc_cell = ret_cell = "N/A (no per-step decision log)"
+        elif exposure_why is not None:
+            cc_cell = ret_cell = f"N/A ({exposure_why})"
+        else:
+            cc_cell = f"{cc:.2f} unsafe steps/episode"
+            ret_cell = f"{sum(exposures)} unsafe steps over {len(exposures)} episodes"
         lines.append(f"| cumulative cost (CC counterpart) | {cc_cell} |")
-        usr_cell = (
-            "N/A (this suite surfaces no task-success signal)" if usr is None
-            else f"{100.0 * usr:.1f}%"
-        )
+        lines.append(f"| risk exposure time (RET counterpart) | {ret_cell} |")
+        if usr is None:
+            usr_cell = "N/A (this suite surfaces no task-success signal)"
+        elif sbu_why is not None:
+            usr_cell = f"N/A ({sbu_why})"
+        else:
+            usr_cell = f"{100.0 * usr:.1f}%"
         lines.append(f"| unsafe success rate (USR) | {usr_cell} |")
         lines.append("")
         lines.append("| quadrant | episodes |")
         lines.append("| --- | --- |")
         for key in QUADRANT_KEYS:
-            lines.append(f"| {key.replace('_', ' ')} | {quadrant[key]} |")
+            count = f"N/A ({sbu_why})" if key == UNSAFE_SUCCESS and sbu_why else quadrant[key]
+            lines.append(f"| {key.replace('_', ' ')} | {count} |")
         lines.append("")
         if quadrant[TASK_SUCCESS_UNMEASURED]:
             lines.append(
