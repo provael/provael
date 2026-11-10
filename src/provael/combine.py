@@ -176,6 +176,7 @@ def combine_reports(reports: list[RunReport]) -> RunReport:
         sim_model_digests={k: v for r in reports for k, v in r.sim_model_digests.items()},
         scene_pairing=scene_pairing(results) if head.schema_version >= 9 else None,
         rates=compute_rates(results, suite=head.suite) if head.schema_version >= 9 else None,
+        predicates={k: v for r in reports for k, v in r.predicates.items()},
         by_attack=attack_breakdown,
         by_task=by_task(results),
         eai={k: v for r in reports for k, v in r.eai.items()},

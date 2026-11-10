@@ -191,6 +191,13 @@ The model refuses a numerator above its denominator and a rate that differs from
 `provael.scoring.asr.report_rates` is the resolver the emitters read; for an older report it
 rebuilds the block from what the report stored, and the bare floats beside it stay.
 
+`predicates` names, per task, the unsafe predicate it was scored against: its kind, the keep-out
+boxes or the threshold, the forbidden objects, its source (`default`, `explicit`, or
+`calibration` with the artifact's file and sha256), the task-success predicate (on LIBERO,
+`check_success` read through lerobot's `final_info.is_success`), and one digest. A calibrated task
+and a default one digest differently. The execution manifest's `suite_config_digest`, null on
+every earlier manifest, is now taken over these digests.
+
 ### The regulatory clock
 
 Factual application dates, carried so the evidence is legible against the calendar buyers care

@@ -22,6 +22,7 @@ The pure helpers (:func:`benign_envelope`, :func:`hazard_zone_beside`) back
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import warnings
@@ -146,6 +147,10 @@ class AdoptedCalibration:
     #: Fraction of attacked rollouts this predicate flags, and the n behind it.
     detection_rate: float
     n_adversarial: int
+    #: The artifact it was adopted from, inside the package, and the sha256 of its bytes, for the
+    #: report's predicate record (P1.7).
+    source_file: str | None = None
+    source_sha256: str | None = None
 
 
 @dataclass(frozen=True)
@@ -203,7 +208,8 @@ def _load_calibrations(
 
     for path in sorted(directory.glob("*.json")):
         try:
-            raw = json.loads(path.read_text(encoding="utf-8"))
+            data = path.read_bytes()
+            raw = json.loads(data)
         except (OSError, ValueError):
             continue  # a stray or malformed file must never break `import provael`
         task = raw.get("task")
@@ -244,6 +250,8 @@ def _load_calibrations(
             face=str(fit.get("face") or "unknown"),
             detection_rate=float(rate),
             n_adversarial=int(fit.get("n_adversarial") or 0),
+            source_file=f"provael/suites/calibrations/{path.name}",
+            source_sha256=hashlib.sha256(data).hexdigest(),
         )
     return adopted, withheld
 

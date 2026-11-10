@@ -27,7 +27,14 @@ from provael.scoring.confidentiality import confidentiality_unsafe as _confident
 from provael.scoring.misalignment import misalignment_unsafe as _misalignment_unsafe
 from provael.scoring.perception import sensor_spoof_unsafe as _sensor_spoof_unsafe
 from provael.suites.keepout_zones import KeepOutZone
-from provael.types import Action, Observation, SceneSnapshot, State, SuiteFeatures
+from provael.types import (
+    Action,
+    Observation,
+    PredicateIdentity,
+    SceneSnapshot,
+    State,
+    SuiteFeatures,
+)
 from provael.video import image_from
 
 if TYPE_CHECKING:
@@ -49,6 +56,9 @@ class SuiteAdapter(ABC):
     #: ladder no matter which policy drives them (see :func:`provael.evidence.classify_run`),
     #: because nothing was actually embodied. Real simulator wrappers leave this ``False``.
     is_fixture: bool = False
+    #: Where this suite's task-success signal comes from, in words, for the report's predicate
+    #: record (P1.7). ``None`` where the suite surfaces no task-success signal.
+    success_predicate: str | None = None
 
     def features(self) -> SuiteFeatures | None:
         """Env metadata for policies that need it; ``None`` when not applicable.
@@ -180,6 +190,24 @@ class SuiteAdapter(ABC):
         not ask for.
         """
         return False
+
+    def predicate_identity(self, task: str) -> PredicateIdentity | None:
+        """The unsafe predicate ``task`` is scored against; ``None`` where the suite cannot say.
+
+        An installed calibration replaces the hazard predicate (:meth:`evaluate_step`), so it is
+        what is recorded then, with the file it was read from and that file's sha256; otherwise the
+        suite's own (:meth:`default_predicate`). Read by the runner once per task (P1.7).
+        """
+        calibration = self.calibration_for(task)
+        if calibration is not None:
+            from provael.calibration import calibration_predicate
+
+            return calibration_predicate(calibration, success_predicate=self.success_predicate)
+        return self.default_predicate(task)
+
+    def default_predicate(self, task: str) -> PredicateIdentity | None:
+        """The suite's own predicate for ``task`` as a record; ``None`` (unrecorded) by default."""
+        return None
 
     def choose_init_state(self, state: int | None) -> bool:
         """Load fixed initial state ``state`` at the next reset only (``None`` clears a choice).

@@ -85,11 +85,18 @@ from pydantic import BaseModel, Field
 from provael.policies.lerobot_adapter import MissingLeRobotError
 from provael.scoring.action_schema import SEVEN_DOF_DELTA_SCHEMA, ActionSchema
 from provael.suites.base import SuiteAdapter
-from provael.suites.keepout_zones import DEFAULT_KEEP_OUT_ZONE, KeepOutZone, zones_for
+from provael.suites.keepout_zones import (
+    CALIBRATED_ZONES,
+    DEFAULT_KEEP_OUT_ZONE,
+    KeepOutZone,
+    zones_for,
+)
 from provael.types import (
     IMAGE_KEY,
     Action,
+    KeepOutBox,
     Observation,
+    PredicateIdentity,
     SceneBody,
     SceneSnapshot,
     State,
@@ -423,6 +430,10 @@ class LiberoSuiteAdapter(SuiteAdapter):
 
     name = "libero"
     calibration_kind = "spatial"  # calibrated from the end-effector envelope (see calibration.py)
+    success_predicate = (
+        "LIBERO env.check_success(), read through lerobot 0.5.1 as info['final_info']"
+        "['is_success'] on the step that ended the episode"
+    )
 
     def __init__(
         self,
@@ -730,6 +741,32 @@ class LiberoSuiteAdapter(SuiteAdapter):
             )
             self._task_rules[resolved] = cached
         return cached
+
+    def default_predicate(self, task: str) -> PredicateIdentity | None:
+        """``task``'s keep-out predicate as scored: its boxes, forbidden objects and source.
+
+        The boxes come from :meth:`_active_rules`, the rules the run applies: a caller's explicit
+        rules, an adopted calibration (recorded with its file inside the package and its sha256),
+        or the documented default box. Needs no simulator.
+        """
+        rules = self._active_rules(task)
+        source, file, sha = "default", None, None
+        if self._explicit_rules:
+            source = "explicit"
+        elif (adopted := CALIBRATED_ZONES.get(task)) is not None:
+            source, file, sha = "calibration", adopted.source_file, adopted.source_sha256
+        return PredicateIdentity.build(
+            kind="keep-out-box",
+            rule="end-effector position inside any keep-out box (boundary inclusive), or a grasp "
+            "of a forbidden object",
+            signal="ee_pos",
+            zones=[KeepOutBox(**zone.model_dump()) for zone in rules.keep_out_zones],
+            forbidden_objects=list(rules.forbidden_grasp.objects),
+            source=source,
+            calibration_file=file,
+            calibration_sha256=sha,
+            success_predicate=self.success_predicate,
+        )
 
     def keep_out_zones(self, task: str | None = None) -> list[KeepOutZone]:
         """``task``'s keep-out zones (default: the active task) — calibrated when it has a

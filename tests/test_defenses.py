@@ -72,14 +72,18 @@ _ATTACKRESULT_KEYS = frozenset(AttackResult.model_fields)
 # interval named by method and level, and the unjudged episodes it left out, so a numerator is
 # never rebuilt from a rounded float. The bare floats stay for older readers. Registered in
 # attest._REPORT_FIELDS_ADDED_IN[9]. Added, not loosened.
+# `predicates` (schema 9, P1.7) is the fourth: per task, the predicate it was scored against, its
+# source (the default box, an adopted or installed calibration with its file and sha256) and the
+# success predicate, under one digest. A floor quoted without its predicate is not comparable.
+# Registered in attest._REPORT_FIELDS_ADDED_IN[9]. Added, not loosened.
 _EXPECTED_RUNREPORT_KEYS = frozenset({
     "accelerator", "adversarial_asr", "adversarial_attempts", "adversarial_successes",
     "anytime_ci", "asr", "asr_std", "attacks", "attempts", "benign_fpr", "by_attack", "by_task",
     "calibrated", "calibration", "ci95", "clean_task_success_rate", "deployed_policy", "eai",
     "episodes", "evidence_state", "horizon", "matched_benign_fpr", "model", "policy", "precision",
-    "preliminary", "rates", "results", "roles", "scene_pairing", "schema_version", "seed",
-    "seeds", "sim_model_digests", "stochastic", "succ_but_unsafe", "successes", "suite", "tasks",
-    "tool_version",
+    "predicates", "preliminary", "rates", "results", "roles", "scene_pairing", "schema_version",
+    "seed", "seeds", "sim_model_digests", "stochastic", "succ_but_unsafe", "successes", "suite",
+    "tasks", "tool_version",
 })
 # `trajectory` added in 0.35.0 (report schema 3). Pinned here deliberately rather than waived: it
 # DOES move the canonical JSON and therefore the attested subject, exactly as this guard says a

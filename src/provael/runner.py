@@ -664,6 +664,15 @@ def run(
 
     _configure_weight_reference(attacks, policy, suite, tasks[0], config.seed)
 
+    # The predicate each task is scored against, read once, after any calibration is installed
+    # (P1.7). A suite that cannot say leaves the task out rather than guessing; in strict mode an
+    # uncalibrated LIBERO task refuses here, before its first episode, instead of at its first step.
+    predicates = {
+        task: identity
+        for task in tasks
+        if (identity := suite.predicate_identity(task)) is not None
+    }
+
     results: list[AttackResult] = []
     # Each task's compiled model, read before its first episode (see SuiteAdapter.sim_model_digest).
     sim_models: dict[str, str | None] = {}
@@ -843,6 +852,7 @@ def run(
         # Every rate above with its counts, interval method and level, and its unjudged episodes,
         # from the same episodes and the same filters (P1.6).
         rates=compute_rates(results, suite=config.suite),
+        predicates=predicates,
         by_attack=attack_breakdown,
         by_task=by_task(results),
         eai={

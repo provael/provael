@@ -69,6 +69,12 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   readers. Why: a rate quoted without its counts invites rebuilding the numerator from a rounded
   float, and `ci95` named no method. Every committed report reads the same through the resolver,
   which a test checks; no number moves.
+- **Each task records the predicate it was scored against.** Report schema 9 adds `predicates`:
+  per task the predicate's kind, its keep-out boxes or threshold, its source (the default box, a
+  caller's rules, or a calibration artifact with its file and sha256), the success predicate and a
+  digest, and the execution manifest's `suite_config_digest` is filled from them. Why: floors were
+  quoted without naming their predicate, and a rate under the default box and one under a
+  calibrated box are different claims. No number moves.
 
 ### Changed
 

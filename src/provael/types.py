@@ -880,6 +880,101 @@ class DeployedPolicy(BaseModel):
         return cls(**body, digest=_canonical_sha256(body))
 
 
+class KeepOutBox(BaseModel):
+    """One axis-aligned keep-out box a task was scored against (world coordinates, metres)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    x: tuple[float, float]
+    y: tuple[float, float]
+    z: tuple[float, float]
+
+
+class PredicateIdentity(BaseModel):
+    """Which unsafe predicate a task was scored against, and where it came from (schema 9, P1.7).
+
+    A floor or an ASR quoted without its predicate cannot be compared with another: the same rate
+    under the default box and under a calibrated one are different claims. Built through
+    :meth:`build`, which derives :attr:`digest` from every other field, so two tasks scored
+    against one predicate digest alike and a calibrated task and a default one never do.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: str = Field(
+        ...,
+        description="'keep-out-box' (the end-effector entering a box) or 'scalar-threshold' (a "
+        "state signal over a threshold).",
+    )
+    rule: str = Field(..., description="The rule in words, as the suite applies it.")
+    signal: str | None = Field(
+        None, description="The state key the rule reads, e.g. 'ee_pos' or 'danger'."
+    )
+    zones: list[KeepOutBox] | None = Field(
+        None, description="The keep-out boxes, for a keep-out predicate."
+    )
+    threshold: float | None = Field(
+        None,
+        description="A fixed threshold, for a calibrated scalar predicate; None for a box, or for "
+        "a threshold drawn per seed.",
+    )
+    forbidden_objects: list[str] | None = Field(
+        None,
+        description="Objects whose grasp also counts as unsafe, where the suite has that rule "
+        "(LIBERO: none by default).",
+    )
+    source: str = Field(
+        ...,
+        description="'default' (the suite's documented default), 'calibration' (an adopted or "
+        "installed calibration artifact) or 'explicit' (rules a caller passed to the adapter).",
+    )
+    calibration_file: str | None = Field(
+        None,
+        description="The calibration artifact the predicate came from: a path inside the package "
+        "for an adopted one, relative to the --calib directory for an installed one.",
+    )
+    calibration_sha256: str | None = Field(
+        None, description="sha256 of that artifact's bytes."
+    )
+    success_predicate: str | None = Field(
+        None,
+        description="Where the suite's task-success signal comes from, in words; None where it "
+        "surfaces none.",
+    )
+    digest: str = Field(..., description="sha256 over the canonical JSON of every other field.")
+
+    @classmethod
+    def build(
+        cls,
+        *,
+        kind: str,
+        rule: str,
+        source: str,
+        signal: str | None = None,
+        zones: Sequence[KeepOutBox] | None = None,
+        threshold: float | None = None,
+        forbidden_objects: Sequence[str] | None = None,
+        calibration_file: str | None = None,
+        calibration_sha256: str | None = None,
+        success_predicate: str | None = None,
+    ) -> PredicateIdentity:
+        """Construct with the digest derived from the fields, as :meth:`DeployedPolicy.build`."""
+        body: dict[str, Any] = {
+            "kind": kind,
+            "rule": rule,
+            "signal": signal,
+            "zones": [zone.model_dump() for zone in zones] if zones is not None else None,
+            "threshold": threshold,
+            "forbidden_objects": list(forbidden_objects) if forbidden_objects is not None else None,
+            "source": source,
+            "calibration_file": calibration_file,
+            "calibration_sha256": calibration_sha256,
+            "success_predicate": success_predicate,
+        }
+        return cls(**body, digest=_canonical_sha256(body))
+
+
 class OperatingEnvelope(BaseModel):
     """Operator-declared operating envelope / operational-design-domain of the machine.
 
@@ -1021,7 +1116,7 @@ class RunReport(BaseModel):
         "`scene_t0`), each task's compiled model digest and how many pairs shared a scene, and "
         "how each episode ended (`termination`, `verdict`, `observation`); an unjudged episode "
         "is excluded from every rate, and `rates` carries every rate with its counts, interval "
-        "method and level. "
+        "method and level, and `predicates` names each task's predicate. "
         "Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed "
         "a calibration, because its trajectories do not exist.",
     )
@@ -1131,6 +1226,12 @@ class RunReport(BaseModel):
         description="Every rate above as successes, trials, rate, an interval named by method "
         "and level, and the unjudged episodes it left out (schema >= 9). Read it through "
         "provael.scoring.asr.report_rates, which rebuilds it for an older report.",
+    )
+    predicates: dict[str, PredicateIdentity] = Field(
+        default_factory=dict,
+        description="Per task: the unsafe predicate it was scored against (kind, boxes or "
+        "threshold, source and calibration file with its sha256), the success predicate, and one "
+        "digest (schema >= 9). A task whose suite cannot say is absent, never guessed.",
     )
 
     by_attack: dict[str, ASRStat] = Field(default_factory=dict)

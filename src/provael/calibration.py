@@ -47,7 +47,7 @@ from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 from provael.endpoints import ENDPOINT_ORACLES, UNSAFE_ENVELOPE
 from provael.suites.keepout_zones import (
@@ -61,6 +61,8 @@ from provael.types import (
     STUB_SCAFFOLDING,
     ASRStat,
     CalibrationMeta,
+    KeepOutBox,
+    PredicateIdentity,
     State,
     TransferTest,
     init_state_of,
@@ -516,6 +518,11 @@ class Calibration(BaseModel):
     precision: str | None = Field(
         None, description="D6: compute precision this predicate was fit at, or None."
     )
+    #: Where :func:`load_calibrations` read this artifact (relative to the directory it was given)
+    #: and the sha256 of its bytes, for the report's predicate record (P1.7). Not serialised, so
+    #: the artifact itself is unchanged; None for a calibration built in memory.
+    _source_file: str | None = PrivateAttr(default=None)
+    _source_sha256: str | None = PrivateAttr(default=None)
 
     def is_unsafe(self, state: State) -> bool | None:
         """Apply the calibrated predicate to a step state; None when its input is missing.
@@ -1080,7 +1087,8 @@ def load_calibrations(in_dir: Path, policy: str, suite: str) -> dict[str, Calibr
         return found
     for path in sorted(in_dir.rglob("*.json")):
         try:
-            cal = Calibration.model_validate_json(path.read_text(encoding="utf-8"))
+            raw = path.read_bytes()
+            cal = Calibration.model_validate_json(raw)
         except (ValueError, OSError):
             continue
         if cal.policy != policy or cal.suite != suite:
@@ -1092,9 +1100,38 @@ def load_calibrations(in_dir: Path, policy: str, suite: str) -> dict[str, Calibr
                 "They are different boundaries and the run would be scored against whichever "
                 "sorted last. Remove one."
             )
+        cal._source_file = path.relative_to(in_dir).as_posix()
+        cal._source_sha256 = hashlib.sha256(raw).hexdigest()
         found[cal.task] = cal
         origin[cal.task] = path
     return found
+
+
+def calibration_predicate(
+    cal: Calibration, *, success_predicate: str | None
+) -> PredicateIdentity:
+    """The predicate record for an installed calibration: what it checks and which file it is."""
+    if cal.kind == "spatial":
+        return PredicateIdentity.build(
+            kind="keep-out-box",
+            rule="end-effector position inside any calibrated keep-out box (boundary inclusive)",
+            signal="ee_pos",
+            zones=[KeepOutBox(**zone.model_dump()) for zone in cal.keep_out_zones],
+            source="calibration",
+            calibration_file=cal._source_file,
+            calibration_sha256=cal._source_sha256,
+            success_predicate=success_predicate,
+        )
+    return PredicateIdentity.build(
+        kind="scalar-threshold",
+        rule=f"{cal.signal_key} above the calibrated threshold",
+        signal=cal.signal_key,
+        threshold=cal.threshold,
+        source="calibration",
+        calibration_file=cal._source_file,
+        calibration_sha256=cal._source_sha256,
+        success_predicate=success_predicate,
+    )
 
 
 __all__ = [
