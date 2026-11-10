@@ -23,7 +23,7 @@ side saw the other, and the previous version of this note wrongly said the two f
 entry-for-entry. The website keeps the ID it published under; the same correction is recorded
 below as **E-2026-09**, so that every correction has an entry in the maintained source. E-2026-14
 was held for the LinkedIn correction below, written on 27 September 2026; the next free ID is
-**E-2026-20**.
+**E-2026-21**.
 
 ---
 
@@ -726,6 +726,37 @@ clause too narrowly to catch this is part of the error.
 - The website's `errata.ts` mirrors this entry under the same ID in the same sweep; the pitch deck
   and the Manifund proposal are regenerated from the corrected sentences.
 
+**Update, 7 November 2026: the threads.** The correction above reached the repository and the site.
+It did not reach everything already posted in other projects' repositories. These posts still carry
+the superseded reading, or the 44/50 against 2/50 pair with no current figure beside it:
+
+| thread | posted | what it carries |
+| --- | --- | --- |
+| [mlcommons/ailuminate#37](https://github.com/mlcommons/ailuminate/issues/37) | 1 September | 44 of 50 against 2 in 50 |
+| [mitre-atlas/atlas-data#29](https://github.com/mitre-atlas/atlas-data/issues/29) | 12 September | "The policy executes the injected goal" |
+| [mitre-atlas/atlas-data#30](https://github.com/mitre-atlas/atlas-data/issues/30) | 12 September | 44/50 against a floor of 2 of 50 |
+| [MINT-SJTU/Evo-SOTA.io#59](https://github.com/MINT-SJTU/Evo-SOTA.io/issues/59) | 9 September | 10/10 against 0%, a one-task figure at n=10 |
+| [simpler-env/SimplerEnv#137](https://github.com/simpler-env/SimplerEnv/issues/137) | 13 September | 44 of 50 and McNemar p = 4.6e-13 |
+| [TheFatInsect/Awesome-Embodied-AI-Safety-Security#1](https://github.com/TheFatInsect/Awesome-Embodied-AI-Safety-Security/issues/1) | 6 September | 44/50 against 2/50 |
+| [x-zheng16/Awesome-Embodied-AI-Safety#8](https://github.com/x-zheng16/Awesome-Embodied-AI-Safety/pull/8) | 9 August | the 9 August table and "3 of 15 attack families" |
+| [huggingface/lerobot#4481](https://github.com/huggingface/lerobot/issues/4481) | 19 August | 88% against 4% |
+| [huggingface/lerobot#4152](https://github.com/huggingface/lerobot/issues/4152) | 31 August | 44 of 50 against 2 of 50 |
+| [robocurve/inspect-robots#439](https://github.com/robocurve/inspect-robots/issues/439) | 12 September | 44/50 against a floor of 2/50 |
+| [UKGovernmentBEIS/inspect_evals#2423](https://github.com/UKGovernmentBEIS/inspect_evals/issues/2423) | 12 September | a floor of 2/50 |
+| [NVIDIA/garak#2062](https://github.com/NVIDIA/garak/issues/2062) | 19 August | 44/50 against 2/50 |
+| [PKU-Alignment/VLA-Arena#34](https://github.com/PKU-Alignment/VLA-Arena/issues/34) | 12 September | 44/50 against a floor of 2/50 |
+| [dexmal/opendm#8](https://github.com/dexmal/opendm/issues/8) (closed) | 1 September | 44 of 50, "the text channel moving the action" |
+| [DravenALG/awesome-vla-wam#8](https://github.com/DravenALG/awesome-vla-wam/pull/8) (closed) | 1 September | 44/50 |
+| [PKU-Alignment/VLA-Arena#31](https://github.com/PKU-Alignment/VLA-Arena/issues/31) (closed) | 13 August | 44 of 50, read as a reword effect |
+
+Four are already corrected on the thread:
+[LiQiiiii/Awesome-VLA-Safety#7](https://github.com/LiQiiiii/Awesome-VLA-Safety/pull/7) (26 September),
+[robocurve/roboharm#2](https://github.com/robocurve/roboharm/issues/2) (25 September),
+[ZJUSCL/Awesome-Robot-Verifier#2](https://github.com/ZJUSCL/Awesome-Robot-Verifier/pull/2)
+(31 October) and
+[Lifelong-Robot-Learning/LIBERO#148](https://github.com/Lifelong-Robot-Learning/LIBERO/issues/148)
+(31 October). Figures posted that no committed run supports at all are in E-2026-20.
+
 ## E-2026-13 — www.provael.com: the measurement meta block contradicted itself on every page, and two surfaces paired an inclusive attack count with an exclusive family count
 
 **Status:** raised and corrected on the website on 18 September 2026 (provael/website PR "Make the
@@ -1085,6 +1116,57 @@ state)" had every pair checked; one that says "matched (task, seed)" did not.
 recorded one equal init state (`provael.scoring.paired.pairs_share_init_state`, which never reads a
 missing value as a match), and says what a run is not matched on otherwise. A test fails if a README
 generated for a run without matched init states says its pairs share a scene.
+
+## E-2026-20 — Figures and capabilities posted in other projects' threads that this repository does not support
+
+**Status:** recorded on 7 November 2026 · the posts are not yet corrected on their threads · **no
+figure in this repository, on the site or in a signed artifact moves**
+**Date raised:** 7 November 2026, from a review of six months of this project's public comments
+**Window:** posts from 12 August to 21 September 2026
+**Affects:** the posts below, written by this project's author in other projects' issue trackers.
+E-2026-14 is the precedent for recording a correction to a post here.
+
+### What was wrong
+
+Each of these states a figure, a capability or a command that no committed artifact supports. The
+repository's rule that a number traces to a committed artifact already covered outreach, and these
+posts broke it.
+
+| where and when | what it said | what the repository supports |
+| --- | --- | --- |
+| [NVIDIA/garak#2062](https://github.com/NVIDIA/garak/issues/2062), 19 August | Wilson intervals of [76.4%, 94.3%] on 44/50 and [0.6%, 13.8%] on 2/50 | `provael.calibration.wilson_ci` gives [76.2%, 94.4%] and [1.1%, 13.5%]. The posted pair was typed by hand: Wilson with continuity correction, Clopper-Pearson, Jeffreys, Agresti-Coull, Wald and arcsine do not give it either. |
+| [robocurve/inspect-robots#439](https://github.com/robocurve/inspect-robots/issues/439), [UKGovernmentBEIS/inspect_evals#2423](https://github.com/UKGovernmentBEIS/inspect_evals/issues/2423), [ZJUSCL/Awesome-Robot-Verifier#1](https://github.com/ZJUSCL/Awesome-Robot-Verifier/issues/1) and the opening post of [PKU-Alignment/VLA-Arena#34](https://github.com/PKU-Alignment/VLA-Arena/issues/34), all 12 September | "3 of 16 attack families transfer to a real hosted model", in those words or close to them | That day the registry held 17 adversarial families (since 1 September, E-2026-09). Three had run on one open policy, run locally in simulation rather than hosted, and one separated from the floor. Today `watch/registry.json` says 8 of 17 families on a real policy and 2 real policies, and the README says one transferred. VLA-Arena#34's comment of 19 September corrected the family count; the opening post still carries it. |
+| [huggingface/lerobot#4619](https://github.com/huggingface/lerobot/issues/4619) and [Lifelong-Robot-Learning/LIBERO#152](https://github.com/Lifelong-Robot-Learning/LIBERO/issues/152), 12 September | 16 perturbation families against 4 open policies, with subtracting the floor changing the conclusion in 13 of the 16 | No committed run supports either figure. `results/cross_arch_transfer/summary.json` has three stub rows and six pending rows, for SmolVLA and π0. |
+| [openvla/openvla#347](https://github.com/openvla/openvla/issues/347), 13 September | "Across 19 perturbation families", with subtracting the floor removing the effect "for most families" | 19 is `familiesTotal`, which counts the benign baseline and the control family; adversarial families are 17. No committed run supports the per-family claim. |
+| [mani-skill/ManiSkill#1488](https://github.com/mani-skill/ManiSkill/issues/1488), 13 September | "I have a ManiSkill adapter" | No ManiSkill suite exists under `src/provael/suites/`. |
+| [huggingface/lerobot#4548](https://github.com/huggingface/lerobot/issues/4548), 21 September | `provael run`, `--task-suite`, `--attack`, and `provael report --format markdown` over two directories | None of these exist. The commands are `provael attack --policy smolvla --model HuggingFaceVLA/smolvla_libero --suite libero --tasks libero_object/0,...,libero_object/9 --attacks none,paraphrase --seeds 5 --horizon 280 --out runs/para/`, then `provael report --in runs/para`, which takes one directory. |
+| [robocasa/robocasa#224](https://github.com/robocasa/robocasa/issues/224), 12 September | An unperturbed failure rate of 2 to 9 out of 50 on five kitchen tasks, a bias of 4 to 18 percent, and "per-task numbers" at provael.com/results | Measured outside this repository. There is no committed run and no RoboCasa suite, and that page carries no RoboCasa figure. The scorer fix in [robocasa/robocasa#225](https://github.com/robocasa/robocasa/pull/225) may also move them. They are withheld under the rule that a figure whose source cannot be checked is not printed. |
+| [openvla/openvla#342](https://github.com/openvla/openvla/issues/342), 18 August | "What I do is reset the env per episode rather than per task, and record the fixture body_pos into the run artifact" | `LiberoSuiteAdapter` caches one env per task, and no run records `body_pos`. A report records the init-state index from schema 8 (E-2026-19). |
+| [huggingface/lerobot#4152](https://github.com/huggingface/lerobot/issues/4152), 12 August | "What I ended up doing": pinning the initial-state sequence to the seed, and emitting a manifest of the states visited | Neither existed then. Init-state recording landed on 24 October 2026 and pinning on 26 October 2026, and both shipped in 0.47.0. |
+
+### What is correct
+
+The right-hand column. The current published figures are `roleplay` 42/50 against a benign floor of
+1/50 (14 September 2026, provael 0.41.2; Wilson [0.4%, 10.5%] for the floor; McNemar p = 9.1e-13, 41
+discordant pairs to 0), and 8 of 17 adversarial families run on a real policy across 2 policies, all
+in simulation. E-2026-12 gives the reading and E-2026-19 what a pair is matched on.
+
+### What this does and does not affect
+
+**No published number moves.** Nothing in this repository, on the site or in a signed artifact
+carried these figures. The posts are what is wrong, and they stay wrong on their threads until each
+gets a correction that cites this ID.
+
+### How to tell whether a figure you hold is affected
+
+A figure from a thread that names no committed run is not evidence. Check an interval against
+`provael.calibration.wilson_ci`, a count against `watch/registry.json`, and a rate against the run's
+`README.md` under `results/`.
+
+### What was changed to prevent recurrence
+
+`tests/test_calibration.py` pins `wilson_ci` at 44/50, 2/50 and 1/50 to four decimals, so any
+interval quoted from now on can be checked against one helper.
 
 ---
 
