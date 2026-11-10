@@ -140,3 +140,27 @@ def test_every_exporter_publishes_the_control_arm_with_its_interval() -> None:
     markdown = to_markdown(report)
     assert "benign FPR 95% CI (Wilson)" in markdown
     assert f"({control.successes}/{control.attempts})" in markdown
+
+
+def test_benign_control_carries_the_floor_as_a_rate_stat() -> None:
+    """P1.6: the floor every emitter prints is the resolver's RateStat, named by method and level."""
+    from provael.scoring.asr import INTERVAL_LEVEL, WILSON_EPISODE_LEVEL, report_rates
+
+    for report in _shards():
+        control = benign_control(report)
+        assert control is not None and control.stat is not None
+        stat = control.stat
+        assert stat == report_rates(report).benign_floor
+        assert (stat.successes, stat.trials, stat.rate) == (
+            control.successes, control.attempts, control.rate)
+        assert stat.interval is not None
+        assert (stat.interval.low, stat.interval.high) == control.ci95
+        assert (stat.interval.method, stat.interval.level) == (WILSON_EPISODE_LEVEL, INTERVAL_LEVEL)
+
+
+def test_a_trimmed_report_keeps_its_floor_without_inventing_a_rate_stat() -> None:
+    report = _shards()[0]
+    trimmed = report.model_copy(update={"results": []})
+    control = benign_control(trimmed)
+    assert control is not None and control.attempts == 0
+    assert control.stat is None and control.ci95 is None

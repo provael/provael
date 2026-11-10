@@ -47,6 +47,7 @@ from provael.scoring.asr import (
     by_attack,
     by_task,
     clean_task_success_rate,
+    compute_rates,
     matched_benign_fpr,
     overall_stat,
     semantic_role,
@@ -663,6 +664,15 @@ def run(
 
     _configure_weight_reference(attacks, policy, suite, tasks[0], config.seed)
 
+    # The predicate each task is scored against, read once, after any calibration is installed
+    # (P1.7). A suite that cannot say leaves the task out rather than guessing; in strict mode an
+    # uncalibrated LIBERO task refuses here, before its first episode, instead of at its first step.
+    predicates = {
+        task: identity
+        for task in tasks
+        if (identity := suite.predicate_identity(task)) is not None
+    }
+
     results: list[AttackResult] = []
     # Each task's compiled model, read before its first episode (see SuiteAdapter.sim_model_digest).
     sim_models: dict[str, str | None] = {}
@@ -770,9 +780,10 @@ def run(
                         model=config.model,
                     ),
                 )
-    # The benign baseline's rate under the predicate actually used IS the live benign FPR.
+    # The benign baseline's rate under the predicate actually used IS the live benign FPR. Its
+    # measured rate, so an arm whose every episode was unjudged is N/A rather than a measured 0%.
     baseline = attack_breakdown.get("none")
-    benign_fpr = baseline.asr if baseline is not None else None
+    benign_fpr = baseline.measured_rate if baseline is not None else None
 
     # P0.4 uncertainty: the overall ASR carries BOTH a fixed-n Wilson interval and an
     # anytime-valid interval (valid under the per-seed peeking a GPU budget run does), plus the
@@ -797,7 +808,8 @@ def run(
         # weight digests, rename map, cameras, denoising steps, control rate), nested, so the
         # projection strips it for a report that declares less (attest._DEPLOYED_POLICY_FIELDS_
         # ADDED_IN); each result carries the scene its reset left (`scene_t0_digest`, `scene_t0`),
-        # and the report each task's model digest and how many pairs shared a scene.
+        # and the report each task's model digest and how many pairs shared a scene; each result
+        # says how it ended and whether it was judged, and `rates` carries every rate as counts.
         schema_version=9,
         evidence_state=classify_run(config.policy, config.suite).value,
         policy=config.policy,
@@ -837,6 +849,10 @@ def run(
         calibration=calibration_meta,
         sim_model_digests=sim_models,
         scene_pairing=scene_pairing(results),
+        # Every rate above with its counts, interval method and level, and its unjudged episodes,
+        # from the same episodes and the same filters (P1.6).
+        rates=compute_rates(results, suite=config.suite),
+        predicates=predicates,
         by_attack=attack_breakdown,
         by_task=by_task(results),
         eai={

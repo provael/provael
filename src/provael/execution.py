@@ -36,10 +36,11 @@ from provael.verdict import ReleaseDecision, release_verdict
 #: as "no protocol named" rather than as a decision.
 #:
 #: 3 -> 4: added ``package_versions``, the installed versions of the simulator and policy stack
-#: (:data:`provael.runtime_versions.TRACKED_PACKAGES`). They change what a run measures (from
-#: mujoco 3.4.0 the stored libero_spatial init states settle differently, lerobot#2354) and depend
-#: on the machine, so they belong here and not in ``report.json``. ``checkpoint_digest`` existed
-#: and was never filled; a CLI run fills it now from the report's deployed weights digest.
+#: (:data:`provael.runtime_versions.TRACKED_PACKAGES`). They change what a run measures (a comment
+#: on lerobot#2354 reports libero_spatial init states settling differently from mujoco 3.4.0) and
+#: depend on the machine, so they belong here and not in ``report.json``. ``checkpoint_digest``
+#: and ``suite_config_digest`` existed and were never filled; they are now filled from the
+#: report's deployed weight digest and its per-task predicates.
 EXECUTION_MANIFEST_VERSION = 4
 
 #: Environment-variable names allowed into the manifest. Anything else is dropped entirely; an
@@ -131,7 +132,12 @@ class ExecutionManifest(BaseModel):
         "locate it, or on an earlier report.",
     )
     suite: str
-    suite_config_digest: str | None = None
+    suite_config_digest: str | None = Field(
+        None,
+        description="sha256 over the suite name and each task's predicate digest "
+        "(`report.predicates`, report schema >= 9): which predicate every task was scored "
+        "against, in one value. None for an earlier report.",
+    )
     # run
     seeds: int
     horizon: int
@@ -183,6 +189,22 @@ def report_digest(report: RunReport) -> str:
     from provael.attest import report_projection
 
     return sha256_hex(canonical_json(report_projection(report)))
+
+
+def predicate_config_digest(report: RunReport) -> str | None:
+    """sha256 over the suite and each task's predicate digest, or None when none is recorded.
+
+    Taken over the digests, not the records, so it moves exactly when a task's predicate does: a
+    calibrated task and a default one give different values, and two runs scored against the same
+    boxes give the same one.
+    """
+    if not report.predicates:
+        return None
+    body = {
+        "suite": report.suite,
+        "predicates": {task: p.digest for task, p in sorted(report.predicates.items())},
+    }
+    return sha256_hex(canonical_json(body))
 
 
 def build_execution_manifest(
@@ -257,7 +279,13 @@ def build_execution_manifest(
         checkpoint_revision=checkpoint_revision,
         checkpoint_digest=checkpoint_digest,
         suite=report.suite,
-        suite_config_digest=suite_config_digest,
+        # Filled from the report's predicates when the caller passes none (null on headline
+        # manifests before schema 9, because nothing recorded the predicate).
+        suite_config_digest=(
+            suite_config_digest
+            if suite_config_digest is not None
+            else predicate_config_digest(report)
+        ),
         seeds=report.seeds,
         horizon=report.horizon,
         attacks=list(report.attacks),
@@ -289,5 +317,6 @@ __all__ = [
     "redact_env",
     "report_digest",
     "build_execution_manifest",
+    "predicate_config_digest",
     "to_execution_manifest_json",
 ]

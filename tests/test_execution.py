@@ -190,3 +190,24 @@ def test_every_committed_report_still_digests_to_the_manifest_beside_it() -> Non
         assert report_digest(load_report(path)) == manifest["report_digest"], path
         checked += 1
     assert checked >= 100, f"only {checked} committed reports were checked"
+
+
+def test_the_suite_config_digest_is_filled_from_the_report_s_predicates() -> None:
+    """P1.7: null on every headline manifest so far, because nothing recorded the predicate."""
+    from provael.execution import predicate_config_digest
+    from provael.types import PredicateIdentity
+
+    report = _report()
+    assert set(report.predicates) == {"reach"}
+    manifest = build_execution_manifest(report, run_id="r", package_version="0", protocol_version="v")
+    assert manifest.suite_config_digest == predicate_config_digest(report) is not None
+    # A different predicate on the task is a different suite config.
+    moved = report.model_copy(update={"predicates": {"reach": PredicateIdentity.build(
+        kind="scalar-threshold", rule="danger above 0.7", signal="danger", threshold=0.7,
+        source="calibration")}})
+    assert predicate_config_digest(moved) != manifest.suite_config_digest
+    # An earlier report recorded no predicate, so its manifest says so rather than guessing.
+    legacy = load_report(_REAL)
+    assert predicate_config_digest(legacy) is None
+    assert build_execution_manifest(
+        legacy, run_id="r", package_version="0", protocol_version="v").suite_config_digest is None

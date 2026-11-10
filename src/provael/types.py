@@ -24,7 +24,7 @@ from typing import Any, Literal
 
 import numpy as np
 import numpy.typing as npt
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 # A policy observation (what a suite hands to a policy) and an environment state
 # snapshot (what ``SuiteAdapter.step`` returns as its info dict) are both plain
@@ -422,6 +422,106 @@ class ASRStat(BaseModel):
         return self.asr if self.attempts > 0 else None
 
 
+#: How far a stored rate may sit from its own successes / trials before a RateStat refuses it.
+RATE_TOLERANCE = 1e-6
+
+
+class RateInterval(BaseModel):
+    """A confidence interval for one rate, named by the method that computed it (schema 9)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    method: str = Field(
+        ..., description="How it was computed, e.g. 'wilson-score (episode-level)'."
+    )
+    level: float = Field(..., gt=0.0, lt=1.0, description="Nominal coverage, e.g. 0.95.")
+    low: float = Field(..., ge=0.0, le=1.0)
+    high: float = Field(..., ge=0.0, le=1.0)
+
+    @model_validator(mode="after")
+    def _ordered(self) -> RateInterval:
+        if self.low > self.high:
+            raise ValueError(f"interval low {self.low} is above high {self.high}")
+        return self
+
+
+class RateStat(BaseModel):
+    """A rate with the counts it came from, its interval and what it left out (schema 9, P1.6).
+
+    The numerator is never reconstructed from a rounded float: ``successes`` and ``trials`` travel
+    with ``rate``, and the validator refuses a rate that disagrees with them by more than 1e-6, a
+    numerator above its denominator, a rate on an empty slice, and a rate over trials without its
+    interval. ``n_unjudged`` counts the slice's episodes that were not judged and so sit outside
+    both counts (P1.3).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    successes: int = Field(..., ge=0, description="Episodes in the numerator.")
+    trials: int = Field(..., ge=0, description="Episodes in the denominator.")
+    rate: float | None = Field(
+        ..., description="successes / trials; None when trials is 0 (N/A, not a measured 0%)."
+    )
+    interval: RateInterval | None = Field(
+        ..., description="The rate's interval; None exactly when trials is 0."
+    )
+    n_unjudged: int = Field(
+        0, ge=0, description="Episodes of this slice left out of both counts as unjudged."
+    )
+
+    @model_validator(mode="after")
+    def _consistent(self) -> RateStat:
+        if self.successes > self.trials:
+            raise ValueError(f"successes {self.successes} exceed trials {self.trials}")
+        if self.trials == 0:
+            if self.rate is not None or self.interval is not None:
+                raise ValueError("a slice with no trials has no rate and no interval")
+            return self
+        if self.rate is None or self.interval is None:
+            raise ValueError("a rate over trials carries both the rate and its interval")
+        if abs(self.rate - self.successes / self.trials) > RATE_TOLERANCE:
+            raise ValueError(
+                f"rate {self.rate} disagrees with {self.successes}/{self.trials} by more than "
+                f"{RATE_TOLERANCE}"
+            )
+        low, high = self.interval.low - RATE_TOLERANCE, self.interval.high + RATE_TOLERANCE
+        if not low <= self.rate <= high:
+            raise ValueError(f"rate {self.rate} lies outside its interval")
+        return self
+
+
+class ReportRates(BaseModel):
+    """Every rate a report publishes, each as a :class:`RateStat` (schema 9, P1.6).
+
+    Resolved once, by :func:`provael.scoring.asr.report_rates`, for every emitter. The bare float
+    fields beside it (``benign_fpr``, ``matched_benign_fpr``, ``succ_but_unsafe``,
+    ``clean_task_success_rate``, ``ci95``) stay for older readers and agree with it.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    adversarial: RateStat = Field(..., description="The headline ASR: adversarial arms only.")
+    all_episodes: RateStat = Field(
+        ..., description="The all-episode observed-unsafe rate (`asr`; benign included)."
+    )
+    benign_floor: RateStat | None = Field(
+        None, description="The benign control arm's rate; None when no benign episode ran."
+    )
+    matched_benign_floor: RateStat | None = Field(
+        None, description="The benign twins of the attacked (task, seed) cells, cell by cell."
+    )
+    clean_task_success: RateStat | None = Field(
+        None, description="Task success on the benign arm; None where no episode carries it."
+    )
+    succ_but_unsafe: RateStat | None = Field(
+        None,
+        description="Completed the task and left the envelope; None where the run could not "
+        "observe it (E-2026-21) or no episode carries a task-success signal.",
+    )
+    by_attack: dict[str, RateStat] = Field(default_factory=dict)
+    by_task: dict[str, RateStat] = Field(default_factory=dict)
+
+
 class ScenePairing(BaseModel):
     """Whether each attacked episode started from its benign twin's scene (schema 9, P1.2).
 
@@ -780,6 +880,101 @@ class DeployedPolicy(BaseModel):
         return cls(**body, digest=_canonical_sha256(body))
 
 
+class KeepOutBox(BaseModel):
+    """One axis-aligned keep-out box a task was scored against (world coordinates, metres)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    x: tuple[float, float]
+    y: tuple[float, float]
+    z: tuple[float, float]
+
+
+class PredicateIdentity(BaseModel):
+    """Which unsafe predicate a task was scored against, and where it came from (schema 9, P1.7).
+
+    A floor or an ASR quoted without its predicate cannot be compared with another: the same rate
+    under the default box and under a calibrated one are different claims. Built through
+    :meth:`build`, which derives :attr:`digest` from every other field, so two tasks scored
+    against one predicate digest alike and a calibrated task and a default one never do.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: str = Field(
+        ...,
+        description="'keep-out-box' (the end-effector entering a box) or 'scalar-threshold' (a "
+        "state signal over a threshold).",
+    )
+    rule: str = Field(..., description="The rule in words, as the suite applies it.")
+    signal: str | None = Field(
+        None, description="The state key the rule reads, e.g. 'ee_pos' or 'danger'."
+    )
+    zones: list[KeepOutBox] | None = Field(
+        None, description="The keep-out boxes, for a keep-out predicate."
+    )
+    threshold: float | None = Field(
+        None,
+        description="A fixed threshold, for a calibrated scalar predicate; None for a box, or for "
+        "a threshold drawn per seed.",
+    )
+    forbidden_objects: list[str] | None = Field(
+        None,
+        description="Objects whose grasp also counts as unsafe, where the suite has that rule "
+        "(LIBERO: none by default).",
+    )
+    source: str = Field(
+        ...,
+        description="'default' (the suite's documented default), 'calibration' (an adopted or "
+        "installed calibration artifact) or 'explicit' (rules a caller passed to the adapter).",
+    )
+    calibration_file: str | None = Field(
+        None,
+        description="The calibration artifact the predicate came from: a path inside the package "
+        "for an adopted one, relative to the --calib directory for an installed one.",
+    )
+    calibration_sha256: str | None = Field(
+        None, description="sha256 of that artifact's bytes."
+    )
+    success_predicate: str | None = Field(
+        None,
+        description="Where the suite's task-success signal comes from, in words; None where it "
+        "surfaces none.",
+    )
+    digest: str = Field(..., description="sha256 over the canonical JSON of every other field.")
+
+    @classmethod
+    def build(
+        cls,
+        *,
+        kind: str,
+        rule: str,
+        source: str,
+        signal: str | None = None,
+        zones: Sequence[KeepOutBox] | None = None,
+        threshold: float | None = None,
+        forbidden_objects: Sequence[str] | None = None,
+        calibration_file: str | None = None,
+        calibration_sha256: str | None = None,
+        success_predicate: str | None = None,
+    ) -> PredicateIdentity:
+        """Construct with the digest derived from the fields, as :meth:`DeployedPolicy.build`."""
+        body: dict[str, Any] = {
+            "kind": kind,
+            "rule": rule,
+            "signal": signal,
+            "zones": [zone.model_dump() for zone in zones] if zones is not None else None,
+            "threshold": threshold,
+            "forbidden_objects": list(forbidden_objects) if forbidden_objects is not None else None,
+            "source": source,
+            "calibration_file": calibration_file,
+            "calibration_sha256": calibration_sha256,
+            "success_predicate": success_predicate,
+        }
+        return cls(**body, digest=_canonical_sha256(body))
+
+
 class OperatingEnvelope(BaseModel):
     """Operator-declared operating envelope / operational-design-domain of the machine.
 
@@ -920,7 +1115,8 @@ class RunReport(BaseModel):
         "denoising steps, control rate), each episode's starting scene (`scene_t0_digest`, "
         "`scene_t0`), each task's compiled model digest and how many pairs shared a scene, and "
         "how each episode ended (`termination`, `verdict`, `observation`); an unjudged episode "
-        "is excluded from every rate. "
+        "is excluded from every rate, and `rates` carries every rate with its counts, interval "
+        "method and level, and `predicates` names each task's predicate. "
         "Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed "
         "a calibration, because its trajectories do not exist.",
     )
@@ -955,7 +1151,9 @@ class RunReport(BaseModel):
         False, description="True for real (model-stochastic) policies; the stub is deterministic."
     )
     ci95: tuple[float, float] | None = Field(
-        None, description="95% Wilson score interval for the overall ASR (fixed-n)."
+        None,
+        description="95% Wilson score interval (episode-level, fixed-n) for the all-episode rate "
+        "`asr`. Schema 9 names the method beside every interval in `rates`.",
     )
     anytime_ci: tuple[float, float] | None = Field(
         None,
@@ -1022,6 +1220,18 @@ class RunReport(BaseModel):
         description="How many attacked episodes started from their benign twin's scene (schema "
         ">= 9). A pinned run refuses to finish with a mismatch, so there every recorded pair "
         "matches; an unpinned run reports what it got.",
+    )
+    rates: ReportRates | None = Field(
+        None,
+        description="Every rate above as successes, trials, rate, an interval named by method "
+        "and level, and the unjudged episodes it left out (schema >= 9). Read it through "
+        "provael.scoring.asr.report_rates, which rebuilds it for an older report.",
+    )
+    predicates: dict[str, PredicateIdentity] = Field(
+        default_factory=dict,
+        description="Per task: the unsafe predicate it was scored against (kind, boxes or "
+        "threshold, source and calibration file with its sha256), the success predicate, and one "
+        "digest (schema >= 9). A task whose suite cannot say is absent, never guessed.",
     )
 
     by_attack: dict[str, ASRStat] = Field(default_factory=dict)

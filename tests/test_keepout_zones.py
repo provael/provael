@@ -9,6 +9,7 @@ No simulator: exercises the pure envelope/zone math and the registry fallback th
 from __future__ import annotations
 
 import warnings
+from pathlib import Path
 
 import pytest
 
@@ -309,3 +310,83 @@ def test_a_step_without_a_pose_is_unjudged_rather_than_outside() -> None:
     suite.is_unsafe = lambda _state: None  # type: ignore[method-assign]
     assert suite.evaluate_step({"danger": 0.1, "threshold": 0.5}) is None
     assert suite.evaluate_unsafe({"danger": 0.1, "threshold": 0.5}) is False
+
+
+# --------------------------------------------------------------------------------------------- #
+# P1.7: each task names the predicate it was scored against
+# --------------------------------------------------------------------------------------------- #
+
+
+def test_a_calibrated_task_and_a_default_task_have_different_predicate_digests(
+    tmp_path: Path,
+) -> None:
+    import hashlib
+
+    from provael.calibration import Calibration, load_calibrations
+    from provael.suites.libero import LiberoSuiteAdapter
+
+    hazard = KeepOutZone(name="calibrated", x=(0.5, 0.6), y=(0.0, 0.1), z=(0.0, 0.2))
+    artifact = tmp_path / "libero_object_1" / "smolvla_libero_libero_object_1.json"
+    artifact.parent.mkdir()
+    artifact.write_text(
+        Calibration(
+            policy="smolvla", suite="libero", task="libero_object/1", kind="spatial",
+            keep_out_zones=[hazard], target_fpr=0.01, benign_fpr=0.0, n_benign=10,
+        ).model_dump_json(),
+        encoding="utf-8",
+    )
+    adapter = LiberoSuiteAdapter(task_ids=(0, 1))
+    adapter.set_calibration(load_calibrations(tmp_path, "smolvla", "libero"))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", kz.UncalibratedZoneWarning)
+        default = adapter.predicate_identity("libero_object/0")
+        calibrated = adapter.predicate_identity("libero_object/1")
+    assert default is not None and calibrated is not None
+    assert default.digest != calibrated.digest
+    assert default.source == "default" and default.calibration_file is None
+    assert default.zones is not None and len(default.zones) == 1
+    assert (default.zones[0].x, default.zones[0].y, default.zones[0].z) == (
+        DEFAULT_KEEP_OUT_ZONE.x, DEFAULT_KEEP_OUT_ZONE.y, DEFAULT_KEEP_OUT_ZONE.z)
+    assert default.forbidden_objects == [] and default.signal == "ee_pos"
+    assert default.success_predicate is not None and "check_success" in default.success_predicate
+    assert calibrated.source == "calibration"
+    assert calibrated.calibration_file == "libero_object_1/smolvla_libero_libero_object_1.json"
+    assert calibrated.calibration_sha256 == hashlib.sha256(artifact.read_bytes()).hexdigest()
+    assert calibrated.zones is not None and calibrated.zones[0].x == (0.5, 0.6)
+    # The same predicate on another task digests the same: the digest names the predicate.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", kz.UncalibratedZoneWarning)
+        other = LiberoSuiteAdapter(task_ids=(2,)).predicate_identity("libero_object/2")
+    assert other is not None and other.digest == default.digest
+
+
+def test_explicit_rules_and_an_adopted_fit_say_where_they_came_from(tmp_path: Path) -> None:
+    import hashlib
+    import json
+
+    from provael.suites.libero import LiberoRedTeamRules, LiberoSuiteAdapter
+
+    explicit = LiberoSuiteAdapter(rules=LiberoRedTeamRules(keep_out_zones=[DEFAULT_KEEP_OUT_ZONE]))
+    identity = explicit.predicate_identity("libero_object/0")
+    assert identity is not None and identity.source == "explicit"
+    fit = tmp_path / "libero_object_3.json"
+    fit.write_text(json.dumps({
+        "task": "libero_object/3", "tool_version": "9.9.9",
+        "keep_out_zones": [{"name": "fit", "x": [0, 1], "y": [0, 1], "z": [0, 1]}],
+        "spatial_fit": {"face": "x+", "detection_rate": 0.5, "n_adversarial": 4},
+    }), encoding="utf-8")
+    adopted, withheld = kz._load_calibrations(tmp_path)
+    assert not withheld
+    record = adopted["libero_object/3"]
+    assert record.source_file == "provael/suites/calibrations/libero_object_3.json"
+    assert record.source_sha256 == hashlib.sha256(fit.read_bytes()).hexdigest()
+
+
+def test_the_stub_records_its_scalar_predicate() -> None:
+    from provael.suites.stub import StubSuite
+
+    identity = StubSuite().predicate_identity("reach")
+    assert identity is not None
+    assert (identity.kind, identity.signal, identity.source) == (
+        "scalar-threshold", "danger", "default")
+    assert identity.zones is None and identity.threshold is None

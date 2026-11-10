@@ -26,7 +26,7 @@ from provael.calibration import describe_calibration, wilson_ci
 from provael.eai import CATALOG
 from provael.endpoints import PHYSICAL_HAZARD
 from provael.evidence import evidence_state_of
-from provael.scoring.asr import benign_control, endpoint_by_attack, fdr_by_attack
+from provael.scoring.asr import benign_control, endpoint_by_attack, fdr_by_attack, report_rates
 from provael.scoring.safety_cost import (
     FIRST_EVENT,
     QUADRANT_KEYS,
@@ -39,7 +39,7 @@ from provael.scoring.safety_cost import (
     unsafe_success_rate,
     unsafe_success_unobservable,
 )
-from provael.types import ASRStat, RunReport
+from provael.types import ASRStat, RateStat, RunReport
 from provael.verdict import ReleaseDecision, acceptance_line, release_verdict
 
 REPORT_JSON = "report.json"
@@ -67,6 +67,23 @@ def _endpoint_cell(stat: ASRStat | None) -> str:
         f"{stat.successes}/{stat.attempts} ({100.0 * stat.asr:.1f}%) "
         f"[{100.0 * lo:.0f}–{100.0 * hi:.0f}%]"
     )
+
+
+def _interval_of(stat: RateStat | None) -> tuple[float, float] | None:
+    """A RateStat's interval as ``(low, high)``, or None for an N/A slice."""
+    if stat is None or stat.interval is None:
+        return None
+    return (stat.interval.low, stat.interval.high)
+
+
+def _unjudged_note(report: RunReport, stat: RateStat | None) -> str:
+    """`` · unjudged N`` beside a rate on a schema-9 report; nothing on an earlier one.
+
+    An earlier report recorded no verdict, so a 0 printed for it would be a claim nobody made.
+    """
+    if report.schema_version < 9 or stat is None:
+        return ""
+    return f" · unjudged {stat.n_unjudged}"
 
 
 def _fmt_ci(ci: tuple[float, float] | None) -> str:
@@ -188,12 +205,19 @@ def to_markdown(
         lines.append(f"| accelerator / precision | `{acc}` / `{prec}` |")
     adv_rate, adv_s, adv_n = report.adversarial_headline()
     adv_pct = "N/A" if adv_n == 0 else f"{100.0 * adv_rate:.1f}%"
-    adv_ci = wilson_ci(adv_s, adv_n) if adv_n else None
-    lines.append(f"| **adversarial ASR** (benign excluded) | **{adv_pct} ({adv_s}/{adv_n})** |")
+    # Every interval comes from the one resolver (P1.6); on a schema-9 report each rate also says
+    # how many unjudged episodes it left out, beside it.
+    rates = report_rates(report)
+    adv_ci = _interval_of(rates.adversarial)
+    lines.append(
+        f"| **adversarial ASR** (benign excluded) | **{adv_pct} ({adv_s}/{adv_n})**"
+        f"{_unjudged_note(report, rates.adversarial)} |"
+    )
     lines.append(f"| adversarial ASR 95% CI (Wilson, episode-level) | {_fmt_ci(adv_ci)} |")
     lines.append(
         f"| all-episode observed-unsafe (benign incl.) | "
-        f"{100.0 * report.asr:.1f}% ({report.successes}/{report.attempts}) |"
+        f"{100.0 * report.asr:.1f}% ({report.successes}/{report.attempts})"
+        f"{_unjudged_note(report, rates.all_episodes)} |"
     )
     lines.append(f"| all-episode 95% CI (Wilson, episode-level) | {_fmt_ci(report.ci95)} |")
     lines.append(f"| all-episode anytime-valid CI | {_fmt_ci(report.anytime_ci)} |")
@@ -210,7 +234,7 @@ def to_markdown(
         counts = f" ({benign.successes}/{benign.attempts})" if benign.attempts else ""
         lines.append(
             f"| **benign baseline FPR** (the ASR's control arm) | "
-            f"**{100.0 * benign.rate:.1f}%{counts}** |"
+            f"**{100.0 * benign.rate:.1f}%{counts}**{_unjudged_note(report, benign.stat)} |"
         )
         lines.append(
             "| benign FPR 95% CI (Wilson) | "

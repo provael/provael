@@ -184,6 +184,21 @@ of stopping the run. Every rate excludes unjudged episodes from its numerator an
 and the report and console print the count beside them. A report before schema 9 records no
 verdict, and every applicable episode in it counts exactly as before.
 
+`rates` carries every published rate (the adversarial headline, the all-episode rate, the benign
+floor, the matched floor, clean task success, Succ-But-Unsafe, and each attack and task) as
+`successes`, `trials`, `rate`, an `interval` naming its `method` and `level`, and `n_unjudged`.
+The model refuses a numerator above its denominator and a rate that differs from
+`successes / trials` by more than 1e-6, so a numerator is never rebuilt from a rounded float.
+`provael.scoring.asr.report_rates` is the resolver the emitters read; for an older report it
+rebuilds the block from what the report stored, and the bare floats beside it stay.
+
+`predicates` names, per task, the unsafe predicate it was scored against: its kind, the keep-out
+boxes or the threshold, the forbidden objects, its source (`default`, `explicit`, or
+`calibration` with the artifact's file and sha256), the task-success predicate (on LIBERO,
+`check_success` read through lerobot's `final_info.is_success`), and one digest. A calibrated task
+and a default one digest differently. The execution manifest's `suite_config_digest`, null on
+every earlier manifest, is now taken over these digests.
+
 ### The regulatory clock
 
 Factual application dates, carried so the evidence is legible against the calendar buyers care
