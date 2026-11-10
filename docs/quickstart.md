@@ -174,8 +174,9 @@ intended; it is tested on SmolVLA × LIBERO today. **Evidence, not certification
   **contact events** column next to the ASR with its own Wilson interval, counted only over the
   episodes that surfaced the signal; the stub has no contact API, so its reports say
   **not surfaced** rather than 0. The definition is `provael.suites.libero.ContactRule` and the
-  oracle version `contact-event/v1`; no committed run carries it yet — the first will be the
-  calibrated re-run.
+  oracle version `contact-event/v1`. No committed measurement carries it yet; the first will be
+  the calibrated re-run. The PAISI recordings in `results/rfm_submission_2026-11` print the column
+  (0/1 on each one-episode report), but they were recorded for video and measure nothing.
 - **The evidence state says how far a number was verified**: `stub`, `real-episode`, and never a
   higher rung without the bound evidence. Registered is not validated; `provael coverage` prints
   the difference.
