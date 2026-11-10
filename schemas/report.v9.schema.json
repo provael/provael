@@ -986,6 +986,182 @@
       "title": "InputNormaliser",
       "type": "object"
     },
+    "RateInterval": {
+      "additionalProperties": false,
+      "description": "A confidence interval for one rate, named by the method that computed it (schema 9).",
+      "properties": {
+        "high": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "High",
+          "type": "number"
+        },
+        "level": {
+          "description": "Nominal coverage, e.g. 0.95.",
+          "exclusiveMaximum": 1.0,
+          "exclusiveMinimum": 0.0,
+          "title": "Level",
+          "type": "number"
+        },
+        "low": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Low",
+          "type": "number"
+        },
+        "method": {
+          "description": "How it was computed, e.g. 'wilson-score (episode-level)'.",
+          "title": "Method",
+          "type": "string"
+        }
+      },
+      "required": [
+        "method",
+        "level",
+        "low",
+        "high"
+      ],
+      "title": "RateInterval",
+      "type": "object"
+    },
+    "RateStat": {
+      "additionalProperties": false,
+      "description": "A rate with the counts it came from, its interval and what it left out (schema 9, P1.6).\n\nThe numerator is never reconstructed from a rounded float: ``successes`` and ``trials`` travel\nwith ``rate``, and the validator refuses a rate that disagrees with them by more than 1e-6, a\nnumerator above its denominator, a rate on an empty slice, and a rate over trials without its\ninterval. ``n_unjudged`` counts the slice's episodes that were not judged and so sit outside\nboth counts (P1.3).",
+      "properties": {
+        "interval": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RateInterval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The rate's interval; None exactly when trials is 0."
+        },
+        "n_unjudged": {
+          "default": 0,
+          "description": "Episodes of this slice left out of both counts as unjudged.",
+          "minimum": 0,
+          "title": "N Unjudged",
+          "type": "integer"
+        },
+        "rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "successes / trials; None when trials is 0 (N/A, not a measured 0%).",
+          "title": "Rate"
+        },
+        "successes": {
+          "description": "Episodes in the numerator.",
+          "minimum": 0,
+          "title": "Successes",
+          "type": "integer"
+        },
+        "trials": {
+          "description": "Episodes in the denominator.",
+          "minimum": 0,
+          "title": "Trials",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "successes",
+        "trials",
+        "rate",
+        "interval"
+      ],
+      "title": "RateStat",
+      "type": "object"
+    },
+    "ReportRates": {
+      "additionalProperties": false,
+      "description": "Every rate a report publishes, each as a :class:`RateStat` (schema 9, P1.6).\n\nResolved once, by :func:`provael.scoring.asr.report_rates`, for every emitter. The bare float\nfields beside it (``benign_fpr``, ``matched_benign_fpr``, ``succ_but_unsafe``,\n``clean_task_success_rate``, ``ci95``) stay for older readers and agree with it.",
+      "properties": {
+        "adversarial": {
+          "$ref": "#/$defs/RateStat",
+          "description": "The headline ASR: adversarial arms only."
+        },
+        "all_episodes": {
+          "$ref": "#/$defs/RateStat",
+          "description": "The all-episode observed-unsafe rate (`asr`; benign included)."
+        },
+        "benign_floor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RateStat"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The benign control arm's rate; None when no benign episode ran."
+        },
+        "by_attack": {
+          "additionalProperties": {
+            "$ref": "#/$defs/RateStat"
+          },
+          "title": "By Attack",
+          "type": "object"
+        },
+        "by_task": {
+          "additionalProperties": {
+            "$ref": "#/$defs/RateStat"
+          },
+          "title": "By Task",
+          "type": "object"
+        },
+        "clean_task_success": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RateStat"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Task success on the benign arm; None where no episode carries it."
+        },
+        "matched_benign_floor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RateStat"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The benign twins of the attacked (task, seed) cells, cell by cell."
+        },
+        "succ_but_unsafe": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RateStat"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Completed the task and left the envelope; None where the run could not observe it (E-2026-21) or no episode carries a task-success signal."
+        }
+      },
+      "required": [
+        "adversarial",
+        "all_episodes"
+      ],
+      "title": "ReportRates",
+      "type": "object"
+    },
     "SceneBody": {
       "additionalProperties": false,
       "description": "One non-robot body of a scene right after its reset: where it stood and which way it faced.\n\nRounded to six decimals (a micron, a microradian) for reading. The episode's\n``scene_t0_digest`` is taken over the exact values, so two scenes that round alike and differ\nstill digest differently.",
@@ -1275,7 +1451,7 @@
         }
       ],
       "default": null,
-      "description": "95% Wilson score interval for the overall ASR (fixed-n).",
+      "description": "95% Wilson score interval (episode-level, fixed-n) for the all-episode rate `asr`. Schema 9 names the method beside every interval in `rates`.",
       "title": "Ci95"
     },
     "clean_task_success_rate": {
@@ -1383,6 +1559,18 @@
       "title": "Preliminary",
       "type": "boolean"
     },
+    "rates": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReportRates"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Every rate above as successes, trials, rate, an interval named by method and level, and the unjudged episodes it left out (schema >= 9). Read it through provael.scoring.asr.report_rates, which rebuilds it for an older report."
+    },
     "results": {
       "items": {
         "$ref": "#/$defs/AttackResult"
@@ -1412,7 +1600,7 @@
     },
     "schema_version": {
       "default": 1,
-      "description": "Report schema version. 1 = legacy: the asr/attempts/successes headline is the ALL-episode observed-unsafe rate (benign control INCLUDED in the denominator). >=2 also carries the adversarial_* fields (the benign control excluded by role) and the roles map. >=3 records a per-episode `trajectory` (the calibration signal every step produced and every run used to discard). >=4 records `weight_corruption`, the bit-flip budget and selection rule in force for the episode. >=5 records `policy_seed`, the seed the POLICY's own sampler was set to \u2014 the environment seed has always been recorded and the policy's never was, which is why two rows at the same commit were not comparable. >=6 records `deployed_policy`, the executed policy as the adapter resolved it (class, revision, unnormaliser, controller convention) beside the requested `model`. >=7 records, per calibrated task, which split the calibration came from, its eval-split FPR and whether its binding holds for this run (`calibration.<task>.split` / `eval_fpr` / `binding`) \u2014 a tuned predicate and a bound one no longer look the same in the report. >=8 records `init_state`, the fixed initial state each episode's reset loaded, which the seed does not determine on LIBERO. >=9 records the rest of the deployed policy's runtime identity (input normaliser, processor and weight digests, rename map, camera order, denoising steps, control rate), each episode's starting scene (`scene_t0_digest`, `scene_t0`), each task's compiled model digest and how many pairs shared a scene, and how each episode ended (`termination`, `verdict`, `observation`); an unjudged episode is excluded from every rate. Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed a calibration, because its trajectories do not exist. This schema documents version 9; it accepts artifacts declaring 9 or lower, because every bump so far has been additive with defaults. It refuses a higher version rather than silently validating a format it does not describe.",
+      "description": "Report schema version. 1 = legacy: the asr/attempts/successes headline is the ALL-episode observed-unsafe rate (benign control INCLUDED in the denominator). >=2 also carries the adversarial_* fields (the benign control excluded by role) and the roles map. >=3 records a per-episode `trajectory` (the calibration signal every step produced and every run used to discard). >=4 records `weight_corruption`, the bit-flip budget and selection rule in force for the episode. >=5 records `policy_seed`, the seed the POLICY's own sampler was set to \u2014 the environment seed has always been recorded and the policy's never was, which is why two rows at the same commit were not comparable. >=6 records `deployed_policy`, the executed policy as the adapter resolved it (class, revision, unnormaliser, controller convention) beside the requested `model`. >=7 records, per calibrated task, which split the calibration came from, its eval-split FPR and whether its binding holds for this run (`calibration.<task>.split` / `eval_fpr` / `binding`) \u2014 a tuned predicate and a bound one no longer look the same in the report. >=8 records `init_state`, the fixed initial state each episode's reset loaded, which the seed does not determine on LIBERO. >=9 records the rest of the deployed policy's runtime identity (input normaliser, processor and weight digests, rename map, camera order, denoising steps, control rate), each episode's starting scene (`scene_t0_digest`, `scene_t0`), each task's compiled model digest and how many pairs shared a scene, and how each episode ended (`termination`, `verdict`, `observation`); an unjudged episode is excluded from every rate, and `rates` carries every rate with its counts, interval method and level. Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed a calibration, because its trajectories do not exist. This schema documents version 9; it accepts artifacts declaring 9 or lower, because every bump so far has been additive with defaults. It refuses a higher version rather than silently validating a format it does not describe.",
       "maximum": 9,
       "title": "Schema Version",
       "type": "integer"

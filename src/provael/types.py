@@ -24,7 +24,7 @@ from typing import Any, Literal
 
 import numpy as np
 import numpy.typing as npt
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 # A policy observation (what a suite hands to a policy) and an environment state
 # snapshot (what ``SuiteAdapter.step`` returns as its info dict) are both plain
@@ -420,6 +420,106 @@ class ASRStat(BaseModel):
         serialization sentinel. Read this (not ``asr``) whenever a 0-attempt group must show N/A.
         """
         return self.asr if self.attempts > 0 else None
+
+
+#: How far a stored rate may sit from its own successes / trials before a RateStat refuses it.
+RATE_TOLERANCE = 1e-6
+
+
+class RateInterval(BaseModel):
+    """A confidence interval for one rate, named by the method that computed it (schema 9)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    method: str = Field(
+        ..., description="How it was computed, e.g. 'wilson-score (episode-level)'."
+    )
+    level: float = Field(..., gt=0.0, lt=1.0, description="Nominal coverage, e.g. 0.95.")
+    low: float = Field(..., ge=0.0, le=1.0)
+    high: float = Field(..., ge=0.0, le=1.0)
+
+    @model_validator(mode="after")
+    def _ordered(self) -> RateInterval:
+        if self.low > self.high:
+            raise ValueError(f"interval low {self.low} is above high {self.high}")
+        return self
+
+
+class RateStat(BaseModel):
+    """A rate with the counts it came from, its interval and what it left out (schema 9, P1.6).
+
+    The numerator is never reconstructed from a rounded float: ``successes`` and ``trials`` travel
+    with ``rate``, and the validator refuses a rate that disagrees with them by more than 1e-6, a
+    numerator above its denominator, a rate on an empty slice, and a rate over trials without its
+    interval. ``n_unjudged`` counts the slice's episodes that were not judged and so sit outside
+    both counts (P1.3).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    successes: int = Field(..., ge=0, description="Episodes in the numerator.")
+    trials: int = Field(..., ge=0, description="Episodes in the denominator.")
+    rate: float | None = Field(
+        ..., description="successes / trials; None when trials is 0 (N/A, not a measured 0%)."
+    )
+    interval: RateInterval | None = Field(
+        ..., description="The rate's interval; None exactly when trials is 0."
+    )
+    n_unjudged: int = Field(
+        0, ge=0, description="Episodes of this slice left out of both counts as unjudged."
+    )
+
+    @model_validator(mode="after")
+    def _consistent(self) -> RateStat:
+        if self.successes > self.trials:
+            raise ValueError(f"successes {self.successes} exceed trials {self.trials}")
+        if self.trials == 0:
+            if self.rate is not None or self.interval is not None:
+                raise ValueError("a slice with no trials has no rate and no interval")
+            return self
+        if self.rate is None or self.interval is None:
+            raise ValueError("a rate over trials carries both the rate and its interval")
+        if abs(self.rate - self.successes / self.trials) > RATE_TOLERANCE:
+            raise ValueError(
+                f"rate {self.rate} disagrees with {self.successes}/{self.trials} by more than "
+                f"{RATE_TOLERANCE}"
+            )
+        low, high = self.interval.low - RATE_TOLERANCE, self.interval.high + RATE_TOLERANCE
+        if not low <= self.rate <= high:
+            raise ValueError(f"rate {self.rate} lies outside its interval")
+        return self
+
+
+class ReportRates(BaseModel):
+    """Every rate a report publishes, each as a :class:`RateStat` (schema 9, P1.6).
+
+    Resolved once, by :func:`provael.scoring.asr.report_rates`, for every emitter. The bare float
+    fields beside it (``benign_fpr``, ``matched_benign_fpr``, ``succ_but_unsafe``,
+    ``clean_task_success_rate``, ``ci95``) stay for older readers and agree with it.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    adversarial: RateStat = Field(..., description="The headline ASR: adversarial arms only.")
+    all_episodes: RateStat = Field(
+        ..., description="The all-episode observed-unsafe rate (`asr`; benign included)."
+    )
+    benign_floor: RateStat | None = Field(
+        None, description="The benign control arm's rate; None when no benign episode ran."
+    )
+    matched_benign_floor: RateStat | None = Field(
+        None, description="The benign twins of the attacked (task, seed) cells, cell by cell."
+    )
+    clean_task_success: RateStat | None = Field(
+        None, description="Task success on the benign arm; None where no episode carries it."
+    )
+    succ_but_unsafe: RateStat | None = Field(
+        None,
+        description="Completed the task and left the envelope; None where the run could not "
+        "observe it (E-2026-21) or no episode carries a task-success signal.",
+    )
+    by_attack: dict[str, RateStat] = Field(default_factory=dict)
+    by_task: dict[str, RateStat] = Field(default_factory=dict)
 
 
 class ScenePairing(BaseModel):
@@ -920,7 +1020,8 @@ class RunReport(BaseModel):
         "denoising steps, control rate), each episode's starting scene (`scene_t0_digest`, "
         "`scene_t0`), each task's compiled model digest and how many pairs shared a scene, and "
         "how each episode ended (`termination`, `verdict`, `observation`); an unjudged episode "
-        "is excluded from every rate. "
+        "is excluded from every rate, and `rates` carries every rate with its counts, interval "
+        "method and level. "
         "Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed "
         "a calibration, because its trajectories do not exist.",
     )
@@ -955,7 +1056,9 @@ class RunReport(BaseModel):
         False, description="True for real (model-stochastic) policies; the stub is deterministic."
     )
     ci95: tuple[float, float] | None = Field(
-        None, description="95% Wilson score interval for the overall ASR (fixed-n)."
+        None,
+        description="95% Wilson score interval (episode-level, fixed-n) for the all-episode rate "
+        "`asr`. Schema 9 names the method beside every interval in `rates`.",
     )
     anytime_ci: tuple[float, float] | None = Field(
         None,
@@ -1022,6 +1125,12 @@ class RunReport(BaseModel):
         description="How many attacked episodes started from their benign twin's scene (schema "
         ">= 9). A pinned run refuses to finish with a mismatch, so there every recorded pair "
         "matches; an unpinned run reports what it got.",
+    )
+    rates: ReportRates | None = Field(
+        None,
+        description="Every rate above as successes, trials, rate, an interval named by method "
+        "and level, and the unjudged episodes it left out (schema >= 9). Read it through "
+        "provael.scoring.asr.report_rates, which rebuilds it for an older report.",
     )
 
     by_attack: dict[str, ASRStat] = Field(default_factory=dict)

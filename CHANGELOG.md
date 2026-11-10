@@ -61,6 +61,14 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   it. Why: a missing pose read as "never left the envelope", and a crash cost a whole shard. The
   committed 14 September shards have a pose on every step of all 530 applicable episodes, so no
   rate moves.
+- **Every rate carries its counts, its interval's method and level, and its unjudged count.**
+  Report schema 9 adds `rates`: the headline, the all-episode rate, the benign and matched floors,
+  clean task success, Succ-But-Unsafe and each attack and task as a `RateStat` that refuses a
+  numerator above its denominator or a rate off `successes / trials`. `report_rates` is the one
+  resolver; the benign control, SARIF and `report.md` read it, and the bare floats stay for older
+  readers. Why: a rate quoted without its counts invites rebuilding the numerator from a rounded
+  float, and `ci95` named no method. Every committed report reads the same through the resolver,
+  which a test checks; no number moves.
 
 ### Changed
 

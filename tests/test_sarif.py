@@ -170,3 +170,37 @@ def test_cli_attack_format_sarif_writes_into_out_dir(tmp_path: Path) -> None:
     )
     assert res.exit_code == 0
     assert (out / "report.sarif").exists()
+
+
+def test_sarif_reads_every_interval_from_the_resolver() -> None:
+    """P1.6: the per-attack interval is the RateStat's; a schema-9 log adds the unjudged count."""
+    from provael.scoring.asr import INTERVAL_LEVEL, report_rates
+
+    report = run(RunConfig(policy="stub", suite="stub", attacks=["none", "instruction"],
+                           episodes=4))
+    rates = report_rates(report)
+    run_log = to_sarif(report)["runs"][0]
+    for result in run_log["results"]:
+        props = result["properties"]
+        stat = rates.by_attack[props["attack"]]
+        assert stat.interval is not None
+        assert (props["asrCiLow"], props["asrCiHigh"]) == (stat.interval.low, stat.interval.high)
+        assert props["nUnjudged"] == stat.n_unjudged == 0
+    assert run_log["properties"]["intervalLevel"] == INTERVAL_LEVEL
+    assert run_log["properties"]["adversarialUnjudged"] == 0
+
+
+def test_an_older_report_renders_the_same_log() -> None:
+    """No schema-9 key on an older report, and the interval is the Wilson score it always was."""
+    from provael.calibration import wilson_ci
+    from provael.report import load_report
+
+    legacy = load_report(Path("results/smolvla_libero_object_suite_2026-09-14/libero_object_0"))
+    assert legacy.schema_version < 9
+    run_log = to_sarif(legacy)["runs"][0]
+    assert "intervalLevel" not in run_log["properties"]
+    for result in run_log["results"]:
+        props = result["properties"]
+        assert "nUnjudged" not in props
+        stat = legacy.by_attack[props["attack"]]
+        assert (props["asrCiLow"], props["asrCiHigh"]) == wilson_ci(stat.successes, stat.attempts)

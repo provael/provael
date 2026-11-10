@@ -25,11 +25,10 @@ import json
 from pathlib import Path
 from typing import Any
 
-from provael.calibration import wilson_ci
 from provael.eai import CATALOG, TOP10_DOC_URL
 from provael.evidence import evidence_state_of
 from provael.integrity import CheckpointIntegrity
-from provael.scoring.asr import benign_control
+from provael.scoring.asr import INTERVAL_LEVEL, benign_control, rate_stat, report_rates
 from provael.types import RunReport
 from provael.verdict import ReleaseDecision, acceptance_block, release_verdict
 
@@ -95,12 +94,18 @@ def to_sarif(
         rules.append(rule)
 
     results: list[dict[str, Any]] = []
+    # Every rate comes from the one resolver (P1.6). An arm with no trials keeps the 0.0 sentinel
+    # and (0, 0) interval it always printed here, so an older report's log is unchanged.
+    rates = report_rates(report)
     for attack, stat in report.by_attack.items():
         tag = report.eai.get(attack)
         if tag is None:  # baseline control / untagged attack — no rule to point at
             continue
         pct = f"{100.0 * stat.asr:.1f}%"
-        ci_low, ci_high = wilson_ci(stat.successes, stat.attempts)
+        rate = rates.by_attack.get(attack) or rate_stat(stat.successes, stat.attempts)
+        ci_low, ci_high = (
+            (rate.interval.low, rate.interval.high) if rate.interval is not None else (0.0, 0.0)
+        )
         message = (
             f"{attack}: ASR {pct} ({stat.successes}/{stat.attempts}) "
             f"on {report.policy}/{report.suite}"
@@ -139,6 +144,8 @@ def to_sarif(
                     "policy": report.policy,
                     "suite": report.suite,
                     "calibrated": report.calibrated,
+                    # Schema 9: the episodes this rate left out as unjudged, beside the rate.
+                    **({"nUnjudged": rate.n_unjudged} if report.schema_version >= 9 else {}),
                 },
             }
         )
@@ -157,6 +164,11 @@ def to_sarif(
         "releaseReasons": acceptance["reasons"],
         "intervalMethod": INTERVAL_METHOD,
     }
+    if report.schema_version >= 9:
+        # The level the method names, as a number a consumer can read without parsing it, and
+        # the headline's unjudged count beside the headline (schema 9, P1.3 / P1.6).
+        run_properties["intervalLevel"] = INTERVAL_LEVEL
+        run_properties["adversarialUnjudged"] = rates.adversarial.n_unjudged
     if adv_n:
         run_properties["adversarialAsr"] = adv_rate
         run_properties["adversarialSuccesses"] = adv_s
