@@ -256,7 +256,7 @@ def _committed_report_mds() -> list[tuple[Path, str]]:
 
 
 def test_no_committed_libero_report_md_prints_these_metrics_as_numbers() -> None:
-    """The 65 re-rendered files. A number here reads as "looked and found none"."""
+    """Every committed LIBERO report.md with the table. A number here reads as "looked and found none"."""
     checked = 0
     for path, suite in _committed_report_mds():
         if suite != "libero":

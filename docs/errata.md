@@ -1171,7 +1171,9 @@ interval quoted from now on can be checked against one helper.
 ## E-2026-21 — Succ-But-Unsafe, risk exposure time and cumulative cost cannot be observed when an episode ends at its first event
 
 **Status:** corrected on `main` on 7 November 2026 · **no headline number moves** · `report.json` files
-are unchanged, and 65 committed `report.md` files are re-rendered with a dated note
+are unchanged, and 69 committed `report.md` files are re-rendered with a dated note: 65 on 7 November
+2026, and on 10 November the four of the PAISI recording (`results/rfm_submission_2026-11`), which
+landed after
 **Date raised:** 7 November 2026
 **Window:** Succ-But-Unsafe from 0.16.0 (15 July 2026), and CC, RET and the quadrant from 0.30.0
 (1 August 2026)
