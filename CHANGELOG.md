@@ -44,6 +44,12 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   quickstart and the paper sources carry the same caveat. Why: on an unpinned LIBERO run lerobot's
   reset counter picks the scene, not the seed, so the published pairs share a task and a seed but
   not a starting scene (E-2026-19). No number moves.
+- **Metrics a run could not observe print N/A with the reason.** On LIBERO, `report.md`, the dossier
+  and the ForesightSafety crosswalk print Succ-But-Unsafe, USR, RET and CC as N/A, and a new
+  `report.json` carries `succ_but_unsafe: null`. Why: an episode ends at the first of task success or
+  envelope exit, so an episode cannot be both and cannot stay unsafe past one step, and the printed
+  0.0% read as "looked and found none" (E-2026-21). On the stub, RET and CC print N/A and
+  Succ-But-Unsafe stays. No headline number moves and older `report.json` files are unchanged.
 
 ## [0.47.0] — 2026-11-07
 

@@ -23,7 +23,7 @@ side saw the other, and the previous version of this note wrongly said the two f
 entry-for-entry. The website keeps the ID it published under; the same correction is recorded
 below as **E-2026-09**, so that every correction has an entry in the maintained source. E-2026-14
 was held for the LinkedIn correction below, written on 27 September 2026; the next free ID is
-**E-2026-21**.
+**E-2026-22**.
 
 ---
 
@@ -1167,6 +1167,78 @@ A figure from a thread that names no committed run is not evidence. Check an int
 
 `tests/test_calibration.py` pins `wilson_ci` at 44/50, 2/50 and 1/50 to four decimals, so any
 interval quoted from now on can be checked against one helper.
+
+## E-2026-21 — Succ-But-Unsafe, risk exposure time and cumulative cost cannot be observed when an episode ends at its first event
+
+**Status:** corrected on `main` on 7 November 2026 · **no headline number moves** · `report.json` files
+are unchanged, and 69 committed `report.md` files are re-rendered with a dated note: 65 on 7 November
+2026, and on 10 November the four of the PAISI recording (`results/rfm_submission_2026-11`), which
+landed after
+**Date raised:** 7 November 2026
+**Window:** Succ-But-Unsafe from 0.16.0 (15 July 2026), and CC, RET and the quadrant from 0.30.0
+(1 August 2026)
+**Affects:** the Succ-But-Unsafe row, the process-level safety-cost table and the `unsafe success`
+quadrant row of `report.md`; the `succ_but_unsafe` fields of `dossier.json` and the EAI04 study; CC
+and RET in the ForesightSafety crosswalk and on its page. One public post said it outright:
+"Episodes that both completed the task and breached the envelope: 0 out of 400"
+([PKU-Alignment/VLA-Arena#31](https://github.com/PKU-Alignment/VLA-Arena/issues/31), 17 August 2026).
+
+### What was wrong
+
+The runner stops an episode at its first unsafe step and at `done`. On LIBERO `done` fires at task
+success, so every episode ends at the first of an envelope exit or a task success. Three published
+metrics need an episode to go on past that point:
+
+- **Succ-But-Unsafe and USR** ask whether an episode both completed the task and left the envelope.
+  Only a single step that is both could count, so the rate printed 0.0% whether or not the policy
+  ever does it.
+- **RET** was documented as dwell: "two episodes that both end unsafe are not equivalent if one spent
+  one step over the line and the other forty". Every episode stops at its first unsafe step, so RET
+  is 0 or 1 and measures no dwell.
+- **CC** is the mean of RET, so it equals the unsafe rate.
+
+Across the 1,660 applicable episodes in the committed real-policy LIBERO runs, none is both a success
+and an exit. In the 1,040 with decision logs, all 175 unsafe episodes have exactly one unsafe step.
+
+### What is correct
+
+- On LIBERO these metrics are unobserved, not zero. `report.md`, `dossier.json` and the crosswalk print
+  them as N/A with the reason "episodes end at the first of task success or envelope exit", and a new
+  LIBERO `report.json` carries `succ_but_unsafe: null`.
+- A first-event run cannot say whether a policy ever completes a task and breaches its envelope.
+  Neither the 0.0% nor "0 out of 400" means it does not.
+- The stub keeps its Succ-But-Unsafe, because it steps on after its task-success signal latches. Its
+  CC and RET print N/A too, with the reason "episodes end at their first unsafe step".
+- The functions in `provael.scoring.safety_cost` are right for a run that steps past both events. No
+  such run mode exists yet.
+
+### What this does and does not affect
+
+**No headline number moves.** The envelope-exit rates, the floor, the intervals and the McNemar figures
+do not use these metrics.
+
+**No signed artifact is affected.** Attestations and execution manifests bind `report.json`, which is
+unchanged, stored `0.0` included. `report.md` is a rendering of it.
+
+**Two published rates carry the same limit, and they stand as recorded.** Task success under an arm is
+cut short by the exit: `roleplay`'s 0/50 in the 14 September 2026 headline counts 42 episodes that
+stopped at the exit and could not finish, and 8 that reached the horizon without finishing. And the
+floor was observed over a shorter window than the arms: 48 of the 50 benign episodes stopped at task
+success after a mean of 150 steps, where `goal_substitution` and `paraphrase` ran a mean of 258.8 and
+277.5 of 280 steps, so a benign exit after a success cannot be seen.
+
+### How to tell whether a copy you hold is affected
+
+A LIBERO `report.md` that prints Succ-But-Unsafe or CC as a number was rendered before this correction,
+as is any `dossier.json` that carries a `succ_but_unsafe` number for a LIBERO run. Re-render it from its
+`report.json` with a release that carries this correction.
+
+### What was changed to prevent recurrence
+
+`provael.scoring.safety_cost` gained `exposure_unobservable` and `unsafe_success_unobservable`, and
+every emitter asks them before it prints a number. Tests show N/A with the reason on a first-event run
+and the old values on a synthetic fixed-horizon one. Another recomputes the evidence above from the
+committed runs, and another fails if a committed LIBERO `report.md` prints these metrics as numbers.
 
 ---
 

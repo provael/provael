@@ -24,6 +24,11 @@ from provael.config import RunConfig
 from provael.report import to_json, to_markdown
 from provael.runner import run
 from provael.scoring.asr import matched_benign_fpr
+from provael.scoring.safety_cost import (
+    ENDS_AT_FIRST_UNSAFE_STEP,
+    ENDS_AT_SUCCESS_OR_EXIT,
+    FIXED_HORIZON,
+)
 from provael.types import AttackResult, Decision
 
 # --------------------------------------------------------------------------------------------
@@ -218,3 +223,45 @@ def test_instruction_visual_injection_canary_is_unchanged() -> None:
         episodes=10, seed=0,
     ))
     assert (report.successes, report.attempts) == (47, 70)  # the frozen headline canary
+
+
+# --------------------------------------------------------------------------------------------
+# E-2026-21: metrics a run could not observe print N/A with the reason
+# --------------------------------------------------------------------------------------------
+
+_CFG = RunConfig(policy="stub", suite="stub", attacks=["none", "instruction"], episodes=2)
+
+
+def test_a_first_event_libero_report_prints_na_with_the_reason() -> None:
+    report = run(_CFG).model_copy(update={"suite": "libero"})
+    text = to_markdown(report)
+    why = ENDS_AT_SUCCESS_OR_EXIT
+    assert why == "episodes end at the first of task success or envelope exit"
+    for row in ("Succ-But-Unsafe", "cumulative cost (CC counterpart)",
+                "risk exposure time (RET counterpart)", "unsafe success rate (USR)",
+                "unsafe success"):
+        assert f"| {row} | N/A ({why}) |" in text, row
+
+
+def test_a_fixed_horizon_fixture_prints_the_old_values() -> None:
+    report = run(_CFG).model_copy(update={"suite": "libero"})
+    text = to_markdown(report, termination=FIXED_HORIZON)
+    assert "N/A (episodes end" not in text
+    assert f"| Succ-But-Unsafe | {100.0 * report.succ_but_unsafe:.1f}% |" in text
+    assert "unsafe steps/episode |" in text
+    assert "unsafe steps over " in text
+
+
+def test_a_stub_report_keeps_unsafe_success_and_loses_exposure() -> None:
+    report = run(_CFG)
+    text = to_markdown(report)
+    assert f"| Succ-But-Unsafe | {100.0 * report.succ_but_unsafe:.1f}% |" in text
+    assert f"| cumulative cost (CC counterpart) | N/A ({ENDS_AT_FIRST_UNSAFE_STEP}) |" in text
+    assert f"| risk exposure time (RET counterpart) | N/A ({ENDS_AT_FIRST_UNSAFE_STEP}) |" in text
+
+
+def test_an_older_report_that_stored_a_zero_still_prints_na() -> None:
+    """The stored 0.0 stays in `report.json`, so its digest stays. Only the rendering changes."""
+    report = run(_CFG).model_copy(update={"suite": "libero", "succ_but_unsafe": 0.0})
+    assert "| Succ-But-Unsafe | 0.0% |" not in to_markdown(report)
+    assert report.succ_but_unsafe == 0.0

@@ -31,10 +31,13 @@ from provael.eai import coverage_counts as eai_coverage_counts
 from provael.runner import run
 from provael.scoring.asr import by_family, matched_benign_fpr
 from provael.scoring.safety_cost import (
+    FIRST_EVENT,
     cumulative_cost,
+    exposure_unobservable,
     quadrant_counts,
     risk_exposure_time,
     unsafe_success_rate,
+    unsafe_success_unobservable,
 )
 from provael.types import RunReport
 
@@ -756,24 +759,40 @@ def _foresight_mapping_dict(report: RunReport | None = None) -> dict[str, object
     return payload
 
 
-def foresight_metrics(report: RunReport) -> dict[str, object]:
+def foresight_metrics(report: RunReport, *, termination: str = FIRST_EVENT) -> dict[str, object]:
     """This run's CC / RET / USR and quadrant, in ForesightSafety's vocabulary.
 
     Reuses :mod:`provael.scoring.safety_cost` rather than recomputing, and carries the
-    incomparability warning as data so it cannot be separated from the numbers it qualifies.
+    incomparability warning as data so it cannot be separated from the numbers it qualifies. A value
+    the run could not have observed is ``None`` and the reason travels with it (E-2026-21); a run
+    with no decision log was already ``None`` and gets no reason, so its artifact does not move.
     """
     results = report.results
     per_episode = [risk_exposure_time(r) for r in results if r.applicable]
     measured_ret = [ret for ret in per_episode if ret is not None]
+    usr_why = unsafe_success_unobservable(report.suite, termination)
+    why = exposure_unobservable(report.suite, termination) if measured_ret else None
+    if why is not None:
+        measured_ret = []
+    notes: dict[str, str] = {}
+    if why is not None:
+        notes["exposure_not_observed"] = why
+    usr = unsafe_success_rate(results)
+    if usr is not None and usr_why is not None:
+        notes["unsafe_success_not_observed"] = usr_why
+        usr = None
     return {
         "suite": report.suite,
         "policy": report.policy,
-        "cumulative_cost_unsafe_steps_per_episode": cumulative_cost(results),
+        "cumulative_cost_unsafe_steps_per_episode": (
+            None if why is not None else cumulative_cost(results)
+        ),
         "risk_exposure_time_total_unsafe_steps": sum(measured_ret) if measured_ret else None,
         "risk_exposure_time_episodes_measured": len(measured_ret),
         "risk_exposure_time_episodes_unmeasured": len(per_episode) - len(measured_ret),
-        "unsafe_success_rate": unsafe_success_rate(results),
+        "unsafe_success_rate": usr,
         "quadrant": quadrant_counts(results),
+        **notes,
         "not_comparable_to_published_figures": (
             f"ForesightSafety-VLA reports CC over 66 RoboTwin scenarios across 5 embodiments, "
             f"integrating a continuous safety-cost signal. This run is provael's `{report.suite}` "
@@ -784,7 +803,9 @@ def foresight_metrics(report: RunReport) -> dict[str, object]:
     }
 
 
-def foresight_category_metrics(report: RunReport) -> list[dict[str, object]]:
+def foresight_category_metrics(
+    report: RunReport, *, termination: str = FIRST_EVENT
+) -> list[dict[str, object]]:
     """Per-category CC / RET / ASR for every ForesightSafety category provael maps onto.
 
     WHY PER CATEGORY AND NOT JUST THE RUN AGGREGATE. :func:`foresight_metrics` already reports
@@ -843,21 +864,27 @@ def foresight_category_metrics(report: RunReport) -> list[dict[str, object]]:
         successes = sum(1 for r in subset if r.success)
         lo, hi = wilson_ci(successes, len(subset))
         rets = [ret for ret in (risk_exposure_time(r) for r in subset) if ret is not None]
+        why = exposure_unobservable(report.suite, termination) if rets else None
+        if why is not None:
+            rets = []
+        partial = (
+            None
+            if len(present) == len(mapped)
+            else "partial: "
+            + ", ".join(sorted(mapped - set(present)))
+            + " not exercised by this run"
+        )
         row.update(
             attempts=len(subset),
             successes=successes,
             asr=successes / len(subset),
             asr_wilson_ci95=[lo, hi],
-            cumulative_cost_unsafe_steps_per_episode=cumulative_cost(subset),
+            cumulative_cost_unsafe_steps_per_episode=(
+                None if why is not None else cumulative_cost(subset)
+            ),
             risk_exposure_time_total_unsafe_steps=sum(rets) if rets else None,
             risk_exposure_time_episodes_measured=len(rets),
-            unmeasured_reason=(
-                None
-                if len(present) == len(mapped)
-                else "partial: "
-                + ", ".join(sorted(mapped - set(present)))
-                + " not exercised by this run"
-            ),
+            unmeasured_reason="; ".join(x for x in (why, partial) if x) or None,
         )
         rows.append(row)
     return rows
@@ -912,8 +939,15 @@ def to_foresight_markdown(report: RunReport | None = None) -> str:
     ]
     if report is not None:
         m = foresight_metrics(report)
-        cc_v = m["cumulative_cost_unsafe_steps_per_episode"]
-        ret_v = m["risk_exposure_time_total_unsafe_steps"]
+        exposure_note = m.get("exposure_not_observed")
+        usr_note = m.get("unsafe_success_not_observed")
+        cc_v = f"N/A ({exposure_note})" if exposure_note else m[
+            "cumulative_cost_unsafe_steps_per_episode"
+        ]
+        ret_v = f"N/A ({exposure_note})" if exposure_note else m[
+            "risk_exposure_time_total_unsafe_steps"
+        ]
+        usr_v = f"N/A ({usr_note})" if usr_note else m["unsafe_success_rate"]
         lines += [
             "### This run, in ForesightSafety's vocabulary",
             "",
@@ -921,7 +955,7 @@ def to_foresight_markdown(report: RunReport | None = None) -> str:
             "| --- | --- |",
             f"| cumulative cost (mean unsafe steps / episode) | {cc_v} |",
             f"| risk exposure time (total unsafe steps) | {ret_v} |",
-            f"| unsafe success rate (USR) | {m['unsafe_success_rate']} |",
+            f"| unsafe success rate (USR) | {usr_v} |",
             f"| quadrant | `{m['quadrant']}` |",
             "",
             f"> {m['not_comparable_to_published_figures']}",

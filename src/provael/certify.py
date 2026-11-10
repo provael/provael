@@ -61,8 +61,8 @@ from provael.scoring.asr import (
     by_family,
     fisher_exact_greater,
     matched_benign_fpr,
-    succ_but_unsafe,
 )
+from provael.scoring.safety_cost import observed_unsafe_success_rate, unsafe_success_unobservable
 from provael.types import (
     MEASURED_REAL_TRANSFER,
     STUB_VALIDATED_SCAFFOLDING,
@@ -300,7 +300,7 @@ def _family_evidence_rows(report: RunReport) -> list[dict[str, Any]]:
             "wilson_ci95": wilson,
             "anytime_ci": anytime,
             "matched_benign_fpr": matched_benign_fpr(with_baseline),
-            "succ_but_unsafe": succ_but_unsafe(subset),
+            "succ_but_unsafe": observed_unsafe_success_rate(subset, suite=report.suite),
             "bh_qvalue": None if q_sig is None else q_sig[0],
             "bh_significant": None if q_sig is None else q_sig[1],
             "transfer_status": tier,
@@ -324,6 +324,7 @@ def _headline(report: RunReport) -> dict[str, Any]:
     lo, hi = wilson_ci(adv_successes, adv_attempts) if adv_attempts else (0.0, 0.0)
     alo, ahi = anytime_ci(adv_successes, adv_attempts) if adv_attempts else (0.0, 1.0)
     all_lo, all_hi = wilson_ci(report.successes, report.attempts) if report.attempts else (0.0, 0.0)
+    sbu_why = unsafe_success_unobservable(report.suite)
     return {
         "asr": adv_rate,
         "attempts": adv_attempts,
@@ -342,7 +343,8 @@ def _headline(report: RunReport) -> dict[str, Any]:
         ),
         "benign_fpr": report.benign_fpr,
         "matched_benign_fpr": report.matched_benign_fpr,
-        "succ_but_unsafe": report.succ_but_unsafe,
+        "succ_but_unsafe": None if sbu_why is not None else report.succ_but_unsafe,
+        **({"succ_but_unsafe_note": sbu_why} if sbu_why is not None else {}),
         "seeds": report.seeds,
         "preliminary": report.preliminary,
         "preliminary_note": (
@@ -936,12 +938,14 @@ def _html_annex_i(dossier: dict[str, Any]) -> str:
     p.extend(_html_component_table(dossier["component_identification"]))
 
     p.append("<h2>2 · Adversarial evidence</h2>")
+    note = head.get("succ_but_unsafe_note")
+    sbu_note = f" ({_esc(note)})" if note else ""
     p.append(f'<p class="sub">Headline ASR <strong>{_pct(head["asr"])}</strong> '
              f"({head['successes']}/{head['attempts']} applicable episodes); "
              f"Wilson 95% {_ci(head['wilson_ci95'])}; anytime-valid {_ci(head['anytime_ci'])}; "
              f"benign FPR {_pct(head['benign_fpr'])}; matched benign "
              f"{_pct(head['matched_benign_fpr'])}; Succ-But-Unsafe "
-             f"{_pct(head['succ_but_unsafe'])}; seeds {head['seeds']}.</p>")
+             f"{_pct(head['succ_but_unsafe'])}{sbu_note}; seeds {head['seeds']}.</p>")
     if head.get("preliminary_note"):
         p.append(f'<p class="stub">{_esc(head["preliminary_note"])}</p>')
     p.extend(_html_family_table(dossier["adversarial_evidence"]["per_family"]))
