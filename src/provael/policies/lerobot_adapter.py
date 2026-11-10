@@ -39,11 +39,19 @@ Enable the real path on a GPU box::
 from __future__ import annotations
 
 import importlib.util
+import warnings
 from typing import Any
 
 import numpy as np
 import numpy.typing as npt
 
+from provael.integrity import (
+    CHECKPOINT_CONFIG,
+    checkpoint_code_report,
+    fetch_processor_state_files,
+    read_checkpoint_files,
+    trust_checkpoint_code,
+)
 from provael.policies.base import PolicyAdapter
 from provael.policies.identity import (
     resolve_hub_revision,
@@ -145,6 +153,19 @@ class MissingLeRobotError(RuntimeError):
 
 class IncompatiblePolicyError(RuntimeError):
     """Raised when a checkpoint's features don't match the env (needs fine-tuning/rename)."""
+
+
+class UntrustedCheckpointError(IncompatiblePolicyError):
+    """Raised before load when a checkpoint's own files would make lerobot fetch or run unreviewed
+    code (:func:`provael.integrity.checkpoint_code_problems`).
+
+    A subclass of :class:`IncompatiblePolicyError` so that every command that already reports an
+    unloadable checkpoint as one clean line reports this one the same way.
+    """
+
+
+class UntrustedCheckpointCodeWarning(UserWarning):
+    """Emitted when ``PROVAEL_TRUST_CHECKPOINT_CODE=1`` lets such a checkpoint load anyway."""
 
 
 def _int_or_none(value: object) -> int | None:
@@ -257,6 +278,8 @@ class LeRobotAdapter(PolicyAdapter):
         """Import lerobot (guarded) and build the policy + processors (verified eval path)."""
         if not self.lerobot_available():
             raise MissingLeRobotError(_INSTALL_HINT.format(name=self.name))
+        # Where lerobot reads config.json and the processor files from: exactly what was checked.
+        source = self._checked_checkpoint_source()
 
         import torch
         from lerobot.configs.policies import PreTrainedConfig
@@ -276,8 +299,10 @@ class LeRobotAdapter(PolicyAdapter):
 
         # Mirror lerobot_eval: build the policy config, then make_policy(cfg, env_cfg,
         # rename_map). make_policy requires an env (or dataset) and validates that the
-        # checkpoint's visual/state features match the env's.
-        policy_cfg = PreTrainedConfig.from_pretrained(self.model_id)
+        # checkpoint's visual/state features match the env's. config.json is parsed from `source`,
+        # the copy that was checked; the weights still load by the id given (safetensors, which
+        # carry no code).
+        policy_cfg = PreTrainedConfig.from_pretrained(source)
         policy_cfg.pretrained_path = self.model_id
         policy_cfg.device = str(device)
 
@@ -332,7 +357,7 @@ class LeRobotAdapter(PolicyAdapter):
             }
         self._preprocess, self._postprocess = make_pre_post_processors(
             policy_cfg=policy_cfg,
-            pretrained_path=policy_cfg.pretrained_path,
+            pretrained_path=source,
             preprocessor_overrides=preprocessor_overrides,
         )
         if env_cfg is not None:
@@ -352,6 +377,42 @@ class LeRobotAdapter(PolicyAdapter):
         )
         self._loaded = True
         self.resolved_identity = self._resolve_identity(policy, policy_cfg)
+
+    def _checked_checkpoint_source(self) -> str:
+        """Check the checkpoint's own files, and return where lerobot should read them from.
+
+        Runs before anything is imported from lerobot, so before any ``from_pretrained``. lerobot
+        0.5.1 loads the repos those files name and imports the step classes they name, and
+        transformers 5.3.0 lets a loaded config turn ``trust_remote_code`` on for itself
+        (PYSEC-2026-2290), so without this the checkpoint picks code that runs in this process.
+        A refused checkpoint raises :class:`UntrustedCheckpointError`, and
+        ``PROVAEL_TRUST_CHECKPOINT_CODE=1`` loads it anyway with a warning naming every problem.
+
+        The answer is ``model_id`` for a local directory, read in place. For a Hub repo it is the
+        cache snapshot of the commit the check read, with the processors' statistics fetched into
+        it: given the repo id, lerobot would fetch the files again, by then perhaps changed by
+        their owner, and load something nobody checked.
+        """
+        files = read_checkpoint_files(self.model_id)
+        problems = files.problems()
+        if problems and not trust_checkpoint_code():
+            raise UntrustedCheckpointError(
+                checkpoint_code_report(self.model_id, problems, refused=True)
+            )
+        if problems:
+            warnings.warn(
+                checkpoint_code_report(self.model_id, problems, refused=False),
+                UntrustedCheckpointCodeWarning,
+                stacklevel=3,
+            )
+        if files.directory is None or files.config is None:
+            raise IncompatiblePolicyError(
+                f"{self.model_id!r} has no {CHECKPOINT_CONFIG}, so lerobot has no policy to load."
+            )
+        if files.revision is None:
+            return self.model_id
+        fetch_processor_state_files(self.model_id, files)
+        return str(files.directory)
 
     def _resolve_identity(self, policy: Any, policy_cfg: Any) -> DeployedPolicy:
         """What executed, read off the live objects rather than the request (issue #227).
@@ -754,6 +815,8 @@ __all__ = [
     "symmetric_int8",
     "MissingLeRobotError",
     "IncompatiblePolicyError",
+    "UntrustedCheckpointError",
+    "UntrustedCheckpointCodeWarning",
     "LEROBOT_EVAL_LIBERO_HINT",
     "LIBERO_FINETUNED_SMOLVLA",
     "clamp_action",

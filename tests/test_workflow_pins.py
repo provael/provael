@@ -18,6 +18,14 @@ own quickstart on a clean machine, and the README tells a reader to install the 
 a pin would test a sentence the README does not say. ``action.yml`` is held to the action rule but
 not the install rule, because what it installs is the adopter's pinned provael release, and why
 that is a range is written beside it.
+
+THE EXAMPLES TOO (10 November 2026). ``examples/ci/*.yml`` is what an adopter copies into their own
+repository, the provenance-attestation example into the job that signs their release. It carried
+``actions/checkout@v4``, ``astral-sh/setup-uv@v5`` and ``actions/attest-build-provenance@v1`` while
+every workflow here was pinned, and nothing looked: Dependabot watches ``directory: "/"`` and this
+test read ``.github/workflows`` only. The action rule now covers the examples, with one exemption:
+``provael/provael@vX.Y.Z`` stays a release tag, because ``tests/test_version_consistency.py`` holds
+it to ``provael.__version__`` and a release rewrites it.
 """
 
 from __future__ import annotations
@@ -33,6 +41,10 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 WORKFLOWS = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
 ACTION = ROOT / "action.yml"
+#: GitHub Actions examples an adopter copies (the Azure and GitLab files there carry no `uses:`).
+EXAMPLES = sorted((ROOT / "examples" / "ci").glob("*.yml"))
+#: This project's own Action, pinned in the examples to the release tag on purpose.
+OWN_ACTION_TAG = re.compile(r"^provael/provael@v\d+\.\d+\.\d+$")
 
 PINNED_ACTION = re.compile(r"^[\w.-]+/[\w./-]+@[0-9a-f]{40}$")
 #: The raw line names the release the SHA was taken from; it is what Dependabot rewrites.
@@ -173,6 +185,29 @@ def test_every_action_is_pinned_to_a_commit(path: Path) -> None:
             f"{path.name}: `{ref}` has no `# vX.Y.Z` comment, so neither a reviewer nor "
             "Dependabot can tell which release the SHA is"
         )
+
+
+@pytest.mark.parametrize("path", EXAMPLES, ids=lambda p: p.name)
+def test_every_example_action_is_pinned_to_a_commit(path: Path) -> None:
+    text = path.read_text(encoding="utf-8")
+    for ref in _uses(_load(path)):
+        if ref.startswith("./") or OWN_ACTION_TAG.match(ref):
+            continue
+        assert PINNED_ACTION.match(ref), (
+            f"examples/ci/{path.name}: `uses: {ref}` is a mutable ref in a file adopters copy. Pin "
+            "the commit its tag points at today, as .github/workflows does, with a `# vX.Y.Z` comment"
+        )
+        line = next(line for line in text.splitlines() if ref in line)
+        assert VERSION_COMMENT.search(line), (
+            f"examples/ci/{path.name}: `{ref}` has no `# vX.Y.Z` comment"
+        )
+
+
+def test_the_example_walk_is_not_vacuous() -> None:
+    """The examples hold third-party actions; a walker that found none would pass the test above."""
+    refs = [ref for path in EXAMPLES for ref in _uses(_load(path))]
+    third_party = [ref for ref in refs if not OWN_ACTION_TAG.match(ref)]
+    assert len(third_party) >= 4, f"found only {third_party} in examples/ci; did the files move?"
 
 
 @pytest.mark.parametrize("path", WORKFLOWS, ids=lambda p: p.name)
