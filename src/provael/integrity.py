@@ -11,10 +11,10 @@ the checkpoint's JSON: does loading it make lerobot fetch or run code nobody rev
 :func:`checkpoint_code_problems`).
 
 It is **not** an attack, it produces **no attack-success rate**, and it does **not** reduce one. A
-checkpoint that passes every check here can still be driven off-task by a reworded instruction at
-exactly the rate the ASR says. Nothing in this module may be reported as, aggregated into, or
-described as moving an ASR. The two live in the same evidence pack because an assessor needs both;
-they are not the same claim and must never be added together.
+checkpoint that passes every check here can still leave its safety envelope under an adversarial
+instruction at exactly the rate the ASR says. Nothing in this module may be reported as,
+aggregated into, or described as moving an ASR. The two live in the same evidence pack because a
+release decision needs both; they are not the same claim and must never be added together.
 
 WHY IT EXISTS
 -------------

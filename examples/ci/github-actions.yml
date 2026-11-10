@@ -20,7 +20,7 @@ jobs:
   redteam:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Provael red-team gate
         uses: provael/provael@v0.47.0
@@ -54,8 +54,8 @@ jobs:
   #     contents: read
   #     security-events: write
   #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-python@v5
+  #     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+  #     - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
   #       with:
   #         python-version: "3.12"
   #     - run: pip install "provael[lerobot]"
@@ -67,7 +67,7 @@ jobs:
   #           --sarif-out provael.sarif --out provael-run
   #       env:
   #         PROVAEL_INTEGRATION: "1"
-  #     - uses: github/codeql-action/upload-sarif@v3
+  #     - uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
   #       with:
   #         sarif_file: provael.sarif
   #         category: provael
