@@ -229,6 +229,10 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   now lists PYSEC-2026-2290 as not reachable and names this check. The three checkpoints the
   published runs and the smolvla default use pass as they are, and `RunConfig` and `report.json`
   do not change.
+- **The README's demo GIF is recorded again, on 0.47.0.** It showed the July 2026 CLI: a pass/fail
+  scorecard and the old "Attack Success Rate" label. The new recording, from the same script, shows
+  the scorecard led by the release verdict, and the alt text and caption say so. Why: the README
+  is the PyPI page, and its first image showed output the tool no longer prints. No number moves.
 
 ## [0.47.0] — 2026-11-07
 
