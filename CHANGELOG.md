@@ -31,6 +31,16 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
+### Added
+
+- **The measurement protocol is written down.** `docs/protocol.md` defines `provael-redteam/v1`, the
+  string every execution manifest carries, as the code runs it today: the loop, the arms and their
+  budgets, what a pair is matched on, the benign control and the controls, the predicate, the
+  termination rule, the intervals and tests, and what each record carries and leaves out. It lists
+  what v2 is planned to change, and the README's "Reading any result" line links it. Why: every
+  manifest named a protocol that no page described, so a reader comparing harnesses had to rebuild
+  it from the code.
+
 ### Changed
 
 - **A run recorded for a video no longer counts as a measurement.** `provael.watch` skips any
