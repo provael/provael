@@ -48,6 +48,7 @@ from provael.scoring.asr import (
     semantic_role,
     succ_but_unsafe,
 )
+from provael.scoring.paired import scene_pairing
 from provael.types import RunReport
 
 #: Fields every shard of one experiment must agree on. A difference in any of them means the shards
@@ -169,6 +170,10 @@ def combine_reports(reports: list[RunReport]) -> RunReport:
         succ_but_unsafe=succ_but_unsafe(results),
         clean_task_success_rate=clean_task_success_rate(results),
         calibration={k: v for r in reports for k, v in r.calibration.items()},
+        # Schema 9: one entry per task, from the shard that ran it; the pairing is recomputed over
+        # the pooled episodes like every other derived quantity (a pre-9 view carries neither).
+        sim_model_digests={k: v for r in reports for k, v in r.sim_model_digests.items()},
+        scene_pairing=scene_pairing(results) if head.schema_version >= 9 else None,
         by_attack=attack_breakdown,
         by_task=by_task(results),
         eai={k: v for r in reports for k, v in r.eai.items()},

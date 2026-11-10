@@ -258,3 +258,35 @@ def test_one_real_smolvla_step_through_the_glue() -> None:
     _next_obs, done, state = suite.step(action)
     assert isinstance(done, bool)
     assert isinstance(suite.is_unsafe(state), bool)
+
+
+@pytest.mark.skipif(
+    not (_INTEGRATION_ENABLED and _LEROBOT_AVAILABLE),
+    reason="requires PROVAEL_INTEGRATION=1 and lerobot+libero (uses the ready "
+    "HuggingFaceVLA/smolvla_libero checkpoint; skips if the sim is unavailable)",
+)
+def test_two_arms_pinned_at_one_seed_start_from_one_scene() -> None:
+    """P1.2 on the real simulator: `none` and `roleplay` at seed 0 with `--pin-init-states 45`.
+
+    Both load init state 45, and the scene each reset left (qpos, qvel, every body's pose after
+    lerobot's settle steps) digests the same. The runner itself refuses a pinned run whose arms
+    start apart, so this also checks that the refusal does not fire on the real stack.
+    """
+    from provael.config import RunConfig
+    from provael.runner import run
+
+    config = RunConfig(
+        policy="smolvla", model=str(_LIBERO_CKPT), suite="libero", attacks=["none", "roleplay"],
+        tasks=["libero_object/0"], episodes=1, horizon=4, pin_init_states=45,
+        accelerator=_DEVICE,
+    )
+    try:
+        report = run(config)
+    except (MissingLeRobotError, ModuleNotFoundError, ImportError) as exc:
+        pytest.skip(f"LIBERO simulator / checkpoint not available: {exc}")
+    assert [r.init_state for r in report.results] == [45, 45]
+    digests = {r.scene_t0_digest for r in report.results}
+    assert len(digests) == 1 and None not in digests, digests
+    assert all(r.scene_t0 for r in report.results)
+    assert report.sim_model_digests.get("libero_object/0") is not None
+    assert report.scene_pairing is not None and report.scene_pairing.scene_matched == 1

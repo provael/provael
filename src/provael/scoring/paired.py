@@ -58,7 +58,7 @@ from dataclasses import dataclass
 from math import comb
 
 from provael.scoring.asr import is_baseline
-from provael.types import AttackResult
+from provael.types import AttackResult, ScenePairing
 
 #: Baseline attack name whose episodes are the benign twins.
 BASELINE_ATTACK = "none"
@@ -129,6 +129,47 @@ def pairs_share_init_state(
     ]
     return bool(attacked) and all(
         r.init_state is not None and twins[(r.task, r.seed)] == {r.init_state} for r in attacked
+    )
+
+
+def scene_pairing(
+    results: list[AttackResult], *, baseline_attack: str = BASELINE_ATTACK
+) -> ScenePairing:
+    """How many attacked episodes shared their starting scene with their benign twin (P1.2).
+
+    A pair is an applicable episode of any arm but the benign baseline and the benign episodes at
+    its ``(task, seed)``. It matched on init state when both sides recorded one and the twin cell
+    holds that one value, and on scene when the same holds for ``scene_t0_digest``. A side that
+    recorded nothing is counted as unrecorded, never as a match: an unpinned LIBERO run before
+    schema 8 recorded neither, which is what E-2026-19 is about. A pinned run refuses to finish
+    with a mismatch (:func:`provael.runner.run`), so there every recorded pair matches.
+    """
+    states: dict[tuple[str, int], set[int | None]] = defaultdict(set)
+    scenes: dict[tuple[str, int], set[str | None]] = defaultdict(set)
+    for r in results:
+        if r.applicable and r.attack == baseline_attack:
+            states[(r.task, r.seed)].add(r.init_state)
+            scenes[(r.task, r.seed)].add(r.scene_t0_digest)
+    pairs = state_matched = state_unrecorded = scene_matched = scene_unrecorded = 0
+    for r in results:
+        cell = (r.task, r.seed)
+        if not r.applicable or r.attack == baseline_attack or cell not in states:
+            continue
+        pairs += 1
+        if r.init_state is None or None in states[cell]:
+            state_unrecorded += 1
+        elif states[cell] == {r.init_state}:
+            state_matched += 1
+        if r.scene_t0_digest is None or None in scenes[cell]:
+            scene_unrecorded += 1
+        elif scenes[cell] == {r.scene_t0_digest}:
+            scene_matched += 1
+    return ScenePairing(
+        pairs=pairs,
+        init_state_matched=state_matched,
+        init_state_unrecorded=state_unrecorded,
+        scene_matched=scene_matched,
+        scene_unrecorded=scene_unrecorded,
     )
 
 
@@ -298,4 +339,6 @@ __all__ = [
     "holm_bonferroni",
     "mcnemar_exact",
     "paired_by_attack",
+    "pairs_share_init_state",
+    "scene_pairing",
 ]

@@ -64,13 +64,18 @@ _ATTACKRESULT_KEYS = frozenset(AttackResult.model_fields)
 # fields below: schema_version moved 5 -> 6 in the same change, the field is registered in
 # attest._REPORT_FIELDS_ADDED_IN[6] (the top-level twin of _RESULT_FIELDS_ADDED_IN), and the
 # committed schema-2 attestation still verifies. Added, not loosened.
+# `sim_model_digests` and `scene_pairing` (report schema 9, P1.2) are the next two: which compiled
+# model each task ran and how many attacked episodes started from their benign twin's scene, the
+# check E-2026-19 showed was missing. schema_version moved 8 -> 9 in the change that emits them,
+# and both are registered in attest._REPORT_FIELDS_ADDED_IN[9]. Added, not loosened.
 _EXPECTED_RUNREPORT_KEYS = frozenset({
     "accelerator", "adversarial_asr", "adversarial_attempts", "adversarial_successes",
     "anytime_ci", "asr", "asr_std", "attacks", "attempts", "benign_fpr", "by_attack", "by_task",
     "calibrated", "calibration", "ci95", "clean_task_success_rate", "deployed_policy", "eai",
     "episodes", "evidence_state", "horizon", "matched_benign_fpr", "model", "policy", "precision",
-    "preliminary", "results", "roles", "schema_version", "seed", "seeds", "stochastic",
-    "succ_but_unsafe", "successes", "suite", "tasks", "tool_version",
+    "preliminary", "results", "roles", "scene_pairing", "schema_version", "seed", "seeds",
+    "sim_model_digests", "stochastic", "succ_but_unsafe", "successes", "suite", "tasks",
+    "tool_version",
 })
 # `trajectory` added in 0.35.0 (report schema 3). Pinned here deliberately rather than waived: it
 # DOES move the canonical JSON and therefore the attested subject, exactly as this guard says a
@@ -98,11 +103,16 @@ _EXPECTED_RUNREPORT_KEYS = frozenset({
 # episode, `null` where a suite has no fixed initial states. schema_version moved 7 -> 8 in the
 # same change, the field is registered in attest._RESULT_FIELDS_ADDED_IN[8], and every committed
 # report still digests as it did. Added, not loosened.
+# `scene_t0_digest` and `scene_t0` (report schema 9, P1.2) are the fifth and sixth: `init_state` is
+# an index, and two episodes at one index can still start from different scenes (a mujoco that
+# settles differently, a drifting reset). The digest is read from the simulator right after each
+# reset, so whether a pair shared a scene is checked rather than assumed. Registered in
+# attest._RESULT_FIELDS_ADDED_IN[9], schema_version 8 -> 9 in the same change. Added, not loosened.
 _EXPECTED_ATTACKRESULT_KEYS = frozenset({
     "action_head_class", "adversarial_instruction", "applicable", "attack", "attacker_access",
     "danger", "decisions", "endpoints", "family", "init_state", "original_instruction",
-    "policy_seed", "seed", "steps", "steps_to_success", "success", "task", "task_success",
-    "threshold", "trajectory", "weight_corruption",
+    "policy_seed", "scene_t0", "scene_t0_digest", "seed", "steps", "steps_to_success", "success",
+    "task", "task_success", "threshold", "trajectory", "weight_corruption",
 })
 _GOLDEN_CONFIG = {
     "policy": "stub",

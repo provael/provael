@@ -149,3 +149,62 @@ def test_no_args_still_prints_help_not_the_version() -> None:
     plain = " ".join(plain.split())
     assert "Usage: provael" in plain
     assert "COMMAND" in plain  # the command list, not just a version string
+
+
+def _flat(text: str) -> str:
+    """Console output with Rich's line wrapping undone, so a sentence can be searched for."""
+    return " ".join(text.split())
+
+
+def _init_states_file(tmp_path: Path, body: str) -> Path:
+    path = tmp_path / "init-states.json"
+    path.write_text(body, encoding="utf-8")
+    return path
+
+
+def test_init_states_with_an_adversarial_arm_must_pin_one_state_per_seed(tmp_path: Path) -> None:
+    """Repeats at one seed on different scenes would break the pairing, so it is refused."""
+    states = _init_states_file(tmp_path, '{"reach": [3, 4, 5, 6]}')
+    result = runner.invoke(
+        app,
+        ["attack", "--attacks", "none,roleplay", "--episodes", "4", "--episodes-per-seed", "2",
+         "--init-states", str(states), "--out", str(tmp_path / "run")],
+    )
+    assert result.exit_code != 0
+    assert "must pin one state per seed" in _flat(result.output)
+    assert not (tmp_path / "run" / "report.json").exists()
+
+
+def test_init_states_and_a_pin_are_refused_together(tmp_path: Path) -> None:
+    states = _init_states_file(tmp_path, '{"reach": [3]}')
+    result = runner.invoke(
+        app,
+        ["attack", "--attacks", "none", "--episodes", "1", "--pin-init-states", "2",
+         "--init-states", str(states), "--out", str(tmp_path / "run")],
+    )
+    assert result.exit_code != 0
+    assert "pass one of them" in _flat(result.output)
+
+
+def test_init_states_that_are_not_a_json_object_of_indices_are_refused(tmp_path: Path) -> None:
+    for body, message in (("{not json", "--init-states"), ('{"reach": [-1]}', "invalid "),
+                          ('{"reach": []}', "invalid ")):
+        states = _init_states_file(tmp_path, body)
+        result = runner.invoke(
+            app,
+            ["attack", "--attacks", "none", "--episodes", "1", "--init-states", str(states),
+             "--out", str(tmp_path / "run")],
+        )
+        assert result.exit_code != 0, body
+        assert message in _flat(result.output), body
+
+
+def test_init_states_on_a_suite_without_fixed_init_states_are_refused(tmp_path: Path) -> None:
+    states = _init_states_file(tmp_path, '{"reach": [3]}')
+    result = runner.invoke(
+        app,
+        ["attack", "--attacks", "none", "--episodes", "1", "--init-states", str(states),
+         "--out", str(tmp_path / "run")],
+    )
+    assert result.exit_code != 0
+    assert "keeps no fixed initial states" in _flat(result.output)

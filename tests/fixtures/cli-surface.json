@@ -175,6 +175,16 @@
      "secondary_opts": []
     },
     {
+     "help": "JSON file naming the initial state each episode starts from, per task: {\"libero_object/0\": [3, 7], ...}, one entry per seed (every arm and repeat at seed index i starts from entry i) or, when the only arm is the benign baseline, one per episode. Any other arm needs one state per seed, so every arm at a seed starts from one scene. Exclusive with --pin-init-states; needs a suite with fixed initial states (LIBERO).",
+     "is_flag": false,
+     "name": "init_states",
+     "opts": [
+      "--init-states"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
      "help": "Max timesteps per episode.",
      "is_flag": false,
      "name": "horizon",

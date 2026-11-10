@@ -35,10 +35,10 @@ from provael.config import RunConfig
 from provael.execution import report_digest
 from provael.ledger import append_trial, record_of, results_for
 from provael.policies.stub import StubPolicy
-from provael.runner import run, run_episode
-from provael.suites.libero import LiberoSuiteAdapter
+from provael.runner import InitStatePlanError, ScenePinError, run, run_episode
+from provael.suites.libero import LiberoSuiteAdapter, model_xml_digest, scene_snapshot_of
 from provael.suites.stub import StubSuite
-from provael.types import Observation, RunReport
+from provael.types import Observation, RunReport, ScenePairing
 
 REPO = Path(__file__).resolve().parents[1]
 TASK = "libero_object/0"
@@ -388,3 +388,255 @@ def test_the_cli_takes_the_pin_and_refuses_it_where_it_cannot_apply(tmp_path: Pa
     )
     assert result.exit_code != 0
     assert "keeps no fixed initial states" in result.output
+
+
+# --------------------------------------------------------------------------------------------- #
+# Schema 9 (P1.2): the scene each reset left, and the pairs that shared one
+#
+# An equal `init_state` is an equal index; whether the scene was the same is read from the
+# simulator after the reset. These drive the real adapter over a fake robosuite chain
+# (`envs[0]._env.env.sim`, the chain `LiberoSuiteAdapter._robosuite_env` already reads) whose
+# arrays are fixed functions of the state the reset loaded.
+# --------------------------------------------------------------------------------------------- #
+
+_BODIES = ("world", "robot0_base", "akita_black_bowl_1_main", "basket_1")
+
+
+class _FakeModel:
+    nbody = len(_BODIES)
+
+    def body_id2name(self, index: int) -> str:
+        return _BODIES[index]
+
+    def get_xml(self) -> str:
+        return (
+            '<mujoco><asset><mesh file="/opt/py/lib/python3.12/site-packages/libero/assets/'
+            'bowl.stl"/></asset></mujoco>'
+        )
+
+
+class _FakeData:
+    def __init__(self) -> None:
+        self.qpos = np.zeros(3)
+        self.qvel = np.zeros(3)
+        self.xpos = np.zeros((len(_BODIES), 3))
+        self.xquat = np.tile([1.0, 0.0, 0.0, 0.0], (len(_BODIES), 1))
+
+
+class _FakeSim:
+    def __init__(self) -> None:
+        self.model = _FakeModel()
+        self.data = _FakeData()
+
+
+class _SceneLiberoEnv(_FakeLiberoEnv):
+    """The counter fake, plus a robosuite sim whose state is a fixed function of the loaded state."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.sim = _FakeSim()
+        self._env = type("OffScreenRenderEnv", (), {})()
+        self._env.env = type("RobosuiteEnv", (), {})()
+        self._env.env.sim = self.sim
+        self.resets = 0
+
+    def reset(self, seed: int | None = None) -> tuple[dict[str, Any], dict[str, Any]]:
+        out = super().reset(seed)
+        self.resets += 1
+        loaded = (self.init_state_id - self._reset_stride) % 50
+        self.place(loaded)
+        return out
+
+    def place(self, loaded: int) -> None:
+        angle = 0.1 * loaded
+        self.sim.data.qpos = np.array([float(loaded), 0.0, 0.0])
+        self.sim.data.xpos[2] = [0.1 * loaded, 0.2, 0.9]
+        self.sim.data.xquat[2] = [np.cos(angle / 2), 0.0, 0.0, np.sin(angle / 2)]
+
+
+class _DriftingSceneEnv(_SceneLiberoEnv):
+    """A simulator that does not settle the same way twice: one init state, a new scene each reset."""
+
+    def place(self, loaded: int) -> None:
+        super().place(loaded)
+        self.sim.data.qvel = np.array([1e-9 * self.resets, 0.0, 0.0])
+
+
+def test_each_episode_records_the_scene_its_reset_left(monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter, _ = _adapter(monkeypatch, _SceneLiberoEnv())
+    adapter.pin_init_states(3)
+    episode = run_episode(_SevenDofPolicy(), adapter, make_attack("none"), TASK, seed=1, horizon=2)
+    assert episode.init_state == 4
+    assert episode.scene_t0_digest is not None and len(episode.scene_t0_digest) == 64
+    assert episode.scene_t0 is not None
+    # The robot's own bodies and the world body stay in the digest and out of the readable list.
+    assert [body.name for body in episode.scene_t0] == ["akita_black_bowl_1_main", "basket_1"]
+    bowl = episode.scene_t0[0]
+    assert bowl.pos == (0.4, 0.2, 0.9) and bowl.yaw == pytest.approx(0.4, abs=1e-6)
+
+
+def test_one_init_state_is_one_digest_and_another_is_another(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter, _ = _adapter(monkeypatch, _SceneLiberoEnv())
+    adapter.pin_init_states(0)
+    policy = _SevenDofPolicy()
+    a = run_episode(policy, adapter, make_attack("none"), TASK, seed=2, horizon=2)
+    b = run_episode(policy, adapter, make_attack("roleplay"), TASK, seed=2, horizon=2)
+    c = run_episode(policy, adapter, make_attack("none"), TASK, seed=3, horizon=2)
+    assert a.scene_t0_digest == b.scene_t0_digest != c.scene_t0_digest
+
+
+def test_the_digest_is_exact_where_the_readable_list_is_rounded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter, _ = _adapter(monkeypatch, _DriftingSceneEnv())
+    adapter.pin_init_states(0)
+    policy = _SevenDofPolicy()
+    a = run_episode(policy, adapter, make_attack("none"), TASK, seed=0, horizon=2)
+    b = run_episode(policy, adapter, make_attack("none"), TASK, seed=0, horizon=2)
+    assert a.init_state == b.init_state and a.scene_t0 == b.scene_t0
+    assert a.scene_t0_digest != b.scene_t0_digest, "a 1e-9 difference is a different scene"
+
+
+def test_a_suite_without_a_simulator_records_no_scene() -> None:
+    policy = StubPolicy()
+    policy.load()
+    result = run_episode(policy, StubSuite(), make_attack("none"), "reach", seed=0, horizon=2)
+    assert result.scene_t0_digest is None and result.scene_t0 is None
+
+
+def _scene_run(
+    monkeypatch: pytest.MonkeyPatch, config: RunConfig, env: _FakeLiberoEnv
+) -> RunReport:
+    adapter, _ = _adapter(monkeypatch, env)
+    monkeypatch.setattr(adapter, "features", lambda: None)
+    monkeypatch.setattr("provael.runner.make_suite", lambda *_args, **_kwargs: adapter)
+    monkeypatch.setattr("provael.runner.make_policy", lambda *_args, **_kwargs: _SevenDofPolicy())
+    return run(config)
+
+
+def test_a_pinned_run_whose_arms_start_apart_stops(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Same init state at a seed, different scene: a pinned run refuses to report the pair."""
+    config = RunConfig(
+        policy="stub", suite="libero", attacks=["none", "roleplay"], tasks=[TASK], episodes=2,
+        horizon=2, pin_init_states=10,
+    )
+    with pytest.raises(ScenePinError, match="did not share a scene"):
+        _scene_run(monkeypatch, config, _DriftingSceneEnv())
+
+
+def test_a_pinned_run_matches_every_pair_and_an_unpinned_one_says_how_many(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    base = {"policy": "stub", "suite": "libero", "attacks": ["none", "roleplay"],
+            "tasks": [TASK], "episodes": 3, "horizon": 2}
+    pinned = _scene_run(monkeypatch, RunConfig(**base, pin_init_states=10), _SceneLiberoEnv())
+    assert pinned.scene_pairing == ScenePairing(
+        pairs=3, init_state_matched=3, init_state_unrecorded=0, scene_matched=3,
+        scene_unrecorded=0,
+    )
+    # Unpinned, the counter walks on: `none` takes states 0-2 and `roleplay` 3-5, so no pair at a
+    # seed shares a scene — the case E-2026-19 is about, now counted in the report.
+    walked = _scene_run(monkeypatch, RunConfig(**base), _SceneLiberoEnv())
+    assert walked.scene_pairing == ScenePairing(
+        pairs=3, init_state_matched=0, init_state_unrecorded=0, scene_matched=0,
+        scene_unrecorded=0,
+    )
+    assert walked.schema_version == 9
+    assert walked.sim_model_digests == {TASK: model_xml_digest(_FakeModel().get_xml())}
+
+
+def test_the_stub_records_unrecorded_pairs_and_no_model() -> None:
+    report = run(RunConfig(policy="stub", suite="stub", attacks=["none", "roleplay"], episodes=2))
+    assert report.sim_model_digests == {"reach": None}
+    assert report.scene_pairing == ScenePairing(
+        pairs=2, init_state_matched=0, init_state_unrecorded=2, scene_matched=0,
+        scene_unrecorded=2,
+    )
+
+
+def test_the_model_digest_names_the_model_not_the_interpreter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    xml = '<mujoco><mesh file="{}/site-packages/libero/assets/bowl.stl"/></mujoco>'
+    here, there = xml.format("/opt/py/lib/python3.12"), xml.format("/home/u/.venv/lib/python3.12")
+    assert model_xml_digest(here) == model_xml_digest(there)
+    assert model_xml_digest(here) != model_xml_digest(here.replace("bowl", "plate"))
+    checkout = '<mujoco><mesh file="/src/LIBERO/libero/assets/bowl.stl"/></mujoco>'
+    assert model_xml_digest(here) != model_xml_digest(checkout), (
+        "a checkout outside site-packages keeps its path, and so its own digest"
+    )
+    adapter, built = _adapter(monkeypatch, _SceneLiberoEnv())
+    digest = adapter.sim_model_digest(TASK)
+    assert digest == model_xml_digest(_FakeModel().get_xml())
+    assert len(built) == 1 and adapter.reset(TASK, seed=0)["init_state"] == 0, (
+        "reading the model builds the env once and leaves its counter where it was"
+    )
+    assert adapter.sim_model_digest("libero_spatial/0") is None
+
+
+def test_scene_snapshot_of_a_sim_it_cannot_read_is_unrecorded() -> None:
+    assert scene_snapshot_of(object()) is None
+
+
+def test_init_states_name_each_seed_s_scene(monkeypatch: pytest.MonkeyPatch) -> None:
+    config = RunConfig(
+        policy="stub", suite="libero", attacks=["none", "roleplay"], tasks=[TASK], episodes=3,
+        horizon=2, init_states={TASK: [7, 30, 2]},
+    )
+    report = _scene_run(monkeypatch, config, _SceneLiberoEnv(success_at=1))
+    assert [(r.attack, r.seed, r.init_state) for r in report.results] == [
+        ("none", 0, 7), ("none", 1, 30), ("none", 2, 2),
+        ("roleplay", 0, 7), ("roleplay", 1, 30), ("roleplay", 2, 2),
+    ]
+    assert report.scene_pairing is not None and report.scene_pairing.scene_matched == 3
+
+
+def test_a_benign_only_run_may_name_one_state_per_episode(monkeypatch: pytest.MonkeyPatch) -> None:
+    config = RunConfig(
+        policy="stub", suite="libero", attacks=["none"], tasks=[TASK], episodes=4,
+        episodes_per_seed=2, horizon=2, init_states={TASK: [40, 41, 42, 43]},
+    )
+    report = _scene_run(monkeypatch, config, _SceneLiberoEnv())
+    assert [(r.seed, r.init_state) for r in report.results] == [(0, 40), (0, 41), (1, 42), (1, 43)]
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        ({"attacks": ["none", "roleplay"], "episodes": 4, "episodes_per_seed": 2,
+          "init_states": {TASK: [40, 41, 42, 43]}}, "must pin one state per seed"),
+        ({"init_states": {"libero_object/9": [1, 2]}}, "missing"),
+        ({"attacks": ["none"], "init_states": {TASK: [1, 2, 3]}}, "one per seed"),
+    ],
+)
+def test_init_states_that_do_not_fit_the_run_are_refused_before_it_starts(
+    monkeypatch: pytest.MonkeyPatch, overrides: dict[str, Any], message: str
+) -> None:
+    base: dict[str, Any] = {"policy": "stub", "suite": "libero", "attacks": ["none", "roleplay"],
+                            "tasks": [TASK], "episodes": 2, "horizon": 2}
+    env = _SceneLiberoEnv()
+    with pytest.raises(InitStatePlanError, match=message):
+        _scene_run(monkeypatch, RunConfig(**{**base, **overrides}), env)
+    assert env.resets == 0, "refused before any episode ran"
+
+
+def test_init_states_and_a_pin_cannot_be_set_together() -> None:
+    with pytest.raises(ValueError, match="pass one of them"):
+        RunConfig(policy="stub", suite="libero", init_states={TASK: [1]}, pin_init_states=3)
+
+
+def test_init_states_on_a_suite_without_fixed_init_states_are_refused() -> None:
+    config = RunConfig(policy="stub", suite="stub", attacks=["none"], episodes=1,
+                       init_states={"reach": [3]})
+    with pytest.raises(NotImplementedError, match="keeps no fixed initial states"):
+        run(config)
+
+
+def test_a_named_state_is_a_non_negative_index(monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter, _ = _adapter(monkeypatch, _SceneLiberoEnv())
+    with pytest.raises(ValueError, match="non-negative"):
+        adapter.choose_init_state(-1)
+    with pytest.raises(ValueError, match="greater than or equal to 0"):
+        RunConfig(policy="stub", init_states={"reach": [-1]})

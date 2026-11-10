@@ -27,7 +27,7 @@ from provael.scoring.confidentiality import confidentiality_unsafe as _confident
 from provael.scoring.misalignment import misalignment_unsafe as _misalignment_unsafe
 from provael.scoring.perception import sensor_spoof_unsafe as _sensor_spoof_unsafe
 from provael.suites.keepout_zones import KeepOutZone
-from provael.types import Action, Observation, State, SuiteFeatures
+from provael.types import Action, Observation, SceneSnapshot, State, SuiteFeatures
 from provael.video import image_from
 
 if TYPE_CHECKING:
@@ -175,6 +175,35 @@ class SuiteAdapter(ABC):
         not ask for.
         """
         return False
+
+    def choose_init_state(self, state: int | None) -> bool:
+        """Load fixed initial state ``state`` at the next reset only (``None`` clears a choice).
+
+        The per-episode form of :meth:`pin_init_states`, for ``provael attack --init-states``,
+        which names the states rather than a start. Only a suite with a fixed list of initial
+        states can honour it; the default returns ``False``, so the runner refuses before any
+        episode runs on a scene nobody asked for.
+        """
+        return False
+
+    def scene_snapshot(self) -> SceneSnapshot | None:
+        """The scene the last reset left, read from the simulator: a digest and the bodies.
+
+        What makes a pair checkable after the fact (P1.2): two episodes started from one scene only
+        if their digests are equal, whatever their seeds and init-state indices say. ``None`` by
+        default, and on any suite that exposes no simulator state, which the episode records as
+        unrecorded rather than as a match.
+        """
+        return None
+
+    def sim_model_digest(self, task: str) -> str | None:
+        """sha256 of ``task``'s compiled simulator model, read once per task; ``None`` when none.
+
+        The model is what the scene is built from (geometry, assets, joints), so two runs whose
+        digests differ ran different simulations of the same task name. The default compiles no
+        model and returns ``None``.
+        """
+        return None
 
     def action_unsafe(self, state: State) -> bool:
         """The EAI04 action-space-integrity predicate (freeze / trajectory hijack).

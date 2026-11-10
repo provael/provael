@@ -44,6 +44,14 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   two loads of one checkpoint can execute differently (normaliser statistics, a swapped camera, the
   denoising budget), and none of it was in the artifact. Older reports load and digest unchanged.
   No number moves.
+- **Each episode records the scene it started from, and a pinned run checks its pairs.** Report
+  schema 9 adds `scene_t0_digest` and `scene_t0` per episode (read from the simulator after the
+  reset), a compiled-model digest per task, and `scene_pairing`, the count of attacked episodes
+  whose benign twin started from the same state and scene. A run pinned with `--pin-init-states`
+  stops if two arms at one seed start apart, and `provael attack --init-states FILE` names the
+  initial state of each seed's episodes (or of each episode, in a benign-only run). Why: an equal
+  `init_state` is an equal index, not proof of an equal scene, and the published pairs recorded
+  neither (E-2026-19). No number moves; no committed run is re-scored.
 
 ### Changed
 

@@ -163,6 +163,15 @@ versions of the simulator and policy stack and fills `checkpoint_digest` from th
 `provael attack` and `provael doctor` warn when a LIBERO run uses mujoco 3.4.0 or newer, or
 versions that differ from the `[lerobot]` resolution in `uv.lock`.
 
+Each episode also records the scene its reset left, read from the simulator after lerobot's settle
+steps: `scene_t0_digest` (sha256 over qpos, qvel and every body's position and orientation) and
+`scene_t0` (the non-robot bodies with their positions and yaw). `init_state` is an index; this is
+the scene, so whether a pair shared one is checked rather than assumed (E-2026-19). The report
+carries each task's compiled-model digest (`sim_model_digests`) and `scene_pairing`, the count of
+attacked episodes whose benign twin recorded the same state and scene. A pinned run
+(`--pin-init-states`, or `--init-states` with one state per seed) stops if two arms at one seed
+start from different scenes.
+
 ### The regulatory clock
 
 Factual application dates, carried so the evidence is legible against the calendar buyers care

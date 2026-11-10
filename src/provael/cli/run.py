@@ -42,7 +42,7 @@ from provael.report import (
     write_report,
 )
 from provael.reproductions import get_reproduction
-from provael.runner import run
+from provael.runner import InitStatePlanError, ScenePinError, run
 from provael.runtime_versions import drift_warnings, installed_versions
 from provael.sarif import write_sarif
 from provael.scorecard import SCORECARD_MD, write_scorecard
@@ -82,6 +82,18 @@ def attack(
             "default, where lerobot walks the list with a reset counter the seed never reaches. "
             "A suite without such a list refuses it. The GPU arm's plan step checks the pinned "
             "states against the calibration fit's (#136).",
+        ),
+    ] = None,
+    init_states: Annotated[
+        Path | None,
+        typer.Option(
+            "--init-states",
+            help="JSON file naming the initial state each episode starts from, per task: "
+            '{"libero_object/0": [3, 7], ...}, one entry per seed (every arm and repeat at seed '
+            "index i starts from entry i) or, when the only arm is the benign baseline, one per "
+            "episode. Any other arm needs one state per seed, so every arm at a seed starts from "
+            "one scene. Exclusive with --pin-init-states; needs a suite with fixed initial "
+            "states (LIBERO).",
         ),
     ] = None,
     horizon: Annotated[int, typer.Option(min=1, help="Max timesteps per episode.")] = 8,
@@ -249,6 +261,12 @@ def attack(
         overrides["seed"] = seed
     if _explicit("pin_init_states"):
         overrides["pin_init_states"] = pin_init_states
+    if init_states is not None:
+        try:
+            overrides["init_states"] = json.loads(init_states.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            _fail(f"--init-states {init_states}: {exc}")
+            return
     if _explicit("horizon"):
         overrides["horizon"] = horizon
     if _explicit("model"):
@@ -340,6 +358,11 @@ def attack(
         _fail(str(exc).strip('"'))
         return
     except NotImplementedError as exc:
+        _fail(str(exc))
+        return
+    except (InitStatePlanError, ScenePinError) as exc:
+        # A plan that does not fit the run is refused before anything loads; a pinned run whose
+        # arms started from different scenes stops rather than writing pairs that are not pairs.
         _fail(str(exc))
         return
     elapsed = time.perf_counter() - started

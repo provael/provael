@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, NonNegativeInt, field_validator, model_validator
 
 
 class RunConfig(BaseModel):
@@ -81,6 +81,15 @@ class RunConfig(BaseModel):
         "such a list refuses a pin. Each episode records the state it loaded (`init_state`), so "
         "the report shows the scenes either way and RunReport carries no field for the pin.",
     )
+    init_states: dict[str, list[NonNegativeInt]] | None = Field(
+        None,
+        description="On a suite with a fixed list of initial states (LIBERO), the init-state "
+        "indices to start each task's episodes from, per task: one per seed (seed index i starts "
+        "from entry i, in every arm and repeat) or, in a run whose only arm is the benign "
+        "baseline, one per episode. A run with any other arm must name one state per seed, so "
+        "every arm at a seed starts from one scene. Exclusive with pin_init_states; the runner "
+        "checks the lists against the run's tasks, seeds and arms before anything runs.",
+    )
     horizon: int = Field(8, ge=1, description="Maximum timesteps per episode.")
     defense: str | None = Field(
         None,
@@ -117,6 +126,25 @@ class RunConfig(BaseModel):
         if not v:
             raise ValueError("at least one attack (or attack family) must be specified")
         return v
+
+    @field_validator("init_states")
+    @classmethod
+    def _init_states_named(
+        cls, v: dict[str, list[int]] | None
+    ) -> dict[str, list[int]] | None:
+        if v is not None and (not v or any(not states for states in v.values())):
+            raise ValueError("init_states must name at least one state for every task it lists")
+        return v
+
+    @model_validator(mode="after")
+    def _one_scene_chooser(self) -> RunConfig:
+        """A pin and a named list both choose each episode's scene; a run takes one of them."""
+        if self.init_states is not None and self.pin_init_states is not None:
+            raise ValueError(
+                "init_states and pin_init_states both choose each episode's starting scene; "
+                "pass one of them"
+            )
+        return self
 
     @field_validator("accelerator")
     @classmethod

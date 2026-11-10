@@ -70,8 +70,11 @@ Enable the real path on a GPU box::
 from __future__ import annotations
 
 import builtins
+import hashlib
 import importlib.util
+import math
 import os
+import re
 from collections.abc import Callable, Sequence
 from typing import Any
 
@@ -83,7 +86,15 @@ from provael.policies.lerobot_adapter import MissingLeRobotError
 from provael.scoring.action_schema import SEVEN_DOF_DELTA_SCHEMA, ActionSchema
 from provael.suites.base import SuiteAdapter
 from provael.suites.keepout_zones import DEFAULT_KEEP_OUT_ZONE, KeepOutZone, zones_for
-from provael.types import IMAGE_KEY, Action, Observation, State, SuiteFeatures
+from provael.types import (
+    IMAGE_KEY,
+    Action,
+    Observation,
+    SceneBody,
+    SceneSnapshot,
+    State,
+    SuiteFeatures,
+)
 from provael.video import image_from
 
 #: Episode horizon per LIBERO task suite, in env steps. These are OpenVLA's evaluation budgets
@@ -343,6 +354,66 @@ def _check_pinned(env: Any, task: str, seed: int, pinned: int, loaded: int | Non
         )
 
 
+#: Quoted attribute values (file paths in a compiled MuJoCo XML) up to and including a
+#: site-packages / dist-packages directory: where Python is installed, not what the model is.
+_INSTALL_PREFIX = re.compile(r'(?<=")[^"<>]*?[/\\](?:site|dist)-packages[/\\]')
+
+
+def _yaw(quat: npt.NDArray[np.float64]) -> float:
+    """Rotation about the world z axis from a MuJoCo quaternion ``(w, x, y, z)``, radians."""
+    w, x, y, z = (float(v) for v in quat)
+    return math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
+
+
+def scene_snapshot_of(sim: Any) -> SceneSnapshot | None:
+    """The scene a MuJoCo sim holds now: a digest over its state, and its non-robot bodies.
+
+    Read through robosuite's binding (``sim.model`` / ``sim.data``, robosuite 1.4.0
+    ``utils/binding_utils.py``): ``qpos`` and ``qvel``, then each body's name, world position
+    (``xpos``) and orientation (``xquat``) in body-id order, all as little-endian float64. The
+    digest covers every body, the robot's included; ``scene_t0`` lists the rest, rounded for
+    reading. ``None`` on any read that fails: an unread scene is unrecorded, never a guess.
+    """
+    try:
+        model, data = sim.model, sim.data
+        qpos = np.asarray(data.qpos, dtype="<f8").reshape(-1)
+        qvel = np.asarray(data.qvel, dtype="<f8").reshape(-1)
+        xpos = np.asarray(data.xpos, dtype="<f8").reshape(-1, 3)
+        xquat = np.asarray(data.xquat, dtype="<f8").reshape(-1, 4)
+        names = [str(model.body_id2name(i) or "") for i in range(int(model.nbody))]
+    except Exception:  # noqa: BLE001 - the binding is version-dependent; absence is "unrecorded"
+        return None
+    if not (len(names) == len(xpos) == len(xquat)):
+        return None
+    digest = hashlib.sha256()
+    digest.update(b"qpos\0" + qpos.tobytes() + b"qvel\0" + qvel.tobytes())
+    bodies: list[SceneBody] = []
+    for name, pos, quat in zip(names, xpos, xquat, strict=True):
+        digest.update(b"body\0" + name.encode("utf-8") + b"\0" + pos.tobytes() + quat.tobytes())
+        # The robot's own bodies (arm, gripper, mount) and MuJoCo's world body stay in the digest
+        # and out of `scene_t0`, which lists the fixtures and objects a pairing has to agree on.
+        if name and name != "world" and not name.startswith(_ROBOT_PREFIXES):
+            bodies.append(
+                SceneBody(
+                    name=name,
+                    pos=(round(float(pos[0]), 6), round(float(pos[1]), 6), round(float(pos[2]), 6)),
+                    yaw=round(_yaw(quat), 6),
+                )
+            )
+    return SceneSnapshot(digest=digest.hexdigest(), bodies=tuple(bodies))
+
+
+def model_xml_digest(xml: str) -> str:
+    """sha256 of a compiled model's XML with install prefixes removed.
+
+    robosuite writes asset paths as absolute paths into the site-packages directory they were
+    installed in, so the raw XML of one model differs between two machines. Every quoted value is
+    cut back to the part after ``site-packages/`` (or ``dist-packages/``), which names the asset and
+    not the interpreter. A LIBERO checkout outside site-packages keeps its absolute paths.
+    """
+    return hashlib.sha256(_INSTALL_PREFIX.sub("", xml).encode("utf-8")).hexdigest()
+
+
 class LiberoSuiteAdapter(SuiteAdapter):
     """Wraps a real LeRobot LIBERO env behind our :class:`SuiteAdapter` interface."""
 
@@ -379,6 +450,7 @@ class LiberoSuiteAdapter(SuiteAdapter):
         self._init_state: int | None = None
         self._init_state_offset = 0
         self._init_state_pin: int | None = None
+        self._init_state_next: int | None = None
 
     @staticmethod
     def lerobot_available() -> bool:
@@ -494,22 +566,19 @@ class LiberoSuiteAdapter(SuiteAdapter):
                 f"{suite!r} (the runner does this from RunConfig.tasks) or fix the task name."
             )
         self._ensure_lerobot()
-        env = self._envs.get(task)
-        if env is None:
-            env = self._build_env(task_id)
-            if self._init_state_offset:
-                # A FRESH env only, before its first reset, so lerobot starts walking this task's
-                # initial states here instead of at 0. A plain attribute set through gymnasium's
-                # VectorEnv API: lerobot itself is not patched.
-                env.set_attr("init_state_id", self._init_state_offset)
-            self._envs[task] = env
+        env = self._env_for(task, task_id)
         pinned: int | None = None
-        if self._init_state_pin is not None:
+        if self._init_state_next is not None:
+            # A state named for this one episode (`--init-states`), used once and cleared, so a
+            # reset nobody chose a state for falls back to the pin or the counter.
+            pinned, self._init_state_next = self._init_state_next, None
+        elif self._init_state_pin is not None:
             # EVERY reset, cached env or fresh, so the seed picks the state and nothing an earlier
             # episode did can move it: lerobot's `step` resets itself on a success and loads the
             # next state, and this reset loads the pinned one over it. lerobot takes the counter
             # modulo the number of states, so the sum goes in unreduced.
             pinned = self._init_state_pin + seed
+        if pinned is not None:
             env.set_attr("init_state_id", pinned)
         self._active = env
         self._task = task
@@ -521,6 +590,60 @@ class LiberoSuiteAdapter(SuiteAdapter):
         if pinned is not None:
             _check_pinned(env, task, seed, pinned, self._init_state)
         return self._observation(obs)
+
+    def _env_for(self, task: str, task_id: int) -> Any:
+        """``task``'s env, built and cached on first use (one per task, as lerobot's eval does)."""
+        env = self._envs.get(task)
+        if env is None:
+            env = self._build_env(task_id)
+            if self._init_state_offset:
+                # A FRESH env only, before its first reset, so lerobot starts walking this task's
+                # initial states here instead of at 0. A plain attribute set through gymnasium's
+                # VectorEnv API: lerobot itself is not patched.
+                env.set_attr("init_state_id", self._init_state_offset)
+            self._envs[task] = env
+        return env
+
+    def choose_init_state(self, state: int | None) -> bool:
+        """Load fixed initial state ``state`` at the next reset only, then clear the choice.
+
+        The reset checks the state it loaded against the one asked for, as a pinned reset does, so
+        an episode cannot be recorded under a state lerobot did not load.
+        """
+        if state is not None and state < 0:
+            raise ValueError(f"an init state is a non-negative index, got {state}")
+        self._init_state_next = state
+        return True
+
+    def scene_snapshot(self) -> SceneSnapshot | None:
+        """The scene the last reset left, read from the robosuite sim (:func:`scene_snapshot_of`).
+
+        lerobot's reset loads the init state and then steps a few no-op actions so the objects
+        settle, so this is the settled scene the episode actually started from.
+        """
+        rs = self._robosuite_env()
+        return scene_snapshot_of(rs.sim) if rs is not None else None
+
+    def sim_model_digest(self, task: str) -> str | None:
+        """sha256 of ``task``'s compiled model XML (:func:`model_xml_digest`), or ``None``.
+
+        Read through robosuite 1.4.0's ``sim.model.get_xml()``, which saves the XML of the LAST
+        model MuJoCo compiled in the process. The runner asks once per task, before the task's
+        first episode: building a task's env compiles its model, and nothing else is compiled in
+        between, so the last model is this task's. The env is built here if it was not already, and
+        the counter is left alone. Unverified on a live simulator from this checkout; any failure
+        records ``None``.
+        """
+        suite, task_id = _parse_task(task, self.task_suite)
+        if suite != self.task_suite:
+            return None
+        self._ensure_lerobot()
+        rs = self._robosuite_env(self._env_for(task, task_id))
+        try:
+            xml = rs.sim.model.get_xml() if rs is not None else None
+        except Exception:  # noqa: BLE001 - version-dependent binding; absence is "unrecorded"
+            return None
+        return model_xml_digest(xml) if isinstance(xml, str) and xml else None
 
     def start_init_states_at(self, offset: int) -> bool:
         """Start each task env this adapter builds from now on at fixed initial state ``offset``.
@@ -695,8 +818,8 @@ class LiberoSuiteAdapter(SuiteAdapter):
 
     # -- the second predicate: robosuite's own contact and force signals -----
 
-    def _robosuite_env(self) -> Any | None:
-        """The robosuite env under the LeRobot vector env, or ``None`` (then the signal is N/A).
+    def _robosuite_env(self, vec_env: Any = None) -> Any | None:
+        """The robosuite env under a LeRobot vector env (default: the active one), or ``None``.
 
         ``vec_env.envs[0]`` is LeRobot's ``LiberoEnv`` (``.unwrapped`` in case a gym wrapper sits
         on it); its ``_env`` is LIBERO's ``OffScreenRenderEnv``; that one's ``env`` is the robosuite
@@ -705,7 +828,7 @@ class LiberoSuiteAdapter(SuiteAdapter):
         endpoint, not a measured ``False``.
         """
         try:
-            env0 = self._active.envs[0]
+            env0 = (vec_env if vec_env is not None else self._active).envs[0]
             base = getattr(env0, "unwrapped", env0)
             libero_env = getattr(base, "_env", None)
             rs = getattr(libero_env, "env", None)
@@ -791,4 +914,6 @@ __all__ = [
     "ContactRule",
     "LiberoRedTeamRules",
     "LiberoSuiteAdapter",
+    "model_xml_digest",
+    "scene_snapshot_of",
 ]

@@ -205,6 +205,31 @@ class BitFlipRecord(BaseModel):
     """
 
 
+class SceneBody(BaseModel):
+    """One non-robot body of a scene right after its reset: where it stood and which way it faced.
+
+    Rounded to six decimals (a micron, a microradian) for reading. The episode's
+    ``scene_t0_digest`` is taken over the exact values, so two scenes that round alike and differ
+    still digest differently.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(..., description="The simulator's body name.")
+    pos: tuple[float, float, float] = Field(..., description="World position (x, y, z), metres.")
+    yaw: float = Field(
+        ..., description="Rotation about the world z axis, radians, from the body's quaternion."
+    )
+
+
+@dataclass(frozen=True)
+class SceneSnapshot:
+    """What a suite read from its simulator right after a reset: a digest and the bodies."""
+
+    digest: str
+    bodies: tuple[SceneBody, ...]
+
+
 class AttackResult(BaseModel):
     """Outcome of a single episode: one ``(task, attack, seed)`` triple."""
 
@@ -289,6 +314,20 @@ class AttackResult(BaseModel):
         "`seed`; this field is the record of which scene ran (#136). Present from "
         "schema_version 8.",
     )
+    scene_t0_digest: str | None = Field(
+        None,
+        description="sha256 over the simulator state right after this episode's reset: qpos, "
+        "qvel, then every body's name, position and orientation, as float64. Two episodes started "
+        "from one scene only if these are equal; `init_state` is the index, this is the scene. "
+        "None where the suite exposes no simulator state (the stub) or the read failed. Present "
+        "from schema_version 9.",
+    )
+    scene_t0: list[SceneBody] | None = Field(
+        None,
+        description="The non-robot bodies of that scene with their positions and yaw, for reading "
+        "(rounded to 1e-6; the digest is over the exact values). None where `scene_t0_digest` is. "
+        "Present from schema_version 9.",
+    )
 
 
 class ASRStat(BaseModel):
@@ -306,6 +345,32 @@ class ASRStat(BaseModel):
         serialization sentinel. Read this (not ``asr``) whenever a 0-attempt group must show N/A.
         """
         return self.asr if self.attempts > 0 else None
+
+
+class ScenePairing(BaseModel):
+    """Whether each attacked episode started from its benign twin's scene (schema 9, P1.2).
+
+    A pair is an applicable episode of any arm but the benign baseline, with the benign episodes
+    at its ``(task, seed)``. On LIBERO the seed does not pick the scene unless the run pins it
+    (E-2026-19), so a pair shares a task and a seed and may not share a starting scene; this says
+    how many did. A side that recorded nothing is unrecorded, never a match.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    pairs: int = Field(..., ge=0, description="Attacked episodes with a benign twin.")
+    init_state_matched: int = Field(
+        ..., ge=0, description="Pairs whose two sides recorded one equal `init_state`."
+    )
+    init_state_unrecorded: int = Field(
+        ..., ge=0, description="Pairs where either side recorded no `init_state`."
+    )
+    scene_matched: int = Field(
+        ..., ge=0, description="Pairs whose two sides recorded one equal `scene_t0_digest`."
+    )
+    scene_unrecorded: int = Field(
+        ..., ge=0, description="Pairs where either side recorded no `scene_t0_digest`."
+    )
 
 
 class EaiTag(BaseModel):
@@ -777,7 +842,8 @@ class RunReport(BaseModel):
         ">=8 records `init_state`, the fixed initial state each episode's reset loaded, which the "
         "seed does not determine on LIBERO. >=9 records the rest of the deployed policy's runtime "
         "identity (input normaliser, processor and weight digests, rename map, camera order, "
-        "denoising steps, control rate). "
+        "denoising steps, control rate), each episode's starting scene (`scene_t0_digest`, "
+        "`scene_t0`), each task's compiled model digest and how many pairs shared a scene. "
         "Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed "
         "a calibration, because its trajectories do not exist.",
     )
@@ -866,6 +932,19 @@ class RunReport(BaseModel):
     )
     calibration: dict[str, CalibrationMeta] = Field(
         default_factory=dict, description="Per-task calibration metadata (calibrated tasks only)."
+    )
+    sim_model_digests: dict[str, str | None] = Field(
+        default_factory=dict,
+        description="Per task: sha256 of the compiled simulator model's XML, read once per task "
+        "with every quoted path cut back past its site-packages directory, so it names the model "
+        "and not where Python is installed. null where the suite compiles no model (the stub). "
+        "Schema >= 9.",
+    )
+    scene_pairing: ScenePairing | None = Field(
+        None,
+        description="How many attacked episodes started from their benign twin's scene (schema "
+        ">= 9). A pinned run refuses to finish with a mismatch, so there every recorded pair "
+        "matches; an unpinned run reports what it got.",
     )
 
     by_attack: dict[str, ASRStat] = Field(default_factory=dict)

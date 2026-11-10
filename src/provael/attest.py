@@ -524,6 +524,7 @@ _RESULT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     4: ("weight_corruption",),
     5: ("policy_seed",),
     8: ("init_state",),
+    9: ("scene_t0_digest", "scene_t0"),
 }
 
 #: TOP-LEVEL report fields introduced by each schema version — the same contract as
@@ -533,6 +534,7 @@ _RESULT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
 #: before schema 6 would verify as TAMPERED.
 _REPORT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     6: ("deployed_policy",),
+    9: ("sim_model_digests", "scene_pairing"),
 }
 
 #: Fields added to each `calibration.<task>` entry (`CalibrationMeta`) by schema version — the
