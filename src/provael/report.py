@@ -232,6 +232,32 @@ def _per_arm_outcomes(report: RunReport, rates: ReportRates) -> list[str]:
     return lines
 
 
+def _competence_section(report: RunReport) -> list[str]:
+    """The competence pre-run, when the run asked for one (``--competence-check``, P2.2)."""
+    check = report.competence
+    if check is None:
+        return []
+    lines = [
+        "## Competence check",
+        "",
+        f"> {check.episodes_per_task} benign episode(s) per task ran before the arms, at seeds "
+        "after the run's own, with the run's defense in place. A task whose task success fell "
+        f"below {100.0 * check.floor:.0f}% had its adversarial arms refused; the benign arm and "
+        "the harmless-variation controls still ran on it. These episodes enter no rate.",
+        "",
+        "| task | task success (pre-run) | decision | arms refused |",
+        "| --- | --- | --- | --- |",
+    ]
+    for task, row in check.by_task.items():
+        decision = "admitted" if row.admitted else "**refused**"
+        refused = ", ".join(row.refused) or "—"
+        lines.append(
+            f"| {task} | {_rate_cell(row.task_success, 'N/A')} | {decision} | {refused} |"
+        )
+    lines.append("")
+    return lines
+
+
 def to_markdown(
     report: RunReport, decision: ReleaseDecision | None = None, *, termination: str = FIRST_EVENT
 ) -> str:
@@ -387,6 +413,7 @@ def to_markdown(
         )
     lines.append("")
     lines += _per_arm_outcomes(report, rates)
+    lines += _competence_section(report)
     fdr = fdr_by_attack(report)
     if fdr:
         lines.append("## Significance (Benjamini-Hochberg FDR)")
@@ -459,11 +486,14 @@ def to_markdown(
             lines.append("")
     lines.append("## ASR by task")
     lines.append("")
-    lines.append("| task | ASR | successes | attempts |")
-    lines.append("| --- | --- | --- | --- |")
+    # Clean task success beside each task's rate (P2.2): a task the policy cannot do unattacked
+    # has no task to lose under an attack, whatever its rate says.
+    lines.append("| task | ASR | successes | attempts | clean task success (benign arm) |")
+    lines.append("| --- | --- | --- | --- | --- |")
     for name, stat in report.by_task.items():
         a, asr, s, n = _stat_row(name, stat)
-        lines.append(f"| {a} | {asr} | {s} | {n} |")
+        clean = _rate_cell(rates.clean_task_success_by_task.get(name), "N/A")
+        lines.append(f"| {a} | {asr} | {s} | {n} | {clean} |")
     lines.append("")
     lines.append("## Sample adversarial instructions")
     lines.append("")
@@ -576,6 +606,13 @@ def render_summary(report: RunReport, console: Console | None = None) -> None:
             "clean-task-success (benign control): "
             f"{100.0 * report.clean_task_success_rate:.1f}% — the unattacked task-completion rate "
             "the ASR is read against"
+        )
+    if report.competence is not None:
+        refused = [t for t, row in report.competence.by_task.items() if not row.admitted]
+        console.print(
+            f"competence check: {len(refused)} of {len(report.competence.by_task)} task(s) below "
+            f"the {100.0 * report.competence.floor:.0f}% floor, adversarial arms refused"
+            + (f" on {', '.join(refused)}" if refused else "")
         )
     benign = benign_control(report)
     fpr = "n/a" if benign is None else benign_control_text(report)

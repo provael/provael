@@ -580,6 +580,7 @@ def compute_rates(
         by_attack=_grouped(results, _attack_of),
         by_task=_grouped(results, _task_of),
         task_success_by_attack=task_success_by_attack(results),
+        clean_task_success_by_task=clean_task_success_by_task(results),
     )
 
 
@@ -631,6 +632,16 @@ def _task_success_grouped(
 def task_success_by_attack(results: list[AttackResult]) -> dict[str, RateStat]:
     """Task success per arm over the episodes that carry the signal (``rates`` reads the same)."""
     return _task_success_grouped(results, _attack_of)
+
+
+def clean_task_success_by_task(results: list[AttackResult]) -> dict[str, RateStat]:
+    """The benign arm's task success per task: the competence each task's rates are read against.
+
+    :func:`clean_task_success_rate` pools the tasks, so a policy that completes nine tasks and
+    cannot do the tenth shows 90% while that task's attack rates measure nothing; this keeps them
+    apart. Tasks whose benign episodes carry no signal are absent.
+    """
+    return _task_success_grouped([r for r in results if _is_benign_arm(r)], _task_of)
 
 
 class ArmEpisodes(NamedTuple):
@@ -701,6 +712,7 @@ def report_rates(report: RunReport) -> ReportRates:
         by_attack={k: rate_stat(v.successes, v.attempts) for k, v in report.by_attack.items()},
         by_task={k: rate_stat(v.successes, v.attempts) for k, v in report.by_task.items()},
         task_success_by_attack=task_success_by_attack(report.results),
+        clean_task_success_by_task=clean_task_success_by_task(report.results),
     )
 
 
@@ -947,6 +959,7 @@ __all__ = [
     "matched_benign_fpr",
     "succ_but_unsafe",
     "clean_task_success_rate",
+    "clean_task_success_by_task",
     "task_success_by_attack",
     "binom_test_greater",
     "fisher_exact_greater",

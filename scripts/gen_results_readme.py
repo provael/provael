@@ -205,6 +205,39 @@ def _task_success_grid(
     return lines
 
 
+def _competence(reports: list[dict[str, Any]]) -> list[str]:
+    """The competence pre-run, when the shards ran one (``--competence-check``, P2.2).
+
+    Each task's benign pre-run against the floor, and the adversarial arms refused on a task below
+    it: a refused arm has no rows on that task, and this says why rather than leaving a gap.
+    """
+    checks = [r["competence"] for r in reports if r.get("competence")]
+    if not checks:
+        return []
+    shapes = sorted({(c["episodes_per_task"], c["floor"]) for c in checks})
+    episodes = ", ".join(str(n) for n, _ in shapes)
+    floors = ", ".join(_pct(f) for _, f in shapes)
+    lines = [
+        "",
+        "## Competence check",
+        "",
+        f"Before the arms, {episodes} benign episode(s) per task ran at seeds after the run's own; "
+        f"a task whose task success fell below {floors} had its adversarial arms refused. The "
+        "pre-run's episodes enter no rate above.",
+        "",
+        "| task | task success (pre-run) | decision | arms refused |",
+        "| --- | ---: | --- | --- |",
+    ]
+    for check in checks:
+        for task, row in sorted(check["by_task"].items()):
+            stat = row["task_success"]
+            done = f"{stat['successes']}/{stat['trials']} ({_pct(stat['rate'])})"
+            decision = "admitted" if row["admitted"] else "**refused**"
+            refused = ", ".join(f"`{a}`" for a in row["refused"]) or "—"
+            lines.append(f"| `{task}` | {done} | {decision} | {refused} |")
+    return lines
+
+
 def render(run_dir: Path) -> str:
     shards = _load_shards(run_dir)
     results = _results(shards)
@@ -369,6 +402,7 @@ def render(run_dir: Path) -> str:
             ]
     schema = min(int(r.get("schema_version", 1)) for r in reports)
     lines += _outcomes(arms, results, roles, schema)
+    lines += _competence(reports)
 
     # Per-task grid
     if len(tasks) > 1:

@@ -50,7 +50,7 @@ from provael.scoring.asr import (
     succ_but_unsafe,
 )
 from provael.scoring.paired import scene_pairing
-from provael.types import RunReport
+from provael.types import CompetenceCheck, RunReport
 
 #: Fields every shard of one experiment must agree on. A difference in any of them means the shards
 #: are not measuring the same thing, and pooling them would produce a rate describing no run that
@@ -177,11 +177,36 @@ def combine_reports(reports: list[RunReport]) -> RunReport:
         scene_pairing=scene_pairing(results) if head.schema_version >= 9 else None,
         rates=compute_rates(results, suite=head.suite) if head.schema_version >= 9 else None,
         predicates={k: v for r in reports for k, v in r.predicates.items()},
+        competence=_merged_competence(reports),
         by_attack=attack_breakdown,
         by_task=by_task(results),
         eai={k: v for r in reports for k, v in r.eai.items()},
         roles={r.attack: semantic_role(r) for r in results},
         results=results,
+    )
+
+
+def _merged_competence(reports: list[RunReport]) -> CompetenceCheck | None:
+    """Each shard's competence check, one entry per task, when every shard ran the same check.
+
+    A shard that ran no check, or a different number of pre-run episodes or a different floor,
+    gated its tasks differently, and pooling it with the others would describe no run that
+    happened; that is a mismatch like any other.
+    """
+    checks = [r.competence for r in reports]
+    if all(check is None for check in checks):
+        return None
+    ran = [check for check in checks if check is not None]
+    if len(ran) < len(checks) or len({(c.episodes_per_task, c.floor) for c in ran}) > 1:
+        seen = sorted({"none" if c is None else f"{c.episodes_per_task}@{c.floor}" for c in checks})
+        raise ShardMismatchError(
+            f"shards disagree on the competence check (episodes@floor): {seen}. They gated their "
+            "tasks differently, so pooling them would describe no run that happened."
+        )
+    return CompetenceCheck(
+        episodes_per_task=ran[0].episodes_per_task,
+        floor=ran[0].floor,
+        by_task={task: row for check in ran for task, row in check.by_task.items()},
     )
 
 

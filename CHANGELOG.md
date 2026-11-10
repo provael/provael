@@ -83,6 +83,14 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   task; in the 14 September control run `benign_reword` left the envelope in 0 of 30 episodes and
   completed the task in 5 of 30, which an exit rate alone cannot show. The regenerated READMEs gain
   these tables and no number in them moves.
+- **`provael attack --competence-check N` asks whether the policy can do each task before it is
+  attacked.** N benign episodes per task run first, at the seeds after the run's own, and a task
+  whose task success falls below `--competence-floor` (default 0.8) runs no adversarial arm; the
+  benign arm and the controls still run there. Report schema 9 records the pre-run and each
+  decision in `competence`, `rates` gains `clean_task_success_by_task`, and `report.md` prints
+  both. Off by default and refused with `--resume`; `min_clean_task_success` in a protocol still
+  decides the release verdict. Why: a 0% attack rate on a policy that cannot do the task unattacked
+  measures nothing. No committed run used it, so no number moves.
 
 ### Changed
 

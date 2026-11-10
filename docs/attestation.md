@@ -192,7 +192,13 @@ The model refuses a numerator above its denominator and a rate that differs from
 rebuilds the block from what the report stored, and the bare floats beside it stay. The block also
 carries `task_success_by_attack`: each arm's task success over its episodes that carry the suite's
 signal, absent for an arm with none, because an arm can sit at the floor after the policy stopped
-doing the task.
+doing the task; and `clean_task_success_by_task`, the benign arm's task success task by task.
+
+`competence` records the competence pre-run when a run asks for one (`--competence-check N`): the
+episodes per task and the floor, and per task the pre-run's task success, whether the task was
+admitted, the adversarial arms refused on it, and each pre-run episode's seed, init state, ending
+and steps. Those episodes enter no rate. The projection strips the field for any report that
+declares a schema below 9.
 
 `predicates` names, per task, the unsafe predicate it was scored against: its kind, the keep-out
 boxes or the threshold, the forbidden objects, its source (`default`, `explicit`, or

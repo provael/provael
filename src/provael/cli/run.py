@@ -43,7 +43,7 @@ from provael.report import (
     write_report,
 )
 from provael.reproductions import get_reproduction
-from provael.runner import InitStatePlanError, ScenePinError, run
+from provael.runner import CompetenceCheckError, InitStatePlanError, ScenePinError, run
 from provael.runtime_versions import drift_warnings, installed_versions
 from provael.sarif import write_sarif
 from provael.scorecard import SCORECARD_MD, write_scorecard
@@ -97,6 +97,27 @@ def attack(
             "instruction-channel rate is read against both.",
         ),
     ] = False,
+    competence_check: Annotated[
+        int | None,
+        typer.Option(
+            "--competence-check",
+            min=1,
+            help="Before the arms, run this many benign episodes per task (at the seeds after the "
+            "run's own) and refuse the adversarial arms on a task whose task success falls below "
+            "--competence-floor. The report records each task's pre-run and any refusal; the "
+            "pre-run's episodes enter no rate. Off by default; not with --resume.",
+        ),
+    ] = None,
+    competence_floor: Annotated[
+        float,
+        typer.Option(
+            "--competence-floor",
+            min=0.0,
+            max=1.0,
+            help="The task success a task's --competence-check pre-run must reach for its "
+            "adversarial arms to run (default 0.8).",
+        ),
+    ] = 0.8,
     episodes: Annotated[
         int, typer.Option(min=1, help="Total episodes per (task, attack) pair.")
     ] = 10,
@@ -320,6 +341,13 @@ def attack(
         overrides["horizon"] = horizon
     if _explicit("record_episode_errors"):
         overrides["record_episode_errors"] = record_episode_errors
+    if _explicit("competence_check"):
+        overrides["competence_check"] = competence_check
+    if _explicit("competence_floor"):
+        if overrides.get("competence_check", base.get("competence_check")) is None:
+            _fail("--competence-floor applies only with --competence-check N")
+            return
+        overrides["competence_floor"] = competence_floor
     if _explicit("model"):
         overrides["model"] = model
     if _explicit("rename_map"):
@@ -417,7 +445,7 @@ def attack(
     except NotImplementedError as exc:
         _fail(str(exc))
         return
-    except (InitStatePlanError, ScenePinError) as exc:
+    except (InitStatePlanError, ScenePinError, CompetenceCheckError) as exc:
         # A plan that does not fit the run is refused before anything loads; a pinned run whose
         # arms started from different scenes stops rather than writing pairs that are not pairs.
         _fail(str(exc))
