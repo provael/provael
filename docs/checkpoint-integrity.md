@@ -1,7 +1,7 @@
 # Checkpoint supply-chain integrity
 
 A pre-load control for the CI gate: **are we about to load the weights we think we are, in a format
-that is safe to load?**
+that is safe to load, and will loading the checkpoint run code nobody reviewed?**
 
 !!! warning "This is not an attack-success rate, and it does not reduce one"
     Checkpoint integrity is a **supply-chain control**. It produces a **verdict**, not a rate. A
@@ -50,13 +50,57 @@ verdict.
 | Digest matches a pinned SHA-256 | **fail closed** | "We did not check" and "we checked and it matched" must not produce the same verdict |
 | Refuses pickle-format weights | **fail closed** | Loading a pickle executes it |
 | Prefers safetensors | advisory | Where both are present the checkpoint is loadable safely — load the safetensors and do not fall back |
+| Refuses a checkpoint whose JSON chooses code that runs on load | **fail closed** | lerobot loads whatever the checkpoint's files name; see [the next section](#what-loading-would-run) |
 
 The digest is computed over the checkpoint's weight files, **order- and layout-independent** (per-file
 SHA-256, sorted, then hashed), so a pin taken once re-checks anywhere.
 
-Both fail-closed behaviours have an **explicit opt-out**, matching how the rest of the gate handles
+Every fail-closed behaviour has an **explicit opt-out**, matching how the rest of the gate handles
 defaults (`fail-on-regression` defaults true). An opt-out is recorded in the evidence — never
 silent.
+
+## What loading would run
+
+Before it loads any weights, lerobot 0.5.1 reads `config.json`, `policy_preprocessor.json` and
+`policy_postprocessor.json` from the checkpoint, then loads what they name: the backbone
+in `vlm_model_name`, each tokenizer step's `tokenizer_name`, the policy class its `type` picks
+(several load further models named in their own config), and, for a step with no registered name,
+whatever its `class` path imports. transformers 5.3.0, which lerobot 0.5.1 pins exactly, adds
+**PYSEC-2026-2290**: a repo loaded that way can turn remote code on for itself. Releases up to
+0.47.0 do not check any of this, so there, naming a checkpoint with `provael attack --model` can
+run code its author chose.
+
+From the first release after 0.47.0, `provael attack` reads those three files before it imports
+anything from lerobot, and refuses the checkpoint if they:
+
+| Refused | Why |
+| --- | --- |
+| turn `trust_remote_code` on anywhere, or carry `auto_map` in `config.json` | both ask transformers to run code shipped in a repo |
+| name a `vlm_model_name` or tokenizer repo outside the three below | lerobot loads it with `from_pretrained` |
+| use a policy `type` other than `smolvla`, `pi0` or `pi05` | other types load models their own config names, and for `pi0_fast` and `groot` lerobot passes `trust_remote_code=True` itself |
+| use a processor step this project has not read in lerobot 0.5.1, or a step with no registered name | lerobot builds an unknown step from its config, and imports a nameless step's `class` and calls it |
+| name a step `class` outside lerobot | the same import, of code from anywhere |
+| build `action_tokenizer_processor` without `trust_remote_code: false` | lerobot 0.5.1 defaults it to true |
+| set `use_peft` | lerobot then loads a second checkpoint, named in `adapter_config.json`, that this check never reads |
+
+The three repos were read off known-good checkpoints on the Hub on 10 November 2026:
+`HuggingFaceTB/SmolVLM2-500M-Instruct` from `HuggingFaceVLA/smolvla_libero`,
+`HuggingFaceTB/SmolVLM2-500M-Video-Instruct` from `lerobot/smolvla_base`, and
+`google/paligemma-3b-pt-224` from `lerobot/pi05_libero_finetuned_v044`. All three checkpoints
+pass. A missing file is not a problem by itself; a Hub checkpoint with no `config.json` is not
+loaded, since lerobot has nothing to build.
+
+For a Hub checkpoint the three files are read at one commit, and lerobot is handed that snapshot
+instead of the repo id, so an owner who changes the repo during the load does not change what
+loads. `provael verify-checkpoint --path` makes the same check on every checkpoint directory under
+the path, each `snapshots/<commit>/` of a Hugging Face cache included, and fails closed the same
+way. A path holding no `config.json` or processor file is recorded as not checked.
+
+To load a refused checkpoint anyway, set `PROVAEL_TRUST_CHECKPOINT_CODE=1` in the environment of
+the command that loads it. `provael attack` then warns, naming every problem, and goes on;
+`verify-checkpoint` passes and records each problem as accepted. The execution manifest records
+the variable. Setting it accepts code the checkpoint's author chose, so set it only for a
+checkpoint you trust, on a machine with no secrets to lose.
 
 ## Use it
 
@@ -112,6 +156,10 @@ The `note` travels with the record so the distinction survives being pasted into
 - Pinning a digest of a checkpoint you never audited pins *that* checkpoint, faithfully. Integrity
   is not provenance.
 - `allow-pickle-checkpoint: true` **accepts** code execution from the checkpoint author. It does not
-  make it safe, and the evidence says so.
+  make it safe, and the evidence says so. `PROVAEL_TRUST_CHECKPOINT_CODE=1` is the same kind of
+  acceptance, for the code a checkpoint's JSON makes lerobot load.
+- The code check reads JSON and trusts the three backbone repos it allows as their owners publish
+  them. The weights still load by repo id, so they are not pinned to the commit the check read;
+  they are safetensors, which hold no code, and `--digest` pins them.
 - This is not a certificate and not a notified-body opinion — the same scope that applies to every
   other artifact Provael emits.

@@ -77,6 +77,24 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   (`.github/pip-audit-extras-allowlist.toml`: each id with a reason, a reachability finding and a
   review date). It could not fail before, so a new advisory in torch, transformers, diffusers,
   accelerate, datasets, fsspec or setuptools printed a line and the merge went ahead.
+- **A LeRobot checkpoint can no longer choose code that runs when Provael loads it.**
+  `LeRobotAdapter.load()` reads the checkpoint's `config.json`, `policy_preprocessor.json` and
+  `policy_postprocessor.json` before any `from_pretrained`, and raises `UntrustedCheckpointError`
+  when they turn `trust_remote_code` on or carry `auto_map`, name a backbone or tokenizer outside
+  three checked repos, use a policy type other than `smolvla`, `pi0` or `pi05` or a processor step
+  not read in lerobot 0.5.1, name a step class outside lerobot, leave `action_tokenizer_processor`
+  trusting remote code, or set `use_peft`. A Hub checkpoint's three files are read at one commit
+  and lerobot is handed that snapshot, so the repo cannot change between the check and the load.
+  `provael verify-checkpoint --path` makes the same check and fails closed on it.
+  `PROVAEL_TRUST_CHECKPOINT_CODE=1` loads a refused checkpoint anyway with a warning, and the
+  execution manifest records the variable; `--policy pi0fast` and `--policy groot` now need it,
+  because lerobot itself loads their tokenizer or backbone with `trust_remote_code=True`. Why:
+  lerobot 0.5.1 loads whatever those files name, and transformers 5.3.0, which it pins, lets a
+  loaded config turn remote code on for itself (PYSEC-2026-2290, fixed in 5.5.0), so
+  `provael attack --model <repo>` could run code the repo's author chose. The GPU-extras audit
+  now lists PYSEC-2026-2290 as not reachable and names this check. The three checkpoints the
+  published runs and the smolvla default use pass as they are, and `RunConfig` and `report.json`
+  do not change.
 
 ## [0.47.0] — 2026-11-07
 
