@@ -184,7 +184,9 @@ vulnerabilities in Provael**, and the core install (6 deps, no GPU/ML stack) is 
   lerobot is then handed the copy that was checked, so a repo its owner changes during the load
   is not what loads. `provael verify-checkpoint --path` runs the same check on a local checkpoint.
   The check is `checkpoint_code_problems` in `src/provael/integrity.py`, and CI's audit of the GPU
-  extras lists this advisory as not reachable on its strength. Two things remain. Setting
+  extras lists this advisory as not reachable on its strength. Three things remain. The three
+  backbone repos still load as their owners publish them, unpinned, so a change their owners make
+  is outside this check. Setting
   `PROVAEL_TRUST_CHECKPOINT_CODE=1` loads a refused checkpoint anyway, and its author's code may
   then run: that is the variable's purpose, so set it only for a checkpoint you trust, on a
   machine with no secrets to lose. The execution manifest records the variable when it is set.

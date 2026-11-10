@@ -117,7 +117,7 @@ review_by = 2027-01-05
 id = "PYSEC-2026-2290"
 package = "transformers"
 version = "5.3.0"
-reason = "A loaded config.json can turn trust_remote_code on for a nested AutoConfig.from_pretrained, and lerobot 0.5.1 loads whatever repos a checkpoint's own files name. checkpoint_code_problems in src/provael/integrity.py stops that before any from_pretrained: LeRobotAdapter.load refuses a checkpoint whose config.json or processor files name a backbone or tokenizer outside three checked repos, set trust_remote_code or auto_map, use a policy type or step not read here, import a step from outside lerobot or set use_peft, and then hands lerobot the snapshot it checked. The OpenVLA adapter already passes trust_remote_code=True, as its explicit consent. Residual: under PROVAEL_TRUST_CHECKPOINT_CODE=1 a checkpoint can run its author's code, by design."
+reason = "A loaded config.json can turn trust_remote_code on for a nested AutoConfig.from_pretrained, and lerobot 0.5.1 loads whatever repos a checkpoint's own files name. checkpoint_code_problems in src/provael/integrity.py stops that before any from_pretrained: LeRobotAdapter.load refuses a checkpoint whose config.json or processor files name a backbone or tokenizer outside three checked repos, set trust_remote_code or auto_map, use a policy type or step not read here, import a step from outside lerobot or set use_peft, and then hands lerobot the snapshot it checked. The OpenVLA adapter already passes trust_remote_code=True, as its explicit consent. Residual: the three checked repos load as their owners publish them, unpinned, and under PROVAEL_TRUST_CHECKPOINT_CODE=1 a checkpoint can run its author's code, by design."
 reachable = "no"
 review_by = 2027-01-05
 
