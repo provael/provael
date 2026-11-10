@@ -160,7 +160,8 @@ resolve is `null`. They sit inside a nested model, so the projection strips them
 that declares a schema below 9 (`attest._DEPLOYED_POLICY_FIELDS_ADDED_IN`), and every earlier
 attestation keeps verifying. The execution manifest (manifest schema 4) records the installed
 versions of the simulator and policy stack and fills `checkpoint_digest` from the weight digest;
-`provael attack` and `provael doctor` warn when a LIBERO run uses mujoco 3.4.0 or newer, or
+`provael attack` and `provael doctor` warn when a `libero_spatial` run uses mujoco 3.4.0 or newer
+(the task suite the upstream report concerns; the lock itself resolves a later mujoco), or
 versions that differ from the `[lerobot]` resolution in `uv.lock`.
 
 Each episode also records the scene its reset left, read from the simulator after lerobot's settle

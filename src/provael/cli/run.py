@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import time
 from pathlib import Path
@@ -46,6 +47,7 @@ from provael.runner import InitStatePlanError, ScenePinError, run
 from provael.runtime_versions import drift_warnings, installed_versions
 from provael.sarif import write_sarif
 from provael.scorecard import SCORECARD_MD, write_scorecard
+from provael.suites.libero import suite_and_ids_from_tasks
 from provael.verdict import write_decision
 
 
@@ -341,7 +343,14 @@ def attack(
     # different measurement, and execution-manifest.json records the versions either way.
     # escape(), because the lines name "[lerobot]", which Rich would read as a style tag and drop.
     uses_lerobot = config.suite == "libero" or config.policy in REQUIRES_LEROBOT
-    for line in drift_warnings(installed_versions(), suite=config.suite, uses_lerobot=uses_lerobot):
+    task_suite = None
+    if config.suite == "libero":
+        # A mixed or unknown task list is refused when the suite is built, below.
+        with contextlib.suppress(ValueError):
+            task_suite = suite_and_ids_from_tasks(config.tasks or [])[0]
+    for line in drift_warnings(
+        installed_versions(), suite=config.suite, uses_lerobot=uses_lerobot, task_suite=task_suite
+    ):
         _err.print(f"[yellow]warning:[/yellow] {escape(line)}")
 
     calibrations = None

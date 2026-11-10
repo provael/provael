@@ -10,16 +10,21 @@ The GPU image installs whatever versions resolve on the day it is built, and unt
 schema 4 no artifact said which versions ran.
 
 So the execution manifest records :func:`installed_versions` for :data:`TRACKED_PACKAGES`, and
-``provael attack`` and ``provael doctor`` print :func:`drift_warnings`: one line when a LIBERO run
-uses mujoco 3.4.0 or newer, and one when an installed version differs from the ``[lerobot]``
-resolution in ``uv.lock``. They are warnings, not refusals: a different stack is a different
-measurement, and the reader of the manifest decides whether it is the one they wanted.
+``provael attack`` and ``provael doctor`` print :func:`drift_warnings`: one line when a
+``libero_spatial`` run (or ``doctor``, which names no task suite) sees mujoco 3.4.0 or newer, and
+one when an installed version differs from the ``[lerobot]`` resolution in ``uv.lock``. They are
+warnings, not refusals: a different stack is a different measurement, and the reader of the
+manifest decides whether it is the one they wanted.
 
 WHY A COPY OF THE LOCK. A wheel ships no ``uv.lock``, and the GPU container pip-installs a release,
 so the resolution the warning compares against is copied into :data:`LOCKED_LEROBOT_RESOLUTION`.
 ``tests/test_runtime_versions.py`` parses ``uv.lock`` and fails when the two disagree, so the copy
 cannot drift from the file it copies. Note that the lock itself resolves mujoco 3.8.1, past the
-3.4.0 line, so a run on the locked stack gets the mujoco warning too.
+3.4.0 line, so a ``libero_spatial`` run on the locked stack gets the mujoco warning too.
+
+WHY ONLY ``libero_spatial``. The report is about that task suite's stored init states, and every
+run on the locked stack is past 3.4.0: a line printed on every LIBERO run, ``libero_object``
+included, would be printed on every run and read by nobody (10 November 2026, PR review).
 """
 
 from __future__ import annotations
@@ -51,6 +56,9 @@ LOCKED_LEROBOT_RESOLUTION: dict[str, str] = {
 #: libero_spatial task 5 init states no longer settle as before (reported there, not measured
 #: here).
 MUJOCO_SETTLING_CHANGE: tuple[int, int, int] = (3, 4, 0)
+
+#: The LIBERO task suite that report is about. The mujoco line is printed for a run on it only.
+SETTLING_REPORT_SUITE = "libero_spatial"
 
 _RELEASE = re.compile(r"^(\d+)(?:\.(\d+))?(?:\.(\d+))?")
 
@@ -92,14 +100,26 @@ def lock_drift(installed: Mapping[str, str | None]) -> dict[str, tuple[str, str]
 
 
 def drift_warnings(
-    installed: Mapping[str, str | None], *, suite: str, uses_lerobot: bool
+    installed: Mapping[str, str | None],
+    *,
+    suite: str,
+    uses_lerobot: bool,
+    task_suite: str | None = None,
 ) -> list[str]:
-    """The warning lines for a run on ``suite``: mujoco past the settling change on LIBERO, and
-    versions off the ``[lerobot]`` lock when the run uses that stack (``uses_lerobot``)."""
+    """The warning lines for a run on ``suite``: mujoco past the settling change on a
+    :data:`SETTLING_REPORT_SUITE` run, and versions off the ``[lerobot]`` lock when the run uses
+    that stack (``uses_lerobot``). ``task_suite`` is the LIBERO task suite the run's tasks name;
+    ``None`` (``provael doctor``, which runs nothing) prints the mujoco line whatever the suite."""
     lines: list[str] = []
     mujoco = installed.get("mujoco")
     release = release_of(mujoco) if mujoco is not None else None
-    if suite == "libero" and release is not None and release >= MUJOCO_SETTLING_CHANGE:
+    reported_suite = task_suite is None or task_suite == SETTLING_REPORT_SUITE
+    if (
+        suite == "libero"
+        and reported_suite
+        and release is not None
+        and release >= MUJOCO_SETTLING_CHANGE
+    ):
         lines.append(
             f"mujoco {mujoco} is installed. A comment on huggingface/lerobot#2354 reports that "
             "from mujoco 3.4.0 the stored libero_spatial task 5 init states no longer settle as "
@@ -123,6 +143,7 @@ def drift_warnings(
 __all__ = [
     "LOCKED_LEROBOT_RESOLUTION",
     "MUJOCO_SETTLING_CHANGE",
+    "SETTLING_REPORT_SUITE",
     "TRACKED_PACKAGES",
     "drift_warnings",
     "installed_versions",

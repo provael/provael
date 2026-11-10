@@ -40,7 +40,8 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   discrete-state flag where a policy has them; `null` where unresolved. The execution manifest
   (schema 4) records the installed lerobot, torch, transformers, mujoco, robosuite, hf-libero,
   gymnasium and numpy versions and fills `checkpoint_digest`, and `provael attack` and `provael
-  doctor` warn on mujoco 3.4.0 or newer for LIBERO and on versions off the `[lerobot]` lock. Why:
+  doctor` warn on mujoco 3.4.0 or newer for a `libero_spatial` run (the task suite the upstream
+  report is about) and on versions off the `[lerobot]` lock. Why:
   two loads of one checkpoint can execute differently (normaliser statistics, a swapped camera, the
   denoising budget), and none of it was in the artifact. Older reports load and digest unchanged.
   No number moves.
@@ -103,6 +104,12 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ### Fixed
 
+- **The two 9 August runs say why their manifests do not verify.** Each `report.json` in
+  `results/smolvla_libero_object_suite` and `results/smolvla_libero_object_control` had
+  `decisions[]` removed for size before it was committed, and provael 0.32.0 itself computes a
+  different `report_digest` for all twenty files than the manifest beside each one holds. Both
+  READMEs now say so, and the test that holds every other committed report to its manifest names
+  these two runs instead of skipping every schema-2 report. No number moves.
 - **The README's badges render, and its sentences match the repository again.** A missing blank
   line after the demo caption made GitHub and PyPI print the badge row as literal Markdown. The
   headline's Holm correction ran across six applicable arms, not seven; the McNemar figure says its
