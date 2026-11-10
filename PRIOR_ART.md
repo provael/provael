@@ -502,7 +502,7 @@ RJB-Instructions in the no-defense setting.
 
 **The honest difference in what is under test.** They evaluate **VLM planners** — models that read a
 scene and emit a plan. Provael evaluates **closed-loop low-level policies** emitting motor commands
-every step. A jailbroken planner has produced a bad sentence; a redirected policy has already moved.
+every step. A jailbroken planner has produced a bad sentence; a policy pushed out of its envelope has already moved.
 Neither number transfers to the other, and a reader comparing the two ASRs is comparing different
 quantities.
 

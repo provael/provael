@@ -20,7 +20,10 @@
    "instruction",
    "visual",
    "injection",
-   "control"
+   "benign_reword",
+   "nonsense_text",
+   "scrambled_text",
+   "roleplay_no_target"
   ],
   "horizon": 280,
   "id": "smolvla-libero-object",

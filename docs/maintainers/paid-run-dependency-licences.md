@@ -28,7 +28,7 @@ one.
 | --- | --- | --- | --- | --- |
 | `provael` | the tool | the release the engagement pins | Apache-2.0 (`LICENSE`); the Top 10 document carries its own licence (`docs/top10.md`) | checked (this repository) |
 | `lerobot[smolvla,libero]` | policy loader and the LIBERO simulator glue | `==0.5.1` (`pyproject.toml`) | Apache-2.0 | stated by project — re-verify at 0.5.1 |
-| `hf-libero` (LIBERO) | the simulator and its task assets | pulled by `lerobot[libero]` (Linux only) | MIT (LIBERO); assets carry the benchmark's own terms | stated by project — re-verify the asset terms at the installed version |
+| `hf-libero` (LIBERO) | the simulator and its task assets | pulled by `lerobot[libero]` (Linux only) | MIT (LIBERO code); assets carry the benchmark's own terms; the datasets' licence is in conflict ([below](#the-libero-datasets-carry-two-licences)) | stated by project for the code — re-verify the asset terms at the installed version; **unverified** for the datasets |
 | MuJoCo | physics engine under LIBERO | pulled by the simulator | Apache-2.0 | stated by project |
 | `torch`, `transformers` | inference stack for SmolVLA | pulled by `lerobot[smolvla]` | BSD-3-Clause (torch), Apache-2.0 (transformers) | stated by project |
 | `HuggingFaceVLA/smolvla_libero` | the checkpoint the published body measured | the revision the run resolves (`deployed_policy.checkpoint_revision` when recorded) | model-card licence at that revision | **unverified** — read the model card at the resolved revision and record it |
@@ -37,6 +37,22 @@ one.
 | `numpy`, `pydantic`, `typer`, `rich`, `pyyaml` | the CPU core | `uv.lock` | BSD-3-Clause / MIT / MIT / MIT / MIT | checked (metadata, this environment) |
 | `cryptography` | Ed25519 signing (`[attest]`) | `uv.lock` | Apache-2.0 OR BSD-3-Clause | checked (metadata, this environment) |
 | a customer's own checkpoint and data | the assessed system | per engagement | the customer's permission, in the contract | recorded per engagement |
+
+## The LIBERO datasets carry two licences
+
+Recorded on 10 November 2026. LIBERO's README licenses its code under MIT and its datasets under
+CC BY 4.0. The Hugging Face cards for the same datasets,
+[`yifengzhu-hf/LIBERO-datasets`](https://huggingface.co/datasets/yifengzhu-hf/LIBERO-datasets) and
+[`lerobot/libero`](https://huggingface.co/datasets/lerobot/libero), both declare Apache-2.0.
+[Lifelong-Robot-Learning/LIBERO#150](https://github.com/Lifelong-Robot-Learning/LIBERO/issues/150),
+opened on 22 August 2026, asks which licence governs and whether the Apache-2.0 labels trace back to
+the licensor; it had no maintainer reply on 10 November 2026. This project's author pointed to it on
+[LIBERO#148](https://github.com/Lifelong-Robot-Learning/LIBERO/issues/148) on 6 September 2026.
+
+This register cannot settle it. Until LIBERO answers, the datasets' terms are unverified here like
+any other unverified row, to be resolved before an engagement that redistributes LIBERO data. An
+answer on #150, or a statement from the LIBERO maintainers, closes it: record the answer and its date
+in this section.
 
 ## Public attribution
 

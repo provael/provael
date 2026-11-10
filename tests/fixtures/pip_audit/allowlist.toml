@@ -1,0 +1,17 @@
+# Every id in clean.json, in date for a run on 2026-11-07.
+
+[[advisory]]
+id = "PYSEC-2026-139"
+package = "torch"
+version = "2.10.0"
+reason = "Fixture."
+reachable = "no"
+review_by = 2027-01-05
+
+[[advisory]]
+id = "PYSEC-2026-40"
+package = "diffusers"
+version = "0.35.2"
+reason = "Fixture."
+reachable = "not assessed"
+review_by = 2027-01-05
