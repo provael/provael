@@ -79,6 +79,14 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   `actions/attest-build-provenance@v1`; they now pin the SHAs this repo's workflows use, and
   `tests/test_workflow_pins.py` covers the examples. Why: the 1 November review listed the sentences,
   and neither Dependabot nor any test looked at `examples/ci/`. No number moves.
+- **Three errata now date their correction to the day it reached `main`.** E-2026-19 and E-2026-21
+  said 7 November, the day the entries were written; #357 and #359 merged on 10 November. E-2026-18
+  said 10 October; #319 merged on 11 October. The two other entries that name a day on `main`,
+  E-2026-16 and E-2026-17, match their merges (the log dates in IST). The site's errata mirror
+  carried the same dates and is corrected with them. No number moves.
+- **The quickstart no longer says no committed run carries the contact column.** The two
+  one-episode PAISI recordings in `results/rfm_submission_2026-11` print it. They were recorded for
+  video and measure nothing, so the first measurement to carry it is still the calibrated re-run.
 
 ## [0.47.0] — 2026-11-07
 
