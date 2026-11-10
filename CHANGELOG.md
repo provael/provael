@@ -8,7 +8,7 @@ All notable changes to this project are documented here. The format is based on
 the entries below are the ones a reader arriving today needs, newest at the top. Every heading is a
 release the tag exists for; the Unreleased section holds what is merged and not yet cut.
 
-- **0.47.0 (4 Nov 2026)** — what proof 1's re-run needs: each LIBERO episode records its init state
+- **0.47.0 (7 Nov 2026)** — what proof 1's re-run needs: each LIBERO episode records its init state
   (schema 8), `calibrate --init-state-offset`, `attack --pin-init-states`, and plan-step refusals
   that keep a fit off a scored run's seeds and scenes. Re-measures nothing, so it ships six behind.
 - **0.46.0 (21 Oct 2026)** — hygiene, `pillow>=13.0` for nine advisories, and significance tested
@@ -55,6 +55,21 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   results READMEs' competence line stop saying what E-2026-12, E-2026-19 and the harness maintainer
   already withdrew. Why: the errata page kept the history while these files kept asserting the old
   reading. `tests/test_superseded_readings.py` fails if one comes back as a current claim.
+
+### Fixed
+
+- **The README's badges render, and its sentences match the repository again.** A missing blank
+  line after the demo caption made GitHub and PyPI print the badge row as literal Markdown. The
+  headline's Holm correction ran across six applicable arms, not seven; the McNemar figure says its
+  pairs share a task and a seed, not a starting scene (E-2026-19); `pi0` and `pi0fast` are
+  registered but never run here, which is neither scaffolding nor stub-validated; `make check`
+  matches CI bar CI's coverage floor; and the demo GIF is captioned as the July recording it is,
+  since its scorecard predates the release verdict. `PRIOR_ART.md` and the VLA-Arena crosswalk no
+  longer say provael holds the scene fixed (E-2026-19), the calibrations README says its ten fits
+  are present and withheld rather than absent, `scripts/render_keyid.py` stops looking for the
+  keyid line the README dropped on 19 September, and the summary above dates 0.47.0 to 7 November,
+  as its tag does. Why: the README is also the PyPI page, and each of these said something the
+  repository does not. No number moves.
 
 ## [0.47.0] — 2026-11-07
 

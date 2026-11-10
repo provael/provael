@@ -113,4 +113,5 @@ Where the two partials come from:
 - [ForesightSafety-VLA crosswalk](foresight-safety-vla.md) — the CC/RET vocabulary collision.
 - [RedVLA in PRIOR_ART.md](https://github.com/provael/provael/blob/main/PRIOR_ART.md) — same author
   group as VLA-Arena, and the complementary half of the same formalism: RedVLA perturbs the scene
-  with the instruction held fixed, provael perturbs the instruction with the scene held fixed.
+  with the instruction held fixed, provael perturbs the instruction and leaves the scene alone (its
+  published runs did not pin the starting scene: [E-2026-19](../errata.md)).

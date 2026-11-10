@@ -37,8 +37,10 @@ trajectories, five of the six candidate faces score 0.0 benign **and catch nothi
 (`studies/keepout_face_selection/`). A predicate that cannot fire scores a perfect ASR and means
 nothing.
 
-## Current contents: none
+## Current contents: ten fits, all withheld
 
-The ten `libero_object` fits under `results/calibration/` are **not** here. They were fitted before
-`spatial_fit` existed, so they carry no adversarial arm at all, and the one that could be checked
-against real trajectories flagged 0 of 12 attacked episodes. See issue #136.
+The ten `libero_object` fits from `results/calibration/` have sat here since #218 (8 September
+2026), and the adoption gate withholds every one at import (`WithheldCalibration`): they were
+fitted before `spatial_fit` existed, so they carry no adversarial arm at all, and the one that
+could be checked against real trajectories flagged 0 of 12 attacked episodes. LIBERO therefore
+runs the default, uncalibrated predicate. See issue #136.
