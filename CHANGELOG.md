@@ -70,6 +70,10 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   keyid line the README dropped on 19 September, and the summary above dates 0.47.0 to 7 November,
   as its tag does. Why: the README is also the PyPI page, and each of these said something the
   repository does not. No number moves.
+- **The README's demo GIF is recorded again, on 0.47.0.** It showed the July 2026 CLI: a pass/fail
+  scorecard and the old "Attack Success Rate" label. The new recording, from the same script, shows
+  the scorecard led by the release verdict, and the alt text and caption say so. Why: the README
+  is the PyPI page, and its first image showed output the tool no longer prints. No number moves.
 
 ## [0.47.0] — 2026-11-07
 
