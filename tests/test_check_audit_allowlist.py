@@ -354,6 +354,23 @@ def test_the_policyserver_justification_survives_on_the_list() -> None:
     assert entry_["in_feed"] is False
 
 
+def test_the_transformers_remote_code_entry_rests_on_a_check_that_exists() -> None:
+    """PYSEC-2026-2290 is "no" only because of the check before load that its reason names.
+
+    The entry is listed, rather than failing the lane, on that one argument. If the check were
+    renamed or moved, the list would go on saying "no" about a path that had reopened, so this
+    holds the reason to the code; tests/test_checkpoint_code.py holds the code to the behaviour.
+    """
+    from provael import integrity
+
+    entry_ = {raw["id"]: raw for raw in _committed()["advisory"]}["PYSEC-2026-2290"]
+    assert entry_["reachable"] == "no"
+    assert "checkpoint_code_problems in src/provael/integrity.py" in entry_["reason"]
+    assert "PROVAEL_TRUST_CHECKPOINT_CODE=1" in entry_["reason"], "the residual risk is stated"
+    assert callable(integrity.checkpoint_code_problems)
+    assert integrity.TRUST_CHECKPOINT_CODE_ENV == "PROVAEL_TRUST_CHECKPOINT_CODE"
+
+
 def _lane() -> dict[str, Any]:
     workflow = yaml.safe_load((REPO / ".github" / "workflows" / "ci.yml").read_text("utf-8"))
     return next(

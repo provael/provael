@@ -21,7 +21,8 @@
 # (lerobot 0.5.1, transformers 5.3.0, datasets 4.8.5, diffusers 0.35.2, accelerate 1.13.0,
 # fsspec 2026.2.0, setuptools 80.10.2, timm 1.0.27) and Provael's src, scripts and examples. They
 # describe the paths Provael's own calls take; they say nothing about code a model repo brings with
-# it under trust_remote_code.
+# it under trust_remote_code. PYSEC-2026-2290's was written on 10 November 2026, with the check
+# before load that it names.
 
 [[advisory]]
 id = "GHSA-f7vj-73pm-m822"
@@ -109,6 +110,14 @@ id = "PYSEC-2025-194"
 package = "torch"
 version = "2.10.0"
 reason = "The corruption is in torch.jit.script, which src, scripts, examples and lerobot 0.5.1 never call, and transformers 5.3.0 and timm 1.0.27 use it only on their own fixed source, never on input from a checkpoint."
+reachable = "no"
+review_by = 2027-01-05
+
+[[advisory]]
+id = "PYSEC-2026-2290"
+package = "transformers"
+version = "5.3.0"
+reason = "A loaded config.json can turn trust_remote_code on for a nested AutoConfig.from_pretrained, and lerobot 0.5.1 loads whatever repos a checkpoint's own files name. checkpoint_code_problems in src/provael/integrity.py stops that before any from_pretrained: LeRobotAdapter.load refuses a checkpoint whose config.json or processor files name a backbone or tokenizer outside three checked repos, set trust_remote_code or auto_map, use a policy type or step not read here, import a step from outside lerobot or set use_peft, and then hands lerobot the snapshot it checked. The OpenVLA adapter already passes trust_remote_code=True, as its explicit consent. Residual: under PROVAEL_TRUST_CHECKPOINT_CODE=1 a checkpoint can run its author's code, by design."
 reachable = "no"
 review_by = 2027-01-05
 
