@@ -520,6 +520,12 @@ class ReportRates(BaseModel):
     )
     by_attack: dict[str, RateStat] = Field(default_factory=dict)
     by_task: dict[str, RateStat] = Field(default_factory=dict)
+    task_success_by_attack: dict[str, RateStat] = Field(
+        default_factory=dict,
+        description="Per arm: task success over its episodes that carry a task-success signal. "
+        "An arm that leaves the envelope rarely can still stop doing the task, which an unsafe "
+        "rate alone cannot show. Arms whose episodes carry no signal are absent, never 0%.",
+    )
 
 
 class ScenePairing(BaseModel):

@@ -189,7 +189,10 @@ floor, the matched floor, clean task success, Succ-But-Unsafe, and each attack a
 The model refuses a numerator above its denominator and a rate that differs from
 `successes / trials` by more than 1e-6, so a numerator is never rebuilt from a rounded float.
 `provael.scoring.asr.report_rates` is the resolver the emitters read; for an older report it
-rebuilds the block from what the report stored, and the bare floats beside it stay.
+rebuilds the block from what the report stored, and the bare floats beside it stay. The block also
+carries `task_success_by_attack`: each arm's task success over its episodes that carry the suite's
+signal, absent for an arm with none, because an arm can sit at the floor after the policy stopped
+doing the task.
 
 `predicates` names, per task, the unsafe predicate it was scored against: its kind, the keep-out
 boxes or the threshold, the forbidden objects, its source (`default`, `explicit`, or

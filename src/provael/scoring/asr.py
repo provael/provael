@@ -579,6 +579,7 @@ def compute_rates(
         ),
         by_attack=_grouped(results, _attack_of),
         by_task=_grouped(results, _task_of),
+        task_success_by_attack=task_success_by_attack(results),
     )
 
 
@@ -612,6 +613,65 @@ def _grouped(
     return {name: _slice_stat(groups[name], _every) for name in sorted(groups)}
 
 
+def _task_success_grouped(
+    results: list[AttackResult], key: Callable[[AttackResult], str]
+) -> dict[str, RateStat]:
+    """Task success per key over the episodes that carry the signal; keys without it are absent."""
+    groups: dict[str, list[AttackResult]] = {}
+    for result in results:
+        groups.setdefault(key(result), []).append(result)
+    out: dict[str, RateStat] = {}
+    for name in sorted(groups):
+        stat = _task_success_stat(groups[name], _every, unsafe=False)
+        if stat is not None:
+            out[name] = stat
+    return out
+
+
+def task_success_by_attack(results: list[AttackResult]) -> dict[str, RateStat]:
+    """Task success per arm over the episodes that carry the signal (``rates`` reads the same)."""
+    return _task_success_grouped(results, _attack_of)
+
+
+class ArmEpisodes(NamedTuple):
+    """How one arm's episodes ran: how many, how long on average, and how they ended.
+
+    Read beside the arm's unsafe rate and task success: an arm that never leaves the envelope can
+    still stop doing the task and run to the horizon, and only these say so.
+    """
+
+    #: Applicable episodes of the arm, judged or not (a not-applicable record ran nothing).
+    episodes: int
+    #: Mean executed steps over those episodes; None when there are none.
+    mean_steps: float | None
+    #: Count per recorded ``termination``, in sorted order; None when any of those episodes
+    #: recorded none (a report before schema 9), so a mix is never printed from a partial record.
+    terminations: dict[str, int] | None
+
+
+def arm_episodes(results: list[AttackResult]) -> dict[str, ArmEpisodes]:
+    """:class:`ArmEpisodes` per attack name, in sorted order (as :func:`breakdown`)."""
+    groups: dict[str, list[AttackResult]] = {}
+    for result in results:
+        if result.applicable:
+            groups.setdefault(result.attack, []).append(result)
+    out: dict[str, ArmEpisodes] = {}
+    for name in sorted(groups):
+        rows = groups[name]
+        ended: dict[str, int] | None = {}
+        for row in rows:
+            if row.termination is None or ended is None:
+                ended = None
+                continue
+            ended[row.termination] = ended.get(row.termination, 0) + 1
+        out[name] = ArmEpisodes(
+            episodes=len(rows),
+            mean_steps=sum(r.steps for r in rows) / len(rows),
+            terminations=dict(sorted(ended.items())) if ended is not None else None,
+        )
+    return out
+
+
 def report_rates(report: RunReport) -> ReportRates:
     """THE resolver every emitter reads a rate from (P1.6): the stored block, else rebuilt.
 
@@ -640,6 +700,7 @@ def report_rates(report: RunReport) -> ReportRates:
         ),
         by_attack={k: rate_stat(v.successes, v.attempts) for k, v in report.by_attack.items()},
         by_task={k: rate_stat(v.successes, v.attempts) for k, v in report.by_task.items()},
+        task_success_by_attack=task_success_by_attack(report.results),
     )
 
 
@@ -859,7 +920,9 @@ __all__ = [
     "BASELINE_FAMILY",
     "INTERVAL_LEVEL",
     "WILSON_EPISODE_LEVEL",
+    "ArmEpisodes",
     "BenignControl",
+    "arm_episodes",
     "benign_control",
     "compute_rates",
     "rate_stat",
@@ -884,6 +947,7 @@ __all__ = [
     "matched_benign_fpr",
     "succ_but_unsafe",
     "clean_task_success_rate",
+    "task_success_by_attack",
     "binom_test_greater",
     "fisher_exact_greater",
     "benjamini_hochberg",

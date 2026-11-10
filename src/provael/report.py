@@ -26,7 +26,14 @@ from provael.calibration import describe_calibration, wilson_ci
 from provael.eai import CATALOG
 from provael.endpoints import PHYSICAL_HAZARD
 from provael.evidence import evidence_state_of
-from provael.scoring.asr import benign_control, endpoint_by_attack, fdr_by_attack, report_rates
+from provael.scoring.asr import (
+    arm_episodes,
+    benign_control,
+    endpoint_by_attack,
+    fdr_by_attack,
+    report_rates,
+    semantic_role,
+)
 from provael.scoring.safety_cost import (
     FIRST_EVENT,
     QUADRANT_KEYS,
@@ -39,7 +46,7 @@ from provael.scoring.safety_cost import (
     unsafe_success_rate,
     unsafe_success_unobservable,
 )
-from provael.types import ASRStat, RateStat, RunReport
+from provael.types import ASRStat, RateStat, ReportRates, RunReport
 from provael.verdict import ReleaseDecision, acceptance_line, release_verdict
 
 REPORT_JSON = "report.json"
@@ -170,6 +177,59 @@ class ReportArtifact:
     def sha256(self) -> str:
         """Hex SHA-256 of :attr:`raw`: what ``sha256sum report.json`` prints."""
         return hashlib.sha256(self.raw).hexdigest()
+
+
+def _rate_cell(stat: RateStat | None, missing: str) -> str:
+    """``k/n (p%) [lo–hi%]`` for a RateStat, or ``missing`` where there is none or no trial."""
+    if stat is None or stat.rate is None:
+        return missing
+    return (
+        f"{stat.successes}/{stat.trials} ({100.0 * stat.rate:.1f}%) "
+        f"[{_fmt_ci(_interval_of(stat))}]"
+    )
+
+
+def ended_cell(terminations: dict[str, int] | None, schema_version: int) -> str:
+    """How an arm's episodes ended, as ``"horizon 3, task_success 2"``, or why it cannot say."""
+    if terminations is None:
+        return f"not recorded (report schema {schema_version}; recorded from schema 9)"
+    return ", ".join(f"{name} {count}" for name, count in terminations.items())
+
+
+def _per_arm_outcomes(report: RunReport, rates: ReportRates) -> list[str]:
+    """Per arm: task success, mean steps and how its episodes ended (P2.1).
+
+    An unsafe rate says how often an arm left the envelope and nothing about what the policy did
+    otherwise: an arm can sit at the floor because the policy stopped doing the task and ran out
+    the horizon. These three columns say which.
+    """
+    outcomes = arm_episodes(report.results)
+    roles = {r.attack: semantic_role(r) for r in report.results} | report.roles
+    lines = [
+        "## Task success and how episodes ended, per arm",
+        "",
+        "| attack | role | task success | mean steps | how episodes ended |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+    for name in report.by_attack:
+        arm = outcomes.get(name)
+        role = roles.get(name, "adversarial-treatment")
+        if arm is None:
+            lines.append(f"| {name} | {role} | N/A | N/A | not applicable on this suite |")
+            continue
+        success = _rate_cell(
+            rates.task_success_by_attack.get(name), "N/A (no task-success signal)"
+        )
+        steps = f"{arm.mean_steps:.1f}" if arm.mean_steps is not None else "N/A"
+        ended = ended_cell(arm.terminations, report.schema_version)
+        lines.append(f"| {name} | {role} | {success} | {steps} | {ended} |")
+    lines += [
+        "",
+        "> Task success counts the episodes that carry the suite's task-success signal; mean "
+        "steps and how episodes ended count every applicable episode of the arm.",
+        "",
+    ]
+    return lines
 
 
 def to_markdown(
@@ -326,6 +386,7 @@ def to_markdown(
             "rather than zero."
         )
     lines.append("")
+    lines += _per_arm_outcomes(report, rates)
     fdr = fdr_by_attack(report)
     if fdr:
         lines.append("## Significance (Benjamini-Hochberg FDR)")
@@ -531,6 +592,7 @@ __all__ = [
     "REPORT_JSON",
     "ReportArtifact",
     "benign_control_text",
+    "ended_cell",
     "REPORT_MD",
     "report_json_bytes",
     "report_json_path",

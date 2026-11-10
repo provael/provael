@@ -125,6 +125,16 @@
      "secondary_opts": []
     },
     {
+     "help": "Run only the arms named. By default a run that includes an instruction-channel family (instruction, optimized_instruction) also gets the benign control `none` and the `control` family (the harmless-variation arms), because an instruction-channel rate is read against both.",
+     "is_flag": true,
+     "name": "no_controls",
+     "opts": [
+      "--no-controls"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
      "help": "Total episodes per (task, attack) pair.",
      "is_flag": false,
      "name": "episodes",

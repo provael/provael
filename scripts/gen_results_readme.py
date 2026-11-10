@@ -43,7 +43,13 @@ sys.path.insert(0, str(ROOT / "src"))
 from provael.calibration import wilson_ci  # noqa: E402
 from provael.campaign import REQUIRED_PROVENANCE, provenance_gaps  # noqa: E402
 from provael.endpoints import PHYSICAL_HAZARD  # noqa: E402
-from provael.scoring.asr import endpoint_by_attack, semantic_role  # noqa: E402
+from provael.report import ended_cell  # noqa: E402
+from provael.scoring.asr import (  # noqa: E402
+    arm_episodes,
+    endpoint_by_attack,
+    semantic_role,
+    task_success_by_attack,
+)
 from provael.scoring.paired import (  # noqa: E402
     cluster_bootstrap_ci,
     holm_bonferroni,
@@ -117,6 +123,86 @@ def _pairing(results: list[AttackResult], suite: str) -> str:
     if "libero" in suite:
         scenes += " and not matched under lerobot 0.5.1's reset counter (E-2026-19)"
     return f"matched (task, seed); starting scenes {scenes}"
+
+
+def _outcomes(
+    arms: list[str], results: list[AttackResult], roles: dict[str, str], schema: int
+) -> list[str]:
+    """Per arm: task success, mean steps and how its episodes ended (P2.1).
+
+    The unsafe rate says how often an arm left the envelope and nothing about what the policy did
+    otherwise. An arm can sit at the floor because the policy stopped doing the task and ran out
+    the horizon, and only these columns say so. Task success counts the episodes that carry the
+    suite's signal; mean steps and the ending count every applicable episode.
+    """
+    episodes = arm_episodes(results)
+    success = task_success_by_attack(results)
+    # The ending is a schema-9 record. A run whose shards recorded none gets one sentence saying
+    # so, not a column repeating it on every row.
+    recorded = any(arm.terminations is not None for arm in episodes.values())
+    lines = ["", "## Task success and how episodes ended, per arm", ""]
+    if recorded:
+        lines += [
+            "| arm | role | task success | 95% Wilson | mean steps | how episodes ended |",
+            "| --- | --- | ---: | --- | ---: | --- |",
+        ]
+    else:
+        lines += [
+            "| arm | role | task success | 95% Wilson | mean steps |",
+            "| --- | --- | ---: | --- | ---: |",
+        ]
+    for name in arms:
+        role = ROLE_LABEL.get(roles.get(name, "adversarial-treatment"), name)
+        arm = episodes.get(name)
+        if arm is None:
+            ended = " not applicable on this suite |" if recorded else ""
+            lines.append(f"| `{name}` | {role} | **not applicable** | — | — |{ended}")
+            continue
+        stat = success.get(name)
+        if stat is None or stat.rate is None or stat.interval is None:
+            done, ci = "not surfaced", "—"
+        else:
+            done = f"{stat.successes}/{stat.trials} ({_pct(stat.rate)})"
+            ci = f"[{_pct(stat.interval.low)}, {_pct(stat.interval.high)}]"
+        steps = f"{arm.mean_steps:.1f}" if arm.mean_steps is not None else "—"
+        ended = f" {ended_cell(arm.terminations, schema)} |" if recorded else ""
+        lines.append(f"| `{name}` | {role} | {done} | {ci} | {steps} |{ended}")
+    lines += [
+        "",
+        "Task success counts the scored episodes that carry the suite's task-success signal; mean "
+        "steps count every applicable episode, including any left unjudged."
+        + (
+            ""
+            if recorded
+            else f" How each episode ended is not recorded: these shards are report schema "
+            f"{schema}, and `termination` is recorded from schema 9."
+        ),
+    ]
+    return lines
+
+
+def _task_success_grid(
+    tasks: list[str], arms: list[str], by_attack: dict[str, list[AttackResult]]
+) -> list[str]:
+    """The per-task grid again, for task success: completed / episodes carrying the signal."""
+    if len(tasks) < 2 or not any(
+        r.task_success is not None for rows in by_attack.values() for r in rows
+    ):
+        return []
+    header = "| task | " + " | ".join(f"`{a}`" for a in arms) + " |"
+    rule = "| --- |" + " ---: |" * len(arms)
+    lines = ["", "## Per task (task success / episodes with the signal)", "", header, rule]
+    for task in tasks:
+        cells = []
+        for name in arms:
+            rows = [
+                r for r in by_attack.get(name, [])
+                if r.task == task and r.scored and r.task_success is not None
+            ]
+            done = sum(1 for r in rows if r.task_success)
+            cells.append("—" if not rows else f"{done}/{len(rows)}")
+        lines.append(f"| `{task}` | " + " | ".join(cells) + " |")
+    return lines
 
 
 def render(run_dir: Path) -> str:
@@ -281,6 +367,8 @@ def render(run_dir: Path) -> str:
                 f"{ok}/{len(benign)} ({_pct(ok / len(benign))}). A policy that cannot do the task "
                 "has no task to lose under an arm; read every rate above against this.",
             ]
+    schema = min(int(r.get("schema_version", 1)) for r in reports)
+    lines += _outcomes(arms, results, roles, schema)
 
     # Per-task grid
     if len(tasks) > 1:
@@ -294,6 +382,7 @@ def render(run_dir: Path) -> str:
                 unsafe = sum(1 for r in rows if r.success)
                 cells.append("—" if not rows else f"{unsafe}/{len(rows)}")
             lines.append(f"| `{task}` | " + " | ".join(cells) + " |")
+    lines += _task_success_grid(tasks, arms, by_attack)
 
     shard_names = [
         f"`{(s.relative_to(run_dir) if s != run_dir else Path('.'))}/report.json`"

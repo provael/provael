@@ -13,6 +13,7 @@ import typer
 from pydantic import ValidationError
 from rich.markup import escape
 
+from provael.attacks.registry import INSTRUCTION_CHANNEL_FAMILIES, attack_names, with_controls
 from provael.calibration import load_calibrations
 from provael.cli._shared import (
     OutputFormat,
@@ -49,6 +50,35 @@ from provael.scorecard import SCORECARD_MD, write_scorecard
 from provael.verdict import write_decision
 
 
+def _add_controls(overrides: dict[str, object], base: dict[str, object]) -> None:
+    """Add the benign control and the control family to an instruction-channel run, and say so.
+
+    Reads the attack list the run will use (an explicit ``--attacks``, else the recipe's, else
+    :class:`~provael.config.RunConfig`'s default) and writes the extended list into ``overrides``
+    only when :func:`~provael.attacks.registry.with_controls` changed it, naming every arm it added
+    on stderr so the run's shape is never a surprise. A list that is not a list of names is left
+    for the configuration's own validation to refuse.
+    """
+    current = overrides.get(
+        "attacks", base.get("attacks", RunConfig.model_fields["attacks"].get_default(
+            call_default_factory=True
+        ))
+    )
+    if not isinstance(current, list) or not all(isinstance(t, str) for t in current):
+        return
+    extended = with_controls(current)
+    if extended == current:
+        return
+    overrides["attacks"] = extended
+    before = set(attack_names(current))
+    added = [name for name in attack_names(extended) if name not in before]
+    _err.print(
+        "[yellow]note:[/yellow] the run includes an instruction-channel family, so it also runs "
+        f"the controls it is read against: {', '.join(added)}. Pass --no-controls to run only "
+        "the arms named."
+    )
+
+
 @app.command()
 def attack(
     ctx: typer.Context,
@@ -57,6 +87,16 @@ def attack(
     attacks: Annotated[
         str, typer.Option(help="Comma-separated attack or family names.")
     ] = "instruction",
+    no_controls: Annotated[
+        bool,
+        typer.Option(
+            "--no-controls",
+            help="Run only the arms named. By default a run that includes an instruction-channel "
+            f"family ({', '.join(INSTRUCTION_CHANNEL_FAMILIES)}) also gets the benign control "
+            "`none` and the `control` family (the harmless-variation arms), because an "
+            "instruction-channel rate is read against both.",
+        ),
+    ] = False,
     episodes: Annotated[
         int, typer.Option(min=1, help="Total episodes per (task, attack) pair.")
     ] = 10,
@@ -322,6 +362,12 @@ def attack(
             "[yellow]note:[/yellow] --include-fixture-families only changes `--recipe full-sweep`; "
             "it has no effect on this run."
         )
+
+    # Controls by default (P2.1): an instruction-channel arm is read against the benign floor and
+    # the harmless-variation controls, so a run that has one gets both unless --no-controls says
+    # otherwise. Applied to the final list whatever set it (the flag, a recipe or the default).
+    if not no_controls:
+        _add_controls(overrides, base)
 
     try:
         config = RunConfig.model_validate({**base, **overrides})

@@ -75,9 +75,28 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   digest, and the execution manifest's `suite_config_digest` is filled from them. Why: floors were
   quoted without naming their predicate, and a rate under the default box and one under a
   calibrated box are different claims. No number moves.
+- **Each arm's task success, mean steps and ending are printed beside its unsafe rate.**
+  `report.md` and the results READMEs add a per-arm table (task success with its Wilson interval,
+  mean steps, and how the episodes ended where the report records it, from schema 9), the README
+  generator adds a per-task task-success grid, and report schema 9's `rates` gains
+  `task_success_by_attack`. Why: an arm can sit at the floor because the policy stopped doing the
+  task; in the 14 September control run `benign_reword` left the envelope in 0 of 30 episodes and
+  completed the task in 5 of 30, which an exit rate alone cannot show. The regenerated READMEs gain
+  these tables and no number in them moves.
 
 ### Changed
 
+- **`provael attack` runs the benign control and the control family with any instruction-channel
+  arm, unless `--no-controls`.** When the arms include `instruction` or `optimized_instruction`
+  (from `--attacks`, a recipe or the default), `none` is added first and the `control` family last,
+  and a note names the arms added. Adopters will see these arms in their reports and tables: the
+  default `--attacks instruction` now runs the instruction family, `none` and every control arm, and
+  the GitHub Action's default attack list gains the control family. The adversarial ASR excludes
+  both by role, so the stub canary stays 47/70. Why: an instruction-channel rate is read against
+  the floor and the harmless variations, and on SmolVLA x LIBERO the controls are what showed the
+  roleplay result is fragility rather than attacker control (E-2026-12). The GPU drivers pass
+  `--no-controls` once their pinned release takes it, so each stage still runs the arms it is
+  costed for.
 - **A run recorded for a video no longer counts as a measurement.** `provael.watch` skips any
   execution manifest whose `deviations` say "recorded for video", so it does not date the freshness
   badge or get a row in `watch/measurements.json`. Why: `results/rfm_submission_2026-11` commits

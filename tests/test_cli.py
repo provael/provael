@@ -10,6 +10,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from provael import __version__
+from provael.attacks.registry import FAMILIES
 from provael.cli import app
 from provael.report import load_report
 
@@ -55,7 +56,10 @@ def test_attack_runs_and_writes_report(tmp_path: Path) -> None:
     assert (out / "report.md").exists()
 
     report = load_report(out)
-    assert report.attempts == 15  # 1 task x 3 attacks x 5 episodes
+    # 1 task x 3 instruction attacks x 5 episodes on the adversarial side; the benign floor and
+    # the control family ride along by default (P2.1) and stay out of that denominator.
+    assert report.adversarial_attempts == 15
+    assert report.attempts == 5 * (3 + 1 + len(FAMILIES["control"]))
     assert 0.0 <= report.asr <= 1.0
     assert "ASR" in result.output  # headline printed
 
@@ -76,11 +80,13 @@ def test_attack_runs_all_three_families(tmp_path: Path) -> None:
     )
     assert result.exit_code == 0
     report = load_report(out)
-    # 1 task x 7 attacks (3 instruction + 2 visual + 2 injection) x 5 episodes.
-    assert report.attempts == 35
+    # 1 task x 7 attacks (3 instruction + 2 visual + 2 injection) x 5 episodes, adversarial; the
+    # floor and the controls the instruction family brings with it are counted apart (P2.1).
+    assert report.adversarial_attempts == 35
     assert set(report.attacks) == {
         "roleplay", "goal_substitution", "paraphrase",
         "patch", "decoy_object", "scene_text", "mcp_tool_desc",
+        "none", *FAMILIES["control"],
     }
 
 
@@ -120,7 +126,7 @@ def test_libero_suite_without_extra_exits_cleanly() -> None:
 def test_seeds_alias_and_bad_rename_map(tmp_path: Path) -> None:
     out = tmp_path / "run"
     # --seeds is an alias for --episodes (1 task x 3 attacks x 2 seeds = 6 attempts).
-    ok = runner.invoke(app, ["attack", "--seeds", "2", "--out", str(out)])
+    ok = runner.invoke(app, ["attack", "--seeds", "2", "--no-controls", "--out", str(out)])
     assert ok.exit_code == 0
     assert load_report(out).attempts == 6
     # Invalid JSON rename-map -> clean error.
@@ -208,3 +214,69 @@ def test_init_states_on_a_suite_without_fixed_init_states_are_refused(tmp_path: 
     )
     assert result.exit_code != 0
     assert "keeps no fixed initial states" in _flat(result.output)
+
+
+# --- Controls by default (P2.1) -----------------------------------------------------------------
+
+
+def _run_attack(tmp_path: Path, *args: str) -> tuple[str, list[str]]:
+    """Run ``provael attack`` on the stub with ``args``; return its output and the arms it ran."""
+    out = tmp_path / "run"
+    result = runner.invoke(
+        app, ["attack", "--policy", "stub", "--suite", "stub", "--episodes", "2", "--out", str(out),
+              *args],
+    )
+    assert result.exit_code == 0, result.output
+    return result.output, load_report(out).attacks
+
+
+def test_an_instruction_run_gets_the_benign_floor_and_the_controls_by_default(
+    tmp_path: Path,
+) -> None:
+    """The default `--attacks instruction` now runs `none` first and the control family last."""
+    output, arms = _run_attack(tmp_path)
+    assert arms == ["none", *FAMILIES["instruction"], *FAMILIES["control"]]
+    assert "--no-controls" in output  # the note names the opt-out
+    for control in FAMILIES["control"]:
+        assert control in output
+
+
+def test_no_controls_runs_only_the_arms_named(tmp_path: Path) -> None:
+    _output, arms = _run_attack(tmp_path, "--attacks", "instruction", "--no-controls")
+    assert arms == FAMILIES["instruction"]
+
+
+def test_a_run_without_an_instruction_channel_arm_is_unchanged(tmp_path: Path) -> None:
+    output, arms = _run_attack(tmp_path, "--attacks", "visual")
+    assert arms == FAMILIES["visual"]
+    assert "--no-controls" not in output
+
+
+def test_controls_already_named_are_not_added_twice(tmp_path: Path) -> None:
+    _output, arms = _run_attack(tmp_path, "--attacks", "roleplay,none,benign_reword")
+    rest = [c for c in FAMILIES["control"] if c != "benign_reword"]
+    assert arms == ["roleplay", "none", "benign_reword", *rest]
+    assert len(arms) == len(set(arms))
+
+
+def test_a_recipe_with_an_instruction_family_gets_the_controls_too(tmp_path: Path) -> None:
+    """`quick` names `none` and the instruction family; the default adds the control family."""
+    _output, arms = _run_attack(tmp_path, "--recipe", "quick")
+    assert arms == ["none", *FAMILIES["instruction"], *FAMILIES["control"]]
+
+
+def test_the_adversarial_headline_does_not_move_with_the_controls(tmp_path: Path) -> None:
+    """The canary: controls and the floor are excluded from the adversarial ASR by role."""
+    with_controls = tmp_path / "with"
+    without = tmp_path / "without"
+    for out, extra in ((with_controls, []), (without, ["--no-controls"])):
+        result = runner.invoke(
+            app,
+            ["attack", "--policy", "stub", "--suite", "stub", "--attacks",
+             "instruction,visual,injection", "--episodes", "10", "--seed", "0", "--out", str(out),
+             *extra],
+        )
+        assert result.exit_code == 0, result.output
+    a, b = load_report(with_controls), load_report(without)
+    assert a.adversarial_headline() == b.adversarial_headline()
+    assert (a.adversarial_successes, a.adversarial_attempts) == (47, 70)

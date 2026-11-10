@@ -18,7 +18,7 @@ from pydantic import ValidationError
 from provael.attest import _REPORT_FIELDS_ADDED_IN, _report_digest, report_projection
 from provael.calibration import wilson_ci
 from provael.config import RunConfig
-from provael.report import load_report
+from provael.report import load_report, to_markdown
 from provael.runner import run
 from provael.scoring.asr import (
     INTERVAL_LEVEL,
@@ -30,7 +30,7 @@ from provael.scoring.asr import (
     report_rates,
 )
 from provael.scoring.safety_cost import unsafe_success_unobservable
-from provael.types import RateInterval, RateStat
+from provael.types import AttackResult, RateInterval, RateStat
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -139,3 +139,56 @@ def test_every_committed_report_reads_the_same_through_the_resolver(path: Path) 
     assert (rates.clean_task_success.rate if rates.clean_task_success else None) == clean
     if unsafe_success_unobservable(report.suite) is not None:
         assert rates.succ_but_unsafe is None
+
+
+# --- Per-arm task success and how episodes ended (P2.1) -------------------------------------------
+
+
+def _signalled(rows: list[AttackResult]) -> tuple[int, int]:
+    done = [r for r in rows if r.scored and r.task_success is not None]
+    return sum(1 for r in done if r.task_success), len(done)
+
+
+def test_task_success_is_recorded_per_arm_from_the_same_episodes() -> None:
+    report = run(
+        RunConfig(policy="stub", suite="stub", attacks=["none", "instruction", "control"],
+                  episodes=3, seed=0)
+    )
+    assert report.rates is not None
+    by_arm = report.rates.task_success_by_attack
+    assert set(by_arm) == set(report.by_attack)  # the stub surfaces task success on every arm
+    for arm, stat in by_arm.items():
+        rows = [r for r in report.results if r.attack == arm]
+        assert (stat.successes, stat.trials) == _signalled(rows)
+        assert stat.interval is not None and stat.interval.method == WILSON_EPISODE_LEVEL
+
+
+def test_an_older_report_rebuilds_task_success_per_arm_from_its_episodes() -> None:
+    shard = ROOT / "results" / "smolvla_libero_object_suite_2026-09-14" / "libero_object_0"
+    report = load_report(shard)
+    rebuilt = report_rates(report).task_success_by_attack
+    assert "mcp_tool_desc" not in rebuilt  # not applicable: absent, never 0/0
+    for arm, stat in rebuilt.items():
+        rows = [r for r in report.results if r.attack == arm]
+        assert (stat.successes, stat.trials) == _signalled(rows)
+    assert (rebuilt["none"].successes, rebuilt["none"].trials) == (5, 5)
+
+
+def test_report_md_prints_each_arm_s_task_success_steps_and_ending() -> None:
+    report = run(
+        RunConfig(policy="stub", suite="stub", attacks=["none", "roleplay"], episodes=3, seed=0)
+    )
+    section = to_markdown(report).split("## Task success and how episodes ended, per arm", 1)[1]
+    none_row = next(line for line in section.splitlines() if line.startswith("| none |"))
+    assert none_row == "| none | benign-control | 3/3 (100.0%) [44–100%] | 8.0 | horizon 3 |"
+    roleplay = next(line for line in section.splitlines() if line.startswith("| roleplay |"))
+    assert "unsafe_exit" in roleplay
+
+
+def test_report_md_says_an_older_report_recorded_no_ending() -> None:
+    shard = ROOT / "results" / "smolvla_libero_object_suite_2026-09-14" / "libero_object_0"
+    md = to_markdown(load_report(shard))
+    section = md.split("## Task success and how episodes ended, per arm", 1)[1]
+    assert "| none | benign-control | 5/5 (100.0%) [57–100%] |" in section
+    assert "not recorded (report schema 5; recorded from schema 9)" in section
+    assert "| mcp_tool_desc | adversarial-treatment | N/A | N/A | not applicable on this suite |" in section

@@ -126,11 +126,12 @@ def _with_control(attacks: list[str]) -> list[str]:
 def _with_both_controls(attacks: list[str]) -> list[str]:
     """``attacks`` with BOTH control arms: the benign-FPR baseline and the harmless variation.
 
-    Only ``full-sweep`` uses this. A sweep that runs every attack and no reword control cannot
-    distinguish "the attacker chose where the policy went" from "the policy is brittle to being
-    asked differently" — which is the strongest objection to this project's own headline, and the
-    reason the reword arm exists. The smaller recipes stay on the benign control alone so a quick
-    scan is still quick.
+    Only ``full-sweep`` names both itself. A sweep that runs every attack and no reword control
+    cannot distinguish "the attacker chose where the policy went" from "the policy is brittle to
+    being asked differently" — which is the strongest objection to this project's own headline,
+    and the reason the reword arm exists. The smaller recipes name the benign control alone;
+    ``provael attack`` adds the control family to any of them that runs an instruction-channel
+    family, unless ``--no-controls`` (:func:`provael.attacks.registry.with_controls`).
     """
     out = _with_control(attacks)
     return out if CONTROL_FAMILY in out else [*out, CONTROL_FAMILY]

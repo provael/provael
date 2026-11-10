@@ -1344,6 +1344,14 @@
           ],
           "default": null,
           "description": "Completed the task and left the envelope; None where the run could not observe it (E-2026-21) or no episode carries a task-success signal."
+        },
+        "task_success_by_attack": {
+          "additionalProperties": {
+            "$ref": "#/$defs/RateStat"
+          },
+          "description": "Per arm: task success over its episodes that carry a task-success signal. An arm that leaves the envelope rarely can still stop doing the task, which an unsafe rate alone cannot show. Arms whose episodes carry no signal are absent, never 0%.",
+          "title": "Task Success By Attack",
+          "type": "object"
         }
       },
       "required": [
