@@ -76,6 +76,15 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   digest, and the execution manifest's `suite_config_digest` is filled from them. Why: floors were
   quoted without naming their predicate, and a rate under the default box and one under a
   calibrated box are different claims. No number moves.
+- **`provael attack --termination fixed-horizon` runs every episode to its horizon.** An exit and
+  a task success latch instead of ending the episode (on LIBERO the adapter steps LIBERO directly,
+  since lerobot 0.5.1's `LiberoEnv.step` resets the scene on success), the report records
+  `termination_mode`, and Succ-But-Unsafe, RET and CC print as numbers only on such a run. Each
+  episode records `failure_cause` (`envelope_exit`, `collision`, `missed_grasp`, `dropped`,
+  `timeout`, or `null` where the signals cannot say), and a fixed-horizon LIBERO episode the
+  `task_success_strict` endpoint. Why: a first-event run cannot observe those three metrics
+  (E-2026-21), and LIBERO credits a held, tipped or one-frame placement as success. First-event
+  stays the default and renders as before; no GPU run used it, and no number moves.
 
 ### Changed
 

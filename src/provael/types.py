@@ -236,6 +236,19 @@ class SceneSnapshot:
 #: ``--record-episode-errors``.
 Termination = Literal["unsafe_exit", "task_success", "horizon", "env_truncated", "error"]
 
+#: How a run ends its episodes (P1.4). ``first-event``, the only mode before schema 9: an episode
+#: stops at its first envelope exit and at the suite's ``done`` (on LIBERO, task success).
+#: ``fixed-horizon``: an episode runs every ``horizon`` step unless the suite cannot go on; an exit
+#: and a success both latch, and the steps after them are still scored, so exposure is dwell.
+TerminationMode = Literal["first-event", "fixed-horizon"]
+
+#: Why a failed episode failed, where the run can say (P1.4): it left the envelope, the contact
+#: predicate fired (``collision``, the ``physical_hazard`` endpoint), the goal object was never
+#: grasped, it was grasped and let go short of the goal (``dropped``), or the steps ran out with the
+#: object held or on a task with nothing to grasp (``timeout``). See
+#: :func:`provael.scoring.failure.failure_cause`.
+FailureCause = Literal["envelope_exit", "collision", "missed_grasp", "dropped", "timeout"]
+
 #: Where the outcome of an episode was read from. Neither is an independent observer: both are
 #: the harness reading state it computed or simulated itself, in its own process, and a record
 #: that carries one says so rather than implying a third party watched.
@@ -392,6 +405,13 @@ class AttackResult(BaseModel):
         None,
         description="Whether an exit was seen, the vantage it was read from, and the coverage "
         "behind the claim (steps observed, horizon, steps without a pose). Schema >= 9.",
+    )
+    failure_cause: FailureCause | None = Field(
+        None,
+        description="Why the episode failed, for one that left the envelope or did not complete "
+        "its task: 'envelope_exit', 'collision' (the physical_hazard endpoint), 'missed_grasp', "
+        "'dropped' or 'timeout' (see provael.scoring.failure). None for an episode that did not "
+        "fail, and wherever the signals cannot say which, never a guess. Schema >= 9.",
     )
 
     @property
@@ -1092,6 +1112,13 @@ class RunReport(BaseModel):
     tasks: list[str] = Field(..., description="Tasks that were run.")
     episodes: int = Field(..., description="Episodes per (task, attack) pair.")
     horizon: int = Field(..., description="Max timesteps per episode.")
+    termination_mode: TerminationMode = Field(
+        "first-event",
+        description="How the run ended its episodes: 'first-event' (at the first envelope exit "
+        "or the suite's done, on LIBERO task success; every run before schema 9) or "
+        "'fixed-horizon' (every episode ran past both to its horizon, so Succ-But-Unsafe, risk "
+        "exposure time and cumulative cost are observable; E-2026-21). Schema >= 9.",
+    )
     seed: int = Field(..., description="Base seed; episode i used seed + i.")
 
     schema_version: int = Field(
@@ -1116,7 +1143,9 @@ class RunReport(BaseModel):
         "`scene_t0`), each task's compiled model digest and how many pairs shared a scene, and "
         "how each episode ended (`termination`, `verdict`, `observation`); an unjudged episode "
         "is excluded from every rate, and `rates` carries every rate with its counts, interval "
-        "method and level, and `predicates` names each task's predicate. "
+        "method and level, and `predicates` names each task's predicate; `termination_mode` "
+        "says whether episodes stopped at their first event or ran to the horizon, and each "
+        "episode records its `failure_cause`. "
         "Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed "
         "a calibration, because its trajectories do not exist.",
     )

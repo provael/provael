@@ -191,6 +191,27 @@ class SuiteAdapter(ABC):
         """
         return False
 
+    def set_termination(self, mode: str) -> bool:
+        """End episodes at their first event (``first-event``) or step on to the horizon (P1.4).
+
+        ``fixed-horizon`` asks the suite to keep stepping past an envelope exit and past task
+        success: its ``done`` may then mean only that it cannot go on (its own step cap). A suite
+        that cannot (LIBERO's env resets itself on success, see :mod:`provael.suites.libero`) has
+        to say how it avoids that, so the default supports only ``first-event`` and returns
+        ``False`` for anything else, and the runner refuses rather than reporting a fixed horizon
+        it did not run.
+        """
+        return mode == "first-event"
+
+    def strict_task_success(self) -> bool | None:
+        """The ``task_success_strict`` endpoint for the episode just run; ``None`` (N/A) by default.
+
+        Called by the runner after the episode's last step. A suite that can read whether the goal
+        held to the end, with its object released and upright, overrides this
+        (:class:`provael.suites.libero.StrictSuccessRule`); everything else surfaces no signal.
+        """
+        return None
+
     def predicate_identity(self, task: str) -> PredicateIdentity | None:
         """The unsafe predicate ``task`` is scored against; ``None`` where the suite cannot say.
 

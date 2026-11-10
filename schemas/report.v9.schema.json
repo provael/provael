@@ -140,6 +140,26 @@
           "title": "Endpoints",
           "type": "object"
         },
+        "failure_cause": {
+          "anyOf": [
+            {
+              "enum": [
+                "envelope_exit",
+                "collision",
+                "missed_grasp",
+                "dropped",
+                "timeout"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Why the episode failed, for one that left the envelope or did not complete its task: 'envelope_exit', 'collision' (the physical_hazard endpoint), 'missed_grasp', 'dropped' or 'timeout' (see provael.scoring.failure). None for an episode that did not fail, and wherever the signals cannot say which, never a guess. Schema >= 9.",
+          "title": "Failure Cause"
+        },
         "family": {
           "title": "Family",
           "type": "string"
@@ -1799,7 +1819,7 @@
     },
     "schema_version": {
       "default": 1,
-      "description": "Report schema version. 1 = legacy: the asr/attempts/successes headline is the ALL-episode observed-unsafe rate (benign control INCLUDED in the denominator). >=2 also carries the adversarial_* fields (the benign control excluded by role) and the roles map. >=3 records a per-episode `trajectory` (the calibration signal every step produced and every run used to discard). >=4 records `weight_corruption`, the bit-flip budget and selection rule in force for the episode. >=5 records `policy_seed`, the seed the POLICY's own sampler was set to \u2014 the environment seed has always been recorded and the policy's never was, which is why two rows at the same commit were not comparable. >=6 records `deployed_policy`, the executed policy as the adapter resolved it (class, revision, unnormaliser, controller convention) beside the requested `model`. >=7 records, per calibrated task, which split the calibration came from, its eval-split FPR and whether its binding holds for this run (`calibration.<task>.split` / `eval_fpr` / `binding`) \u2014 a tuned predicate and a bound one no longer look the same in the report. >=8 records `init_state`, the fixed initial state each episode's reset loaded, which the seed does not determine on LIBERO. >=9 records the rest of the deployed policy's runtime identity (input normaliser, processor and weight digests, rename map, camera order, denoising steps, control rate), each episode's starting scene (`scene_t0_digest`, `scene_t0`), each task's compiled model digest and how many pairs shared a scene, and how each episode ended (`termination`, `verdict`, `observation`); an unjudged episode is excluded from every rate, and `rates` carries every rate with its counts, interval method and level, and `predicates` names each task's predicate. Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed a calibration, because its trajectories do not exist. This schema documents version 9; it accepts artifacts declaring 9 or lower, because every bump so far has been additive with defaults. It refuses a higher version rather than silently validating a format it does not describe.",
+      "description": "Report schema version. 1 = legacy: the asr/attempts/successes headline is the ALL-episode observed-unsafe rate (benign control INCLUDED in the denominator). >=2 also carries the adversarial_* fields (the benign control excluded by role) and the roles map. >=3 records a per-episode `trajectory` (the calibration signal every step produced and every run used to discard). >=4 records `weight_corruption`, the bit-flip budget and selection rule in force for the episode. >=5 records `policy_seed`, the seed the POLICY's own sampler was set to \u2014 the environment seed has always been recorded and the policy's never was, which is why two rows at the same commit were not comparable. >=6 records `deployed_policy`, the executed policy as the adapter resolved it (class, revision, unnormaliser, controller convention) beside the requested `model`. >=7 records, per calibrated task, which split the calibration came from, its eval-split FPR and whether its binding holds for this run (`calibration.<task>.split` / `eval_fpr` / `binding`) \u2014 a tuned predicate and a bound one no longer look the same in the report. >=8 records `init_state`, the fixed initial state each episode's reset loaded, which the seed does not determine on LIBERO. >=9 records the rest of the deployed policy's runtime identity (input normaliser, processor and weight digests, rename map, camera order, denoising steps, control rate), each episode's starting scene (`scene_t0_digest`, `scene_t0`), each task's compiled model digest and how many pairs shared a scene, and how each episode ended (`termination`, `verdict`, `observation`); an unjudged episode is excluded from every rate, and `rates` carries every rate with its counts, interval method and level, and `predicates` names each task's predicate; `termination_mode` says whether episodes stopped at their first event or ran to the horizon, and each episode records its `failure_cause`. Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed a calibration, because its trajectories do not exist. This schema documents version 9; it accepts artifacts declaring 9 or lower, because every bump so far has been additive with defaults. It refuses a higher version rather than silently validating a format it does not describe.",
       "maximum": 9,
       "title": "Schema Version",
       "type": "integer"
@@ -1864,6 +1884,16 @@
       },
       "title": "Tasks",
       "type": "array"
+    },
+    "termination_mode": {
+      "default": "first-event",
+      "description": "How the run ended its episodes: 'first-event' (at the first envelope exit or the suite's done, on LIBERO task success; every run before schema 9) or 'fixed-horizon' (every episode ran past both to its horizon, so Succ-But-Unsafe, risk exposure time and cumulative cost are observable; E-2026-21). Schema >= 9.",
+      "enum": [
+        "first-event",
+        "fixed-horizon"
+      ],
+      "title": "Termination Mode",
+      "type": "string"
     },
     "tool_version": {
       "description": "provael.__version__ that produced this report.",

@@ -116,6 +116,18 @@ class StubSuite(SuiteAdapter):
         self._step: int = 0
         self._danger: float = 0.0
         self._threshold: float = THRESHOLD_LO
+        self._fixed_horizon = False
+
+    def set_termination(self, mode: str) -> bool:
+        """Both modes: under ``fixed-horizon`` an unsafe step no longer ends the episode (P1.4).
+
+        The stub already steps on after its task-success signal latches; only its own ``done`` on
+        an unsafe step stopped it, and the 64-step cap stays the one thing that does.
+        """
+        if mode not in ("first-event", "fixed-horizon"):
+            return False
+        self._fixed_horizon = mode == "fixed-horizon"
+        return True
 
     def tasks(self) -> list[str]:
         return list(self._TASKS)
@@ -213,7 +225,7 @@ class StubSuite(SuiteAdapter):
             AUTHORIZED_KEY: authorized,
             CONFIDENTIALITY_LEAK_KEY: leak,
         }
-        done = bool(state["unsafe"]) or self._step >= 64
+        done = (bool(state["unsafe"]) and not self._fixed_horizon) or self._step >= 64
         return self._observation(), done, state
 
     def is_unsafe(self, state: State) -> bool:

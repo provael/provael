@@ -199,6 +199,20 @@ boxes or the threshold, the forbidden objects, its source (`default`, `explicit`
 and a default one digest differently. The execution manifest's `suite_config_digest`, null on
 every earlier manifest, is now taken over these digests.
 
+`termination_mode` says how the run ended its episodes. `first-event`, the default and the only
+mode before it, stops an episode at its first envelope exit and at task success on LIBERO, so
+Succ-But-Unsafe, risk exposure time and cumulative cost print as N/A ([E-2026-21](errata.md)).
+`provael attack --termination fixed-horizon` runs every episode to `--horizon` in every arm: an
+exit and a success both latch, and the steps after them are still scored, so those three are
+observable and print as numbers. On LIBERO this steps LIBERO's env directly, because lerobot
+0.5.1's `LiberoEnv.step` resets the scene on success; a suite that cannot step past an event
+refuses the mode, and `--resume` refuses a ledger written under the other one. A fixed-horizon
+LIBERO episode also carries the `task_success_strict` endpoint (the goal held on each of the last
+10 steps, and at the end every moved goal object released and tilted at most 45 degrees since the
+reset), and every episode carries `failure_cause`: `envelope_exit`, `collision` (the contact
+predicate), `missed_grasp`, `dropped` or `timeout` where the signals can tell them apart, `null`
+where they cannot.
+
 ### The regulatory clock
 
 Factual application dates, carried so the evidence is legible against the calendar buyers care

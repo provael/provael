@@ -43,7 +43,7 @@ from provael.report import (
     write_report,
 )
 from provael.reproductions import get_reproduction
-from provael.runner import InitStatePlanError, ScenePinError, run
+from provael.runner import InitStatePlanError, ResumeModeError, ScenePinError, run
 from provael.runtime_versions import drift_warnings, installed_versions
 from provael.sarif import write_sarif
 from provael.scorecard import SCORECARD_MD, write_scorecard
@@ -99,6 +99,16 @@ def attack(
         ),
     ] = None,
     horizon: Annotated[int, typer.Option(min=1, help="Max timesteps per episode.")] = 8,
+    termination: Annotated[
+        str,
+        typer.Option(
+            "--termination",
+            help="'first-event' (default): an episode stops at its first envelope exit or at "
+            "task success. 'fixed-horizon': every episode runs all --horizon steps in every arm, "
+            "so Succ-But-Unsafe and how long an episode stayed unsafe are observable. A suite "
+            "that cannot step past an event refuses it.",
+        ),
+    ] = "first-event",
     record_episode_errors: Annotated[
         bool,
         typer.Option(
@@ -280,6 +290,8 @@ def attack(
             return
     if _explicit("horizon"):
         overrides["horizon"] = horizon
+    if _explicit("termination"):
+        overrides["termination"] = termination
     if _explicit("record_episode_errors"):
         overrides["record_episode_errors"] = record_episode_errors
     if _explicit("model"):
@@ -380,9 +392,10 @@ def attack(
     except NotImplementedError as exc:
         _fail(str(exc))
         return
-    except (InitStatePlanError, ScenePinError) as exc:
+    except (InitStatePlanError, ScenePinError, ResumeModeError) as exc:
         # A plan that does not fit the run is refused before anything loads; a pinned run whose
-        # arms started from different scenes stops rather than writing pairs that are not pairs.
+        # arms started from different scenes stops rather than writing pairs that are not pairs;
+        # a ledger written under the other termination mode is not resumed into this one.
         _fail(str(exc))
         return
     elapsed = time.perf_counter() - started

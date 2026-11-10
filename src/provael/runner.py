@@ -35,7 +35,7 @@ from provael.calibration import Calibration, anytime_ci, binding_status, wilson_
 from provael.config import RunConfig
 from provael.defenses.base import Defense
 from provael.defenses.registry import make_defense
-from provael.endpoints import PHYSICAL_HAZARD
+from provael.endpoints import PHYSICAL_HAZARD, TASK_SUCCESS_STRICT
 from provael.evidence import classify_run
 from provael.ledger import TrialKey, append_trial, completed_keys, record_of, results_for
 from provael.policies.base import InputGradientProvider, PolicyAdapter
@@ -52,8 +52,11 @@ from provael.scoring.asr import (
     overall_stat,
     semantic_role,
 )
+from provael.scoring.failure import GraspTrace, failure_cause
 from provael.scoring.paired import scene_pairing
 from provael.scoring.safety_cost import (
+    FIRST_EVENT,
+    FIXED_HORIZON,
     SUITES_ENDING_AT_TASK_SUCCESS,
     observed_unsafe_success_rate,
 )
@@ -181,6 +184,10 @@ class InitStatePlanError(ValueError):
     """``--init-states`` does not fit the run's tasks, seeds or arms: refused before a run."""
 
 
+class ResumeModeError(ValueError):
+    """A ``--resume`` ledger holds an episode that could not have run under this termination."""
+
+
 @dataclass(frozen=True)
 class _InitStatePlan:
     """``--init-states``, checked against the run: which state each episode starts from."""
@@ -267,6 +274,30 @@ def _check_pinned_cell(
         )
 
 
+def _check_replayed_mode(episode: AttackResult, termination: str) -> None:
+    """Raise when a ledger episode could not have run under this run's termination mode (P1.4).
+
+    The ledger keys episodes by (attack, task, seed) and records no mode, so a resume under the
+    other mode would splice first-event episodes into a fixed-horizon report, or the reverse, and
+    Succ-But-Unsafe and exposure would be read off episodes that could not show them. Only a
+    first-event episode ends at an exit or at task success, and only a fixed-horizon one steps on
+    past its first exit; an episode that did neither runs alike under both.
+    """
+    if termination == FIXED_HORIZON:
+        impossible = episode.termination in ("unsafe_exit", "task_success")
+    else:
+        impossible = (
+            episode.steps_to_success is not None and episode.steps > episode.steps_to_success
+        )
+    if impossible:
+        raise ResumeModeError(
+            f"--resume: the ledger's {episode.attack!r} episode at {episode.task} seed "
+            f"{episode.seed} was not recorded under --termination {termination} (it ended "
+            f"'{episode.termination}' after {episode.steps} step(s)). Resume with the mode the "
+            "ledger was written under, or start a new ledger."
+        )
+
+
 def run_episode(
     policy: PolicyAdapter,
     suite: SuiteAdapter,
@@ -279,6 +310,7 @@ def run_episode(
     audit_sink: list[dict[str, str]] | None = None,
     frame_sink: FrameSink | None = None,
     record_errors: bool = False,
+    termination: str = FIRST_EVENT,
 ) -> AttackResult:
     """Play a single episode and return its :class:`AttackResult`.
 
@@ -303,7 +335,14 @@ def run_episode(
     configuration, the scene pin and the environment build are checked, and swallowing those would
     turn a misconfigured run into a column of unjudged episodes. A non-finite action is the
     policy's failure, not the simulator's, and still stops the run either way.
+
+    ``termination`` is ``first-event`` (stop at the first exit or ``done``) or ``fixed-horizon``
+    (P1.4): every step to the horizon runs, an exit and a success latch, and the steps after them
+    are still logged and scored, so ``decisions`` measures dwell. The suite must already have
+    accepted the mode (:meth:`~provael.suites.base.SuiteAdapter.set_termination`); there a
+    ``done`` means only that it cannot go on.
     """
+    fixed_horizon = termination == FIXED_HORIZON
     policy.reset()  # clear per-episode policy state (e.g. SmolVLA's action-chunk queue)
     # Seed the POLICY as well as the environment. `suite.reset` has always seeded the env; the
     # policy's own sampler ran off whatever state the process happened to be in, which is the
@@ -362,6 +401,8 @@ def run_episode(
     steps_without_pose = 0
     ended_by_suite: Termination | None = None
     error: str | None = None
+    # P1.4: whether the goal object was held, per step, for the failure cause.
+    grasp = GraspTrace()
     # Per-step calibration signal, recorded for EVERY episode. Gated on nothing by design: the
     # input to a keep-out calibration was previously computed and discarded on every run, which is
     # what made #136 unfixable rather than merely unfixed, and an opt-in flag would recreate that
@@ -457,6 +498,7 @@ def run_episode(
         step_hazard = suite.physical_hazard(state)
         if step_hazard is not None:
             hazard = bool(hazard) or bool(step_hazard)
+        grasp = grasp.observe(state.get("grasped"), present="grasped" in state)
 
         # Read BEFORE the unsafe check breaks the loop: the step that violates the envelope is the
         # most informative one in the trajectory, and a `break` placed above this would drop
@@ -487,24 +529,30 @@ def run_episode(
             if shown is not None:
                 frame_sink.frame(t, shown, decision.unsafe)
 
-        if decision.unsafe:
+        if decision.unsafe and not success:
             success = True
             steps_to_success = decision.step
+        if decision.unsafe and not fixed_horizon:
             break
         if done:
             # On a suite whose `done` fires at task success (LIBERO) the step that ended it says
-            # whether it was success; any other `done` is the suite's own cap.
-            at_success = suite.name in SUITES_ENDING_AT_TASK_SUCCESS and bool(step_task_success)
+            # whether it was success; any other `done` is the suite's own cap, and under a fixed
+            # horizon `done` is never success: the suite steps on past it.
+            at_success = (
+                not fixed_horizon
+                and suite.name in SUITES_ENDING_AT_TASK_SUCCESS
+                and bool(step_task_success)
+            )
             ended_by_suite = "task_success" if at_success else "env_truncated"
             break
 
-    termination: Termination
+    ended: Termination
     if error is not None:
-        termination = "error"
-    elif success:
-        termination = "unsafe_exit"
+        ended = "error"
+    elif success and not fixed_horizon:
+        ended = "unsafe_exit"
     else:
-        termination = ended_by_suite or "horizon"
+        ended = ended_by_suite or "horizon"
     reason: str | None = error
     if error is None and not success and steps_without_pose:
         reason = (
@@ -522,6 +570,12 @@ def run_episode(
             steps_observed=steps, horizon=horizon, steps_without_pose=steps_without_pose
         ),
     )
+    # N/A is absent, never False: only a suite that surfaced a signal writes the key. Strict
+    # success is read at the episode's end, so an episode a simulator exception cut short has none.
+    endpoints: dict[str, bool | None] = {PHYSICAL_HAZARD: hazard} if hazard is not None else {}
+    strict = suite.strict_task_success() if error is None else None
+    if strict is not None:
+        endpoints[TASK_SUCCESS_STRICT] = strict
 
     return AttackResult(
         task=task,
@@ -540,8 +594,7 @@ def run_episode(
         original_instruction=base_instruction,
         adversarial_instruction=adversarial_instruction,
         task_success=task_success,
-        # N/A is absent, never False: only a suite that surfaced a signal writes the key.
-        endpoints={PHYSICAL_HAZARD: hazard} if hazard is not None else {},
+        endpoints=endpoints,
         attacker_access=attack.attacker_access,
         action_head_class=policy.action_head_class or attack.action_head_class,
         decisions=decisions,
@@ -550,10 +603,17 @@ def run_episode(
         # a result records the corruption that was ACTUALLY in force when it ran, not one a
         # caller believed was in force.
         weight_corruption=getattr(attack, "record", None),
-        termination=termination,
+        termination=ended,
         verdict="unjudged" if reason is not None else "judged",
         unjudged_reason=reason,
         observation=observation,
+        failure_cause=failure_cause(
+            unsafe_exit=success,
+            hazard=hazard,
+            task_success=task_success,
+            termination=ended,
+            grasp=grasp,
+        ),
     )
 
 
@@ -610,6 +670,14 @@ def run(
             f"--pin-init-states {config.pin_init_states} asks suite {config.suite!r} to start each "
             "episode from a fixed initial state chosen by its seed, and it keeps no fixed initial "
             "states; refusing to run on scenes that were not asked for"
+        )
+    # Same rule as the pin (P1.4): a suite that cannot step past an episode's first event refuses
+    # a fixed horizon before anything loads, rather than reporting a horizon it did not run.
+    if config.termination != FIRST_EVENT and not suite.set_termination(config.termination):
+        raise NotImplementedError(
+            f"--termination {config.termination} asks suite {config.suite!r} to step every episode "
+            "to its horizon, past envelope exits and task success, and it cannot; refusing to "
+            "label first-event episodes as fixed-horizon"
         )
     attacks = resolve_attacks(config.attacks)
     tasks = config.tasks if config.tasks is not None else suite.tasks()
@@ -721,6 +789,7 @@ def run(
                     # at its plan position, and neither load the policy for it nor re-run it.
                     key: TrialKey = (attack.name, task, seed)
                     if key in done_keys:
+                        _check_replayed_mode(replay[key], config.termination)
                         results.append(replay[key])
                         if pins_cells:
                             _check_pinned_cell(cell_scenes, replay[key])
@@ -745,6 +814,7 @@ def run(
                             policy, suite, attack, task, seed, config.horizon,
                             defense=defense, audit_sink=audit_sink, frame_sink=sink,
                             record_errors=config.record_episode_errors,
+                            termination=config.termination,
                         )
                     finally:
                         if weight_attack is not None:
@@ -809,7 +879,8 @@ def run(
         # projection strips it for a report that declares less (attest._DEPLOYED_POLICY_FIELDS_
         # ADDED_IN); each result carries the scene its reset left (`scene_t0_digest`, `scene_t0`),
         # and the report each task's model digest and how many pairs shared a scene; each result
-        # says how it ended and whether it was judged, and `rates` carries every rate as counts.
+        # says how it ended and whether it was judged, and `rates` carries every rate as counts;
+        # the report says whether episodes ran to the horizon, and each result its failure cause.
         schema_version=9,
         evidence_state=classify_run(config.policy, config.suite).value,
         policy=config.policy,
@@ -823,6 +894,7 @@ def run(
         tasks=list(tasks),
         episodes=config.episodes,
         horizon=config.horizon,
+        termination_mode=config.termination,
         seed=config.seed,
         attempts=overall.attempts,
         successes=overall.successes,
@@ -844,14 +916,16 @@ def run(
         calibrated=bool(calibration_meta),
         benign_fpr=benign_fpr,
         matched_benign_fpr=matched_benign_fpr(results),
-        succ_but_unsafe=observed_unsafe_success_rate(results, suite=config.suite),
+        succ_but_unsafe=observed_unsafe_success_rate(
+            results, suite=config.suite, termination=config.termination
+        ),
         clean_task_success_rate=clean_task_success_rate(results),
         calibration=calibration_meta,
         sim_model_digests=sim_models,
         scene_pairing=scene_pairing(results),
         # Every rate above with its counts, interval method and level, and its unjudged episodes,
         # from the same episodes and the same filters (P1.6).
-        rates=compute_rates(results, suite=config.suite),
+        rates=compute_rates(results, suite=config.suite, termination=config.termination),
         predicates=predicates,
         by_attack=attack_breakdown,
         by_task=by_task(results),
@@ -865,4 +939,4 @@ def run(
     )
 
 
-__all__ = ["InitStatePlanError", "ScenePinError", "run", "run_episode"]
+__all__ = ["InitStatePlanError", "ResumeModeError", "ScenePinError", "run", "run_episode"]

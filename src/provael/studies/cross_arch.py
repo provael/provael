@@ -450,7 +450,8 @@ def eai04_measured_rows(arch: Architecture, report: RunReport) -> list[Eai04Row]
             lo, hi = wilson_ci(stat.successes, stat.attempts)
             q = fdr.get(vector)
             sbu = observed_unsafe_success_rate(
-                [r for r in report.results if r.attack == vector], suite=report.suite
+                [r for r in report.results if r.attack == vector], suite=report.suite,
+                termination=report.termination_mode,
             )
             rows.append(Eai04Row(
                 architecture=arch.key, family=family, vector=vector, status="measured",

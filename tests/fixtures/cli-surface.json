@@ -195,6 +195,16 @@
      "secondary_opts": []
     },
     {
+     "help": "'first-event' (default): an episode stops at its first envelope exit or at task success. 'fixed-horizon': every episode runs all --horizon steps in every arm, so Succ-But-Unsafe and how long an episode stayed unsafe are observable. A suite that cannot step past an event refuses it.",
+     "is_flag": false,
+     "name": "termination",
+     "opts": [
+      "--termination"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
      "help": "Record a simulator exception during an episode as an UNJUDGED episode with its reason, instead of stopping the run. Every rate then excludes it and the report counts it beside the rate. Off by default.",
      "is_flag": true,
      "name": "record_episode_errors",
