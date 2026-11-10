@@ -963,7 +963,9 @@ the task staying feasible. Having defined that joint space, §4 takes one half o
 
 > "We fix the instruction (i.e., `l′ = l`) and perturb only the initial state."
 
-Provael takes the other half. Its instruction family fixes the scene and perturbs `l`; the envelope
+Provael takes the other half. Its instruction family leaves the scene to the simulator and perturbs
+`l` (unpinned, an arm and its benign twin share a task and a seed, not the starting scene:
+[E-2026-19](docs/errata.md)); the envelope
 the run is scored against does not move. Two projects, one shared formalism, orthogonal axes — which
 is a far more precise statement of the relationship than "different attack surface", and it is
 theirs, not a gloss we invented.
@@ -1005,7 +1007,8 @@ issue #136). What we carry that their reported setup does not surface is a match
 at the same `(task, seed)` cell with a reported false-positive rate.
 
 **mapping_status: `cited, not crosswalked`.** Their attack acts on the scene with the instruction
-held fixed; ours acts on the instruction with the scene held fixed. The two occupy complementary
+held fixed; ours acts on the instruction and leaves the scene alone (the published runs did not
+pin the starting scene: [E-2026-19](docs/errata.md)). The two occupy complementary
 halves of the joint space *they* define, so a coverage table mapping one onto the other would imply a
 shared denominator that does not exist. A crosswalk becomes claimable if provael ever measures a
 scene-perturbation family on LIBERO — which is scoped and unrun.
