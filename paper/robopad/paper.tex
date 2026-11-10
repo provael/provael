@@ -29,7 +29,8 @@ published without that rate has no floor under it: if the false-positive rate is
 change in attack success between two checkpoints may be a property of the instrument rather than
 of the adaptation. We report a paired evaluation of a vision-language-action policy in simulation
 in which
-every attacked episode has a benign twin at the same task and seed, under an identical policy and
+every attacked episode has a benign twin at the same task and seed (not the same starting scene),
+under an identical policy and
 an identical predicate. Measuring both arms changed three of our own conclusions. First, the benign
 arm fires on 4\% of episodes, and those firings are not scattered: pooled over two independent
 runs they are 5 of 100, and every one lands on 2 of 10 tasks while the other 8 stay silent through
@@ -140,6 +141,8 @@ rather than something the paper works around.
 
 \paragraph{Paired design.} Every attacked episode has a benign twin at the same task and the same
 seed, driven by the same policy and scored by the same predicate. Pairing is on the task-seed cell.
+The pair does not share a starting scene: LIBERO's reset counter, not the seed, picks the fixed
+initial state, and these runs did not record it, so the test below is on nominal pairs.
 Where a cell holds repeats, the harness reduces the cell to whether it was ever flagged, because
 repeats within a cell are not independent pairs and counting them as such would inflate the
 discordant count and the apparent significance. Significance is the exact McNemar test on the

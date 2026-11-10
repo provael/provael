@@ -1,0 +1,4 @@
+# Working files of the RFM recording: tens of megabytes per episode. They stay on the recording
+# machine or the Modal Volume; the composed videos, the reports and the sidecars are what get kept.
+episodes/*/tracks/
+episodes/*/policy_view.npz
