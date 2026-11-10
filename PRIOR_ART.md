@@ -886,9 +886,11 @@ discordant benign twins, McNemar exact p = 4.6e-13, task-clustered 95% CI [72%, 
 harmless-variation control arm that fired 1/50 and is indistinguishable from doing nothing
 (p = 0.625). `examples/matched_pairs.py` runs that machinery on CPU in under a second.
 
-Two honest limits on that claim. It is a claim about **method, not about strength** — their attacks
-work and ours does not, and no amount of pairing changes that. And our own benign control fires
-2/50 against an uncalibrated predicate ([#136](https://github.com/provael/provael/issues/136)), so
+Three honest limits on that claim. Those pairs match on task and seed, not on the starting scene:
+on an unpinned LIBERO run the reset counter picks the scene, so UniTexture's same-state comparison
+is closer on that point than ours ([E-2026-19](docs/errata.md)). It is a claim about **method, not
+about strength** — their attacks work and ours does not, and no amount of pairing changes that. And
+our own benign control fires 2/50 against an uncalibrated predicate ([#136](https://github.com/provael/provael/issues/136)), so
 the control we are holding up as the missing piece has a false-positive rate we have not yet
 characterised either.
 
