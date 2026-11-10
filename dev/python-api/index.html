@@ -2826,9 +2826,11 @@ digest is unmoved and attestations issued by earlier versions still verify.</p>
   neither is given the policy, the suite or the danger predicate. <code>position</code> records which side a
   measure acts on, because a text pre-filter and an output clamp are different protective measures
   with different failure modes. <code>provael list-defenses</code>.</li>
-<li><strong><code>verify-checkpoint</code></strong> — a supply-chain control run BEFORE a policy loads: pinned-digest match
-  and a refusal to load pickle-format weights, both fail-closed. It emits a <strong>verdict, not a rate</strong>,
-  and does not reduce attack success. See <a href="../checkpoint-integrity/">docs/checkpoint-integrity.md</a>.</li>
+<li><strong><code>verify-checkpoint</code></strong> — a supply-chain control run BEFORE a policy loads: pinned-digest match,
+  a refusal to load pickle-format weights, and a refusal of a checkpoint whose JSON would make
+  lerobot load unreviewed code (the check <code>provael attack</code> makes too), all fail-closed. It emits a
+  <strong>verdict, not a rate</strong>, and does not reduce attack success. See
+  <a href="../checkpoint-integrity/">docs/checkpoint-integrity.md</a>.</li>
 <li><strong><code>runner</code></strong> — runs every <code>(task, attack, seed)</code> episode and aggregates.</li>
 <li><strong>ASR</strong> — <code>successes / attempts</code>, with <code>by_attack</code> and <code>by_task</code> breakdowns.</li>
 </ul>
