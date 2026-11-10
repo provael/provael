@@ -304,6 +304,11 @@ class LeRobotAdapter(PolicyAdapter):
             # `response`), so the refusal surfaces as an unrelated TypeError.
             ds_meta = LeRobotDatasetMetadata(self.dataset_repo_id, revision="main")
 
+        # A base checkpoint never fine-tuned on LIBERO is refused by name before its weights
+        # download (provael.policies.preflight); make_policy refuses lerobot/smolvla_base below.
+        from provael.policies import preflight
+
+        preflight.refuse_untuned_base_checkpoint(self.model_id, self._features)
         try:
             policy = make_policy(
                 cfg=policy_cfg, ds_meta=ds_meta, env_cfg=env_cfg, rename_map=self.rename_map
@@ -334,6 +339,17 @@ class LeRobotAdapter(PolicyAdapter):
             self._env_preprocess, self._env_postprocess = make_env_pre_post_processors(
                 env_cfg=env_cfg, policy_cfg=policy_cfg
             )
+        # Fail-closed checks on what lerobot built, read off the live objects: normaliser
+        # statistics, the rename map, loaded weights, the gripper range on LIBERO and image
+        # sensitivity (provael.policies.preflight). A refusal raises before the adapter is loaded.
+        self.preflight_outcomes = preflight.check_lerobot_policy(
+            policy,
+            self._preprocess,
+            self._postprocess,
+            model_id=self.model_id,
+            rename_map=self.rename_map,
+            features=self._features,
+        )
         self._loaded = True
         self.resolved_identity = self._resolve_identity(policy, policy_cfg)
 

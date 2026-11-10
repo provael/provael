@@ -353,6 +353,16 @@
      ],
      "required": false,
      "secondary_opts": []
+    },
+    {
+     "help": "Before the run, command a +x end-effector delta for a few steps on the run's first task and refuse the run unless the end-effector moved along +x: a simulator applying deltas in another frame than it reports the pose in (robosuite issue 819). Uses an environment of its own, so the run's scenes are unchanged. Needs a suite that reports an end-effector position (LIBERO). Off by default.",
+     "is_flag": true,
+     "name": "preflight",
+     "opts": [
+      "--preflight"
+     ],
+     "required": false,
+     "secondary_opts": []
     }
    ],
    "short_help": null
