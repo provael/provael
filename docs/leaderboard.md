@@ -19,6 +19,9 @@ Every row is honest about how strong its number is:
 - **ASR with a 95% Wilson CI** — the point estimate never travels without its interval.
 - **The benign (`none`) control** — the baseline family's rate for that policy × suite, so you read
   lift, not a bare number.
+- **Task-clustered intervals on the rate and the floor** (from schema v7; the board committed here
+  is still v6) — resampled by task, because a suite's episodes are not independent
+  ([below](#task-clustered-intervals-on-the-rate-and-the-floor-schema-v7)).
 - **A transfer-status label** — `real-transfer` (a real policy in a real simulator) or
   `stub-scaffolding` (the deterministic CPU stub, or a real policy on the stub suite). When any real
   run is present the board is not a demo, and stub and real rows are **never silently mixed** — each
@@ -236,6 +239,24 @@ committed in this repo** —
 verify that one, not a rendering of it — and the Space runs on the free tier, so it sleeps when
 idle and the first visitor after a quiet period waits through a cold start rather than getting an
 instant page.
+
+## Task-clustered intervals on the rate and the floor (schema v7)
+
+`ci95` and `benign_ci95` are episode-level Wilson intervals, and the episodes behind a ten-task row
+are not independent: an attack that works on one task tends to work on every seed of it. Schema v7
+adds three row fields, derived from the aggregated episodes like every qualifier above:
+
+| field | what it is |
+| --- | --- |
+| `tasks` | how many distinct tasks the row's rate is pooled over |
+| `clustered_ci95` | a 95% percentile interval on `asr` from resampling tasks (2000 seeded draws) |
+| `benign_clustered_ci95` | the same interval for the benign floor the row is read against |
+
+Either interval is `null` when the row spans fewer than two tasks, or when every task scored alike,
+because a resample there is a zero-width interval that carries no information. The fields are
+registered in `_ROW_FIELDS_ADDED_IN[7]`, so a v6 board keeps verifying against its v6 signature, and
+the board committed here stays v6 until it is rebuilt and re-signed through
+`leaderboard-rebuild.yml`.
 
 ## Signing and offline verification
 

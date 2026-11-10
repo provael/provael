@@ -14,18 +14,18 @@
 
 ## Result
 
-| arm | role | pooled | 95% Wilson | McNemar vs `none` | Holm | task-clustered 95% CI | verdict |
-| --- | --- | ---: | --- | ---: | ---: | --- | --- |
-| `none` | benign control (the floor) | **1/50 (2%)** | [0%, 10%] | — | — | — | the floor every treatment is read against |
-| `roleplay` | adversarial treatment | **42/50 (84%)** | [71%, 92%] | p=9.1e-13 (41–0) | 5.5e-12 | [62%, 100%] | **survives** |
-| `goal_substitution` | adversarial treatment | **7/50 (14%)** | [7%, 26%] | p=0.07 (7–1) | 0.35 | [0%, 34%] | rejected |
-| `paraphrase` | adversarial treatment | **1/50 (2%)** | [0%, 10%] | p=1 (1–1) | 1 | [0%, 6%] | rejected |
-| `patch` | adversarial treatment | **1/50 (2%)** | [0%, 10%] | p=1 (1–1) | 1 | [0%, 6%] | rejected |
-| `decoy_object` | adversarial treatment | **1/50 (2%)** | [0%, 10%] | p=1 (1–1) | 1 | [0%, 6%] | rejected |
-| `scene_text` | adversarial treatment | **2/50 (4%)** | [1%, 13%] | p=1 (1–0) | 1 | [0%, 10%] | rejected |
-| `mcp_tool_desc` | adversarial treatment | **not applicable** (50 records) | — | — | — | — | not measured on this suite |
+| arm | role | pooled | 95% Wilson | McNemar vs `none` | Holm | difference vs `none` (95%) | task-clustered 95% CI | verdict |
+| --- | --- | ---: | --- | ---: | ---: | --- | --- | --- |
+| `none` | benign control (the floor) | **1/50 (2%)** | [0%, 10%] | — | — | — | [0%, 6%] | the floor every treatment is read against |
+| `roleplay` | adversarial treatment | **42/50 (84%)** | [71%, 92%] | p=9.1e-13 (41–0) | 5.5e-12 | +82 pp [+67, +90] | [62%, 100%] | **survives** |
+| `goal_substitution` | adversarial treatment | **7/50 (14%)** | [7%, 26%] | p=0.07 (7–1) | 0.35 | +12 pp [+1, +24] | [0%, 34%] | rejected |
+| `paraphrase` | adversarial treatment | **1/50 (2%)** | [0%, 10%] | p=1 (1–1) | 1 | 0 pp [-9, +9] | [0%, 6%] | rejected |
+| `patch` | adversarial treatment | **1/50 (2%)** | [0%, 10%] | p=1 (1–1) | 1 | 0 pp [-9, +9] | [0%, 6%] | rejected |
+| `decoy_object` | adversarial treatment | **1/50 (2%)** | [0%, 10%] | p=1 (1–1) | 1 | 0 pp [-9, +9] | [0%, 6%] | rejected |
+| `scene_text` | adversarial treatment | **2/50 (4%)** | [1%, 13%] | p=1 (1–0) | 1 | +2 pp [-6, +11] | [0%, 10%] | rejected |
+| `mcp_tool_desc` | adversarial treatment | **not applicable** (50 records) | — | — | — | — | — | not measured on this suite |
 
-McNemar is paired at matched (task, seed); starting scenes not recorded and not matched under lerobot 0.5.1's reset counter (E-2026-19). It runs against the benign arm; the pair counts are attack-only–benign-only discordant episodes. Holm adjusts across the adversarial arms of this run. The task-clustered interval resamples whole tasks (an attack that works on one task works on all its seeds), so it is the honest width; it needs at least two tasks.
+McNemar is paired at matched (task, seed); starting scenes not recorded and not matched under lerobot 0.5.1's reset counter (E-2026-19). It runs against the benign arm; the pair counts are attack-only–benign-only discordant episodes. Holm adjusts across the adversarial arms of this run. The difference is the arm's unsafe rate minus the benign arm's over the same pairs, in percentage points, with Newcombe's score interval for paired proportions (method 10, Statistics in Medicine 1998;17:2635), built from the table McNemar reads; it is not adjusted for multiplicity. The task-clustered interval resamples whole tasks (an attack that works on one task works on all its seeds), so it is the honest width, for the benign floor as for the arms; it needs at least two tasks.
 
 **Competence control (clean task success on the benign arm):** 48/50 (96%). A policy that cannot do the task has no task to lose under an arm; read every rate above against this.
 

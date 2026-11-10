@@ -26,8 +26,9 @@ runs with inspect-ai, which provael is not, so nothing here ever emits a ``verif
 WHAT PROVAEL PUBLISHES THERE, AND HOW IT STAYS HONEST. One entry per arm of the run — the
 adversarial treatments, the benign baseline and the harmless-variation controls alike — with
 ``value`` the arm's episode-level unsafe fraction in ``[0, 1]`` and ``notes`` carrying the role,
-the counts, the 95 % Wilson interval, the predicate state, the tool version and the checkpoint,
-so a reader of the Hub page sees the floor beside the rate and never a bare number. ``date`` is
+the counts, the 95 % Wilson interval, the task-clustered 95 % interval (or why there is none), the
+predicate state, the tool version and the checkpoint, so a reader of the Hub page sees the floor
+beside the rate and never a bare number. ``date`` is
 the execution manifest's end time when one is present and is otherwise omitted (the Hub falls
 back to the commit time; this module never reads the clock). ``source.url`` is meant to be the
 committed results directory on GitHub, so the entry points at an artifact, not at a claim. Arms
@@ -49,6 +50,7 @@ import yaml
 from provael.calibration import wilson_ci
 from provael.execution import ExecutionManifest
 from provael.scoring.asr import semantic_role
+from provael.scoring.paired import cluster_bootstrap_ci, floor_cluster_bootstrap_ci
 from provael.types import RunReport
 
 #: The ``evaluation_framework`` value a provael benchmark's ``eval.yaml`` names. It must exist in
@@ -79,6 +81,28 @@ def _date_of(manifest: ExecutionManifest | None) -> str | None:
     return manifest.ended_at[:10]
 
 
+def _clustered_note(report: RunReport, attack: str, role: str) -> str:
+    """The arm's task-clustered 95% interval, or why it has none (P2.4).
+
+    Episodes within a task are correlated, so on a run of several tasks the episode-level Wilson
+    interval is too narrow for a statement about the suite; the clustered one resamples tasks. The
+    benign floor gets the same treatment as the arms, through its own variant.
+    """
+    tasks = {r.task for r in report.results if r.attack == attack and r.scored}
+    if not tasks:
+        return "task-clustered 95% CI n/a (episodes not retained)"
+    if len(tasks) < 2:
+        return "task-clustered 95% CI n/a (one task)"
+    ci = (
+        floor_cluster_bootstrap_ci(report.results)
+        if role == "benign-control"
+        else cluster_bootstrap_ci(report.results, attack=attack)
+    )
+    if ci is None:
+        return f"task-clustered 95% CI declined (every one of {len(tasks)} tasks scored alike)"
+    return f"task-clustered 95% CI [{ci[0]:.3f}, {ci[1]:.3f}] over {len(tasks)} tasks"
+
+
 def to_eval_results(
     report: RunReport,
     dataset_id: str,
@@ -104,7 +128,8 @@ def to_eval_results(
             "value": round(stat.successes / stat.attempts, 6),
             "notes": (
                 f"{role}; unsafe {stat.successes}/{stat.attempts}; 95% Wilson CI "
-                f"[{lo:.3f}, {hi:.3f}]; {predicate}; horizon {report.horizon}; "
+                f"[{lo:.3f}, {hi:.3f}]; {_clustered_note(report, attack, role)}; "
+                f"{predicate}; horizon {report.horizon}; "
                 f"provael {report.tool_version}; checkpoint {checkpoint}; "
                 "value is the episode-level unsafe fraction, read against the benign-control arm"
             ),

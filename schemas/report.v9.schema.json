@@ -985,6 +985,44 @@
       "title": "DeployedPolicy",
       "type": "object"
     },
+    "DifferenceInterval": {
+      "additionalProperties": false,
+      "description": "An interval for a difference of two rates, named by its method (schema 9, P2.4).",
+      "properties": {
+        "high": {
+          "maximum": 1.0,
+          "minimum": -1.0,
+          "title": "High",
+          "type": "number"
+        },
+        "level": {
+          "description": "Nominal coverage, e.g. 0.95.",
+          "exclusiveMaximum": 1.0,
+          "exclusiveMinimum": 0.0,
+          "title": "Level",
+          "type": "number"
+        },
+        "low": {
+          "maximum": 1.0,
+          "minimum": -1.0,
+          "title": "Low",
+          "type": "number"
+        },
+        "method": {
+          "description": "How it was computed, e.g. Newcombe's paired score.",
+          "title": "Method",
+          "type": "string"
+        }
+      },
+      "required": [
+        "method",
+        "level",
+        "low",
+        "high"
+      ],
+      "title": "DifferenceInterval",
+      "type": "object"
+    },
     "EaiTag": {
       "description": "Embodied AI Security Top-10 risk an attack maps to (see :mod:`provael.eai`).",
       "properties": {
@@ -1180,6 +1218,63 @@
         "z"
       ],
       "title": "KeepOutBox",
+      "type": "object"
+    },
+    "PairedDifferenceStat": {
+      "additionalProperties": false,
+      "description": "An arm's rate minus its benign twins' over the cells they share (schema 9, P2.4).\n\nThe whole paired 2x2 table travels with the interval: ``attack_only`` and ``benign_only`` are\nMcNemar's discordant counts b and c, and ``pairs`` is n. The validator refuses a table that\ndoes not add up and an estimate that is not ``(b - c) / n``.",
+      "properties": {
+        "attack_only": {
+          "description": "b: the arm left, its benign twin did not.",
+          "minimum": 0,
+          "title": "Attack Only",
+          "type": "integer"
+        },
+        "benign_only": {
+          "description": "c: the benign twin left, the arm did not.",
+          "minimum": 0,
+          "title": "Benign Only",
+          "type": "integer"
+        },
+        "both": {
+          "description": "Cells where the arm and its twin both left.",
+          "minimum": 0,
+          "title": "Both",
+          "type": "integer"
+        },
+        "estimate": {
+          "description": "(b - c) / n.",
+          "maximum": 1.0,
+          "minimum": -1.0,
+          "title": "Estimate",
+          "type": "number"
+        },
+        "interval": {
+          "$ref": "#/$defs/DifferenceInterval"
+        },
+        "neither": {
+          "description": "Cells where neither left.",
+          "minimum": 0,
+          "title": "Neither",
+          "type": "integer"
+        },
+        "pairs": {
+          "description": "n: the (task, seed) cells both arms share.",
+          "minimum": 1,
+          "title": "Pairs",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "pairs",
+        "both",
+        "attack_only",
+        "benign_only",
+        "neither",
+        "estimate",
+        "interval"
+      ],
+      "title": "PairedDifferenceStat",
       "type": "object"
     },
     "PredicateIdentity": {
@@ -1476,6 +1571,14 @@
           ],
           "default": null,
           "description": "The benign twins of the attacked (task, seed) cells, cell by cell."
+        },
+        "paired_difference": {
+          "additionalProperties": {
+            "$ref": "#/$defs/PairedDifferenceStat"
+          },
+          "description": "Per arm paired with the benign arm: its rate minus its twins' over the (task, seed) cells they share, with Newcombe's paired score interval and the table it came from. Matched on task and seed, which is not a shared starting scene on an unpinned LIBERO run (E-2026-19). Arms with no shared cell are absent.",
+          "title": "Paired Difference",
+          "type": "object"
         },
         "succ_but_unsafe": {
           "anyOf": [

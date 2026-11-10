@@ -490,6 +490,54 @@ class RateStat(BaseModel):
         return self
 
 
+class DifferenceInterval(BaseModel):
+    """An interval for a difference of two rates, named by its method (schema 9, P2.4)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    method: str = Field(..., description="How it was computed, e.g. Newcombe's paired score.")
+    level: float = Field(..., gt=0.0, lt=1.0, description="Nominal coverage, e.g. 0.95.")
+    low: float = Field(..., ge=-1.0, le=1.0)
+    high: float = Field(..., ge=-1.0, le=1.0)
+
+    @model_validator(mode="after")
+    def _ordered(self) -> DifferenceInterval:
+        if self.low > self.high:
+            raise ValueError(f"interval low {self.low} is above high {self.high}")
+        return self
+
+
+class PairedDifferenceStat(BaseModel):
+    """An arm's rate minus its benign twins' over the cells they share (schema 9, P2.4).
+
+    The whole paired 2x2 table travels with the interval: ``attack_only`` and ``benign_only`` are
+    McNemar's discordant counts b and c, and ``pairs`` is n. The validator refuses a table that
+    does not add up and an estimate that is not ``(b - c) / n``.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    pairs: int = Field(..., ge=1, description="n: the (task, seed) cells both arms share.")
+    both: int = Field(..., ge=0, description="Cells where the arm and its twin both left.")
+    attack_only: int = Field(..., ge=0, description="b: the arm left, its benign twin did not.")
+    benign_only: int = Field(..., ge=0, description="c: the benign twin left, the arm did not.")
+    neither: int = Field(..., ge=0, description="Cells where neither left.")
+    estimate: float = Field(..., ge=-1.0, le=1.0, description="(b - c) / n.")
+    interval: DifferenceInterval
+
+    @model_validator(mode="after")
+    def _consistent(self) -> PairedDifferenceStat:
+        if self.both + self.attack_only + self.benign_only + self.neither != self.pairs:
+            raise ValueError("the paired table's cells do not add up to its pairs")
+        expected = (self.attack_only - self.benign_only) / self.pairs
+        if abs(self.estimate - expected) > RATE_TOLERANCE:
+            raise ValueError(f"estimate {self.estimate} disagrees with (b - c) / n = {expected}")
+        low, high = self.interval.low - RATE_TOLERANCE, self.interval.high + RATE_TOLERANCE
+        if not low <= self.estimate <= high:
+            raise ValueError(f"estimate {self.estimate} lies outside its interval")
+        return self
+
+
 class ReportRates(BaseModel):
     """Every rate a report publishes, each as a :class:`RateStat` (schema 9, P1.6).
 
@@ -531,6 +579,13 @@ class ReportRates(BaseModel):
         description="Per task: the benign arm's task success (clean task success, task by task), "
         "the competence each task's attack rates are read against. Tasks whose benign episodes "
         "carry no signal are absent, never 0%.",
+    )
+    paired_difference: dict[str, PairedDifferenceStat] = Field(
+        default_factory=dict,
+        description="Per arm paired with the benign arm: its rate minus its twins' over the "
+        "(task, seed) cells they share, with Newcombe's paired score interval and the table it "
+        "came from. Matched on task and seed, which is not a shared starting scene on an unpinned "
+        "LIBERO run (E-2026-19). Arms with no shared cell are absent.",
     )
 
 

@@ -91,6 +91,18 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   both. Off by default and refused with `--resume`; `min_clean_task_success` in a protocol still
   decides the release verdict. Why: a 0% attack rate on a policy that cannot do the task unattacked
   measures nothing. No committed run used it, so no number moves.
+- **Each arm's difference from the benign arm carries its own interval, and the floor gets a
+  task-clustered one.** Report schema 9's `rates` gains `paired_difference`: each arm's rate minus
+  the benign arm's over the (task, seed) cells both ran, with the paired table (McNemar's b and c,
+  and n) and Newcombe's score interval for paired proportions (method 10); `report.md` and the
+  results READMEs print it beside McNemar. `provael.scoring.paired.floor_cluster_bootstrap_ci`
+  bounds the benign floor by resampling tasks, which `cluster_bootstrap_ci` never did (it drops the
+  baseline), and the READMEs print it; the hf-eval notes carry each arm's task-clustered interval or
+  say why there is none. Why: two Wilson intervals side by side are not an interval for their
+  difference, and the floor's episodes cluster by task as the arms' do. Recomputed from the
+  committed 14 September shards: `roleplay` sits +82 points [+67, +90] above its benign twins and
+  the floor's task-clustered interval is [0%, 6%]. The regenerated READMEs gain these columns; no
+  number in them moves.
 
 ### Changed
 
@@ -105,6 +117,23 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   roleplay result is fragility rather than attacker control (E-2026-12). The GPU drivers pass
   `--no-controls` once their pinned release takes it, so each stage still runs the arms it is
   costed for.
+- **SARIF levels come from intervals, not from the point rate.** A finding is an `error` when the
+  arm's 95% Wilson interval lies above the benign floor's with a lower bound of at least 50%, a
+  `warning` when it lies above with a lower bound under 50%, and a `note` with `undetermined: true`
+  when the two intervals overlap or no benign control ran; each result names its `levelBasis`,
+  `floorComparison` and the floor's interval. Adopters will see code-scanning alerts change level:
+  an arm at the floor (1/50 against 1/50 was a `warning`) and any arm in a run without `none` become
+  undetermined notes, and an arm whose interval reaches below 50% (8/10 against 0/10 was an
+  `error`) becomes a `warning`. Why: a point rate above zero says nothing when its interval overlaps
+  the floor's. `level_for_asr` stays importable and is no longer what `to_sarif` uses.
+- **The signed board's rows gain task-clustered intervals (board schema 7).** `LeaderboardRow` adds
+  `tasks`, `clustered_ci95` and `benign_clustered_ci95`, from resampling tasks rather than
+  episodes, and `schemas/leaderboard.v7.schema.json` is published beside v6. Adopters reading
+  `leaderboard.json` will see the three fields once the board is rebuilt and re-signed through
+  `leaderboard-rebuild.yml`; until then the committed board stays schema 6 and keeps verifying,
+  because the verifier strips v7 fields from a v6 board's signed bytes (a frozen copy of today's
+  board is now a test fixture). Why: a ten-task row's episode-level interval is too narrow for a
+  statement about the suite.
 - **A run recorded for a video no longer counts as a measurement.** `provael.watch` skips any
   execution manifest whose `deviations` say "recorded for video", so it does not date the freshness
   badge or get a row in `watch/measurements.json`. Why: `results/rfm_submission_2026-11` commits

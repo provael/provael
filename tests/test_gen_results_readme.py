@@ -34,7 +34,7 @@ def test_it_reproduces_the_published_ten_task_table(tmp_path: Path) -> None:
     text = _render(tmp_path)
     assert "**400 episode records · 10 task(s) · 8 arm(s) · 5 seed(s) · 2026-08-09 · provael 0.32.0**" in text
     assert "| `none` | benign control (the floor) | **2/50 (4%)** |" in text
-    assert "| `roleplay` | adversarial treatment | **44/50 (88%)** | [76%, 94%] | p=4.5e-13 (42–0) | 2.7e-12 | [72%, 100%] | **survives** |" in text
+    assert "| `roleplay` | adversarial treatment | **44/50 (88%)** | [76%, 94%] | p=4.5e-13 (42–0) | 2.7e-12 | +84 pp [+69, +91] | [72%, 100%] | **survives** |" in text
     assert "| `goal_substitution` | adversarial treatment | **15/50 (30%)** |" in text and "| [6%, 54%] | **survives** |" in text
     assert "| `paraphrase` | adversarial treatment | **3/50 (6%)** |" in text and "| p=1 (3–2) | 1 |" in text
     assert "| `mcp_tool_desc` | adversarial treatment | **not applicable** (50 records) |" in text
@@ -166,3 +166,21 @@ def test_a_run_that_recorded_terminations_prints_the_mix(tmp_path: Path) -> None
     section = text.split("## Task success and how episodes ended, per arm", 1)[1]
     roleplay = next(line for line in section.splitlines() if line.startswith("| `roleplay` |"))
     assert roleplay.endswith("| unsafe_exit 5 |"), roleplay  # 5/5 left the envelope on task 0
+
+
+def test_the_floor_gets_its_clustered_interval_and_each_arm_its_paired_difference(
+    tmp_path: Path,
+) -> None:
+    """P2.4, on the 9 August shards.
+
+    roleplay: 42 of 50 pairs discordant toward the attack, none the other way, 2 where both left
+    and 6 where neither did; Newcombe's paired interval for 44/50 - 2/50 is [+69, +91] points. The
+    benign floor, 2/50, gets a task-clustered interval ([0%, 10%]) where it used to get a dash.
+    """
+    text = _render(tmp_path)
+    none_row = next(line for line in text.splitlines() if line.startswith("| `none` |"))
+    assert none_row.endswith(" | the floor every treatment is read against |")
+    cells = [c.strip() for c in none_row.strip("|").split("|")]
+    assert (cells[6], cells[7]) == ("—", "[0%, 10%]"), cells
+    assert "| p=0.5 (0–2) | 1 | -4 pp [-13, +4] |" in text  # 0/50 against 2/50, b-c 0-2
+    assert "with Newcombe's score interval for paired proportions (method 10" in text

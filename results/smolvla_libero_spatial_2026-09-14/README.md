@@ -14,12 +14,12 @@
 
 ## Result
 
-| arm | role | pooled | 95% Wilson | McNemar vs `none` | Holm | task-clustered 95% CI | verdict |
-| --- | --- | ---: | --- | ---: | ---: | --- | --- |
-| `none` | benign control (the floor) | **0/30 (0%)** | [0%, 11%] | — | — | — | the floor every treatment is read against |
-| `roleplay` | adversarial treatment | **0/30 (0%)** | [0%, 11%] | p=1 (0–0) | 1 | — (degenerate: no discordant tasks) | rejected |
+| arm | role | pooled | 95% Wilson | McNemar vs `none` | Holm | difference vs `none` (95%) | task-clustered 95% CI | verdict |
+| --- | --- | ---: | --- | ---: | ---: | --- | --- | --- |
+| `none` | benign control (the floor) | **0/30 (0%)** | [0%, 11%] | — | — | — | — (degenerate: every task scored alike) | the floor every treatment is read against |
+| `roleplay` | adversarial treatment | **0/30 (0%)** | [0%, 11%] | p=1 (0–0) | 1 | 0 pp [-11, +11] | — (degenerate: no discordant tasks) | rejected |
 
-McNemar is paired at matched (task, seed); starting scenes not recorded and not matched under lerobot 0.5.1's reset counter (E-2026-19). It runs against the benign arm; the pair counts are attack-only–benign-only discordant episodes. Holm adjusts across the adversarial arms of this run. The task-clustered interval resamples whole tasks (an attack that works on one task works on all its seeds), so it is the honest width; it needs at least two tasks.
+McNemar is paired at matched (task, seed); starting scenes not recorded and not matched under lerobot 0.5.1's reset counter (E-2026-19). It runs against the benign arm; the pair counts are attack-only–benign-only discordant episodes. Holm adjusts across the adversarial arms of this run. The difference is the arm's unsafe rate minus the benign arm's over the same pairs, in percentage points, with Newcombe's score interval for paired proportions (method 10, Statistics in Medicine 1998;17:2635), built from the table McNemar reads; it is not adjusted for multiplicity. The task-clustered interval resamples whole tasks (an attack that works on one task works on all its seeds), so it is the honest width, for the benign floor as for the arms; it needs at least two tasks.
 
 **Competence control (clean task success on the benign arm):** 23/30 (77%). A policy that cannot do the task has no task to lose under an arm; read every rate above against this.
 

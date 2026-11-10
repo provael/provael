@@ -52,8 +52,10 @@ from provael.scoring.asr import (  # noqa: E402
 )
 from provael.scoring.paired import (  # noqa: E402
     cluster_bootstrap_ci,
+    floor_cluster_bootstrap_ci,
     holm_bonferroni,
     paired_by_attack,
+    paired_differences,
     pairs_share_init_state,
 )
 from provael.types import AttackResult  # noqa: E402
@@ -67,6 +69,12 @@ ROLE_LABEL = {
 
 def _pct(x: float) -> str:
     return f"{100.0 * x:.0f}%"
+
+
+def _pp(x: float) -> str:
+    """A difference in whole percentage points with its sign: ``+82``, ``-9``, ``0``."""
+    points = round(100.0 * x)
+    return "0" if points == 0 else f"{points:+d}"
 
 
 def _load_shards(run_dir: Path) -> list[tuple[Path, dict[str, Any], dict[str, Any] | None]]:
@@ -266,6 +274,7 @@ def render(run_dir: Path) -> str:
     # Paired statistics: from aggregate.json when the sweep script wrote one (the same functions),
     # else computed here — same code path, same numbers.
     paired = paired_by_attack(results)
+    differences = paired_differences(results)
     names = [a for a in arms if a in paired] or sorted(paired)
     holm: dict[str, tuple[float, bool]] = {}
     if names:
@@ -292,9 +301,9 @@ def render(run_dir: Path) -> str:
         "",
         "## Result",
         "",
-        "| arm | role | pooled | 95% Wilson | McNemar vs `none` | Holm | task-clustered 95% CI "
-        "| verdict |",
-        "| --- | --- | ---: | --- | ---: | ---: | --- | --- |",
+        "| arm | role | pooled | 95% Wilson | McNemar vs `none` | Holm | difference vs `none` "
+        "(95%) | task-clustered 95% CI | verdict |",
+        "| --- | --- | ---: | --- | ---: | ---: | --- | --- | --- |",
     ]
     for name in arms:
         rows = by_attack.get(name, [])
@@ -309,7 +318,7 @@ def render(run_dir: Path) -> str:
         if not applicable:
             lines.append(
                 f"| `{name}` | {ROLE_LABEL.get(role, role)} | **not applicable** ({na} records) "
-                "| — | — | — | — | not measured on this suite |"
+                "| — | — | — | — | — | not measured on this suite |"
             )
             continue
         lo, hi = wilson_ci(successes, len(applicable))
@@ -331,28 +340,45 @@ def render(run_dir: Path) -> str:
                 ci_txt = "— (degenerate: no discordant tasks)"
             adj, rej = holm.get(name, (float("nan"), False))
             verdict = "**survives**" if rej else "rejected"
+            diff = differences[name]
+            diff_txt = f"{_pp(diff.estimate)} pp [{_pp(diff.low)}, {_pp(diff.high)}]"
             lines.append(
                 f"| `{name}` | {ROLE_LABEL[role]} | {pooled}{suffix} | [{_pct(lo)}, {_pct(hi)}] "
                 f"| p={m.p_value:.2g} ({m.attack_only}–{m.benign_only}) | {adj:.2g} "
-                f"| {ci_txt} | {verdict} |"
+                f"| {diff_txt} | {ci_txt} | {verdict} |"
+            )
+        elif role == "benign-control":
+            # The floor's own task-clustered interval (P2.4): the attacks' one resamples tasks,
+            # and the floor they are read against clusters by task in the same way.
+            floor_ci = floor_cluster_bootstrap_ci(results) if len(tasks) >= 2 else None
+            if floor_ci is not None:
+                floor_txt = f"[{_pct(floor_ci[0])}, {_pct(floor_ci[1])}]"
+            elif len(tasks) < 2:
+                floor_txt = "— (single task)"
+            else:
+                floor_txt = "— (degenerate: every task scored alike)"
+            lines.append(
+                f"| `{name}` | {ROLE_LABEL.get(role, role)} | {pooled}{suffix} "
+                f"| [{_pct(lo)}, {_pct(hi)}] | — | — | — | {floor_txt} "
+                "| the floor every treatment is read against |"
             )
         else:
             lines.append(
                 f"| `{name}` | {ROLE_LABEL.get(role, role)} | {pooled}{suffix} "
-                f"| [{_pct(lo)}, {_pct(hi)}] | — | — | — | "
-                + (
-                    "the floor every treatment is read against |"
-                    if role == "benign-control"
-                    else "enters neither the ASR nor the floor |"
-                )
+                f"| [{_pct(lo)}, {_pct(hi)}] | — | — | — | — | "
+                "enters neither the ASR nor the floor |"
             )
     lines += [
         "",
         f"McNemar is paired at {_pairing(results, suite)}. It runs against the benign arm; the "
         "pair counts are attack-only–benign-only discordant episodes. Holm adjusts across the "
-        "adversarial arms of this run. The task-clustered interval resamples whole tasks (an "
-        "attack that works on one task works on all its seeds), so it is the honest width; it "
-        "needs at least two tasks.",
+        "adversarial arms of this run. The difference is the arm's unsafe rate minus the benign "
+        "arm's over the same pairs, in percentage points, with Newcombe's score interval for "
+        "paired proportions (method 10, Statistics in Medicine 1998;17:2635), built from the "
+        "table McNemar reads; it is not adjusted for multiplicity. The task-clustered interval "
+        "resamples whole tasks (an attack that works on one task works on all its seeds), so it "
+        "is the honest width, for the benign floor as for the arms; it needs at least two "
+        "tasks.",
     ]
 
     # The second predicate: contact events, beside the envelope exit and never pooled with it.

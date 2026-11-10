@@ -192,3 +192,51 @@ def test_report_md_says_an_older_report_recorded_no_ending() -> None:
     assert "| none | benign-control | 5/5 (100.0%) [57–100%] |" in section
     assert "not recorded (report schema 5; recorded from schema 9)" in section
     assert "| mcp_tool_desc | adversarial-treatment | N/A | N/A | not applicable on this suite |" in section
+
+
+# --- The paired difference in the rates block (P2.4) ----------------------------------------------
+
+
+def test_each_paired_arm_s_difference_is_stored_with_its_table() -> None:
+    from provael.scoring.paired import PAIRED_DIFFERENCE_METHOD, paired_differences
+
+    report = run(
+        RunConfig(policy="stub", suite="stub", attacks=["none", "instruction", "control"],
+                  episodes=4, seed=0)
+    )
+    assert report.rates is not None
+    stored = report.rates.paired_difference
+    computed = paired_differences(report.results)
+    assert set(stored) == set(computed)
+    for arm, diff in computed.items():
+        row = stored[arm]
+        assert (row.both, row.attack_only, row.benign_only, row.neither, row.pairs) == (
+            diff.both, diff.attack_only, diff.benign_only, diff.neither, diff.pairs)
+        assert (row.interval.low, row.interval.high) == (diff.low, diff.high)
+        assert row.interval.method == PAIRED_DIFFERENCE_METHOD
+        assert row.interval.level == INTERVAL_LEVEL
+
+
+def test_a_paired_table_that_does_not_add_up_is_refused() -> None:
+    from provael.types import DifferenceInterval, PairedDifferenceStat
+
+    interval = DifferenceInterval(method="m", level=0.95, low=-0.1, high=0.5)
+    PairedDifferenceStat(pairs=10, both=1, attack_only=3, benign_only=1, neither=5, estimate=0.2,
+                         interval=interval)
+    with pytest.raises(ValidationError, match="add up"):
+        PairedDifferenceStat(pairs=11, both=1, attack_only=3, benign_only=1, neither=5,
+                             estimate=0.2, interval=interval)
+    with pytest.raises(ValidationError, match="disagrees"):
+        PairedDifferenceStat(pairs=10, both=1, attack_only=3, benign_only=1, neither=5,
+                             estimate=0.3, interval=interval)
+    with pytest.raises(ValidationError, match="outside"):
+        PairedDifferenceStat(pairs=10, both=1, attack_only=3, benign_only=1, neither=5,
+                             estimate=0.2, interval=DifferenceInterval(
+                                 method="m", level=0.95, low=0.3, high=0.5))
+
+
+def test_report_md_prints_the_paired_difference() -> None:
+    shard = ROOT / "results" / "smolvla_libero_object_suite_2026-09-14" / "libero_object_0"
+    section = to_markdown(load_report(shard)).split("## Paired difference against the benign arm")[1]
+    assert "| roleplay | 5 | 5–0 | +100.0 pp | [+38.6, +100.0] pp |" in section
+    assert "not adjusted for multiplicity" in section

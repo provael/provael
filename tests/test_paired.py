@@ -13,11 +13,16 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from provael.scoring.paired import (
     cluster_bootstrap_ci,
+    floor_cluster_bootstrap_ci,
     holm_bonferroni,
     mcnemar_exact,
     paired_by_attack,
+    paired_difference_ci,
+    paired_differences,
     pairs_share_init_state,
 )
 from provael.types import AttackResult
@@ -282,3 +287,117 @@ def test_no_pairs_is_not_a_shared_scene() -> None:
 
 def test_the_published_headline_run_does_not_claim_a_shared_scene() -> None:
     assert pairs_share_init_state(_committed()) is False
+
+
+# --- The paired difference (Newcombe method 10) -----------------------------------------------------
+
+#: Newcombe (1998), Statistics in Medicine 17:2635-2650, Table III, method 10: cells (e, f, g, h)
+#: of the paired 2x2 table and the published 95% limits for (e+f)/n - (e+g)/n, to four decimals.
+#: Pinned against the paper, not against this implementation's own output.
+_NEWCOMBE_TABLE_III = [
+    ((36, 12, 2, 0), (0.0569, 0.3404)),
+    ((20, 12, 2, 16), (0.0562, 0.3292)),
+    ((18, 12, 2, 18), (0.0562, 0.3290)),
+    ((35, 14, 0, 1), (0.1461, 0.4175)),
+    ((18, 14, 0, 18), (0.1441, 0.3963)),
+    ((0, 29, 1, 0), (0.6666, 0.9882)),
+    ((1, 98, 0, 1), (0.9171, 0.9916)),
+    ((0, 30, 0, 0), (0.8395, 1.0)),
+    ((53, 0, 0, 1), (-0.0729, 0.0729)),
+    ((30, 0, 0, 24), (-0.0358, 0.0358)),
+    ((27, 0, 0, 27), (-0.0351, 0.0351)),
+]
+
+
+@pytest.mark.parametrize(("cells", "published"), _NEWCOMBE_TABLE_III)
+def test_the_paired_difference_reproduces_newcombe_s_published_limits(
+    cells: tuple[int, int, int, int], published: tuple[float, float]
+) -> None:
+    both, attack_only, benign_only, neither = cells
+    low, high = paired_difference_ci(both, attack_only, benign_only, neither)
+    assert low == pytest.approx(published[0], abs=6e-5)
+    assert high == pytest.approx(published[1], abs=6e-5)
+
+
+def test_the_headline_pair_by_hand() -> None:
+    """roleplay on the 14 September run: 1 both, 41 attack only, 0 benign only, 8 neither (n=50).
+
+    By hand: Wilson(42/50) = [0.714858, 0.916626], Wilson(1/50) = [0.003539, 0.104954]. phi's
+    numerator 1*8 - 41*0 = 8 is positive and below n/2 = 25, so the continuity correction takes it
+    to 0. delta = sqrt((0.84 - 0.714858)^2 + (0.104954 - 0.02)^2) = 0.151254 and
+    epsilon = sqrt((0.916626 - 0.84)^2 + (0.02 - 0.003539)^2) = 0.078374, around 41/50 = 0.82.
+    """
+    low, high = paired_difference_ci(1, 41, 0, 8)
+    assert low == pytest.approx(0.82 - 0.151254, abs=1e-6)
+    assert high == pytest.approx(0.82 + 0.078374, abs=1e-6)
+
+
+def test_the_paired_difference_carries_the_table_mcnemar_reads() -> None:
+    rows = [_r("t", "none", s, s == 0) for s in range(10)]
+    rows += [_r("t", "roleplay", s, s < 7) for s in range(10)]
+    diff = paired_differences(rows)["roleplay"]
+    test = paired_by_attack(rows)["roleplay"]
+    assert (diff.attack_only, diff.benign_only) == (test.attack_only, test.benign_only) == (6, 0)
+    assert (diff.both, diff.neither, diff.pairs) == (1, 3, 10)
+    assert diff.estimate == pytest.approx(0.6)
+    assert (diff.low, diff.high) == paired_difference_ci(1, 6, 0, 3)
+    assert diff.low < diff.estimate < diff.high
+
+
+def test_a_table_with_no_pairs_is_refused() -> None:
+    with pytest.raises(ValueError, match="no paired table"):
+        paired_difference_ci(0, 0, 0, 0)
+
+
+def test_the_committed_headline_run_s_differences() -> None:
+    """Recomputed from the committed 14 September shards, the numbers the README now prints."""
+    from provael.combine import combine_reports, load_shards
+
+    run_dir = REPORT.parents[1] / "smolvla_libero_object_suite_2026-09-14"
+    view = combine_reports([report for _, report in load_shards(run_dir)])
+    diffs = paired_differences(view.results)
+    roleplay = diffs["roleplay"]
+    assert (roleplay.both, roleplay.attack_only, roleplay.benign_only, roleplay.neither) == (
+        1, 41, 0, 8
+    )
+    assert (round(roleplay.low, 4), round(roleplay.high, 4)) == (0.6687, 0.8984)
+    goal = diffs["goal_substitution"]
+    assert (goal.attack_only, goal.benign_only) == (7, 1)
+    assert (round(goal.low, 4), round(goal.high, 4)) == (0.0065, 0.2439)
+    assert "mcp_tool_desc" not in diffs  # not applicable: no pair, no difference
+
+
+# --- The floor's clustered interval ----------------------------------------------------------------
+
+
+def test_the_floor_variant_bounds_the_benign_arm_the_attack_variant_drops() -> None:
+    """Two tasks, the benign arm at 0/5 and 1/5: by hand the interval is [0%, 20%].
+
+    Resampling two tasks with replacement draws (A, A) with probability 1/4 (a pooled 0/10),
+    (A, B) or (B, A) with 1/2 (1/10) and (B, B) with 1/4 (2/10). The 2.5th percentile is 0 and the
+    97.5th is 0.2 for any draw count where both ends turn up more than 2.5% of the time. The
+    attack variant drops the baseline, so on the same episodes it has nothing to bound.
+    """
+    floor = [_r("a", "none", s, False) for s in range(5)]
+    floor += [_r("b", "none", s, s == 0) for s in range(5)]
+    assert floor_cluster_bootstrap_ci(floor) == (0.0, 0.2)
+    assert cluster_bootstrap_ci(floor) is None
+    split = [_r("a", "none", s, False) for s in range(5)] + [_r("b", "none", s, True) for s in range(5)]
+    assert floor_cluster_bootstrap_ci(split) == (0.0, 1.0)
+
+
+def test_the_floor_variant_keeps_the_degenerate_refusal() -> None:
+    """One task, or every task alike, is a zero-width resample: declined, never [0%, 0%]."""
+    assert floor_cluster_bootstrap_ci([_r("t", "none", s, s == 0) for s in range(10)]) is None
+    flat = [_r(f"t{t}", "none", s, False) for t in range(10) for s in range(5)]
+    assert floor_cluster_bootstrap_ci(flat) is None
+    assert floor_cluster_bootstrap_ci([_r("t", "roleplay", 0, True)]) is None  # no benign arm
+
+
+def test_the_committed_headline_floor_by_task() -> None:
+    """1/50 on the 14 September run, the one firing on `libero_object/5`: [0%, 6%] by task."""
+    from provael.combine import combine_reports, load_shards
+
+    run_dir = REPORT.parents[1] / "smolvla_libero_object_suite_2026-09-14"
+    view = combine_reports([report for _, report in load_shards(run_dir)])
+    assert floor_cluster_bootstrap_ci(view.results) == (0.0, 0.06)

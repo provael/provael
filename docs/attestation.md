@@ -192,7 +192,11 @@ The model refuses a numerator above its denominator and a rate that differs from
 rebuilds the block from what the report stored, and the bare floats beside it stay. The block also
 carries `task_success_by_attack`: each arm's task success over its episodes that carry the suite's
 signal, absent for an arm with none, because an arm can sit at the floor after the policy stopped
-doing the task; and `clean_task_success_by_task`, the benign arm's task success task by task.
+doing the task; `clean_task_success_by_task`, the benign arm's task success task by task; and
+`paired_difference`: per arm paired with the benign arm, its rate minus the benign twins' over the
+(task, seed) cells both ran, with the whole paired table (`attack_only` and `benign_only` are
+McNemar's b and c, `pairs` is n) and Newcombe's paired score interval (method 10), a
+`DifferenceInterval` that names its method and level.
 
 `competence` records the competence pre-run when a run asks for one (`--competence-check N`): the
 episodes per task and the floor, and per task the pre-run's task success, whether the task was

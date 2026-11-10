@@ -107,3 +107,24 @@ def test_committed_benchmark_files_declare_each_task_once() -> None:
         keys = [(r["task_id"], r["libero_task"]) for r in rows]
         assert len(keys) == len(set(keys)), f"{tasks}: duplicate rows"
         assert {r["task_id"] for r in rows} <= set(ids), f"{tasks}: task id not in eval.yaml"
+
+
+def test_a_one_task_run_says_it_has_no_clustered_interval() -> None:
+    entries = to_eval_results(_report(), "provael/stub-redteam")
+    assert all("task-clustered 95% CI n/a (one task)" in e["notes"] for e in entries)
+
+
+def test_a_ten_task_view_carries_each_arm_s_clustered_interval_and_the_floor_s() -> None:
+    """P2.4: the 14 September shards, combined in memory (never written as a report.json).
+
+    roleplay's interval is the one the run's aggregate.json and README publish ([62%, 100%]); the
+    benign floor gets its own through the floor variant, where it used to get none.
+    """
+    from provael.combine import combine_reports, load_shards
+
+    run_dir = Path(__file__).resolve().parents[1] / "results" / "smolvla_libero_object_suite_2026-09-14"
+    view = combine_reports([report for _, report in load_shards(run_dir)])
+    by_task = {e["dataset"]["task_id"]: e["notes"] for e in to_eval_results(view, "x/y")}
+    assert "task-clustered 95% CI [0.620, 1.000] over 10 tasks" in by_task["libero--roleplay"]
+    assert "task-clustered 95% CI [0.000, 0.060] over 10 tasks" in by_task["libero--none"]
+    assert "libero--mcp_tool_desc" not in by_task  # not applicable: no entry, never a 0

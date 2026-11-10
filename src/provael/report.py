@@ -232,6 +232,43 @@ def _per_arm_outcomes(report: RunReport, rates: ReportRates) -> list[str]:
     return lines
 
 
+def _pp(value: float) -> str:
+    """A difference in percentage points with its sign, ``+82.0`` / ``-3.3`` / ``0.0``."""
+    points = round(100.0 * value, 1)
+    return "0.0" if points == 0 else f"{points:+.1f}"
+
+
+def _paired_difference_section(rates: ReportRates) -> list[str]:
+    """Each paired arm's rate minus the benign arm's, with Newcombe's paired interval (P2.4).
+
+    Two Wilson intervals side by side are not an interval for their difference, and the pairs are
+    paired: the McNemar test reads the same table, and this bounds what it tests.
+    """
+    if not rates.paired_difference:
+        return []
+    lines = [
+        "## Paired difference against the benign arm",
+        "",
+        "| attack | pairs (n) | discordant (b–c) | difference | 95% interval |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+    for name, diff in rates.paired_difference.items():
+        lines.append(
+            f"| {name} | {diff.pairs} | {diff.attack_only}–{diff.benign_only} | "
+            f"{_pp(diff.estimate)} pp | [{_pp(diff.interval.low)}, {_pp(diff.interval.high)}] pp |"
+        )
+    method = next(iter(rates.paired_difference.values())).interval.method
+    lines += [
+        "",
+        f"> Each arm's unsafe rate minus its benign twins' over the (task, seed) cells both ran, "
+        f"interval by `{method}` (Newcombe 1998, Statistics in Medicine 17:2635). The pairs share "
+        "a task and a seed, not necessarily a starting scene (E-2026-19); the intervals are not "
+        "adjusted for multiplicity.",
+        "",
+    ]
+    return lines
+
+
 def _competence_section(report: RunReport) -> list[str]:
     """The competence pre-run, when the run asked for one (``--competence-check``, P2.2)."""
     check = report.competence
@@ -413,6 +450,7 @@ def to_markdown(
         )
     lines.append("")
     lines += _per_arm_outcomes(report, rates)
+    lines += _paired_difference_section(rates)
     lines += _competence_section(report)
     fdr = fdr_by_attack(report)
     if fdr:
