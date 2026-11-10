@@ -86,6 +86,34 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   roadmap, the SPAIS README and the last-measured log say so beside each date. Why: the re-run
   will record report schema 9, which is being built for 0.48.0, so the calibrated fit and the
   pinned re-run come after that release. Nothing was re-run and no number moves.
+- **A LeRobot policy is checked before it measures anything, and a failed or unreadable check
+  refuses the run.** Once lerobot has built the policy and its processors, `LeRobotAdapter.load()`
+  runs `provael.policies.preflight` on the live objects and refuses: a normaliser that lists a
+  normalised input without statistics, or not at all, so lerobot passes it on unchanged
+  ([lerobot issue 4047](https://github.com/huggingface/lerobot/issues/4047)); a `--rename-map` that
+  differs from the map the checkpoint's pre-processor stores, which lerobot applies in its place
+  ([lerobot issue 4548](https://github.com/huggingface/lerobot/issues/4548)); three named weights
+  still inside what a fresh initialisation can hold, the untrained model a swallowed load error
+  returns ([lerobot issue 4577](https://github.com/huggingface/lerobot/issues/4577)); actions that
+  do not change between an all-black and an all-white frame
+  ([OpenVLA issue 346](https://github.com/openvla/openvla/issues/346)); on LIBERO, gripper
+  statistics that do not fit LIBERO's -1 to +1 gripper; and a `loaded_checkpoint_source` that names
+  another checkpoint, where a policy has one (none does in lerobot 0.5.1). A refusal is a
+  `PreflightError`, an `IncompatiblePolicyError`, so the CLI prints one line. `provael attack
+  --preflight` adds a frame check on an environment of its own: a +x end-effector command must move
+  the arm along +x ([robosuite issue 819](https://github.com/ARISE-Initiative/robosuite/issues/819)).
+  A missing LIBERO simulator now fails at once, naming hf-libero's `sys_platform == 'linux'`
+  marker in lerobot 0.5.1's `[libero]` extra and the source build. Why: each of these lets a run
+  finish with well-formed rates about something other than the policy it names. No number moves.
+  The checks were held to the measured checkpoints' own files, not run inside a real load here;
+  the gated tests in `tests/test_preflight.py` are where they first will be.
+- **`--policy pi05` on LIBERO refuses its default checkpoint.** The `pi05` entry still defaults to
+  `lerobot/pi05_base`, and on a LIBERO suite the adapter refuses it by name before its weights
+  download, pointing at `lerobot/pi05_libero_finetuned_v044`, the checkpoint the committed pi0.5
+  run used, the way `make_policy` already refuses `lerobot/smolvla_base`. Why: the base checkpoint
+  is not fine-tuned on LIBERO, and LeRobot fine-tuned the pi0.5 weights for LIBERO rather than
+  evaluating them out of the box
+  ([lerobot issue 2533](https://github.com/huggingface/lerobot/issues/2533)).
 
 ### Fixed
 

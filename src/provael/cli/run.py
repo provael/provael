@@ -186,6 +186,17 @@ def attack(
             "run is a diagnostic: measured, and its acceptance not assessed.",
         ),
     ] = None,
+    preflight: Annotated[
+        bool,
+        typer.Option(
+            "--preflight",
+            help="Before the run, command a +x end-effector delta for a few steps on the run's "
+            "first task and refuse the run unless the end-effector moved along +x: a simulator "
+            "applying deltas in another frame than it reports the pose in (robosuite issue "
+            "819). Uses an environment of its own, so the run's scenes are unchanged. Needs a "
+            "suite that reports an end-effector position (LIBERO). Off by default.",
+        ),
+    ] = False,
 ) -> None:
     """Run a red-team evaluation and write report.json + report.md."""
     rename: dict[str, str] | None = None
@@ -314,6 +325,17 @@ def attack(
                 f"[yellow]note:[/yellow] no calibration artifacts for "
                 f"{config.policy}/{config.suite} in {calib}; using the default predicate."
             )
+
+    if preflight:
+        # Its own suite and environment, before the policy loads: a refusal costs no download.
+        from provael.policies.preflight import PreflightError, run_frame_preflight
+
+        try:
+            checked = run_frame_preflight(config.suite, config.tasks, config.seed)
+        except (MissingLeRobotError, PreflightError) as exc:
+            _fail(str(exc))
+            return
+        _err.print(f"[green]preflight:[/green] {escape(checked.detail)}")
 
     started = time.perf_counter()
     # The defense audit trail is collected here and written as a SIDECAR, never merged into

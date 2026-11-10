@@ -704,6 +704,11 @@ def fake_lerobot(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
         monkeypatch.setitem(sys.modules, name, module)
     monkeypatch.setattr(LeRobotAdapter, "lerobot_available", staticmethod(lambda: True))
     monkeypatch.delenv(TRUST_CHECKPOINT_CODE_ENV, raising=False)
+    # The fake builds a policy with no features, which the fail-closed preflight that load()
+    # runs after the build would refuse. These tests are about where lerobot reads the
+    # checkpoint from, so the preflight is stubbed like lerobot is; tests/test_preflight.py
+    # holds the checks themselves.
+    monkeypatch.setattr("provael.policies.preflight.check_lerobot_policy", lambda *_a, **_k: ())
     return seen
 
 
