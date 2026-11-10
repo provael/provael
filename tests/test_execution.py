@@ -165,18 +165,26 @@ def test_every_committed_report_still_digests_to_the_manifest_beside_it() -> Non
     tables beside it), and this is the test that notices a field added without a registration,
     at the top of the report, on an episode, or nested in `calibration` or `deployed_policy`.
 
-    The twenty schema-2 shards of 9 August 2026 are excluded by their declared schema: their
-    manifests (provael 0.32.0) bound a digest that no later release reproduces, before or after
-    this change, and they say so by declaring schema 2.
+    The twenty shards of the two 9 August 2026 runs are excluded by name, not by schema: each
+    report.json there had ``decisions[]`` removed for size before it was committed, as both run
+    READMEs say, and provael 0.32.0 itself computes a different digest for all twenty committed
+    files than the manifest beside each holds (checked on 10 November 2026). That fits a digest
+    taken before the trim; either way no version reproduces it from these files. Any other trimmed
+    report still fails here.
     """
     import json
 
+    trimmed_runs = {"smolvla_libero_object_suite", "smolvla_libero_object_control"}
     checked = 0
     for path in sorted((_REAL.parent).rglob("report.json")):
         manifest_path = path.parent / "execution-manifest.json"
         if not manifest_path.is_file():
             continue
-        if json.loads(path.read_text(encoding="utf-8")).get("schema_version") == 2:
+        if path.parent.parent.name in trimmed_runs:
+            assert all(
+                "decisions" not in result
+                for result in json.loads(path.read_text(encoding="utf-8"))["results"]
+            ), f"{path} is no longer trimmed; check it against its manifest instead"
             continue
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         assert report_digest(load_report(path)) == manifest["report_digest"], path

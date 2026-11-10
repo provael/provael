@@ -79,7 +79,10 @@ is noise at these counts and is not a finding; it is reported rather than smooth
 
 `libero_object_<n>/report.json` — one per task, ten in total, **with `decisions[]` removed**: the
 per-step action traces are 15.9 MB and every field the statistics consume is retained. Combining
-them reproduces the table above exactly (`provael.combine.combine_reports`).
+them reproduces the table above exactly (`provael.combine.combine_reports`). The
+`execution-manifest.json` beside each file does not verify against it: provael 0.32.0 itself
+computes a different `report_digest` for all ten trimmed files (checked on 10 November 2026), which
+fits a digest taken before `decisions[]` was removed.
 
 There is deliberately **no top-level `report.json`**. A file with that name is attestable everywhere
 in this project — `provael attest` signs one, the freshness badge dates one, the manifest digests
