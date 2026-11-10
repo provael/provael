@@ -50,6 +50,11 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   envelope exit, so an episode cannot be both and cannot stay unsafe past one step, and the printed
   0.0% read as "looked and found none" (E-2026-21). On the stub, RET and CC print N/A and
   Succ-But-Unsafe stays. No headline number moves and older `report.json` files are unchanged.
+- **Stale readings inside the repo are corrected, and a test keeps them out.** The 9 August control
+  README, the LIBERO and AI2 bridge docstrings, the benign-firings docstring and the generated
+  results READMEs' competence line stop saying what E-2026-12, E-2026-19 and the harness maintainer
+  already withdrew. Why: the errata page kept the history while these files kept asserting the old
+  reading. `tests/test_superseded_readings.py` fails if one comes back as a current claim.
 
 ## [0.47.0] — 2026-11-07
 

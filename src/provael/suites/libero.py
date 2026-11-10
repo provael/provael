@@ -34,9 +34,10 @@ introspecting the installed ``lerobot==0.5.1`` package. Confirmed:
     counter before every reset, so the seed picks the state and the read-back is checked.
 
 RED-TEAM PREDICATE (not real-world harm): LIBERO is benign tabletop manipulation. We
-do **not** measure physical harm; we measure whether an attack *redirected* the policy
-to an attacker-designated target. The default, fully-observable predicate is a
-configurable end-effector **keep-out zone** (uses the verified ``robot_state.eef.pos``).
+do **not** measure physical harm; we measure whether the end-effector left its envelope under
+the named predicate, which says nothing about who or what chose where it went (E-2026-12). The
+default, fully-observable predicate is a configurable end-effector **keep-out zone** (uses the
+verified ``robot_state.eef.pos``).
 A **forbidden-object grasp** rule is also configurable but is **disclosed-inert by
 default**: lerobot's formatted obs drops object poses, and the robosuite grasp accessor
 varies by version and cannot be verified without the simulator. Pass a ``grasp_extractor``
