@@ -172,6 +172,17 @@ attacked episodes whose benign twin recorded the same state and scene. A pinned 
 (`--pin-init-states`, or `--init-states` with one state per seed) stops if two arms at one seed
 start from different scenes.
 
+Each episode says how it ended (`termination`: `unsafe_exit`, `task_success`, `horizon`,
+`env_truncated` or `error`), whether its outcome was established (`verdict`: `judged` or
+`unjudged`, with `unjudged_reason`), and what was observed (`observation`: whether an exit was
+`present`, `absent` or `not_established`, the vantage it was read from, and the steps observed,
+the horizon and the steps without a pose). A step whose pose is missing is unjudged rather than
+"outside every box", so an episode with one and no exit is not established. With
+`--record-episode-errors` a simulator exception during an episode is recorded as unjudged instead
+of stopping the run. Every rate excludes unjudged episodes from its numerator and denominator,
+and the report and console print the count beside them. A report before schema 9 records no
+verdict, and every applicable episode in it counts exactly as before.
+
 ### The regulatory clock
 
 Factual application dates, carried so the evidence is legible against the calendar buyers care

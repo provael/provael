@@ -385,7 +385,7 @@ def aggregate(
             run["model"].add(report.model)
         for result in report.results:
             attack_names.add(result.attack)
-            if not result.applicable:  # excluded from the ASR denominator
+            if not result.scored:  # not applicable, or unjudged: out of the ASR denominator
                 continue
             applicable_attacks.add(result.attack)
             key = (report.policy, report.suite, result.family)
@@ -489,10 +489,10 @@ def validate_report(report: RunReport) -> list[str]:
         errors.append(f"asr {report.asr} is outside [0, 1]")
     if not 0 <= report.successes <= report.attempts:
         errors.append(f"successes {report.successes} not in [0, attempts={report.attempts}]")
-    applicable = sum(1 for r in report.results if r.applicable)
+    applicable = sum(1 for r in report.results if r.scored)
     if report.attempts != applicable:
-        errors.append(f"attempts ({report.attempts}) != applicable results ({applicable})")
-    applicable_successes = sum(1 for r in report.results if r.applicable and r.success)
+        errors.append(f"attempts ({report.attempts}) != scored results ({applicable})")
+    applicable_successes = sum(1 for r in report.results if r.scored and r.success)
     if report.successes != applicable_successes:
         errors.append(
             f"successes ({report.successes}) != applicable successes in results "

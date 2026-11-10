@@ -9,7 +9,7 @@ For each ``(task, attack, episode)`` triple the runner plays one episode:
         adv_instruction, adv_obs = attack.perturb(base_instruction, obs)
         action = policy.act(adv_obs, adv_instruction)
         obs, done, state = suite.step(action)
-        if suite.is_unsafe(state): success at step t; stop
+        if suite.evaluate_step(state): success at step t; stop
         if done: stop
 
 Episode ``i`` of a ``(task, attack)`` pair uses ``seed = config.seed + i`` so a run
@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 
@@ -51,17 +52,25 @@ from provael.scoring.asr import (
     semantic_role,
 )
 from provael.scoring.paired import scene_pairing
-from provael.scoring.safety_cost import observed_unsafe_success_rate
+from provael.scoring.safety_cost import (
+    SUITES_ENDING_AT_TASK_SUCCESS,
+    observed_unsafe_success_rate,
+)
 from provael.suites import make_suite
 from provael.suites.base import SuiteAdapter
 from provael.types import (
+    FIXTURE_VANTAGE,
+    SIMULATOR_VANTAGE,
     Action,
     AttackResult,
     CalibrationMeta,
     Decision,
     EaiTag,
+    EpisodeCoverage,
+    EpisodeObservation,
     Observation,
     RunReport,
+    Termination,
     Trajectory,
     init_state_of,
 )
@@ -268,6 +277,7 @@ def run_episode(
     defense: Defense | None = None,
     audit_sink: list[dict[str, str]] | None = None,
     frame_sink: FrameSink | None = None,
+    record_errors: bool = False,
 ) -> AttackResult:
     """Play a single episode and return its :class:`AttackResult`.
 
@@ -285,6 +295,13 @@ def run_episode(
     ``frame_sink``, when given, receives per step the image the policy was actually shown (after
     the attack and any defense) and whether that step was scored unsafe — the episode's clip, see
     :mod:`provael.video`. Same rule as ``audit_sink``: caller-owned, never part of the report.
+
+    ``record_errors`` turns an exception from ``suite.step`` into an episode recorded as
+    ``unjudged`` with its reason (``termination: error``), instead of an aborted shard (P1.3). Only
+    the step: a failure in ``reset`` still stops the run, because the reset is where the
+    configuration, the scene pin and the environment build are checked, and swallowing those would
+    turn a misconfigured run into a column of unjudged episodes. A non-finite action is the
+    policy's failure, not the simulator's, and still stops the run either way.
     """
     policy.reset()  # clear per-episode policy state (e.g. SmolVLA's action-chunk queue)
     # Seed the POLICY as well as the environment. `suite.reset` has always seeded the env; the
@@ -339,6 +356,11 @@ def run_episode(
     task_success: bool | None = None  # C2: only set if the suite surfaces a task-success signal
     hazard: bool | None = None  # the second predicate: only set if the suite surfaces contact/force
     decisions: list[Decision] = []
+    # P1.3: steps the predicate could not judge (its input was missing), how the loop ended, and a
+    # simulator failure recorded under `record_errors`.
+    steps_without_pose = 0
+    ended_by_suite: Termination | None = None
+    error: str | None = None
     # Per-step calibration signal, recorded for EVERY episode. Gated on nothing by design: the
     # input to a keep-out calibration was previously computed and discarded on every run, which is
     # what made #136 unfixable rather than merely unfixed, and an opt-in flag would recreate that
@@ -403,7 +425,16 @@ def run_episode(
                     }
                 )
             action = filtered_action
-        obs, done, state = suite.step(action)
+        try:
+            obs, done, state = suite.step(action)
+        except Exception as exc:  # noqa: BLE001 - re-raised unless the run asked to record it
+            if not record_errors:
+                raise
+            # Recorded, not swallowed: the episode is unjudged, its reason says what failed, and
+            # every rate excludes it and counts it beside the rate (never a silent shrink).
+            error = f"simulator exception at step {t}: {type(exc).__name__}: {exc}"
+            steps = t - 1
+            break
 
         danger = float(state.get("danger", danger))
         threshold = float(state.get("threshold", threshold))
@@ -435,11 +466,16 @@ def run_episode(
                 [float(signal)] if isinstance(signal, (int, float)) else [float(v) for v in signal]
             )
 
+        # The calibrated predicate if one is installed. None is a step it could not judge (a lost
+        # pose): logged as not unsafe, and counted, so the episode cannot read as "no exit".
+        verdict = suite.evaluate_step(state)
+        if verdict is None:
+            steps_without_pose += 1
         decision = Decision(
             step=t,
             instruction=adversarial_instruction,
             action=[float(x) for x in action.reshape(-1)],
-            unsafe=suite.evaluate_unsafe(state),  # calibrated predicate if one is installed
+            unsafe=verdict is True,
         )
         decisions.append(decision)
 
@@ -455,7 +491,36 @@ def run_episode(
             steps_to_success = decision.step
             break
         if done:
+            # On a suite whose `done` fires at task success (LIBERO) the step that ended it says
+            # whether it was success; any other `done` is the suite's own cap.
+            at_success = suite.name in SUITES_ENDING_AT_TASK_SUCCESS and bool(step_task_success)
+            ended_by_suite = "task_success" if at_success else "env_truncated"
             break
+
+    termination: Termination
+    if error is not None:
+        termination = "error"
+    elif success:
+        termination = "unsafe_exit"
+    else:
+        termination = ended_by_suite or "horizon"
+    reason: str | None = error
+    if error is None and not success and steps_without_pose:
+        reason = (
+            f"the predicate's input (the end-effector pose) was missing on {steps_without_pose} "
+            f"of {steps} executed step(s) and no exit was seen, so whether the episode left the "
+            "envelope is not established"
+        )
+    observed: Literal["present", "absent", "not_established"] = (
+        "present" if success else "not_established" if reason is not None else "absent"
+    )
+    observation = EpisodeObservation(
+        state=observed,
+        vantage=FIXTURE_VANTAGE if suite.is_fixture else SIMULATOR_VANTAGE,
+        coverage=EpisodeCoverage(
+            steps_observed=steps, horizon=horizon, steps_without_pose=steps_without_pose
+        ),
+    )
 
     return AttackResult(
         task=task,
@@ -484,6 +549,10 @@ def run_episode(
         # a result records the corruption that was ACTUALLY in force when it ran, not one a
         # caller believed was in force.
         weight_corruption=getattr(attack, "record", None),
+        termination=termination,
+        verdict="unjudged" if reason is not None else "judged",
+        unjudged_reason=reason,
+        observation=observation,
     )
 
 
@@ -665,6 +734,7 @@ def run(
                         episode = run_episode(
                             policy, suite, attack, task, seed, config.horizon,
                             defense=defense, audit_sink=audit_sink, frame_sink=sink,
+                            record_errors=config.record_episode_errors,
                         )
                     finally:
                         if weight_attack is not None:

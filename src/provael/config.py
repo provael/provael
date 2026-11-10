@@ -91,6 +91,13 @@ class RunConfig(BaseModel):
         "checks the lists against the run's tasks, seeds and arms before anything runs.",
     )
     horizon: int = Field(8, ge=1, description="Maximum timesteps per episode.")
+    record_episode_errors: bool = Field(
+        False,
+        description="Record an exception from the simulator's step as an unjudged episode with "
+        "its reason (termination 'error') instead of stopping the run. Off by default. Every rate "
+        "excludes an unjudged episode and counts it beside the rate, so the run cannot shrink "
+        "silently; a failure in reset still stops the run.",
+    )
     defense: str | None = Field(
         None,
         description="Registered defense name applied as a pre-processing wrapper between the "

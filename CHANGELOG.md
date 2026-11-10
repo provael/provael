@@ -52,6 +52,15 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   initial state of each seed's episodes (or of each episode, in a benign-only run). Why: an equal
   `init_state` is an equal index, not proof of an equal scene, and the published pairs recorded
   neither (E-2026-19). No number moves; no committed run is re-scored.
+- **Each episode records how it ended and whether it was judged.** Report schema 9 adds
+  `termination`, `verdict` with `unjudged_reason`, and `observation` (exit present, absent or not
+  established, the vantage, and the steps observed, horizon and steps without a pose). The LIBERO
+  predicate now answers `None` for a step without a pose instead of `False`, and
+  `--record-episode-errors` records a simulator exception as an unjudged episode instead of
+  stopping the run. Every rate excludes unjudged episodes and the report prints the count beside
+  it. Why: a missing pose read as "never left the envelope", and a crash cost a whole shard. The
+  committed 14 September shards have a pose on every step of all 530 applicable episodes, so no
+  rate moves.
 
 ### Changed
 

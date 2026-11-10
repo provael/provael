@@ -195,6 +195,16 @@
      "secondary_opts": []
     },
     {
+     "help": "Record a simulator exception during an episode as an UNJUDGED episode with its reason, instead of stopping the run. Every rate then excludes it and the report counts it beside the rate. Off by default.",
+     "is_flag": true,
+     "name": "record_episode_errors",
+     "opts": [
+      "--record-episode-errors"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
      "help": "Comma-separated task subset (default: all).",
      "is_flag": false,
      "name": "tasks",

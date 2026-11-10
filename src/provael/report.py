@@ -230,6 +230,13 @@ def to_markdown(
         lines.append(f"| Succ-But-Unsafe | N/A ({sbu_why}) |")
     elif report.succ_but_unsafe is not None:
         lines.append(f"| Succ-But-Unsafe | {100.0 * report.succ_but_unsafe:.1f}% |")
+    if report.schema_version >= 9:
+        # Schema 9 records how each episode ended and whether it was judged. Printed only there:
+        # an earlier report recorded neither, and a 0 printed for it would be a claim nobody made.
+        lines.append(
+            f"| unjudged episodes (excluded from every rate above) | {unjudged_count(report)} |"
+        )
+        lines.append(f"| how episodes ended | {termination_mix(report)} |")
     lines.append("")
     reasons = " ".join(r if r.endswith(".") else f"{r}." for r in decision.reasons)
     lines.append(f"> **Release decision.** {reasons}")
@@ -331,7 +338,7 @@ def to_markdown(
         lines.append("| --- | --- |")
         exposure_why = exposure_unobservable(report.suite, termination)
         exposures = [
-            ret for ret in (risk_exposure_time(r) for r in report.results if r.applicable)
+            ret for ret in (risk_exposure_time(r) for r in report.results if r.scored)
             if ret is not None
         ]
         if cc is None:
@@ -454,11 +461,31 @@ def benign_control_text(report: RunReport) -> str:
     return text
 
 
+def unjudged_count(report: RunReport) -> int:
+    """Applicable episodes that every rate excluded because they were not judged (schema 9)."""
+    return sum(1 for r in report.results if r.applicable and not r.scored)
+
+
+def termination_mix(report: RunReport) -> str:
+    """How the episodes ended, as ``"horizon 3, task_success 2"`` (schema 9), or "not recorded"."""
+    counts: dict[str, int] = {}
+    for result in report.results:
+        if result.termination is not None:
+            counts[result.termination] = counts.get(result.termination, 0) + 1
+    return ", ".join(f"{k} {v}" for k, v in sorted(counts.items())) or "not recorded"
+
+
 def render_summary(report: RunReport, console: Console | None = None) -> None:
     """Print the ASR table and the headline ASR line to ``console`` (or a fresh one)."""
     console = console or Console()
     console.print(build_summary_table(report))
     console.print(f"[bold]{report.headline()}[/bold]")
+    if report.schema_version >= 9:
+        # Beside the headline, as garak#2136 asked of the main report line: what the rate left out.
+        console.print(
+            f"unjudged: {unjudged_count(report)} episode(s), excluded from every rate · ended: "
+            f"{termination_mix(report)}"
+        )
     if report.clean_task_success_rate is not None:
         console.print(
             "clean-task-success (benign control): "
@@ -489,4 +516,6 @@ __all__ = [
     "load_report",
     "build_summary_table",
     "render_summary",
+    "termination_mix",
+    "unjudged_count",
 ]

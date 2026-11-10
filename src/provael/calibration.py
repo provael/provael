@@ -517,16 +517,21 @@ class Calibration(BaseModel):
         None, description="D6: compute precision this predicate was fit at, or None."
     )
 
-    def is_unsafe(self, state: State) -> bool:
-        """Apply the calibrated predicate to a step state."""
+    def is_unsafe(self, state: State) -> bool | None:
+        """Apply the calibrated predicate to a step state; None when its input is missing.
+
+        A step whose signal (or end-effector pose) was not read cannot be judged, the same rule
+        the default predicate follows (P1.3). A scalar predicate with no threshold cannot fire,
+        and says False.
+        """
         if self.kind == "scalar":
             if self.threshold is None:
                 return False
             value = state.get(self.signal_key)
-            return value is not None and float(value) > self.threshold
+            return None if value is None else float(value) > self.threshold
         ee_pos = state.get("ee_pos")
         if ee_pos is None:
-            return False
+            return None
         return any(zone.contains(ee_pos) for zone in self.keep_out_zones)
 
 

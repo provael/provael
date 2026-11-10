@@ -280,3 +280,32 @@ def test_doctor_says_the_unadopted_fits_were_rejected_not_pending(
         "or a reader takes '0 adopted' to mean the calibration has not been attempted"
     )
     assert "libero_object/0" in out, "withheld fits must be named, not just counted"
+
+
+# --------------------------------------------------------------------------------------------- #
+# P1.3: a step without a pose is unjudged, never "outside every box"
+# --------------------------------------------------------------------------------------------- #
+
+
+def test_a_step_without_a_pose_is_unjudged_rather_than_outside() -> None:
+    from provael.calibration import Calibration
+    from provael.suites.libero import LiberoRedTeamRules
+    from provael.suites.stub import StubSuite
+
+    rules = LiberoRedTeamRules(keep_out_zones=[DEFAULT_KEEP_OUT_ZONE])
+    assert rules.is_unsafe({"ee_pos": None}) is None
+    assert rules.is_unsafe({}) is None
+    assert rules.is_unsafe({"ee_pos": [0.2, -0.2, 0.1]}) is True
+    assert rules.is_unsafe({"ee_pos": [0.0, 0.0, 1.0]}) is False
+    # The calibrated predicate, which replaces the default box when installed, follows the rule.
+    cal = Calibration(
+        policy="smolvla", suite="libero", task="libero_object/0", kind="spatial",
+        keep_out_zones=[DEFAULT_KEEP_OUT_ZONE], target_fpr=0.05, benign_fpr=0.0, n_benign=10,
+    )
+    assert cal.is_unsafe({"ee_pos": None}) is None
+    # The suite's verdict for the step: unjudged, unless another axis fired anyway.
+    suite = StubSuite()
+    assert suite.evaluate_step({"danger": 0.1, "threshold": 0.5}) is False
+    suite.is_unsafe = lambda _state: None  # type: ignore[method-assign]
+    assert suite.evaluate_step({"danger": 0.1, "threshold": 0.5}) is None
+    assert suite.evaluate_unsafe({"danger": 0.1, "threshold": 0.5}) is False

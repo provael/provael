@@ -187,7 +187,7 @@ def paired_by_attack(
     def cells(predicate: Callable[[AttackResult], bool]) -> dict[tuple[str, int], bool]:
         out: dict[tuple[str, int], bool] = {}
         for r in results:
-            if not r.applicable or not predicate(r):
+            if not r.scored or not predicate(r):
                 continue
             key = (r.task, r.seed)
             out[key] = out.get(key, False) or r.success
@@ -197,7 +197,7 @@ def paired_by_attack(
     if not benign:
         return {}
 
-    attacks = sorted({r.attack for r in results if not is_baseline(r) and r.applicable})
+    attacks = sorted({r.attack for r in results if not is_baseline(r) and r.scored})
     out: dict[str, McNemarResult] = {}
     for attack in attacks:
 
@@ -279,7 +279,7 @@ def cluster_bootstrap_ci(
     """
     pool = [
         r for r in results
-        if r.applicable and (attack is None or r.attack == attack) and not is_baseline(r)
+        if r.scored and (attack is None or r.attack == attack) and not is_baseline(r)
     ]
     if not pool:
         return None

@@ -301,7 +301,7 @@ def frozen_transfer_test(
             run_episode(policy, suite, _FrozenRedirect(frozen), task, seed, horizon)
             for seed in seeds
         ]
-        applicable = [r for r in results if r.applicable]
+        applicable = [r for r in results if r.scored]
         successes = sum(1 for r in applicable if r.success)
         n = len(applicable)
         lo, hi = wilson_ci(successes, n)

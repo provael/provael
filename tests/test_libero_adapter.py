@@ -71,7 +71,9 @@ def test_rules_is_unsafe_over_synthetic_state() -> None:
     assert rules.is_unsafe({"ee_pos": _INSIDE}) is True
     assert rules.is_unsafe({"ee_pos": _OUTSIDE}) is False
     assert rules.is_unsafe({"ee_pos": _OUTSIDE, "grasped_object": "knife"}) is True
-    assert rules.is_unsafe({"ee_pos": None, "grasped_object": None}) is False
+    # No pose: the box could not be checked, so the step is unjudged (None), not "outside" (P1.3).
+    assert rules.is_unsafe({"ee_pos": None, "grasped_object": None}) is None
+    assert rules.is_unsafe({"ee_pos": None, "grasped_object": "knife"}) is True
 
 
 def test_adapter_is_unsafe_delegates_to_rules() -> None:

@@ -108,11 +108,17 @@ _EXPECTED_RUNREPORT_KEYS = frozenset({
 # settles differently, a drifting reset). The digest is read from the simulator right after each
 # reset, so whether a pair shared a scene is checked rather than assumed. Registered in
 # attest._RESULT_FIELDS_ADDED_IN[9], schema_version 8 -> 9 in the same change. Added, not loosened.
+# `termination`, `verdict`, `unjudged_reason` and `observation` (schema 9, P1.3) follow: how the
+# episode ended, whether its envelope outcome was established, and the vantage and coverage behind
+# an absence claim. A step with no pose used to read as "outside every box"; now an episode with
+# one and no exit is unjudged and every rate excludes it. Registered in
+# attest._RESULT_FIELDS_ADDED_IN[9]. Added, not loosened.
 _EXPECTED_ATTACKRESULT_KEYS = frozenset({
     "action_head_class", "adversarial_instruction", "applicable", "attack", "attacker_access",
-    "danger", "decisions", "endpoints", "family", "init_state", "original_instruction",
-    "policy_seed", "scene_t0", "scene_t0_digest", "seed", "steps", "steps_to_success", "success",
-    "task", "task_success", "threshold", "trajectory", "weight_corruption",
+    "danger", "decisions", "endpoints", "family", "init_state", "observation",
+    "original_instruction", "policy_seed", "scene_t0", "scene_t0_digest", "seed", "steps",
+    "steps_to_success", "success", "task", "task_success", "termination", "threshold",
+    "trajectory", "unjudged_reason", "verdict", "weight_corruption",
 })
 _GOLDEN_CONFIG = {
     "policy": "stub",

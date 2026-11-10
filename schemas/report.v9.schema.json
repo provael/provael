@@ -157,6 +157,18 @@
           "description": "Which of the task's fixed initial states this episode's reset loaded, read from the environment after the reset (LIBERO: lerobot's `init_state_id` less the stride the reset added, modulo the number of states). None where the suite has no fixed initial states.\n\nThe seed does not pick it under lerobot 0.5.1: a reset counter does, and a success ends an episode with a second reset, so two episodes at one seed can start from different scenes and a resumed run restarts the counter. Neither leaves a trace in `seed`; this field is the record of which scene ran (#136). Present from schema_version 8.",
           "title": "Init State"
         },
+        "observation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EpisodeObservation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Whether an exit was seen, the vantage it was read from, and the coverage behind the claim (steps observed, horizon, steps without a pose). Schema >= 9."
+        },
         "original_instruction": {
           "title": "Original Instruction",
           "type": "string"
@@ -247,6 +259,26 @@
           "description": "C2 (Succ-But-Unsafe): did the policy also COMPLETE the benign task this episode? Independent of `success` (the safety violation). None where the suite surfaces no task-success signal \u2014 the stub surfaces a deterministic one (benign reach reached), the real signal is GPU-gated (LIBERO surfaces its native flag).",
           "title": "Task Success"
         },
+        "termination": {
+          "anyOf": [
+            {
+              "enum": [
+                "unsafe_exit",
+                "task_success",
+                "horizon",
+                "env_truncated",
+                "error"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How the episode ended: 'unsafe_exit', 'task_success', 'horizon', 'env_truncated' or 'error' (see provael.types.Termination). None on a not-applicable record, where no episode ran. Present from schema_version 9.",
+          "title": "Termination"
+        },
         "threshold": {
           "description": "Per-seed unsafe threshold the danger signal was compared against.",
           "title": "Threshold",
@@ -263,6 +295,36 @@
           ],
           "default": null,
           "description": "Per-step calibration signal for this episode (end-effector pose on a spatial suite). Recorded for EVERY episode, benign and adversarial alike, and on by default: an opt-in flag reproduces the pre-0.35.0 situation the first time someone forgets. None only where the suite surfaced no signal on any step \u2014 never where it surfaced one and it was dropped. See issue #136."
+        },
+        "unjudged_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Why the episode is unjudged; None when it was judged. Schema >= 9.",
+          "title": "Unjudged Reason"
+        },
+        "verdict": {
+          "anyOf": [
+            {
+              "enum": [
+                "judged",
+                "unjudged"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "'judged' when the envelope outcome was established, 'unjudged' when it was not (a simulator exception, or a step the predicate could not judge with no exit seen), the reason in `unjudged_reason`. An unjudged episode leaves every rate's numerator and denominator and is counted beside it. None on a not-applicable record; a report before schema 9 records none and every applicable episode in it counts, as it always did.",
+          "title": "Verdict"
         },
         "weight_corruption": {
           "anyOf": [
@@ -808,6 +870,67 @@
       "title": "EaiTag",
       "type": "object"
     },
+    "EpisodeCoverage": {
+      "additionalProperties": false,
+      "description": "How much of an episode the predicate actually saw: the denominator an absence claim needs.",
+      "properties": {
+        "horizon": {
+          "description": "The most steps the episode could have run.",
+          "minimum": 1,
+          "title": "Horizon",
+          "type": "integer"
+        },
+        "steps_observed": {
+          "description": "Executed steps whose state was read.",
+          "minimum": 0,
+          "title": "Steps Observed",
+          "type": "integer"
+        },
+        "steps_without_pose": {
+          "description": "Executed steps the predicate could not judge because its input was missing (the end-effector pose, on a spatial suite).",
+          "minimum": 0,
+          "title": "Steps Without Pose",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "steps_observed",
+        "horizon",
+        "steps_without_pose"
+      ],
+      "title": "EpisodeCoverage",
+      "type": "object"
+    },
+    "EpisodeObservation": {
+      "additionalProperties": false,
+      "description": "Whether an envelope exit was seen, from where, and over how much of the episode (P1.3).\n\n``present``: an exit was observed. ``absent``: the predicate judged every executed step and saw\nnone. ``not_established``: some step could not be judged and no exit was seen, which is never\nthe same claim as \"no exit\".",
+      "properties": {
+        "coverage": {
+          "$ref": "#/$defs/EpisodeCoverage"
+        },
+        "state": {
+          "enum": [
+            "present",
+            "absent",
+            "not_established"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "vantage": {
+          "description": "Where the outcome was read from (SIMULATOR_VANTAGE).",
+          "title": "Vantage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "state",
+        "vantage",
+        "coverage"
+      ],
+      "title": "EpisodeObservation",
+      "type": "object"
+    },
     "InputNormaliser": {
       "additionalProperties": false,
       "description": "How the policy's observation inputs were normalised on the way in (schema 9).\n\nThe input-side twin of :class:`ActionUnnormaliser`. The same checkpoint served with different\nstate statistics sees a different observation, and a pre-processor whose statistics never\nloaded normalises nothing without saying so (lerobot#4047). Resolved from the pipeline that\nexecuted, never from a model card.",
@@ -1289,7 +1412,7 @@
     },
     "schema_version": {
       "default": 1,
-      "description": "Report schema version. 1 = legacy: the asr/attempts/successes headline is the ALL-episode observed-unsafe rate (benign control INCLUDED in the denominator). >=2 also carries the adversarial_* fields (the benign control excluded by role) and the roles map. >=3 records a per-episode `trajectory` (the calibration signal every step produced and every run used to discard). >=4 records `weight_corruption`, the bit-flip budget and selection rule in force for the episode. >=5 records `policy_seed`, the seed the POLICY's own sampler was set to \u2014 the environment seed has always been recorded and the policy's never was, which is why two rows at the same commit were not comparable. >=6 records `deployed_policy`, the executed policy as the adapter resolved it (class, revision, unnormaliser, controller convention) beside the requested `model`. >=7 records, per calibrated task, which split the calibration came from, its eval-split FPR and whether its binding holds for this run (`calibration.<task>.split` / `eval_fpr` / `binding`) \u2014 a tuned predicate and a bound one no longer look the same in the report. >=8 records `init_state`, the fixed initial state each episode's reset loaded, which the seed does not determine on LIBERO. >=9 records the rest of the deployed policy's runtime identity (input normaliser, processor and weight digests, rename map, camera order, denoising steps, control rate), each episode's starting scene (`scene_t0_digest`, `scene_t0`), each task's compiled model digest and how many pairs shared a scene. Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed a calibration, because its trajectories do not exist. This schema documents version 9; it accepts artifacts declaring 9 or lower, because every bump so far has been additive with defaults. It refuses a higher version rather than silently validating a format it does not describe.",
+      "description": "Report schema version. 1 = legacy: the asr/attempts/successes headline is the ALL-episode observed-unsafe rate (benign control INCLUDED in the denominator). >=2 also carries the adversarial_* fields (the benign control excluded by role) and the roles map. >=3 records a per-episode `trajectory` (the calibration signal every step produced and every run used to discard). >=4 records `weight_corruption`, the bit-flip budget and selection rule in force for the episode. >=5 records `policy_seed`, the seed the POLICY's own sampler was set to \u2014 the environment seed has always been recorded and the policy's never was, which is why two rows at the same commit were not comparable. >=6 records `deployed_policy`, the executed policy as the adapter resolved it (class, revision, unnormaliser, controller convention) beside the requested `model`. >=7 records, per calibrated task, which split the calibration came from, its eval-split FPR and whether its binding holds for this run (`calibration.<task>.split` / `eval_fpr` / `binding`) \u2014 a tuned predicate and a bound one no longer look the same in the report. >=8 records `init_state`, the fixed initial state each episode's reset loaded, which the seed does not determine on LIBERO. >=9 records the rest of the deployed policy's runtime identity (input normaliser, processor and weight digests, rename map, camera order, denoising steps, control rate), each episode's starting scene (`scene_t0_digest`, `scene_t0`), each task's compiled model digest and how many pairs shared a scene, and how each episode ended (`termination`, `verdict`, `observation`); an unjudged episode is excluded from every rate. Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed a calibration, because its trajectories do not exist. This schema documents version 9; it accepts artifacts declaring 9 or lower, because every bump so far has been additive with defaults. It refuses a higher version rather than silently validating a format it does not describe.",
       "maximum": 9,
       "title": "Schema Version",
       "type": "integer"

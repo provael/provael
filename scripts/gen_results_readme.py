@@ -179,8 +179,12 @@ def render(run_dir: Path) -> str:
     ]
     for name in arms:
         rows = by_attack.get(name, [])
-        applicable = [r for r in rows if r.applicable]
-        na = len(rows) - len(applicable)
+        # Scored: applicable and not unjudged (schema 9). An unjudged episode leaves the rate and
+        # is counted beside it, never dropped silently; none of the committed runs before
+        # schema 9 recorded a verdict, so their tables read as they always did.
+        applicable = [r for r in rows if r.scored]
+        na = sum(1 for r in rows if not r.applicable)
+        unjudged = sum(1 for r in rows if r.applicable and not r.scored)
         successes = sum(1 for r in applicable if r.success)
         role = roles.get(name, "adversarial-treatment")
         if not applicable:
@@ -192,6 +196,7 @@ def render(run_dir: Path) -> str:
         lo, hi = wilson_ci(successes, len(applicable))
         pooled = f"**{successes}/{len(applicable)} ({_pct(successes / len(applicable))})**"
         suffix = f" ({na} N/A)" if na else ""
+        suffix += f" ({unjudged} unjudged)" if unjudged else ""
         if name in paired and role == "adversarial-treatment":
             m = paired[name]
             agg = mcnemar_from_aggregate.get(name, {})
@@ -266,7 +271,7 @@ def render(run_dir: Path) -> str:
     clean = [c for c in clean if c is not None]
     if clean:
         benign = [
-            r for r in by_attack.get("none", []) if r.applicable and r.task_success is not None
+            r for r in by_attack.get("none", []) if r.scored and r.task_success is not None
         ]
         if benign:
             ok = sum(1 for r in benign if r.task_success)
@@ -285,7 +290,7 @@ def render(run_dir: Path) -> str:
         for task in tasks:
             cells = []
             for name in arms:
-                rows = [r for r in by_attack.get(name, []) if r.task == task and r.applicable]
+                rows = [r for r in by_attack.get(name, []) if r.task == task and r.scored]
                 unsafe = sum(1 for r in rows if r.success)
                 cells.append("—" if not rows else f"{unsafe}/{len(rows)}")
             lines.append(f"| `{task}` | " + " | ".join(cells) + " |")

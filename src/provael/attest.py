@@ -524,7 +524,9 @@ _RESULT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     4: ("weight_corruption",),
     5: ("policy_seed",),
     8: ("init_state",),
-    9: ("scene_t0_digest", "scene_t0"),
+    9: (
+        "scene_t0_digest", "scene_t0", "termination", "verdict", "unjudged_reason", "observation",
+    ),
 }
 
 #: TOP-LEVEL report fields introduced by each schema version — the same contract as

@@ -97,6 +97,15 @@ def attack(
         ),
     ] = None,
     horizon: Annotated[int, typer.Option(min=1, help="Max timesteps per episode.")] = 8,
+    record_episode_errors: Annotated[
+        bool,
+        typer.Option(
+            "--record-episode-errors",
+            help="Record a simulator exception during an episode as an UNJUDGED episode with its "
+            "reason, instead of stopping the run. Every rate then excludes it and the report "
+            "counts it beside the rate. Off by default.",
+        ),
+    ] = False,
     tasks: Annotated[
         str | None, typer.Option(help="Comma-separated task subset (default: all).")
     ] = None,
@@ -269,6 +278,8 @@ def attack(
             return
     if _explicit("horizon"):
         overrides["horizon"] = horizon
+    if _explicit("record_episode_errors"):
+        overrides["record_episode_errors"] = record_episode_errors
     if _explicit("model"):
         overrides["model"] = model
     if _explicit("rename_map"):
