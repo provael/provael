@@ -116,3 +116,4 @@ run.
 - Nothing about other checkpoints of the same model family, other suites, or other tasks.
 - No conformity with any standard or regulation; `provael report --format test-report` on a shard renders the assessor-shaped document, and it says the same.
 - The policy samples its actions: episodes are seeded and the applied seed is recorded, so a re-execution matches in distribution, not byte for byte.
+- Which licence governs LIBERO's datasets. LIBERO's README says CC BY 4.0, its Hugging Face dataset cards say Apache-2.0, and [LIBERO#150](https://github.com/Lifelong-Robot-Learning/LIBERO/issues/150) asks which applies; see `docs/maintainers/paid-run-dependency-licences.md`.

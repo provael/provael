@@ -292,3 +292,45 @@ def test_two_arms_pinned_at_one_seed_start_from_one_scene() -> None:
     assert all(r.scene_t0 for r in report.results)
     assert report.sim_model_digests.get("libero_object/0") is not None
     assert report.scene_pairing is not None and report.scene_pairing.scene_matched == 1
+
+
+@pytest.mark.skipif(
+    not (_INTEGRATION_ENABLED and _LEROBOT_AVAILABLE),
+    reason="requires PROVAEL_INTEGRATION=1 and lerobot+libero (uses the ready "
+    "HuggingFaceVLA/smolvla_libero checkpoint; skips if the sim is unavailable)",
+)
+def test_a_fixed_horizon_benign_episode_runs_past_success_on_one_scene() -> None:
+    """P1.4 on the real simulator: one benign episode to its full horizon, no reset inside it.
+
+    lerobot 0.5.1's ``LiberoEnv.step`` resets the scene on success (``envs/libero.py:341-348``) and
+    gymnasium's vector env resets it again on the next step; the adapter steps LIBERO directly
+    instead. So the episode runs every step, the counter moved once (the episode's own reset), and
+    the end-effector path is continuous: a reset would put the arm back at its start pose.
+    """
+    from provael.attacks.registry import make_attack
+    from provael.policies.lerobot_adapter import LeRobotAdapter
+    from provael.runner import run_episode
+    from provael.suites.libero import _loaded_init_state
+
+    horizon = 280
+    suite = LiberoSuiteAdapter(task_suite="libero_object", task_ids=(0,))
+    policy = LeRobotAdapter(model_id=str(_LIBERO_CKPT), device=_DEVICE)
+    try:
+        policy.set_features(suite.features())
+        policy.load()
+    except (MissingLeRobotError, ModuleNotFoundError, ImportError) as exc:
+        pytest.skip(f"LIBERO simulator / checkpoint not available: {exc}")
+    assert suite.set_termination("fixed-horizon")
+    result = run_episode(
+        policy, suite, make_attack("none"), "libero_object/0", seed=0, horizon=horizon,
+        termination="fixed-horizon",
+    )
+    assert (result.steps, result.termination) == (horizon, "horizon")
+    assert _loaded_init_state(suite._active) == result.init_state, "a reset ran inside the episode"
+    assert result.trajectory is not None
+    poses = np.asarray(result.trajectory.columns("x", "y", "z"))
+    jumps = np.linalg.norm(np.diff(poses, axis=0), axis=1)
+    assert float(jumps.max()) < 0.05, f"the end effector jumped {jumps.max():.3f} m in one step"
+    if not result.task_success:
+        pytest.skip("the policy never completed the task, so there was no success to step past")
+    assert "task_success_strict" in result.endpoints

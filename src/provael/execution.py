@@ -40,7 +40,11 @@ from provael.verdict import ReleaseDecision, release_verdict
 #: on lerobot#2354 reports libero_spatial init states settling differently from mujoco 3.4.0) and
 #: depend on the machine, so they belong here and not in ``report.json``. ``checkpoint_digest``
 #: and ``suite_config_digest`` existed and were never filled; they are now filled from the
-#: report's deployed weight digest and its per-task predicates.
+#: report's deployed weight digest and its per-task predicates. Version 4 also records
+#: ``sidecars``: the sha256 of each opt-in sidecar written beside ``report.json`` (the predicted
+#: action chunks and the per-step timing, :mod:`provael.sidecars`), which binds a sidecar to its run
+#: the way ``report_digest`` binds the report. Version 4 is not yet in a release, so it grew
+#: rather than moving to 5.
 EXECUTION_MANIFEST_VERSION = 4
 
 #: Environment-variable names allowed into the manifest. Anything else is dropped entirely; an
@@ -57,6 +61,10 @@ ENV_ALLOWLIST: tuple[str, ...] = (
     # claims, and only the environment distinguishes them. Recorded here rather than as a manifest
     # field for the reason stated above: a new field would invalidate every attestation ever issued.
     "PROVAEL_REQUIRE_CALIBRATED",
+    # Whether the run loaded a checkpoint the pre-load check refused, accepting code the checkpoint
+    # chose (provael.integrity.TRUST_CHECKPOINT_CODE_ENV). A run that passed the check and one that
+    # overrode it are different claims, and as above only the environment tells them apart.
+    "PROVAEL_TRUST_CHECKPOINT_CODE",
     "MUJOCO_GL",
     "PYOPENGL_PLATFORM",
     "PROVAEL_SMOLVLA_LIBERO_CKPT",
@@ -145,6 +153,12 @@ class ExecutionManifest(BaseModel):
         "unchanged (see EXECUTION_MANIFEST_VERSION).",
     )
     action_schema_digest: str | None = None
+    sidecars: dict[str, str] | None = Field(
+        None,
+        description="File name -> sha256 of each opt-in sidecar written beside report.json "
+        "(chunks.npz from --record-chunks, timing.json from --record-timing). None when the run "
+        "asked for none (manifest schema >= 4).",
+    )
     # evidence
     evidence_state: str
     release_verdict: str
@@ -226,6 +240,7 @@ def build_execution_manifest(
     defense: str | None = None,
     suite_config_digest: str | None = None,
     action_schema_digest: str | None = None,
+    sidecars: dict[str, str] | None = None,
     started_at: str | None = None,
     ended_at: str | None = None,
     env: dict[str, str] | None = None,
@@ -286,6 +301,7 @@ def build_execution_manifest(
         horizon=report.horizon,
         attacks=list(report.attacks),
         action_schema_digest=action_schema_digest,
+        sidecars=dict(sidecars) if sidecars is not None else None,
         evidence_state=evidence_state_of(report).value,
         release_verdict=decision.verdict.value,
         acceptance_protocol=decision.protocol,

@@ -160,7 +160,8 @@ resolve is `null`. They sit inside a nested model, so the projection strips them
 that declares a schema below 9 (`attest._DEPLOYED_POLICY_FIELDS_ADDED_IN`), and every earlier
 attestation keeps verifying. The execution manifest (manifest schema 4) records the installed
 versions of the simulator and policy stack and fills `checkpoint_digest` from the weight digest;
-`provael attack` and `provael doctor` warn when a LIBERO run uses mujoco 3.4.0 or newer, or
+`provael attack` and `provael doctor` warn when a `libero_spatial` run uses mujoco 3.4.0 or newer
+(the task suite the upstream report concerns; the lock itself resolves a later mujoco), or
 versions that differ from the `[lerobot]` resolution in `uv.lock`.
 
 Each episode also records the scene its reset left, read from the simulator after lerobot's settle
@@ -210,6 +211,40 @@ boxes or the threshold, the forbidden objects, its source (`default`, `explicit`
 `check_success` read through lerobot's `final_info.is_success`), and one digest. A calibrated task
 and a default one digest differently. The execution manifest's `suite_config_digest`, null on
 every earlier manifest, is now taken over these digests.
+
+`termination_mode` says how the run ended its episodes. `first-event`, the default and the only
+mode before it, stops an episode at its first envelope exit and at task success on LIBERO, so
+Succ-But-Unsafe, risk exposure time and cumulative cost print as N/A ([E-2026-21](errata.md)).
+`provael attack --termination fixed-horizon` runs every episode to `--horizon` in every arm: an
+exit and a success both latch, and the steps after them are still scored, so those three are
+observable and print as numbers. On LIBERO this steps LIBERO's env directly, because lerobot
+0.5.1's `LiberoEnv.step` resets the scene on success; a suite that cannot step past an event
+refuses the mode, and `--resume` refuses a ledger written under the other one. A fixed-horizon
+LIBERO episode also carries the `task_success_strict` endpoint (the goal held on each of the last
+10 steps, and at the end every moved goal object released and tilted at most 45 degrees since the
+reset), and every episode carries `failure_cause`: `envelope_exit`, `collision` (the contact
+predicate), `missed_grasp`, `dropped` or `timeout` where the signals can tell them apart, `null`
+where they cannot.
+
+Each `trajectory` names its columns (`channels`), so a reader never infers the stride: `x`, `y`,
+`z` on a spatial suite, `danger` on the stub, and on LIBERO the end-effector orientation (`qx`,
+`qy`, `qz`, `qw`) and the gripper opening in metres beside the position, NaN in a column a step
+could not read. A trajectory from before schema 9 names none and is read by its width, as before,
+and the projection strips `channels` from any report that declares less
+(`attest._TRAJECTORY_FIELDS_ADDED_IN`). Two sidecars are opt-in and stay out of `report.json`:
+`provael attack --record-chunks` writes `chunks.npz` (every action chunk the policy predicted,
+including the rows that never ran, and which row each step executed), and `--record-timing`
+writes `timing.json` (when each step's observation arrived and its action left, which is
+wall-clock). The execution manifest records each file's sha256 under `sidecars`.
+
+`delivered_inputs` records what the policy was handed on an episode's live steps, taken at its
+input after the attack and any defense: the sha256 of each distinct instruction string, a rolling
+sha256 over the camera image of every step, and the attack's declared parameters
+(`Attack.parameters`) as they were read. An attack's search queries are not live steps and are not
+in it. The benign arm takes the same path with nothing declared, so its record is the one an
+attacked twin's is read against. A run in which a declared parameter was never read during an
+episode the attack ran in stops instead of writing a report, because a setting that never reaches
+the code that applies it changes nothing while the report would say it was in force.
 
 ### The regulatory clock
 

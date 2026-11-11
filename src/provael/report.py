@@ -35,7 +35,7 @@ from provael.scoring.asr import (
     semantic_role,
 )
 from provael.scoring.safety_cost import (
-    FIRST_EVENT,
+    FIXED_HORIZON,
     QUADRANT_KEYS,
     TASK_SUCCESS_UNMEASURED,
     UNSAFE_SUCCESS,
@@ -296,15 +296,19 @@ def _competence_section(report: RunReport) -> list[str]:
 
 
 def to_markdown(
-    report: RunReport, decision: ReleaseDecision | None = None, *, termination: str = FIRST_EVENT
+    report: RunReport, decision: ReleaseDecision | None = None, *, termination: str | None = None
 ) -> str:
     """Render a report as a Markdown document.
 
     ``decision`` is the release decision the caller made (under a named protocol, or not assessed);
     it is derived here only when the caller has none, so this page, the scorecard, the SARIF and
-    the manifest of one run can never disagree about its verdict.
+    the manifest of one run can never disagree about its verdict. ``termination`` defaults to the
+    report's own ``termination_mode``, which decides whether Succ-But-Unsafe, CC and RET print as
+    N/A (E-2026-21): they do on a first-event run, exactly as before, and not on a fixed-horizon
+    one.
     """
     decision = decision if decision is not None else release_verdict(report)
+    termination = termination if termination is not None else report.termination_mode
     lines: list[str] = []
     lines.append("# Provael — VLA Red-Team Report")
     lines.append("")
@@ -321,6 +325,12 @@ def to_markdown(
     lines.append(f"| tasks | {', '.join(f'`{t}`' for t in report.tasks)} |")
     lines.append(f"| episodes / pair | {report.episodes} |")
     lines.append(f"| horizon | {report.horizon} |")
+    if report.termination_mode == FIXED_HORIZON:
+        # Printed only for the new mode, so a first-event report renders exactly as it did.
+        lines.append(
+            "| episode termination | fixed horizon: every episode ran to the horizon, past its "
+            "first envelope exit and past task success |"
+        )
     lines.append(f"| base seed | {report.seed} |")
     if report.accelerator is not None or report.precision is not None:
         acc = report.accelerator or "unspecified"

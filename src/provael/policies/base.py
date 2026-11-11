@@ -11,11 +11,15 @@ add and so the rest of the engine never depends on a specific model framework.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import Any, Protocol, runtime_checkable
 
 import numpy.typing as npt
 
 from provael.types import Action, DeployedPolicy, Observation, SuiteFeatures
+
+#: Receives each action chunk a policy predicts, ``(rows, action_dim)`` (P1.5).
+type ChunkSink = Callable[[Any], None]
 
 
 class PolicyAdapter(ABC):
@@ -87,6 +91,18 @@ class PolicyAdapter(ABC):
         numpy and deterministic by construction. An adapter that sets ``stochastic = True`` and
         does NOT override this is the bug, and `tests/test_policy_seeding.py` fails on it by name
         rather than leaving it to be noticed in a result file months later.
+        """
+        return None
+
+    def record_chunks(self, sink: ChunkSink | None) -> str | None:
+        """Hand every action chunk this policy predicts to ``sink`` from now on (P1.5).
+
+        A chunked policy predicts several steps at once and executes some of them, so the actions
+        in ``report.json`` are only the executed rows; the predicted rows that never ran were not
+        stored anywhere. Returns, in words, the space the chunks are in (they can precede the
+        post-processor that turns them into controller units), or ``None`` when this adapter
+        hands none over, which is the default. ``None`` as the sink stops it. Called after
+        :meth:`load`.
         """
         return None
 

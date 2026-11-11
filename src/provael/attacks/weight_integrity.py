@@ -291,6 +291,8 @@ class GradientBitFlip(WeightIntegrityAttack):
 
     name = "weight_bitflip_gradient"
     selection = "gradient"
+    #: The ranking is a function of the clean weights alone, so the seed is never read.
+    parameters = ("flips",)
 
     def _select_bits(
         self,
@@ -325,6 +327,7 @@ class RandomBitFlip(WeightIntegrityAttack):
 
     name = "weight_bitflip_random"
     selection = "random"
+    parameters = ("flips", "seed")
 
     def _select_bits(
         self,

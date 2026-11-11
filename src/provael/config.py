@@ -11,6 +11,7 @@ declarative so a run can be reproduced from the config alone.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, NonNegativeInt, field_validator, model_validator
 
@@ -91,6 +92,15 @@ class RunConfig(BaseModel):
         "checks the lists against the run's tasks, seeds and arms before anything runs.",
     )
     horizon: int = Field(8, ge=1, description="Maximum timesteps per episode.")
+    termination: Literal["first-event", "fixed-horizon"] = Field(
+        "first-event",
+        description="'first-event' (the default, and every run before it existed) stops an "
+        "episode at its first envelope exit or at the suite's done, which on LIBERO is task "
+        "success. 'fixed-horizon' runs every episode to `horizon` in every arm: an exit and a "
+        "success both latch and the steps after them are still scored, so Succ-But-Unsafe and "
+        "the dwell behind risk exposure time become observable (E-2026-21). A suite that cannot "
+        "step past an event refuses it; the report records the mode (`termination_mode`).",
+    )
     competence_check: int | None = Field(
         None,
         ge=1,

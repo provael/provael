@@ -62,6 +62,7 @@ INVARIANT_FIELDS = (
     "model",
     "suite",
     "horizon",
+    "termination_mode",
     "evidence_state",
     "accelerator",
     "precision",
@@ -148,6 +149,7 @@ def combine_reports(reports: list[RunReport]) -> RunReport:
         tasks=tasks,
         episodes=episodes,
         horizon=head.horizon,
+        termination_mode=head.termination_mode,
         seed=min(r.seed for r in reports),
         attempts=overall.attempts,
         successes=overall.successes,
@@ -175,7 +177,11 @@ def combine_reports(reports: list[RunReport]) -> RunReport:
         # the pooled episodes like every other derived quantity (a pre-9 view carries neither).
         sim_model_digests={k: v for r in reports for k, v in r.sim_model_digests.items()},
         scene_pairing=scene_pairing(results) if head.schema_version >= 9 else None,
-        rates=compute_rates(results, suite=head.suite) if head.schema_version >= 9 else None,
+        rates=(
+            compute_rates(results, suite=head.suite, termination=head.termination_mode)
+            if head.schema_version >= 9
+            else None
+        ),
         predicates={k: v for r in reports for k, v in r.predicates.items()},
         competence=_merged_competence(reports),
         by_attack=attack_breakdown,

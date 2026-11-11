@@ -108,6 +108,17 @@ def test_the_locked_stack_itself_draws_the_mujoco_warning() -> None:
     assert len(lines) == 1 and "past that line as well" in lines[0]
 
 
+def test_the_mujoco_line_is_for_the_task_suite_the_report_is_about() -> None:
+    """Every run on the locked stack is past 3.4.0, so a line on every LIBERO run is noise: it is
+    printed for a ``libero_spatial`` run, and for ``doctor`` (no task suite), and nowhere else."""
+    locked = dict(LOCKED_LEROBOT_RESOLUTION)
+    spatial = drift_warnings(locked, suite="libero", uses_lerobot=True, task_suite="libero_spatial")
+    assert len(spatial) == 1 and "huggingface/lerobot#2354" in spatial[0]
+    for other in ("libero_object", "libero_goal", "libero_10"):
+        assert drift_warnings(locked, suite="libero", uses_lerobot=True, task_suite=other) == []
+    assert len(drift_warnings(locked, suite="libero", uses_lerobot=True, task_suite=None)) == 1
+
+
 def _flat(text: str) -> str:
     """Console output with Rich's line wrapping undone, so a sentence can be searched for."""
     return " ".join(text.split())
@@ -122,13 +133,21 @@ def test_attack_prints_the_warnings_before_it_runs(
         lambda: dict(LOCKED_LEROBOT_RESOLUTION, torch="2.9.1"),
     )
     result = runner.invoke(
-        app, ["attack", "--policy", "stub", "--suite", "libero", "--attacks", "none",
-              "--episodes", "1", "--out", str(tmp_path / "run")],
+        app, ["attack", "--policy", "stub", "--suite", "libero", "--tasks", "libero_spatial/0",
+              "--attacks", "none", "--episodes", "1", "--out", str(tmp_path / "run")],
     )
     output = _flat(result.output)
     assert "huggingface/lerobot#2354" in output
     assert "torch 2.9.1 (lock 2.10.0)" in output
     assert "[lerobot] resolution in uv.lock" in output, "the bracketed name must survive"
+    # The default task suite is libero_object, which the mujoco report is not about.
+    default = runner.invoke(
+        app, ["attack", "--policy", "stub", "--suite", "libero", "--attacks", "none",
+              "--episodes", "1", "--out", str(tmp_path / "default")],
+    )
+    flat = _flat(default.output)
+    assert "huggingface/lerobot#2354" not in flat
+    assert "torch 2.9.1 (lock 2.10.0)" in flat
 
 
 def test_a_stub_run_draws_no_warning_and_its_manifest_records_the_versions(

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import time
 from pathlib import Path
@@ -43,10 +44,26 @@ from provael.report import (
     write_report,
 )
 from provael.reproductions import get_reproduction
-from provael.runner import CompetenceCheckError, InitStatePlanError, ScenePinError, run
+from provael.runner import (
+    CompetenceCheckError,
+    InitStatePlanError,
+    ResumeModeError,
+    ScenePinError,
+    UnreadParameterError,
+    run,
+)
 from provael.runtime_versions import drift_warnings, installed_versions
 from provael.sarif import write_sarif
 from provael.scorecard import SCORECARD_MD, write_scorecard
+from provael.sidecars import (
+    CHUNKS_NPZ,
+    TIMING_JSON,
+    ChunkLog,
+    TimingLog,
+    write_chunks,
+    write_timing,
+)
+from provael.suites.libero import suite_and_ids_from_tasks
 from provael.verdict import write_decision
 
 
@@ -158,6 +175,16 @@ def attack(
         ),
     ] = None,
     horizon: Annotated[int, typer.Option(min=1, help="Max timesteps per episode.")] = 8,
+    termination: Annotated[
+        str,
+        typer.Option(
+            "--termination",
+            help="'first-event' (default): an episode stops at its first envelope exit or at "
+            "task success. 'fixed-horizon': every episode runs all --horizon steps in every arm, "
+            "so Succ-But-Unsafe and how long an episode stayed unsafe are observable. A suite "
+            "that cannot step past an event refuses it.",
+        ),
+    ] = "first-event",
     record_episode_errors: Annotated[
         bool,
         typer.Option(
@@ -201,6 +228,24 @@ def attack(
                  "the file if absent. Not usable with --episodes-per-seed > 1.",
         ),
     ] = None,
+    record_chunks: Annotated[
+        bool,
+        typer.Option(
+            "--record-chunks",
+            help="Write chunks.npz beside report.json: every action chunk the policy predicted on "
+            "each step, including the rows that never ran, and which row each step executed. "
+            "Its sha256 goes in execution-manifest.json. Off by default; never changes the report.",
+        ),
+    ] = False,
+    record_timing: Annotated[
+        bool,
+        typer.Option(
+            "--record-timing",
+            help="Write timing.json beside report.json: when each step's observation arrived and "
+            "when its action was sent, in nanoseconds since the run started. Wall-clock, so never "
+            "in report.json; its sha256 goes in execution-manifest.json. Off by default.",
+        ),
+    ] = False,
     video_dir: Annotated[
         Path | None,
         typer.Option(
@@ -270,6 +315,17 @@ def attack(
             "run is a diagnostic: measured, and its acceptance not assessed.",
         ),
     ] = None,
+    preflight: Annotated[
+        bool,
+        typer.Option(
+            "--preflight",
+            help="Before the run, command a +x end-effector delta for a few steps on the run's "
+            "first task and refuse the run unless the end-effector moved along +x: a simulator "
+            "applying deltas in another frame than it reports the pose in (robosuite issue "
+            "819). Uses an environment of its own, so the run's scenes are unchanged. Needs a "
+            "suite that reports an end-effector position (LIBERO). Off by default.",
+        ),
+    ] = False,
 ) -> None:
     """Run a red-team evaluation and write report.json + report.md."""
     rename: dict[str, str] | None = None
@@ -339,6 +395,8 @@ def attack(
             return
     if _explicit("horizon"):
         overrides["horizon"] = horizon
+    if _explicit("termination"):
+        overrides["termination"] = termination
     if _explicit("record_episode_errors"):
         overrides["record_episode_errors"] = record_episode_errors
     if _explicit("competence_check"):
@@ -415,7 +473,14 @@ def attack(
     # different measurement, and execution-manifest.json records the versions either way.
     # escape(), because the lines name "[lerobot]", which Rich would read as a style tag and drop.
     uses_lerobot = config.suite == "libero" or config.policy in REQUIRES_LEROBOT
-    for line in drift_warnings(installed_versions(), suite=config.suite, uses_lerobot=uses_lerobot):
+    task_suite = None
+    if config.suite == "libero":
+        # A mixed or unknown task list is refused when the suite is built, below.
+        with contextlib.suppress(ValueError):
+            task_suite = suite_and_ids_from_tasks(config.tasks or [])[0]
+    for line in drift_warnings(
+        installed_versions(), suite=config.suite, uses_lerobot=uses_lerobot, task_suite=task_suite
+    ):
         _err.print(f"[yellow]warning:[/yellow] {escape(line)}")
 
     calibrations = None
@@ -427,13 +492,28 @@ def attack(
                 f"{config.policy}/{config.suite} in {calib}; using the default predicate."
             )
 
+    if preflight:
+        # Its own suite and environment, before the policy loads: a refusal costs no download.
+        from provael.policies.preflight import PreflightError, run_frame_preflight
+
+        try:
+            checked = run_frame_preflight(config.suite, config.tasks, config.seed)
+        except (MissingLeRobotError, PreflightError) as exc:
+            _fail(str(exc))
+            return
+        _err.print(f"[green]preflight:[/green] {escape(checked.detail)}")
+
     started = time.perf_counter()
     # The defense audit trail is collected here and written as a SIDECAR, never merged into
     # report.json — a field on RunReport would move the attestation subject digest.
     defense_audit: list[dict[str, str]] = []
+    # The opt-in sidecars (P1.5) are filled the same way, and written beside the report below.
+    chunk_log = ChunkLog() if record_chunks else None
+    timing_log = TimingLog() if record_timing else None
     try:
         report = run(
-            config, calibrations, audit_sink=defense_audit, ledger_path=resume, video_dir=video_dir
+            config, calibrations, audit_sink=defense_audit, ledger_path=resume,
+            video_dir=video_dir, chunk_log=chunk_log, timing_log=timing_log,
         )
     except (MissingLeRobotError, IncompatiblePolicyError) as exc:
         _fail(str(exc))
@@ -445,15 +525,35 @@ def attack(
     except NotImplementedError as exc:
         _fail(str(exc))
         return
-    except (InitStatePlanError, ScenePinError, CompetenceCheckError) as exc:
+    except (
+        InitStatePlanError,
+        ScenePinError,
+        ResumeModeError,
+        UnreadParameterError,
+        CompetenceCheckError,
+    ) as exc:
         # A plan that does not fit the run is refused before anything loads; a pinned run whose
-        # arms started from different scenes stops rather than writing pairs that are not pairs.
+        # arms started from different scenes stops rather than writing pairs that are not pairs;
+        # a ledger written under the other termination mode is not resumed into this one; an
+        # attack setting that was never read is not reported as in force.
         _fail(str(exc))
         return
     elapsed = time.perf_counter() - started
 
     decision = _decide(report, acceptance)
     json_path, md_path = write_report(report, config.out, decision)
+    sidecars: dict[str, str] = {}
+    if chunk_log is not None:
+        chunks_path, sidecars[CHUNKS_NPZ] = write_chunks(chunk_log, config.out)
+        _out.print(f"Wrote [cyan]{chunks_path}[/cyan]  (predicted action chunks)")
+        if chunk_log.space is None:
+            _err.print(
+                f"[yellow]note:[/yellow] policy {config.policy!r} hands over no action chunks; "
+                "chunks.npz records the steps and no chunk."
+            )
+    if timing_log is not None:
+        timing_path, sidecars[TIMING_JSON] = write_timing(timing_log, config.out)
+        _out.print(f"Wrote [cyan]{timing_path}[/cyan]  (per-step timing)")
     if acceptance is not None:
         decision_path = write_decision(decision, config.out)
         _out.print(
@@ -461,7 +561,8 @@ def attack(
             f"[bold]{decision.verdict.value}[/bold] -> [cyan]{decision_path}[/cyan]"
         )
     _emit_execution_manifest(
-        report, config.out, elapsed=elapsed, defense=config.defense, decision=decision
+        report, config.out, elapsed=elapsed, defense=config.defense, decision=decision,
+        sidecars=sidecars or None,
     )
     if config.defense:
         log_path = _write_defense_log(defense_audit, config.out)

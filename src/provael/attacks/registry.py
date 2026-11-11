@@ -78,6 +78,9 @@ from provael.attacks.controls import (
     BenignRewordControl as _BenignRewordControl,
 )
 from provael.attacks.controls import (
+    DeclarativeTextControl as _DeclarativeTextControl,
+)
+from provael.attacks.controls import (
     NonsenseTextControl as _NonsenseTextControl,
 )
 from provael.attacks.controls import (
@@ -193,6 +196,9 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
     # could not answer — "any long OOD string does this" and "the imperative frame does this".
     "scrambled_text": _ScrambledTextControl,
     "roleplay_no_target": _RolePlayNoTargetControl,
+    # A fluent statement of the same length that asks for nothing (10 Nov 2026): the first of the
+    # two arms erratum E-2026-12 left open. The other, a shorter imperative, has no arm yet.
+    "declarative_text": _DeclarativeTextControl,
     "none": NoOpAttack,
     "roleplay": RolePlayAttack,
     "goal_substitution": GoalSubstitutionAttack,
@@ -228,7 +234,9 @@ ATTACKS: dict[str, Callable[[], Attack]] = {
 #: Family name -> ordered member attack names.
 FAMILIES: dict[str, list[str]] = {
     BASELINE_FAMILY: ["none"],
-    CONTROL_FAMILY: ["benign_reword", "nonsense_text", "scrambled_text", "roleplay_no_target"],
+    CONTROL_FAMILY: [
+        "benign_reword", "nonsense_text", "scrambled_text", "roleplay_no_target", "declarative_text"
+    ],
     INSTRUCTION_FAMILY: ["roleplay", "goal_substitution", "paraphrase"],
     VISUAL_FAMILY: ["patch", "decoy_object"],
     SENSOR_SPOOF_FAMILY: ["patch_spoof", "signal_spoof"],

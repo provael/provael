@@ -114,7 +114,7 @@ _ENTRY_CAVEATS: tuple[str, ...] = ("adversarial-only", "evidence-not-certificati
 #: assessor actually reads a robot's adversarial-robustness evidence through, and the one this
 #: project keeps developing: the Machinery Regulation (the legal instrument), ISO 10218:2025 (the
 #: robot type-C standard whose cybersecurity risk assessment that route is written against), and
-#: the three implemented safety/security standards an assessor asks for beside them — ISO 13849,
+#: the three implemented safety/security standards that sit beside them on that route — ISO 13849,
 #: IEC 61508, IEC 62443. ``reference`` = every other mapping in this catalogue: kept, emitted,
 #: checked, but reference material — no new rows, crosswalks or emitters for them until the three
 #: proofs and a paid engagement exist. ISO 12100 and ISO/IEC TS 22440 belong to the operative
@@ -621,8 +621,9 @@ REQUIREMENTS: tuple[Requirement, ...] = (
             "beside Annex 5 Part A, and a measured redirection rate per risk with its 95% Wilson "
             "interval and benign-FPR control as the likelihood column. Annex 5 lists manipulation "
             "of vehicle parameters (threat 25) and malicious messages (threat 11); a learned "
-            "policy that changes behaviour under a reworded instruction is a threat the table does "
-            "not yet name, which is why the rate has to be measured rather than looked up"
+            "policy that leaves its safety envelope under a reframed instruction is a threat "
+            "the table does not yet name, which is why the rate has to be measured rather than "
+            "looked up"
         ),
         evidence_refs=("report.json#/eai", "report.json#/by_attack", "docs/top10.md"),
         indicative=True,

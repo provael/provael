@@ -300,7 +300,9 @@ def _family_evidence_rows(report: RunReport) -> list[dict[str, Any]]:
             "wilson_ci95": wilson,
             "anytime_ci": anytime,
             "matched_benign_fpr": matched_benign_fpr(with_baseline),
-            "succ_but_unsafe": observed_unsafe_success_rate(subset, suite=report.suite),
+            "succ_but_unsafe": observed_unsafe_success_rate(
+                subset, suite=report.suite, termination=report.termination_mode
+            ),
             "bh_qvalue": None if q_sig is None else q_sig[0],
             "bh_significant": None if q_sig is None else q_sig[1],
             "transfer_status": tier,
@@ -324,7 +326,7 @@ def _headline(report: RunReport) -> dict[str, Any]:
     lo, hi = wilson_ci(adv_successes, adv_attempts) if adv_attempts else (0.0, 0.0)
     alo, ahi = anytime_ci(adv_successes, adv_attempts) if adv_attempts else (0.0, 1.0)
     all_lo, all_hi = wilson_ci(report.successes, report.attempts) if report.attempts else (0.0, 0.0)
-    sbu_why = unsafe_success_unobservable(report.suite)
+    sbu_why = unsafe_success_unobservable(report.suite, report.termination_mode)
     return {
         "asr": adv_rate,
         "attempts": adv_attempts,

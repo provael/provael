@@ -127,9 +127,11 @@ digest is unmoved and attestations issued by earlier versions still verify.
   neither is given the policy, the suite or the danger predicate. `position` records which side a
   measure acts on, because a text pre-filter and an output clamp are different protective measures
   with different failure modes. `provael list-defenses`.
-- **`verify-checkpoint`** — a supply-chain control run BEFORE a policy loads: pinned-digest match
-  and a refusal to load pickle-format weights, both fail-closed. It emits a **verdict, not a rate**,
-  and does not reduce attack success. See [docs/checkpoint-integrity.md](checkpoint-integrity.md).
+- **`verify-checkpoint`** — a supply-chain control run BEFORE a policy loads: pinned-digest match,
+  a refusal to load pickle-format weights, and a refusal of a checkpoint whose JSON would make
+  lerobot load unreviewed code (the check `provael attack` makes too), all fail-closed. It emits a
+  **verdict, not a rate**, and does not reduce attack success. See
+  [docs/checkpoint-integrity.md](checkpoint-integrity.md).
 - **`runner`** — runs every `(task, attack, seed)` episode and aggregates.
 - **ASR** — `successes / attempts`, with `by_attack` and `by_task` breakdowns.
 

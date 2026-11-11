@@ -25,6 +25,8 @@ eighteen-name family list under a "19 families" label in README.md. The table be
     probe            10  x  8  x  3  x 1   =    240     7.6       ~$6.11  ~45 min sharded
     control          10  x  4  x  5  x 1   =    200     6.3       ~$6.15   ~1.1 h sharded
                                                     hard ceiling ~$12 (10 x 1.5 h timeout)
+    declarative      10  x  3  x  5  x 1   =    150     6.8       ~$5.47   ~0.8 h sharded
+                                                    hard ceiling ~$12 (10 x 1.5 h timeout)
     eai04-redirect   10  x  4  x  5  x 1   =    200     6.3       ~$6.2    ~1.1 h sharded
                                                     hard ceiling ~$12 (10 x 1.5 h timeout)
     full             10  x  8  x  5  x 1   =    400    15.4       $12.29   2.04 h sharded (RUN)
@@ -41,6 +43,17 @@ eighteen-name family list under a "19 families" label in README.md. The table be
 `full`'s row is MEASURED, not projected — it ran, and its estimate was $10.17 against an actual
 $12.29, 21% low. `control`'s ~$6.15 is that measured $0.031/episode times 200, so it inherits the
 correction rather than repeating the optimism.
+
+ONE MODAL RUN OF `control` IS COMMITTED, AND IT IS THE BASIS FOR `declarative`'s ROW. On 9 August
+2026 the stage ran four arms (`none`, `roleplay`, `benign_reword`, `nonsense_text`), 200 episodes,
+in 9.12 GPU-hours, ~$7.30, its slowest shard ~1.04 h (results/smolvla_libero_object_control): above
+its row, so its row still reads low. The stage has named six arms since `scrambled_text` and
+`roleplay_no_target` were registered on 14 September 2026, and those six have run only on a
+workstation (results/smolvla_libero_object_control_2026-09-14). At five seeds that is 30 episodes a
+shard, and at the 9 August pace the slowest shard would take ~1.56 h, past the 1.5 h timeout:
+re-size the stage before dispatching it. `declarative_text`, the control registered on 10 November
+2026, is therefore not in `control`. It has its own stage, `declarative`, whose row scales the 9
+August run's measured GPU-hours to 150 episodes: an estimate for an arm that has never run anywhere.
 
 STAGES WITH >1 TASK ARE SHARDED ONE TASK PER CONTAINER, which is why wall clock is a tenth of
 GPU-hours at identical cost. That is a survivability decision, not a speed one.
@@ -393,8 +406,36 @@ STAGES: dict[str, dict[str, str]] = {
     #
     # Only a stage that carries the key passes `--pin-init-states` (see the command below), and the
     # plan step refuses this one while PROVAEL_PIN is a release whose `attack` has no such flag.
+    #
+    # THE CONTROLS ARE NAMED, NOT GIVEN AS THE `control` FAMILY, since 10 November 2026, when the
+    # family gained `declarative_text`: a registered control must not add work to a stage whose
+    # timeout is its printed ceiling. These four are what the family resolved to before that day.
     "control": {
-        "tasks": ALL_TASKS, "attacks": "none,roleplay,control",
+        "tasks": ALL_TASKS,
+        "attacks": "none,roleplay,benign_reword,nonsense_text,scrambled_text,roleplay_no_target",
+        "seeds": "5", "episodes_per_seed": "1", "timeout": "5400",
+        "pin_init_states": "45",
+    },
+    # THE FIRST OF THE TWO ARMS ERRATUM E-2026-12 LEFT OPEN, OPT-IN. The 14 September controls
+    # showed the roleplay frame leaving the envelope with no target named and with its words
+    # scrambled; the erratum left open whether a fluent non-imperative sentence of the same length
+    # does too. `declarative_text` is that sentence (the shorter imperative it also named has no
+    # arm). It runs beside `none` and `roleplay` so every comparison it needs is internal to one
+    # report, on the same pinned scenes as `control` (init state 45 + seed), so the two stages'
+    # `none` and `roleplay` cells start from the same scenes.
+    #
+    # SIZING, scaled from the one Modal run of a control stage and labelled as an estimate: 10 tasks
+    # x 3 arms x 5 seeds = 150 episodes, 15 a shard. The 9 August `control` run took 9.12 GPU-hours
+    # for 200 episodes, so 150 is ~6.8 GPU-hours, ~$5.47. That run's reports hold 38,337 steps, so
+    # its pace was ~0.81 s/step after ten 174 s setups, and a shard whose every episode runs the
+    # 280-step horizon at that pace is 15 x 227 s + 174 s = ~3,580 s, inside the 5,400 s timeout.
+    # The ceiling is 10 x 1.5 h x $0.7992 = ~$11.99.
+    #
+    # NOT DISPATCHABLE YET. The image installs PROVAEL_PIN, and 0.47.0 has no `declarative_text`:
+    # the container would stop at `unknown attack or family` after billing its setup. That is why
+    # gpu-arm.yml does not offer this stage. Offer it once PROVAEL_PIN names a release with the arm.
+    "declarative": {
+        "tasks": ALL_TASKS, "attacks": "none,roleplay,declarative_text",
         "seeds": "5", "episodes_per_seed": "1", "timeout": "5400",
         "pin_init_states": "45",
     },
@@ -432,8 +473,16 @@ STAGES: dict[str, dict[str, str]] = {
     # targeted_redirect arm searches, 5 of the 20 episodes in a shard, at most 64 extra policy
     # queries each — ~220 s, under 4% of the shard. THE CEILING IS THE NUMBER THAT MATTERS: it is
     # what ten hung containers bill regardless of what they were asked to do.
+    #
+    # THE CONTROLS ARE NAMED here too since 10 November 2026, for the reason `control` gives: these
+    # four are what the family resolved to that day. The sizing above was written for the first two;
+    # with all four a shard is 30 episodes, so re-size the stage before dispatching it.
     "eai04-redirect": {
-        "tasks": ALL_TASKS, "attacks": "none,optimized_instruction,control",
+        "tasks": ALL_TASKS,
+        "attacks": (
+            "none,optimized_instruction,benign_reword,nonsense_text,scrambled_text,"
+            "roleplay_no_target"
+        ),
         "seeds": "5", "episodes_per_seed": "1", "timeout": "5400",
         "query_budget": "64",
     },

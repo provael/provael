@@ -95,6 +95,7 @@ class TrajectoryHijackAttack(Attack):
 
     name = "trajectory_hijack"
     family = FAMILY
+    parameters = ("target",)
     eai_id = _EAI.id
     eai_name = _EAI.name
 

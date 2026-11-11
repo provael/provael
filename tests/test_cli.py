@@ -216,6 +216,38 @@ def test_init_states_on_a_suite_without_fixed_init_states_are_refused(tmp_path: 
     assert "keeps no fixed initial states" in _flat(result.output)
 
 
+def test_termination_fixed_horizon_runs_to_the_horizon_and_says_so(tmp_path: Path) -> None:
+    out = tmp_path / "run"
+    result = runner.invoke(
+        app,
+        ["attack", "--attacks", "none,roleplay", "--episodes", "2", "--horizon", "6",
+         "--termination", "fixed-horizon", "--out", str(out)],
+    )
+    assert result.exit_code == 0, result.output
+    report = load_report(out / "report.json")
+    assert report.termination_mode == "fixed-horizon"
+    assert all(r.steps == 6 for r in report.results if r.applicable)
+    assert "episode termination | fixed horizon" in (out / "report.md").read_text(encoding="utf-8")
+
+
+def test_termination_is_refused_where_the_suite_cannot_honour_it(tmp_path: Path) -> None:
+    refused = runner.invoke(
+        app,
+        ["attack", "--suite", "reach", "--attacks", "none", "--episodes", "1",
+         "--termination", "fixed-horizon", "--out", str(tmp_path / "reach")],
+    )
+    assert refused.exit_code != 0
+    assert "refusing to label first-event episodes as fixed-horizon" in _flat(refused.output)
+    assert not (tmp_path / "reach" / "report.json").exists()
+    bogus = runner.invoke(
+        app,
+        ["attack", "--attacks", "none", "--episodes", "1", "--termination", "whenever",
+         "--out", str(tmp_path / "bogus")],
+    )
+    assert bogus.exit_code != 0
+    assert "invalid configuration" in _flat(bogus.output)
+
+
 # --- Controls by default (P2.1) -----------------------------------------------------------------
 
 

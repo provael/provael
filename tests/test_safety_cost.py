@@ -235,6 +235,8 @@ def test_no_committed_real_policy_episode_could_show_what_the_erratum_says_it_ca
         report = json.loads(path.read_text(encoding="utf-8"))
         if report.get("policy") == "stub" or report.get("suite") != "libero":
             continue
+        if report.get("termination_mode", "first-event") != "first-event":
+            continue  # a fixed-horizon run can show both; the erratum is about first-event runs
         for row in report["results"]:
             both += bool(row.get("success") and row.get("task_success"))
             if row.get("decisions"):

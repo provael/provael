@@ -132,6 +132,9 @@ class TargetedRedirect(OptimizedAttack[_Edit]):
 
     name = "targeted_redirect"
     family = FAMILY
+    # The settings its search reads on every episode: `max_cues` only when the search expands
+    # and `keep_out_zones` only once a candidate is scored, so neither is declared.
+    parameters = ("banned", "min_similarity", "target_redirection", "query_budget")
     eai_id = _EAI.id
     eai_name = _EAI.name
     attacker_access = ATTACKER_ACCESS
@@ -235,6 +238,7 @@ class _FrozenRedirect(Attack):
 
     name = "targeted_redirect"
     family = FAMILY
+    parameters = ("_edit",)
     eai_id = _EAI.id
     eai_name = _EAI.name
     attacker_access = ATTACKER_ACCESS

@@ -84,7 +84,9 @@ def bounds_from_reports(reports: Iterable[RunReport]) -> list[TaskBounds]:
             trajectory = result.trajectory
             if trajectory is None:  # pragma: no cover - benign_results filters these out
                 continue
-            poses = trajectory.decode()
+            # The calibration signal by name: from schema 9 a LIBERO trajectory also records the
+            # orientation and the gripper, which are not part of a reachable bound.
+            poses = trajectory.calibration_signal()
             if not poses:
                 continue
             entry = acc.get(result.task)

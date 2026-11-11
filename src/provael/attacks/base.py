@@ -19,9 +19,13 @@ contract, the runner and scoring are all unchanged.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from provael.types import Action, Observation
+
+#: Where an attack keeps the reads of its declared parameters while an episode is audited.
+_READS = "_parameter_reads"
 
 
 class Attack(ABC):
@@ -47,6 +51,53 @@ class Attack(ABC):
     #: where not asserted. A stub-only attack does not claim a head class; a real-transfer
     #: attack records the one it actually ran against (see ROADMAP D3/INV-4).
     action_head_class: str | None = None
+    #: The settings this attack's perturbation reads, by attribute name (P1.8): its constructor
+    #: arguments and what the runner sets on it, read on every episode it runs. Each episode
+    #: records them as read (``AttackResult.delivered_inputs.parameters``), and the runner fails
+    #: the run when one was never read during an episode the attack ran in: a setting that never
+    #: reaches the code that reads it changes nothing while the report says it was in force. A
+    #: table written into the class (a template, a phrase bank) is code, not a setting, and the
+    #: instruction digest records what it produced. The benign arm declares nothing.
+    parameters: ClassVar[tuple[str, ...]] = ()
+
+    if not TYPE_CHECKING:  # hidden from mypy, so an attribute typo on an attack is still caught
+
+        def __getattribute__(self, name):
+            value = object.__getattribute__(self, name)
+            if name in type(self).parameters:
+                reads = object.__getattribute__(self, "__dict__").get(_READS)
+                if reads is not None and name not in reads:
+                    reads[name] = value
+            return value
+
+    def audit_start(self) -> None:
+        """Start recording reads of :attr:`parameters` for one episode.
+
+        Idempotent within an episode: the runner arms it before a weight corruption, and
+        :func:`provael.runner.run_episode` before the first step, and the reads of both count.
+        """
+        self.__dict__.setdefault(_READS, {})
+
+    def audit_collect(self) -> dict[str, Any]:
+        """The declared parameters read since :meth:`audit_start`, first values; recording stops."""
+        reads: dict[str, Any] | None = self.__dict__.pop(_READS, None)
+        return reads or {}
+
+    def _audit_reads(self) -> dict[str, Any]:
+        """The reads recorded so far this episode, for an attack that caches what they produced."""
+        return dict(self.__dict__.get(_READS) or {})
+
+    def _audit_replay(self, reads: Mapping[str, Any]) -> None:
+        """Count, in this episode, the reads behind a result cached in an earlier one.
+
+        An attack that searches once per ``(task, seed)`` and reuses the result on a repeat (or
+        fits once and carries the fit to every episode) reads its search settings only the first
+        time; the episode that reuses the result was still shaped by them.
+        """
+        current = self.__dict__.get(_READS)
+        if current is not None:
+            for name, value in reads.items():
+                current.setdefault(name, value)
 
     def applicable(self, observation: Observation) -> bool:
         """Whether this attack has a surface in the given suite's observation.
@@ -121,6 +172,8 @@ class OptimizedAttack[Edit](Attack):
         #: Winning edit per episode, keyed by ``(task, seed)`` — see :meth:`perturb` for why the
         #: key needs the task and why the EDIT is cached rather than the rendered pair.
         self._cache: dict[tuple[str, int], Edit | None] = {}
+        #: The parameter reads behind each cached edit, replayed when the edit is reused (P1.8).
+        self._cache_reads: dict[tuple[str, int], dict[str, Any]] = {}
         #: Queries the most recent :meth:`_search` used (asserted by the budget/early-stop tests).
         self.last_search_queries = 0
         #: The winning edit of the most recent :meth:`_search` (``None`` if every candidate was
@@ -262,6 +315,9 @@ class OptimizedAttack[Edit](Attack):
         if key not in self._cache:
             self._search(instruction, observation)  # sets self.best_edit / last_search_queries
             self._cache[key] = self.best_edit
+            self._cache_reads[key] = self._audit_reads()
+        else:
+            self._audit_replay(self._cache_reads.get(key, {}))
         edit = self._cache[key]
         if edit is None:
             return instruction, observation  # every candidate rejected → benign passthrough
