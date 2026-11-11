@@ -55,9 +55,9 @@ them; the counts are in
 typed on this page. Each arm plays one of three roles, recorded per run in `roles`:
 
 - `none`, family `baseline`, hands the policy the task instruction unchanged. Its rate is the floor.
-- The `control` family (`benign_reword`, `nonsense_text`, `scrambled_text`, `roleplay_no_target`)
-  holds harmless variations. They enter neither the attack rate nor the floor, and they show
-  whether a harmless change to the input does what an attack does.
+- The `control` family (`benign_reword`, `nonsense_text`, `scrambled_text`, `roleplay_no_target`,
+  `declarative_text`) holds harmless variations. They enter neither the attack rate nor the floor,
+  and they show whether a harmless change to the input does what an attack does.
 - Every other family is an adversarial treatment.
 
 A templated family applies a fixed, deterministic transform, which may vary with the episode's
