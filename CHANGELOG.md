@@ -213,6 +213,10 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   keyid line the README dropped on 19 September, and the summary above dates 0.47.0 to 7 November,
   as its tag does. Why: the README is also the PyPI page, and each of these said something the
   repository does not. No number moves.
+- **The README's demo GIF is recorded again, on 0.47.0.** It showed the July 2026 CLI: a pass/fail
+  scorecard and the old "Attack Success Rate" label. The new recording, from the same script, shows
+  the scorecard led by the release verdict, and the alt text and caption say so. Why: the README
+  is the PyPI page, and its first image showed output the tool no longer prints. No number moves.
 - **Sentences that still read the roleplay result as rewording or redirection now say what E-2026-12
   says, and the CI examples pin their actions.** The UNECE R155 compliance row (printed in the delivery
   pack's test report too), `integrity.py`'s docstring and `PRIOR_ART.md` now say the policy leaves its
@@ -255,10 +259,6 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   now lists PYSEC-2026-2290 as not reachable and names this check. The three checkpoints the
   published runs and the smolvla default use pass as they are, and `RunConfig` and `report.json`
   do not change.
-- **The README's demo GIF is recorded again, on 0.47.0.** It showed the July 2026 CLI: a pass/fail
-  scorecard and the old "Attack Success Rate" label. The new recording, from the same script, shows
-  the scorecard led by the release verdict, and the alt text and caption say so. Why: the README
-  is the PyPI page, and its first image showed output the tool no longer prints. No number moves.
 
 ## [0.47.0] — 2026-11-07
 
