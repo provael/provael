@@ -164,3 +164,39 @@ def test_the_declarative_arm_runs_end_to_end_and_enters_neither_population() -> 
     assert benign_unsafe_rate(with_arm.results) == benign_unsafe_rate(without.results) == 0.0
     assert harmless_variation_rate(without.results) is None  # no control ran: unmeasured
     assert harmless_variation_rate(with_arm.results) == 0.0
+
+
+# --- Controls by default (P2.1) -------------------------------------------------------------------
+
+
+def test_an_instruction_channel_run_gets_the_floor_first_and_the_controls_last() -> None:
+    """`provael attack`'s default, as the registry computes it; the control count is the registry's."""
+    from provael.attacks.registry import FAMILIES, INSTRUCTION_CHANNEL_FAMILIES, with_controls
+
+    floor = FAMILIES["baseline"]
+    for family in INSTRUCTION_CHANNEL_FAMILIES:
+        assert with_controls([family]) == [*floor, family, CONTROL_FAMILY]
+        member = FAMILIES[family][0]  # a member counts as its family
+        assert with_controls([member, "patch"]) == [*floor, member, "patch", CONTROL_FAMILY]
+    arms = [a.name for a in resolve_attacks(with_controls(["roleplay"]))]
+    assert arms == [*floor, "roleplay", *FAMILIES[CONTROL_FAMILY]]
+
+
+def test_a_run_with_no_instruction_channel_arm_is_left_alone() -> None:
+    from provael.attacks.registry import with_controls
+
+    for tokens in (["visual"], ["patch", "scene_text"], ["none"], ["control"], ["weight_integrity"]):
+        assert with_controls(tokens) == tokens
+
+
+def test_adding_the_controls_is_idempotent_and_never_duplicates_an_arm() -> None:
+    from provael.attacks.registry import FAMILIES, with_controls
+
+    once = with_controls(["instruction"])
+    assert with_controls(once) == once
+    named = ["roleplay", "none", *FAMILIES[CONTROL_FAMILY]]
+    assert with_controls(named) == named  # every control already named: nothing to add
+    partial = with_controls(["roleplay", "benign_reword"])
+    arms = [a.name for a in resolve_attacks(partial)]
+    assert len(arms) == len(set(arms))
+    assert set(FAMILIES[CONTROL_FAMILY]) <= set(arms)

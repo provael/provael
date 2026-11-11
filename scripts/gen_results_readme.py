@@ -43,11 +43,20 @@ sys.path.insert(0, str(ROOT / "src"))
 from provael.calibration import wilson_ci  # noqa: E402
 from provael.campaign import REQUIRED_PROVENANCE, provenance_gaps  # noqa: E402
 from provael.endpoints import PHYSICAL_HAZARD  # noqa: E402
-from provael.scoring.asr import endpoint_by_attack, semantic_role  # noqa: E402
+from provael.report import ended_cell  # noqa: E402
+from provael.scoring.asr import (  # noqa: E402
+    arm_episodes,
+    endpoint_by_attack,
+    semantic_role,
+    task_success_by_attack,
+)
 from provael.scoring.paired import (  # noqa: E402
     cluster_bootstrap_ci,
+    floor_cluster_bootstrap_ci,
     holm_bonferroni,
+    independent_difference_ci,
     paired_by_attack,
+    paired_differences,
     pairs_share_init_state,
 )
 from provael.types import AttackResult  # noqa: E402
@@ -63,11 +72,28 @@ def _pct(x: float) -> str:
     return f"{100.0 * x:.0f}%"
 
 
+def _pp(x: float) -> str:
+    """A difference in whole percentage points with its sign: ``+82``, ``-9``, ``0``.
+
+    A nonzero value that would round to 0 keeps one decimal (``+0.3``), so a bound that stops just
+    short of zero is never printed as touching it.
+    """
+    points = round(100.0 * x)
+    if points == 0:
+        return "0" if x == 0 else f"{100.0 * x:+.1f}"
+    return f"{points:+d}"
+
+
+def _shard_dirs(run_dir: Path) -> list[Path]:
+    """``run_dir`` itself when it holds a ``report.json``, else each child directory that does."""
+    if (run_dir / "report.json").exists():
+        return [run_dir]
+    return sorted(p.parent for p in run_dir.glob("*/report.json"))
+
+
 def _load_shards(run_dir: Path) -> list[tuple[Path, dict[str, Any], dict[str, Any] | None]]:
     """``(shard_dir, report, manifest)`` for every ``report.json`` under ``run_dir``."""
-    candidates = [run_dir] if (run_dir / "report.json").exists() else sorted(
-        p.parent for p in run_dir.glob("*/report.json")
-    )
+    candidates = _shard_dirs(run_dir)
     shards = []
     for shard in candidates:
         report = json.loads((shard / "report.json").read_text(encoding="utf-8"))
@@ -119,6 +145,289 @@ def _pairing(results: list[AttackResult], suite: str) -> str:
     return f"matched (task, seed); starting scenes {scenes}"
 
 
+def _outcomes(
+    arms: list[str], results: list[AttackResult], roles: dict[str, str], schema: int
+) -> list[str]:
+    """Per arm: task success, mean steps and how its episodes ended (P2.1).
+
+    The unsafe rate says how often an arm left the envelope and nothing about what the policy did
+    otherwise. An arm can sit at the floor because the policy stopped doing the task and ran out
+    the horizon, and only these columns say so. Task success counts the episodes that carry the
+    suite's signal; mean steps and the ending count every applicable episode.
+    """
+    episodes = arm_episodes(results)
+    success = task_success_by_attack(results)
+    # The ending is a schema-9 record. A run whose shards recorded none gets one sentence saying
+    # so, not a column repeating it on every row.
+    recorded = any(arm.terminations is not None for arm in episodes.values())
+    lines = ["", "## Task success and how episodes ended, per arm", ""]
+    if recorded:
+        lines += [
+            "| arm | role | task success | 95% Wilson | mean steps | how episodes ended |",
+            "| --- | --- | ---: | --- | ---: | --- |",
+        ]
+    else:
+        lines += [
+            "| arm | role | task success | 95% Wilson | mean steps |",
+            "| --- | --- | ---: | --- | ---: |",
+        ]
+    for name in arms:
+        role = ROLE_LABEL.get(roles.get(name, "adversarial-treatment"), name)
+        arm = episodes.get(name)
+        if arm is None:
+            ended = " not applicable on this suite |" if recorded else ""
+            lines.append(f"| `{name}` | {role} | **not applicable** | — | — |{ended}")
+            continue
+        stat = success.get(name)
+        if stat is None or stat.rate is None or stat.interval is None:
+            done, ci = "not surfaced", "—"
+        else:
+            done = f"{stat.successes}/{stat.trials} ({_pct(stat.rate)})"
+            ci = f"[{_pct(stat.interval.low)}, {_pct(stat.interval.high)}]"
+        steps = f"{arm.mean_steps:.1f}" if arm.mean_steps is not None else "—"
+        ended = f" {ended_cell(arm.terminations, schema)} |" if recorded else ""
+        lines.append(f"| `{name}` | {role} | {done} | {ci} | {steps} |{ended}")
+    lines += [
+        "",
+        "Task success counts the scored episodes that carry the suite's task-success signal; mean "
+        "steps count every applicable episode, including any left unjudged."
+        + (
+            ""
+            if recorded
+            else f" How each episode ended is not recorded: these shards are report schema "
+            f"{schema}, and `termination` is recorded from schema 9."
+        ),
+    ]
+    return lines
+
+
+def _task_success_grid(
+    tasks: list[str], arms: list[str], by_attack: dict[str, list[AttackResult]]
+) -> list[str]:
+    """The per-task grid again, for task success: completed / episodes carrying the signal."""
+    if len(tasks) < 2 or not any(
+        r.task_success is not None for rows in by_attack.values() for r in rows
+    ):
+        return []
+    header = "| task | " + " | ".join(f"`{a}`" for a in arms) + " |"
+    rule = "| --- |" + " ---: |" * len(arms)
+    lines = ["", "## Per task (task success / episodes with the signal)", "", header, rule]
+    for task in tasks:
+        cells = []
+        for name in arms:
+            rows = [
+                r for r in by_attack.get(name, [])
+                if r.task == task and r.scored and r.task_success is not None
+            ]
+            done = sum(1 for r in rows if r.task_success)
+            cells.append("—" if not rows else f"{done}/{len(rows)}")
+        lines.append(f"| `{task}` | " + " | ".join(cells) + " |")
+    return lines
+
+
+def _competence(reports: list[dict[str, Any]]) -> list[str]:
+    """The competence pre-run, when the shards ran one (``--competence-check``, P2.2).
+
+    Each task's benign pre-run against the floor, and the adversarial arms refused on a task below
+    it: a refused arm has no rows on that task, and this says why rather than leaving a gap.
+    """
+    checks = [r["competence"] for r in reports if r.get("competence")]
+    if not checks:
+        return []
+    shapes = sorted({(c["episodes_per_task"], c["floor"]) for c in checks})
+    episodes = ", ".join(str(n) for n, _ in shapes)
+    floors = ", ".join(_pct(f) for _, f in shapes)
+    lines = [
+        "",
+        "## Competence check",
+        "",
+        f"Before the arms, {episodes} benign episode(s) per task ran at seeds after the run's own; "
+        f"a task whose task success fell below {floors} had its adversarial arms refused. The "
+        "pre-run's episodes enter no rate above.",
+        "",
+        "| task | task success (pre-run) | decision | arms refused |",
+        "| --- | ---: | --- | --- |",
+    ]
+    for check in checks:
+        for task, row in sorted(check["by_task"].items()):
+            stat = row["task_success"]
+            done = f"{stat['successes']}/{stat['trials']} ({_pct(stat['rate'])})"
+            decision = "admitted" if row["admitted"] else "**refused**"
+            refused = ", ".join(f"`{a}`" for a in row["refused"]) or "—"
+            lines.append(f"| `{task}` | {done} | {decision} | {refused} |")
+    return lines
+
+
+def _holm_family(names: list[str], arms: list[str], roles: dict[str, str]) -> str:
+    """Which arms Holm adjusts across, by name: every arm paired against ``none``.
+
+    The family is :func:`paired_by_attack`'s arms, which are every arm but the benign baseline
+    with an applicable episode, harmless-variation controls included. This sentence said "the
+    adversarial arms" while the code adjusted across the controls too (found in the docs batch,
+    #367), so it now names what the code does rather than describing it.
+    """
+    if not names:
+        return "No arm is paired against `none` here, so Holm adjusts nothing."
+    listed = ", ".join(f"`{n}`" for n in names)
+    unpaired = [
+        a for a in arms
+        if a not in names and roles.get(a, "adversarial-treatment") != "benign-control"
+    ]
+    tail = (
+        f" {', '.join(f'`{a}`' for a in unpaired)} had no applicable episode, so "
+        f"{'it has' if len(unpaired) == 1 else 'they have'} no pair and no p-value."
+        if unpaired
+        else ""
+    )
+    if len(names) == 1:
+        return (
+            f"Holm's family is the one arm paired against `none`, {listed}, so its adjusted "
+            f"p-value is its raw one.{tail}"
+        )
+    adversarial = sum(1 for n in names if roles.get(n) == "adversarial-treatment")
+    controls = len(names) - adversarial
+    if not controls:
+        kind = "all of them adversarial"
+    elif not adversarial:
+        kind = "all of them harmless-variation controls"
+    else:
+        kind = (
+            f"{adversarial} adversarial and {controls} harmless-variation "
+            f"control{'s' if controls != 1 else ''} together"
+        )
+    return (
+        f"Holm adjusts across the {len(names)} arms paired against `none`, {kind}: "
+        f"{listed}.{tail}"
+    )
+
+
+def _per_seed(
+    seeds: list[int],
+    tasks: list[str],
+    arms: list[str],
+    by_attack: dict[str, list[AttackResult]],
+) -> list[str]:
+    """Per seed, pooled over tasks: each arm's unsafe count, and its range across seeds (P2.5).
+
+    A single run is one draw. The spread across its own seeds is the smallest yardstick a
+    difference between two runs, two simulators or a simulator and a robot has to clear before it
+    says anything (docs/sim-predicts-real.md). It needs two seeds, and two tasks to pool: on one
+    task a seed's count is a single episode and its range says nothing a rate could.
+    """
+    if len(seeds) < 2 or len(tasks) < 2:
+        return []
+    header = "| seed | " + " | ".join(f"`{a}`" for a in arms) + " |"
+    rule = "| ---: |" + " ---: |" * len(arms)
+    lines = ["", "## Per seed (unsafe / applicable, pooled over tasks)", "", header, rule]
+    rates: dict[str, list[float]] = {a: [] for a in arms}
+    for seed in seeds:
+        cells = []
+        for name in arms:
+            rows = [r for r in by_attack.get(name, []) if r.seed == seed and r.scored]
+            unsafe = sum(1 for r in rows if r.success)
+            if rows:
+                rates[name].append(unsafe / len(rows))
+            cells.append("—" if not rows else f"{unsafe}/{len(rows)}")
+        lines.append(f"| {seed} | " + " | ".join(cells) + " |")
+    spread = []
+    for name in arms:
+        seen = rates[name]
+        if not seen:
+            spread.append("—")
+        elif min(seen) == max(seen):
+            spread.append(f"{_pct(seen[0])} on every seed")
+        else:
+            spread.append(f"{_pct(min(seen))} to {_pct(max(seen))}")
+    lines += [
+        "| range across seeds | " + " | ".join(spread) + " |",
+        "",
+        "Each seed's count pools its tasks, and the range is the lowest and highest of them: the "
+        "within-simulator seed spread. A difference between two runs, two simulators, or a "
+        "simulator and a robot that sits inside it says nothing about either "
+        "([the rule](../../docs/sim-predicts-real.md)).",
+    ]
+    return lines
+
+
+def _configuration(shards: list[Shard]) -> tuple[object, ...]:
+    """What makes two runs one configuration: everything but the release and the date (P2.5).
+
+    The policy and checkpoint, the suite and horizon, whether the predicate was calibrated, the
+    defense the execution manifests record, and the design: every (task, arm, seed) cell with the
+    number of episodes it holds. Read from the raw shards, so a sibling run is compared without
+    parsing its episodes into models.
+    """
+    reports = [r for _, r, _ in shards]
+    cells: dict[tuple[str, str, int], int] = defaultdict(int)
+    for report in reports:
+        for row in report.get("results", []):
+            cells[(str(row["task"]), str(row["attack"]), int(row["seed"]))] += 1
+    return (
+        tuple(sorted({str(r.get("policy")) for r in reports})),
+        tuple(sorted({str(r.get("model")) for r in reports})),
+        tuple(sorted({str(r.get("suite")) for r in reports})),
+        tuple(sorted({str(r.get("horizon")) for r in reports})),
+        tuple(sorted({bool(r.get("calibrated")) for r in reports})),
+        tuple(sorted({str(m.get("defense")) for _, _, m in shards if m is not None})),
+        tuple(sorted(cells.items())),
+    )
+
+
+def _run_to_run(run_dir: Path, shards: list[Shard], arms: list[str]) -> list[str]:
+    """Each other committed run of this configuration, and per arm the difference (P2.5).
+
+    The yardstick for every cross-run, cross-simulator or sim-to-real claim: two runs of one
+    configuration differ by draw alone, so a difference elsewhere has to be read against this.
+    Found by comparing configurations across the sibling results directories, never declared.
+    """
+    key = _configuration(shards)
+    here = _results(shards)
+    lines: list[str] = []
+    for other in sorted(p for p in run_dir.parent.iterdir() if p.is_dir()):
+        if other.resolve() == run_dir.resolve() or not _shard_dirs(other):
+            continue
+        theirs = _load_shards(other)
+        if _configuration(theirs) != key:
+            continue
+        versions = ", ".join(sorted({str(r.get("tool_version")) for _, r, _ in theirs}))
+        where = other.resolve()
+        named = where.relative_to(ROOT).as_posix() if where.is_relative_to(ROOT) else other.name
+        if not lines:
+            lines += ["", "## Run to run"]
+        lines += [
+            "",
+            f"`{named}` ran this configuration on provael {versions} "
+            f"({_dates(theirs)}): the same policy and checkpoint, suite, tasks, arms, seeds, "
+            "horizon, predicate and defense. Per arm, this run's unsafe rate minus that run's:",
+            "",
+            "| arm | this run | that run | difference | 95% interval |",
+            "| --- | ---: | ---: | ---: | --- |",
+        ]
+        there = _results(theirs)
+        for name in arms:
+            mine = [r for r in here if r.attack == name and r.scored]
+            yours = [r for r in there if r.attack == name and r.scored]
+            if not mine or not yours:
+                lines.append(f"| `{name}` | not applicable | not applicable | — | — |")
+                continue
+            a, b = sum(r.success for r in mine), sum(r.success for r in yours)
+            low, high = independent_difference_ci(a, len(mine), b, len(yours))
+            lines.append(
+                f"| `{name}` | {a}/{len(mine)} ({_pct(a / len(mine))}) "
+                f"| {b}/{len(yours)} ({_pct(b / len(yours))}) "
+                f"| {_pp(a / len(mine) - b / len(yours))} pp | [{_pp(low)}, {_pp(high)}] |"
+            )
+    if lines:
+        lines += [
+            "",
+            "The interval is Newcombe's hybrid score for two independent proportions (method 10, "
+            "Statistics in Medicine 1998;17:873): the runs share a configuration and their seeds, "
+            "not their draws. Read a difference against the per-seed range above; one inside it is "
+            "what a single run varies by on its own.",
+        ]
+    return lines
+
+
 def render(run_dir: Path) -> str:
     shards = _load_shards(run_dir)
     results = _results(shards)
@@ -147,6 +456,7 @@ def render(run_dir: Path) -> str:
     # Paired statistics: from aggregate.json when the sweep script wrote one (the same functions),
     # else computed here — same code path, same numbers.
     paired = paired_by_attack(results)
+    differences = paired_differences(results)
     names = [a for a in arms if a in paired] or sorted(paired)
     holm: dict[str, tuple[float, bool]] = {}
     if names:
@@ -173,9 +483,9 @@ def render(run_dir: Path) -> str:
         "",
         "## Result",
         "",
-        "| arm | role | pooled | 95% Wilson | McNemar vs `none` | Holm | task-clustered 95% CI "
-        "| verdict |",
-        "| --- | --- | ---: | --- | ---: | ---: | --- | --- |",
+        "| arm | role | pooled | 95% Wilson | McNemar vs `none` | Holm | difference vs `none` "
+        "(95%) | task-clustered 95% CI | verdict |",
+        "| --- | --- | ---: | --- | ---: | ---: | --- | --- | --- |",
     ]
     for name in arms:
         rows = by_attack.get(name, [])
@@ -190,7 +500,7 @@ def render(run_dir: Path) -> str:
         if not applicable:
             lines.append(
                 f"| `{name}` | {ROLE_LABEL.get(role, role)} | **not applicable** ({na} records) "
-                "| — | — | — | — | not measured on this suite |"
+                "| — | — | — | — | — | not measured on this suite |"
             )
             continue
         lo, hi = wilson_ci(successes, len(applicable))
@@ -212,28 +522,45 @@ def render(run_dir: Path) -> str:
                 ci_txt = "— (degenerate: no discordant tasks)"
             adj, rej = holm.get(name, (float("nan"), False))
             verdict = "**survives**" if rej else "rejected"
+            diff = differences[name]
+            diff_txt = f"{_pp(diff.estimate)} pp [{_pp(diff.low)}, {_pp(diff.high)}]"
             lines.append(
                 f"| `{name}` | {ROLE_LABEL[role]} | {pooled}{suffix} | [{_pct(lo)}, {_pct(hi)}] "
                 f"| p={m.p_value:.2g} ({m.attack_only}–{m.benign_only}) | {adj:.2g} "
-                f"| {ci_txt} | {verdict} |"
+                f"| {diff_txt} | {ci_txt} | {verdict} |"
+            )
+        elif role == "benign-control":
+            # The floor's own task-clustered interval (P2.4): the attacks' one resamples tasks,
+            # and the floor they are read against clusters by task in the same way.
+            floor_ci = floor_cluster_bootstrap_ci(results) if len(tasks) >= 2 else None
+            if floor_ci is not None:
+                floor_txt = f"[{_pct(floor_ci[0])}, {_pct(floor_ci[1])}]"
+            elif len(tasks) < 2:
+                floor_txt = "— (single task)"
+            else:
+                floor_txt = "— (degenerate: every task scored alike)"
+            lines.append(
+                f"| `{name}` | {ROLE_LABEL.get(role, role)} | {pooled}{suffix} "
+                f"| [{_pct(lo)}, {_pct(hi)}] | — | — | — | {floor_txt} "
+                "| the floor every treatment is read against |"
             )
         else:
             lines.append(
                 f"| `{name}` | {ROLE_LABEL.get(role, role)} | {pooled}{suffix} "
-                f"| [{_pct(lo)}, {_pct(hi)}] | — | — | — | "
-                + (
-                    "the floor every treatment is read against |"
-                    if role == "benign-control"
-                    else "enters neither the ASR nor the floor |"
-                )
+                f"| [{_pct(lo)}, {_pct(hi)}] | — | — | — | — | "
+                "enters neither the ASR nor the floor |"
             )
     lines += [
         "",
         f"McNemar is paired at {_pairing(results, suite)}. It runs against the benign arm; the "
-        "pair counts are attack-only–benign-only discordant episodes. Holm adjusts across the "
-        "adversarial arms of this run. The task-clustered interval resamples whole tasks (an "
-        "attack that works on one task works on all its seeds), so it is the honest width; it "
-        "needs at least two tasks.",
+        "pair counts are attack-only–benign-only discordant episodes. "
+        f"{_holm_family(names, arms, roles)} The difference is the arm's unsafe rate minus the "
+        "benign arm's over the same pairs, in percentage points, with Newcombe's score interval "
+        "for paired proportions (method 10, Statistics in Medicine 1998;17:2635), built from the "
+        "table McNemar reads; it is not adjusted for multiplicity. The task-clustered interval "
+        "resamples whole tasks (an attack that works on one task works on all its seeds), so it "
+        "is the honest width, for the benign floor as for the arms; it needs at least two "
+        "tasks.",
     ]
 
     # The second predicate: contact events, beside the envelope exit and never pooled with it.
@@ -281,6 +608,9 @@ def render(run_dir: Path) -> str:
                 f"{ok}/{len(benign)} ({_pct(ok / len(benign))}). A policy that cannot do the task "
                 "has no task to lose under an arm; read every rate above against this.",
             ]
+    schema = min(int(r.get("schema_version", 1)) for r in reports)
+    lines += _outcomes(arms, results, roles, schema)
+    lines += _competence(reports)
 
     # Per-task grid
     if len(tasks) > 1:
@@ -294,6 +624,9 @@ def render(run_dir: Path) -> str:
                 unsafe = sum(1 for r in rows if r.success)
                 cells.append("—" if not rows else f"{unsafe}/{len(rows)}")
             lines.append(f"| `{task}` | " + " | ".join(cells) + " |")
+    lines += _task_success_grid(tasks, arms, by_attack)
+    lines += _per_seed(seeds, tasks, arms, by_attack)
+    lines += _run_to_run(run_dir, shards, arms)
 
     shard_names = [
         f"`{(s.relative_to(run_dir) if s != run_dir else Path('.'))}/report.json`"

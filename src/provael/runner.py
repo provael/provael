@@ -31,7 +31,7 @@ from provael import __version__
 from provael.attacks.base import Attack
 from provael.attacks.gradient_patch import GradientOracleAttack
 from provael.attacks.optimized import OracleAttack, SchemaAwareAttack, ZoneAwareAttack
-from provael.attacks.registry import resolve_attacks
+from provael.attacks.registry import FAMILIES, make_attack, resolve_attacks
 from provael.attacks.weight_integrity import SensitivityReferencePolicy, WeightIntegrityAttack
 from provael.calibration import Calibration, anytime_ci, binding_status, wilson_ci
 from provael.config import RunConfig
@@ -45,6 +45,7 @@ from provael.policies.base import InputGradientProvider, PolicyAdapter
 from provael.policies.registry import make_policy
 from provael.scoring.asr import (
     BASELINE_FAMILY,
+    CONTROL_FAMILY,
     adversarial_asr,
     asr_std,
     by_attack,
@@ -53,6 +54,7 @@ from provael.scoring.asr import (
     compute_rates,
     matched_benign_fpr,
     overall_stat,
+    rate_stat,
     semantic_role,
 )
 from provael.scoring.failure import GraspTrace, failure_cause
@@ -72,6 +74,9 @@ from provael.types import (
     Action,
     AttackResult,
     CalibrationMeta,
+    CompetenceCheck,
+    CompetenceEpisode,
+    CompetenceTask,
     Decision,
     EaiTag,
     EpisodeCoverage,
@@ -672,6 +677,69 @@ def run_episode(
     )
 
 
+class CompetenceCheckError(ValueError):
+    """``--competence-check`` cannot be applied: with ``--resume``, or on a suite with no signal."""
+
+
+def _competence_check(
+    config: RunConfig,
+    policy: PolicyAdapter,
+    suite: SuiteAdapter,
+    task: str,
+    attacks: list[Attack],
+    defense: Defense | None,
+) -> CompetenceTask | None:
+    """The competence pre-run on ``task``: can the policy do it before it is attacked (P2.2)?
+
+    ``config.competence_check`` benign episodes, at the seeds after the run's own so no scored
+    episode is reused to decide what gets scored, with the run's defense in place and under its
+    termination mode, so the pre-run sees the conditions the benign arm runs under. A task whose
+    task success falls below ``config.competence_floor`` has its adversarial arms refused: a 0%
+    rate on a policy that cannot do the task unattacked measures nothing. The benign arm and the
+    harmless-variation controls still run, so the floor and the release verdict's own competence
+    criterion see the task. None when the run asked for no check.
+
+    Raises:
+        CompetenceCheckError: when no pre-run episode carries a task-success signal, so the check
+            cannot be judged at all.
+    """
+    if config.competence_check is None:
+        return None
+    benign = make_attack(FAMILIES[BASELINE_FAMILY][0])
+    first = config.seed + config.episodes // config.episodes_per_seed
+    episodes = [
+        run_episode(
+            policy, suite, benign, task, first + i, config.horizon,
+            defense=defense, record_errors=config.record_episode_errors,
+            termination=config.termination,
+        )
+        for i in range(config.competence_check)
+    ]
+    signalled = [e for e in episodes if e.task_success is not None]
+    if not signalled:
+        raise CompetenceCheckError(
+            f"--competence-check: suite {config.suite!r} surfaced no task-success signal on "
+            f"{task!r}, so whether the policy can do the task cannot be judged; drop the flag "
+            "on this suite"
+        )
+    stat = rate_stat(sum(1 for e in signalled if e.task_success), len(signalled))
+    admitted = stat.rate is not None and stat.rate >= config.competence_floor
+    return CompetenceTask(
+        task_success=stat,
+        admitted=admitted,
+        refused=[] if admitted else [
+            a.name for a in attacks if a.family not in (BASELINE_FAMILY, CONTROL_FAMILY)
+        ],
+        episodes=[
+            CompetenceEpisode(
+                seed=e.seed, init_state=e.init_state, task_success=e.task_success,
+                termination=e.termination, steps=e.steps,
+            )
+            for e in episodes
+        ],
+    )
+
+
 def run(
     config: RunConfig,
     calibrations: dict[str, Calibration] | None = None,
@@ -755,6 +823,11 @@ def run(
     # Checked against the run's tasks, seeds and arms before the policy loads, and then against
     # the suite, which needs a fixed list of initial states to load a named one.
     init_plan = _init_state_plan(config, tasks, attacks)
+    if config.competence_check is not None and ledger_path is not None:
+        raise CompetenceCheckError(
+            "--competence-check cannot be combined with --resume: a resumed run would run the "
+            "pre-run again on new episodes and could admit a task the first attempt refused"
+        )
     if init_plan is not None and not suite.choose_init_state(None):
         raise NotImplementedError(
             f"--init-states names the initial state of each episode, and suite {config.suite!r} "
@@ -816,11 +889,20 @@ def run(
         init_plan is not None and init_plan.per_seed
     )
     cell_scenes: dict[tuple[str, int], tuple[str, int | None, str | None]] = {}
+    competence: dict[str, CompetenceTask] = {}
     for task in tasks:
         sim_models[task] = suite.sim_model_digest(task)
         # Re-point the spatial search at THIS task's geometry before anything runs against it.
         _configure_zones(attacks, suite, task)
+        # The competence pre-run (P2.2): a task the policy cannot do unattacked runs no
+        # adversarial arm. None when the run asked for no check.
+        checked = _competence_check(config, policy, suite, task, attacks, defense)
+        if checked is not None:
+            competence[task] = checked
+        refused = set(checked.refused) if checked is not None else set()
         for attack in attacks:
+            if attack.name in refused:
+                continue
             # Two nested loops, not one. `episodes` is the TOTAL per (task, attack) and
             # `episodes_per_seed` splits it into distinct seeds x repeats at each seed, so a report
             # can separate initial-state variation from policy stochasticity. At the default
@@ -1002,6 +1084,15 @@ def run(
         # from the same episodes and the same filters (P1.6).
         rates=compute_rates(results, suite=config.suite, termination=config.termination),
         predicates=predicates,
+        competence=(
+            CompetenceCheck(
+                episodes_per_task=config.competence_check,
+                floor=config.competence_floor,
+                by_task=competence,
+            )
+            if config.competence_check is not None
+            else None
+        ),
         by_attack=attack_breakdown,
         by_task=by_task(results),
         eai={
@@ -1015,6 +1106,7 @@ def run(
 
 
 __all__ = [
+    "CompetenceCheckError",
     "InitStatePlanError",
     "ResumeModeError",
     "ScenePinError",

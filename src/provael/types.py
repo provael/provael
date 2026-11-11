@@ -617,6 +617,54 @@ class RateStat(BaseModel):
         return self
 
 
+class DifferenceInterval(BaseModel):
+    """An interval for a difference of two rates, named by its method (schema 9, P2.4)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    method: str = Field(..., description="How it was computed, e.g. Newcombe's paired score.")
+    level: float = Field(..., gt=0.0, lt=1.0, description="Nominal coverage, e.g. 0.95.")
+    low: float = Field(..., ge=-1.0, le=1.0)
+    high: float = Field(..., ge=-1.0, le=1.0)
+
+    @model_validator(mode="after")
+    def _ordered(self) -> DifferenceInterval:
+        if self.low > self.high:
+            raise ValueError(f"interval low {self.low} is above high {self.high}")
+        return self
+
+
+class PairedDifferenceStat(BaseModel):
+    """An arm's rate minus its benign twins' over the cells they share (schema 9, P2.4).
+
+    The whole paired 2x2 table travels with the interval: ``attack_only`` and ``benign_only`` are
+    McNemar's discordant counts b and c, and ``pairs`` is n. The validator refuses a table that
+    does not add up and an estimate that is not ``(b - c) / n``.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    pairs: int = Field(..., ge=1, description="n: the (task, seed) cells both arms share.")
+    both: int = Field(..., ge=0, description="Cells where the arm and its twin both left.")
+    attack_only: int = Field(..., ge=0, description="b: the arm left, its benign twin did not.")
+    benign_only: int = Field(..., ge=0, description="c: the benign twin left, the arm did not.")
+    neither: int = Field(..., ge=0, description="Cells where neither left.")
+    estimate: float = Field(..., ge=-1.0, le=1.0, description="(b - c) / n.")
+    interval: DifferenceInterval
+
+    @model_validator(mode="after")
+    def _consistent(self) -> PairedDifferenceStat:
+        if self.both + self.attack_only + self.benign_only + self.neither != self.pairs:
+            raise ValueError("the paired table's cells do not add up to its pairs")
+        expected = (self.attack_only - self.benign_only) / self.pairs
+        if abs(self.estimate - expected) > RATE_TOLERANCE:
+            raise ValueError(f"estimate {self.estimate} disagrees with (b - c) / n = {expected}")
+        low, high = self.interval.low - RATE_TOLERANCE, self.interval.high + RATE_TOLERANCE
+        if not low <= self.estimate <= high:
+            raise ValueError(f"estimate {self.estimate} lies outside its interval")
+        return self
+
+
 class ReportRates(BaseModel):
     """Every rate a report publishes, each as a :class:`RateStat` (schema 9, P1.6).
 
@@ -647,6 +695,76 @@ class ReportRates(BaseModel):
     )
     by_attack: dict[str, RateStat] = Field(default_factory=dict)
     by_task: dict[str, RateStat] = Field(default_factory=dict)
+    task_success_by_attack: dict[str, RateStat] = Field(
+        default_factory=dict,
+        description="Per arm: task success over its episodes that carry a task-success signal. "
+        "An arm that leaves the envelope rarely can still stop doing the task, which an unsafe "
+        "rate alone cannot show. Arms whose episodes carry no signal are absent, never 0%.",
+    )
+    clean_task_success_by_task: dict[str, RateStat] = Field(
+        default_factory=dict,
+        description="Per task: the benign arm's task success (clean task success, task by task), "
+        "the competence each task's attack rates are read against. Tasks whose benign episodes "
+        "carry no signal are absent, never 0%.",
+    )
+    paired_difference: dict[str, PairedDifferenceStat] = Field(
+        default_factory=dict,
+        description="Per arm paired with the benign arm: its rate minus its twins' over the "
+        "(task, seed) cells they share, with Newcombe's paired score interval and the table it "
+        "came from. Matched on task and seed, which is not a shared starting scene on an unpinned "
+        "LIBERO run (E-2026-19). Arms with no shared cell are absent.",
+    )
+
+
+class CompetenceEpisode(BaseModel):
+    """One benign episode of the competence pre-run (P2.2): its seed, scene, ending and result."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    seed: int
+    init_state: int | None = Field(None, description="The fixed initial state its reset loaded.")
+    task_success: bool | None = Field(
+        ..., description="Whether it completed the task; None where the suite surfaced no signal."
+    )
+    termination: Termination | None = Field(None, description="How it ended (schema 9).")
+    steps: int = Field(..., ge=0, description="Steps it executed.")
+
+
+class CompetenceTask(BaseModel):
+    """The competence check on one task: the pre-run's task success and what it admitted (P2.2)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    task_success: RateStat = Field(
+        ...,
+        description="Pre-run episodes that completed the task over those carrying the signal, "
+        "with the Wilson interval. Compared with the floor as a point rate.",
+    )
+    admitted: bool = Field(
+        ..., description="True when task success met the floor, so every arm ran on the task."
+    )
+    refused: list[str] = Field(
+        default_factory=list,
+        description="The adversarial arms not run on this task because it fell below the floor. "
+        "The benign arm and the harmless-variation controls still ran.",
+    )
+    episodes: list[CompetenceEpisode] = Field(default_factory=list)
+
+
+class CompetenceCheck(BaseModel):
+    """``--competence-check``: benign episodes per task before the arms, and the floor (P2.2).
+
+    The pre-run asks whether the policy can do the task at all before an attack is read against
+    it: a 0% rate on a policy that cannot act measures nothing. Its episodes run at seeds after the
+    run's own and enter no rate; a task below the floor has its adversarial arms refused, and the
+    refusal is recorded here rather than left as missing rows.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    episodes_per_task: int = Field(..., ge=1, description="Benign pre-run episodes per task.")
+    floor: float = Field(..., ge=0.0, le=1.0, description="The task-success floor applied.")
+    by_task: dict[str, CompetenceTask] = Field(default_factory=dict)
 
 
 class ScenePairing(BaseModel):
@@ -1251,9 +1369,10 @@ class RunReport(BaseModel):
         "how each episode ended (`termination`, `verdict`, `observation`); an unjudged episode "
         "is excluded from every rate, and `rates` carries every rate with its counts, interval "
         "method and level, and `predicates` names each task's predicate; `termination_mode` "
-        "says whether episodes stopped at their first event or ran to the horizon, and each "
+        "says whether episodes stopped at their first event or ran to the horizon, each "
         "episode records its `failure_cause` and what the policy was handed "
-        "(`delivered_inputs`). "
+        "(`delivered_inputs`), and `competence` records the competence pre-run when a run "
+        "asks for one. "
         "Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed "
         "a calibration, because its trajectories do not exist.",
     )
@@ -1369,6 +1488,12 @@ class RunReport(BaseModel):
         description="Per task: the unsafe predicate it was scored against (kind, boxes or "
         "threshold, source and calibration file with its sha256), the success predicate, and one "
         "digest (schema >= 9). A task whose suite cannot say is absent, never guessed.",
+    )
+    competence: CompetenceCheck | None = Field(
+        None,
+        description="The competence check, when the run asked for one (`--competence-check`): per "
+        "task, the benign pre-run's task success against the floor and the adversarial arms "
+        "refused on a task below it. The pre-run's episodes enter no rate (schema >= 9).",
     )
 
     by_attack: dict[str, ASRStat] = Field(default_factory=dict)

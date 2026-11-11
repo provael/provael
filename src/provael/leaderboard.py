@@ -33,6 +33,7 @@ from provael.calibration import wilson_ci
 from provael.policies.stub import ATTACKABLE_OBS_FIELDS
 from provael.report import REPORT_JSON, load_report
 from provael.scoring.action import ACTION_DIRECTIVE_KEY
+from provael.scoring.paired import task_bootstrap_ci
 from provael.suites.stub import BASE_INSTRUCTION, StubSuite
 from provael.types import RunReport
 
@@ -104,6 +105,25 @@ class LeaderboardRow(BaseModel):
         "An ASR is a difference against this floor, so publishing an interval on one term and a "
         "point on the other invites a comparison the data does not support.",
     )
+    tasks: int | None = Field(
+        None,
+        description="Distinct tasks behind this row's rate: the clusters `clustered_ci95` "
+        "resamples. Schema 7.",
+    )
+    clustered_ci95: tuple[float, float] | None = Field(
+        None,
+        description="95% percentile interval on `asr` from resampling TASKS rather than episodes "
+        "(provael.scoring.paired.task_bootstrap_ci, seeded, 2000 draws). Episodes within a task "
+        "are correlated, so on a suite of tasks the episode-level `ci95` is too narrow. None when "
+        "the row spans fewer than two tasks or every task scored alike, where a resample is a "
+        "zero-width interval carrying no information. Schema 7.",
+    )
+    benign_clustered_ci95: tuple[float, float] | None = Field(
+        None,
+        description="The same task-clustered interval for the benign floor (`benign_fpr`), so the "
+        "floor is published to the same standard as the rate. None as for `clustered_ci95`, or "
+        "when no baseline family reached this policy x suite. Schema 7.",
+    )
     transfer_status: str = Field(
         STUB_SCAFFOLDING, description="'real-transfer' or 'stub-scaffolding' (see transfer_status)."
     )
@@ -170,11 +190,13 @@ class Leaderboard(BaseModel):
     #: so a row carries the qualifiers its own report always had - the board was the one place they
     #: were dropped, which is precisely where a number is read furthest from its source. 5 -> 6:
     #: added per-row ``benign_successes`` / ``benign_attempts`` / ``benign_ci95``, so the control
-    #: arm is published to the same standard as the rate it qualifies. Every bump is additive with
-    #: defaults, so an older board still loads - and every added field is registered in
-    #: ``_FIELDS_ADDED_IN`` / ``_ROW_FIELDS_ADDED_IN`` or it silently invalidates every signature
-    #: ever issued.
-    schema_version: int = 6
+    #: arm is published to the same standard as the rate it qualifies. 6 -> 7: added per-row
+    #: ``tasks`` / ``clustered_ci95`` / ``benign_clustered_ci95``, the task-clustered intervals on
+    #: the rate and the floor, because a ten-task row's episode-level interval is too narrow. Every
+    #: bump is additive with defaults, so an older board still loads - and every added field is
+    #: registered in ``_FIELDS_ADDED_IN`` / ``_ROW_FIELDS_ADDED_IN`` or it silently invalidates
+    #: every signature ever issued.
+    schema_version: int = 7
     is_demo: bool = Field(..., description="True when every aggregated run used the stub policy.")
     rows: list[LeaderboardRow] = Field(default_factory=list)
     examples: list[AttackExample] = Field(default_factory=list)
@@ -367,6 +389,8 @@ def aggregate(
     inventing provenance the artifact never carried.
     """
     buckets: dict[tuple[str, str, str], list[int]] = {}
+    #: Each bucket's scored outcomes by task: what its task-clustered interval resamples.
+    clusters: dict[tuple[str, str, str], dict[str, list[bool]]] = {}
     attack_names: set[str] = set()
     #: Attacks with at least one applicable episode anywhere. Anything in `attack_names` but not
     #: here was attempted and never measured — see `Leaderboard.not_applicable`.
@@ -392,6 +416,7 @@ def aggregate(
             tally = buckets.setdefault(key, [0, 0])
             tally[0] += 1
             tally[1] += int(result.success)
+            clusters.setdefault(key, {}).setdefault(result.task, []).append(result.success)
 
     # The benign control per (policy, suite): the baseline ('none') family's counts AND rate.
     # Counts, not just the rate — they are what lets the row carry an interval, and they come
@@ -426,6 +451,8 @@ def aggregate(
         calibrated, stochastic, checkpoint = _qualifiers(policy, suite)
         b_succ, b_att = baseline_arm.get((policy, suite), (0, 0))
         has_benign = (policy, suite) in baseline_arm
+        by_task = clusters[(policy, suite, family)]
+        benign_by_task = clusters.get((policy, suite, "baseline"), {})
         rows.append(
             LeaderboardRow(
                 policy=policy,
@@ -439,6 +466,9 @@ def aggregate(
                 benign_successes=b_succ if has_benign else None,
                 benign_attempts=b_att if has_benign else None,
                 benign_ci95=wilson_ci(b_succ, b_att) if has_benign else None,
+                tasks=len(by_task),
+                clustered_ci95=task_bootstrap_ci(by_task),
+                benign_clustered_ci95=task_bootstrap_ci(benign_by_task) if has_benign else None,
                 transfer_status=transfer_status(policy, suite),
                 submitted_by=submitted_by,
                 provenance=provenance,
@@ -666,6 +696,7 @@ _FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
 _ROW_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     5: ("calibrated", "stochastic", "checkpoint"),
     6: ("benign_successes", "benign_attempts", "benign_ci95"),
+    7: ("tasks", "clustered_ci95", "benign_clustered_ci95"),
 }
 
 

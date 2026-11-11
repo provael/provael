@@ -131,8 +131,10 @@ def _per_attack(report: RunReport) -> list[dict[str, Any]]:
 
 def _ran_instruction_family(report: RunReport) -> bool:
     """Whether an instruction-channel arm ran, so its framing limitation is stated only then."""
+    from provael.attacks.registry import INSTRUCTION_CHANNEL_FAMILIES
+
     families = {r.family for r in report.results}
-    return bool(families & {"instruction", "optimized_instruction"})
+    return bool(families & set(INSTRUCTION_CHANNEL_FAMILIES))
 
 
 def build_evidence_manifest(

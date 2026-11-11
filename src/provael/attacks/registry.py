@@ -378,16 +378,64 @@ def resolve_attacks(tokens: list[str]) -> list[Attack]:
     return [make_attack(name) for name in resolved_names]
 
 
+#: The families that perturb the instruction text, the channel the harmless-variation controls are
+#: built against: each control rewords, scrambles, empties or re-frames the instruction, so it is
+#: the yardstick an instruction-channel rate is read beside. The evidence manifest states its
+#: framing limitation when one of these ran, and ``provael attack`` adds the controls when one is
+#: in the run (:func:`with_controls`).
+INSTRUCTION_CHANNEL_FAMILIES: tuple[str, ...] = (INSTRUCTION_FAMILY, OPTIMIZED_INSTRUCTION_FAMILY)
+
+
+def attack_names(tokens: list[str]) -> list[str]:
+    """The attack names ``tokens`` resolve to, in order, skipping any name the registry lacks.
+
+    Unknown tokens are skipped rather than raised: :func:`resolve_attacks` refuses them with the
+    full list of what exists, which is the message a caller should see.
+    """
+    names: list[str] = []
+    for token in tokens:
+        for name in FAMILIES.get(token, [token]):
+            if name in ATTACKS and name not in names:
+                names.append(name)
+    return names
+
+
+def with_controls(tokens: list[str]) -> list[str]:
+    """``tokens`` with the benign baseline and the control family, when an instruction arm is in it.
+
+    An instruction-channel rate means little on its own: it is read against the benign floor and
+    against harmless variations of the same instruction, and on SmolVLA x LIBERO the controls are
+    what showed the roleplay result is fragility rather than attacker control (E-2026-12). So when
+    any token resolves to a member of :data:`INSTRUCTION_CHANNEL_FAMILIES`, the benign baseline
+    (``none``) goes first unless it is already there and the ``control`` family goes last unless
+    every member already is. Anything else is returned unchanged. Idempotent; the controls are read
+    from :data:`FAMILIES`, so the count is whatever the registry holds.
+    """
+    names = attack_names(tokens)
+    family_of = {name: family for family, members in FAMILIES.items() for name in members}
+    if not any(family_of.get(name) in INSTRUCTION_CHANNEL_FAMILIES for name in names):
+        return list(tokens)
+    out = list(tokens)
+    if not set(FAMILIES[BASELINE_FAMILY]) <= set(names):
+        out = [*FAMILIES[BASELINE_FAMILY], *out]
+    if not set(FAMILIES[CONTROL_FAMILY]) <= set(names):
+        out = [*out, CONTROL_FAMILY]
+    return out
+
+
 __all__ = [
     "ATTACKS",
     "FAMILIES",
     "FAMILY_STATUS_CONTROL",
     "FAMILY_STATUS_FIXTURE_ONLY",
     "FAMILY_STATUS_MEASURED",
+    "INSTRUCTION_CHANNEL_FAMILIES",
     "MEASURED_FAMILIES",
+    "attack_names",
     "available_attacks",
     "available_families",
     "family_status",
     "make_attack",
     "resolve_attacks",
+    "with_controls",
 ]

@@ -293,6 +293,17 @@ implemented and what is not.
 `none` is the benign control — it never perturbs anything, so its ASR is the false-positive floor
 every other rate is read against.
 
+## Controls run by default with an instruction-channel arm
+
+`provael attack` adds `none` and the `control` family (the harmless-variation arms; `provael
+list-attacks` lists them) to any run that includes an instruction-channel family, `instruction` or
+`optimized_instruction`, whether the arms came from `--attacks`, a recipe or the default, and it
+names the arms it added. `--no-controls` runs only the arms named. The adversarial ASR excludes both
+by role, so they never move it. What they add is the reading above, and per arm the task success,
+mean steps and how the episodes ended, which `report.md` and the results READMEs print beside the
+unsafe rate: in the 14 September control run `benign_reword` left the envelope in 0 of 30 episodes
+and completed the task in 5 of 30, which an exit rate alone cannot show.
+
 ## Coverage: registered is not validated
 
 > *Moved here from the repository README on 20 September 2026, when the README was cut to what a new reader needs. The text is as it stood there; links were re-pointed.*

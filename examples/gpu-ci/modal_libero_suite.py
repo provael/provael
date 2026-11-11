@@ -183,6 +183,19 @@ ATTACKS = "none,instruction,visual,injection"
 PROVAEL_PIN = "0.47.0"
 PROVAEL = f"provael[lerobot]=={PROVAEL_PIN}"
 
+#: The newest provael RELEASE whose `attack` neither adds controls by itself nor takes
+#: `--no-controls`; both reached main after it. A past release, so it never needs updating. From the
+#: next release `provael attack` adds `none` and the `control` family to any run with an
+#: instruction-channel arm unless told not to, and every stage below is costed arm by arm, so the
+#: command passes `--no-controls` once PROVAEL_PIN is past this. A stage that wants the controls
+#: names them, as `control` does.
+LAST_RELEASE_WITHOUT_NO_CONTROLS = "0.47.0"
+
+
+def _release(version: str) -> tuple[int, ...]:
+    """``0.47.0`` as ``(0, 47, 0)``; the pin is an exact release (tests/test_gpu_image_pin.py)."""
+    return tuple(int(part) for part in version.split("."))
+
 
 def _pin_commit() -> str | None:
     """Commit of the tag the container installs from PyPI, resolved on the driver machine.
@@ -724,6 +737,10 @@ def redteam(stage: str, task: str | None = None) -> str:
     # release predates the flag.
     if "pin_init_states" in cfg:
         cmd += ["--pin-init-states", cfg["pin_init_states"]]
+    # A stage runs exactly the arms it names (see LAST_RELEASE_WITHOUT_NO_CONTROLS): the planned
+    # episode count printed below and the plan step's ceiling are both worked out from them.
+    if _release(PROVAEL_PIN) > _release(LAST_RELEASE_WITHOUT_NO_CONTROLS):
+        cmd += ["--no-controls"]
     # Say which stage the CONTAINER thinks it is running. The stage bug above was invisible
     # precisely because nothing in the output named the stage, so a wrong-stage run read as a
     # right one.

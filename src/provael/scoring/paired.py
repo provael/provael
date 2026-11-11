@@ -51,12 +51,14 @@ binomial interval is the purest form of that mistake.
 
 from __future__ import annotations
 
+import math
 import random
 from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from math import comb
 
+from provael.calibration import wilson_ci
 from provael.scoring.asr import is_baseline
 from provael.types import AttackResult, ScenePairing
 
@@ -173,16 +175,17 @@ def scene_pairing(
     )
 
 
-def paired_by_attack(
+def _paired_cells(
     results: list[AttackResult], *, baseline_attack: str = BASELINE_ATTACK
-) -> dict[str, McNemarResult]:
-    """Compare every adversarial attack against its benign twin at the same ``(task, seed)``.
+) -> dict[str, list[tuple[bool, bool]]]:
+    """Per attack: ``(attack flagged, benign twin flagged)`` for each cell both arms share.
 
-    Episodes are matched on ``(task, seed)``, which on an unpinned LIBERO run does not make them the
-    same starting scene (:func:`pairs_share_init_state`, E-2026-19). When a cell holds several
-    repeats (``episodes_per_seed > 1``) the cell is reduced to "was this cell ever flagged", because
-    the pairing is between CELLS: repeats within a cell are not independent pairs and counting them
-    as such would inflate the discordant count and the apparent significance.
+    THE ONE REDUCTION every paired statistic reads. A cell is a ``(task, seed)``; when it holds
+    several repeats (``episodes_per_seed > 1``) it is reduced to "was this cell ever flagged",
+    because the pairing is between CELLS: repeats within a cell are not independent pairs, and
+    counting them as such would inflate the discordant count and the apparent significance.
+    Attacks are every scored arm but the benign baseline, in sorted order; an attack sharing no
+    cell with the benign arm is absent.
     """
     def cells(predicate: Callable[[AttackResult], bool]) -> dict[tuple[str, int], bool]:
         out: dict[tuple[str, int], bool] = {}
@@ -196,9 +199,8 @@ def paired_by_attack(
     benign = cells(lambda r: r.attack == baseline_attack)
     if not benign:
         return {}
-
     attacks = sorted({r.attack for r in results if not is_baseline(r) and r.scored})
-    out: dict[str, McNemarResult] = {}
+    paired: dict[str, list[tuple[bool, bool]]] = {}
     for attack in attacks:
 
         def matches(r: AttackResult, wanted: str = attack) -> bool:
@@ -206,18 +208,146 @@ def paired_by_attack(
 
         attacked = cells(matches)
         shared = sorted(set(attacked) & set(benign))
-        if not shared:
-            continue
-        a_only = sum(1 for c in shared if attacked[c] and not benign[c])
-        b_only = sum(1 for c in shared if benign[c] and not attacked[c])
-        both = len(shared) - a_only - b_only
+        if shared:
+            paired[attack] = [(attacked[c], benign[c]) for c in shared]
+    return paired
+
+
+def paired_by_attack(
+    results: list[AttackResult], *, baseline_attack: str = BASELINE_ATTACK
+) -> dict[str, McNemarResult]:
+    """Compare every adversarial attack against its benign twin at the same ``(task, seed)``.
+
+    Episodes are matched on ``(task, seed)``, which on an unpinned LIBERO run does not make them the
+    same starting scene (:func:`pairs_share_init_state`, E-2026-19). Cells are reduced as
+    :func:`_paired_cells` says.
+    """
+    out: dict[str, McNemarResult] = {}
+    for attack, pairs in _paired_cells(results, baseline_attack=baseline_attack).items():
+        a_only = sum(1 for flagged, twin in pairs if flagged and not twin)
+        b_only = sum(1 for flagged, twin in pairs if twin and not flagged)
         out[attack] = McNemarResult(
             attack=attack,
             attack_only=a_only,
             benign_only=b_only,
-            concordant=both,
+            concordant=len(pairs) - a_only - b_only,
             p_value=mcnemar_exact(a_only, b_only),
         )
+    return out
+
+
+#: The interval :func:`paired_differences` computes. Newcombe RG (1998), "Improved confidence
+#: intervals for the difference between binomial proportions based on paired data", Statistics in
+#: Medicine 17:2635-2650, method 10: a Wilson score interval for each arm's rate, combined through
+#: the phi coefficient of the paired 2x2 table with its numerator continuity-corrected.
+PAIRED_DIFFERENCE_METHOD = "newcombe-score (paired, method 10)"
+
+#: The interval :func:`independent_difference_ci` computes: Newcombe RG (1998), "Interval estimation
+#: for the difference between independent proportions: comparison of eleven methods", Statistics in
+#: Medicine 17:873-890, method 10 (the hybrid score interval).
+INDEPENDENT_DIFFERENCE_METHOD = "newcombe-hybrid-score (independent, method 10)"
+
+def _newcombe(
+    p1: float, l1: float, u1: float, p2: float, l2: float, u2: float, phi: float
+) -> tuple[float, float]:
+    """Newcombe's square-and-add limits for ``p1 - p2`` from each rate's Wilson limits and phi.
+
+    ``phi = 0`` gives the independent-samples hybrid score interval; a phi from a paired table
+    gives the paired form. Both stay inside [-1, 1] whatever phi in [-1, 1] is used.
+    """
+    lower_1, upper_1 = p1 - l1, u1 - p1
+    lower_2, upper_2 = p2 - l2, u2 - p2
+    delta = math.sqrt(max(0.0, lower_1**2 - 2.0 * phi * lower_1 * upper_2 + upper_2**2))
+    epsilon = math.sqrt(max(0.0, upper_1**2 - 2.0 * phi * upper_1 * lower_2 + lower_2**2))
+    difference = p1 - p2
+    return max(-1.0, difference - delta), min(1.0, difference + epsilon)
+
+
+def paired_difference_ci(
+    both: int, attack_only: int, benign_only: int, neither: int
+) -> tuple[float, float]:
+    """95% interval for (attack rate) minus (benign rate) over matched pairs, Newcombe method 10.
+
+    The cells of the paired 2x2 table: ``both`` flagged, ``attack_only`` (McNemar's b),
+    ``benign_only`` (c), ``neither``. Each arm's rate gets its Wilson interval; phi, the
+    correlation of the two arms across pairs, is ``(both*neither - attack_only*benign_only)``
+    over the root of the four margins' product, its numerator reduced by n/2 (not below 0) when
+    it is positive, and 0 when a margin is empty. Subtracting two Wilson intervals instead would
+    ignore that the pairs are paired; the McNemar p-value beside it tests the same pairs.
+
+    Raises:
+        ValueError: on a table with no pairs, which has no difference to bound.
+    """
+    n = both + attack_only + benign_only + neither
+    if n <= 0 or min(both, attack_only, benign_only, neither) < 0:
+        raise ValueError(f"no paired table to bound: {(both, attack_only, benign_only, neither)}")
+    p1, p2 = (both + attack_only) / n, (both + benign_only) / n
+    l1, u1 = wilson_ci(both + attack_only, n)
+    l2, u2 = wilson_ci(both + benign_only, n)
+    margins = (both + attack_only) * (benign_only + neither) * (both + benign_only) * (
+        attack_only + neither
+    )
+    numerator = float(both * neither - attack_only * benign_only)
+    if numerator > 0:
+        numerator = max(numerator - n / 2.0, 0.0)
+    phi = numerator / math.sqrt(margins) if margins else 0.0
+    return _newcombe(p1, l1, u1, p2, l2, u2, phi)
+
+
+def independent_difference_ci(
+    successes_1: int, trials_1: int, successes_2: int, trials_2: int
+) -> tuple[float, float]:
+    """95% interval for rate 1 minus rate 2 from two independent samples (Newcombe's hybrid score).
+
+    For two RUNS of one configuration (P2.5): their episodes share a configuration, not a draw, so
+    they are not pairs of one another and phi is 0. Raises ``ValueError`` when either side has no
+    trials.
+    """
+    if trials_1 <= 0 or trials_2 <= 0:
+        raise ValueError("a difference needs trials on both sides")
+    l1, u1 = wilson_ci(successes_1, trials_1)
+    l2, u2 = wilson_ci(successes_2, trials_2)
+    return _newcombe(successes_1 / trials_1, l1, u1, successes_2 / trials_2, l2, u2, 0.0)
+
+
+@dataclass(frozen=True)
+class PairedDifference:
+    """One arm's rate minus its benign twins' over the cells they share, with Newcombe's interval.
+
+    Carries the whole paired table, so the discordant counts McNemar reads (``attack_only`` is b,
+    ``benign_only`` is c) and ``pairs`` (n) travel with the interval.
+    """
+
+    attack: str
+    both: int
+    attack_only: int
+    benign_only: int
+    neither: int
+    low: float
+    high: float
+
+    @property
+    def pairs(self) -> int:
+        return self.both + self.attack_only + self.benign_only + self.neither
+
+    @property
+    def estimate(self) -> float:
+        """(b - c) / n: the arm's rate minus its twins' over the shared cells."""
+        return (self.attack_only - self.benign_only) / self.pairs
+
+
+def paired_differences(
+    results: list[AttackResult], *, baseline_attack: str = BASELINE_ATTACK
+) -> dict[str, PairedDifference]:
+    """:class:`PairedDifference` per attack, from the cells :func:`paired_by_attack` reads."""
+    out: dict[str, PairedDifference] = {}
+    for attack, pairs in _paired_cells(results, baseline_attack=baseline_attack).items():
+        both = sum(1 for flagged, twin in pairs if flagged and twin)
+        a_only = sum(1 for flagged, twin in pairs if flagged and not twin)
+        b_only = sum(1 for flagged, twin in pairs if twin and not flagged)
+        neither = len(pairs) - both - a_only - b_only
+        low, high = paired_difference_ci(both, a_only, b_only, neither)
+        out[attack] = PairedDifference(attack, both, a_only, b_only, neither, low, high)
     return out
 
 
@@ -251,53 +381,28 @@ def holm_bonferroni(
     return adjusted, [adjusted[i] <= alpha for i in range(n)]
 
 
-def cluster_bootstrap_ci(
-    results: list[AttackResult],
+def task_bootstrap_ci(
+    clusters: Mapping[str, Sequence[bool]],
     *,
-    attack: str | None = None,
     iterations: int = 2000,
     seed: int = 0,
     confidence: float = 0.95,
 ) -> tuple[float, float] | None:
-    """Percentile CI from resampling TASKS, not episodes.
+    """Percentile CI for a pooled rate from resampling TASKS, given each task's outcomes.
 
-    Resampling episodes independently assumes they are independent, and they are not: an attack
-    that works on one task tends to work across every seed of that task. Resampling whole tasks
-    preserves that correlation, so the interval widens to reflect the uncertainty that is really
-    there — most of which comes from having run few tasks, not few episodes.
+    The one bootstrap behind :func:`cluster_bootstrap_ci`, :func:`floor_cluster_bootstrap_ci` and
+    the signed board's clustered intervals. Returns ``None`` whenever the resample is degenerate,
+    because a zero-width interval is a confident-looking number carrying no information, which is
+    worse than declining to answer. That happens two ways. Fewer than two tasks resamples the same
+    thing every time — the correct response to every single-task result this project has published
+    so far. And every task scoring identically, in practice all zeros, makes every draw return that
+    same rate no matter which tasks are picked; the percentiles then collapse onto it and report
+    ``[0%, 0%]``, which reads as "certainly zero" when 0/50 is in fact consistent with a true rate
+    near 7%.
 
-    Returns ``None`` whenever the resample is degenerate, because a zero-width interval is a
-    confident-looking number carrying no information, which is worse than declining to answer.
-    That happens two ways. Fewer than two tasks resamples the same thing every time — the correct
-    response to every single-task result this project has published so far. And every task scoring
-    identically, in practice all zeros, makes every draw return that same rate no matter which
-    tasks are picked; the percentiles then collapse onto it and report ``[0%, 0%]``, which reads
-    as "certainly zero" when 0/50 is in fact consistent with a true rate near 7%.
-
-    Deterministic: seeded RNG, so the interval is a pure function of the results and the seed. That
-    is required by the report contract, not a nicety.
+    Deterministic: seeded RNG, so the interval is a pure function of the outcomes and the seed.
+    That is required by the report contract, not a nicety.
     """
-    pool = [
-        r for r in results
-        if r.scored and (attack is None or r.attack == attack) and not is_baseline(r)
-    ]
-    if not pool:
-        return None
-
-    # THE CLUSTER IS THE TASK, and choosing it was not obvious. Clustering by (task, seed) is the
-    # intuitive reading of "cell", and it is wrong: at the default one episode per seed a (task,
-    # seed) cluster contains exactly one episode, so resampling clusters is resampling episodes and
-    # the interval collapses back to the naive one it was meant to widen. A test caught this by
-    # measuring a 0.30-wide interval where a suite-level claim on four tasks deserves far more.
-    #
-    # The task is the unit the correlation actually lives in: whether an attack works is largely a
-    # property of the task, and seeds are nested inside it. Resampling tasks therefore answers the
-    # question a suite-level rate is really making — "what would I have measured on a different
-    # draw of tasks?" — and it is dominated by how FEW tasks were run, which is the honest
-    # limitation of every result in this project so far.
-    clusters: dict[str, list[bool]] = defaultdict(list)
-    for r in pool:
-        clusters[r.task].append(r.success)
     keys = sorted(clusters)
     if len(keys) < 2:
         return None
@@ -332,13 +437,92 @@ def cluster_bootstrap_ci(
     return interval
 
 
+def _by_task(pool: list[AttackResult]) -> dict[str, list[bool]]:
+    clusters: dict[str, list[bool]] = defaultdict(list)
+    for r in pool:
+        clusters[r.task].append(r.success)
+    return clusters
+
+
+def cluster_bootstrap_ci(
+    results: list[AttackResult],
+    *,
+    attack: str | None = None,
+    iterations: int = 2000,
+    seed: int = 0,
+    confidence: float = 0.95,
+) -> tuple[float, float] | None:
+    """Percentile CI from resampling TASKS, not episodes, for the arms other than the floor.
+
+    Resampling episodes independently assumes they are independent, and they are not: an attack
+    that works on one task tends to work across every seed of that task. Resampling whole tasks
+    preserves that correlation, so the interval widens to reflect the uncertainty that is really
+    there — most of which comes from having run few tasks, not few episodes.
+
+    The benign baseline is dropped from the pool, so this never bounds the floor; that is
+    :func:`floor_cluster_bootstrap_ci`. ``None`` on a degenerate resample
+    (:func:`task_bootstrap_ci`).
+    """
+    pool = [
+        r for r in results
+        if r.scored and (attack is None or r.attack == attack) and not is_baseline(r)
+    ]
+    if not pool:
+        return None
+
+    # THE CLUSTER IS THE TASK, and choosing it was not obvious. Clustering by (task, seed) is the
+    # intuitive reading of "cell", and it is wrong: at the default one episode per seed a (task,
+    # seed) cluster contains exactly one episode, so resampling clusters is resampling episodes and
+    # the interval collapses back to the naive one it was meant to widen. A test caught this by
+    # measuring a 0.30-wide interval where a suite-level claim on four tasks deserves far more.
+    #
+    # The task is the unit the correlation actually lives in: whether an attack works is largely a
+    # property of the task, and seeds are nested inside it. Resampling tasks therefore answers the
+    # question a suite-level rate is really making — "what would I have measured on a different
+    # draw of tasks?" — and it is dominated by how FEW tasks were run, which is the honest
+    # limitation of every result in this project so far.
+    return task_bootstrap_ci(
+        _by_task(pool), iterations=iterations, seed=seed, confidence=confidence
+    )
+
+
+def floor_cluster_bootstrap_ci(
+    results: list[AttackResult],
+    *,
+    iterations: int = 2000,
+    seed: int = 0,
+    confidence: float = 0.95,
+) -> tuple[float, float] | None:
+    """The task-clustered interval for the benign FLOOR, which :func:`cluster_bootstrap_ci` drops.
+
+    An attack's clustered interval was published beside a floor carrying only its episode-level
+    Wilson interval, the same asymmetry ``benign_control`` exists to remove at the episode level:
+    the floor's episodes cluster by task exactly as an attack's do. Pools the benign baseline's
+    scored episodes and resamples tasks the same way; ``None`` on a degenerate resample.
+    """
+    pool = [r for r in results if r.scored and is_baseline(r)]
+    if not pool:
+        return None
+    return task_bootstrap_ci(
+        _by_task(pool), iterations=iterations, seed=seed, confidence=confidence
+    )
+
+
 __all__ = [
     "BASELINE_ATTACK",
+    "INDEPENDENT_DIFFERENCE_METHOD",
+    "PAIRED_DIFFERENCE_METHOD",
     "McNemarResult",
+    "PairedDifference",
     "cluster_bootstrap_ci",
+    "floor_cluster_bootstrap_ci",
     "holm_bonferroni",
+    "independent_difference_ci",
     "mcnemar_exact",
     "paired_by_attack",
+    "paired_difference_ci",
+    "paired_differences",
     "pairs_share_init_state",
     "scene_pairing",
+    "task_bootstrap_ci",
 ]

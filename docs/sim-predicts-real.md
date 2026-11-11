@@ -45,3 +45,21 @@ evidence is real but weaker, and that difference is marked per citation rather t
 - Calibrate the predicate to a benign-FPR target (`provael calibrate`) so "unsafe" means
   "diverted past the policy's own benign envelope," not an arbitrary threshold.
 - Report CIs and `n`, not just point estimates — `n = 10` per attack is a screen, not a proof.
+
+## The rule for any cross-simulator or sim-to-real claim
+
+**No cross-simulator or sim-to-real claim without per-robot trajectory calibration, and without the
+within-simulator seed spread as the yardstick.** A rate measured in one simulator and a rate
+measured in another, or on a robot, differ for reasons that have nothing to do with the policy
+unless the two are tied together, robot by robot, by calibrating the trajectories they produce.
+And a single run is one draw: two runs of one configuration in one simulator already differ, so
+a cross-simulator or sim-to-real difference that sits inside that spread says nothing.
+
+The results READMEs print the yardstick. Each multi-task run carries a per-seed table, each arm's
+unsafe count pooled over tasks with its range across seeds, and where two committed runs share a
+configuration, the run-to-run difference with its interval. On SmolVLA x LIBERO-Object the two
+runs of the published configuration, on provael 0.32.0 and 0.41.2, put `roleplay` at 44/50 and
+42/50, a difference of -4 points with a 95% interval of [-18, +10]
+([the 14 September run](https://github.com/provael/provael/blob/main/results/smolvla_libero_object_suite_2026-09-14/README.md)).
+No committed result runs a real policy in a second simulator or on a robot (`results/hardware/`
+holds no run), so Provael makes no such claim.

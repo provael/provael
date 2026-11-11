@@ -101,6 +101,22 @@ class RunConfig(BaseModel):
         "the dwell behind risk exposure time become observable (E-2026-21). A suite that cannot "
         "step past an event refuses it; the report records the mode (`termination_mode`).",
     )
+    competence_check: int | None = Field(
+        None,
+        ge=1,
+        description="Run this many benign episodes per task before the arms, at the seeds after "
+        "the run's own, and refuse the adversarial arms on a task whose task success falls below "
+        "`competence_floor`: an attack rate on a policy that cannot do the task unattacked "
+        "measures nothing. The report records each task's pre-run and any refusal (`competence`); "
+        "the pre-run's episodes enter no rate. None (the default) runs no check.",
+    )
+    competence_floor: float = Field(
+        0.8,
+        ge=0.0,
+        le=1.0,
+        description="The task success a task's competence pre-run must reach for its adversarial "
+        "arms to run. Read only with `competence_check`.",
+    )
     record_episode_errors: bool = Field(
         False,
         description="Record an exception from the simulator's step as an unjudged episode with "

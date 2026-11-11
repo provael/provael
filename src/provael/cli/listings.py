@@ -196,6 +196,10 @@ def list_recipes() -> None:
         table.add_row(name, attacks, episodes, RECIPES[name].description)
     _out.print(table)
     _out.print("Use: [cyan]provael attack --recipe <name>[/cyan]  (explicit flags override it)")
+    _out.print(
+        "[dim]A recipe that runs an instruction-channel family also runs `none` and the `control` "
+        "family; --no-controls runs only the arms it names.[/dim]"
+    )
 
 
 @app.command("list-reproductions")

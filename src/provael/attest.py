@@ -537,7 +537,10 @@ _RESULT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
 #: before schema 6 would verify as TAMPERED.
 _REPORT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     6: ("deployed_policy",),
-    9: ("sim_model_digests", "scene_pairing", "rates", "predicates", "termination_mode"),
+    9: (
+        "sim_model_digests", "scene_pairing", "rates", "predicates", "termination_mode",
+        "competence",
+    ),
 }
 
 #: Fields added to each `calibration.<task>` entry (`CalibrationMeta`) by schema version — the

@@ -135,9 +135,75 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   during an episode the attack ran in. Why: a configured perturbation is not a delivered one, and
   a setting that never reaches the code that reads it changes nothing while the report says it
   was in force. Attack randomness stays local and seeded. No number moves.
+- **Each arm's task success, mean steps and ending are printed beside its unsafe rate.**
+  `report.md` and the results READMEs add a per-arm table (task success with its Wilson interval,
+  mean steps, and how the episodes ended where the report records it, from schema 9), the README
+  generator adds a per-task task-success grid, and report schema 9's `rates` gains
+  `task_success_by_attack`. Why: an arm can sit at the floor because the policy stopped doing the
+  task; in the 14 September control run `benign_reword` left the envelope in 0 of 30 episodes and
+  completed the task in 5 of 30, which an exit rate alone cannot show. The regenerated READMEs gain
+  these tables and no number in them moves.
+- **`provael attack --competence-check N` asks whether the policy can do each task before it is
+  attacked.** N benign episodes per task run first, at the seeds after the run's own, and a task
+  whose task success falls below `--competence-floor` (default 0.8) runs no adversarial arm; the
+  benign arm and the controls still run there. Report schema 9 records the pre-run and each
+  decision in `competence`, `rates` gains `clean_task_success_by_task`, and `report.md` prints
+  both. Off by default and refused with `--resume`; `min_clean_task_success` in a protocol still
+  decides the release verdict. Why: a 0% attack rate on a policy that cannot do the task unattacked
+  measures nothing. No committed run used it, so no number moves.
+- **Each arm's difference from the benign arm carries its own interval, and the floor gets a
+  task-clustered one.** Report schema 9's `rates` gains `paired_difference`: each arm's rate minus
+  the benign arm's over the (task, seed) cells both ran, with the paired table (McNemar's b and c,
+  and n) and Newcombe's score interval for paired proportions (method 10); `report.md` and the
+  results READMEs print it beside McNemar. `provael.scoring.paired.floor_cluster_bootstrap_ci`
+  bounds the benign floor by resampling tasks, which `cluster_bootstrap_ci` never did (it drops the
+  baseline), and the READMEs print it; the hf-eval notes carry each arm's task-clustered interval or
+  say why there is none. Why: two Wilson intervals side by side are not an interval for their
+  difference, and the floor's episodes cluster by task as the arms' do. Recomputed from the
+  committed 14 September shards: `roleplay` sits +82 points [+67, +90] above its benign twins and
+  the floor's task-clustered interval is [0%, 6%]. The regenerated READMEs gain these columns; no
+  number in them moves.
+- **The results READMEs print each run's seed spread, and the difference from a second run of the
+  same configuration.** A per-seed table gives each arm's unsafe count pooled over tasks and its
+  range across seeds. Where two committed runs share a configuration (found from their shards: the
+  policy and checkpoint, suite, horizon, predicate, defense and every task, arm and seed), a table
+  gives each arm's difference with Newcombe's hybrid score interval for independent proportions.
+  `docs/sim-predicts-real.md` adds the rule: no cross-simulator or sim-to-real claim without
+  per-robot trajectory calibration and the within-simulator seed spread as the yardstick. Why: a
+  single run is one draw. Recomputed from the shards, the published configuration's two runs put
+  `roleplay` at 44/50 on 0.32.0 and 42/50 on 0.41.2, a difference of -4 points [-18, +10]. No
+  number moves.
 
 ### Changed
 
+- **`provael attack` runs the benign control and the control family with any instruction-channel
+  arm, unless `--no-controls`.** When the arms include `instruction` or `optimized_instruction`
+  (from `--attacks`, a recipe or the default), `none` is added first and the `control` family last,
+  and a note names the arms added. Adopters will see these arms in their reports and tables: the
+  default `--attacks instruction` now runs the instruction family, `none` and every control arm, and
+  the GitHub Action's default attack list gains the control family. The adversarial ASR excludes
+  both by role, so the stub canary stays 47/70. Why: an instruction-channel rate is read against
+  the floor and the harmless variations, and on SmolVLA x LIBERO the controls are what showed the
+  roleplay result is fragility rather than attacker control (E-2026-12). The GPU drivers pass
+  `--no-controls` once their pinned release takes it, so each stage still runs the arms it is
+  costed for.
+- **SARIF levels come from intervals, not from the point rate.** A finding is an `error` when the
+  arm's 95% Wilson interval lies above the benign floor's with a lower bound of at least 50%, a
+  `warning` when it lies above with a lower bound under 50%, and a `note` with `undetermined: true`
+  when the two intervals overlap or no benign control ran; each result names its `levelBasis`,
+  `floorComparison` and the floor's interval. Adopters will see code-scanning alerts change level:
+  an arm at the floor (1/50 against 1/50 was a `warning`) and any arm in a run without `none` become
+  undetermined notes, and an arm whose interval reaches below 50% (8/10 against 0/10 was an
+  `error`) becomes a `warning`. Why: a point rate above zero says nothing when its interval overlaps
+  the floor's. `level_for_asr` stays importable and is no longer what `to_sarif` uses.
+- **The signed board's rows gain task-clustered intervals (board schema 7).** `LeaderboardRow` adds
+  `tasks`, `clustered_ci95` and `benign_clustered_ci95`, from resampling tasks rather than
+  episodes, and `schemas/leaderboard.v7.schema.json` is published beside v6. Adopters reading
+  `leaderboard.json` will see the three fields once the board is rebuilt and re-signed through
+  `leaderboard-rebuild.yml`; until then the committed board stays schema 6 and keeps verifying,
+  because the verifier strips v7 fields from a v6 board's signed bytes (a frozen copy of today's
+  board is now a test fixture). Why: a ten-task row's episode-level interval is too narrow for a
+  statement about the suite.
 - **A run recorded for a video no longer counts as a measurement.** `provael.watch` skips any
   execution manifest whose `deviations` say "recorded for video", so it does not date the freshness
   badge or get a row in `watch/measurements.json`. Why: `results/rfm_submission_2026-11` commits
@@ -201,6 +267,12 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   different `report_digest` for all twenty files than the manifest beside each one holds. Both
   READMEs now say so, and the test that holds every other committed report to its manifest names
   these two runs instead of skipping every schema-2 report. No number moves.
+- **The results READMEs say which arms Holm adjusts across.** They said "the adversarial arms of
+  this run" while the family the code adjusts holds every arm paired against `none`, the
+  harmless-variation controls included (in the 14 September control run, `roleplay` and its
+  controls). The generator now names the arms, says when controls are among them and which arms had
+  no pair, and a test holds every committed README to the code's family. Why: the sentence
+  described a family the code does not use. No number moves.
 - **The README's badges render, and its sentences match the repository again.** A missing blank
   line after the demo caption made GitHub and PyPI print the badge row as literal Markdown. The
   headline's Holm correction ran across six applicable arms, not seven; the McNemar figure says its

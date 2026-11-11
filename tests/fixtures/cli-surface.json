@@ -125,6 +125,36 @@
      "secondary_opts": []
     },
     {
+     "help": "Run only the arms named. By default a run that includes an instruction-channel family (instruction, optimized_instruction) also gets the benign control `none` and the `control` family (the harmless-variation arms), because an instruction-channel rate is read against both.",
+     "is_flag": true,
+     "name": "no_controls",
+     "opts": [
+      "--no-controls"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "Before the arms, run this many benign episodes per task (at the seeds after the run's own) and refuse the adversarial arms on a task whose task success falls below --competence-floor. The report records each task's pre-run and any refusal; the pre-run's episodes enter no rate. Off by default; not with --resume.",
+     "is_flag": false,
+     "name": "competence_check",
+     "opts": [
+      "--competence-check"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
+     "help": "The task success a task's --competence-check pre-run must reach for its adversarial arms to run (default 0.8).",
+     "is_flag": false,
+     "name": "competence_floor",
+     "opts": [
+      "--competence-floor"
+     ],
+     "required": false,
+     "secondary_opts": []
+    },
+    {
      "help": "Total episodes per (task, attack) pair.",
      "is_flag": false,
      "name": "episodes",

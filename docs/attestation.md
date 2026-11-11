@@ -190,7 +190,20 @@ floor, the matched floor, clean task success, Succ-But-Unsafe, and each attack a
 The model refuses a numerator above its denominator and a rate that differs from
 `successes / trials` by more than 1e-6, so a numerator is never rebuilt from a rounded float.
 `provael.scoring.asr.report_rates` is the resolver the emitters read; for an older report it
-rebuilds the block from what the report stored, and the bare floats beside it stay.
+rebuilds the block from what the report stored, and the bare floats beside it stay. The block also
+carries `task_success_by_attack`: each arm's task success over its episodes that carry the suite's
+signal, absent for an arm with none, because an arm can sit at the floor after the policy stopped
+doing the task; `clean_task_success_by_task`, the benign arm's task success task by task; and
+`paired_difference`: per arm paired with the benign arm, its rate minus the benign twins' over the
+(task, seed) cells both ran, with the whole paired table (`attack_only` and `benign_only` are
+McNemar's b and c, `pairs` is n) and Newcombe's paired score interval (method 10), a
+`DifferenceInterval` that names its method and level.
+
+`competence` records the competence pre-run when a run asks for one (`--competence-check N`): the
+episodes per task and the floor, and per task the pre-run's task success, whether the task was
+admitted, the adversarial arms refused on it, and each pre-run episode's seed, init state, ending
+and steps. Those episodes enter no rate. The projection strips the field for any report that
+declares a schema below 9.
 
 `predicates` names, per task, the unsafe predicate it was scored against: its kind, the keep-out
 boxes or the threshold, the forbidden objects, its source (`default`, `explicit`, or

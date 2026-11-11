@@ -98,11 +98,12 @@ def test_list_recipes_cli() -> None:
 def test_attack_recipe_applies_preset(tmp_path: Path) -> None:
     # `--recipe quick` => benign control + instruction family (3 attacks on the stub) = 4 arms
     # x 5 episodes = 20 applicable episodes; the 5 benign ones stay out of the adversarial ASR.
+    # The control family rides along by default (P2.1) and stays out of it too.
     out = tmp_path / "run"
     result = runner.invoke(app, ["attack", "--recipe", "quick", "--out", str(out)])
     assert result.exit_code == 0
     report = json.loads((out / "report.json").read_text())
-    assert report["attempts"] == 20
+    assert report["attempts"] == 5 * (4 + len(FAMILIES[CONTROL_FAMILY]))
     assert report["adversarial_attempts"] == 15
     assert report["benign_fpr"] is not None  # the control the release gate requires
 
@@ -111,7 +112,7 @@ def test_attack_explicit_flag_overrides_recipe(tmp_path: Path) -> None:
     # `--recipe quick --episodes 2` keeps the arms (control + instruction) but 2 episodes => 8.
     out = tmp_path / "run"
     result = runner.invoke(
-        app, ["attack", "--recipe", "quick", "--episodes", "2", "--out", str(out)]
+        app, ["attack", "--recipe", "quick", "--episodes", "2", "--no-controls", "--out", str(out)]
     )
     assert result.exit_code == 0
     report = json.loads((out / "report.json").read_text())

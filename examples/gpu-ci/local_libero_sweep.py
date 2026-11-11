@@ -104,7 +104,19 @@ def _attack_command(args: argparse.Namespace, task_id: int) -> list[str]:
         cmd += ["--calib", str(args.calib)]
     if args.query_budget:
         cmd += ["--query-budget", str(args.query_budget)]
+    # The sweep runs exactly the arms --attacks names, arm for arm with the `full` stage. A provael
+    # that adds the controls to an instruction-channel run by itself also takes --no-controls; an
+    # older one does neither, and would refuse the flag.
+    if _adds_controls():
+        cmd += ["--no-controls"]
     return cmd
+
+
+def _adds_controls() -> bool:
+    """Whether the installed provael adds controls by itself (and so takes ``--no-controls``)."""
+    from provael.attacks import registry
+
+    return hasattr(registry, "with_controls")
 
 
 def _run_shard(args: argparse.Namespace, task_id: int) -> tuple[int, int, float]:
