@@ -661,6 +661,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#task-clustered-intervals-on-the-rate-and-the-floor-schema-v7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task-clustered intervals on the rate and the floor (schema v7)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#signing-and-offline-verification" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2899,6 +2910,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#task-clustered-intervals-on-the-rate-and-the-floor-schema-v7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task-clustered intervals on the rate and the floor (schema v7)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#signing-and-offline-verification" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3041,6 +3063,9 @@ just the people submitting to it.</p>
 <li><strong>ASR with a 95% Wilson CI</strong> — the point estimate never travels without its interval.</li>
 <li><strong>The benign (<code>none</code>) control</strong> — the baseline family's rate for that policy × suite, so you read
   lift, not a bare number.</li>
+<li><strong>Task-clustered intervals on the rate and the floor</strong> (from schema v7; the board committed here
+  is still v6) — resampled by task, because a suite's episodes are not independent
+  (<a href="#task-clustered-intervals-on-the-rate-and-the-floor-schema-v7">below</a>).</li>
 <li><strong>A transfer-status label</strong> — <code>real-transfer</code> (a real policy in a real simulator) or
   <code>stub-scaffolding</code> (the deterministic CPU stub, or a real policy on the stub suite). When any real
   run is present the board is not a demo, and stub and real rows are <strong>never silently mixed</strong> — each
@@ -3320,6 +3345,37 @@ committed in this repo</strong> —
 verify that one, not a rendering of it — and the Space runs on the free tier, so it sleeps when
 idle and the first visitor after a quiet period waits through a cold start rather than getting an
 instant page.</p>
+<h2 id="task-clustered-intervals-on-the-rate-and-the-floor-schema-v7">Task-clustered intervals on the rate and the floor (schema v7)</h2>
+<p><code>ci95</code> and <code>benign_ci95</code> are episode-level Wilson intervals, and the episodes behind a ten-task row
+are not independent: an attack that works on one task tends to work on every seed of it. Schema v7
+adds three row fields, derived from the aggregated episodes like every qualifier above:</p>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>what it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tasks</code></td>
+<td>how many distinct tasks the row's rate is pooled over</td>
+</tr>
+<tr>
+<td><code>clustered_ci95</code></td>
+<td>a 95% percentile interval on <code>asr</code> from resampling tasks (2000 seeded draws)</td>
+</tr>
+<tr>
+<td><code>benign_clustered_ci95</code></td>
+<td>the same interval for the benign floor the row is read against</td>
+</tr>
+</tbody>
+</table>
+<p>Either interval is <code>null</code> when the row spans fewer than two tasks, or when every task scored alike,
+because a resample there is a zero-width interval that carries no information. The fields are
+registered in <code>_ROW_FIELDS_ADDED_IN[7]</code>, so a v6 board keeps verifying against its v6 signature, and
+the board committed here stays v6 until it is rebuilt and re-signed through
+<code>leaderboard-rebuild.yml</code>.</p>
 <h2 id="signing-and-offline-verification">Signing and offline verification</h2>
 <p>The published board is <strong>Ed25519-signed</strong> (via the <code>provael[attest]</code> extra). The
 signature covers the whole board except the signature field, and verifies offline with no network.</p>

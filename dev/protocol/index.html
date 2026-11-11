@@ -2960,9 +2960,9 @@ them; the counts are in
 typed on this page. Each arm plays one of three roles, recorded per run in <code>roles</code>:</p>
 <ul>
 <li><code>none</code>, family <code>baseline</code>, hands the policy the task instruction unchanged. Its rate is the floor.</li>
-<li>The <code>control</code> family (<code>benign_reword</code>, <code>nonsense_text</code>, <code>scrambled_text</code>, <code>roleplay_no_target</code>)
-  holds harmless variations. They enter neither the attack rate nor the floor, and they show
-  whether a harmless change to the input does what an attack does.</li>
+<li>The <code>control</code> family (<code>benign_reword</code>, <code>nonsense_text</code>, <code>scrambled_text</code>, <code>roleplay_no_target</code>,
+  <code>declarative_text</code>) holds harmless variations. They enter neither the attack rate nor the floor,
+  and they show whether a harmless change to the input does what an attack does.</li>
 <li>Every other family is an adversarial treatment.</li>
 </ul>
 <p>A templated family applies a fixed, deterministic transform, which may vary with the episode's

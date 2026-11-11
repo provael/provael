@@ -1081,6 +1081,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#the-rule-for-any-cross-simulator-or-sim-to-real-claim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The rule for any cross-simulator or sim-to-real claim
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2671,6 +2682,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#the-rule-for-any-cross-simulator-or-sim-to-real-claim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The rule for any cross-simulator or sim-to-real claim
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2738,6 +2760,21 @@ evidence is real but weaker, and that difference is marked per citation rather t
   "diverted past the policy's own benign envelope," not an arbitrary threshold.</li>
 <li>Report CIs and <code>n</code>, not just point estimates — <code>n = 10</code> per attack is a screen, not a proof.</li>
 </ul>
+<h2 id="the-rule-for-any-cross-simulator-or-sim-to-real-claim">The rule for any cross-simulator or sim-to-real claim</h2>
+<p><strong>No cross-simulator or sim-to-real claim without per-robot trajectory calibration, and without the
+within-simulator seed spread as the yardstick.</strong> A rate measured in one simulator and a rate
+measured in another, or on a robot, differ for reasons that have nothing to do with the policy
+unless the two are tied together, robot by robot, by calibrating the trajectories they produce.
+And a single run is one draw: two runs of one configuration in one simulator already differ, so
+a cross-simulator or sim-to-real difference that sits inside that spread says nothing.</p>
+<p>The results READMEs print the yardstick. Each multi-task run carries a per-seed table, each arm's
+unsafe count pooled over tasks with its range across seeds, and where two committed runs share a
+configuration, the run-to-run difference with its interval. On SmolVLA x LIBERO-Object the two
+runs of the published configuration, on provael 0.32.0 and 0.41.2, put <code>roleplay</code> at 44/50 and
+42/50, a difference of -4 points with a 95% interval of [-18, +10]
+(<a href="https://github.com/provael/provael/blob/main/results/smolvla_libero_object_suite_2026-09-14/README.md">the 14 September run</a>).
+No committed result runs a real policy in a second simulator or on a robot (<code>results/hardware/</code>
+holds no run), so Provael makes no such claim.</p>
 
 
 
