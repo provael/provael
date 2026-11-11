@@ -109,6 +109,32 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   digest, and the execution manifest's `suite_config_digest` is filled from them. Why: floors were
   quoted without naming their predicate, and a rate under the default box and one under a
   calibrated box are different claims. No number moves.
+- **`provael attack --termination fixed-horizon` runs every episode to its horizon.** An exit and
+  a task success latch instead of ending the episode (on LIBERO the adapter steps LIBERO directly,
+  since lerobot 0.5.1's `LiberoEnv.step` resets the scene on success), the report records
+  `termination_mode`, and Succ-But-Unsafe, RET and CC print as numbers only on such a run. Each
+  episode records `failure_cause` (`envelope_exit`, `collision`, `missed_grasp`, `dropped`,
+  `timeout`, or `null` where the signals cannot say), and a fixed-horizon LIBERO episode the
+  `task_success_strict` endpoint. Why: a first-event run cannot observe those three metrics
+  (E-2026-21), and LIBERO credits a held, tipped or one-frame placement as success. First-event
+  stays the default and renders as before; no GPU run used it, and no number moves.
+- **Trajectories name their channels, and two opt-in sidecars record chunks and timing.** Each
+  `trajectory` carries `channels`; on LIBERO it records the end-effector orientation and the
+  gripper opening beside the position, and a trajectory from before schema 9 still decodes by its
+  width. `provael attack --record-chunks` writes `chunks.npz` (every predicted action chunk, the
+  rows that never ran included, and the row each step executed) and `--record-timing` writes
+  `timing.json` (per-step observation and dispatch times); the execution manifest records each
+  file's sha256 and neither enters `report.json`. Why: for the steps that ran, the report could
+  not tell a predicted action from an executed one, and a reader had to infer the trajectory's
+  stride. No number moves.
+- **Each episode records what the policy was handed, and an unread attack setting stops the run.**
+  Report schema 9 adds `delivered_inputs`: a sha256 per distinct instruction handed to the policy,
+  a rolling sha256 over the camera images handed to it, and the attack's declared parameters as
+  read. Every attack declares its settings (`Attack.parameters`); the benign arm declares none and
+  takes the same path, and the runner fails a run in which a declared setting was never read
+  during an episode the attack ran in. Why: a configured perturbation is not a delivered one, and
+  a setting that never reaches the code that reads it changes nothing while the report says it
+  was in force. Attack randomness stays local and seeded. No number moves.
 
 ### Changed
 
@@ -187,6 +213,10 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   keyid line the README dropped on 19 September, and the summary above dates 0.47.0 to 7 November,
   as its tag does. Why: the README is also the PyPI page, and each of these said something the
   repository does not. No number moves.
+- **The README's demo GIF is recorded again, on 0.47.0.** It showed the July 2026 CLI: a pass/fail
+  scorecard and the old "Attack Success Rate" label. The new recording, from the same script, shows
+  the scorecard led by the release verdict, and the alt text and caption say so. Why: the README
+  is the PyPI page, and its first image showed output the tool no longer prints. No number moves.
 - **Sentences that still read the roleplay result as rewording or redirection now say what E-2026-12
   says, and the CI examples pin their actions.** The UNECE R155 compliance row (printed in the delivery
   pack's test report too), `integrity.py`'s docstring and `PRIOR_ART.md` now say the policy leaves its
@@ -229,10 +259,6 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   now lists PYSEC-2026-2290 as not reachable and names this check. The three checkpoints the
   published runs and the smolvla default use pass as they are, and `RunConfig` and `report.json`
   do not change.
-- **The README's demo GIF is recorded again, on 0.47.0.** It showed the July 2026 CLI: a pass/fail
-  scorecard and the old "Attack Success Rate" label. The new recording, from the same script, shows
-  the scorecard led by the release verdict, and the alt text and caption say so. Why: the README
-  is the PyPI page, and its first image showed output the tool no longer prints. No number moves.
 
 ## [0.47.0] — 2026-11-07
 

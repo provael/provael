@@ -108,6 +108,7 @@ class GradientPatch(Attack):
 
     name = "gradient_patch"
     family = FAMILY
+    parameters = ("eps", "steps")
     eai_id = _EAI.id
     eai_name = _EAI.name
     #: INV-4: reads gradients through the policy's vision encoder — strictly more access than the

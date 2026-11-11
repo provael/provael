@@ -302,11 +302,13 @@ def _emit_execution_manifest(
     elapsed: float,
     defense: str | None = None,
     decision: ReleaseDecision | None = None,
+    sidecars: dict[str, str] | None = None,
 ) -> None:
     """Write execution-manifest.json (runtime provenance) beside the deterministic report.json.
 
     The manifest carries the wall-clock, OS/Python, commit, and (redacted) environment that must
-    NOT enter report.json; it is bound to the report by the report's canonical digest.
+    NOT enter report.json; it is bound to the report by the report's canonical digest, and to any
+    opt-in sidecar (``sidecars``: file name -> sha256) by that file's digest.
     """
     from datetime import timedelta
 
@@ -340,6 +342,7 @@ def _emit_execution_manifest(
         ended_at=end.strftime(fmt),
         env=dict(os.environ),
         decision=decision,
+        sidecars=sidecars,
     )
     # Name from provael.watch, not a literal: the freshness badge reads this exact file, and a
     # drift between the two halves makes every future measurement invisible to it.

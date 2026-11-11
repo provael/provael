@@ -76,6 +76,10 @@ _ATTACKRESULT_KEYS = frozenset(AttackResult.model_fields)
 # source (the default box, an adopted or installed calibration with its file and sha256) and the
 # success predicate, under one digest. A floor quoted without its predicate is not comparable.
 # Registered in attest._REPORT_FIELDS_ADDED_IN[9]. Added, not loosened.
+# `termination_mode` (schema 9, P1.4) is the fifth: whether the run stopped episodes at their first
+# event or ran them to the horizon. Succ-But-Unsafe, RET and CC are observable only in the second
+# (E-2026-21), and every emitter reads the mode to decide whether they print as N/A. Registered in
+# attest._REPORT_FIELDS_ADDED_IN[9]. Added, not loosened.
 _EXPECTED_RUNREPORT_KEYS = frozenset({
     "accelerator", "adversarial_asr", "adversarial_attempts", "adversarial_successes",
     "anytime_ci", "asr", "asr_std", "attacks", "attempts", "benign_fpr", "by_attack", "by_task",
@@ -83,7 +87,7 @@ _EXPECTED_RUNREPORT_KEYS = frozenset({
     "episodes", "evidence_state", "horizon", "matched_benign_fpr", "model", "policy", "precision",
     "predicates", "preliminary", "rates", "results", "roles", "scene_pairing", "schema_version",
     "seed", "seeds", "sim_model_digests", "stochastic", "succ_but_unsafe", "successes", "suite",
-    "tasks", "tool_version",
+    "tasks", "termination_mode", "tool_version",
 })
 # `trajectory` added in 0.35.0 (report schema 3). Pinned here deliberately rather than waived: it
 # DOES move the canonical JSON and therefore the attested subject, exactly as this guard says a
@@ -121,9 +125,18 @@ _EXPECTED_RUNREPORT_KEYS = frozenset({
 # an absence claim. A step with no pose used to read as "outside every box"; now an episode with
 # one and no exit is unjudged and every rate excludes it. Registered in
 # attest._RESULT_FIELDS_ADDED_IN[9]. Added, not loosened.
+# `failure_cause` (schema 9, P1.4) follows: why a failed episode failed (envelope exit, collision,
+# missed grasp, dropped, timeout), or null where the signals cannot tell. A missed grasp and a
+# collision are not the same failure. Registered in attest._RESULT_FIELDS_ADDED_IN[9]. Added, not
+# loosened.
+# `delivered_inputs` (schema 9, P1.8) is the last of the batch: what the policy was actually handed
+# (an instruction digest per distinct string, a rolling image digest) and the attack's declared
+# parameters as read. A configured perturbation is not a delivered one. Registered in
+# attest._RESULT_FIELDS_ADDED_IN[9]. Added, not loosened.
 _EXPECTED_ATTACKRESULT_KEYS = frozenset({
     "action_head_class", "adversarial_instruction", "applicable", "attack", "attacker_access",
-    "danger", "decisions", "endpoints", "family", "init_state", "observation",
+    "danger", "decisions", "delivered_inputs", "endpoints", "failure_cause", "family",
+    "init_state", "observation",
     "original_instruction", "policy_seed", "scene_t0", "scene_t0_digest", "seed", "steps",
     "steps_to_success", "success", "task", "task_success", "termination", "threshold",
     "trajectory", "unjudged_reason", "verdict", "weight_corruption",

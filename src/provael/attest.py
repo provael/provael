@@ -526,6 +526,7 @@ _RESULT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     8: ("init_state",),
     9: (
         "scene_t0_digest", "scene_t0", "termination", "verdict", "unjudged_reason", "observation",
+        "failure_cause", "delivered_inputs",
     ),
 }
 
@@ -536,7 +537,7 @@ _RESULT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
 #: before schema 6 would verify as TAMPERED.
 _REPORT_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
     6: ("deployed_policy",),
-    9: ("sim_model_digests", "scene_pairing", "rates", "predicates"),
+    9: ("sim_model_digests", "scene_pairing", "rates", "predicates", "termination_mode"),
 }
 
 #: Fields added to each `calibration.<task>` entry (`CalibrationMeta`) by schema version — the
@@ -561,6 +562,15 @@ _DEPLOYED_POLICY_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
         "rename_map", "camera_keys", "denoising_steps", "control_rate_hz",
         "temporal_ensemble_coeff", "discrete_state_input",
     ),
+}
+
+
+#: Fields added to each result's `trajectory` block (`Trajectory`) by schema version, the same
+#: contract one level down again. Every committed report from schema 3 to 8 carries trajectories,
+#: and without this table each would dump `channels` as null, its canonical bytes would move, and
+#: the digest its execution manifest binds would stop matching.
+_TRAJECTORY_FIELDS_ADDED_IN: dict[int, tuple[str, ...]] = {
+    9: ("channels",),
 }
 
 
@@ -600,6 +610,13 @@ def report_projection(report: RunReport | dict[str, Any]) -> dict[str, Any]:
             if isinstance(deployed, dict):
                 for name in names:
                     deployed.pop(name, None)
+    for version, names in _TRAJECTORY_FIELDS_ADDED_IN.items():
+        if declared < version:
+            for result in obj.get("results", []):
+                trajectory = result.get("trajectory") if isinstance(result, dict) else None
+                if isinstance(trajectory, dict):
+                    for name in names:
+                        trajectory.pop(name, None)
     return obj
 
 

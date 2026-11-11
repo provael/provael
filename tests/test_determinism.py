@@ -54,6 +54,17 @@ def test_repeated_full_runs_are_stable() -> None:
     assert len(dumps) == 1
 
 
+def test_the_opt_in_sidecars_leave_the_report_byte_identical() -> None:
+    """P1.5: timing is wall-clock and chunks are bulk; both go to caller-owned logs, never here."""
+    from provael.sidecars import ChunkLog, TimingLog
+
+    config = RunConfig(policy="stub", suite="stub", attacks=["none", "instruction"], episodes=6)
+    with_sidecars = run(config, chunk_log=ChunkLog(), timing_log=TimingLog())
+    assert to_json(with_sidecars) == to_json(run(config)) == to_json(
+        run(config, chunk_log=ChunkLog(), timing_log=TimingLog())
+    )
+
+
 # --------------------------------------------------------------------------- #
 # cross-process (a fresh interpreter and a different PYTHONHASHSEED per run)
 # --------------------------------------------------------------------------- #

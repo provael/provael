@@ -54,6 +54,7 @@
   "reviewer": null,
   "run_id": "smolvla-libero-2026-06-06",
   "seeds": 0,
+  "sidecars": null,
   "skipped_checks": [],
   "started_at": "2026-06-06T00:00:00Z",
   "suite": "libero",

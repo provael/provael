@@ -72,7 +72,7 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
-from provael.policies.base import PolicyAdapter
+from provael.policies.base import ChunkSink, PolicyAdapter
 from provael.policies.lerobot_adapter import clamp_action
 from provael.types import Action, Observation
 
@@ -240,6 +240,29 @@ class OpenPiAdapter(PolicyAdapter):
                 self._image_tools.resize_with_pad(wrist_u8, self.resize, self.resize)
             )
         return obs
+
+    def record_chunks(self, sink: ChunkSink | None) -> str | None:
+        """Hand each chunk the policy server returns to ``sink`` (P1.5); ``None`` stops it.
+
+        :meth:`act` executes the first row of ``infer(...)["actions"]`` and drops the rest. The
+        client's ``infer`` is wrapped on this instance only, returning the server's answer
+        untouched, so the whole chunk is recorded as the server sent it.
+        """
+        client = self._client
+        if client is None:
+            return None
+        vars(client).pop("infer", None)  # an earlier wrapper, so wrappers never stack
+        if sink is None:
+            return None
+        infer = client.infer
+
+        def infer_and_record(obs: dict[str, Any]) -> Any:
+            result = infer(obs)
+            sink(np.asarray(result["actions"], dtype=np.float32))
+            return result
+
+        client.infer = infer_and_record
+        return "as the openpi policy server returned them"
 
     def act(self, observation: Observation, instruction: str) -> Action:
         """Run one openpi ``infer`` step; return the first action of the chunk, clamped."""

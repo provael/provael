@@ -43,6 +43,7 @@ class PatchAttack(Attack):
 
     name = "patch"
     family = FAMILY
+    parameters = ("target_object",)
     eai_id = _EAI.id
     eai_name = _EAI.name
     #: Patch payload appended to ``visual_tokens`` (encodes object + urgency).
@@ -71,6 +72,7 @@ class DecoyObjectAttack(Attack):
 
     name = "decoy_object"
     family = FAMILY
+    parameters = ("target_object",)
     eai_id = _EAI.id
     eai_name = _EAI.name
     #: Saliency cue appended to ``visual_tokens`` alongside the planted object.

@@ -28,6 +28,8 @@ from provael.scoring.misalignment import misalignment_unsafe as _misalignment_un
 from provael.scoring.perception import sensor_spoof_unsafe as _sensor_spoof_unsafe
 from provael.suites.keepout_zones import KeepOutZone
 from provael.types import (
+    DANGER_CHANNELS,
+    POSITION_CHANNELS,
     Action,
     Observation,
     PredicateIdentity,
@@ -159,6 +161,25 @@ class SuiteAdapter(ABC):
         danger = state.get("danger")
         return None if danger is None else float(danger)
 
+    def trajectory_channels(self) -> tuple[str, ...]:
+        """The names of the columns :meth:`trajectory_sample` returns, in order (P1.5).
+
+        By default the calibration signal's: x, y, z for a spatial suite, the danger level for a
+        scalar one. A suite that records more per step (LIBERO's orientation and gripper) names it.
+        """
+        return POSITION_CHANNELS if self.calibration_kind == "spatial" else DANGER_CHANNELS
+
+    def trajectory_sample(self, state: State) -> list[float] | None:
+        """One step of the episode's recorded trajectory; ``None`` drops the step, as today.
+
+        By default the calibration signal (:meth:`calibration_signal`) as a row of floats, so every
+        suite that does not override this records exactly what it always recorded.
+        """
+        signal = self.calibration_signal(state)
+        if signal is None:
+            return None
+        return [float(signal)] if isinstance(signal, int | float) else [float(v) for v in signal]
+
     def set_calibration(self, calibrations: dict[str, Calibration]) -> None:
         """Install per-task calibrations (keyed by task id) for :meth:`evaluate_unsafe`."""
         self._calibrations: dict[str, Calibration] = dict(calibrations)
@@ -190,6 +211,27 @@ class SuiteAdapter(ABC):
         not ask for.
         """
         return False
+
+    def set_termination(self, mode: str) -> bool:
+        """End episodes at their first event (``first-event``) or step on to the horizon (P1.4).
+
+        ``fixed-horizon`` asks the suite to keep stepping past an envelope exit and past task
+        success: its ``done`` may then mean only that it cannot go on (its own step cap). A suite
+        that cannot (LIBERO's env resets itself on success, see :mod:`provael.suites.libero`) has
+        to say how it avoids that, so the default supports only ``first-event`` and returns
+        ``False`` for anything else, and the runner refuses rather than reporting a fixed horizon
+        it did not run.
+        """
+        return mode == "first-event"
+
+    def strict_task_success(self) -> bool | None:
+        """The ``task_success_strict`` endpoint for the episode just run; ``None`` (N/A) by default.
+
+        Called by the runner after the episode's last step. A suite that can read whether the goal
+        held to the end, with its object released and upright, overrides this
+        (:class:`provael.suites.libero.StrictSuccessRule`); everything else surfaces no signal.
+        """
+        return None
 
     def predicate_identity(self, task: str) -> PredicateIdentity | None:
         """The unsafe predicate ``task`` is scored against; ``None`` where the suite cannot say.

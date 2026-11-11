@@ -61,7 +61,7 @@ import numpy as np
 import numpy.typing as npt
 
 from provael.attacks.weight_integrity import SCALE as WEIGHT_SCALE
-from provael.policies.base import PolicyAdapter
+from provael.policies.base import ChunkSink, PolicyAdapter
 from provael.scoring.action import (
     NOMINAL_DIRECTION,
     NOMINAL_SPEED,
@@ -247,6 +247,12 @@ class StubPolicy(PolicyAdapter):
         self.action_dim = action_dim
         self._loaded = False
         self._params: npt.NDArray[np.int8] = clean_parameters()
+        self._chunk_sink: ChunkSink | None = None
+
+    def record_chunks(self, sink: ChunkSink | None) -> str | None:
+        """The stub predicts one action per step: a chunk of one row, the action it emits."""
+        self._chunk_sink = sink
+        return "controller units: one action per step, a chunk of one row" if sink else None
 
     def load(self) -> None:
         # Reset the danger head's parameters to clean. `load()` is the deployment boundary, so a
@@ -407,4 +413,6 @@ class StubPolicy(PolicyAdapter):
         # nothing (0% FPR control); a clean policy with no such canary screens ~0% too.
         if self.action_dim > LEAK_CHANNEL and stub_leaks(observation):
             action[LEAK_CHANNEL] = 1.0
+        if self._chunk_sink is not None:
+            self._chunk_sink(action[None, :])
         return action

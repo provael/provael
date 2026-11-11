@@ -9,12 +9,14 @@ For each ``(task, attack, episode)`` triple the runner plays one episode:
         adv_instruction, adv_obs = attack.perturb(base_instruction, obs)
         action = policy.act(adv_obs, adv_instruction)
         obs, done, state = suite.step(action)
-        if suite.evaluate_step(state): success at step t; stop
+        if suite.evaluate_step(state): success at step t; stop (first-event)
         if done: stop
 
-Episode ``i`` of a ``(task, attack)`` pair uses ``seed = config.seed + i`` so a run
-is fully reproducible. The aggregated :class:`RunReport` contains no wall-clock
-time, so the same config always yields a byte-identical report.
+Under ``--termination fixed-horizon`` neither event stops the episode: the exit latches and the
+loop runs to the horizon. Episode ``i`` of a ``(task, attack)`` pair uses ``seed = config.seed + i``
+so a run is fully reproducible. The aggregated :class:`RunReport` contains no wall-clock
+time, so the same config always yields a byte-identical report; the opt-in chunk and timing
+sidecars (:mod:`provael.sidecars`) are filled into caller-owned logs and never reach it.
 """
 
 from __future__ import annotations
@@ -35,7 +37,8 @@ from provael.calibration import Calibration, anytime_ci, binding_status, wilson_
 from provael.config import RunConfig
 from provael.defenses.base import Defense
 from provael.defenses.registry import make_defense
-from provael.endpoints import PHYSICAL_HAZARD
+from provael.delivery import DeliveryLog
+from provael.endpoints import PHYSICAL_HAZARD, TASK_SUCCESS_STRICT
 from provael.evidence import classify_run
 from provael.ledger import TrialKey, append_trial, completed_keys, record_of, results_for
 from provael.policies.base import InputGradientProvider, PolicyAdapter
@@ -52,11 +55,15 @@ from provael.scoring.asr import (
     overall_stat,
     semantic_role,
 )
+from provael.scoring.failure import GraspTrace, failure_cause
 from provael.scoring.paired import scene_pairing
 from provael.scoring.safety_cost import (
+    FIRST_EVENT,
+    FIXED_HORIZON,
     SUITES_ENDING_AT_TASK_SUCCESS,
     observed_unsafe_success_rate,
 )
+from provael.sidecars import ChunkLog, TimingLog
 from provael.suites import make_suite
 from provael.suites.base import SuiteAdapter
 from provael.types import (
@@ -181,6 +188,34 @@ class InitStatePlanError(ValueError):
     """``--init-states`` does not fit the run's tasks, seeds or arms: refused before a run."""
 
 
+class ResumeModeError(ValueError):
+    """A ``--resume`` ledger holds an episode that could not have run under this termination."""
+
+
+class UnreadParameterError(RuntimeError):
+    """An attack declares a parameter that was never read during an episode it ran (P1.8)."""
+
+
+def _check_parameters_read(attack: Attack, episode: AttackResult) -> None:
+    """Raise unless every parameter ``attack`` declares was read during ``episode``.
+
+    A setting that never reaches the code that applies it changes nothing while the report says it
+    was in force (a config key read nowhere, GR00T#745). An episode the attack had no surface in
+    ran nothing of it and is not checked.
+    """
+    if not episode.applicable or episode.delivered_inputs is None:
+        return
+    read = episode.delivered_inputs.parameters
+    unread = [name for name in attack.parameters if name not in read]
+    if unread:
+        raise UnreadParameterError(
+            f"{attack.name!r} declares {unread} and never read them during its episode at "
+            f"{episode.task} seed {episode.seed}: the setting never reached the code that applies "
+            "it, so the episode ran without it while the report would say it was in force. "
+            "Refusing to report it."
+        )
+
+
 @dataclass(frozen=True)
 class _InitStatePlan:
     """``--init-states``, checked against the run: which state each episode starts from."""
@@ -267,6 +302,30 @@ def _check_pinned_cell(
         )
 
 
+def _check_replayed_mode(episode: AttackResult, termination: str) -> None:
+    """Raise when a ledger episode could not have run under this run's termination mode (P1.4).
+
+    The ledger keys episodes by (attack, task, seed) and records no mode, so a resume under the
+    other mode would splice first-event episodes into a fixed-horizon report, or the reverse, and
+    Succ-But-Unsafe and exposure would be read off episodes that could not show them. Only a
+    first-event episode ends at an exit or at task success, and only a fixed-horizon one steps on
+    past its first exit; an episode that did neither runs alike under both.
+    """
+    if termination == FIXED_HORIZON:
+        impossible = episode.termination in ("unsafe_exit", "task_success")
+    else:
+        impossible = (
+            episode.steps_to_success is not None and episode.steps > episode.steps_to_success
+        )
+    if impossible:
+        raise ResumeModeError(
+            f"--resume: the ledger's {episode.attack!r} episode at {episode.task} seed "
+            f"{episode.seed} was not recorded under --termination {termination} (it ended "
+            f"'{episode.termination}' after {episode.steps} step(s)). Resume with the mode the "
+            "ledger was written under, or start a new ledger."
+        )
+
+
 def run_episode(
     policy: PolicyAdapter,
     suite: SuiteAdapter,
@@ -279,6 +338,9 @@ def run_episode(
     audit_sink: list[dict[str, str]] | None = None,
     frame_sink: FrameSink | None = None,
     record_errors: bool = False,
+    termination: str = FIRST_EVENT,
+    chunk_log: ChunkLog | None = None,
+    timing_log: TimingLog | None = None,
 ) -> AttackResult:
     """Play a single episode and return its :class:`AttackResult`.
 
@@ -303,7 +365,22 @@ def run_episode(
     configuration, the scene pin and the environment build are checked, and swallowing those would
     turn a misconfigured run into a column of unjudged episodes. A non-finite action is the
     policy's failure, not the simulator's, and still stops the run either way.
+
+    ``termination`` is ``first-event`` (stop at the first exit or ``done``) or ``fixed-horizon``
+    (P1.4): every step to the horizon runs, an exit and a success latch, and the steps after them
+    are still logged and scored, so ``decisions`` measures dwell. The suite must already have
+    accepted the mode (:meth:`~provael.suites.base.SuiteAdapter.set_termination`); there a
+    ``done`` means only that it cannot go on.
+
+    ``chunk_log`` and ``timing_log`` (P1.5), when given, receive the action chunks the policy
+    predicted on each live step and when each step's observation arrived and its action left.
+    Same rule as ``audit_sink``: caller-owned, never part of the report; the clock is read only
+    into ``timing_log``.
     """
+    fixed_horizon = termination == FIXED_HORIZON
+    # P1.8: which declared parameters the attack reads this episode. Idempotent, so a weight
+    # corruption the runner applied before this call (and audited) still counts.
+    attack.audit_start()
     policy.reset()  # clear per-episode policy state (e.g. SmolVLA's action-chunk queue)
     # Seed the POLICY as well as the environment. `suite.reset` has always seeded the env; the
     # policy's own sampler ran off whatever state the process happened to be in, which is the
@@ -312,6 +389,7 @@ def run_episode(
     # never the value we asked for.
     policy_seed = policy.seed(seed)
     obs = suite.reset(task, seed)
+    observed_ns = timing_log.now() if timing_log is not None else 0
     base_instruction = str(obs.get("instruction", ""))
     # Which fixed initial state the reset loaded, as the SUITE read it from its environment. On
     # LIBERO the seed does not pick it (a reset counter does), so it is recorded per episode
@@ -327,6 +405,7 @@ def run_episode(
     if not attack.applicable(obs):
         # The attack has no surface in this suite (e.g. mcp_tool_desc on a direct LIBERO
         # loop). Record it as not-applicable; scoring excludes it from the ASR denominator.
+        attack.audit_collect()  # nothing was delivered, so nothing is recorded
         return AttackResult(
             task=task,
             attack=attack.name,
@@ -362,11 +441,15 @@ def run_episode(
     steps_without_pose = 0
     ended_by_suite: Termination | None = None
     error: str | None = None
+    # P1.4: whether the goal object was held, per step, for the failure cause.
+    grasp = GraspTrace()
     # Per-step calibration signal, recorded for EVERY episode. Gated on nothing by design: the
     # input to a keep-out calibration was previously computed and discarded on every run, which is
     # what made #136 unfixable rather than merely unfixed, and an opt-in flag would recreate that
     # the first time someone forgot to pass it. Cost is a few hundred floats per episode.
     calib_samples: list[list[float]] = []
+    # P1.8: what the policy is actually handed on each live step.
+    delivery = DeliveryLog()
 
     for t in range(1, horizon + 1):
         steps = t
@@ -390,7 +473,12 @@ def run_episode(
                     }
                 )
             adversarial_instruction, adv_obs = defense.apply(adversarial_instruction, adv_obs)
+        delivery.handed(t, adversarial_instruction, adv_obs)
+        if chunk_log is not None:
+            chunk_log.before_act()  # chunks an attack's search queried for were never executed
         action = policy.act(adv_obs, adversarial_instruction)
+        if chunk_log is not None:
+            chunk_log.after_act(t)
         # Every unsafe predicate downstream is a threshold comparison, and EVERY comparison against
         # NaN is False — so a policy emitting NaN would score SAFE on all axes and the episode would
         # be reported as a benign success. Reject non-finite actions at the one boundary they all
@@ -426,6 +514,8 @@ def run_episode(
                     }
                 )
             action = filtered_action
+        if timing_log is not None:
+            timing_log.step(observed_ns, timing_log.now())
         try:
             obs, done, state = suite.step(action)
         except Exception as exc:  # noqa: BLE001 - re-raised unless the run asked to record it
@@ -436,6 +526,8 @@ def run_episode(
             error = f"simulator exception at step {t}: {type(exc).__name__}: {exc}"
             steps = t - 1
             break
+        if timing_log is not None:
+            observed_ns = timing_log.now()
 
         danger = float(state.get("danger", danger))
         threshold = float(state.get("threshold", threshold))
@@ -457,15 +549,15 @@ def run_episode(
         step_hazard = suite.physical_hazard(state)
         if step_hazard is not None:
             hazard = bool(hazard) or bool(step_hazard)
+        grasp = grasp.observe(state.get("grasped"), present="grasped" in state)
 
         # Read BEFORE the unsafe check breaks the loop: the step that violates the envelope is the
         # most informative one in the trajectory, and a `break` placed above this would drop
-        # precisely that sample on every successful attack.
-        signal = suite.calibration_signal(state)
-        if signal is not None:
-            calib_samples.append(
-                [float(signal)] if isinstance(signal, (int, float)) else [float(v) for v in signal]
-            )
+        # precisely that sample on every successful attack. The suite names its columns (P1.5):
+        # the calibration signal, and on LIBERO the orientation and gripper opening beside it.
+        sample = suite.trajectory_sample(state)
+        if sample is not None:
+            calib_samples.append(sample)
 
         # The calibrated predicate if one is installed. None is a step it could not judge (a lost
         # pose): logged as not unsafe, and counted, so the episode cannot read as "no exit".
@@ -487,24 +579,30 @@ def run_episode(
             if shown is not None:
                 frame_sink.frame(t, shown, decision.unsafe)
 
-        if decision.unsafe:
+        if decision.unsafe and not success:
             success = True
             steps_to_success = decision.step
+        if decision.unsafe and not fixed_horizon:
             break
         if done:
             # On a suite whose `done` fires at task success (LIBERO) the step that ended it says
-            # whether it was success; any other `done` is the suite's own cap.
-            at_success = suite.name in SUITES_ENDING_AT_TASK_SUCCESS and bool(step_task_success)
+            # whether it was success; any other `done` is the suite's own cap, and under a fixed
+            # horizon `done` is never success: the suite steps on past it.
+            at_success = (
+                not fixed_horizon
+                and suite.name in SUITES_ENDING_AT_TASK_SUCCESS
+                and bool(step_task_success)
+            )
             ended_by_suite = "task_success" if at_success else "env_truncated"
             break
 
-    termination: Termination
+    ended: Termination
     if error is not None:
-        termination = "error"
-    elif success:
-        termination = "unsafe_exit"
+        ended = "error"
+    elif success and not fixed_horizon:
+        ended = "unsafe_exit"
     else:
-        termination = ended_by_suite or "horizon"
+        ended = ended_by_suite or "horizon"
     reason: str | None = error
     if error is None and not success and steps_without_pose:
         reason = (
@@ -522,6 +620,12 @@ def run_episode(
             steps_observed=steps, horizon=horizon, steps_without_pose=steps_without_pose
         ),
     )
+    # N/A is absent, never False: only a suite that surfaced a signal writes the key. Strict
+    # success is read at the episode's end, so an episode a simulator exception cut short has none.
+    endpoints: dict[str, bool | None] = {PHYSICAL_HAZARD: hazard} if hazard is not None else {}
+    strict = suite.strict_task_success() if error is None else None
+    if strict is not None:
+        endpoints[TASK_SUCCESS_STRICT] = strict
 
     return AttackResult(
         task=task,
@@ -540,20 +644,31 @@ def run_episode(
         original_instruction=base_instruction,
         adversarial_instruction=adversarial_instruction,
         task_success=task_success,
-        # N/A is absent, never False: only a suite that surfaced a signal writes the key.
-        endpoints={PHYSICAL_HAZARD: hazard} if hazard is not None else {},
+        endpoints=endpoints,
         attacker_access=attack.attacker_access,
         action_head_class=policy.action_head_class or attack.action_head_class,
         decisions=decisions,
-        trajectory=Trajectory.encode(calib_samples) if calib_samples else None,
+        trajectory=(
+            Trajectory.encode(calib_samples, channels=suite.trajectory_channels())
+            if calib_samples
+            else None
+        ),
         # None for every input-channel family. Read from the attack rather than passed in, so
         # a result records the corruption that was ACTUALLY in force when it ran, not one a
         # caller believed was in force.
         weight_corruption=getattr(attack, "record", None),
-        termination=termination,
+        termination=ended,
         verdict="unjudged" if reason is not None else "judged",
         unjudged_reason=reason,
         observation=observation,
+        failure_cause=failure_cause(
+            unsafe_exit=success,
+            hazard=hazard,
+            task_success=task_success,
+            termination=ended,
+            grasp=grasp,
+        ),
+        delivered_inputs=delivery.finish(attack.audit_collect()),
     )
 
 
@@ -564,6 +679,8 @@ def run(
     audit_sink: list[dict[str, str]] | None = None,
     ledger_path: Path | None = None,
     video_dir: Path | None = None,
+    chunk_log: ChunkLog | None = None,
+    timing_log: TimingLog | None = None,
 ) -> RunReport:
     """Execute a full red-team run described by ``config`` and return a report.
 
@@ -585,6 +702,12 @@ def run(
     The replayed episodes are spliced back **in plan order**, not appended at the end, so a resumed
     report is identical to the uninterrupted one rather than merely equivalent. Determinism is the
     product here; "same numbers, different order" would still change the digest ``attest`` signs.
+
+    ``chunk_log`` and ``timing_log`` (P1.5) are the opt-in sidecars: the chunks the policy
+    predicted, which it hands over through
+    :meth:`~provael.policies.base.PolicyAdapter.record_chunks`, and per-step timing. Each
+    episode's entry is keyed by its position in ``results``; an episode replayed from the ledger
+    ran in another process and has none. Neither touches the report.
     """
     # `device` is forwarded so --accelerator is actually HONOURED. Every real factory already
     # accepts a `device` kwarg (defaulting to "cuda"), but the runner never passed one, so the
@@ -611,6 +734,14 @@ def run(
             "episode from a fixed initial state chosen by its seed, and it keeps no fixed initial "
             "states; refusing to run on scenes that were not asked for"
         )
+    # Same rule as the pin (P1.4): a suite that cannot step past an episode's first event refuses
+    # a fixed horizon before anything loads, rather than reporting a horizon it did not run.
+    if config.termination != FIRST_EVENT and not suite.set_termination(config.termination):
+        raise NotImplementedError(
+            f"--termination {config.termination} asks suite {config.suite!r} to step every episode "
+            "to its horizon, past envelope exits and task success, and it cannot; refusing to "
+            "label first-event episodes as fixed-horizon"
+        )
     attacks = resolve_attacks(config.attacks)
     tasks = config.tasks if config.tasks is not None else suite.tasks()
     # `RunConfig` rejects an explicitly-empty `tasks`, but a suite that exposes none reaches the
@@ -636,6 +767,10 @@ def run(
         policy.set_features(features)
 
     policy.load()
+    if chunk_log is not None:
+        # The adapter states what space its chunks are in, or None when it predicts none it can
+        # hand over; the sidecar records either answer.
+        chunk_log.space = policy.record_chunks(chunk_log.sink)
 
     defense = make_defense(config.defense) if config.defense else None
     _configure_optimized(attacks, policy, suite, config.query_budget)
@@ -721,6 +856,7 @@ def run(
                     # at its plan position, and neither load the policy for it nor re-run it.
                     key: TrialKey = (attack.name, task, seed)
                     if key in done_keys:
+                        _check_replayed_mode(replay[key], config.termination)
                         results.append(replay[key])
                         if pins_cells:
                             _check_pinned_cell(cell_scenes, replay[key])
@@ -730,6 +866,8 @@ def run(
                     weight_attack = (
                         attack if isinstance(attack, WeightIntegrityAttack) else None
                     )
+                    # Audited from here: a weight attack reads its flip budget in `corrupt`.
+                    attack.audit_start()
                     if weight_attack is not None:
                         weight_attack.corrupt(policy, seed)
                     # One clip per episode when asked for (``--video-dir``): the frames the policy
@@ -740,17 +878,24 @@ def run(
                         if video_dir is not None
                         else None
                     )
+                    for log in (chunk_log, timing_log):
+                        if log is not None:
+                            log.start(len(results), task, attack.name, seed)
                     try:
                         episode = run_episode(
                             policy, suite, attack, task, seed, config.horizon,
                             defense=defense, audit_sink=audit_sink, frame_sink=sink,
                             record_errors=config.record_episode_errors,
+                            termination=config.termination,
+                            chunk_log=chunk_log, timing_log=timing_log,
                         )
                     finally:
+                        attack.audit_collect()  # stop recording, however the episode ended
                         if weight_attack is not None:
                             weight_attack.restore(policy)
                         if sink is not None:
                             sink.close()
+                    _check_parameters_read(attack, episode)
                     # Append BEFORE the next episode starts, so a kill loses at most this one.
                     if ledger_path is not None:
                         append_trial(ledger_path, record_of(episode, trial_index=len(results)))
@@ -809,7 +954,8 @@ def run(
         # projection strips it for a report that declares less (attest._DEPLOYED_POLICY_FIELDS_
         # ADDED_IN); each result carries the scene its reset left (`scene_t0_digest`, `scene_t0`),
         # and the report each task's model digest and how many pairs shared a scene; each result
-        # says how it ended and whether it was judged, and `rates` carries every rate as counts.
+        # says how it ended and whether it was judged, and `rates` carries every rate as counts;
+        # the report says whether episodes ran to the horizon, and each result its failure cause.
         schema_version=9,
         evidence_state=classify_run(config.policy, config.suite).value,
         policy=config.policy,
@@ -823,6 +969,7 @@ def run(
         tasks=list(tasks),
         episodes=config.episodes,
         horizon=config.horizon,
+        termination_mode=config.termination,
         seed=config.seed,
         attempts=overall.attempts,
         successes=overall.successes,
@@ -844,14 +991,16 @@ def run(
         calibrated=bool(calibration_meta),
         benign_fpr=benign_fpr,
         matched_benign_fpr=matched_benign_fpr(results),
-        succ_but_unsafe=observed_unsafe_success_rate(results, suite=config.suite),
+        succ_but_unsafe=observed_unsafe_success_rate(
+            results, suite=config.suite, termination=config.termination
+        ),
         clean_task_success_rate=clean_task_success_rate(results),
         calibration=calibration_meta,
         sim_model_digests=sim_models,
         scene_pairing=scene_pairing(results),
         # Every rate above with its counts, interval method and level, and its unjudged episodes,
         # from the same episodes and the same filters (P1.6).
-        rates=compute_rates(results, suite=config.suite),
+        rates=compute_rates(results, suite=config.suite, termination=config.termination),
         predicates=predicates,
         by_attack=attack_breakdown,
         by_task=by_task(results),
@@ -865,4 +1014,11 @@ def run(
     )
 
 
-__all__ = ["InitStatePlanError", "ScenePinError", "run", "run_episode"]
+__all__ = [
+    "InitStatePlanError",
+    "ResumeModeError",
+    "ScenePinError",
+    "UnreadParameterError",
+    "run",
+    "run_episode",
+]

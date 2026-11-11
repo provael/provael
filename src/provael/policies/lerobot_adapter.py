@@ -52,7 +52,7 @@ from provael.integrity import (
     read_checkpoint_files,
     trust_checkpoint_code,
 )
-from provael.policies.base import PolicyAdapter
+from provael.policies.base import ChunkSink, PolicyAdapter
 from provael.policies.identity import (
     POSTPROCESSOR_CONFIG,
     PREPROCESSOR_CONFIG,
@@ -519,6 +519,41 @@ class LeRobotAdapter(PolicyAdapter):
         if torch.cuda.is_available():  # pragma: no cover - no CUDA in the CPU test environment
             torch.cuda.manual_seed_all(seed)
         return seed
+
+    def record_chunks(self, sink: ChunkSink | None) -> str | None:
+        """Hand each chunk the loaded policy predicts to ``sink`` (P1.5); ``None`` stops it.
+
+        Read from lerobot 0.5.1, not executed here: ``SmolVLAPolicy.select_action`` fills its
+        action queue from ``self._get_action_chunk(batch, noise)`` when the queue is empty
+        (``policies/smolvla/modeling_smolvla.py:340-347``), and ``PI0Policy`` and ``PI05Policy``
+        from ``self.predict_action_chunk(batch)`` (``pi0/modeling_pi0.py:1252-1257``,
+        ``pi05/modeling_pi05.py:1223-1228``); both return ``(batch, chunk_size, action_dim)`` and
+        the queue keeps the first ``n_action_steps``. The one the policy's class defines is wrapped
+        on this instance only: the wrapper returns the call's own result untouched and hands the
+        whole chunk to ``sink``, the rows that will never run included. Those rows are the
+        policy's output before the post-processor unnormalises them.
+        """
+        policy = self._policy
+        if policy is None:
+            return None
+        name = next(
+            (n for n in ("_get_action_chunk", "predict_action_chunk") if hasattr(type(policy), n)),
+            None,
+        )
+        if name is None:
+            return None
+        vars(policy).pop(name, None)  # an earlier wrapper, so wrappers never stack
+        if sink is None:
+            return None
+        predict = getattr(policy, name)
+
+        def predict_and_record(*args: Any, **kwargs: Any) -> Any:
+            chunk = predict(*args, **kwargs)
+            sink(chunk.detach().float().cpu().numpy()[0])
+            return chunk
+
+        setattr(policy, name, predict_and_record)
+        return "the policy's normalised output, before its post-processor"
 
     def _apply_image_override(self, observation: Observation, raw: Any) -> Any:
         """Fold ``observation[image_key]`` (an attack may have edited it) back into ``raw``.

@@ -22,12 +22,15 @@ an empty one. This follows :func:`provael.scoring.asr.benign_unsafe_rate` and
 :func:`provael.scoring.asr.succ_but_unsafe`, and it is the difference between "we looked and found
 nothing" and "we did not look" — which, for a safety metric, is the whole difference.
 
-**What a run could observe (E-2026-21).** The runner stops an episode at its first unsafe step and
-at ``done``, and on LIBERO ``done`` fires at task success. So on such a run an episode cannot stay
-unsafe past one step, and it cannot complete the task after leaving the envelope or leave after
-completing. These functions still count what the log holds, which is why every emitter asks
-:func:`exposure_unobservable` and :func:`unsafe_success_unobservable` first and prints N/A with the
-reason. A count of something the run could not have seen is not a zero.
+**What a run could observe (E-2026-21).** Under first-event termination, the default and every
+run before ``--termination fixed-horizon`` existed, the runner stops an episode at its first unsafe
+step and at ``done``, and on LIBERO ``done`` fires at task success. So on such a run an episode
+cannot stay unsafe past one step, and it cannot complete the task after leaving the envelope or
+leave after completing. These functions still count what the log holds, which is why every emitter
+asks :func:`exposure_unobservable` and :func:`unsafe_success_unobservable` first, with the report's
+``termination_mode``, and prints N/A with the reason. A count of something the run could not have
+seen is not a zero. A fixed-horizon run steps every episode to its horizon, so there both are
+observable and the N/A does not apply.
 """
 
 from __future__ import annotations
@@ -45,9 +48,10 @@ UNSAFE_FAILURE = "unsafe_failure"
 #: silently do not sum to the episode count invites the reader to assume the remainder was safe.
 TASK_SUCCESS_UNMEASURED = "task_success_unmeasured"
 
-#: How a run's episodes end. :data:`FIRST_EVENT` is the only mode the runner has today: an episode
-#: stops at its first unsafe step or at ``done``. :data:`FIXED_HORIZON` names a run that keeps
-#: stepping past both, which is what reading dwell or the unsafe-success quadrant needs.
+#: How a run's episodes end (``RunConfig.termination``, recorded as ``RunReport.termination_mode``).
+#: :data:`FIRST_EVENT`, the default: an episode stops at its first unsafe step or at ``done``.
+#: :data:`FIXED_HORIZON`: it keeps stepping past both to the horizon, which is what reading dwell or
+#: the unsafe-success quadrant needs.
 FIRST_EVENT = "first-event"
 FIXED_HORIZON = "fixed-horizon"
 

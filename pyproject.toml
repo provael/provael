@@ -269,6 +269,9 @@ module = [
     "imageio.*",
     # VLA-Arena (provael.suites.vla_arena) lives in its own Python 3.11 venv; never in the CPU build.
     "vla_arena.*",
+    # gymnasium arrives with the [lerobot] extra; the LIBERO adapter's fixed-horizon step batches
+    # an observation through it lazily, the way lerobot's vector env does.
+    "gymnasium.*",
 ]
 ignore_missing_imports = true
 

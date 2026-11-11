@@ -125,6 +125,18 @@
           "title": "Decisions",
           "type": "array"
         },
+        "delivered_inputs": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeliveredInputs"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What the policy was handed on the live steps: a sha256 per distinct instruction, a rolling sha256 over the camera images, and the attack's declared parameters as read (see DeliveredInputs). None on a not-applicable record. Schema >= 9."
+        },
         "endpoints": {
           "additionalProperties": {
             "anyOf": [
@@ -139,6 +151,26 @@
           "description": "Independent semantic-endpoint outcomes (see provael.endpoints): a suite may populate 'unauthorized_action' / 'physical_hazard' / etc. here. `success` is the 'unsafe_envelope' endpoint and 'authorized_task_success' derives from task_success; the rest are N/A (absent) where the suite surfaces no signal \u2014 never a fabricated False.",
           "title": "Endpoints",
           "type": "object"
+        },
+        "failure_cause": {
+          "anyOf": [
+            {
+              "enum": [
+                "envelope_exit",
+                "collision",
+                "missed_grasp",
+                "dropped",
+                "timeout"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Why the episode failed, for one that left the envelope or did not complete its task: 'envelope_exit', 'collision' (the physical_hazard endpoint), 'missed_grasp', 'dropped' or 'timeout' (see provael.scoring.failure). None for an episode that did not fail, and wherever the signals cannot say which, never a guess. Schema >= 9.",
+          "title": "Failure Cause"
         },
         "family": {
           "title": "Family",
@@ -629,6 +661,51 @@
         "unsafe"
       ],
       "title": "Decision",
+      "type": "object"
+    },
+    "DeliveredInputs": {
+      "additionalProperties": false,
+      "description": "What the policy was actually handed in one episode, and the attack's settings as read (P1.8).\n\nTaken where every input crosses into the policy, right before ``policy.act`` and after the\nattack and any defense, so it records what was delivered and not what was configured. The\nbenign arm takes the same path with nothing declared, so its record is the reference an\nattacked twin's is read against. An attack's search queries are not live steps and are not in\nit.",
+      "properties": {
+        "image_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Rolling sha256 over the primary camera image (`observation['image']`, the frame every image-channel attack edits) the policy was handed on each step: the step number, dtype, shape and bytes of each. None when no step handed one (the stub has no camera).",
+          "title": "Image Sha256"
+        },
+        "image_steps": {
+          "default": 0,
+          "description": "Steps whose image is in `image_sha256`.",
+          "minimum": 0,
+          "title": "Image Steps",
+          "type": "integer"
+        },
+        "instruction_sha256": {
+          "description": "sha256 (UTF-8) of each distinct instruction string the policy was handed, in the order first handed.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Instruction Sha256",
+          "type": "array"
+        },
+        "parameters": {
+          "additionalProperties": true,
+          "description": "The attack's declared parameters (`Attack.parameters`), each as first read while the episode ran, as JSON: the realized perturbation settings. {} for an attack that declares none, the benign arm included. The runner fails a run in which a declared parameter was never read during an episode the attack ran in.",
+          "title": "Parameters",
+          "type": "object"
+        }
+      },
+      "required": [
+        "instruction_sha256"
+      ],
+      "title": "DeliveredInputs",
       "type": "object"
     },
     "DeployedPolicy": {
@@ -1440,8 +1517,24 @@
       "type": "object"
     },
     "Trajectory": {
-      "description": "The per-step calibration signal of one episode, stored compactly.\n\nWHY THIS EXISTS AT ALL. Calibrating a keep-out zone needs the BENIGN end-effector envelope \u2014\nwhere the policy actually goes when nobody is attacking it \u2014 and that is the one input the\nrunner computed on every step and then threw away. :meth:`Suite.calibration_signal` has always\nreturned exactly this signal, and nothing ever persisted it, so every finished run left the\ncalibration no more possible than before it started. That is why issue #136 is *unfixable*\nrather than merely unfixed: the blocker is not GPU budget for the fit, it is that the data the\nfit consumes was never written down.\n\nWHY NOT JUST REUSE ``decisions``. ``Decision`` is a per-step JSON object and the ten-task suite\nalready sheds 1.9 MB per task of it before anything is committed. A second per-step JSON field\nwould be the same mistake twice. This is a homogeneous numeric array, so it is stored as one\nbase64 blob of zlib-compressed float32 \u2014 a few hundred poses collapse to a few hundred bytes,\nand the shape is carried explicitly so a reader never has to infer the stride.\n\nDETERMINISM. zlib at a fixed level over identical float32 bytes is byte-stable, so a report\ncarrying trajectories stays a pure function of its inputs and the attestation subject is\nunchanged in kind.",
+      "description": "The per-step calibration signal of one episode, stored compactly.\n\nWHY THIS EXISTS AT ALL. Calibrating a keep-out zone needs the BENIGN end-effector envelope \u2014\nwhere the policy actually goes when nobody is attacking it \u2014 and that is the one input the\nrunner computed on every step and then threw away. :meth:`Suite.calibration_signal` has always\nreturned exactly this signal, and nothing ever persisted it, so every finished run left the\ncalibration no more possible than before it started. That is why issue #136 is *unfixable*\nrather than merely unfixed: the blocker is not GPU budget for the fit, it is that the data the\nfit consumes was never written down.\n\nWHY NOT JUST REUSE ``decisions``. ``Decision`` is a per-step JSON object and the ten-task suite\nalready sheds 1.9 MB per task of it before anything is committed. A second per-step JSON field\nwould be the same mistake twice. This is a homogeneous numeric array, so it is stored as one\nbase64 blob of zlib-compressed float32 \u2014 a few hundred poses collapse to a few hundred bytes,\nand the shape is carried explicitly so a reader never has to infer the stride.\n\nDETERMINISM. zlib at a fixed level over identical float32 bytes is byte-stable, so a report\ncarrying trajectories stays a pure function of its inputs and the attestation subject is\nunchanged in kind.\n\nNAMED CHANNELS (schema 9, P1.5). A suite may record more than its calibration signal: LIBERO\nrecords the end-effector's orientation and the gripper opening beside its position. ``channels``\nnames every column, so a reader never infers the stride, and :meth:`calibration_signal` picks\nthe position or danger columns out of whatever else was recorded. A trajectory written before\nschema 9 names none and is read by its width, as it always was.",
       "properties": {
+        "channels": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The name of each column, in order, e.g. ['x', 'y', 'z', 'qx', 'qy', 'qz', 'qw', 'gripper_opening'] on LIBERO or ['danger'] on the stub; a column a step could not read is NaN there. None on a trajectory written before schema 9, where the width says which signal it is (3: x, y, z; 1: danger).",
+          "title": "Channels"
+        },
         "data": {
           "description": "base64(zlib(float32 little-endian, C-order)).",
           "title": "Data",
@@ -1455,7 +1548,7 @@
           "type": "string"
         },
         "shape": {
-          "description": "(steps, dims). dims is 3 for a spatial suite (x, y, z) and 1 for a scalar-danger suite, so a reader can tell the two apart without guessing.",
+          "description": "(steps, dims). Without `channels`, dims is 3 for a spatial suite (x, y, z) and 1 for a scalar-danger suite, so a reader can tell the two apart without guessing.",
           "maxItems": 2,
           "minItems": 2,
           "prefixItems": [
@@ -1799,7 +1892,7 @@
     },
     "schema_version": {
       "default": 1,
-      "description": "Report schema version. 1 = legacy: the asr/attempts/successes headline is the ALL-episode observed-unsafe rate (benign control INCLUDED in the denominator). >=2 also carries the adversarial_* fields (the benign control excluded by role) and the roles map. >=3 records a per-episode `trajectory` (the calibration signal every step produced and every run used to discard). >=4 records `weight_corruption`, the bit-flip budget and selection rule in force for the episode. >=5 records `policy_seed`, the seed the POLICY's own sampler was set to \u2014 the environment seed has always been recorded and the policy's never was, which is why two rows at the same commit were not comparable. >=6 records `deployed_policy`, the executed policy as the adapter resolved it (class, revision, unnormaliser, controller convention) beside the requested `model`. >=7 records, per calibrated task, which split the calibration came from, its eval-split FPR and whether its binding holds for this run (`calibration.<task>.split` / `eval_fpr` / `binding`) \u2014 a tuned predicate and a bound one no longer look the same in the report. >=8 records `init_state`, the fixed initial state each episode's reset loaded, which the seed does not determine on LIBERO. >=9 records the rest of the deployed policy's runtime identity (input normaliser, processor and weight digests, rename map, camera order, denoising steps, control rate), each episode's starting scene (`scene_t0_digest`, `scene_t0`), each task's compiled model digest and how many pairs shared a scene, and how each episode ended (`termination`, `verdict`, `observation`); an unjudged episode is excluded from every rate, and `rates` carries every rate with its counts, interval method and level, and `predicates` names each task's predicate. Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed a calibration, because its trajectories do not exist. This schema documents version 9; it accepts artifacts declaring 9 or lower, because every bump so far has been additive with defaults. It refuses a higher version rather than silently validating a format it does not describe.",
+      "description": "Report schema version. 1 = legacy: the asr/attempts/successes headline is the ALL-episode observed-unsafe rate (benign control INCLUDED in the denominator). >=2 also carries the adversarial_* fields (the benign control excluded by role) and the roles map. >=3 records a per-episode `trajectory` (the calibration signal every step produced and every run used to discard). >=4 records `weight_corruption`, the bit-flip budget and selection rule in force for the episode. >=5 records `policy_seed`, the seed the POLICY's own sampler was set to \u2014 the environment seed has always been recorded and the policy's never was, which is why two rows at the same commit were not comparable. >=6 records `deployed_policy`, the executed policy as the adapter resolved it (class, revision, unnormaliser, controller convention) beside the requested `model`. >=7 records, per calibrated task, which split the calibration came from, its eval-split FPR and whether its binding holds for this run (`calibration.<task>.split` / `eval_fpr` / `binding`) \u2014 a tuned predicate and a bound one no longer look the same in the report. >=8 records `init_state`, the fixed initial state each episode's reset loaded, which the seed does not determine on LIBERO. >=9 records the rest of the deployed policy's runtime identity (input normaliser, processor and weight digests, rename map, camera order, denoising steps, control rate), each episode's starting scene (`scene_t0_digest`, `scene_t0`), each task's compiled model digest and how many pairs shared a scene, and how each episode ended (`termination`, `verdict`, `observation`); an unjudged episode is excluded from every rate, and `rates` carries every rate with its counts, interval method and level, and `predicates` names each task's predicate; `termination_mode` says whether episodes stopped at their first event or ran to the horizon, and each episode records its `failure_cause` and what the policy was handed (`delivered_inputs`). Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed a calibration, because its trajectories do not exist. This schema documents version 9; it accepts artifacts declaring 9 or lower, because every bump so far has been additive with defaults. It refuses a higher version rather than silently validating a format it does not describe.",
       "maximum": 9,
       "title": "Schema Version",
       "type": "integer"
@@ -1864,6 +1957,16 @@
       },
       "title": "Tasks",
       "type": "array"
+    },
+    "termination_mode": {
+      "default": "first-event",
+      "description": "How the run ended its episodes: 'first-event' (at the first envelope exit or the suite's done, on LIBERO task success; every run before schema 9) or 'fixed-horizon' (every episode ran past both to its horizon, so Succ-But-Unsafe, risk exposure time and cumulative cost are observable; E-2026-21). Schema >= 9.",
+      "enum": [
+        "first-event",
+        "fixed-horizon"
+      ],
+      "title": "Termination Mode",
+      "type": "string"
     },
     "tool_version": {
       "description": "provael.__version__ that produced this report.",

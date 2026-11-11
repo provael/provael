@@ -83,6 +83,12 @@ class Decision(BaseModel):
     unsafe: bool = Field(..., description="Whether the resulting environment state was unsafe.")
 
 
+#: The calibration signal's channels (P1.5): a spatial suite's position, a scalar suite's danger
+#: level. A trajectory written before schema 9 names no channels and holds exactly one of these.
+POSITION_CHANNELS: tuple[str, ...] = ("x", "y", "z")
+DANGER_CHANNELS: tuple[str, ...] = ("danger",)
+
+
 class Trajectory(BaseModel):
     """The per-step calibration signal of one episode, stored compactly.
 
@@ -103,6 +109,12 @@ class Trajectory(BaseModel):
     DETERMINISM. zlib at a fixed level over identical float32 bytes is byte-stable, so a report
     carrying trajectories stays a pure function of its inputs and the attestation subject is
     unchanged in kind.
+
+    NAMED CHANNELS (schema 9, P1.5). A suite may record more than its calibration signal: LIBERO
+    records the end-effector's orientation and the gripper opening beside its position. ``channels``
+    names every column, so a reader never infers the stride, and :meth:`calibration_signal` picks
+    the position or danger columns out of whatever else was recorded. A trajectory written before
+    schema 9 names none and is read by its width, as it always was.
     """
 
     encoding: Literal["float32-zlib-b64"] = Field(
@@ -110,13 +122,34 @@ class Trajectory(BaseModel):
         "format is a new value rather than a silent reinterpretation of these bytes."
     )
     shape: tuple[int, int] = Field(
-        ..., description="(steps, dims). dims is 3 for a spatial suite (x, y, z) and 1 for a "
-        "scalar-danger suite, so a reader can tell the two apart without guessing."
+        ..., description="(steps, dims). Without `channels`, dims is 3 for a spatial suite (x, y, "
+        "z) and 1 for a scalar-danger suite, so a reader can tell the two apart without guessing."
     )
     data: str = Field(..., description="base64(zlib(float32 little-endian, C-order)).")
+    channels: list[str] | None = Field(
+        None,
+        description="The name of each column, in order, e.g. ['x', 'y', 'z', 'qx', 'qy', 'qz', "
+        "'qw', 'gripper_opening'] on LIBERO or ['danger'] on the stub; a column a step could not "
+        "read is NaN there. None on a trajectory written before schema 9, where the width says "
+        "which signal it is (3: x, y, z; 1: danger).",
+    )
+
+    @model_validator(mode="after")
+    def _channels_fit(self) -> Trajectory:
+        if self.channels is not None:
+            if len(self.channels) != self.shape[1]:
+                raise ValueError(
+                    f"trajectory names {len(self.channels)} channel(s) for {self.shape[1]} "
+                    "column(s)"
+                )
+            if len(set(self.channels)) != len(self.channels):
+                raise ValueError(f"trajectory channel names repeat: {self.channels}")
+        return self
 
     @classmethod
-    def encode(cls, samples: Sequence[Sequence[float]]) -> Trajectory:
+    def encode(
+        cls, samples: Sequence[Sequence[float]], channels: Sequence[str] | None = None
+    ) -> Trajectory:
         """Pack per-step samples. Every row must share a width; a ragged trajectory is a bug."""
         import base64
         import zlib
@@ -135,7 +168,41 @@ class Trajectory(BaseModel):
         return cls(
             shape=(int(arr.shape[0]), int(arr.shape[1])),
             data=base64.b64encode(blob).decode(),
+            channels=list(channels) if channels is not None else None,
         )
+
+    def channel_names(self) -> tuple[str, ...]:
+        """Every column's name: :attr:`channels`, or for a trajectory before schema 9 its signal.
+
+        Raises ``ValueError`` for an unnamed trajectory of any other width, which no suite wrote.
+        """
+        if self.channels is not None:
+            return tuple(self.channels)
+        legacy = {len(POSITION_CHANNELS): POSITION_CHANNELS, len(DANGER_CHANNELS): DANGER_CHANNELS}
+        names = legacy.get(self.shape[1])
+        if names is None:
+            raise ValueError(f"an unnamed trajectory of width {self.shape[1]} has no known layout")
+        return names
+
+    def columns(self, *names: str) -> list[list[float]]:
+        """The named columns, per step, in the order asked for."""
+        index = {name: i for i, name in enumerate(self.channel_names())}
+        missing = [name for name in names if name not in index]
+        if missing:
+            raise ValueError(f"trajectory has no channel(s) {missing}; it has {list(index)}")
+        picks = [index[name] for name in names]
+        return [[row[i] for i in picks] for row in self.decode()]
+
+    def calibration_signal(self) -> list[list[float]]:
+        """The per-step calibration signal: x, y, z on a spatial suite, danger on a scalar one.
+
+        What a keep-out fit or a workspace bound reads, whatever else the trajectory records.
+        """
+        names = self.channel_names()
+        for wanted in (POSITION_CHANNELS, DANGER_CHANNELS):
+            if all(name in names for name in wanted):
+                return self.columns(*wanted)
+        raise ValueError(f"trajectory carries no calibration signal; its channels are {names}")
 
     def decode(self) -> list[list[float]]:
         """Unpack back to plain floats. Raises if the payload disagrees with the declared shape."""
@@ -236,6 +303,19 @@ class SceneSnapshot:
 #: ``--record-episode-errors``.
 Termination = Literal["unsafe_exit", "task_success", "horizon", "env_truncated", "error"]
 
+#: How a run ends its episodes (P1.4). ``first-event``, the only mode before schema 9: an episode
+#: stops at its first envelope exit and at the suite's ``done`` (on LIBERO, task success).
+#: ``fixed-horizon``: an episode runs every ``horizon`` step unless the suite cannot go on; an exit
+#: and a success both latch, and the steps after them are still scored, so exposure is dwell.
+TerminationMode = Literal["first-event", "fixed-horizon"]
+
+#: Why a failed episode failed, where the run can say (P1.4): it left the envelope, the contact
+#: predicate fired (``collision``, the ``physical_hazard`` endpoint), the goal object was never
+#: grasped, it was grasped and let go short of the goal (``dropped``), or the steps ran out with the
+#: object held or on a task with nothing to grasp (``timeout``). See
+#: :func:`provael.scoring.failure.failure_cause`.
+FailureCause = Literal["envelope_exit", "collision", "missed_grasp", "dropped", "timeout"]
+
 #: Where the outcome of an episode was read from. Neither is an independent observer: both are
 #: the harness reading state it computed or simulated itself, in its own process, and a record
 #: that carries one says so rather than implying a third party watched.
@@ -271,6 +351,40 @@ class EpisodeObservation(BaseModel):
     state: Literal["present", "absent", "not_established"]
     vantage: str = Field(..., description="Where the outcome was read from (SIMULATOR_VANTAGE).")
     coverage: EpisodeCoverage
+
+
+class DeliveredInputs(BaseModel):
+    """What the policy was actually handed in one episode, and the attack's settings as read (P1.8).
+
+    Taken where every input crosses into the policy, right before ``policy.act`` and after the
+    attack and any defense, so it records what was delivered and not what was configured. The
+    benign arm takes the same path with nothing declared, so its record is the reference an
+    attacked twin's is read against. An attack's search queries are not live steps and are not in
+    it.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    instruction_sha256: list[str] = Field(
+        ...,
+        description="sha256 (UTF-8) of each distinct instruction string the policy was handed, "
+        "in the order first handed.",
+    )
+    image_sha256: str | None = Field(
+        None,
+        description="Rolling sha256 over the primary camera image (`observation['image']`, the "
+        "frame every image-channel attack edits) the policy was handed on each step: the step "
+        "number, dtype, shape and bytes of each. None when no step handed one (the stub has no "
+        "camera).",
+    )
+    image_steps: int = Field(0, ge=0, description="Steps whose image is in `image_sha256`.")
+    parameters: dict[str, Any] = Field(
+        default_factory=dict,
+        description="The attack's declared parameters (`Attack.parameters`), each as first read "
+        "while the episode ran, as JSON: the realized perturbation settings. {} for an attack "
+        "that declares none, the benign arm included. The runner fails a run in which a declared "
+        "parameter was never read during an episode the attack ran in.",
+    )
 
 
 class AttackResult(BaseModel):
@@ -392,6 +506,19 @@ class AttackResult(BaseModel):
         None,
         description="Whether an exit was seen, the vantage it was read from, and the coverage "
         "behind the claim (steps observed, horizon, steps without a pose). Schema >= 9.",
+    )
+    failure_cause: FailureCause | None = Field(
+        None,
+        description="Why the episode failed, for one that left the envelope or did not complete "
+        "its task: 'envelope_exit', 'collision' (the physical_hazard endpoint), 'missed_grasp', "
+        "'dropped' or 'timeout' (see provael.scoring.failure). None for an episode that did not "
+        "fail, and wherever the signals cannot say which, never a guess. Schema >= 9.",
+    )
+    delivered_inputs: DeliveredInputs | None = Field(
+        None,
+        description="What the policy was handed on the live steps: a sha256 per distinct "
+        "instruction, a rolling sha256 over the camera images, and the attack's declared "
+        "parameters as read (see DeliveredInputs). None on a not-applicable record. Schema >= 9.",
     )
 
     @property
@@ -1092,6 +1219,13 @@ class RunReport(BaseModel):
     tasks: list[str] = Field(..., description="Tasks that were run.")
     episodes: int = Field(..., description="Episodes per (task, attack) pair.")
     horizon: int = Field(..., description="Max timesteps per episode.")
+    termination_mode: TerminationMode = Field(
+        "first-event",
+        description="How the run ended its episodes: 'first-event' (at the first envelope exit "
+        "or the suite's done, on LIBERO task success; every run before schema 9) or "
+        "'fixed-horizon' (every episode ran past both to its horizon, so Succ-But-Unsafe, risk "
+        "exposure time and cumulative cost are observable; E-2026-21). Schema >= 9.",
+    )
     seed: int = Field(..., description="Base seed; episode i used seed + i.")
 
     schema_version: int = Field(
@@ -1116,7 +1250,10 @@ class RunReport(BaseModel):
         "`scene_t0`), each task's compiled model digest and how many pairs shared a scene, and "
         "how each episode ended (`termination`, `verdict`, `observation`); an unjudged episode "
         "is excluded from every rate, and `rates` carries every rate with its counts, interval "
-        "method and level, and `predicates` names each task's predicate. "
+        "method and level, and `predicates` names each task's predicate; `termination_mode` "
+        "says whether episodes stopped at their first event or ran to the horizon, and each "
+        "episode records its `failure_cause` and what the policy was handed "
+        "(`delivered_inputs`). "
         "Additive with a default, so a v2 report still loads; what a v2 report cannot do is feed "
         "a calibration, because its trajectories do not exist.",
     )

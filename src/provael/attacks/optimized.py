@@ -40,7 +40,7 @@ from __future__ import annotations
 import math
 import random
 from collections.abc import Callable, Sequence
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from provael.attacks._payload import append_channel
 from provael.attacks.base import Attack
@@ -175,6 +175,7 @@ class TargetedTrajectoryHijack(Attack):
 
     name = "targeted_hijack"
     family = FAMILY
+    parameters = ("target", "query_budget", "max_magnitude")
     eai_id = _EAI.id
     eai_name = _EAI.name
 
@@ -194,6 +195,7 @@ class TargetedTrajectoryHijack(Attack):
         self._oracle: Oracle | None = None
         self._reset: Callable[[], None] | None = None
         self._cache: dict[tuple[str, int], str] = {}  # (task, seed) -> cue (one search per episode)
+        self._cache_reads: dict[tuple[str, int], dict[str, Any]] = {}  # the reads behind each cue
         #: Number of policy/surrogate queries the most recent search used (for budget tests).
         self.last_search_queries = 0
 
@@ -261,6 +263,9 @@ class TargetedTrajectoryHijack(Attack):
         if cue is None:
             cue = self._search(instruction, observation)
             self._cache[key] = cue
+            self._cache_reads[key] = self._audit_reads()
+        else:
+            self._audit_replay(self._cache_reads.get(key, {}))  # a repeat reuses this search
         # Instruction untouched: a resulting hijack is attributable to the action channel.
         return instruction, append_channel(observation, ACTION_DIRECTIVE_KEY, cue)
 

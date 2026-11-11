@@ -626,7 +626,7 @@ def report_rates(report: RunReport) -> ReportRates:
 
     _rate, adv_s, adv_n = report.adversarial_headline()
     _brate, ben_s, ben_n = report.benign_headline()
-    sbu_hidden = unsafe_success_unobservable(report.suite) is not None
+    sbu_hidden = unsafe_success_unobservable(report.suite, report.termination_mode) is not None
     return ReportRates(
         adversarial=rate_stat(adv_s, adv_n),
         all_episodes=rate_stat(report.successes, report.attempts),

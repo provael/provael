@@ -133,3 +133,102 @@ def test_a_payload_disagreeing_with_its_shape_is_rejected() -> None:
     lying = Trajectory(shape=(9, 3), data=good.data)
     with pytest.raises(ValueError, match="payload"):
         lying.decode()
+
+
+# --------------------------------------------------------------------------- #
+# named channels (schema 9, P1.5): a reader never infers the stride
+# --------------------------------------------------------------------------- #
+
+_POSE = ("x", "y", "z", "qx", "qy", "qz", "qw", "gripper_opening")
+
+
+def test_every_new_trajectory_names_its_channels() -> None:
+    assert {tuple(r.trajectory.channels or ()) for r in _report().results if r.trajectory} == {
+        ("x", "y", "z")
+    }
+    scalar = run(RunConfig(**_SCALAR))  # type: ignore[arg-type]
+    assert {tuple(r.trajectory.channels or ()) for r in scalar.results if r.trajectory} == {
+        ("danger",)
+    }
+
+
+def test_named_channels_round_trip_and_are_read_by_name() -> None:
+    rows = [[0.1, 0.2, 0.3, 0.0, 0.0, 0.0, 1.0, 0.08], [0.4, 0.5, 0.6, 0.0, 0.0, 0.7, 0.7, 0.01]]
+    traj = Trajectory.encode(rows, channels=_POSE)
+    restored = Trajectory.model_validate_json(traj.model_dump_json())
+    assert restored.channels == list(_POSE) and restored.channel_names() == _POSE
+    flat = [v for row in restored.decode() for v in row]
+    assert flat == pytest.approx([v for row in rows for v in row])
+    assert [v for (v,) in restored.columns("gripper_opening")] == pytest.approx([0.08, 0.01])
+    xyz = [v for row in restored.calibration_signal() for v in row]
+    assert xyz == pytest.approx([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
+
+
+def test_an_old_three_channel_trajectory_still_decodes() -> None:
+    """Every trajectory before schema 9 names nothing; its width says what it is."""
+    legacy = Trajectory(**Trajectory.encode([[0.1, 0.2, 0.3]]).model_dump(exclude={"channels"}))
+    assert legacy.channels is None and legacy.channel_names() == ("x", "y", "z")
+    assert legacy.calibration_signal() == legacy.decode()
+    scalar = Trajectory(**Trajectory.encode([[0.7]]).model_dump(exclude={"channels"}))
+    assert scalar.channel_names() == ("danger",)
+    odd = Trajectory(**Trajectory.encode([[1.0, 2.0]]).model_dump(exclude={"channels"}))
+    with pytest.raises(ValueError, match="no known layout"):
+        odd.channel_names()
+
+
+def test_a_committed_trajectory_from_before_schema_9_reads_as_it_did() -> None:
+    from pathlib import Path
+
+    from provael.report import load_report
+
+    shard = Path(__file__).resolve().parents[1] / "results" / (
+        "smolvla_libero_object_suite_2026-09-14/libero_object_0"
+    )
+    report = load_report(shard)
+    traj = next(r.trajectory for r in report.results if r.trajectory is not None)
+    assert traj.channels is None and traj.shape[1] == 3
+    assert traj.calibration_signal() == traj.decode()
+
+
+def test_channels_must_name_every_column_once() -> None:
+    with pytest.raises(ValueError, match="channel"):
+        Trajectory.encode([[0.1, 0.2, 0.3]], channels=("x", "y"))
+    with pytest.raises(ValueError, match="repeat"):
+        Trajectory.encode([[0.1, 0.2]], channels=("x", "x"))
+    with pytest.raises(ValueError, match="no channel"):
+        Trajectory.encode([[0.1, 0.2, 0.3]], channels=("x", "y", "z")).columns("qw")
+
+
+def test_the_projection_strips_channels_from_a_report_that_declares_less() -> None:
+    """A schema-8 report's trajectories digest as they always did; a schema-9 one keeps them."""
+    from provael.attest import report_projection
+
+    report = _report()
+    projected = report_projection(report)
+    assert projected["results"][0]["trajectory"]["channels"] == ["x", "y", "z"]
+    older = report_projection(report.model_copy(update={"schema_version": 8}))
+    assert "channels" not in older["results"][0]["trajectory"]
+
+
+def test_a_libero_step_records_position_orientation_and_gripper() -> None:
+    import math
+
+    import numpy as np
+
+    from provael.suites.libero import LIBERO_TRAJECTORY_CHANNELS, LiberoSuiteAdapter
+
+    adapter = LiberoSuiteAdapter()
+    obs = {"robot_state": {
+        "eef": {"pos": np.array([[0.1, 0.2, 0.9]]), "quat": np.array([[0.0, 0.0, 0.0, 1.0]])},
+        "gripper": {"qpos": np.array([[0.03, -0.03]])},
+    }}
+    state = adapter._state_from(obs, {})
+    assert adapter.trajectory_channels() == LIBERO_TRAJECTORY_CHANNELS == _POSE
+    assert adapter.trajectory_sample(state) == pytest.approx([0.1, 0.2, 0.9, 0, 0, 0, 1, 0.06])
+    # An orientation or opening that could not be read is NaN in its column, never a guess.
+    del obs["robot_state"]["eef"]["quat"], obs["robot_state"]["gripper"]
+    sample = adapter.trajectory_sample(adapter._state_from(obs, {}))
+    assert sample is not None and sample[:3] == pytest.approx([0.1, 0.2, 0.9])
+    assert all(math.isnan(v) for v in sample[3:])
+    # No position, no row: the step is dropped from the trajectory, as it always was.
+    assert adapter.trajectory_sample(adapter._state_from({}, {})) is None
