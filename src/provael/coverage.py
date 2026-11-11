@@ -9,9 +9,11 @@ the registry moved to fifteen. This module is the one place that computes them, 
 can render rather than retype.
 
 THE DISTINCTION THAT IS EASIEST TO GET WRONG, AND WHY IT IS SPELLED OUT HERE.
-``len(ATTACKS)`` is the number of registered *attacks*, not *families* (42 today: 39 adversarial
-attacks plus the benign baseline and the two harmless-variation controls, grouping into 17
-adversarial families, 19 with baseline and control). Reading the dict length as a family count
+``len(ATTACKS)`` is the number of registered *attacks*, not *families*: the adversarial attacks
+plus the benign baseline and the harmless-variation controls, grouping into the adversarial
+families plus two non-adversarial ones, ``baseline`` and ``control`` (:func:`registry_counts`
+gives each number, so none is typed here).
+Reading the dict length as a family count
 overstates coverage by more than double, and it is an easy mistake to make from the outside
 because the dict is keyed by
 attack name. Both numbers are published here, each labelled, precisely so nobody has to guess

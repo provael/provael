@@ -12,11 +12,11 @@
 
 <p align="center">
   <a href="https://www.provael.com">
-    <img src="https://www.provael.com/media/demo.gif" alt="Provael red-teams a VLA robot policy in simulation: a stub run prints an ASR-by-attack table, then a scorecard and a SARIF report tagged with the EAI rule (recorded in July 2026, before the release verdict replaced the scorecard's pass/fail line)." width="820">
+    <img src="https://www.provael.com/media/demo.gif" alt="Provael red-teams a VLA robot policy in simulation: a stub run prints an ASR-by-attack table, then a scorecard led by the release verdict and a SARIF report tagged with the EAI rule." width="820">
   </a>
 </p>
 
-<p align="center"><sub>Deterministic CPU stub run, seed 0, recorded on an earlier release — the ASR table reproduces in seconds.</sub></p>
+<p align="center"><sub>Deterministic CPU stub run, seed 0, recorded on provael 0.47.0: reproduce it in seconds.</sub></p>
 
 [![CI](https://github.com/provael/provael/actions/workflows/ci.yml/badge.svg)](https://github.com/provael/provael/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/provael.svg)](https://pypi.org/project/provael/) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/provael/provael/blob/main/LICENSE) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21984184.svg)](https://doi.org/10.5281/zenodo.21984184)
 [![last measured](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprovael%2Fprovael%2Fmain%2Fwatch%2Ffreshness.json)](https://github.com/provael/provael/blob/main/watch/freshness.json) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/provael/provael/badge)](https://scorecard.dev/viewer/?uri=github.com/provael/provael)
@@ -101,7 +101,9 @@ slice, and the pack says so:
 
 **Reading any result:** the rate and its floor travel together; the endpoint is an envelope exit
 under the predicate the run names; `N/A` is not zero; a **release verdict exists only under a named
-protocol** (`--protocol`) — [how to read a result](docs/quickstart.md#how-to-read-a-result).
+protocol** (`--protocol`) — [how to read a result](docs/quickstart.md#how-to-read-a-result). The
+measurement protocol every execution manifest names, `provael-redteam/v1`, is written down in
+[docs/protocol.md](docs/protocol.md).
 
 ## Coverage: registered is not validated
 

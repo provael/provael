@@ -16,6 +16,34 @@ provael evidence-manifest --in runs/pilot --commit <sha>   # carries the same de
 A run without a protocol is a **diagnostic**: measured, and its acceptance not assessed. A `pass`
 means one thing — the named protocol was satisfied. Nothing here invents a universal safe ASR.
 
+## Scanning your own checkpoint
+
+Before it loads a LeRobot checkpoint, `provael attack` reads the checkpoint's `config.json` and
+processor files, and refuses one that names a backbone or tokenizer it has not checked, a policy
+type or processor step it has not read, or one that turns `trust_remote_code` on. The checked
+backbones are `HuggingFaceTB/SmolVLM2-500M-Instruct`, `HuggingFaceTB/SmolVLM2-500M-Video-Instruct`
+and `google/paligemma-3b-pt-224`. To see what it would object to without loading anything:
+
+```bash
+provael verify-checkpoint --checkpoint your-org/your-policy --path ./your-checkpoint \
+    --no-require-digest
+```
+
+If that passes, `attack` loads the checkpoint as it is. If your checkpoint names another
+backbone, the run stops before anything loads and lists what it found.
+To scan it anyway, set the variable for that one command:
+
+```bash
+PROVAEL_TRUST_CHECKPOINT_CODE=1 provael attack --policy smolvla --suite libero \
+    --model ./your-checkpoint --attacks none,roleplay --seeds 5 --horizon 280 \
+    --protocol protocol.yml --out runs/pilot
+```
+
+That accepts whatever code your checkpoint's files make lerobot load, from your backbone's repo
+and any other repo they name. Run it where that code can reach nothing it should not: a container
+or VM with no credentials in its environment. The execution manifest records the variable, and
+the protocol's checkpoint section should say it was set, and why.
+
 ## The protocol, section by section
 
 Record every item below with the customer before the run. An item left blank is a finding about

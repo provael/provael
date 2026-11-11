@@ -131,6 +131,13 @@ LIBERO_TASK_SUITES: tuple[str, ...] = (
 #: LIBERO continuous action dimension (verified: Box(-1, 1, shape=(7,))).
 LIBERO_ACTION_DIM = 7
 
+#: The range LIBERO reads its gripper channel (channel 6 of :data:`SEVEN_DOF_DELTA_SCHEMA`) in:
+#: -1 opens, +1 closes. Read in lerobot 0.5.1 ``envs/libero.py``: the action space is
+#: ``Box(-1, 1, (7,))`` and the no-op action ``get_libero_dummy_action()`` holds the gripper at -1.
+#: The adapter preflight refuses a checkpoint whose training data used another range
+#: (:func:`provael.policies.preflight.check_gripper_convention`).
+LIBERO_GRIPPER_RANGE: tuple[float, float] = (-1.0, 1.0)
+
 #: What a LIBERO episode's trajectory records per step (P1.5): the end-effector position, its
 #: orientation as robosuite reports it (``robot0_eef_quat``, x-y-z-w order: robosuite 1.4.0
 #: ``robots/single_arm.py:308-309`` converts MuJoCo's w-x-y-z with ``to="xyzw"``), and the gripper
@@ -155,6 +162,19 @@ _LIBERO_HINT = (
     "not installed.\n"
     "  pip install 'provael[lerobot]' 'lerobot[libero]==0.5.1'\n"
     "  PROVAEL_INTEGRATION=1 provael attack --policy smolvla --suite libero ...\n"
+    "Run on CPU with '--suite stub' to exercise the full pipeline with no simulator."
+)
+
+#: Raised by :func:`_ensure_libero_initialized` when lerobot is installed and the simulator is not.
+_LIBERO_SIM_HINT = (
+    "The LIBERO simulator package ('libero', published on PyPI as hf-libero) is not importable, "
+    "so no LIBERO environment can be built.\n"
+    "lerobot 0.5.1's [libero] extra declares it with a platform marker:\n"
+    "  hf-libero>=0.1.3,<0.2.0; sys_platform == 'linux'\n"
+    "so 'pip install lerobot[libero]==0.5.1' installs no simulator on macOS or Windows.\n"
+    "  - On Linux, install the extra:  pip install 'lerobot[libero]==0.5.1'\n"
+    "  - Elsewhere, build hf-libero from its source (https://github.com/huggingface/LIBERO) and\n"
+    "    install it into this environment; that route is not tested by this project.\n"
     "Run on CPU with '--suite stub' to exercise the full pipeline with no simulator."
 )
 
@@ -368,7 +388,14 @@ def suite_and_ids_from_tasks(tasks: Sequence[str]) -> tuple[str, tuple[int, ...]
 
 
 def _ensure_libero_initialized() -> None:
-    """Pre-create LIBERO's first-run config so its import never blocks on ``input()``.
+    """Refuse at once when the LIBERO simulator is missing; otherwise pre-create its config.
+
+    MISSING SIMULATOR. lerobot 0.5.1's ``libero`` extra declares ``hf-libero>=0.1.3,<0.2.0;
+    sys_platform == 'linux'`` (read in its ``pyproject.toml``), so on macOS or Windows
+    ``pip install 'lerobot[libero]==0.5.1'`` succeeds and installs no simulator. This used to
+    return and let ``make_env`` fail later inside lerobot's own imports; it now raises
+    :class:`MissingLeRobotError` naming the marker and the source build, checked before the config
+    so a stale ``~/.libero/config.yaml`` cannot hide the missing package.
 
     VERIFIED behaviour (LIBERO ``libero/libero/__init__.py``): on first import it writes
     ``$LIBERO_CONFIG_PATH``/``~/.libero``/``config.yaml`` and, if that file is absent,
@@ -376,13 +403,13 @@ def _ensure_libero_initialized() -> None:
     (pytest) or any non-interactive run that raises ``OSError``. If the config is missing,
     we import ``libero.libero`` once with ``input`` auto-answered "N" so LIBERO writes its
     default config; subsequent imports (incl. lerobot's ``create_libero_envs``) skip the
-    prompt. No-op if the config already exists or LIBERO isn't installed.
+    prompt. No-op if the config already exists.
     """
+    if importlib.util.find_spec("libero") is None:
+        raise MissingLeRobotError(_LIBERO_SIM_HINT)
     config_dir = os.environ.get("LIBERO_CONFIG_PATH", os.path.expanduser("~/.libero"))
     if os.path.exists(os.path.join(config_dir, "config.yaml")):
         return
-    if importlib.util.find_spec("libero") is None:
-        return  # let make_env surface the missing-sim error
 
     def _answer_no(*_args: object, **_kwargs: object) -> str:
         return "N"
@@ -1213,6 +1240,7 @@ class LiberoSuiteAdapter(SuiteAdapter):
 __all__ = [
     "LIBERO_TASK_SUITES",
     "LIBERO_ACTION_DIM",
+    "LIBERO_GRIPPER_RANGE",
     "LIBERO_TRAJECTORY_CHANNELS",
     "ISO_TS_15066_HANDS_QUASI_STATIC_N",
     "CONTACT_RULE_VERSION",

@@ -147,16 +147,51 @@ vulnerabilities in Provael**, and the core install (6 deps, no GPU/ML stack) is 
   not reachable through Provael, on CPU or GPU. If you **separately** run LeRobot's async inference,
   require auth/mTLS on the PolicyServer. **No released LeRobot carries a fix as of 19 September
   2026:** a fix is *proposed* in [LeRobot PR #3048](https://github.com/huggingface/lerobot/pull/3048)
-  (replacing pickle with safetensors + JSON), which is still open, and the advisory
+  (replacing pickle with safetensors + JSON), which closed unmerged on 7 October 2026, and the advisory
   ([GHSA-f7vj-73pm-m822](https://github.com/advisories/GHSA-f7vj-73pm-m822)) lists no patched
   version — this note used to say "fixed in PR #3048", which overstated it. **The pin is a bounded,
   explicit exception, not a forgotten one:** it stays at `0.5.1` until a release that carries the
   fix has been validated against the supported checkpoint on a GPU (the adapter's per-step rollout
   was read off this version's evaluator, and 0.6.x moved import paths and raised the torch floor —
   `pyproject.toml` records why), and it moves by a validated run, never by a version-string edit.
-  CI's dependency audit of the GPU extras names this advisory in an `--ignore-vuln` allow-list with
-  this justification (`.github/workflows/ci.yml`), so the audit stays legible for anything new.
+  CI's dependency audit of the GPU extras keeps this justification on its reviewed allow-list
+  (`.github/pip-audit-extras-allowlist.toml`), with a review date. That audit cannot see the advisory
+  itself: as of 7 November 2026 neither PyPI's feed nor OSV maps it to `lerobot`, and GitHub lists it
+  as unreviewed with no package attached, so a green audit says nothing about this CVE either way.
   Enabling LeRobot's separate inference server is not a shortcut to that and is not done.
+- **PYSEC-2026-2290: transformers 5.3.0 lets a loaded config turn on remote code.**
+  `LightGlueConfig` passes a `trust_remote_code` it reads from a repo's `config.json` to a nested
+  `AutoConfig.from_pretrained`, so a model repo can run its own code when the caller never asked.
+  transformers 5.5.0 fixes it, but `lerobot==0.5.1` pins `transformers==5.3.0` exactly, so the
+  `[lerobot]` extra keeps 5.3.0 until the lerobot pin moves, by a GPU-validated run. lerobot loads
+  whatever repos a checkpoint's own files name, and releases up to 0.47.0 do not check those
+  files, so there `provael attack --model <repo>` can reach this bug through any repo it is
+  pointed at. From the first release after 0.47.0, `LeRobotAdapter.load()` reads the checkpoint's
+  `config.json`, `policy_preprocessor.json` and `policy_postprocessor.json` before anything
+  loads, and refuses the checkpoint if they:
+  - turn `trust_remote_code` on anywhere, or carry `auto_map` in `config.json`;
+  - name a backbone or tokenizer outside three repos read off known-good checkpoints on
+    10 November 2026;
+  - use a policy type other than `smolvla`, `pi0` or `pi05`, or a processor step this project has
+    not read in lerobot 0.5.1. Other types and steps load models their own config names, and
+    lerobot itself passes `trust_remote_code=True` for `pi0_fast` and `groot`, so
+    `--policy pi0fast` and `--policy groot` are refused too;
+  - name a step class outside lerobot, or a step with no registered name, which lerobot imports
+    and calls with the step's config;
+  - build `action_tokenizer_processor` without `trust_remote_code: false`, or set `use_peft`,
+    which makes lerobot load a second checkpoint this check never reads.
+
+  lerobot is then handed the copy that was checked, so a repo its owner changes during the load
+  is not what loads. `provael verify-checkpoint --path` runs the same check on a local checkpoint.
+  The check is `checkpoint_code_problems` in `src/provael/integrity.py`, and CI's audit of the GPU
+  extras lists this advisory as not reachable on its strength. Three things remain. The three
+  backbone repos still load as their owners publish them, unpinned, so a change their owners make
+  is outside this check. Setting
+  `PROVAEL_TRUST_CHECKPOINT_CODE=1` loads a refused checkpoint anyway, and its author's code may
+  then run: that is the variable's purpose, so set it only for a checkpoint you trust, on a
+  machine with no secrets to lose. The execution manifest records the variable when it is set.
+  The OpenVLA adapter loads with `trust_remote_code=True` on purpose, because OpenVLA ships its
+  model code on the Hub, so naming a checkpoint for `--policy openvla` already means trusting it.
 
 ## Scope under the EU Cyber Resilience Act
 

@@ -21,7 +21,7 @@ jobs:
   regression-gate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4   # the baseline lives in-repo at .provael/baseline.report.json
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0   # the baseline lives in-repo at .provael/baseline.report.json
 
       - name: Provael baseline-regression gate
         uses: provael/provael@v0.47.0

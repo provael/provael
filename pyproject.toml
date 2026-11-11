@@ -97,7 +97,9 @@ provael = "provael.cli:app"
 # import paths, split the dataset/training deps into new extras and raised the torch floor. Bumping
 # it therefore requires re-reading those call signatures and re-running the PROVAEL_INTEGRATION=1
 # lane on a GPU box — not a version-string edit. lerobot 0.6.0 (6 Jul 2026) and 0.6.1 (3 Aug 2026)
-# are both published on PyPI; pin only against a published release.
+# are both published on PyPI; pin only against a published release. The policy types and
+# processor steps provael.integrity lets a checkpoint use were also read in 0.5.1, so a bump
+# re-reads them too.
 [project.optional-dependencies]
 # smolvla -> the policy (transformers); libero -> the simulator (Part 2 above). Both ride this one
 # GPU extra so a single `pip install 'provael[lerobot]'` gives the full real SmolVLA x LIBERO path.
