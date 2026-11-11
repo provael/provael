@@ -20,6 +20,7 @@ import contextlib
 import importlib.util
 import json
 import os
+import warnings
 from collections.abc import Iterator
 from pathlib import Path
 from types import SimpleNamespace
@@ -41,9 +42,12 @@ from provael.policies.preflight import (
     CHECK_SOURCE,
     CHECK_WEIGHTS,
     NOT_APPLICABLE,
+    OVERRIDDEN,
+    OVERRIDE_PREFLIGHT_ENV,
     PASSED,
     WEIGHT_CANARIES,
     PreflightError,
+    PreflightOverrideWarning,
     WeightCanary,
 )
 from provael.policies.registry import MEASURED_POLICIES, make_policy
@@ -923,3 +927,85 @@ def test_real_libero_with_swapped_translation_channels_is_refused() -> None:
     suite.step = swapped
     with pytest.raises(PreflightError, match=CHECK_FRAME):
         preflight.check_frame_consistency(suite, "libero_object/0", 0)
+
+
+# --------------------------------------------------------------------------------------------- #
+# the override: PROVAEL_OVERRIDE_PREFLIGHT=1 runs every check and records each refusal
+# --------------------------------------------------------------------------------------------- #
+
+_OVERRIDE = {OVERRIDE_PREFLIGHT_ENV: "1"}
+
+
+def _refused_twice() -> tuple[Any, Any, Any]:
+    """Freshly initialised weights and a 0-to-1 gripper on LIBERO: two load checks refuse."""
+    pre, post = _processors(post_stats={"action": _action_stats(min=_channel(0.0), max=_channel(1.0))})
+    return _smolvla(np.random.default_rng(12), fresh=True), pre, post
+
+
+def test_without_the_override_the_first_refusal_still_raises() -> None:
+    policy, pre, post = _refused_twice()
+    with pytest.raises(PreflightError, match=CHECK_WEIGHTS):
+        preflight.check_lerobot_policy(
+            policy, pre, post, model_id="x/y", rename_map=None, features=_LIBERO,
+            torch=_FakeTorch(), environ={},
+        )
+
+
+def test_the_override_runs_every_check_and_records_each_refusal() -> None:
+    policy, pre, post = _refused_twice()
+    with pytest.warns(PreflightOverrideWarning) as caught:
+        outcomes = preflight.check_lerobot_policy(
+            policy, pre, post, model_id="x/y", rename_map=None, features=_LIBERO,
+            torch=_FakeTorch(), environ=_OVERRIDE,
+        )
+    assert [o.check for o in outcomes] == [
+        CHECK_SOURCE, CHECK_NORMALISER, CHECK_RENAME, CHECK_WEIGHTS, CHECK_GRIPPER, CHECK_IMAGE,
+    ]
+    statuses = {o.check: o.status for o in outcomes}
+    assert statuses[CHECK_WEIGHTS] == statuses[CHECK_GRIPPER] == OVERRIDDEN
+    assert statuses[CHECK_NORMALISER] == PASSED  # a check that passes still says so
+    weights = next(o for o in outcomes if o.check == CHECK_WEIGHTS)
+    assert "refused this run" in weights.detail  # the refusal's own message is kept
+    [warning] = [w for w in caught if w.category is PreflightOverrideWarning]
+    message = str(warning.message)
+    assert f"{OVERRIDE_PREFLIGHT_ENV}=1" in message and "'x/y'" in message
+    assert f"[{CHECK_WEIGHTS}]" in message and f"[{CHECK_GRIPPER}]" in message
+
+
+def test_only_the_value_1_overrides() -> None:
+    policy, pre, post = _refused_twice()
+    for value in ("true", "yes", "0", ""):
+        with pytest.raises(PreflightError):
+            preflight.check_lerobot_policy(
+                policy, pre, post, model_id="x/y", rename_map=None, features=_LIBERO,
+                torch=_FakeTorch(), environ={OVERRIDE_PREFLIGHT_ENV: value},
+            )
+    assert preflight.override_preflight(_OVERRIDE)
+    assert not preflight.override_preflight({})
+
+
+def test_an_override_with_nothing_to_override_warns_nothing() -> None:
+    pre, post = _processors()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", PreflightOverrideWarning)
+        outcomes = preflight.check_lerobot_policy(
+            _smolvla(np.random.default_rng(8)), pre, post,
+            model_id="HuggingFaceVLA/smolvla_libero", rename_map=None, features=_LIBERO,
+            torch=_FakeTorch(), environ=_OVERRIDE,
+        )
+    assert OVERRIDDEN not in {o.status for o in outcomes}
+
+
+def test_the_override_does_not_lift_the_named_base_checkpoint_refusal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(OVERRIDE_PREFLIGHT_ENV, "1")
+    with pytest.raises(PreflightError, match="lerobot/pi05_libero_finetuned_v044"):
+        preflight.refuse_untuned_base_checkpoint("lerobot/pi05_base", _LIBERO)
+
+
+def test_the_execution_manifest_records_the_override() -> None:
+    from provael.execution import ENV_ALLOWLIST, redact_env
+
+    assert OVERRIDE_PREFLIGHT_ENV in ENV_ALLOWLIST
+    assert redact_env({OVERRIDE_PREFLIGHT_ENV: "1"}) == {OVERRIDE_PREFLIGHT_ENV: "1"}

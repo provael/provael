@@ -65,6 +65,11 @@ ENV_ALLOWLIST: tuple[str, ...] = (
     # chose (provael.integrity.TRUST_CHECKPOINT_CODE_ENV). A run that passed the check and one that
     # overrode it are different claims, and as above only the environment tells them apart.
     "PROVAEL_TRUST_CHECKPOINT_CODE",
+    # Whether the run loaded a policy its load-time preflight refused
+    # (provael.policies.preflight.OVERRIDE_PREFLIGHT_ENV). Same reason: a run that passed every
+    # check and one that went past a refusal are different claims, and only the environment says
+    # which.
+    "PROVAEL_OVERRIDE_PREFLIGHT",
     "MUJOCO_GL",
     "PYOPENGL_PLATFORM",
     "PROVAEL_SMOLVLA_LIBERO_CKPT",

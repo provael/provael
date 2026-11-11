@@ -173,6 +173,13 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
   single run is one draw. Recomputed from the shards, the published configuration's two runs put
   `roleplay` at 44/50 on 0.32.0 and 42/50 on 0.41.2, a difference of -4 points [-18, +10]. No
   number moves.
+- **A preflight refusal can be overridden, on the record.** `PROVAEL_OVERRIDE_PREFLIGHT=1` loads a
+  LeRobot policy whose load-time preflight refused it: every check still runs, each refusal is
+  kept as an `overridden` outcome with its message, one warning names them all, and the execution
+  manifest records the variable, as it records `PROVAEL_TRUST_CHECKPOINT_CODE`. The `pi05_base`
+  refusal and the opt-in `--preflight` frame check are not lifted. Why: the thresholds are stated
+  design values that no real load has tested, so a wrong refusal had no way through but editing
+  the code. No number moves.
 
 ### Changed
 

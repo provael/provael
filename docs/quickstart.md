@@ -93,6 +93,10 @@ an all-black and an all-white frame, and, on LIBERO, a checkpoint whose gripper 
 fit LIBERO's -1 to +1 gripper. `lerobot/pi05_base`, the `pi05` default, is refused on LIBERO; pass
 `--model lerobot/pi05_libero_finetuned_v044`. Add `--preflight` to `provael attack` to check, in an
 environment of its own before the run, that a +x end-effector command moves the arm along +x.
+The thresholds are stated design values that no real load has tested yet, so if one refuses a
+checkpoint you have reason to trust, `PROVAEL_OVERRIDE_PREFLIGHT=1` loads it anyway: every check
+still runs, each refusal prints as a warning, and the execution manifest records the variable. It
+does not lift the `pi05_base` refusal or the `--preflight` frame check.
 
 Add `--competence-check 5` to ask, before any attack, whether the policy can do each task at all:
 five benign episodes per task run first, at the seeds after the run's own, and a task whose task

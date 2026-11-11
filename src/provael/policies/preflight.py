@@ -37,6 +37,15 @@ FAIL CLOSED. A check that finds its failure raises :class:`PreflightError`. A ch
 what it needs (a statistic, a file, a parameter, a declared canary) raises too, saying it could not
 verify, rather than passing what it never looked at.
 
+OVERRIDE, ON THE RECORD. The thresholds are stated design values that no real load has tested,
+so a refusal can be wrong. ``PROVAEL_OVERRIDE_PREFLIGHT=1`` (:data:`OVERRIDE_PREFLIGHT_ENV`) lets
+:func:`check_lerobot_policy` load anyway: every check still runs, each refusal becomes an
+``overridden`` outcome carrying its message, a :class:`PreflightOverrideWarning` names them all,
+and the execution manifest records the variable (``provael.execution.ENV_ALLOWLIST``), as it
+records ``PROVAEL_TRUST_CHECKPOINT_CODE``. It does not reach :func:`refuse_untuned_base_checkpoint`,
+which refuses a named checkpoint rather than a threshold, or the opt-in frame check behind
+``provael attack --preflight``, which a run that does not want it can leave off.
+
 WHERE THEY RUN. :meth:`provael.policies.lerobot_adapter.LeRobotAdapter.load` calls
 :func:`refuse_untuned_base_checkpoint` before the weights download and
 :func:`check_lerobot_policy` once lerobot has built the policy and its processors, reading the live
@@ -52,7 +61,9 @@ from __future__ import annotations
 
 import json
 import math
-from collections.abc import Iterable, Mapping, Sequence
+import os
+import warnings
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NoReturn
@@ -75,9 +86,15 @@ class PreflightError(IncompatiblePolicyError):
     """
 
 
-#: Outcome statuses. A failure is never an outcome: it raises.
+#: Outcome statuses. A failure is never an outcome: it raises, unless the operator overrode the
+#: preflight, and then it is recorded as ``overridden`` with the refusal's message.
 PASSED = "passed"
 NOT_APPLICABLE = "not-applicable"
+OVERRIDDEN = "overridden"
+
+#: Set to ``1`` to load a policy whose load-time preflight refused it (see the module docstring).
+#: Any other value is a no.
+OVERRIDE_PREFLIGHT_ENV = "PROVAEL_OVERRIDE_PREFLIGHT"
 
 CHECK_SOURCE = "loaded-checkpoint-source"
 CHECK_NORMALISER = "normaliser-statistics"
@@ -87,6 +104,26 @@ CHECK_GRIPPER = "gripper-convention"
 CHECK_IMAGE = "image-sensitivity"
 CHECK_FRAME = "frame-consistency"
 CHECK_BASE = "libero-checkpoint"
+
+
+class PreflightOverrideWarning(UserWarning):
+    """Emitted when ``PROVAEL_OVERRIDE_PREFLIGHT=1`` lets a load its preflight refused go ahead."""
+
+
+def override_preflight(environ: Mapping[str, str] | None = None) -> bool:
+    """True when the operator set ``PROVAEL_OVERRIDE_PREFLIGHT=1``. Any other value is a no."""
+    env = os.environ if environ is None else environ
+    return env.get(OVERRIDE_PREFLIGHT_ENV) == "1"
+
+
+def override_report(model_id: str, overridden: Sequence[PreflightOutcome]) -> str:
+    """The warning an overridden load prints: the checkpoint, then every refusal it went past."""
+    lines = [
+        f"{OVERRIDE_PREFLIGHT_ENV}=1: loading {model_id!r} although its preflight refused it. Read "
+        "this run's rates against each refusal below; the execution manifest records the override."
+    ]
+    lines.extend(f"  - [{o.check}] {o.detail}" for o in overridden)
+    return "\n".join(lines)
 
 
 @dataclass(frozen=True)
@@ -775,34 +812,53 @@ def check_lerobot_policy(
     rename_map: Mapping[str, str] | None,
     features: SuiteFeatures | None,
     torch: Any = None,
+    environ: Mapping[str, str] | None = None,
 ) -> tuple[PreflightOutcome, ...]:
     """Run checks 9, 1, 2, 3, 5 and 4, in that order, on what lerobot built; raise on the first.
 
     Cheap reads first and the two forward passes last. The gripper check runs on a LIBERO suite
     only, where the expected range is known. ``torch`` is injectable so the CPU tests can drive the
-    probe with a fake; a real load imports it.
+    probe with a fake; a real load imports it. With ``PROVAEL_OVERRIDE_PREFLIGHT=1`` (read from
+    ``environ``, the process environment by default) nothing raises: every check runs, a refusal is
+    recorded as ``overridden``, and one :class:`PreflightOverrideWarning` names them all.
     """
     from provael.scoring.action_schema import SEVEN_DOF_DELTA_SCHEMA
     from provael.suites.libero import LIBERO_GRIPPER_RANGE
 
     config = getattr(policy, "config", None)
-    outcomes = [
-        check_loaded_checkpoint_source(policy, model_id),
-        check_normaliser_statistics(
+    override = override_preflight(environ)
+    outcomes: list[PreflightOutcome] = []
+
+    def run(check: str, probe: Callable[[], PreflightOutcome]) -> None:
+        try:
+            outcomes.append(probe())
+        except PreflightError as exc:
+            if not override:
+                raise
+            outcomes.append(PreflightOutcome(check, OVERRIDDEN, str(exc)))
+
+    run(CHECK_SOURCE, lambda: check_loaded_checkpoint_source(policy, model_id))
+    run(
+        CHECK_NORMALISER,
+        lambda: check_normaliser_statistics(
             preprocessor, postprocessor, getattr(config, "input_features", None)
         ),
-        check_rename_map(
+    )
+    run(
+        CHECK_RENAME,
+        lambda: check_rename_map(
             rename_map, embedded_rename_map(model_id) if rename_map is not None else {}
         ),
-        check_weights_loaded(policy),
-    ]
+    )
+    run(CHECK_WEIGHTS, lambda: check_weights_loaded(policy))
     if _names_libero(features):
-        outcomes.append(
-            check_gripper_convention(
+        run(
+            CHECK_GRIPPER,
+            lambda: check_gripper_convention(
                 action_statistics(postprocessor, preprocessor),
                 SEVEN_DOF_DELTA_SCHEMA.gripper_indices[0],
                 LIBERO_GRIPPER_RANGE,
-            )
+            ),
         )
     else:
         outcomes.append(
@@ -812,13 +868,24 @@ def check_lerobot_policy(
         import torch as torch_module
 
         torch = torch_module
-    try:
-        black, white = probe_image_sensitivity(policy, preprocessor, torch=torch)
-    except PreflightError:
-        raise
-    except Exception as exc:  # noqa: BLE001 - a probe that cannot run has verified nothing
-        _unverified(CHECK_IMAGE, f"the probe's forward pass failed ({type(exc).__name__}: {exc})")
-    outcomes.append(check_image_sensitivity(black, white))
+
+    def image() -> PreflightOutcome:
+        try:
+            black, white = probe_image_sensitivity(policy, preprocessor, torch=torch)
+        except PreflightError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - a probe that cannot run has verified nothing
+            _unverified(
+                CHECK_IMAGE, f"the probe's forward pass failed ({type(exc).__name__}: {exc})"
+            )
+        return check_image_sensitivity(black, white)
+
+    run(CHECK_IMAGE, image)
+    overridden = [o for o in outcomes if o.status == OVERRIDDEN]
+    if overridden:
+        warnings.warn(
+            override_report(model_id, overridden), PreflightOverrideWarning, stacklevel=2
+        )
     return tuple(outcomes)
 
 
@@ -924,10 +991,13 @@ __all__ = [
     "IMAGE_SENSITIVITY_EPSILON",
     "LIBERO_UNTUNED_BASE_CHECKPOINTS",
     "NOT_APPLICABLE",
+    "OVERRIDDEN",
+    "OVERRIDE_PREFLIGHT_ENV",
     "PASSED",
     "WEIGHT_CANARIES",
     "PreflightError",
     "PreflightOutcome",
+    "PreflightOverrideWarning",
     "WeightCanary",
     "action_statistics",
     "check_frame_consistency",
@@ -940,6 +1010,8 @@ __all__ = [
     "check_weights_loaded",
     "embedded_rename_map",
     "locate_checkpoint_file",
+    "override_preflight",
+    "override_report",
     "probe_batch",
     "probe_image_sensitivity",
     "refuse_untuned_base_checkpoint",
