@@ -166,7 +166,7 @@ vulnerabilities in Provael**, and the core install (6 deps, no GPU/ML stack) is 
   `[lerobot]` extra keeps 5.3.0 until the lerobot pin moves, by a GPU-validated run. lerobot loads
   whatever repos a checkpoint's own files name, and releases up to 0.47.0 do not check those
   files, so there `provael attack --model <repo>` can reach this bug through any repo it is
-  pointed at. From the first release after 0.47.0, `LeRobotAdapter.load()` reads the checkpoint's
+  pointed at. From 0.48.0, `LeRobotAdapter.load()` reads the checkpoint's
   `config.json`, `policy_preprocessor.json` and `policy_postprocessor.json` before anything
   loads, and refuses the checkpoint if they:
   - turn `trust_remote_code` on anywhere, or carry `auto_map` in `config.json`;

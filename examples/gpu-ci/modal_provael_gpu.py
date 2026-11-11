@@ -148,8 +148,23 @@ REPOSITORY = "provael/provael"
 #: and to 0.46.0 on 21 October 2026, still paused and 0/80 banked, so it resumes under the release
 #: whose significance column tests each attack against the control arm's own counts (E-2026-18);
 #: and to 0.47.0 on 7 November 2026, still paused and 0/80 banked, so it resumes under the release
-#: whose LIBERO episodes record the init state their reset loaded (report schema 8).
-PROVAEL_PIN = "0.47.0"
+#: whose LIBERO episodes record the init state their reset loaded (report schema 8); and to 0.48.0
+#: on 11 November 2026, still paused and 0/80 banked, so it resumes under the release that records
+#: report schema 9 (the policy's runtime identity, each episode's scene, ending and inputs).
+PROVAEL_PIN = "0.48.0"
+
+#: The newest release whose `attack` neither adds the controls by itself nor takes `--no-controls`
+#: (examples/gpu-ci/modal_libero_suite.py keeps the same constant). From 0.48.0 an
+#: instruction-channel run gains `none` and every control the run did not name, and the plan names
+#: four controls one by one so `declarative_text` stays out of a shard sized for 45 minutes
+#: (studies/scheduled_campaign/plan.json), so the shard command passes `--no-controls` once the pin
+#: is past this release. A past release, so it never needs updating.
+LAST_RELEASE_WITHOUT_NO_CONTROLS = "0.47.0"
+
+
+def _release(version: str) -> tuple[int, ...]:
+    """``0.48.0`` as ``(0, 48, 0)``; the pin is an exact release (tests/test_gpu_image_pin.py)."""
+    return tuple(int(part) for part in version.split("."))
 PROVAEL = f"provael[lerobot]=={PROVAEL_PIN}"
 
 # --------------------------------------------------------------------------- #
@@ -276,6 +291,9 @@ def redteam(
         "--model", model, "--tasks", task, "--attacks", attacks, "--seeds", "1",
         "--horizon", str(horizon), "--seed", str(seed), "--out", str(out),
     ]
+    # The plan's arms exactly, no more (see LAST_RELEASE_WITHOUT_NO_CONTROLS).
+    if _release(PROVAEL_PIN) > _release(LAST_RELEASE_WITHOUT_NO_CONTROLS):
+        cmd += ["--no-controls"]
     done = subprocess.run(cmd, check=False, capture_output=True, text=True)
     if done.returncode != 0:
         # The reason travels back in the exception, not only the exit code: the driver lists

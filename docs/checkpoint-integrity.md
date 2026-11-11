@@ -70,7 +70,7 @@ whatever its `class` path imports. transformers 5.3.0, which lerobot 0.5.1 pins 
 0.47.0 do not check any of this, so there, naming a checkpoint with `provael attack --model` can
 run code its author chose.
 
-From the first release after 0.47.0, `provael attack` reads those three files before it imports
+From 0.48.0, `provael attack` reads those three files before it imports
 anything from lerobot, and refuses the checkpoint if they:
 
 | Refused | Why |
@@ -119,7 +119,7 @@ In the Action, the step runs **before** the policy is instantiated — the check
 the load:
 
 ```yaml
-- uses: provael/provael@v0.47.0
+- uses: provael/provael@v0.48.0
   with:
     policy: smolvla
     suite: libero

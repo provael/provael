@@ -182,12 +182,12 @@ ATTACKS = "none,instruction,visual,injection"
 #: pushed registry, because the image was rebuilt from a layer that had resolved `@main` weeks
 #: earlier. That failure was loud. The same staleness on a code path that still RUNS is silent,
 #: and is exactly what happened to `calibrate`.
-PROVAEL_PIN = "0.47.0"
+PROVAEL_PIN = "0.48.0"
 PROVAEL = f"provael[lerobot]=={PROVAEL_PIN}"
 
 #: The newest provael RELEASE whose `attack` neither adds controls by itself nor takes
-#: `--no-controls`; both reached main after it. A past release, so it never needs updating. From the
-#: next release `provael attack` adds `none` and the `control` family to any run with an
+#: `--no-controls`; both reached main after it. A past release, so it never needs updating. From
+#: 0.48.0 `provael attack` adds `none` and the `control` family to any run with an
 #: instruction-channel arm unless told not to, and every stage below is costed arm by arm, so the
 #: command passes `--no-controls` once PROVAEL_PIN is past this. A stage that wants the controls
 #: names them, as `control` does.
@@ -440,9 +440,9 @@ STAGES: dict[str, dict[str, str]] = {
     # 280-step horizon at that pace is 15 x 227 s + 174 s = ~3,580 s, inside the 5,400 s timeout.
     # The ceiling is 10 x 1.5 h x $0.7992 = ~$11.99.
     #
-    # NOT DISPATCHABLE YET. The image installs PROVAEL_PIN, and 0.47.0 has no `declarative_text`:
-    # the container would stop at `unknown attack or family` after billing its setup. That is why
-    # gpu-arm.yml does not offer this stage. Offer it once PROVAEL_PIN names a release with the arm.
+    # DISPATCHABLE FROM 0.48.0. The image installs PROVAEL_PIN, and 0.47.0 had no `declarative_text`
+    # (its container would have stopped at `unknown attack or family` after billing its setup), so
+    # gpu-arm.yml offered this stage only once PROVAEL_PIN named 0.48.0, on 11 November 2026.
     "declarative": {
         "tasks": ALL_TASKS, "attacks": "none,roleplay,declarative_text",
         "seeds": "5", "episodes_per_seed": "1", "timeout": "5400",

@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format is based on
 the entries below are the ones a reader arriving today needs, newest at the top. Every heading is a
 release the tag exists for; the Unreleased section holds what is merged and not yet cut.
 
+- **0.48.0 (11 Nov 2026)** — report schema 9 for proof 1's re-run: the policy's runtime identity,
+  each episode's scene, ending and inputs, every rate with its counts; controls by default, a
+  competence gate, paired and clustered intervals, load preflights. Re-measures nothing.
 - **0.47.0 (7 Nov 2026)** — what proof 1's re-run needs: each LIBERO episode records its init state
   (schema 8), `calibrate --init-state-offset`, `attack --pin-init-states`, and plan-step refusals
   that keep a fit off a scored run's seeds and scenes. Re-measures nothing, so it ships six behind.
@@ -18,18 +21,36 @@ release the tag exists for; the Unreleased section holds what is merged and not 
   record a KMS key can sign (0.44 cannot verify v2; v1 still verifies); three-way calibration
   (schema 7); a contact/force predicate (unmeasured); the ML-BOM names the policy; Meta-World is
   scaffolding; the signed clock's ISO 10218 date corrected (E-2026-17). No published number moves.
-- **0.44.0 (20 Sep 2026)** — hygiene and scope: `full-sweep` on a real policy narrows to measured
-  families, `certify` becomes `dossier`, the machinery route is reframed. No measured number moves.
-- **Before 0.44** — 0.43.0 (19 Sep 2026): a release verdict only under a named acceptance protocol
-  (`--protocol`) and evidence manifest v2 (17 families, 39 attacks). 0.42.x (18–19 Sep 2026): π0.5's
-  preliminary leg (roleplay 1/30 against 0/30, no transfer claimed) and `E-2026-12`, fragility under
-  the roleplay frame rather than attacker control. 0.41.2 (9 Sep 2026), the 14 September run's tool:
-  roleplay 42/50 against 1/50, uncalibrated, on ten Object tasks; before it, the sharded suite.
+- **Before 0.45** — 0.44.0 (20 Sep 2026): hygiene and scope; `full-sweep` on a real policy narrows
+  to measured families and `certify` becomes `dossier`. 0.43.0 (19 Sep 2026): a release verdict
+  only under a named acceptance protocol (`--protocol`) and evidence manifest v2 (17 families, 39
+  attacks). 0.42.x (18–19 Sep 2026): π0.5's preliminary leg (roleplay 1/30 against 0/30, no
+  transfer claimed) and `E-2026-12`, fragility under the roleplay frame rather than attacker
+  control. 0.41.2 (9 Sep 2026), the 14 September run's tool: roleplay 42/50 against 1/50,
+  uncalibrated, on ten Object tasks; before it, the sharded suite.
 
 Corrections to published numbers live in [docs/errata.md](docs/errata.md), not here; an incident's
 narrative belongs there too, and from 0.44.0 entries say what changed and why, in that order.
 
 ## [Unreleased]
+
+## [0.48.0] — 2026-11-11
+
+This release carries report schema 9 and the method work proof 1's re-run is to record (#136):
+each report names the deployed policy's runtime identity, each episode's starting scene, how it
+ended and what the policy was handed, every rate with its counts, interval and unjudged count,
+and the predicate each task was scored against. `--termination fixed-horizon` runs episodes to
+the horizon; `provael attack` adds the benign arm and the control family to any instruction-channel
+run unless `--no-controls`; `--competence-check` refuses the attacks on a task the policy cannot
+do; paired and task-clustered intervals reach `report.md`, the hf-eval notes, SARIF levels and
+board schema 7. A LeRobot checkpoint whose own files would run unreviewed code is refused
+(PYSEC-2026-2290), and load-time preflights refuse a policy fed the wrong thing
+(`PROVAEL_OVERRIDE_PREFLIGHT=1` loads it anyway, on the record). Both GPU images now install
+0.48.0 (`PROVAEL_PIN`) and pass `--no-controls`, so every stage runs the arms it is costed for. The
+published measurement does not move with it: nothing was re-measured, `measuredWith` (0.41.2) and
+`measuredAt` stay as they are, and the headline is still uncalibrated.
+`watch/publish-freshness.json` reads `releasesBehind: 7` and `isStale: true`, and the scheduled
+campaign stays paused.
 
 ### Added
 
