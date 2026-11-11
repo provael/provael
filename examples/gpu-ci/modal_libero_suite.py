@@ -23,12 +23,12 @@ eighteen-name family list under a "19 families" label in README.md. The table be
     calibrate        10  x  1  x 20  x 1   =    200     6.3       ~$5     ~0.6 h sharded
                                                     hard ceiling ~$11.99 (10 x 1.5 h timeout)
     probe            10  x  8  x  3  x 1   =    240     7.6       ~$6.11  ~45 min sharded
-    control          10  x  4  x  5  x 1   =    200     6.3       ~$6.15   ~1.1 h sharded
-                                                    hard ceiling ~$12 (10 x 1.5 h timeout)
+    control          10  x  6  x  5  x 1   =    300    13.7       ~$11     ~1.6 h sharded
+                                                    hard ceiling ~$20 (10 x 2.5 h timeout)
     declarative      10  x  3  x  5  x 1   =    150     6.8       ~$5.47   ~0.8 h sharded
                                                     hard ceiling ~$12 (10 x 1.5 h timeout)
-    eai04-redirect   10  x  4  x  5  x 1   =    200     6.3       ~$6.2    ~1.1 h sharded
-                                                    hard ceiling ~$12 (10 x 1.5 h timeout)
+    eai04-redirect   10  x  6  x  5  x 1   =    300    13.7       ~$11     ~1.7 h sharded
+                                                    hard ceiling ~$20 (10 x 2.5 h timeout)
     full             10  x  8  x  5  x 1   =    400    15.4       $12.29   2.04 h sharded (RUN)
                                                     hard ceiling ~$20 (10 x 2.5 h timeout)
     whitebox-pilot    2  x 12  x  2  x 1   =     48     ~2.4     ~$2 +?    <=2.5 h sharded
@@ -41,8 +41,9 @@ eighteen-name family list under a "19 families" label in README.md. The table be
     `full`'s row is the reason to read projections sceptically — see below.
 
 `full`'s row is MEASURED, not projected — it ran, and its estimate was $10.17 against an actual
-$12.29, 21% low. `control`'s ~$6.15 is that measured $0.031/episode times 200, so it inherits the
-correction rather than repeating the optimism.
+$12.29, 21% low. `control`'s ~$11 scales the one Modal run of that stage (9 August, below:
+$7.30 for 200 episodes) to the 300 its six arms now make, so it inherits a measured pace rather
+than a projection's optimism; `eai04-redirect` names six arms too and is priced the same way.
 
 ONE MODAL RUN OF `control` IS COMMITTED, AND IT IS THE BASIS FOR `declarative`'s ROW. On 9 August
 2026 the stage ran four arms (`none`, `roleplay`, `benign_reword`, `nonsense_text`), 200 episodes,
@@ -50,8 +51,9 @@ in 9.12 GPU-hours, ~$7.30, its slowest shard ~1.04 h (results/smolvla_libero_obj
 its row, so its row still reads low. The stage has named six arms since `scrambled_text` and
 `roleplay_no_target` were registered on 14 September 2026, and those six have run only on a
 workstation (results/smolvla_libero_object_control_2026-09-14). At five seeds that is 30 episodes a
-shard, and at the 9 August pace the slowest shard would take ~1.56 h, past the 1.5 h timeout:
-re-size the stage before dispatching it. `declarative_text`, the control registered on 10 November
+shard, and at the 9 August pace the slowest shard would take ~1.56 h, past the 1.5 h timeout it
+had, so on 11 November 2026 its timeout moved to 2.5 h, and `eai04-redirect`'s with it (see the
+two stages). `declarative_text`, the control registered on 10 November
 2026, is therefore not in `control`. It has its own stage, `declarative`, whose row scales the 9
 August run's measured GPU-hours to 150 episodes: an estimate for an arm that has never run anywhere.
 
@@ -410,10 +412,17 @@ STAGES: dict[str, dict[str, str]] = {
     # THE CONTROLS ARE NAMED, NOT GIVEN AS THE `control` FAMILY, since 10 November 2026, when the
     # family gained `declarative_text`: a registered control must not add work to a stage whose
     # timeout is its printed ceiling. These four are what the family resolved to before that day.
+    #
+    # SIZING, re-done 11 November 2026: six arms x five seeds is 30 episodes a shard, and the one
+    # Modal run of this stage (9 August, four arms) ran at ~0.81 s/step after a 174 s setup. A shard
+    # whose every episode runs the 280-step horizon at that pace is 30 x 227 s + 174 s = ~6,980 s,
+    # past the 5,400 s it had, and a shard that overruns writes nothing. 9,000 s (2.5 h, `full`'s
+    # timeout) leaves ~29% over that worst case; the ceiling is 10 x 2.5 h x $0.7992 = ~$19.98
+    # against ~$11 expected (the 9 August $7.30 for 200 episodes, scaled to 300).
     "control": {
         "tasks": ALL_TASKS,
         "attacks": "none,roleplay,benign_reword,nonsense_text,scrambled_text,roleplay_no_target",
-        "seeds": "5", "episodes_per_seed": "1", "timeout": "5400",
+        "seeds": "5", "episodes_per_seed": "1", "timeout": "9000",
         "pin_init_states": "45",
     },
     # THE FIRST OF THE TWO ARMS ERRATUM E-2026-12 LEFT OPEN, OPT-IN. The 14 September controls
@@ -476,14 +485,16 @@ STAGES: dict[str, dict[str, str]] = {
     #
     # THE CONTROLS ARE NAMED here too since 10 November 2026, for the reason `control` gives: these
     # four are what the family resolved to that day. The sizing above was written for the first two;
-    # with all four a shard is 30 episodes, so re-size the stage before dispatching it.
+    # with all four a shard is 30 episodes, and on 11 November 2026 the timeout moved to 9,000 s for
+    # it: 30 x 280 x 0.81 s + a 174 s setup + the search's ~260 s is ~7,240 s at `control`'s
+    # 9 August pace, ~24% under the timeout, and the ceiling is 10 x 2.5 h x $0.7992 = ~$19.98.
     "eai04-redirect": {
         "tasks": ALL_TASKS,
         "attacks": (
             "none,optimized_instruction,benign_reword,nonsense_text,scrambled_text,"
             "roleplay_no_target"
         ),
-        "seeds": "5", "episodes_per_seed": "1", "timeout": "5400",
+        "seeds": "5", "episodes_per_seed": "1", "timeout": "9000",
         "query_budget": "64",
     },
     # THE TWO WHITE-BOX FAMILIES, ON THE REAL ADAPTER, AS A PILOT. Since 0.42.0 `LeRobotAdapter`
