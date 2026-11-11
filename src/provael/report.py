@@ -278,8 +278,9 @@ def _competence_section(report: RunReport) -> list[str]:
         "## Competence check",
         "",
         f"> {check.episodes_per_task} benign episode(s) per task ran before the arms, at seeds "
-        "after the run's own, with the run's defense in place. A task whose task success fell "
-        f"below {100.0 * check.floor:.0f}% had its adversarial arms refused; the benign arm and "
+        "after the run's own, with the run's defense in place and under its termination mode. "
+        f"A task whose task success fell below {100.0 * check.floor:.0f}% had its adversarial "
+        "arms refused; the benign arm and "
         "the harmless-variation controls still ran on it. These episodes enter no rate.",
         "",
         "| task | task success (pre-run) | decision | arms refused |",

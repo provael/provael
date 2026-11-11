@@ -692,7 +692,8 @@ def _competence_check(
     """The competence pre-run on ``task``: can the policy do it before it is attacked (P2.2)?
 
     ``config.competence_check`` benign episodes, at the seeds after the run's own so no scored
-    episode is reused to decide what gets scored, with the run's defense in place. A task whose
+    episode is reused to decide what gets scored, with the run's defense in place and under its
+    termination mode, so the pre-run sees the conditions the benign arm runs under. A task whose
     task success falls below ``config.competence_floor`` has its adversarial arms refused: a 0%
     rate on a policy that cannot do the task unattacked measures nothing. The benign arm and the
     harmless-variation controls still run, so the floor and the release verdict's own competence
@@ -710,6 +711,7 @@ def _competence_check(
         run_episode(
             policy, suite, benign, task, first + i, config.horizon,
             defense=defense, record_errors=config.record_episode_errors,
+            termination=config.termination,
         )
         for i in range(config.competence_check)
     ]

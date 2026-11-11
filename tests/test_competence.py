@@ -174,3 +174,16 @@ def test_shards_that_ran_one_check_combine_and_shards_that_did_not_are_refused(
         combine_reports([reach, _run(tasks=["fumble"])])
     with pytest.raises(ShardMismatchError, match="competence check"):
         combine_reports([reach, _run(tasks=["fumble"], competence_check=3)])
+
+
+def test_the_pre_run_runs_under_the_run_s_termination_mode() -> None:
+    """A fixed-horizon run's pre-run runs to the horizon too, as its benign arm does (P1.4)."""
+    report = _run(tasks=["reach"], competence_check=2, horizon=6, termination="fixed-horizon")
+    assert report.termination_mode == "fixed-horizon"
+    check = report.competence
+    assert check is not None
+    pre_run = check.by_task["reach"].episodes
+    assert [e.steps for e in pre_run] == [6, 6]
+    assert {e.termination for e in pre_run} == {"horizon"}
+    benign = [r for r in report.results if r.attack == "none" and r.applicable]
+    assert benign and all(r.steps == 6 for r in benign)
