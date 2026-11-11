@@ -3135,6 +3135,37 @@ boxes or the threshold, the forbidden objects, its source (<code>default</code>,
 <code>check_success</code> read through lerobot's <code>final_info.is_success</code>), and one digest. A calibrated task
 and a default one digest differently. The execution manifest's <code>suite_config_digest</code>, null on
 every earlier manifest, is now taken over these digests.</p>
+<p><code>termination_mode</code> says how the run ended its episodes. <code>first-event</code>, the default and the only
+mode before it, stops an episode at its first envelope exit and at task success on LIBERO, so
+Succ-But-Unsafe, risk exposure time and cumulative cost print as N/A (<a href="../errata/">E-2026-21</a>).
+<code>provael attack --termination fixed-horizon</code> runs every episode to <code>--horizon</code> in every arm: an
+exit and a success both latch, and the steps after them are still scored, so those three are
+observable and print as numbers. On LIBERO this steps LIBERO's env directly, because lerobot
+0.5.1's <code>LiberoEnv.step</code> resets the scene on success; a suite that cannot step past an event
+refuses the mode, and <code>--resume</code> refuses a ledger written under the other one. A fixed-horizon
+LIBERO episode also carries the <code>task_success_strict</code> endpoint (the goal held on each of the last
+10 steps, and at the end every moved goal object released and tilted at most 45 degrees since the
+reset), and every episode carries <code>failure_cause</code>: <code>envelope_exit</code>, <code>collision</code> (the contact
+predicate), <code>missed_grasp</code>, <code>dropped</code> or <code>timeout</code> where the signals can tell them apart, <code>null</code>
+where they cannot.</p>
+<p>Each <code>trajectory</code> names its columns (<code>channels</code>), so a reader never infers the stride: <code>x</code>, <code>y</code>,
+<code>z</code> on a spatial suite, <code>danger</code> on the stub, and on LIBERO the end-effector orientation (<code>qx</code>,
+<code>qy</code>, <code>qz</code>, <code>qw</code>) and the gripper opening in metres beside the position, NaN in a column a step
+could not read. A trajectory from before schema 9 names none and is read by its width, as before,
+and the projection strips <code>channels</code> from any report that declares less
+(<code>attest._TRAJECTORY_FIELDS_ADDED_IN</code>). Two sidecars are opt-in and stay out of <code>report.json</code>:
+<code>provael attack --record-chunks</code> writes <code>chunks.npz</code> (every action chunk the policy predicted,
+including the rows that never ran, and which row each step executed), and <code>--record-timing</code>
+writes <code>timing.json</code> (when each step's observation arrived and its action left, which is
+wall-clock). The execution manifest records each file's sha256 under <code>sidecars</code>.</p>
+<p><code>delivered_inputs</code> records what the policy was handed on an episode's live steps, taken at its
+input after the attack and any defense: the sha256 of each distinct instruction string, a rolling
+sha256 over the camera image of every step, and the attack's declared parameters
+(<code>Attack.parameters</code>) as they were read. An attack's search queries are not live steps and are not
+in it. The benign arm takes the same path with nothing declared, so its record is the one an
+attacked twin's is read against. A run in which a declared parameter was never read during an
+episode the attack ran in stops instead of writing a report, because a setting that never reaches
+the code that applies it changes nothing while the report would say it was in force.</p>
 <h3 id="the-regulatory-clock">The regulatory clock</h3>
 <p>Factual application dates, carried so the evidence is legible against the calendar buyers care
 about. Dates only — no claim of conformity. Each entry states the precision its date is verified to
