@@ -138,7 +138,8 @@ These are advisories in **optional dependencies**, tracked here for transparency
 vulnerabilities in Provael**, and the core install (6 deps, no GPU/ML stack) is unaffected.
 
 - **[CVE-2026-25874](https://nvd.nist.gov/vuln/detail/CVE-2026-25874) — LeRobot unauthenticated
-  pickle-deserialization RCE (CVSS 9.8), affecting `lerobot` through `0.5.1`.** The flaw is in
+  pickle-deserialization RCE (CVSS 9.8), affecting `lerobot` through `0.6.1`** (OSV, record updated
+  11 November 2026; NVD's CPE range still ends at `0.5.1`). The flaw is in
   LeRobot's **async-inference `PolicyServer`**, which `pickle.loads` untrusted payloads over an
   unauthenticated gRPC endpoint (TCP/50051). Provael's optional `[lerobot]` extra pins
   `lerobot==0.5.1` (an affected version), **but Provael never starts that PolicyServer or any gRPC
