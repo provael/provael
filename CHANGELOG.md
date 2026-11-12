@@ -306,6 +306,9 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 - **The quickstart no longer says no committed run carries the contact column.** The two
   one-episode PAISI recordings in `results/rfm_submission_2026-11` print it. They were recorded for
   video and measure nothing, so the first measurement to carry it is still the calibrated re-run.
+- **CVE-2026-25874 affects `lerobot` through `0.6.1`**, per OSV's record of 11 November 2026, not
+  `0.5.1`. `SECURITY.md`, `docs/checkpoint-integrity.md`, `src/provael/integrity.py` and `action.yml`
+  now say so, and a test holds them to one range. The `0.5.1` pin is inside it either way.
 
 ### Security
 

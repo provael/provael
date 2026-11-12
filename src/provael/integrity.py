@@ -19,7 +19,8 @@ release decision needs both; they are not the same claim and must never be added
 WHY IT EXISTS
 -------------
 Provael's own ``SECURITY.md`` documents **CVE-2026-25874** — LeRobot unauthenticated
-pickle-deserialization RCE (CVSS 9.8), affecting ``lerobot`` through ``0.5.1``, in the
+pickle-deserialization RCE (CVSS 9.8), affecting ``lerobot`` through ``0.6.1`` (OSV, record
+updated 11 November 2026; NVD's CPE range still ends at ``0.5.1``), in the
 async-inference ``PolicyServer`` which ``pickle.loads`` untrusted payloads over an unauthenticated
 gRPC endpoint (TCP/50051). Provael never starts that PolicyServer, so *that* path is not reachable
 through Provael — but the same class of risk reaches any tool that loads a third-party checkpoint,

@@ -28,7 +28,7 @@
 id = "GHSA-f7vj-73pm-m822"
 package = "lerobot"
 version = "0.5.1"
-reason = "LeRobot PolicyServer pickle RCE. Unreachable through Provael: the [lerobot] extra is used in-process for policy loading and the LIBERO simulator; no gRPC/PolicyServer is ever started. No released lerobot carries a fix (PR #3048 open, the advisory lists no patched version), and the 0.5.1 pin is a bounded exception documented in SECURITY.md and pyproject.toml. Re-examine when the pin moves. Update, 7 November 2026: PR #3048 closed unmerged on 7 October."
+reason = "LeRobot PolicyServer pickle RCE. Unreachable through Provael: the [lerobot] extra is used in-process for policy loading and the LIBERO simulator; no gRPC/PolicyServer is ever started. No released lerobot carries a fix (PR #3048 open, the advisory lists no patched version), and the 0.5.1 pin is a bounded exception documented in SECURITY.md and pyproject.toml. Re-examine when the pin moves. Update, 7 November 2026: PR #3048 closed unmerged on 7 October. Update, 11 November 2026: OSV lists lerobot through 0.6.1; the 0.5.1 pin is inside the range either way."
 reachable = "no"
 review_by = 2027-01-05
 in_feed = false
