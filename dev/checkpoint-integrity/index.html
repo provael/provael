@@ -2794,7 +2794,8 @@ ASR.</p>
 <h2 id="why">Why</h2>
 <p>Provael's <a href="https://github.com/provael/provael/blob/main/SECURITY.md">SECURITY.md</a> documents
 <a href="https://nvd.nist.gov/vuln/detail/CVE-2026-25874"><strong>CVE-2026-25874</strong></a> — LeRobot unauthenticated
-pickle-deserialization RCE (CVSS 9.8), affecting <code>lerobot</code> through <code>0.5.1</code>. The flaw is in LeRobot's
+pickle-deserialization RCE (CVSS 9.8), affecting <code>lerobot</code> through <code>0.6.1</code> (OSV, record updated
+11 November 2026; NVD's CPE range still ends at <code>0.5.1</code>). The flaw is in LeRobot's
 <strong>async-inference <code>PolicyServer</code></strong>, which <code>pickle.loads</code> untrusted payloads over an unauthenticated
 gRPC endpoint (TCP/50051).</p>
 <p><strong>Provael never starts that PolicyServer or any gRPC endpoint</strong> — it uses LeRobot only for
