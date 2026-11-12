@@ -43,8 +43,8 @@ from provael.verdict import ReleaseDecision, release_verdict
 #: report's deployed weight digest and its per-task predicates. Version 4 also records
 #: ``sidecars``: the sha256 of each opt-in sidecar written beside ``report.json`` (the predicted
 #: action chunks and the per-step timing, :mod:`provael.sidecars`), which binds a sidecar to its run
-#: the way ``report_digest`` binds the report. Version 4 is not yet in a release, so it grew
-#: rather than moving to 5.
+#: the way ``report_digest`` binds the report. Version 4 grew in place while it was unreleased,
+#: rather than moving to 5, and first shipped in 0.48.0.
 EXECUTION_MANIFEST_VERSION = 4
 
 #: Environment-variable names allowed into the manifest. Anything else is dropped entirely; an
@@ -65,6 +65,11 @@ ENV_ALLOWLIST: tuple[str, ...] = (
     # chose (provael.integrity.TRUST_CHECKPOINT_CODE_ENV). A run that passed the check and one that
     # overrode it are different claims, and as above only the environment tells them apart.
     "PROVAEL_TRUST_CHECKPOINT_CODE",
+    # Whether the run loaded a policy its load-time preflight refused
+    # (provael.policies.preflight.OVERRIDE_PREFLIGHT_ENV). Same reason: a run that passed every
+    # check and one that went past a refusal are different claims, and only the environment says
+    # which.
+    "PROVAEL_OVERRIDE_PREFLIGHT",
     "MUJOCO_GL",
     "PYOPENGL_PLATFORM",
     "PROVAEL_SMOLVLA_LIBERO_CKPT",

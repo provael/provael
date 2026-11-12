@@ -89,13 +89,14 @@ def test_the_ceiling_is_shards_times_timeout_times_rate() -> None:
     """Pin the arithmetic, so a plausible-looking wrong number cannot ship.
 
     A cost ceiling is a claim like any other in this repo, and it is the one a maintainer reads
-    right before deciding to spend. `eai04-redirect` is 10 shards x 1.5 h x $0.7992 = $11.99.
+    right before deciding to spend. `eai04-redirect` is 10 shards x 2.5 h x $0.7992 = $19.98 (its
+    timeout moved from 1.5 h on 11 November 2026, when six arms made a shard 30 episodes).
     """
     cfg = plan_module.stages()["eai04-redirect"]
     shards = len(cfg["tasks"].split(","))
     expected = shards * (int(cfg["timeout"]) / 3600) * plan_module.L4_USD_PER_HOUR
     assert shards == 10
-    assert round(expected, 2) == 11.99
+    assert round(expected, 2) == 19.98
     assert f"~${expected:,.2f}" in plan_module.plan("eai04-redirect")
 
 

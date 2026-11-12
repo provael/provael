@@ -93,6 +93,10 @@ an all-black and an all-white frame, and, on LIBERO, a checkpoint whose gripper 
 fit LIBERO's -1 to +1 gripper. `lerobot/pi05_base`, the `pi05` default, is refused on LIBERO; pass
 `--model lerobot/pi05_libero_finetuned_v044`. Add `--preflight` to `provael attack` to check, in an
 environment of its own before the run, that a +x end-effector command moves the arm along +x.
+The thresholds are stated design values that no real load has tested yet, so if one refuses a
+checkpoint you have reason to trust, `PROVAEL_OVERRIDE_PREFLIGHT=1` loads it anyway: every check
+still runs, each refusal prints as a warning, and the execution manifest records the variable. It
+does not lift the `pi05_base` refusal or the `--preflight` frame check.
 
 Add `--competence-check 5` to ask, before any attack, whether the policy can do each task at all:
 five benign episodes per task run first, at the seeds after the run's own, and a task whose task
@@ -135,7 +139,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.47.0
+      - uses: provael/provael@v0.48.0
         with:
           attacks: instruction,visual,injection
           episodes: "10"
@@ -292,7 +296,7 @@ Or in CI, gating the build on the measured rate — SARIF goes to code scanning,
 the adversarial ASR exceeds your threshold or regresses past tolerance against a baseline:
 
 ```yaml
-- uses: provael/provael@v0.47.0
+- uses: provael/provael@v0.48.0
   with: { policy: stub, suite: stub, asr-threshold: "0.5" }
 ```
 
@@ -343,7 +347,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: provael/provael@v0.47.0
+      - uses: provael/provael@v0.48.0
         with:
           # `none` is the benign control: without it an ASR has no false-positive baseline,
           # and the release gate cannot reach `pass`. It never moves the adversarial ASR.

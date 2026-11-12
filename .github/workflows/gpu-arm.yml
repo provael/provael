@@ -41,8 +41,9 @@ on:
         options:
           - timing          # 1 episode, ~$0.05 — proves the path works before spending
           - calibrate       # ~$8  [~$12] BOTH arms; fits the predicate and picks its face
-          - eai04-redirect  # ~$6  [~$12] optimized_instruction transfer + both controls
-          - control         # ~$6  [~$12] the falsification arm for the roleplay headline
+          - eai04-redirect  # ~$11 [~$20] optimized_instruction transfer + the four controls
+          - control         # ~$11 [~$20] the falsification arm for the roleplay headline
+          - declarative     # ~$5.47 [~$12] declarative_text beside none and roleplay, control's scenes
           - suite           # ~$2.55      10 tasks x {none, roleplay}
           - probe           # ~$6.11      direction check across all ten tasks
           - whitebox-pilot  # ~$2 [~$4]   weight_integrity ladder + gradient_patch on the real adapter, 2 tasks x 2 seeds; needs provael >= 0.42.0 in the image
