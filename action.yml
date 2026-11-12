@@ -223,9 +223,9 @@ runs:
 
     # Supply-chain control, run BEFORE any policy is instantiated: loading a pickle executes it,
     # so the check is worthless after the load. Provael's own SECURITY.md documents
-    # CVE-2026-25874 (LeRobot unauthenticated pickle-deserialization RCE, CVSS 9.8, through
-    # lerobot 0.5.1) — Provael never starts that PolicyServer, but the same class of risk reaches
-    # any tool that loads a third-party checkpoint.
+    # CVE-2026-25874 (LeRobot unauthenticated pickle-deserialization RCE, CVSS 9.8, affecting
+    # `lerobot` through `0.6.1`, per OSV on 11 November 2026) — Provael never starts that
+    # PolicyServer, but the same class of risk reaches any tool that loads a third-party checkpoint.
     #
     # This produces a VERDICT, not an attack-success rate, and does not reduce one.
     - name: Verify checkpoint integrity (supply chain)

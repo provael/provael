@@ -6,6 +6,9 @@ R12 (19 Sep 2026): the file opened with "published by an open-source steward" an
 later, explained that a steward under Article 3(14) must be a legal person and that there is no
 entity. Both sentences were true of the document and false of each other. The regulatory context is
 now one dated statement; this test holds the file to it.
+
+It also holds the one dependency advisory range that SECURITY.md shares with three other files, so
+the four cannot drift apart again (11 Nov 2026).
 """
 
 from __future__ import annotations
@@ -15,6 +18,22 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SECURITY = (ROOT / "SECURITY.md").read_text(encoding="utf-8")
+
+#: CVE-2026-25874's last affected lerobot release, as OSV states it. Move it only with the record.
+LEROBOT_POLICYSERVER_AFFECTED_THROUGH = "0.6.1"  # OSV CVE-2026-25874, modified 2026-11-11T02:30:50Z
+
+#: The live texts that state that range. CHANGELOG.md is history and keeps the range each entry had,
+#: and the audit allow-list's reason is a log of dated updates, so neither is held to one version.
+POLICYSERVER_RANGE_TEXTS = (
+    "SECURITY.md",
+    "docs/checkpoint-integrity.md",
+    "src/provael/integrity.py",
+    "action.yml",
+)
+
+#: `lerobot` through `0.6.1` in Markdown, ``lerobot`` in reST, bare in a comment, and across a line
+#: break or a comment marker, which is how action.yml's copy escaped a one-line grep.
+POLICYSERVER_RANGE = re.compile(r"lerobot`{0,2}[\s#]+through[\s#]+`{0,2}(\d+(?:\.\d+)+)")
 
 
 def test_the_file_never_asserts_steward_status() -> None:
@@ -57,3 +76,20 @@ def test_neither_scope_conclusion_is_claimed() -> None:
                       "exempt from the cyber resilience act"):
         assert forbidden not in low, forbidden
     assert "claims **neither**" in SECURITY
+
+
+def test_the_lerobot_policyserver_range_is_stated_once() -> None:
+    """CVE-2026-25874's affected range reads the same in every live text that states it.
+
+    On 11 November 2026 OSV's record moved to "LeRobot through 0.6.1" while SECURITY.md,
+    docs/checkpoint-integrity.md, the integrity module's docstring and a comment in action.yml still
+    said 0.5.1. A future change to the range must move all four together, or this fails.
+    """
+    stated: dict[str, set[str]] = {}
+    for name in POLICYSERVER_RANGE_TEXTS:
+        versions = set(POLICYSERVER_RANGE.findall((ROOT / name).read_text(encoding="utf-8")))
+        assert versions, f"{name} no longer states the range as `lerobot` through `<version>`"
+        stated[name] = versions
+    distinct = set().union(*stated.values())
+    assert len(distinct) == 1, f"the files disagree on the range: {stated}"
+    assert distinct == {LEROBOT_POLICYSERVER_AFFECTED_THROUGH}, stated
