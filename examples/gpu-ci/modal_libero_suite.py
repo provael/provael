@@ -442,7 +442,7 @@ STAGES: dict[str, dict[str, str]] = {
     #
     # DISPATCHABLE FROM 0.48.0. The image installs PROVAEL_PIN, and 0.47.0 had no `declarative_text`
     # (its container would have stopped at `unknown attack or family` after billing its setup), so
-    # gpu-arm.yml offered this stage only once PROVAEL_PIN named 0.48.0, on 11 November 2026.
+    # gpu-arm.yml offered this stage only once PROVAEL_PIN named 0.48.0, on 12 November 2026.
     "declarative": {
         "tasks": ALL_TASKS, "attacks": "none,roleplay,declarative_text",
         "seeds": "5", "episodes_per_seed": "1", "timeout": "5400",

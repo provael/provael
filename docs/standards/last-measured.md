@@ -240,7 +240,7 @@ minor releases: 0.42.1 was a patch, so seven tags separate the two. The headline
 still uncalibrated, the campaign is still paused until the predicate is calibrated (#136), and the
 lane's pin moved to 0.47.0 with 0 of 80 banked.
 
-**Update, 11 November 2026: seven behind, still `isStale: true`.** 0.48.0 carries report schema 9,
+**Update, 12 November 2026: seven behind, still `isStale: true`.** 0.48.0 carries report schema 9,
 which proof 1's re-run is to record (the policy's runtime identity, each episode's starting
 scene, ending and delivered inputs, every rate with its counts and interval, each task's
 predicate), with the controls run by default, a competence gate and paired and task-clustered

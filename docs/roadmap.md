@@ -14,9 +14,9 @@ runs", "no peer review" — and each has a date this page will keep or publicly 
 1. **A calibrated predicate — target 24 October 2026, missed; new target 14 November 2026, missed;
    new target 15 December 2026**
    ([#136](https://github.com/provael/provael/issues/136)).
-   Status, 11 November 2026: the 14 November date is missed, decided on 10 November. Report schema 9
+   Status, 12 November 2026: the 14 November date is missed, decided on 10 November. Report schema 9
    (the policy's identity, the scene each pair starts from, how each episode ended and the
-   predicate it was scored against) ships in 0.48.0 (11 November 2026), so the fit and the pinned
+   predicate it was scored against) ships in 0.48.0 (12 November 2026), so the fit and the pinned
    re-run can now record it; neither has run. What shipped before, in 0.47.0 (7 November
    2026): a new run records the init state each episode's reset loaded (report schema 8);
    `provael calibrate --init-state-offset` starts a fit past a chosen state; the GPU arm's plan step

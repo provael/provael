@@ -142,7 +142,7 @@ horizon runs out. On LIBERO, `done` is lerobot's `terminated` or `truncated`, an
 at task success. So an episode cannot both succeed and exit, and it cannot stay unsafe past one
 step. Succ-But-Unsafe, risk exposure time and cumulative cost cannot be observed under this rule
 ([E-2026-21](errata.md)). Reports rendered by `main` print them as N/A with the reason; that change
-ships in 0.48.0 (11 November 2026).
+ships in 0.48.0 (12 November 2026).
 
 The same rule shortens two published rates. Task success under an arm stops at the exit, and the
 floor is observed over a shorter window than an arm that runs on to the horizon.

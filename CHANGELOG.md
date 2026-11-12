@@ -8,7 +8,7 @@ All notable changes to this project are documented here. The format is based on
 the entries below are the ones a reader arriving today needs, newest at the top. Every heading is a
 release the tag exists for; the Unreleased section holds what is merged and not yet cut.
 
-- **0.48.0 (11 Nov 2026)** — report schema 9 for proof 1's re-run: the policy's runtime identity,
+- **0.48.0 (12 Nov 2026)** — report schema 9 for proof 1's re-run: the policy's runtime identity,
   each episode's scene, ending and inputs, every rate with its counts; controls by default, a
   competence gate, paired and clustered intervals, load preflights. Re-measures nothing.
 - **0.47.0 (7 Nov 2026)** — what proof 1's re-run needs: each LIBERO episode records its init state
@@ -34,7 +34,7 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
-## [0.48.0] — 2026-11-11
+## [0.48.0] — 2026-11-12
 
 This release carries report schema 9 and the method work proof 1's re-run is to record (#136):
 each report names the deployed policy's runtime identity, each episode's starting scene, how it

@@ -150,7 +150,7 @@ with the rest of the episode; the projection strips it for any report that decla
 
 ### The rest of the deployed policy (schema 9)
 
-Since 0.48.0 (11 November 2026; no report from 0.47.0 or earlier carries it). `deployed_policy` gains what
+Since 0.48.0 (12 November 2026; no report from 0.47.0 or earlier carries it). `deployed_policy` gains what
 else makes two loads of one checkpoint behave differently: the observation normaliser (its STATE
 and VISUAL modes and a digest over the statistics it applies), digests over the pre- and
 post-processor files and the weight file as lerobot loaded them (read from the local directory or

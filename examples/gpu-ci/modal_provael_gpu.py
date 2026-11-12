@@ -149,7 +149,7 @@ REPOSITORY = "provael/provael"
 #: whose significance column tests each attack against the control arm's own counts (E-2026-18);
 #: and to 0.47.0 on 7 November 2026, still paused and 0/80 banked, so it resumes under the release
 #: whose LIBERO episodes record the init state their reset loaded (report schema 8); and to 0.48.0
-#: on 11 November 2026, still paused and 0/80 banked, so it resumes under the release that records
+#: on 12 November 2026, still paused and 0/80 banked, so it resumes under the release that records
 #: report schema 9 (the policy's runtime identity, each episode's scene, ending and inputs).
 PROVAEL_PIN = "0.48.0"
 
