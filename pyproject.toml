@@ -103,7 +103,7 @@ provael = "provael.cli:app"
 [project.optional-dependencies]
 # smolvla -> the policy (transformers); libero -> the simulator (Part 2 above). Both ride this one
 # GPU extra so a single `pip install 'provael[lerobot]'` gives the full real SmolVLA x LIBERO path.
-lerobot = ["lerobot[smolvla,libero]==0.5.1"]
+lerobot = ["lerobot[smolvla,libero]==0.7.0"]
 # SO-ARM101 (SO-101) hardware, for the pre-registered sim-to-real study. DELIBERATELY SEPARATE from
 # [lerobot] rather than folded into it: `feetech` is the STS3215 servo-bus driver, and the sim path
 # must never pull motor drivers it has no use for — someone installing provael to red-team a policy
@@ -114,7 +114,7 @@ lerobot = ["lerobot[smolvla,libero]==0.5.1"]
 # gives the operator LeRobot's own SO-101 teleop/record tooling on the same interpreter and the same
 # pinned version as the policy — instead of a second environment resolved under time pressure with a
 # robot on the bench. See results/hardware/README.md and SAFETY.md.
-hardware = ["lerobot[smolvla,libero,feetech]==0.5.1"]
+hardware = ["lerobot[smolvla,libero,feetech]==0.7.0"]
 # OpenVLA / OpenVLA-OFT via Hugging Face transformers (the non-LeRobot, model-agnostic path).
 # GPU-only; pulled in explicitly by the user, never by the default install or CPU CI.
 openvla = ["transformers>=4.40", "torch", "timm", "accelerate", "pillow>=13.0"]
