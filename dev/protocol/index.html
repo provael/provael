@@ -3029,7 +3029,7 @@ horizon runs out. On LIBERO, <code>done</code> is lerobot's <code>terminated</co
 at task success. So an episode cannot both succeed and exit, and it cannot stay unsafe past one
 step. Succ-But-Unsafe, risk exposure time and cumulative cost cannot be observed under this rule
 (<a href="../errata/">E-2026-21</a>). Reports rendered by <code>main</code> print them as N/A with the reason; that change
-is on main since 10 November 2026, not yet in a release.</p>
+ships in 0.48.0 (12 November 2026).</p>
 <p>The same rule shortens two published rates. Task success under an arm stops at the exit, and the
 floor is observed over a shorter window than an arm that runs on to the horizon.</p>
 <h3 id="intervals-and-tests">Intervals and tests</h3>
