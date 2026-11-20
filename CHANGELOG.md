@@ -34,6 +34,11 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
+### Security
+
+- mistune 3.3.3 to 3.3.4 in the lock (CVE-2026-97698, CVE-2026-97699). It comes in only through
+  the docs group, and nothing in Provael or its docs build calls it, so no install was affected.
+
 ## [0.48.0] — 2026-11-12
 
 This release carries report schema 9 and the method work proof 1's re-run is to record (#136):
