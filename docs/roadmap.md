@@ -48,10 +48,13 @@ runs", "no peer review" — and each has a date this page will keep or publicly 
 3. **Peer review — the SPAIS@CoRL 4-pager by 1 October 2026 AoE** (submitted before the deadline;
    not accepted, notified 17 October 2026), around the measurement
    discipline (benign controls, Wilson and task-clustered intervals, published nulls, errata, the
-   π0.5 null); arXiv in November regardless of the decision, the ID into `CITATION.cff` and the
-   README. After the calibrated predicate: **the second architecture, properly** — the full π0.5
-   leg (50 episodes × the four LIBERO suites with controls) and OpenVLA-OFT or GR00T N1.7 through
-   the allenai harness path, October–December, nulls published as nulls.
+   π0.5 null). The arXiv upload was promised for November 2026 regardless of the decision, and
+   that date is missed (recorded 28 November 2026). It now follows the calibrated re-run (proof
+   1), so the uploaded text carries the calibrated headline: by 31 January 2027, the ID into
+   `CITATION.cff` and the README. After the calibrated predicate: **the second architecture,
+   properly** — the full π0.5 leg (50 episodes × the four LIBERO suites with controls) and
+   OpenVLA-OFT or GR00T N1.7 through the allenai harness path, October–December, nulls published
+   as nulls.
 
 Still owed alongside them, from what is already published: **complete provenance on every new
 committed run** (`tests/test_results_provenance.py` refuses a shard without `repository`, `commit`,
