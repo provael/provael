@@ -17,7 +17,9 @@ short-lived installation token of the repository's own GitHub App
 ruleset's **only** bypass actor — no human role is on the list, so the maintainer goes through a
 pull request like anyone else. The jobs fail loudly when the two secrets are absent; there is no
 fallback to `GITHUB_TOKEN`, because a fallback that pushes nothing and exits green is how a badge
-goes stale unnoticed.
+goes stale unnoticed. Since 28 November 2026 each of the six asks for `permission-contents: write`
+alone, so a scope the App gains later does not reach them; ci.yml's `zizmor` job fails a token step
+that drops it.
 
 Set up once, by an org owner (UI only — none of this can be done from a workflow):
 

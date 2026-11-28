@@ -45,6 +45,13 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 - mistune 3.3.3 to 3.3.4 in the lock (CVE-2026-97698, CVE-2026-97699). It comes in only through
   the docs group, and nothing in Provael or its docs build calls it, so no install was affected.
+- **CI lints its workflows with zizmor, and template injection fails at any severity.** Why:
+  CVE-2026-137964 (27 November 2026) was a release workflow that ran a pull request's title as
+  shell. No workflow here did that, but nothing checked. ci.yml's `zizmor` job runs zizmor 1.33.1,
+  pinned and offline, and `tests/test_workflow_zizmor.py` keeps the event fields an outsider writes
+  out of every `run:` block. Fixed on the way, none of it reachable from a pull request: the release
+  workflow uses no uv cache, the six bot-token steps ask for `contents: write` alone, three checkouts
+  say whether they keep credentials, and seven `${{ }}` expansions in scripts arrive through `env:`.
 
 ## [0.48.0] — 2026-11-12
 

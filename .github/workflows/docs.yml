@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           python-version: "3.12"
       - name: Build (strict)
@@ -77,7 +77,7 @@ jobs:
         with:
           persist-credentials: true
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           python-version: "3.12"
 
@@ -97,6 +97,10 @@ jobs:
           echo "publishing docs for $v"
 
       - name: Deploy the docs (a version + the latest alias on a tag; /dev/ with no alias on main)
+        # The version arrives as an environment variable, not a `${{ }}` pasted into the script
+        # (zizmor: template-injection; tests/test_workflow_zizmor.py).
+        env:
+          DOCS_VERSION: ${{ steps.ver.outputs.version }}
         run: |
           set -euo pipefail
           git config user.name  'github-actions[bot]'
@@ -108,12 +112,12 @@ jobs:
           # /latest/… URL would 404, which is worse than not versioning at all. `redirect` is also
           # wrong here — it would make every alias URL bounce to a DATED /0.39.2/… path, and a
           # stable undated URL is the entire reason `latest` exists.
-          if [ "${{ steps.ver.outputs.version }}" = "dev" ]; then
+          if [ "$DOCS_VERSION" = "dev" ]; then
             # main: its own version, no alias touched. `latest` keeps meaning the newest release.
             uv run --group docs mike deploy --branch gh-pages --alias-type=copy dev
           else
             uv run --group docs mike deploy --branch gh-pages --alias-type=copy \
-              --update-aliases "${{ steps.ver.outputs.version }}" latest
+              --update-aliases "$DOCS_VERSION" latest
             uv run --group docs mike set-default --branch gh-pages latest
           fi
 

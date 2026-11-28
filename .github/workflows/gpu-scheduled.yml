@@ -116,17 +116,23 @@ jobs:
           fi
       - name: Mint the bot App token
         id: bot
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
         with:
           app-id: ${{ secrets.PROVAEL_BOT_APP_ID }}
           private-key: ${{ secrets.PROVAEL_BOT_PRIVATE_KEY }}
+          # Contents alone: this job checks out and pushes, nothing more. With no permission-*
+          # input the token carries every scope the App is ever granted (zizmor: github-app).
+          permission-contents: write
 
       # persist-credentials: true, deliberately. This was false, which is the right default for a
       # lane that only reads — and this one has to push the measurement it produces or the whole
-      # run is discarded. Scoped by `permissions: contents: write` on the job above.
+      # run is discarded. Scoped by `permissions: contents: write` on the job above. Written out
+      # below rather than left to the default, so zizmor's artipacked audit reads it as
+      # deliberate; the upload takes gpu-scheduled-report.txt alone, never .git/.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           token: ${{ steps.bot.outputs.token }}  # the App token; see the steps above
+          persist-credentials: true  # "Keep the measurement" pushes
           # Full history so the Modal driver can resolve the pinned release tag to its commit
           # and pass it into the container as PROVAEL_COMMIT (execution-manifest provenance;
           # both September 2026 canary manifests recorded `commit: null`). The driver also reads
