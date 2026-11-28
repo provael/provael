@@ -79,7 +79,12 @@ jobs:
         uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           python-version: "3.12"
-          enable-cache: true
+          # No cache in a release (zizmor: cache-poisoning). A cache entry is written by whatever
+          # ran before this tag, and what this workflow builds goes to PyPI, where a version can
+          # never be replaced. The other two setup-uv steps below say `false` as well: setup-uv's
+          # `auto` default skips the cache on a tag push today, and a Dependabot bump could change
+          # what `auto` means without a line of this file moving.
+          enable-cache: false
       - name: Sync core + dev (no extras)
         run: uv sync --locked
       - name: Lint (ruff)
@@ -116,6 +121,7 @@ jobs:
         uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           python-version: "3.12"
+          enable-cache: false  # no cache in a release; see the check job
       - name: Build distributions
         run: uv build
       - name: Check metadata
@@ -184,6 +190,7 @@ jobs:
         uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           python-version: "3.12"
+          enable-cache: false  # no cache in a release; see the check job
       - name: Generate CycloneDX SBOM + SHA-256 checksums
         run: |
           uv sync --locked --no-dev

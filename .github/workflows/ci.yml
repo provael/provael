@@ -314,3 +314,51 @@ jobs:
           uv export --only-group docs --no-emit-project --no-hashes --no-annotate --quiet \
             --format requirements-txt -o audit-docs.txt
           uvx pip-audit==2.10.1 --progress-spinner off -r audit-docs.txt
+
+  # Workflow lint (28 November 2026).
+  #
+  # THE TRIGGER. CVE-2026-137964 (ToolJet, GHSA-74h3-686h-cmvf, critical 9.8, NVD 27 November
+  # 2026): a release workflow expanded a pull request's title inside a `run:` step, so the title
+  # ran as shell. A `${{ }}` expansion is pasted into the script before the shell parses it, and no
+  # quoting survives that. No workflow here did this, and none runs on `pull_request_target`,
+  # `issue_comment` or `workflow_run`, but nothing kept it that way: the workflow tests read token
+  # scopes, pins and pipefail, never what a script expands. zizmor reads that, and more.
+  #
+  # TWO RUNS, ONE PINNED VERSION. The first fails on any finding at medium or above. The second
+  # fails on template injection at EVERY severity: zizmor rates an expansion it cannot prove safe
+  # (a step output, say) as informational, which a severity floor would let through, and that is
+  # the class the CVE belongs to. `--no-exit-codes` keeps a crash failing while a finding does not;
+  # jq decides, and refuses a report that is not a JSON list. `--offline`: no token, no network.
+  # tests/test_workflow_zizmor.py keeps the event fields an outsider writes out of every `run:`
+  # block too, so the class stays guarded on a machine that has no zizmor.
+  zizmor:
+    name: workflow lint (zizmor)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Install uv (pinned Python 3.12)
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          python-version: "3.12"
+
+      - name: zizmor (medium and above)
+        run: uvx zizmor==1.33.1 --offline --min-severity medium --format github .github/workflows
+
+      - name: zizmor template-injection (every severity)
+        shell: bash
+        run: |
+          set -euo pipefail
+          uvx zizmor==1.33.1 --offline --no-exit-codes --min-severity informational --format json \
+            .github/workflows > zizmor.json
+          jq -e 'type == "array"' zizmor.json > /dev/null
+          jq -r '.[] | select(.ident == "template-injection") | .locations[]
+                 | select(.symbolic.kind == "Primary")
+                 | "::error file=\(.symbolic.key.Local.verbatim_path),line=\(.concrete.location.start_point.row + 1)::template-injection: \(.symbolic.annotation)"' \
+            zizmor.json | tee template-injection.txt
+          test ! -s template-injection.txt
