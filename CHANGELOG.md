@@ -34,6 +34,13 @@ narrative belongs there too, and from 0.44.0 entries say what changed and why, i
 
 ## [Unreleased]
 
+### Changed
+
+- **Dependabot groups minor and patch GitHub Actions bumps into one weekly PR.** Why: four arrived
+  in the same minute on 26 November 2026 (#383 to #386), and main's strict ruleset made each merge
+  put the rest behind main again. A major bump still arrives as a PR of its own; every bump is still
+  a SHA pin with its `# vX.Y.Z` comment.
+
 ### Security
 
 - mistune 3.3.3 to 3.3.4 in the lock (CVE-2026-97698, CVE-2026-97699). It comes in only through

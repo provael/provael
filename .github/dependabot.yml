@@ -11,6 +11,16 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
     labels: ["dependencies", "ci"]
+    # Minor and patch bumps arrive as one PR a week. On 26 November 2026 four came in the same
+    # minute (#383 to #386), and under main's strict ruleset every merge put the others behind
+    # main again: four rounds of rebase and CI for four one-line bumps. A major bump still gets a
+    # PR of its own, since a major is where an action's inputs and defaults change. The group
+    # changes how bumps are batched, not how they are written: each is still the SHA and its
+    # `# vX.Y.Z` comment, rewritten in place, as the block above requires.
+    groups:
+      actions-minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # Python dependencies (the uv lockfile). The core stays intentionally small; Dependabot surfaces
   # security updates as PRs for review rather than auto-merging.
