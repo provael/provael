@@ -58,6 +58,9 @@ jobs:
         with:
           app-id: ${{ secrets.PROVAEL_BOT_APP_ID }}
           private-key: ${{ secrets.PROVAEL_BOT_PRIVATE_KEY }}
+          # Contents alone: this job checks out and pushes, nothing more. With no permission-*
+          # input the token carries every scope the App is ever granted (zizmor: github-app).
+          permission-contents: write
 
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:

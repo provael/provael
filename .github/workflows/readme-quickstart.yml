@@ -59,6 +59,7 @@ jobs:
             README.md
           sparse-checkout-cone-mode: false
           path: readme-only
+          persist-credentials: false  # nothing here pushes; the tag check reads anonymously
 
       - name: The README still documents the commands this job runs
         run: |
@@ -163,17 +164,23 @@ jobs:
 
       - name: Record how long a stranger actually waits
         if: always()
+        # Step outputs arrive as environment variables, not `${{ }}` pasted into the script: the
+        # version string is whatever the installed package prints (zizmor: template-injection).
+        env:
+          INSTALL_SECONDS: ${{ steps.install.outputs.install_seconds }}
+          RUN_SECONDS: ${{ steps.quickstart.outputs.run_seconds }}
+          INSTALLED_VERSION: ${{ steps.install.outputs.version }}
         run: |
           {
             echo "### Time to a first ASR number, from a clean runner"
             echo
             echo "| step | seconds |"
             echo "| --- | ---: |"
-            echo "| \`pip install provael\` | ${{ steps.install.outputs.install_seconds }} |"
-            echo "| first \`provael attack\` | ${{ steps.quickstart.outputs.run_seconds }} |"
-            echo "| **total** | **$(( ${{ steps.install.outputs.install_seconds || 0 }} + ${{ steps.quickstart.outputs.run_seconds || 0 }} ))** |"
+            echo "| \`pip install provael\` | ${INSTALL_SECONDS} |"
+            echo "| first \`provael attack\` | ${RUN_SECONDS} |"
+            echo "| **total** | **$(( ${INSTALL_SECONDS:-0} + ${RUN_SECONDS:-0} ))** |"
             echo
-            echo "Installed version: \`${{ steps.install.outputs.version }}\`"
+            echo "Installed version: \`${INSTALLED_VERSION}\`"
             echo
             echo "The README claims **20 s** on a clean container. This runner is not that container,"
             echo "so treat this as an independent second data point rather than a reproduction of it."

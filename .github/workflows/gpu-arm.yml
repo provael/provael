@@ -108,12 +108,18 @@ jobs:
         with:
           app-id: ${{ secrets.PROVAEL_BOT_APP_ID }}
           private-key: ${{ secrets.PROVAEL_BOT_PRIVATE_KEY }}
+          # Contents alone: this job checks out and pushes, nothing more. With no permission-*
+          # input the token carries every scope the App is ever granted (zizmor: github-app).
+          permission-contents: write
 
-      # No `persist-credentials: false` here, unlike most checkouts in this repo: "Keep the run"
-      # below has to push the artifacts this arm paid for. Scoped by `contents: write` on the job.
+      # `persist-credentials: true`, unlike most checkouts in this repo: "Keep the run" below has
+      # to push the artifacts this arm paid for. Scoped by `contents: write` on the job. Written
+      # out rather than left to the default, so zizmor's artipacked audit reads it as deliberate;
+      # "Upload the run" takes the log and artifacts/, never .git/.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           token: ${{ steps.bot.outputs.token }}  # the App token; see the steps above
+          persist-credentials: true  # "Keep the run" pushes
           # Full history so the Modal driver can resolve the pinned release tag to its commit
           # and pass it into the container as PROVAEL_COMMIT (execution-manifest provenance;
           # both September 2026 canary manifests recorded `commit: null`).
